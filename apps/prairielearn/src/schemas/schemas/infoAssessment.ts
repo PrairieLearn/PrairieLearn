@@ -14,7 +14,8 @@ const GroupRoleJsonSchema = z
     minimum: z
       .number()
       .describe('The minimum number of users that should be in this role in a group.')
-      .optional(),
+      .optional()
+      .default(0),
     maximum: z
       .number()
       .describe('The maximum number of users that should be in this role in a group.')
@@ -22,11 +23,14 @@ const GroupRoleJsonSchema = z
     canAssignRoles: z
       .boolean()
       .describe("Whether users with this role can assign other users' group roles.")
-      .optional(),
+      .optional()
+      .default(false),
   })
   .describe(
     'A custom role for use in group assessments that allows control over certain permissions.',
   );
+
+export type GroupRoleJson = z.infer<typeof GroupRoleJsonSchema>;
 
 export const AssessmentAccessRuleJsonSchema = z
   .object({
@@ -66,19 +70,22 @@ export const AssessmentAccessRuleJsonSchema = z
     showClosedAssessment: z
       .boolean()
       .describe('Whether the student can view the assessment after it has been closed')
-      .optional(),
+      .optional()
+      .default(true),
     showClosedAssessmentScore: z
       .boolean()
       .describe(
         'Whether the student can view the assessment grade after it has been closed. Only works if showClosedAssessment is also set to false',
       )
-      .optional(),
+      .optional()
+      .default(true),
     active: z
       .boolean()
       .describe(
         'Whether the student can create a new assessment instance and submit answers to questions. If set to false, the available credit must be 0.',
       )
-      .optional(),
+      .optional()
+      .default(true),
   })
   .strict()
   .describe(
@@ -87,7 +94,11 @@ export const AssessmentAccessRuleJsonSchema = z
 
 export type AssessmentAccessRuleJson = z.infer<typeof AssessmentAccessRuleJsonSchema>;
 
-export const PointsSingleJsonSchema = z.number().gte(0).describe('A single point value.');
+export const PointsSingleJsonSchema = z
+  .number()
+  .gte(0)
+  .describe('A single point value.')
+  .default(0);
 
 export const PointsListJsonSchema = z
   .array(PointsSingleJsonSchema)
@@ -123,11 +134,12 @@ export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;
 const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
   id: QuestionIdJsonSchema,
-  forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
+  forceMaxPoints: ForceMaxPointsJsonSchema.optional().default(false),
   triesPerVariant: z
     .number()
     .describe('The maximum number of graded submissions allowed for each question instance.')
-    .optional(),
+    .optional()
+    .default(1),
   advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
   gradeRateMinutes: z
     .number()
@@ -138,10 +150,12 @@ const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
     .optional(),
   canSubmit: uniqueArray(z.string())
     .describe('The names of roles that can submit this question.')
-    .optional(),
+    .optional()
+    .default([]),
   canView: uniqueArray(z.string())
     .describe('The names of roles that can view this question.')
-    .optional(),
+    .optional()
+    .default([]),
 });
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
@@ -163,11 +177,13 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .int()
     .gte(0)
     .describe('Number of questions to choose from this group.')
-    .optional(),
+    .optional()
+    .default(1),
   triesPerVariant: z
     .number()
     .describe('The maximum number of graded submissions allowed for each question instance.')
-    .optional(),
+    .optional()
+    .default(1),
   advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
   singleVariant: z
     .boolean()
@@ -186,12 +202,14 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .describe(
       'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
     )
-    .optional(),
+    .optional()
+    .default([]),
   canView: uniqueArray(z.string())
     .describe(
       'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
     )
-    .optional(),
+    .optional()
+    .default([]),
 });
 
 const ZoneJsonSchema = z.object({
@@ -265,15 +283,18 @@ export const AssessmentJsonSchema = z
     allowIssueReporting: z
       .boolean()
       .describe('Whether to allow students to report issues for assessment questions')
-      .optional(),
+      .optional()
+      .default(true),
     multipleInstance: z
       .boolean()
       .describe('Whether to allow students to create additional instances of the assessment')
-      .optional(),
+      .optional()
+      .default(false),
     shuffleQuestions: z
       .boolean()
       .describe('Whether the questions will be shuffled in the student view of an assessment')
-      .optional(),
+      .optional()
+      .default(false),
     allowAccess: z
       .array(AssessmentAccessRuleJsonSchema)
       .describe(
@@ -298,7 +319,8 @@ export const AssessmentJsonSchema = z
     autoClose: z
       .boolean()
       .describe('Whether to automatically close the assessment after a period of inactivity.')
-      .optional(),
+      .optional()
+      .default(true),
     zones: z
       .array(ZoneJsonSchema)
       .describe(
@@ -310,18 +332,25 @@ export const AssessmentJsonSchema = z
       .describe(
         'Whether to keep the value of a question constant after a student solves it correctly.',
       )
-      .optional(),
+      .optional()
+      .default(false),
     allowRealTimeGrading: z
       .boolean()
       .describe(
         'Removes the student "Grade" buttons to prevent real-time grading while the assessment is being taken.',
       )
-      .optional(),
+      .optional()
+      .default(true),
     requireHonorCode: z
       .boolean()
       .describe('Requires the student to accept an honor code before starting exam assessments.')
-      .optional(),
-    groupWork: z.boolean().describe('Whether the assessment will support group work.').optional(),
+      .optional()
+      .default(true),
+    groupWork: z
+      .boolean()
+      .describe('Whether the assessment will support group work.')
+      .optional()
+      .default(false),
     groupMaxSize: z.number().describe('Maximum number of students in a group.').optional(),
     groupMinSize: z.number().describe('Minimum number of students in a group.').optional(),
     groupRoles: z
@@ -332,15 +361,29 @@ export const AssessmentJsonSchema = z
       .describe(
         'A list of group role names that can submit questions in this assessment. Only applicable for group assessments.',
       )
-      .optional(),
+      .optional()
+      .default([]),
     canView: uniqueArray(z.string())
       .describe(
         'A list of group role names that can view questions in this assessment. Only applicable for group assessments.',
       )
-      .optional(),
-    studentGroupCreate: z.boolean().describe('Whether students can create groups.').optional(),
-    studentGroupJoin: z.boolean().describe('Whether students can join groups.').optional(),
-    studentGroupLeave: z.boolean().describe('Whether students can leave groups.').optional(),
+      .optional()
+      .default([]),
+    studentGroupCreate: z
+      .boolean()
+      .describe('Whether students can create groups.')
+      .optional()
+      .default(false),
+    studentGroupJoin: z
+      .boolean()
+      .describe('Whether students can join groups.')
+      .optional()
+      .default(false),
+    studentGroupLeave: z
+      .boolean()
+      .describe('Whether students can leave groups.')
+      .optional()
+      .default(false),
     advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
     gradeRateMinutes: z
       .number()
@@ -358,20 +401,4 @@ export const AssessmentJsonSchema = z
   .describe('Configuration data for an assessment.');
 
 export type AssessmentJson = z.infer<typeof AssessmentJsonSchema>;
-
-/*
-const AccessRuleSchema = z.intersection(
-  AccessRuleSchema,
-  z.object({
-    role: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-  }),
-);
-const AssessmentSchema = z.intersection(
-  AssessmentSchema,
-  z.object({
-    advanceScorePerc: AccessRuleSchema.optional(),
-  }),
-);
-*/
+export type AssessmentJsonInput = z.input<typeof AssessmentJsonSchema>;

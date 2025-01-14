@@ -80,7 +80,8 @@ export const WorkspaceOptionsJsonSchema = z
     enableNetworking: z
       .boolean()
       .describe('Whether the workspace should have network access. Access is disabled by default.')
-      .optional(),
+      .optional()
+      .default(false),
     environment: z
       .object({})
       .catchall(z.any())
@@ -121,7 +122,8 @@ export const QuestionJsonSchema = z
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
       .describe('The list of question files accessible by the client (defaults to ["client.js"]).')
-      .optional(),
+      .optional()
+      .default(['client.js']),
     clientTemplates: z
       .array(z.string().describe('A single template file accessible by the client.'))
       .describe('List of client-accessible templates to render server-side.')
@@ -139,11 +141,13 @@ export const QuestionJsonSchema = z
       .describe(
         'Whether the question is not randomized and only generates a single variant (defaults to "false").',
       )
-      .optional(),
+      .optional()
+      .default(false),
     showCorrectAnswer: z
       .boolean()
       .describe('Whether to show the correct answer panel (defaults to "true").')
-      .optional(),
+      .optional()
+      .default(true),
     partialCredit: z
       .boolean()
       .describe(
@@ -194,7 +198,8 @@ export const QuestionJsonSchema = z
           .describe(
             'Whether the grading containers should have network access. Access is disabled by default.',
           )
-          .optional(),
+          .optional()
+          .default(false),
         environment: z
           .object({})
           .catchall(z.any())
@@ -220,37 +225,4 @@ export const QuestionJsonSchema = z
   .describe('Info files for questions.');
 
 export type QuestionJson = z.infer<typeof QuestionJsonSchema>;
-/*
-const DependencySchema = z.intersection(
-  DependencySchema,
-  z.object({
-    coreStyles: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-    coreScripts: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-  }),
-);
-
-const WorkspaceOptionsSchema = z.intersection(
-  WorkspaceOptionsSchema,
-  z.object({
-    syncIgnore: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-  }),
-);
-
-const QuestionSchema = z.intersection(
-  QuestionSchema,
-  z.object({
-    dependencies: DependencySchema.optional(),
-    sharedPublicly: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-    workspaceOptions: WorkspaceOptionsSchema.optional(),
-  }),
-);
-
-*/
+export type QuestionJsonInput = z.input<typeof QuestionJsonSchema>;

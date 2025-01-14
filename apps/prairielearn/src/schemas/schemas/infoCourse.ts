@@ -90,7 +90,8 @@ export const CourseOptionsJsonSchema = z
     useNewQuestionRenderer: z
       .boolean()
       .describe('Feature flag to enable the new question renderer.')
-      .optional(),
+      .optional()
+      .default(false),
     devModeFeatures: z
       .union([
         z
@@ -123,7 +124,8 @@ export const CourseJsonSchema = z
       .describe(
         'The timezone for all date input and display (e.g., "America/Chicago", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).',
       )
-      .optional(),
+      .optional()
+      .default('America/Chicago'),
     options: CourseOptionsJsonSchema.optional(),
     assessmentSets: z.array(AssessmentSetJsonSchema).describe('Assessment sets.').optional(),
     assessmentModules: z
@@ -157,3 +159,4 @@ export const CourseJsonSchema = z
   .describe('The specification file for a course.');
 
 export type CourseJson = z.infer<typeof CourseJsonSchema>;
+export type CourseJsonInput = z.input<typeof CourseJsonSchema>;

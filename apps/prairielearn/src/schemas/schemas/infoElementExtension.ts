@@ -75,23 +75,3 @@ export const ElementExtensionJsonSchema = z
   .describe('Info files for v3 element extensions.');
 
 export type ElementExtensionJson = z.infer<typeof ElementExtensionJsonSchema>;
-/*
-const DependencySchema = z.intersection(
-  DependencySchema,
-  z.object({
-    coreStyles: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-    coreScripts: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-  }),
-);
-
-const ElementExtensionSchema = z.intersection(
-  ElementExtensionSchema,
-  z.object({
-    dependencies: DependencySchema.optional(),
-  }),
-);
-*/

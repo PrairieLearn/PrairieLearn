@@ -76,23 +76,3 @@ export const ElementCourseJsonSchema = z
   .describe('Info files for v3 elements.');
 
 export type ElementCourseJson = z.infer<typeof ElementCourseJsonSchema>;
-/*
-const DependencySchema = z.intersection(
-  DependencySchema,
-  z.object({
-    coreStyles: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-    coreScripts: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-  }),
-);
-
-const ElementCourseSchema = z.intersection(
-  ElementCourseSchema,
-  z.object({
-    dependencies: DependencySchema.optional(),
-  }),
-);
-*/

@@ -44,14 +44,16 @@ export const CourseInstanceJsonSchema = z
       .describe(
         'The timezone for all date input and display (e.g., "America/Chicago", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).',
       )
-      .optional(),
-    allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional(),
+      .optional()
+      .default('America/Chicago'),
+    allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional().default(true),
     hideInEnrollPage: z
       .boolean()
       .describe(
         'If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.',
       )
-      .optional(),
+      .optional()
+      .default(false),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
     allowAccess: AccessControlJsonSchema.optional(),
     groupAssessmentsBy: z
@@ -59,42 +61,11 @@ export const CourseInstanceJsonSchema = z
       .describe(
         'Determines which assessment category will be used to group assessments on the student assessments page.',
       )
-      .optional(),
+      .optional()
+      .default('Set'),
   })
   .strict()
   .describe('The specification file for a course instance.');
 
 export type CourseInstanceJson = z.infer<typeof CourseInstanceJsonSchema>;
-
-/*
-const AccessRuleSchema = z.intersection(
-  LegacyAccessRuleSchema,
-  z.object({
-    role: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-  }),
-);
-
-const AccessControlSchema = z
-  .array(AccessRuleSchema)
-  .describe(
-    'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
-  );
-
-const CourseInstanceSchema = z.intersection(
-  LegacyCourseInstanceSchema,
-  z.object({
-    shortName: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-    allowIssueReporting: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-    userRoles: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-    allowAccess: AccessControlSchema.optional(),
-  }),
-);
-*/
+export type CourseInstanceJsonInput = z.input<typeof CourseInstanceJsonSchema>;
