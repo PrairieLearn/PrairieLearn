@@ -94,7 +94,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             else:
                 correct = False
         except Exception as exc:
-            raise ValueError("invalid score: " + score) from exc
+            raise ValueError("invalid score: " + str(score)) from exc
 
     if data["panel"] == "question":
         if sort_type == SortTypes.FIXED.name:
@@ -141,7 +141,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     answers_name = pl.get_string_attrib(element, "answers-name")
@@ -166,7 +166,7 @@ def parse(element_html, data):
         data["format_errors"][answers_name] = "Invalid option submitted."
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answers_name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -178,7 +178,7 @@ def grade(element_html, data):
         data["partial_scores"][answers_name] = {"score": 0, "weight": weight}
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answers_name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)

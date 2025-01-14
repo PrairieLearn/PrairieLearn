@@ -307,7 +307,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_fractions = pl.get_boolean_attrib(
@@ -361,7 +361,7 @@ def parse(element_html, data):
         data["submitted_answers"][name] = pl.to_json(matrix)
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_partial_credit = pl.get_boolean_attrib(
@@ -435,7 +435,7 @@ def grade(element_html, data):
         }
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)

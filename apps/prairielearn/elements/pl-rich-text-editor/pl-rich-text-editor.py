@@ -159,7 +159,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     file_name = pl.get_string_attrib(element, "file-name", "")

@@ -381,7 +381,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answer-name")
 
@@ -405,7 +405,7 @@ def parse(element_html, data):
     data["submitted_answers"][name] = a_sub
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answer-name")
 

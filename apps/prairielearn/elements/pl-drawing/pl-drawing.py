@@ -360,7 +360,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     return chevron.render(template, html_params).strip()
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(
         element, "answers-name", defaults.element_defaults["answers-name"]
@@ -385,7 +385,7 @@ def parse(element_html, data):
         data["submitted_answers"][name] = None
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     prev = not pl.get_boolean_attrib(
         element, "gradable", defaults.element_defaults["gradable"]
