@@ -7,7 +7,7 @@ You can see and edit a live version at [https://prairielearn.com](https://prairi
 
 ### Getting Started
 
-Learn how to create your first questions and assessments using our [Get Started](https://prairielearn.readthedocs.io/en/latest/getStarted/) tutorial.
+Learn how to create your first questions and assessments using the [quick start tutorial](https://prairielearn.readthedocs.io/en/latest/getStarted/).
 
 ### Getting Help
 
