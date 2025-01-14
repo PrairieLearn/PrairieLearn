@@ -152,13 +152,9 @@ function getParamsForAssessment(
             maxAutoPoints: question.maxAutoPoints ?? null,
             autoPoints: question.autoPoints ?? null,
             manualPoints: question.manualPoints ?? null,
-            forceMaxPoints: question.forceMaxPoints || false,
-            triesPerVariant: question.triesPerVariant || 1,
-            advanceScorePerc:
-              question.advanceScorePerc ??
-              zone.advanceScorePerc ??
-              assessment.advanceScorePerc ??
-              0,
+            forceMaxPoints: question.forceMaxPoints ?? false,
+            triesPerVariant: question.triesPerVariant ?? 1,
+            advanceScorePerc: question.advanceScorePerc ?? 0,
             gradeRateMinutes: questionGradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
