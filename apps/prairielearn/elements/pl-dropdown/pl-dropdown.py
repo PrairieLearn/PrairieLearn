@@ -49,7 +49,7 @@ def get_solution(element, data):
     return solution[0]
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(
         element,
@@ -74,7 +74,7 @@ def prepare(element_html, data):
         raise ValueError(f"Correct answer not defined for answers-name: {answers_name}")
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answers_name = pl.get_string_attrib(element, "answers-name")
     dropdown_options = get_options(element, data)

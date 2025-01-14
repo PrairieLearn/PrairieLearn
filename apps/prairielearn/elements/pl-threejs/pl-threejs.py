@@ -25,7 +25,7 @@ TOL_ROTATION_DEFAULT = 5
 GRADE_DEFAULT = True
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
         "answer-name",  # key for 'submitted_answers' and 'true_answers'
@@ -158,7 +158,7 @@ def get_objects(element, data):
     return obj_list
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answer-name")
 

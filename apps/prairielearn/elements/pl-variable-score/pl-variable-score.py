@@ -6,7 +6,7 @@ import prairielearn as pl
 use_pl_variable_score = False
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     if not use_pl_variable_score:
         return
 
@@ -14,7 +14,7 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs=["answers-name"], optional_attribs=[])
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     if not use_pl_variable_score:
         return ""
 
