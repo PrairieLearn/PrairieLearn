@@ -1,5 +1,6 @@
 import { assert } from 'chai';
 
+import type { AssessmentSetJson } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -22,7 +23,7 @@ function checkAssessmentSet(syncedAssessmentSet: any, assessmentSet: any) {
 /**
  * Makes a new assessment.
  */
-function makeAssessmentSet(): util.AssessmentSet {
+function makeAssessmentSet(): AssessmentSetJson {
   return {
     name: 'new assessment set',
     abbreviation: 'new',
@@ -82,13 +83,13 @@ describe('Assessment set syncing', () => {
 
   it('records a warning if two assessment sets have the same name', async () => {
     const courseData = util.getCourseData();
-    const newAssessmentSet1 = {
+    const newAssessmentSet1: AssessmentSetJson = {
       name: 'new assessment set',
       abbreviation: 'new1',
       heading: 'a new assessment set 1 to sync',
       color: 'red1',
     };
-    const newAssessmentSet2 = {
+    const newAssessmentSet2: AssessmentSetJson = {
       name: 'new assessment set',
       abbreviation: 'new2',
       heading: 'a new assessment set 2 to sync',
