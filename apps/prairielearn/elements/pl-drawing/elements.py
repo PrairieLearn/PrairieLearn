@@ -10,7 +10,7 @@ def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Get the position of the anchor point of the vector
     rpos = np.array([x1, y1])
     # Defining the direction of the vector
-    dir = np.array([math.cos(theta), math.sin(theta)])
+    direction = np.array([math.cos(theta), math.sin(theta)])
     # Defining the error box limit in the direction of the vector
     max_forward = offset_forward + tol
     max_backward = offset_backward + tol
@@ -18,7 +18,7 @@ def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Defining the error box limit in the direction perpendicular to the vector
     max_perp = tol
     hbox = 2 * max_perp
-    pc = rpos - (wbox / 2 - max_forward) * dir
+    pc = rpos - (wbox / 2 - max_forward) * direction
     return (pc, hbox, wbox, max_forward, max_backward)
 
 
