@@ -72,9 +72,15 @@ env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 # /.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.10
 export UV_PYTHON_INSTALL_DIR=/usr/share/uv/python
 export UV_PYTHON_BIN_DIR=/usr/local/bin
+export UV_PYTHON_PREFERENCE=only-managed
+export UV_PYTHON_DOWNLOADS=manual
 
 # Installing to a different directory is a preview feature
-uv python install --default --preview cpython@3.10
+# https://gregoryszorc.com/docs/python-build-standalone/main/running.html
+# 64-bit Intel/AMD CPUs approximately newer than Nehalem (released in 2008).
+uv python install --default --preview cpython-3.10-linux-x86_64_v2-gnu
+# 64-bit Intel/AMD CPUs approximately newer than Haswell (released in 2013) and Excavator (released in 2015)
+# uv python install --default --preview cpython-3.10-linux-x86_64_v3-gnu
 
 uv venv
 uv pip install --no-cache-dir -r /python-requirements.txt
