@@ -551,3 +551,15 @@ export function canDeleteAssessmentInstance(resLocals): boolean {
     (!resLocals.assessment_instance.include_in_statistics || resLocals.course.example_course)
   );
 }
+
+/**
+ * TODO: Should this be moved?
+ *
+ * Returns if a course has any non-deleted assessments.
+ *
+ * @param course_id - The course ID.
+ * @returns {boolean} Whether the course has any non-deleted assessments.
+ */
+export function selectCourseHasAssessments({ course_id }): Promise<boolean> {
+  return sqldb.queryRow(sql.select_course_has_assessments, { course_id }, z.boolean());
+}

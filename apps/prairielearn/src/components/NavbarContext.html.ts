@@ -1,5 +1,6 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 
+import { CircularProgress } from './CircularProgress.html.js';
 import { IssueBadge } from './IssueBadge.html.js';
 import { type NavPage, type NavSubPage } from './Navbar.types.js';
 
@@ -73,7 +74,14 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       activeSubPage: 'onboarding',
       urlSuffix: '/course_admin/onboarding',
       iconClasses: 'fa fa-tasks',
-      tabLabel: 'Onboarding Tasks',
+      tabLabel: 'Onboarding',
+      htmlSuffix: (resLocals) =>
+        CircularProgress({
+          numComplete: resLocals.navbarNumTasksComplete, // TODO: Naming?
+          numTotal: resLocals.navbarNumTasksTotal,
+          isInCourseNavbar: true,
+        }),
+      renderCondition: (resLocals) => !resLocals.course.onboarding_dismissed,
     },
     {
       activeSubPage: 'sets',

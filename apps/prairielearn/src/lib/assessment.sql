@@ -1391,3 +1391,16 @@ FROM
   deleted_assessment_instances AS ai
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id);
+
+-- BLOCK select_course_has_assessments
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      assessments AS a
+      LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    WHERE
+      a.deleted_at IS NULL
+      AND ci.course_id = $course_id
+  )

@@ -378,6 +378,7 @@ export const CourseSchema = z.object({
   template_course: z.boolean(),
   title: z.string().nullable(),
   yearly_enrollment_limit: z.number().nullable(),
+  onboarding_dismissed: z.boolean(),
 });
 export type Course = z.infer<typeof CourseSchema>;
 

@@ -23,6 +23,7 @@ columns
     template_course: boolean not null default false
     title: text
     yearly_enrollment_limit: integer
+    dismissed: boolean not null default false
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)

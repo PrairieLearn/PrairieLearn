@@ -13,6 +13,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getAvailableTimezones } from '../../lib/timezones.js';
+import { updateCourseOnboardingDismissed } from '../instructorCourseAdminOnboarding/instructorCourseAdminOnboarding.js';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
@@ -120,8 +121,20 @@ router.post(
       } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
+    }
+
+    if (req.body.__action === 'restore_onboarding') {
+      if (!res.locals.course.onboarding_dismissed) {
+        throw new error.HttpStatusError(400, 'Onboarding not dismissed');
+      }
+      await updateCourseOnboardingDismissed({
+        course_id: res.locals.course.id,
+        onboarding_dismissed: false,
+      });
+      flash('success', 'Onboarding page restored successfully.');
+      return res.redirect(`${res.locals.urlPrefix}/course_admin/onboarding`);
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `Unknown __action: ${req.body.__action}`);
     }
   }),
 );

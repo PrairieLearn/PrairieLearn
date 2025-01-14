@@ -183,6 +183,25 @@ export function InstructorCourseAdminSettings({
                 })}
               </form>
             </div>
+            ${resLocals.course.onboarding_dismissed
+              ? html`
+                  <div class="card-footer">
+                    <form method="POST">
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        name="__action"
+                        value="restore_onboarding"
+                        class="btn btn-sm btn-primary"
+                        title="Restore Onboarding Page"
+                        type="submit"
+                      >
+                        <i class="fa fa-tasks"></i>
+                        <span>Restore Onboarding Page</span>
+                      </button>
+                    </form>
+                  </div>
+                `
+              : ''}
           </div>
         </main>
       </body>

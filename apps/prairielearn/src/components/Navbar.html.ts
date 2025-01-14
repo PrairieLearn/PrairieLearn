@@ -4,6 +4,7 @@ import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 
+import { CircularProgress } from './CircularProgress.html.js';
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
@@ -623,6 +624,9 @@ function NavbarInstructor({
     assessment_label,
     assessments,
     navbarOpenIssueCount,
+    navbarNumTasksComplete,
+    navbarNumTasksTotal,
+
     authz_data,
     urlPrefix,
   } = resLocals;
@@ -674,12 +678,14 @@ function NavbarInstructor({
       </div>
     </li>
 
-    ${authz_data.has_course_permission_edit
+    ${authz_data.has_course_permission_edit && !course.onboarding_dismissed
       ? html`
-          <li
-            class="nav-item"
-          >
-            <a class="nav-link" href="${urlPrefix}/course_admin/onboarding">Onboarding</a>
+          <li class="nav-item d-flex align-items-center">
+            <a class="nav-link pr-0" href="${urlPrefix}/course_admin/onboarding">Onboarding</a>
+            ${CircularProgress({
+              numComplete: navbarNumTasksComplete,
+              numTotal: navbarNumTasksTotal,
+            })}
           </li>
         `
       : ''}

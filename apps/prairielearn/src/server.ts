@@ -726,6 +726,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor', [
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
     (await import('./middlewares/selectOpenIssueCount.js')).default,
+    (await import('./middlewares/getOnboardingTaskCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       next();
@@ -766,6 +767,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course/:course_id(\\d+)', [
     (await import('./middlewares/authzCourseOrInstance.js')).default, // set res.locals.course
     (await import('./middlewares/selectOpenIssueCount.js')).default,
+    (await import('./middlewares/getOnboardingTaskCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       next();
@@ -1297,6 +1299,13 @@ export async function initExpress(): Promise<Express> {
       next();
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
+  ]);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/onboarding', [
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navSubPage = 'onboarding';
+      next();
+    },
+    (await import('./pages/instructorCourseAdminOnboarding/instructorCourseAdminOnboarding.js')).default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',

@@ -102,3 +102,15 @@ GROUP BY
   top.id
 ORDER BY
   q.qid;
+
+-- BLOCK select_course_has_questions
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      questions as q
+    WHERE
+      q.course_id = $course_id
+      AND q.deleted_at IS NULL
+  );
