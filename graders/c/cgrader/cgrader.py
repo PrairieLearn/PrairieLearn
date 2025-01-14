@@ -100,6 +100,7 @@ class CGrader:
         self,
         command: str | list[str],
         input: Any | None = None,
+        *,
         sandboxed: bool = True,
         timeout: float | None = None,
         env: subprocess._ENV | None = None,
@@ -151,6 +152,7 @@ class CGrader:
         self,
         c_file: Iterable[str] | str,
         exec_file: str | None = None,
+        *,
         add_c_file: str | Iterable[str] | None = None,
         compiler: str | None = None,
         flags: str | list[str] | None = None,
@@ -281,6 +283,7 @@ class CGrader:
         student_obj_files: str | Iterable[str] | None,
         add_obj_files: str | Iterable[str] | None,
         exec_file: str,
+        *,
         compiler: str | None = None,
         flags: str | list[str] | None = None,
         pkg_config_flags: str | Iterable[str] | None = None,
@@ -345,6 +348,7 @@ class CGrader:
     def test_compile_file(
         self,
         c_file: str | Iterable[str],
+        *,
         exec_file: str | None = None,
         main_file: str | None = None,
         add_c_file: str | list[str] | None = None,
@@ -396,7 +400,7 @@ class CGrader:
         )
 
     def change_mode(
-        self, file: str, mode: str = "744", change_parent: bool = True
+        self, file: str, mode: str = "744", *, change_parent: bool = True
     ) -> None:
         file = os.path.abspath(file)
         self.run_command(["chmod", mode, file], sandboxed=False)
@@ -413,6 +417,7 @@ class CGrader:
     def test_run(
         self,
         command: str | Iterable[str],
+        *,
         input: str | None = None,
         exp_output: str | Iterable[str] | None = None,
         must_match_all_outputs: OutputMatchingOption | bool = "any",
@@ -578,6 +583,7 @@ class CGrader:
         self,
         name: str,
         description: str = "",
+        *,
         points: bool | float = True,
         msg: str | None = "",
         output: str = "",
@@ -621,6 +627,7 @@ class CGrader:
     def run_check_suite(
         self,
         exec_file: str,
+        *,
         args: str | Iterable[str] | None = None,
         use_suite_title: bool = False,
         use_case_name: bool = True,
