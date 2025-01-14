@@ -558,12 +558,12 @@ def check_library(library):
 
 
 ######################################################################
-def mkdir_or_die(dir):
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+def mkdir_or_die(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-    if not os.path.isdir(dir):
-        print(f"Could not create directory ({dir})")
+    if not os.path.isdir(directory):
+        print(f"Could not create directory ({directory})")
         sys.exit(1)
 
 
