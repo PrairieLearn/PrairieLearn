@@ -60,7 +60,6 @@ ignore = [
 
     # These rules have active PRs
     "A", # flake8-builtins
-    "FBT", # flake8-boolean-trap
     "EXE", # flake8-executable
 ]
 [tool.ruff.lint.per-file-ignores]
@@ -82,12 +81,20 @@ ignore = [
 # The zygote specifically uses imports in strange places to facilitate the
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
-# Ignore uppercase function parameters (e.g. G for a graph), ignore unused parameters in functions
-"apps/prairielearn/elements/**/*.py" = ["N803", "ARG"]
+"apps/prairielearn/elements/**/*.py" = [
+    # Ignore uppercase function parameters (e.g. G for a graph)
+    "N803",
+    # Allow boolean trap pattern in method signatures
+    "FBT001", "FBT002", "FBT003",
+    # ignore unused parameters in functions
+    "ARG"
+]
 "apps/prairielearn/python/*.py" = ["N803"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
+# Boolean default positional argument
+"graders/**/*.py" = ["FBT002"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
