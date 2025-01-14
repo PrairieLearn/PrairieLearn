@@ -149,10 +149,8 @@ export async function createCourseRepoJob(
     await createEmptyRepository(client, options.repo_short_name);
     job.info(`Created repository ${options.repo_short_name}`);
 
-    job.info('Creating infoCourse.json');
+    job.info('Creating infoCourse.json based on template');
     const infoCoursePath = path.join(TEMPLATE_COURSE_PATH, 'infoCourse.json');
-
-    // Read the template infoCourse.json file
     const infoCourse = JSON.parse(await fs.readFile(infoCoursePath, 'utf-8'));
 
     infoCourse.uuid = uuidv4();
