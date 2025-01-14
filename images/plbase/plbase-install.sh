@@ -73,6 +73,7 @@ env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 export UV_PYTHON_INSTALL_DIR=/usr/share/uv/python
 export UV_PYTHON_BIN_DIR=/usr/local/bin
 export UV_PYTHON_DOWNLOADS=manual
+export UV_PYTHON_PREFERENCE=only-managed
 
 if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]] ; then
     # v2 seems safe but 4 may be too incompatible with some x86_64 machines still in common use.
@@ -87,20 +88,16 @@ else
     echo "Unsupported architecture combination" >&2
     exit 1
 fi
-# This seems to locate the most recent minor version (e.g. 3.10.16) just by omitting it.
-UV_PY_VER="3.10"
-UV_PY_VER_FULL="cpython-${UV_PY_VER}-${UV_ARCH}"
 
 # Installing to a different directory is a preview feature
-uv python install --default --preview "$UV_PY_VER_FULL"
-
+uv python install --default --preview "cpython-3.10-${UV_ARCH}"
+# # uv currently doesn't pick up optimized builds https://github.com/astral-sh/uv/issues/10586
+rename linux-x86_64_v2 linux-x86_64 $UV_PYTHON_INSTALL_DIR/*
 uv venv
-. .venv/bin/activate
-export UV_PYTHON_PREFERENCE=only-managed # defining after "uv venv" to avoid lookup issue
-uv pip install --no-cache-dir --upgrade pip setuptools # alternative to ensurepip
+uv pip install --no-cache-dir --upgrade pip setuptools
 uv pip install --no-cache-dir -r /python-requirements.txt
-uv cache clean
 
 # Clear various caches to minimize the final image size.
+uv cache clean
 dnf clean all
 nvm cache clear
