@@ -21,18 +21,22 @@ export function CircularProgress({
   const filledLengthFixed = filledLength.toFixed(2);
   const unfilledLengthFixed = unfilledLength.toFixed(2);
 
-  return html`<div class="ml-1 ${isInCourseNavbar ? '' : 'mr-2'}">
-    <svg style="transform:rotate(-90deg)" width="20px" height="20px" viewBox="0 0 20px 20px">
-      <circle cx="10px" cy="10px" r="8px" fill="none" stroke="#ddd" stroke-width="2px"></circle>
-      <circle
-        cx="10px"
-        cy="10px"
-        r="8px"
-        fill="none"
-        stroke="#5394fd"
-        stroke-width="2px"
-        stroke-dasharray="${filledLengthFixed}px ${unfilledLengthFixed}px"
-      ></circle>
-    </svg>
-  </div>`;
+  return html` <svg
+    style="transform:rotate(-90deg)"
+    width="20px"
+    height="20px"
+    viewBox="0 0 20px 20px"
+    class="ml-1 ${isInCourseNavbar ? '' : 'mr-2'}"
+  >
+    <circle cx="10px" cy="10px" r="8px" fill="none" stroke="#ddd" stroke-width="2px"></circle>
+    <circle
+      cx="10px"
+      cy="10px"
+      r="8px"
+      fill="none"
+      stroke="#5394fd"
+      stroke-width="2px"
+      stroke-dasharray="${filledLengthFixed}px ${unfilledLengthFixed}px"
+    ></circle>
+  </svg>`;
 }

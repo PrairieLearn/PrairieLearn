@@ -74,9 +74,14 @@ router.get(
     }
     const course_id = res.locals.course.id; // TODO/CHECK: Should this be handled with an error?
 
-    const first_course_instance = await selectFirstCourseInstance({ course_id });
+    const courseHasCourseInstance = await selectCourseHasCourseInstances({ course_id });
 
-    const assessmentsPageLink = `/pl/course_instance/${first_course_instance.id}/instructor/instance_admin/assessments`;
+    let assessmentsPageLink: string | undefined;
+
+    if (courseHasCourseInstance) {
+      const first_course_instance = await selectFirstCourseInstance({ course_id });
+      assessmentsPageLink = `/pl/course_instance/${first_course_instance.id}/instructor/instance_admin/assessments`;
+    }
 
     const steps: OnboardingStepInfo[] = [
       {

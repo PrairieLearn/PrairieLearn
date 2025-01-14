@@ -8,7 +8,7 @@ export interface OnboardingStepInfo {
   // TODO: check - Is this okay?
   header: string;
   description: string;
-  link: string;
+  link?: string;
   isComplete: boolean;
   optionalToComplete?: boolean;
 }
@@ -96,7 +96,7 @@ function OnboardingStep({
   stepNumber: number;
   header: string;
   description: string;
-  link: string;
+  link?: string;
   complete: boolean;
   optionalToComplete?: boolean;
 }) {
@@ -116,7 +116,7 @@ function OnboardingStep({
           disabled
         />
         <div>
-          ${!complete
+          ${!complete && link
             ? html` <a href="${link}">
                 <p class="my-0">${stepHeader}</p>
               </a>`

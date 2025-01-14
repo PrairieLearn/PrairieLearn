@@ -16,7 +16,7 @@ router.get(
       // We believe that for brand new courses, users want to create questions first.
       // New users likely aren't ready to offer anything to students yet, and
       // questions are what make PrairieLearn really unique.
-      res.redirect(`/pl/course/${res.locals.course.id}/course_admin/questions`);
+      res.redirect(`/pl/course/${res.locals.course.id}/course_admin/${res.locals.course.onboarding_dismissed ? 'questions' : 'onboarding'}`);
     } else {
       // Once users have created course instances, they should have easy access
       // to them via the course instances page.
