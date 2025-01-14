@@ -1,5 +1,7 @@
 import os
 
+c = get_config()  # type: ignore # noqa: F821
+
 c.NotebookApp.base_url = "/"
 if "WORKSPACE_BASE_URL" in os.environ:
     c.NotebookApp.base_url = os.environ["WORKSPACE_BASE_URL"]

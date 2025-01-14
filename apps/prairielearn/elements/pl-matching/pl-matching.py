@@ -42,7 +42,7 @@ def get_counter(i, counter_type):
     elif counter_type == "full-text":
         return ""
     else:
-        raise Exception(
+        raise ValueError(
             f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".'
         )
 
@@ -118,7 +118,7 @@ def categorize_matches(element, data):
     return list(options.values()), statements
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ["answers-name"]
@@ -169,16 +169,15 @@ def prepare(element_html, data):
             indices = random.sample(range(len(statements)), number_statements)
             statements = [statements[i] for i in sorted(indices)]
         # Otherwise, just use all the statements as-is.
+    # Shuffle or sample the statements.
+    elif number_statements < len(statements):
+        statements = random.sample(statements, number_statements)
     else:
-        # Shuffle or sample the statements.
-        if number_statements < len(statements):
-            statements = random.sample(statements, number_statements)
-        else:
-            random.shuffle(statements)
+        random.shuffle(statements)
 
     # Organize the list of options to use.
     # First, select all the options associated with the chosen statements.
-    needed_options_keys = set(s["match"] for s in statements)
+    needed_options_keys = {s["match"] for s in statements}
     needed_options, distractors = partition(
         options, lambda opt: opt["name"] in needed_options_keys
     )
@@ -197,7 +196,7 @@ def prepare(element_html, data):
             # Add a sample of the distractors.
             distractor_sample = random.sample(distractors, more_needed)
             needed_options_keys = needed_options_keys.union(
-                set(o["name"] for o in distractor_sample)
+                {o["name"] for o in distractor_sample}
             )
             needed_options = [o for o in options if o["name"] in needed_options_keys]
         options = needed_options
@@ -257,7 +256,7 @@ def prepare(element_html, data):
     data["correct_answers"][name] = correct_matches
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
@@ -281,14 +280,13 @@ def parse(element_html, data):
             )
         elif student_answer is None:
             data["format_errors"][expected_html_name] = "No answer was submitted."
-        else:
-            if not legal_answer(student_answer, display_options):
-                data["format_errors"][expected_html_name] = (
-                    "The submitted answer is invalid."
-                )
+        elif not legal_answer(student_answer, display_options):
+            data["format_errors"][expected_html_name] = (
+                "The submitted answer is invalid."
+            )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     display_statements, display_options = data["params"].get(name, ([], []))
@@ -472,7 +470,7 @@ def render(element_html, data):
     return html
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -503,7 +501,7 @@ def grade(element_html, data):
     data["partial_scores"][name] = {"score": score, "weight": weight}
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)

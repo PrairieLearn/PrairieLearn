@@ -304,4 +304,34 @@ describe('Creating a course instance', () => {
       `${siteUrl}/pl/course/1/course_admin/instances`,
     );
   });
+
+  step(
+    'should not be able to create course instance with short_name that falls outside correct root directory',
+    async () => {
+      const courseInstancePageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course/1/course_admin/instances`,
+      );
+
+      assert.equal(courseInstancePageResponse.status, 200);
+
+      // Create the new course instance with a short_name that falls outside the correct root directory
+      const courseInstanceCreationResponse = await fetchCheerio(
+        `${siteUrl}/pl/course/1/course_admin/instances`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'add_course_instance',
+            __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
+            orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+            short_name: '../Fa26',
+            long_name: 'Fall 2026',
+            access_dates_enabled: 'on',
+          }),
+        },
+      );
+
+      assert.equal(courseInstanceCreationResponse.status, 200);
+      assert.match(courseInstanceCreationResponse.url, /\/pl\/course\/1\/edit_error\/\d+$/);
+    },
+  );
 });

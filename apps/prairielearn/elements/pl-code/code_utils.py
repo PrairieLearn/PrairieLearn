@@ -5,8 +5,8 @@ def parse_highlight_lines(highlight_lines: str) -> list[int] | None:
     """
     lines = []
     components = highlight_lines.split(",")
-    for component in components:
-        component = component.replace(" ", "").split("-")
+    for raw_component in components:
+        component = raw_component.replace(" ", "").split("-")
         try:
             if len(component) == 1:
                 line = int(component[0])

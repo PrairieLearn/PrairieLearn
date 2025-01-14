@@ -33,31 +33,31 @@ def test_evaluate() -> None:
 
 
 class TestSympy:
-    SYMBOL_NAMES = ["n", "m", "alpha", "\u03bc0"]
+    SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0")
     M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
 
-    FUNCTION_NAMES = ["f", "g", "beef", "\u03c6"]
+    FUNCTION_NAMES = ("f", "g", "beef", "\u03c6")
     # Any annotations here to ignore annoying typechecking complaining
     F: Any = sympy.Function("f")
     G: Any = sympy.Function("g")
     BEEF: Any = sympy.Function("beef")
     PHI: Any = sympy.Function("phi")
 
-    CUSTOM_FUNCTION_PAIRS = [
+    CUSTOM_FUNCTION_PAIRS = (
         ("f(1) + g(2)", F(1) + G(2)),
         ("f(g(n), 1)", F(G(N), 1)),
         ("f(1) + g(2, 3) + sin n", F(1) + G(2, 3) + sympy.sin(N)),
         ("beef(m + n)", BEEF(N + M)),
         ("beef(n) + f(m)", BEEF(N) + F(M)),
         ("\u03c6(\u03bc0)", PHI(MU0)),
-    ]
+    )
 
-    INCORRECT_FUNCTION_PAIRS = [
+    INCORRECT_FUNCTION_PAIRS = (
         ("f(1) + g(2)", F(1) + G(2, 3)),
         ("f(1) + g(2)", G(1) + F(2)),
-    ]
+    )
 
-    EXPR_PAIRS = [
+    EXPR_PAIRS = (
         # Test unicode conversion
         ("1+\u03bc0", MU0 + 1),
         ("m \u2212 n", M - N),
@@ -121,9 +121,9 @@ class TestSympy:
         ("atanh(m)", sympy.atanh(M)),
         ("asinh(m)", sympy.asinh(M)),
         ("acosh(m)", sympy.acosh(M)),
-    ]
+    )
 
-    @pytest.mark.parametrize("a_sub, sympy_ref", CUSTOM_FUNCTION_PAIRS)
+    @pytest.mark.parametrize(("a_sub", "sympy_ref"), CUSTOM_FUNCTION_PAIRS)
     def test_custom_function_conversion(
         self, a_sub: str, sympy_ref: sympy.Expr
     ) -> None:
@@ -134,7 +134,7 @@ class TestSympy:
             custom_functions=self.FUNCTION_NAMES,
         )
 
-    @pytest.mark.parametrize("a_sub, sympy_ref", INCORRECT_FUNCTION_PAIRS)
+    @pytest.mark.parametrize(("a_sub", "sympy_ref"), INCORRECT_FUNCTION_PAIRS)
     def test_custom_function_incorrect(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
         assert sympy_ref != phs.convert_string_to_sympy(
             a_sub,
@@ -143,7 +143,7 @@ class TestSympy:
             custom_functions=self.FUNCTION_NAMES,
         )
 
-    @pytest.mark.parametrize("a_sub, sympy_ref", EXPR_PAIRS)
+    @pytest.mark.parametrize(("a_sub", "sympy_ref"), EXPR_PAIRS)
     def test_string_conversion(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
         assert sympy_ref == phs.convert_string_to_sympy(
             a_sub,
@@ -160,7 +160,8 @@ class TestSympy:
         )
 
     @pytest.mark.parametrize(
-        "a_sub, sympy_ref", [("i", sympy.I), ("j", sympy.I), ("i*i", -1), ("j*j", -1)]
+        ("a_sub", "sympy_ref"),
+        [("i", sympy.I), ("j", sympy.I), ("i*i", -1), ("j*j", -1)],
     )
     def test_string_conversion_no_complex(
         self, a_sub: str, sympy_ref: sympy.Expr
@@ -186,7 +187,7 @@ class TestSympy:
         assert ref_expr == phs.json_to_sympy(phs.sympy_to_json(ref_expr))
 
     @pytest.mark.parametrize(
-        "a_pair, custom_functions",
+        ("a_pair", "custom_functions"),
         chain(
             zip(EXPR_PAIRS, repeat(None)),
             zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
@@ -197,7 +198,7 @@ class TestSympy:
         self,
         a_pair: tuple[str, sympy.Expr],
         custom_functions: list[str] | None,
-        remove_assumptions: bool,
+        remove_assumptions: bool,  # noqa: FBT001
     ) -> None:
         a_sub, _ = a_pair
         sympy_expr = phs.convert_string_to_sympy(
@@ -220,7 +221,7 @@ class TestSympy:
         assert sympy_expr == json_converted_expr
 
     @pytest.mark.parametrize(
-        "assumptions, expression_str",
+        ("assumptions", "expression_str"),
         [
             ({"x": {"positive": True}, "y": {"real": True}}, "(x**2)**(1/2) + y"),
             ({"x": {"positive": False}, "z": {"complex": True}}, "z^2 + y - x"),
@@ -232,7 +233,7 @@ class TestSympy:
                 },
                 "z^2 + y^2 - x**3",
             ),
-            (dict(), "z^2 + y - x"),
+            ({}, "z^2 + y - x"),
         ],
     )
     def test_assumption_conversion(
@@ -253,7 +254,7 @@ class TestSympy:
         assert sympy_expr.assumptions0 == json_converted_expr.assumptions0
 
     @pytest.mark.parametrize(
-        "expr, bad_assumptions",
+        ("expr", "bad_assumptions"),
         [
             ("f(1)", {"f": {}}),
             ("x+5", {"x": {}}),
@@ -272,17 +273,17 @@ class TestSympy:
 
 
 class TestExceptions:
-    VARIABLES = ["n"]
+    VARIABLES = ("n",)
 
-    COMPLEX_CASES = ["i", "5 * i", "j", "I"]
-    NO_FLOATS_CASES = ["3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)"]
-    INVALID_EXPRESSION_CASES = ["5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5"]
-    INVALID_FUNCTION_CASES = ["eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))"]
-    INVALID_VARIABLE_CASES = ["x", "exp(y)", "z*n"]
-    FUNCTION_NOT_CALLED_CASES = ["2+exp", "cos*n"]
-    INVALID_PARSE_CASES = ["(", "n**", "n**2+", "!"]
-    INVALID_ESCAPE_CASES = ["\\", "n + 2 \\", "2 \\"]
-    INVALID_COMMENT_CASES = ["#", "n + 2 # comment", "# x"]
+    COMPLEX_CASES = ("i", "5 * i", "j", "I")
+    NO_FLOATS_CASES = ("3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)")
+    INVALID_EXPRESSION_CASES = ("5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5")
+    INVALID_FUNCTION_CASES = ("eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))")
+    INVALID_VARIABLE_CASES = ("x", "exp(y)", "z*n")
+    FUNCTION_NOT_CALLED_CASES = ("2+exp", "cos*n")
+    INVALID_PARSE_CASES = ("(", "n**", "n**2+", "!")
+    INVALID_ESCAPE_CASES = ("\\", "n + 2 \\", "2 \\")
+    INVALID_COMMENT_CASES = ("#", "n + 2 # comment", "# x")
 
     # Test exception cases
 
@@ -343,7 +344,7 @@ class TestExceptions:
     # Test formatting strings from validation
 
     @pytest.mark.parametrize(
-        "a_sub_list, target_string",
+        ("a_sub_list", "target_string"),
         [
             (NO_FLOATS_CASES, "floating-point number"),
             (INVALID_EXPRESSION_CASES, "invalid expression"),
@@ -364,7 +365,7 @@ class TestExceptions:
 
 
 @pytest.mark.parametrize(
-    "input_str, expected_output",
+    ("input_str", "expected_output"),
     [("abba", "abba"), ("\u03bc0", "mu0")],
 )
 def test_greek_unicode_transform(input_str: str, expected_output: str) -> None:

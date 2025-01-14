@@ -12,6 +12,7 @@ import re
 import string
 import unicodedata
 import uuid
+from collections import namedtuple
 from collections.abc import Callable, Generator
 from enum import Enum
 from io import StringIO
@@ -20,7 +21,7 @@ from typing import Any, Literal, TypedDict, TypeVar, overload
 import lxml.html
 import networkx as nx
 import numpy as np
-import pandas
+import pandas as pd
 import python_helper_sympy as phs
 import sympy
 import to_precision
@@ -75,8 +76,7 @@ def check_answers_names(data: QuestionData, name: str) -> None:
     """Checks that answers names are distinct using property in data dict."""
     if name in data["answers_names"]:
         raise KeyError(f'Duplicate "answers-name" attribute: "{name}"')
-    else:
-        data["answers_names"][name] = True
+    data["answers_names"][name] = True
 
 
 def get_unit_registry() -> UnitRegistry:
@@ -297,10 +297,8 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
         matrix = []
-        for i in range(0, num_rows):
-            row = []
-            for j in range(0, num_cols):
-                row.append(str(v[i, j]))
+        for i in range(num_rows):
+            row = [str(v[i, j]) for j in range(num_cols)]
             matrix.append(row)
         return {
             "_type": "sympy_matrix",
@@ -308,14 +306,14 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             "_variables": s,
             "_shape": [num_rows, num_cols],
         }
-    elif isinstance(v, pandas.DataFrame):
+    elif isinstance(v, pd.DataFrame):
         if df_encoding_version == 1:
             return {
                 "_type": "dataframe",
                 "_value": {
                     "index": list(v.index),
                     "columns": list(v.columns),
-                    "data": v.values.tolist(),
+                    "data": v.to_numpy().tolist(),
                 },
             }
 
@@ -377,14 +375,14 @@ def from_json(v):
             if ("_value" in v) and ("real" in v["_value"]) and ("imag" in v["_value"]):
                 return complex(v["_value"]["real"], v["_value"]["imag"])
             else:
-                raise Exception(
+                raise ValueError(
                     "variable of type complex should have value with real and imaginary pair"
                 )
         elif v["_type"] == "np_scalar":
             if "_concrete_type" in v and "_value" in v:
                 return getattr(np, v["_concrete_type"])(v["_value"])
             else:
-                raise Exception(
+                raise ValueError(
                     f"variable of type {v['_type']} needs both concrete type and value information"
                 )
         elif v["_type"] == "ndarray":
@@ -394,7 +392,7 @@ def from_json(v):
                 else:
                     return np.array(v["_value"])
             else:
-                raise Exception("variable of type ndarray should have value")
+                raise ValueError("variable of type ndarray should have value")
         elif v["_type"] == "complex_ndarray":
             if ("_value" in v) and ("real" in v["_value"]) and ("imag" in v["_value"]):
                 if "_dtype" in v:
@@ -408,7 +406,7 @@ def from_json(v):
                         + np.array(v["_value"]["imag"]) * 1j
                     )
             else:
-                raise Exception(
+                raise ValueError(
                     "variable of type complex_ndarray should have value with real and imaginary pair"
                 )
         elif v["_type"] == "sympy":
@@ -419,14 +417,14 @@ def from_json(v):
                 variables = v["_variables"]
                 shape = v["_shape"]
                 matrix = sympy.Matrix.zeros(shape[0], shape[1])
-                for i in range(0, shape[0]):
-                    for j in range(0, shape[1]):
+                for i in range(shape[0]):
+                    for j in range(shape[1]):
                         matrix[i, j] = phs.convert_string_to_sympy(
                             value[i][j], variables
                         )
                 return matrix
             else:
-                raise Exception(
+                raise ValueError(
                     "variable of type sympy_matrix should have value, variables, and shape"
                 )
         elif v["_type"] == "dataframe":
@@ -437,22 +435,22 @@ def from_json(v):
                 and ("data" in v["_value"])
             ):
                 val = v["_value"]
-                return pandas.DataFrame(
+                return pd.DataFrame(
                     index=val["index"], columns=val["columns"], data=val["data"]
                 )
             else:
-                raise Exception(
+                raise ValueError(
                     "variable of type dataframe should have value with index, columns, and data"
                 )
         elif v["_type"] == "dataframe_v2":
             # Convert native JSON back to a string representation so that
             # pandas read_json() can process it.
             value_str = StringIO(json.dumps(v["_value"]))
-            return pandas.read_json(value_str, orient="table")
+            return pd.read_json(value_str, orient="table")
         elif v["_type"] == "networkx_graph":
             return nx.adjacency_graph(v["_value"])
         else:
-            raise Exception("variable has unknown type {}".format(v["_type"]))
+            raise ValueError("variable has unknown type {}".format(v["_type"]))
     return v
 
 
@@ -464,13 +462,6 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
     for child in element:
         inner += lxml.html.tostring(child, method="html").decode("utf-8")
     return inner
-
-
-def compat_get(object, attrib, default):
-    if attrib in object:
-        return object[attrib]
-    old_attrib = attrib.replace("-", "_")
-    return old_attrib in object
 
 
 def compat_array(arr: list[str]) -> list[str]:
@@ -488,14 +479,14 @@ def check_attribs(
 ) -> None:
     for name in required_attribs:
         if not has_attrib(element, name):
-            raise Exception(f'Required attribute "{name}" missing')
+            raise ValueError(f'Required attribute "{name}" missing')
     extra_attribs = list(
         set(element.attrib)
         - set(compat_array(required_attribs))
         - set(compat_array(optional_attribs))
     )
     for name in extra_attribs:
-        raise Exception(f'Unknown attribute "{name}"')
+        raise ValueError(f'Unknown attribute "{name}"')
 
 
 def _get_attrib(element, name, *args):
@@ -515,7 +506,7 @@ def _get_attrib(element, name, *args):
     # to distinguish between default=None and no default being passed,
     # which means we need to explicitly handle the optional argument
     if len(args) > 1:
-        raise Exception("Only one additional argument is allowed")
+        raise ValueError("Only one additional argument is allowed")
 
     if name in element.attrib:
         return (element.attrib[name], False)
@@ -655,7 +646,7 @@ def get_integer_attrib(element, name, *args):
     if int_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise Exception(f'Attribute "{name}" must be an integer: {val}')
+        raise ValueError(f'Attribute "{name}" must be an integer: {val}')
     return int_val
 
 
@@ -677,7 +668,7 @@ def get_float_attrib(element, name, *args):
     if float_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise Exception(f'Attribute "{name}" must be a number: {val}')
+        raise ValueError(f'Attribute "{name}" must be a number: {val}')
     return float_val
 
 
@@ -714,11 +705,10 @@ def get_color_attrib(element, name, *args):
     match = re.search(r"^#(?:[0-9a-fA-F]{1,2}){3}$", val)
     if match:
         return val
+    elif PLColor.match(val) is not None:
+        return PLColor(val).to_string(hex=True)
     else:
-        if PLColor.match(val) is not None:
-            return PLColor(val).to_string(hex=True)
-        else:
-            raise Exception(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
+        raise ValueError(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
 
 
 def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
@@ -741,7 +731,7 @@ def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
         s = np_object.shape
         m = s[0]
         vector_str = "["
-        for i in range(0, m):
+        for i in range(m):
             vector_str += "{:.{indigits}{iwtype}}".format(
                 np_object[i], indigits=ndigits, iwtype=wtype
             )
@@ -754,8 +744,8 @@ def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
         m = s[0]
         n = s[1]
         matrix_str = "["
-        for i in range(0, m):
-            for j in range(0, n):
+        for i in range(m):
+            for j in range(n):
                 matrix_str += "{:.{indigits}{iwtype}}".format(
                     np_object[i, j], indigits=ndigits, iwtype=wtype
                 )
@@ -929,7 +919,7 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
         result = f"Matrix({result})"
         return result
     else:
-        raise Exception(
+        raise ValueError(
             f'language "{language}" must be either "python", "matlab", "mathematica", "r", or "sympy"'
         )
 
@@ -988,7 +978,7 @@ def numpy_to_matlab_sf(A, ndigits=2):
         s = A.shape
         m = s[0]
         vector_str = "["
-        for i in range(0, m):
+        for i in range(m):
             if np.iscomplexobj(A[i]):
                 vector_str += _string_from_complex_sigfig(A[i], ndigits)
             else:
@@ -1002,8 +992,8 @@ def numpy_to_matlab_sf(A, ndigits=2):
         m = s[0]
         n = s[1]
         matrix_str = "["
-        for i in range(0, m):
-            for j in range(0, n):
+        for i in range(m):
+            for j in range(n):
                 if np.iscomplexobj(A[i, j]):
                     matrix_str += _string_from_complex_sigfig(A[i, j], ndigits)
                 else:
@@ -1053,12 +1043,12 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
     try:
         s_int = int(s, base)
         return s_int
-    except Exception:
+    except ValueError:
         # If that didn't work, return None
         return None
 
 
-def string_to_number(s, allow_complex=True):
+def string_to_number(s, *, allow_complex=True):
     """string_to_number(s, allow_complex=True)
 
     Parses a string that can be interpreted either as float or (optionally) complex.
@@ -1093,7 +1083,7 @@ def string_to_number(s, allow_complex=True):
         return None
 
 
-def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
+def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):  # noqa: FBT002 (downstream callers already use this signature)
     """string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True)
 
     Parses a string containing a decimal number with support for answers expressing
@@ -1136,11 +1126,11 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
 
                 if a_parse_l is None or not np.isfinite(a_parse_l):
                     raise ValueError(
-                        f"The numerator could not be interpreted as a decimal{ or_complex }number."
+                        f"The numerator could not be interpreted as a decimal{or_complex}number."
                     )
                 if a_parse_r is None or not np.isfinite(a_parse_r):
                     raise ValueError(
-                        f"The denominator could not be interpreted as a decimal{ or_complex }number."
+                        f"The denominator could not be interpreted as a decimal{or_complex}number."
                     )
 
                 with np.errstate(divide="raise"):
@@ -1154,8 +1144,8 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                 data["format_errors"] = (
                     "Your expression resulted in a division by zero."
                 )
-            except Exception as error:
-                data["format_errors"] = f"Invalid format: {str(error)}"
+            except Exception as exc:
+                data["format_errors"] = f"Invalid format: {exc}"
         else:
             data["format_errors"] = "Fractional answers are not allowed in this input."
     else:
@@ -1164,19 +1154,19 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
             a_sub_parsed = string_to_number(a_sub, allow_complex=allow_complex)
             if a_sub_parsed is None:
                 raise ValueError(
-                    f"The submitted answer could not be interpreted as a decimal{ or_complex }number."
+                    f"The submitted answer could not be interpreted as a decimal{or_complex}number."
                 )
             if not np.isfinite(a_sub_parsed):
                 raise ValueError("The submitted answer is not a finite number.")
             value = a_sub_parsed
             data["submitted_answers"] = to_json(value)
-        except Exception as error:
-            data["format_errors"] = f"Invalid format: {str(error)}"
+        except Exception as exc:
+            data["format_errors"] = f"Invalid format: {exc}"
 
     return (value, data)
 
 
-def string_to_2darray(s, allow_complex=True):
+def string_to_2darray(s, *, allow_complex=True):
     """string_to_2darray(s)
 
     Parses a string that is either a scalar or a 2D array in matlab or python
@@ -1284,7 +1274,7 @@ def string_to_2darray(s, allow_complex=True):
         matrix = np.zeros((m, n))
 
         # Iterate over rows
-        for i in range(0, m):
+        for i in range(m):
             # Split row
             s_row = re.split(matlab_delimiter_regex, s[i])
 
@@ -1304,8 +1294,9 @@ def string_to_2darray(s, allow_complex=True):
                 )
 
             # Iterate over columns
-            for j in range(0, n):
-                try:
+            j = 0
+            try:
+                for j in range(n):
                     # Convert entry to float or (optionally) complex
                     ans = string_to_number(s_row[j], allow_complex=allow_complex)
                     if ans is None:
@@ -1321,14 +1312,14 @@ def string_to_2darray(s, allow_complex=True):
 
                     # Insert the new entry
                     matrix[i, j] = ans
-                except Exception:
-                    # Return error if entry could not be converted to float or complex
-                    return (
-                        None,
-                        {
-                            "format_error": f"Entry {escape_invalid_string(s_row[j])} at location (row={i + 1}, column={j + 1}) in the matrix has an invalid format."
-                        },
-                    )
+            except Exception:
+                # Return error if entry could not be converted to float or complex
+                return (
+                    None,
+                    {
+                        "format_error": f"Entry {escape_invalid_string(s_row[j])} at location (row={i + 1}, column={j + 1}) in the matrix has an invalid format."
+                    },
+                )
 
         # Return resulting ndarray with no error
         return (matrix, {"format_type": "matlab"})
@@ -1392,28 +1383,25 @@ def string_to_2darray(s, allow_complex=True):
                     )
                 else:
                     s = s_after_right
+            # Return error if it is not the last row and there is no comma after right bracket
+            elif s_after_right[0] != ",":
+                return (
+                    None,
+                    {"format_error": f"No comma after row {len(s_row)} of the matrix."},
+                )
             else:
-                # Return error if it is not the last row and there is no comma after right bracket
-                if s_after_right[0] != ",":
-                    return (
-                        None,
-                        {
-                            "format_error": f"No comma after row {len(s_row)} of the matrix."
-                        },
-                    )
-                else:
-                    s = s_after_right[1:]
+                s = s_after_right[1:]
         number_of_rows = len(s_row)
 
         # Check that number of rows is what we expected
         if number_of_rows != number_of_left_brackets - 1:
-            raise Exception(
+            raise ValueError(
                 f"Number of rows {number_of_rows} should have been one less than the number of brackets {number_of_left_brackets}"
             )
 
         # Split each row on comma
         number_of_columns = None
-        for i in range(0, number_of_rows):
+        for i in range(number_of_rows):
             # Return error if row has no columns
             if not s_row[i]:
                 return (
@@ -1440,9 +1428,10 @@ def string_to_2darray(s, allow_complex=True):
         matrix = np.zeros((number_of_rows, number_of_columns))
 
         # Parse each row and column
-        for i in range(0, number_of_rows):
-            for j in range(0, number_of_columns):
-                try:
+        i, j = 0, 0
+        try:
+            for i in range(number_of_rows):
+                for j in range(number_of_columns):
                     # Check if entry is empty
                     if not s_row[i][j].strip():
                         return (
@@ -1467,20 +1456,19 @@ def string_to_2darray(s, allow_complex=True):
 
                     # Insert the new entry
                     matrix[i, j] = ans
-                except Exception:
-                    # Return error if entry could not be converted to float or complex
-                    return (
-                        None,
-                        {
-                            "format_error": f"Entry {escape_invalid_string(s_row[i][j])} at location (row={i + 1}, column={j + 1}) of the matrix has an invalid format."
-                        },
-                    )
+        except Exception:
+            # Return error if entry could not be converted to float or complex
+            return (
+                None,
+                {
+                    "format_error": f"Entry {escape_invalid_string(s_row[i][j])} at location (row={i + 1}, column={j + 1}) of the matrix has an invalid format."
+                },
+            )
 
         # Return result with no error
         return (matrix, {"format_type": "python"})
 
-    # Should never get here
-    raise Exception(f"Invalid number of left brackets: {number_of_left_brackets}")
+    assert_never(number_of_left_brackets)
 
 
 def latex_from_2darray(
@@ -1560,8 +1548,8 @@ def is_correct_ndarray2d_dd(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
-    for i in range(0, m):
-        for j in range(0, n):
+    for i in range(m):
+        for j in range(n):
             if not is_correct_scalar_dd(a_sub[i, j], a_tru[i, j], digits):
                 return False
 
@@ -1573,8 +1561,8 @@ def is_correct_ndarray2d_sf(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
-    for i in range(0, m):
-        for j in range(0, n):
+    for i in range(m):
+        for j in range(n):
             if not is_correct_scalar_sf(a_sub[i, j], a_tru[i, j], digits):
                 return False
 
@@ -1666,7 +1654,7 @@ def escape_unicode_string(string: str) -> str:
 
     def escape_unprintable(x):
         category = unicodedata.category(x)
-        if category == "Cc" or category == "Cf":
+        if category in ("Cc", "Cf"):
             return f"<U+{ord(x):x}>"
         else:
             return x
@@ -1705,9 +1693,9 @@ def load_extension(data, extension_name):
     Returns a dictionary of defined variables and functions.
     """
     if "extensions" not in data:
-        raise Exception("load_extension() must be called from an element!")
+        raise ValueError("load_extension() must be called from an element!")
     if extension_name not in data["extensions"]:
-        raise Exception(f"Could not find extension {extension_name}!")
+        raise ValueError(f"Could not find extension {extension_name}!")
 
     ext_info = data["extensions"][extension_name]
     if "controller" not in ext_info:
@@ -1742,9 +1730,7 @@ def load_extension(data, extension_name):
     }
 
     # Return functions and variables as a namedtuple, so we get the nice dot access syntax
-    module_tuple = collections.namedtuple(
-        clean_identifier_name(extension_name), loaded.keys()
-    )
+    module_tuple = namedtuple(clean_identifier_name(extension_name), loaded.keys())  # noqa: PYI024
     return module_tuple(**loaded)
 
 
@@ -1757,7 +1743,7 @@ def load_all_extensions(data):
     """
 
     if "extensions" not in data:
-        raise Exception("load_all_extensions() must be called from an element!")
+        raise ValueError("load_all_extensions() must be called from an element!")
     if len(data["extensions"]) == 0:
         return {}
 
@@ -1776,8 +1762,7 @@ def load_host_script(script_name):
     """
 
     # Chop off the file extension because it's unnecessary here
-    if script_name.endswith(".py"):
-        script_name = script_name[:-3]
+    script_name = script_name.removesuffix(".py")
     return __import__(script_name)
 
 
