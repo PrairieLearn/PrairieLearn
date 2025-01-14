@@ -25,7 +25,7 @@ const question = [{ qid: 'addNumbers', type: 'Freeform', maxPoints: 5 }];
 const questions = _.keyBy(question, 'qid');
 
 describe('assessment instance group synchronization test', function () {
-  this.timeout(20000);
+  this.timeout(10000);
 
   const storedConfig: Record<string, any> = {};
   before('store authenticated user', () => {
