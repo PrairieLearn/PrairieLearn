@@ -1,12 +1,8 @@
 [tool.ruff]
 include = [
-    "./apps/prairielearn/elements/**/*.py",
-    "./apps/prairielearn/python/*.py",
-    "./graders/**/*.py",
-    "./exampleCourse/**/*.py",
-    "./testCourse/**/*.py",
-    "./tools/**/*.py"
+    "**/*.py",
 ]
+
 exclude = [
     # These files are intentionally not parseable as Python.
     "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_binary_file/fib.py",
@@ -61,7 +57,6 @@ ignore = [
 
     # These rules need to be implemented
     "SLF001", # private-member-access 
-    "RSE102", # unnecessary-paren-on-raise-exception
 
     # These rules have active PRs
     "FBT", # flake8-boolean-trap
