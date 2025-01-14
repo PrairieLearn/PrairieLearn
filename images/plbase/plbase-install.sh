@@ -80,7 +80,7 @@ if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]] ; then
     # https://gregoryszorc.com/docs/python-build-standalone/main/running.html
     # v2: 64-bit Intel/AMD CPUs approximately newer than Nehalem (released in 2008).
     # v3: 64-bit Intel/AMD CPUs approximately newer than Haswell (released in 2013) and Excavator (released in 2015)
-    UV_ARCH="linux-x86_64_v2"
+    UV_ARCH="linux-x86_64_v3"
 elif [[ "$(uname)" = "Darwin" ]] && [[ "$(uname -m)" = "arm64" ]] ; then
     UV_ARCH="macos-aarch64-none"
 else
