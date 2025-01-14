@@ -1,5 +1,5 @@
-DEFAULT_SERVER = '0.0.0.0'
-DATA_DIR = '/home/postgres/.pgadmin'
+DEFAULT_SERVER = "0.0.0.0"
+DATA_DIR = "/home/postgres/.pgadmin"
 SERVER_MODE = False
 MASTER_PASSWORD_REQUIRED = False
 UPGRADE_CHECK_ENABLED = False
@@ -17,6 +17,6 @@ FIXED_BINARY_PATHS = {
     "ppas-14": "",
     "ppas-15": "",
     "ppas-16": "",
-    "ppas-17": ""
+    "ppas-17": "",
 }
 DATA_RESULT_ROWS_PER_PAGE = 1000
