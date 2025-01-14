@@ -737,7 +737,9 @@ NumPyScalarType = (
 
 
 def numpy_to_matlab(
-    np_object: np.ndarray | NumPyScalarType, ndigits: int = 2, wtype: str = "f"
+    np_object: np.ndarray | NumPyScalarType,
+    ndigits: int = 2,
+    wtype: str = "f",
 ) -> str:
     """numpy_to_matlab(np_object, ndigits=2, wtype='f')
 
@@ -789,11 +791,14 @@ def numpy_to_matlab(
         return matrix_str
 
 
+Language = Literal["python", "matlab", "mathematica", "r", "sympy"]
+
+
 def string_from_numpy(
     A: np.ndarray | NumPyScalarType,
-    language="python",
-    presentation_type="f",
-    digits=2,
+    language: Language = "python",
+    presentation_type: str = "f",
+    digits: int = 2,
 ):
     """string_from_numpy(A)
 
@@ -920,15 +925,13 @@ def string_from_numpy(
         result = f"Matrix({result})"
         return result
     else:
-        raise ValueError(
-            f'language "{language}" must be either "python", "matlab", "mathematica", "r", or "sympy"'
-        )
+        assert_never(language)
 
 
 # Deprecated version, keeping for backwards compatibility
 def string_from_2darray(
     A: np.ndarray,
-    language: str = "python",
+    language: Language = "python",
     presentation_type: str = "f",
     digits: int = 2,
 ):
@@ -967,7 +970,7 @@ def _string_from_complex_sigfig(
         return f"{re}-{im}j"
 
 
-def numpy_to_matlab_sf(A: NumPyScalarType | np.ndarray, ndigits: int = 2):
+def numpy_to_matlab_sf(A: NumPyScalarType | np.ndarray, ndigits: int = 2) -> str:
     """numpy_to_matlab(A, ndigits=2)
 
     This function assumes that A is one of these things:
@@ -1196,7 +1199,7 @@ def string_fraction_to_number(
 
 
 def string_to_2darray(
-    s: str, allow_complex=True
+    s: str, allow_complex: bool = True
 ) -> tuple[None | np.ndarray, dict[str, str]]:
     """string_to_2darray(s)
 
@@ -1726,7 +1729,7 @@ def clean_identifier_name(name: str) -> str:
     return name
 
 
-def load_extension(data: QuestionData | Any, extension_name: str) -> Any:
+def load_extension(data: QuestionData, extension_name: str) -> Any:
     """
     load_extension(data, extension_name)
 
