@@ -74,7 +74,7 @@ export UV_PYTHON_INSTALL_DIR=/usr/share/uv/python
 export UV_PYTHON_BIN_DIR=/usr/local/bin
 
 # Installing to a different directory is a preview feature
-uv python install --default --preview 3.10
+uv python install --default --preview cpython-3.10.16-linux-x86_64_v4-gnu
 
 uv venv
 uv pip install --no-cache-dir -r /python-requirements.txt
