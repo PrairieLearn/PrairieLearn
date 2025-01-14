@@ -106,7 +106,6 @@ exclude = [
     "./apps/prairielearn/elements/pl-prairiedraw-figure",
     "./apps/prairielearn/elements/pl-order-blocks",
     "./apps/prairielearn/elements/pl-matrix-input",
-    "./apps/prairielearn/elements/pl-matrix-input",
     "./apps/prairielearn/elements/pl-matrix-component-input",
     "./apps/prairielearn/elements/pl-matching",
     "./apps/prairielearn/elements/pl-dropdown",
