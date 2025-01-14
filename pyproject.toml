@@ -57,7 +57,6 @@ ignore = [
 
     # These rules need to be implemented
     "SLF001", # private-member-access 
-    "RSE102", # unnecessary-paren-on-raise-exception
 
     # These rules have active PRs
     "A", # flake8-builtins
