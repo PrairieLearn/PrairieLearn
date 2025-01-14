@@ -51,7 +51,7 @@ class PartialScore(TypedDict):
 # QuestionData be a generic type so that question elements could declare types
 # for their answer data, feedback data, etc., but TypedDicts with Generics are
 # not yet supported: https://bugs.python.org/issue44863
-class QuestionData(TypedDict, total=True):
+class QuestionData(TypedDict):
     "A class with type signatures for the data dictionary"
 
     params: dict[str, Any]
@@ -1101,8 +1101,11 @@ def string_to_number(
         return None
 
 
-class PartialData(TypedDict, total=False):
+class _PartialDataFormatError(TypedDict):
     format_errors: str
+
+
+class _PartialDataSubmittedAnswers(TypedDict):
     submitted_answers: Any
 
 
@@ -1110,7 +1113,10 @@ def string_fraction_to_number(
     a_sub: str | None,
     allow_fractions: bool = True,  # noqa: FBT001, FBT002
     allow_complex: bool = True,  # noqa: FBT001, FBT002
-) -> tuple[None | np.float64 | np.complex128, PartialData]:
+) -> (
+    tuple[None, _PartialDataFormatError]
+    | tuple[np.float64 | np.complex128, _PartialDataSubmittedAnswers]
+):
     """string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True)
 
     Parses a string containing a decimal number with support for answers expressing
@@ -1125,16 +1131,14 @@ def string_fraction_to_number(
     If parsing failed, the first entry will be 'None' and the "data" entry will
     contain a 'format_errors' key.
     """
-    data: PartialData = {}
-    value = None
+    data: _PartialDataSubmittedAnswers = {}  # type: ignore
+    value: np.float64 | np.complex128 = None  # type: ignore
 
     if a_sub is None:
-        data["format_errors"] = "No submitted answer."
-        return (value, data)
+        return (None, {"format_errors": "No submitted answer."})
 
     if a_sub.strip() == "":
-        data["format_errors"] = "The submitted answer was blank."
-        return (value, data)
+        return (None, {"format_errors": "The submitted answer was blank."})
 
     # support FANCY division characters
     a_sub = a_sub.replace("\u2215", "/")  # unicode /
@@ -1168,13 +1172,22 @@ def string_fraction_to_number(
                 value = a_frac
                 data["submitted_answers"] = to_json(value)
             except FloatingPointError:  # Caused by numpy division
-                data["format_errors"] = (
-                    "Your expression resulted in a division by zero."
+                return (
+                    None,
+                    {
+                        "format_errors": "Your expression resulted in a division by zero."
+                    },
                 )
             except Exception as exc:
-                data["format_errors"] = f"Invalid format: {exc}"
+                return (
+                    None,
+                    {"format_errors": f"Invalid format: {exc}"},
+                )
         else:
-            data["format_errors"] = "Fractional answers are not allowed in this input."
+            return (
+                None,
+                {"format_errors": "Fractional answers are not allowed in this input."},
+            )
     else:
         # Not a fraction, just convert to float or complex
         try:
@@ -1188,7 +1201,10 @@ def string_fraction_to_number(
             value = a_sub_parsed
             data["submitted_answers"] = to_json(value)
         except Exception as exc:
-            data["format_errors"] = f"Invalid format: {exc}"
+            return (
+                None,
+                {"format_errors": f"Invalid format: {exc}"},
+            )
 
     return (value, data)
 
