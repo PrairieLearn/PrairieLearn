@@ -1780,7 +1780,7 @@ def load_extension(data: QuestionData, extension_name: str) -> Any:
     return module_tuple(**loaded)
 
 
-def load_all_extensions(data: QuestionData | Any) -> dict[str, Any]:
+def load_all_extensions(data: QuestionData) -> dict[str, Any]:
     """
     load_all_extensions(data)
 
