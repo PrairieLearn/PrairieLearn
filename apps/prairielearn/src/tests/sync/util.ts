@@ -19,13 +19,13 @@ import {
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
 const CourseInstanceDataSchema = z.object({
-  assessments: z.record(AssessmentJsonSchema),
+  assessments: z.record(z.string(), AssessmentJsonSchema),
   courseInstance: CourseInstanceJsonSchema,
 });
 
 export type CourseInstanceData = z.infer<typeof CourseInstanceDataSchema>;
 
-interface CourseData {
+export interface CourseData {
   course: CourseJson;
   questions: Record<string, QuestionJson>;
   courseInstances: Record<string, CourseInstanceData>;
@@ -104,7 +104,7 @@ export const WORKSPACE_QUESTION_ID = 'workspace';
 export const COURSE_INSTANCE_ID = 'Fa19';
 export const ASSESSMENT_ID = 'test';
 
-const course: CourseJson = CourseJsonSchema.parse({
+const course = CourseJsonSchema.parse({
   uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
@@ -248,7 +248,7 @@ const courseInstances = z.record(z.string(), CourseInstanceDataSchema).parse({
 /**
  * @returns The base course data for syncing testing
  */
-export function getCourseData(): CourseData {
+export function getCourseData() {
   // Copy all data with `structuredClone` to ensure that mutations to nested
   // objects aren't reflected in the original objects.
   return structuredClone({

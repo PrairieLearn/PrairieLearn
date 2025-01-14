@@ -1,10 +1,12 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import { v4 as uuid } from 'uuid';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { AssessmentJsonSchema } from '../schemas/index.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -49,40 +51,42 @@ describe('Course with assessments grouped by Set vs Module', function () {
       heading: 'Module 2',
     },
   ];
-  course.courseInstances[COURSE_INSTANCE_ID].assessments = {
-    'homework-1': {
-      uuid: uuid(),
-      title: 'Homework 1',
-      type: 'Homework',
-      set: 'Homeworks',
-      module: 'Module 1',
-      number: '1',
-    },
-    'exam-1': {
-      uuid: uuid(),
-      title: 'Exam 1',
-      type: 'Exam',
-      set: 'Exams',
-      module: 'Module 1',
-      number: '1',
-    },
-    'homework-2': {
-      uuid: uuid(),
-      title: 'Homework 2',
-      type: 'Homework',
-      set: 'Homeworks',
-      module: 'Module 2',
-      number: '2',
-    },
-    'exam-2': {
-      uuid: uuid(),
-      title: 'Exam 2',
-      type: 'Exam',
-      set: 'Exams',
-      module: 'Module 2',
-      number: '2',
-    },
-  };
+  course.courseInstances[COURSE_INSTANCE_ID].assessments = z
+    .record(z.string(), AssessmentJsonSchema)
+    .parse({
+      'homework-1': {
+        uuid: uuid(),
+        title: 'Homework 1',
+        type: 'Homework',
+        set: 'Homeworks',
+        module: 'Module 1',
+        number: '1',
+      },
+      'exam-1': {
+        uuid: uuid(),
+        title: 'Exam 1',
+        type: 'Exam',
+        set: 'Exams',
+        module: 'Module 1',
+        number: '1',
+      },
+      'homework-2': {
+        uuid: uuid(),
+        title: 'Homework 2',
+        type: 'Homework',
+        set: 'Homeworks',
+        module: 'Module 2',
+        number: '2',
+      },
+      'exam-2': {
+        uuid: uuid(),
+        title: 'Exam 2',
+        type: 'Exam',
+        set: 'Exams',
+        module: 'Module 2',
+        number: '2',
+      },
+    });
 
   async function fetchAssessmentsPage() {
     const assessmentsUrl = `http://localhost:${config.serverPort}/pl/course_instance/${courseInstanceId}/assessments`;

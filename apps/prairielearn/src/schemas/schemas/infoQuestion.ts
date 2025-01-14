@@ -97,6 +97,54 @@ export const WorkspaceOptionsJsonSchema = z
   .strict()
   .describe('Options for workspace questions.');
 
+export const ExternalGradingOptionsJsonSchema = z
+  .object({
+    comment: CommentJsonSchema.optional(),
+    enabled: z
+      .boolean()
+      .describe(
+        'Whether the external grader is currently enabled. Useful if it is breaking, for example.',
+      )
+      .optional(),
+    image: z
+      .string()
+      .describe(
+        'The Docker image that will be used to grade this question. Should be specified as Dockerhub image.',
+      ),
+    entrypoint: z
+      .union([z.string(), z.array(z.string())])
+      .describe('Program or command to run as the entrypoint to your grader.'),
+    serverFilesCourse: z
+      .array(
+        z
+          .string()
+          .describe('A single file or directory that will be copied to the external grader.'),
+      )
+      .describe(
+        'The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/',
+      )
+      .optional(),
+    timeout: z
+      .number()
+      .int()
+      .describe('The number of seconds after which the grading job will timeout.')
+      .optional(),
+    enableNetworking: z
+      .boolean()
+      .describe(
+        'Whether the grading containers should have network access. Access is disabled by default.',
+      )
+      .optional()
+      .default(false),
+    environment: z
+      .object({})
+      .catchall(z.any())
+      .describe('Environment variables to set inside the grading container.')
+      .optional(),
+  })
+  .strict()
+  .describe('Options for externally graded questions.');
+
 export const QuestionJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
@@ -161,54 +209,7 @@ export const QuestionJsonSchema = z
         'Options that define how the question will work, specific to the individual question type.',
       )
       .optional(),
-    externalGradingOptions: z
-      .object({
-        comment: CommentJsonSchema.optional(),
-        enabled: z
-          .boolean()
-          .describe(
-            'Whether the external grader is currently enabled. Useful if it is breaking, for example.',
-          )
-          .optional(),
-        image: z
-          .string()
-          .describe(
-            'The Docker image that will be used to grade this question. Should be specified as Dockerhub image.',
-          ),
-        entrypoint: z
-          .union([z.string(), z.array(z.string())])
-          .describe('Program or command to run as the entrypoint to your grader.'),
-        serverFilesCourse: z
-          .array(
-            z
-              .string()
-              .describe('A single file or directory that will be copied to the external grader.'),
-          )
-          .describe(
-            'The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/',
-          )
-          .optional(),
-        timeout: z
-          .number()
-          .int()
-          .describe('The number of seconds after which the grading job will timeout.')
-          .optional(),
-        enableNetworking: z
-          .boolean()
-          .describe(
-            'Whether the grading containers should have network access. Access is disabled by default.',
-          )
-          .optional()
-          .default(false),
-        environment: z
-          .object({})
-          .catchall(z.any())
-          .describe('Environment variables to set inside the grading container.')
-          .optional(),
-      })
-      .strict()
-      .describe('Options for externally graded questions.')
-      .optional(),
+    externalGradingOptions: ExternalGradingOptionsJsonSchema.optional(),
     dependencies: DependencyJsonSchema.optional(),
     workspaceOptions: WorkspaceOptionsJsonSchema.optional(),
     sharingSets: z

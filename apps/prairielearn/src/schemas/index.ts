@@ -47,6 +47,7 @@ import {
   WorkspaceOptionsJsonSchema,
   DependencyJsonSchema,
   CommentJsonSchema,
+  ExternalGradingOptionsJsonSchema,
 } from './schemas/index.js';
 export * from './schemas/index.js';
 
@@ -151,6 +152,7 @@ export const infoQuestion = prairielearnZodToJsonSchema(QuestionJsonSchema, {
     WorkspaceOptionsJsonSchema,
     DependencyJsonSchema,
     CommentJsonSchema,
+    ExternalGradingOptionsJsonSchema,
   },
 }) as JSONSchemaType<QuestionJson>;
 
