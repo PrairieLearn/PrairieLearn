@@ -353,7 +353,7 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
 
 
 def sympy_check(
-    expr: sympy.Expr, locals_for_eval: LocalsForEval, allow_complex: bool
+    expr: sympy.Expr, locals_for_eval: LocalsForEval, *, allow_complex: bool
 ) -> None:
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
