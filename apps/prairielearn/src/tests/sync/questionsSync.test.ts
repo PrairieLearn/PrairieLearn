@@ -7,9 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { idsEqual } from '../../lib/id.js';
 import {
   type QuestionJsonInput,
-  type TagJson,
   type TagJsonInput,
-  type TopicJson,
   type TopicJsonInput,
 } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';

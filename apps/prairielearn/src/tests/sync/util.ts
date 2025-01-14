@@ -10,7 +10,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import type {
   AssessmentJsonInput,
-  AssessmentSetJsonInput,
   CourseInstanceJsonInput,
   CourseJsonInput,
   CourseOptionsJson,

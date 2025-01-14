@@ -1,7 +1,6 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import { v4 as uuid } from 'uuid';
-import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
