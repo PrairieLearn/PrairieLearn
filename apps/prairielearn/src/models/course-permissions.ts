@@ -5,6 +5,7 @@ import {
   loadSqlEquiv,
   queryAsync,
   queryOptionalRow,
+  queryRow,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
@@ -222,4 +223,20 @@ export async function userIsInstructorInAnyCourse({
     z.boolean(),
   );
   return result ?? false;
+}
+
+/**
+ * A course starts with one staffmember. Once the course has two or more
+ * staff members, another one has been added and the onboarding step is complete.
+ *
+ * This function returns if the course has at least two staff members.
+ */
+export async function selectCourseHasAddedStaff({ course_id }: { course_id: string }) {
+  return await queryRow(
+    sql.select_course_has_staff,
+    {
+      course_id,
+    },
+    z.boolean(),
+  );
 }

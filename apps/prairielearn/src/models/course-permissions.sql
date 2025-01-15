@@ -375,3 +375,16 @@ WHERE
   )
 LIMIT
   1;
+
+-- BLOCK select_course_has_staff
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      course_permissions AS cp
+    WHERE
+      cp.course_id = $course_id
+    OFFSET
+      1
+  );

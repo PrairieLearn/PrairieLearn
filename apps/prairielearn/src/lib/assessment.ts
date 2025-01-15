@@ -553,8 +553,6 @@ export function canDeleteAssessmentInstance(resLocals): boolean {
 }
 
 /**
- * TODO: Should this be moved?
- *
  * Returns if a course has any non-deleted assessments.
  *
  * @param course_id - The course ID.

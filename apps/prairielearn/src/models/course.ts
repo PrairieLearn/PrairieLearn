@@ -206,3 +206,19 @@ export async function insertCourse({
     return course;
   });
 }
+
+/**
+ * Update the onboarding_dismissed field for a course.
+ */
+export async function updateCourseOnboardingDismissed({
+  course_id,
+  onboarding_dismissed,
+}: {
+  course_id: string;
+  onboarding_dismissed: boolean;
+}) {
+  return await queryAsync(sql.update_course_onboarding_dismissed, {
+    course_id,
+    onboarding_dismissed,
+  });
+}

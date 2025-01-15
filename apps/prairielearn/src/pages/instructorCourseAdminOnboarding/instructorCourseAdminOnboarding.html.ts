@@ -3,14 +3,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-
-export interface OnboardingStepInfo {
-  header: string;
-  description: string;
-  isComplete: boolean;
-  link?: string;
-  optional?: boolean;
-}
+import type { OnboardingStepInfo } from '../../lib/onboarding.js';
 
 export function InstructorCourseAdminOnboarding({
   steps,

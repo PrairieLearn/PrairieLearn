@@ -109,3 +109,10 @@ VALUES
   )
 RETURNING
   *;
+
+-- BLOCK update_course_onboarding_dismissed
+UPDATE pl_courses
+SET
+  onboarding_dismissed = $onboarding_dismissed
+WHERE
+  id = $course_id
