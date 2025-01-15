@@ -85,7 +85,7 @@ router.get(
 
     const steps: OnboardingStepInfo[] = [
       {
-        header: 'Add Course Staff',
+        header: 'Add course staff',
         description:
           'Invite users to the course staff to help manage and deliver the course. If you are working alone, you can skip this step.',
         link: 'staff',
@@ -93,21 +93,21 @@ router.get(
         optionalToComplete: true,
       },
       {
-        header: 'Create Your First Question',
+        header: 'Create a question',
         description:
           "A question is a problem or task that tests a student's understanding of a specific concept.",
         link: 'questions',
         isComplete: await selectCourseHasQuestions({ course_id }),
       },
       {
-        header: 'Create a Course Instance',
+        header: 'Create a course instance',
         description:
           'A course instance contains the assessments and other configuration for a single offering of a course.',
         link: 'instances',
         isComplete: await selectCourseHasCourseInstances({ course_id }),
       },
       {
-        header: 'Create an Assessment',
+        header: 'Create an assessment',
         description:
           "An assessment is a collection of questions designed to build or evaluate a student's knowledge.",
         link: assessmentsPageLink,

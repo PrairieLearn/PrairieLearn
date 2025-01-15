@@ -192,11 +192,11 @@ export function InstructorCourseAdminSettings({
                         name="__action"
                         value="restore_onboarding"
                         class="btn btn-sm btn-primary"
-                        title="Restore Onboarding Page"
+                        title="Restore onboarding page"
                         type="submit"
                       >
                         <i class="fa fa-tasks"></i>
-                        <span>Restore Onboarding Page</span>
+                        <span>Restore onboarding page</span>
                       </button>
                     </form>
                   </div>

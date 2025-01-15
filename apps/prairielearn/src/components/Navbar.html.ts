@@ -624,8 +624,8 @@ function NavbarInstructor({
     assessment_label,
     assessments,
     navbarOpenIssueCount,
-    navbarNumTasksComplete,
-    navbarNumTasksTotal,
+    navbarCompleteOnboardingTasksCount,
+    navbarTotalOnboardingTasksCount,
 
     authz_data,
     urlPrefix,
@@ -683,8 +683,8 @@ function NavbarInstructor({
           <li class="nav-item d-flex align-items-center">
             <a class="nav-link pr-0" href="${urlPrefix}/course_admin/onboarding">Onboarding</a>
             ${ProgressCircle({
-              numComplete: navbarNumTasksComplete,
-              numTotal: navbarNumTasksTotal,
+              numComplete: navbarCompleteOnboardingTasksCount,
+              numTotal: navbarTotalOnboardingTasksCount,
             })}
           </li>
         `

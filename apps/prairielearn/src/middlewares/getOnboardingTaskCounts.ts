@@ -17,7 +17,9 @@ export default asyncHandler(async (req, res, next) => {
     await selectCourseHasAssessments({ course_id }),
   ];
 
-  res.locals.navbarNumTasksComplete = taskCompletionStatuses.filter((status) => status).length;
-  res.locals.navbarNumTasksTotal = taskCompletionStatuses.length;
+  res.locals.navbarCompleteOnboardingTasksCount = taskCompletionStatuses.filter(
+    (status) => status,
+  ).length;
+  res.locals.navbarTotalOnboardingTasksCount = taskCompletionStatuses.length;
   next();
 });

@@ -5,12 +5,11 @@ import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 
 export interface OnboardingStepInfo {
-  // TODO: check - Is this okay?
   header: string;
   description: string;
-  link?: string;
   isComplete: boolean;
-  optionalToComplete?: boolean;
+  link?: string;
+  optional?: boolean;
 }
 
 export function InstructorCourseAdminOnboarding({
@@ -20,7 +19,7 @@ export function InstructorCourseAdminOnboarding({
   steps: OnboardingStepInfo[];
   resLocals: Record<string, any>;
 }) {
-  const canDismiss = steps.every((step) => step.optionalToComplete || step.isComplete);
+  const canDismiss = steps.every((step) => step.optional || step.isComplete);
   return html`
     <!doctype html>
     <html lang="en">
@@ -39,42 +38,31 @@ export function InstructorCourseAdminOnboarding({
             <div class="card-header bg-primary text-white">
               <h1>Onboarding Tasks</h1>
             </div>
-            <div class="my-4 card-body text-left" style="text-wrap: balance;">
+            <div class="card-body text-left" style="text-wrap: balance;">
               <div class="container">
                 <p class="mb-3">
-                  Here are some task suggestions to help you finish setting up your course.
+                  Complete these task suggestions to finish setting up your course.
                 </p>
-                <div class="list-group">
+                <div class="list-group mb-3">
                   ${steps.map((step, index) =>
                     OnboardingStep({
                       stepNumber: index + 1,
-                      header: step.header,
-                      description: step.description,
-                      link: step.link,
-                      complete: step.isComplete,
-                      optionalToComplete: step.optionalToComplete,
+                      step,
                     }),
                   )}
                 </div>
                 ${canDismiss
-                  ? html` <p class="my-3">
-                        All required tasks are complete. You can dismiss this page now.
-                      </p>
-                      <form method="POST">
-                        <input
-                          type="hidden"
-                          name="__csrf_token"
-                          value="${resLocals.__csrf_token}"
-                        />
-                        <button
-                          name="__action"
-                          value="dismiss_onboarding"
-                          class="btn btn-sm btn-primary"
-                          type="submit"
-                        >
-                          Dismiss Onboarding
-                        </button>
-                      </form>`
+                  ? html` <form method="POST">
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        name="__action"
+                        value="dismiss_onboarding"
+                        class="btn btn-sm btn-primary"
+                        type="submit"
+                      >
+                        Dismiss onboarding
+                      </button>
+                    </form>`
                   : ''}
               </div>
             </div>
@@ -85,43 +73,28 @@ export function InstructorCourseAdminOnboarding({
   `.toString();
 }
 
-function OnboardingStep({
-  stepNumber,
-  header,
-  description,
-  link,
-  complete,
-  optionalToComplete,
-}: {
-  stepNumber: number;
-  header: string;
-  description: string;
-  link?: string;
-  complete: boolean;
-  optionalToComplete?: boolean;
-}) {
-  let stepHeader = `${stepNumber}. ${header}`;
-  if (optionalToComplete) {
-    stepHeader += ' (Optional)';
+function OnboardingStep({ stepNumber, step }: { stepNumber: number; step: OnboardingStepInfo }) {
+  let stepHeader = `${stepNumber}. ${step.header}`;
+  if (step.optional) {
+    stepHeader += ' (optional)';
   }
-
   return html`
     <div class="list-group-item">
-      <div class="d-flex align-items-center gap-3 ${complete ? 'opacity-50' : ''}">
+      <div class="d-flex align-items-center gap-3 ${step.isComplete ? 'opacity-50' : ''}">
         <input
           type="checkbox"
           class="custom-control-input"
           id="customCheck1"
-          ${complete ? 'checked' : ''}
+          ${step.isComplete ? 'checked' : ''}
           disabled
         />
         <div>
-          ${!complete && link
-            ? html` <a href="${link}">
+          ${!step.isComplete && step.link
+            ? html` <a href="${step.link}">
                 <p class="my-0">${stepHeader}</p>
               </a>`
             : html`<p class="my-0">${stepHeader}</p>`}
-          <p class="text-muted my-0">${description}</p>
+          <p class="text-muted my-0">${step.description}</p>
         </div>
       </div>
     </div>
