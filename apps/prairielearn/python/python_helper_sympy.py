@@ -353,7 +353,7 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
 
 
 def sympy_check(
-    expr: sympy.Expr, locals_for_eval: LocalsForEval, allow_complex: bool
+    expr: sympy.Expr, locals_for_eval: LocalsForEval, *, allow_complex: bool
 ) -> None:
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
@@ -370,7 +370,7 @@ def sympy_check(
         if isinstance(item, sympy.Float):
             raise HasFloatError(float(str_item))
         if not allow_complex and item == sympy.I:
-            raise HasComplexError()
+            raise HasComplexError("complex values not allowed")
 
         work_stack.extend(item.args)
 
@@ -432,7 +432,7 @@ def evaluate_with_source(
     try:
         res = eval_expr(code, local_dict, global_dict)
     except Exception as exc:
-        raise BaseSympyError() from exc
+        raise BaseSympyError from exc
 
     # Finally, check for invalid symbols
     sympy_check(res, locals_for_eval, allow_complex=allow_complex)

@@ -116,7 +116,9 @@ def not_repeated(f: Callable) -> Callable:
 
 
 def print_student_code(
-    st_code: str = "user_code.py", ipynb_key: str = "#grade", as_feedback: bool = True
+    st_code: str = "user_code.py",
+    ipynb_key: str = "#grade",
+    as_feedback: bool = True,  # noqa: FBT001
 ) -> None | str:
     """
     Print the student's code, with syntax highlighting.

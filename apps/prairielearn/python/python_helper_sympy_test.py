@@ -198,7 +198,7 @@ class TestSympy:
         self,
         a_pair: tuple[str, sympy.Expr],
         custom_functions: list[str] | None,
-        remove_assumptions: bool,
+        remove_assumptions: bool,  # noqa: FBT001
     ) -> None:
         a_sub, _ = a_pair
         sympy_expr = phs.convert_string_to_sympy(

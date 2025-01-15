@@ -19,7 +19,7 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = 0
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
     optional_attribs = [
@@ -62,7 +62,7 @@ def prepare(element_html, data):
             )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, "answers-name")
@@ -307,7 +307,7 @@ def render(element_html, data):
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_fractions = pl.get_boolean_attrib(
@@ -339,7 +339,7 @@ def parse(element_html, data):
             if allow_blank and a_sub is not None and a_sub.strip() == "":
                 a_sub = blank_value
             value, newdata = pl.string_fraction_to_number(
-                a_sub, allow_fractions, allow_complex=False
+                a_sub, allow_fractions=allow_fractions, allow_complex=False
             )
             if value is not None:
                 matrix[i, j] = value
@@ -361,7 +361,7 @@ def parse(element_html, data):
         data["submitted_answers"][name] = pl.to_json(matrix)
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_partial_credit = pl.get_boolean_attrib(
@@ -435,7 +435,7 @@ def grade(element_html, data):
         }
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -501,10 +501,10 @@ def test(element_html, data):
         }
 
 
-def create_table_for_html_display(m, n, name, label, data, format):
+def create_table_for_html_display(m, n, name, label, data, format_type):
     editable = data["editable"]
 
-    if format == "output-invalid":
+    if format_type == "output-invalid":
         display_array = "<table>"
         display_array += "<tr>"
         display_array += (
@@ -554,7 +554,7 @@ def create_table_for_html_display(m, n, name, label, data, format):
             display_array += "</tr>"
         display_array += "</table>"
 
-    elif format == "output-feedback":
+    elif format_type == "output-feedback":
         partial_score_feedback = data["partial_scores"].get(name, {"feedback": None})
         feedback_each_entry = partial_score_feedback.get("feedback", None)
         score = partial_score_feedback.get("score", None)
@@ -630,7 +630,7 @@ def create_table_for_html_display(m, n, name, label, data, format):
             display_array += "</tr>"
         display_array += "</table>"
 
-    elif format == "input":
+    elif format_type == "input":
         display_array = "<table>"
         display_array += "<tr>"
         # Add first row

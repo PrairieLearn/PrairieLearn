@@ -27,19 +27,19 @@ DIRECTORY_DEFAULT = "."
 MARKDOWN_SHORTCUTS_DEFAULT = True
 
 
-def get_answer_name(file_name):
+def get_answer_name(file_name: str) -> str:
     return "_rich_text_editor_{}".format(
         hashlib.sha1(file_name.encode("utf-8")).hexdigest()
     )
 
 
-def element_inner_html(element):
+def element_inner_html(element: lxml.html.HtmlElement) -> str:
     return (element.text or "") + "".join(
         [str(lxml.html.tostring(c), "utf-8") for c in element.iterchildren()]
     )
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file-name"]
     optional_attribs = [
@@ -77,7 +77,7 @@ def prepare(element_html, data):
         )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name", "")
     answer_name = get_answer_name(file_name)
@@ -159,7 +159,7 @@ def render(element_html, data):
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     file_name = pl.get_string_attrib(element, "file-name", "")

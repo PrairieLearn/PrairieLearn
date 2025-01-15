@@ -464,13 +464,6 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
     return inner
 
 
-def compat_get(object, attrib, _default):
-    if attrib in object:
-        return object[attrib]
-    old_attrib = attrib.replace("-", "_")
-    return old_attrib in object
-
-
 def compat_array(arr: list[str]) -> list[str]:
     new_arr = []
     for i in arr:
@@ -1055,7 +1048,7 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
         return None
 
 
-def string_to_number(s, allow_complex=True):
+def string_to_number(s, *, allow_complex=True):
     """string_to_number(s, allow_complex=True)
 
     Parses a string that can be interpreted either as float or (optionally) complex.
@@ -1090,7 +1083,7 @@ def string_to_number(s, allow_complex=True):
         return None
 
 
-def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
+def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):  # noqa: FBT002 (downstream callers already use this signature)
     """string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True)
 
     Parses a string containing a decimal number with support for answers expressing
@@ -1173,7 +1166,7 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
     return (value, data)
 
 
-def string_to_2darray(s, allow_complex=True):
+def string_to_2darray(s, *, allow_complex=True):
     """string_to_2darray(s)
 
     Parses a string that is either a scalar or a 2D array in matlab or python

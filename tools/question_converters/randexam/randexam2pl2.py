@@ -161,7 +161,7 @@ class LibraryRegexp:
     no_tail indicates whether trailing text after the regexp is permitted
     """
 
-    def __init__(self, name, regexp, no_tail=False):
+    def __init__(self, name, regexp, *, no_tail=False):
         self.name = name
         self.regexp = regexp
         self.no_tail = no_tail
@@ -558,12 +558,12 @@ def check_library(library):
 
 
 ######################################################################
-def mkdir_or_die(dir):
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+def mkdir_or_die(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-    if not os.path.isdir(dir):
-        print(f"Could not create directory ({dir})")
+    if not os.path.isdir(directory):
+        print(f"Could not create directory ({directory})")
         sys.exit(1)
 
 

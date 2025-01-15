@@ -1,9 +1,19 @@
 __author__ = "William Rusnack github.com/BebeSparkelSparkel linkedin.com/in/williamrusnack williamrusnack@gmail.com"
 
 import math
+from typing import Any, Literal
+
+from typing_extensions import assert_never
 
 
-def to_precision(value, precision, notation="auto", filler="e"):
+def to_precision(
+    value: Any,
+    precision: int,
+    notation: Literal[
+        "auto", "sci", "std", "standard", "engineering", "scientific"
+    ] = "auto",
+    filler: str = "e",
+) -> str:
     """
     converts a value to the specified notation and precision
     value - any type that can be converted to a float
@@ -35,12 +45,12 @@ def to_precision(value, precision, notation="auto", filler="e"):
         converter = std_notation
 
     else:
-        raise ValueError("Unknown notation: " + str(notation))
+        assert_never(notation)
 
     return converter(value, precision, filler)
 
 
-def std_notation(value, precision, _extra=None):
+def std_notation(value: float, precision: int, _extra=None) -> str:
     """
     standard notation (US version)
     ref: http://www.mathsisfun.com/definitions/standard-notation.html
@@ -63,7 +73,7 @@ def std_notation(value, precision, _extra=None):
     return ("-" if is_neg else "") + _place_dot(sig_digits, power)
 
 
-def sci_notation(value, precision, filler):
+def sci_notation(value: float, precision: int, filler: str) -> str:
     """
     scientific notation
     ref: https://www.mathsisfun.com/numbers/scientific-notation.html
@@ -91,7 +101,7 @@ def sci_notation(value, precision, filler):
     )
 
 
-def eng_notation(value, precision, filler):
+def eng_notation(value: float, precision: int, filler: str) -> str:
     """
     engineering notation
     ref: http://www.mathsisfun.com/definitions/engineering-notation.html
@@ -122,7 +132,7 @@ def eng_notation(value, precision, filler):
     )
 
 
-def _sci_notation(value, precision):
+def _sci_notation(value: float, precision: int) -> tuple[bool, str, int, int]:
     """
     returns the properties for to construct a scientific notation number
     used in sci_notation and eng_notation
@@ -140,7 +150,7 @@ def _sci_notation(value, precision):
     return is_neg, sig_digits, dot_power, ten_power
 
 
-def _place_dot(digits, power):
+def _place_dot(digits: str, power: int) -> str:
     """
     places the dot in the correct spot in the digits
     if the dot is outside the range of the digits zeros will be added
@@ -175,7 +185,7 @@ def _place_dot(digits, power):
     return out
 
 
-def _number_profile(value, precision):
+def _number_profile(value: float, precision: int) -> tuple[str, int, bool]:
     """
     returns:
         string of significant digits

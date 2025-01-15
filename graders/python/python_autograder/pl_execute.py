@@ -37,7 +37,7 @@ def try_read(fname: str) -> str:
 def execute_code(
     fname_ref: str,
     fname_student: str,
-    include_plt: bool = False,
+    include_plt: bool = False,  # noqa: FBT001
     console_output_fname: str | None = None,
     test_iter_num: int = 0,
     ipynb_key: str = "#grade",

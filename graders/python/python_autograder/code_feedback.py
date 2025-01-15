@@ -111,7 +111,7 @@ class Feedback:
         Complete grading immediately, additionally outputting the message in fb_text.
         """
         cls.add_feedback(fb_text)
-        raise GradingComplete()
+        raise GradingComplete("Grading complete")
 
     @staticmethod
     def not_allowed(*_args, **_kwargs) -> NoReturn:
@@ -174,8 +174,8 @@ class Feedback:
         name: str,
         ref: np.ndarray,
         data: None | ArrayLike | Any,
-        accuracy_critical: bool = False,
-        report_failure: bool = True,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
     ) -> bool | None:
         """
         Feedback.check_numpy_array_features(name, ref, data)
@@ -231,11 +231,11 @@ class Feedback:
         name: str,
         ref: np.ndarray,
         data: ArrayLike,
-        accuracy_critical: bool = False,
+        accuracy_critical: bool = False,  # noqa: FBT001
         rtol: float = 1e-05,
         atol: float = 1e-08,
-        report_success: bool = True,
-        report_failure: bool = True,
+        report_success: bool = True,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
     ) -> bool:
         """
         Feedback.check_numpy_allclose(name, ref, data)
@@ -268,7 +268,7 @@ class Feedback:
             cls.add_feedback(f"'{name}' looks good")
 
         if accuracy_critical and not good:
-            raise GradingComplete()
+            raise GradingComplete("Inaccurate, grading halted")
 
         return good
 
@@ -279,8 +279,8 @@ class Feedback:
         ref: list,
         data: list | None | Any,
         entry_type: Any | None = None,
-        accuracy_critical: bool = False,
-        report_failure: bool = True,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
     ) -> bool:
         """
         Feedback.check_list(name, ref, data)
@@ -328,9 +328,9 @@ class Feedback:
         name: str,
         ref: tuple,
         data: tuple | None | Any,
-        accuracy_critical: bool = False,
-        report_failure: bool = True,
-        report_success: bool = True,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
     ) -> bool:
         """
         Feedback.check_tuple(name, ref, data)
@@ -388,11 +388,11 @@ class Feedback:
         name: str,
         ref: complex | np.number,
         data: complex | np.number | None | Any,
-        accuracy_critical: bool = False,
+        accuracy_critical: bool = False,  # noqa: FBT001
         rtol: float = 1e-5,
         atol: float = 1e-8,
-        report_success: bool = True,
-        report_failure: bool = True,
+        report_success: bool = True,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
     ) -> bool:
         """
         Feedback.check_scalar(name, ref, data)
@@ -486,7 +486,7 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete() from exc
+            raise GradingComplete from exc
 
     @classmethod
     def check_plot(
@@ -495,9 +495,9 @@ class Feedback:
         ref: Axes,
         plot: Axes,
         check_axes_scale: Literal[None, "x", "y", "xy"] = None,
-        accuracy_critical: bool = False,
-        report_failure: bool = True,
-        report_success: bool = True,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
     ) -> bool:
         """
         Feedback.check_plot(name, ref, plot, check_axes_scale)
@@ -591,9 +591,9 @@ class Feedback:
         ref: DataFrame,
         data: DataFrame,
         subset_columns: list[str] | None = None,
-        check_values: bool = True,
-        allow_order_variance: bool = True,
-        display_input: bool = False,
+        check_values: bool = True,  # noqa: FBT001
+        allow_order_variance: bool = True,  # noqa: FBT001
+        display_input: bool = False,  # noqa: FBT001
     ) -> bool:
         """
         ``check_dataframe``
