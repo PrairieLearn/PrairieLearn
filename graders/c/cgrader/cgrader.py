@@ -102,7 +102,7 @@ class CGrader:
         input: Any | None = None,  # noqa: A002
         sandboxed: bool = True,  # noqa: FBT001
         timeout: float | None = None,
-        env: subprocess._ENV | None = None,
+        env: Any | None = None,
     ) -> str:
         if isinstance(command, str):
             command = shlex.split(command)
