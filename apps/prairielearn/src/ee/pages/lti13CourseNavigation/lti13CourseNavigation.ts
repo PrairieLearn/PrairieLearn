@@ -57,7 +57,7 @@ async function coursesAllowedToLink({ resLocals }: { resLocals: Record<string, a
     is_administrator: resLocals.authn_is_administrator,
   });
 
-  return courses.filter((c) => c.permissions_course.has_course_permission_own);
+  return courses.filter((c) => c.permissions_course.has_course_permission_edit);
 }
 
 router.get(

@@ -98,8 +98,8 @@ export function Lti13CourseNavigationInstructor({
               <summary>Why don't I see my course or course instances here?</summary>
               <p>The following PrairieLearn permissions are required to link:</p>
               <ul>
-                <li>Course: Owner</li>
-                <li>Course instance: Any</li>
+                <li>Course: Editor</li>
+                <li>Course instance: Student Data Editor</li>
               </ul>
             </details>
           </p>
