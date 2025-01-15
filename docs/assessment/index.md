@@ -25,7 +25,7 @@ The assessment ID is the full path relative to `assessments`.
 ??? note "Format specification for assessment `infoAssessment.json`"
 
     ```json
-    --8<-- "apps/prairielearn/src/schemas/schemas/infoAssessment.json"
+    --8<-- "apps/prairielearn/src/schemas/infoAssessment.json"
     ```
 
 ## Assessment naming
