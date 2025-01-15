@@ -1,8 +1,8 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 
-import { CircularProgress } from './CircularProgress.html.js';
 import { IssueBadge } from './IssueBadge.html.js';
 import { type NavPage, type NavSubPage } from './Navbar.types.js';
+import { ProgressCircle } from './ProgressCircle.html.js';
 
 interface TabInfo {
   activeSubPage: NavSubPage | NavSubPage[];
@@ -91,10 +91,9 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       iconClasses: 'fa fa-tasks',
       tabLabel: 'Onboarding',
       htmlSuffix: (resLocals) =>
-        CircularProgress({
+        ProgressCircle({
           numComplete: resLocals.navbarNumTasksComplete, // TODO: Naming?
           numTotal: resLocals.navbarNumTasksTotal,
-          isInCourseNavbar: true,
         }),
       renderCondition: (resLocals) => !resLocals.course.onboarding_dismissed,
     },

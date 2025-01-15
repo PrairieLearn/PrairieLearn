@@ -4,10 +4,10 @@ import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 
-import { CircularProgress } from './CircularProgress.html.js';
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
+import { ProgressCircle } from './ProgressCircle.html.js';
 
 export function Navbar({
   resLocals,
@@ -682,7 +682,7 @@ function NavbarInstructor({
       ? html`
           <li class="nav-item d-flex align-items-center">
             <a class="nav-link pr-0" href="${urlPrefix}/course_admin/onboarding">Onboarding</a>
-            ${CircularProgress({
+            ${ProgressCircle({
               numComplete: navbarNumTasksComplete,
               numTotal: navbarNumTasksTotal,
             })}
