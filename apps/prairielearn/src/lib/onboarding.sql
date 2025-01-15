@@ -32,6 +32,7 @@ SELECT
       assessments AS a
       LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     WHERE
-      ci.course_id = $course_id
-      AND a.deleted_at IS NULL
+      a.deleted_at IS NULL
+      AND ci.course_id = $course_id
+      AND ci.deleted_at IS NULL
   )
