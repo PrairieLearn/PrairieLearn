@@ -8,9 +8,9 @@ WHERE
   AND deployment_id = $deployment_id
   AND context_id = $context_id;
 
--- BLOCK select_lti13_course_instance_institution
+-- BLOCK select_lti13_institution_course_instance
 SELECT
-  i.id
+  ci.*
 FROM
   lti13_instances
   JOIN institutions AS i ON i.id = lti13_instances.institution_id

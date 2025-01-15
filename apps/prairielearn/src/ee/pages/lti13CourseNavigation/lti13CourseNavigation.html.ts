@@ -53,12 +53,13 @@ export function Lti13CourseNavigationInstructor({
           ${courses.length === 0
             ? html`<p>
                 <strong>
-                  It doesn't look like you have owner permissions in any PrairieLearn courses.
+                  It doesn't look like you have course editor permissions in any PrairieLearn
+                  courses.
                 </strong>
               </p>`
             : html`
                 <div class="mb-3">
-                  <form method="POST" id="ci_form">
+                  <form method="POST" id="link_form">
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
 
                     <label class="form-label" for="connect_course">
@@ -69,7 +70,7 @@ export function Lti13CourseNavigationInstructor({
                       class="form-select mb-3"
                       name="unsafe_course_id"
                       hx-get="${originalUrl}/course_instances"
-                      hx-include="#ci_form"
+                      hx-include="#link_form"
                       hx-target="#course_instances"
                     >
                       <option selected disabled>Select a course to continue</option>

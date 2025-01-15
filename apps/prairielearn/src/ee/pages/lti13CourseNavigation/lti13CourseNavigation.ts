@@ -5,11 +5,8 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow, queryAsync } from '@prairielearn/postgres';
 
-import { IdSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
-import {
-  selectCourseInstanceById,
-  selectCourseInstancesWithStaffAccess,
-} from '../../../models/course-instances.js';
+import { CourseInstanceSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
+import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
 import { selectCoursesWithEditAccess } from '../../../models/course.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
@@ -36,23 +33,52 @@ function prettyCourseName(ltiClaim) {
   }
 }
 
+async function courseInstancesAllowedToLink({
+  course_id,
+  resLocals,
+}: {
+  course_id: string;
+  resLocals: Record<string, any>;
+}) {
+  const course_instances = await selectCourseInstancesWithStaffAccess({
+    course_id,
+    user_id: resLocals.authn_user.user_id,
+    authn_user_id: resLocals.authn_user.user_id,
+    is_administrator: resLocals.authn_is_administrator,
+    authn_is_administrator: resLocals.authn_is_administrator,
+  });
+
+  return course_instances.filter((ci) => ci.has_course_instance_permission_edit);
+}
+
+async function coursesAllowedToLink({ resLocals }: { resLocals: Record<string, any> }) {
+  const courses = await selectCoursesWithEditAccess({
+    user_id: resLocals.authn_user.user_id,
+    is_administrator: resLocals.authn_is_administrator,
+  });
+
+  return courses.filter((c) => c.permissions_course.has_course_permission_own);
+}
+
 router.get(
   '/course_instances',
   asyncHandler(async (req, res) => {
-    const course_instances = await selectCourseInstancesWithStaffAccess({
+    const course_instances = await courseInstancesAllowedToLink({
       course_id: z.coerce.string().parse(req.query.unsafe_course_id),
-      user_id: res.locals.authn_user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.authn_is_administrator,
-      authn_is_administrator: res.locals.authn_is_administrator,
+      resLocals: res.locals,
     });
 
-    const options = course_instances.reduce((html, ci) => {
-      if (ci.has_course_instance_permission_edit) {
+    let options: string;
+
+    if (course_instances.length === 0) {
+      options =
+        '<option disabled selected>No course instances found where you have student data editor permissions</option>';
+    } else {
+      options = course_instances.reduce((html, ci) => {
         html += `<option value="${ci.id}">${ci.short_name}: ${ci.long_name}</option>\n`;
-      }
-      return html;
-    }, '');
+        return html;
+      }, '');
+    }
 
     res.send(options);
   }),
@@ -127,17 +153,12 @@ router.get(
       return;
     }
 
-    // Instructor so lookup their existing information in PL
-    const courses = await selectCoursesWithEditAccess({
-      user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.authn_is_administrator,
-    });
-
+    // Instructors get a prompt for linking
     res.send(
       Lti13CourseNavigationInstructor({
         resLocals: res.locals,
         courseName,
-        courses: courses.filter((c) => c.permissions_course.has_course_permission_own),
+        courses: await coursesAllowedToLink({ resLocals: res.locals }),
         originalUrl: req.originalUrl,
       }),
     );
@@ -147,47 +168,44 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const unsafe_course_instance_id = req.body.unsafe_course_instance_id;
-
     const ltiClaim = new Lti13Claim(req);
-    const authn_lti13_instance_id = req.session.authn_lti13_instance_id;
 
     // Map passed and auth lti13_instance_id through institution to course instance, or fail
-    const authorized = await queryOptionalRow(
-      sql.select_lti13_course_instance_institution,
+    const course_instance = await queryOptionalRow(
+      sql.select_lti13_institution_course_instance,
       {
-        course_instance_id: unsafe_course_instance_id,
+        course_instance_id: req.body.unsafe_course_instance_id,
         lti13_instance_id: req.params.lti13_instance_id,
-        authn_lti13_instance_id,
+        authn_lti13_instance_id: req.session.authn_lti13_instance_id,
       },
-      IdSchema,
+      CourseInstanceSchema,
     );
 
-    if (authorized == null) {
+    if (course_instance == null) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    // Check that user is course Owner for this course instance
-    const course_instance = await selectCourseInstanceById(unsafe_course_instance_id);
-    const courses = await selectCoursesWithEditAccess({
-      user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.authn_is_administrator,
+    const courseInstancesAllowed = await courseInstancesAllowedToLink({
+      course_id: course_instance.course_id,
+      resLocals: res.locals,
     });
-
-    const is_ci_owner = courses.find(
-      (course) =>
-        course.id === course_instance?.course_id &&
-        course.permissions_course.has_course_permission_own,
+    const hasCourseInstanceAllowed = courseInstancesAllowed.some(
+      (ci) => ci.id === course_instance.id,
     );
 
-    if (ltiClaim.isRoleInstructor() && is_ci_owner) {
+    const coursesAllowed = await coursesAllowedToLink({
+      resLocals: res.locals,
+    });
+    const hasCourseAllowed = coursesAllowed.some((c) => c.id === course_instance.course_id);
+
+    if (ltiClaim.isRoleInstructor() && hasCourseAllowed && hasCourseInstanceAllowed) {
       await queryAsync(sql.insert_lci, {
         lti13_instance_id: req.params.lti13_instance_id,
         deployment_id: ltiClaim.deployment_id,
         context_id: ltiClaim.context?.id,
         context_label: ltiClaim.context?.label,
         context_title: ltiClaim.context?.title,
-        course_instance_id: unsafe_course_instance_id,
+        course_instance_id: course_instance.id,
       });
 
       res.redirect(`/pl/lti13_instance/${req.params.lti13_instance_id}/course_navigation?done`);
