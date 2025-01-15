@@ -7,42 +7,6 @@
   },
   "assessmentSets": [
     {
-      "abbreviation": "HW",
-      "name": "Homework",
-      "heading": "Homeworks",
-      "color": "green1"
-    },
-    {
-      "abbreviation": "Q",
-      "name": "Quiz",
-      "heading": "Quizzes",
-      "color": "red1"
-    },
-    {
-      "abbreviation": "PQ",
-      "name": "Practice Quiz",
-      "heading": "Practice Quizzes",
-      "color": "pink1"
-    },
-    {
-      "abbreviation": "E",
-      "name": "Exam",
-      "heading": "Exams",
-      "color": "brown1"
-    },
-    {
-      "abbreviation": "PE",
-      "name": "Practice Exam",
-      "heading": "Practice Exams",
-      "color": "yellow1"
-    },
-    {
-      "abbreviation": "WS",
-      "name": "Worksheet",
-      "heading": "Worksheets",
-      "color": "purple1"
-    },
-    {
       "abbreviation": "PLEC",
       "name": "Prelecture",
       "heading": "Prelectures",
@@ -59,6 +23,42 @@
       "name": "Lab",
       "heading": "Labs",
       "color": "blue1"
+    },
+    {
+      "abbreviation": "WS",
+      "name": "Worksheet",
+      "heading": "Worksheets",
+      "color": "purple1"
+    },
+    {
+      "abbreviation": "HW",
+      "name": "Homework",
+      "heading": "Homeworks",
+      "color": "green1"
+    },
+    {
+      "abbreviation": "PQ",
+      "name": "Practice Quiz",
+      "heading": "Practice Quizzes",
+      "color": "pink1"
+    },
+    {
+      "abbreviation": "Q",
+      "name": "Quiz",
+      "heading": "Quizzes",
+      "color": "red1"
+    },
+    {
+      "abbreviation": "PE",
+      "name": "Practice Exam",
+      "heading": "Practice Exams",
+      "color": "yellow1"
+    },
+    {
+      "abbreviation": "E",
+      "name": "Exam",
+      "heading": "Exams",
+      "color": "brown1"
     },
     {
       "abbreviation": "U",
