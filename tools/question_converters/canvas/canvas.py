@@ -9,7 +9,7 @@ import requests
 class ExtendAction(argparse.Action):
     """Add argparse action='extend' for pre-3.8 python"""
 
-    def __call__(self, parser, namespace, values, option_string=None):
+    def __call__(self, _parser, namespace, values, _option_string=None):
         items = getattr(namespace, self.dest) or []
         items.extend(values)
         setattr(namespace, self.dest, items)
@@ -18,7 +18,7 @@ class ExtendAction(argparse.Action):
 class Canvas:
     """Canvas"""
 
-    def __init__(self, token=None, args=None):
+    def __init__(self, args=None):
         self.debug = args.debug if args else False
         with open(os.path.join(os.path.dirname(__file__), "config.json")) as config:
             self.config = json.load(config)
@@ -27,7 +27,7 @@ class Canvas:
         self.token_header = {"Authorization": f"Bearer {self.token}"}
 
     @staticmethod
-    def add_arguments(parser, course=True, quiz=False, assignment=False):
+    def add_arguments(parser, *, course=True, quiz=False, assignment=False):
         """docstring"""
 
         parser.add_argument(
@@ -40,7 +40,7 @@ class Canvas:
         if assignment:
             parser.add_argument("-a", "--assignment", type=int, help="Assignment ID")
 
-    def request(self, request, stop_at_first=False):
+    def request(self, request, *, stop_at_first=False):
         """docstring"""
         retval = []
         response = requests.get(self.api_url + request, headers=self.token_header)
@@ -96,7 +96,7 @@ class Canvas:
             courses.extend(result)
         return courses
 
-    def course(self, course_id, prompt_if_needed=False):
+    def course(self, course_id, *, prompt_if_needed=False):
         """docstring"""
         if course_id:
             for course in self.request(f"/courses/{course_id}?include[]=term"):
@@ -158,7 +158,7 @@ class Course(Canvas):
             ]
         return quizzes
 
-    def quiz(self, quiz_id, prompt_if_needed=False):
+    def quiz(self, quiz_id, *, prompt_if_needed=False):
         """docstring"""
         if quiz_id:
             for quiz in self.request(f"{self.url_prefix}/quizzes/{quiz_id}"):
@@ -182,7 +182,7 @@ class Course(Canvas):
             ]
         return assignments
 
-    def assignment(self, assignment_id, prompt_if_needed=False):
+    def assignment(self, assignment_id, *, prompt_if_needed=False):
         """docstring"""
         if assignment_id:
             for assignment in self.request(
@@ -366,6 +366,7 @@ class Quiz(CourseSubObject):
 
     def submissions(
         self,
+        *,
         include_user=True,
         include_submission=True,
         include_history=True,
