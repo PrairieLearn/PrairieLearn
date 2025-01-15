@@ -102,6 +102,7 @@ exclude = [
 include = [
     "./apps/prairielearn/elements",
     "./apps/prairielearn/python",
+    "./graders/c",
 ]
 exclude = [
     "./apps/prairielearn/elements/pl-drawing", # requires refactor

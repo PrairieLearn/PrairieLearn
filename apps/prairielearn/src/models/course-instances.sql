@@ -80,3 +80,15 @@ FROM
 WHERE
   cip.course_instance_id = $course_instance_id
   AND cip.course_instance_role >= $minimal_role;
+
+-- BLOCK select_course_has_course_instances
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      course_instances as ci
+    WHERE
+      ci.course_id = $course_id
+      AND ci.deleted_at IS NULL
+  );
