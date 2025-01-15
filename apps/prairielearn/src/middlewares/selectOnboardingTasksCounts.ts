@@ -9,9 +9,7 @@ export default asyncHandler(async (req, res, next) => {
     course_id,
   });
 
-  res.locals.navbarCompleteOnboardingTasksCount = steps.filter(
-    (step) => step.optional || step.isComplete,
-  ).length;
+  res.locals.navbarCompleteOnboardingTasksCount = steps.filter((step) => step.isComplete).length;
   res.locals.navbarTotalOnboardingTasksCount = steps.length;
   next();
 });

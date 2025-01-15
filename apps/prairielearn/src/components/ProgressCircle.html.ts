@@ -27,7 +27,7 @@ export function ProgressCircle({
     width="20px"
     height="20px"
     viewBox="0 0 20px 20px"
-    class="mx-1
+    class="mx-1"
   >
     <circle
       cx="10px"
