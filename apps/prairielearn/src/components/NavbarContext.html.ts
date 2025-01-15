@@ -90,12 +90,13 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       urlSuffix: '/course_admin/onboarding',
       iconClasses: 'fa fa-tasks',
       tabLabel: 'Onboarding',
-      htmlSuffix: (resLocals) =>
+      htmlSuffix: ({ navbarCompleteOnboardingTasksCount, navbarTotalOnboardingTasksCount }) =>
         ProgressCircle({
-          numComplete: resLocals.navbarNumTasksComplete, // TODO: Naming?
-          numTotal: resLocals.navbarNumTasksTotal,
+          numComplete: navbarCompleteOnboardingTasksCount,
+          numTotal: navbarTotalOnboardingTasksCount,
         }),
-      renderCondition: (resLocals) => !resLocals.course.onboarding_dismissed,
+      renderCondition: ({ authz_data, course }) =>
+        authz_data.has_course_permission_edit && !course.onboarding_dismissed,
     },
     {
       activeSubPage: 'sets',

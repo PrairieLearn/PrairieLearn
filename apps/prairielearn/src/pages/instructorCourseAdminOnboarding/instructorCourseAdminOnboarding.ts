@@ -17,11 +17,10 @@ router.get(
     if (res.locals.course.onboarding_dismissed) {
       throw new HttpStatusError(400, 'Onboarding already dismissed');
     }
-    const course_id = res.locals.course.id; // TODO/CHECK: Should this be handled with an error?
     res.send(
       InstructorCourseAdminOnboarding({
         resLocals: res.locals,
-        steps: await getOnboardingSteps({ course_id }),
+        steps: await getOnboardingSteps({ course_id: res.locals.course.id }),
       }),
     );
   }),
@@ -58,7 +57,7 @@ router.post(
 
     if (req.body.__action === 'dismiss_onboarding') {
       await updateCourseOnboardingDismissed({
-        course_id: res.locals.course.id,
+        course_id,
         onboarding_dismissed: true,
       });
     } else {
@@ -66,7 +65,7 @@ router.post(
     }
     flash(
       'success',
-      'Onboarding dismissed. You can return to the onboarding page through the Course Settings tab.',
+      'Onboarding page dismissed. You can restore it by clicking "Restore onboarding page" in course settings.',
     );
     res.redirect(`${res.locals.urlPrefix}/course_admin/settings`);
   }),

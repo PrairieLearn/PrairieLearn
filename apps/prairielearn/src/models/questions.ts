@@ -66,10 +66,3 @@ export async function selectPublicQuestionsForCourse(
 
   return rows;
 }
-
-/**
- * Returns if the course has any non-deleted questions.
- */
-export async function selectCourseHasQuestions({ course_id }: { course_id: string }) {
-  return await sqldb.queryRow(sql.select_course_has_questions, { course_id }, z.boolean());
-}

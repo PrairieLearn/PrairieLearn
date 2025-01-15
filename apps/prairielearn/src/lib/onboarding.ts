@@ -1,11 +1,13 @@
+import { z } from 'zod';
+
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+
 import {
   selectCourseHasCourseInstances,
   selectFirstCourseInstance,
 } from '../models/course-instances.js';
-import { selectCourseHasAddedStaff } from '../models/course-permissions.js';
-import { selectCourseHasQuestions } from '../models/questions.js';
 
-import { selectCourseHasAssessments } from './assessment.js';
+const sql = loadSqlEquiv(import.meta.url);
 
 export interface OnboardingStepInfo {
   header: string;
@@ -34,13 +36,36 @@ export async function getOnboardingSteps({
     assessmentsPageLink = `/pl/course_instance/${first_course_instance.id}/instructor/instance_admin/assessments`;
   }
 
+  // Check if the course has at least 2 staff members (since each course starts with one staff member)
+  const courseHasAddedStaff = await queryRow(
+    sql.select_course_has_staff,
+    {
+      course_id,
+    },
+    z.boolean(),
+  );
+
+  // Check if the course has at least one non-deleted question
+  const courseHasQuestions = await queryRow(
+    sql.select_course_has_questions,
+    { course_id },
+    z.boolean(),
+  );
+
+  // Check if the course has at least one non-deleted assessment
+  const courseHasAssessments = await queryRow(
+    sql.select_course_has_assessments,
+    { course_id },
+    z.boolean(),
+  );
+
   const steps: OnboardingStepInfo[] = [
     {
       header: 'Add course staff',
       description:
         'Invite users to the course staff to help manage and deliver the course. If you are working alone, you can skip this step.',
       link: 'staff',
-      isComplete: await selectCourseHasAddedStaff({ course_id }),
+      isComplete: courseHasAddedStaff,
       optional: true,
     },
     {
@@ -48,7 +73,7 @@ export async function getOnboardingSteps({
       description:
         "A question is a problem or task that tests a student's understanding of a specific concept.",
       link: 'questions',
-      isComplete: await selectCourseHasQuestions({ course_id }),
+      isComplete: courseHasQuestions,
     },
     {
       header: 'Create a course instance',
@@ -62,7 +87,7 @@ export async function getOnboardingSteps({
       description:
         "An assessment is a collection of questions designed to build or evaluate a student's knowledge.",
       link: assessmentsPageLink,
-      isComplete: await selectCourseHasAssessments({ course_id }),
+      isComplete: courseHasAssessments,
     },
   ];
 
