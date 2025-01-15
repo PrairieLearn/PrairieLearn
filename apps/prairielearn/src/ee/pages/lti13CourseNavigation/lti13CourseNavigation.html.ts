@@ -93,6 +93,16 @@ export function Lti13CourseNavigationInstructor({
               `}
 
           <p>
+            <details>
+              <summary>Why don't I see my course or course instances here?</summary>
+              <p>The following PrairieLearn permissions are required to link:</p>
+              <ul>
+                <li>Course: Owner</li>
+                <li>Course instance: Any</li>
+              </ul>
+            </details>
+          </p>
+          <p>
             If you need a new PrairieLearn course,
             <a href="/pl/request_course">request one here</a>.
           </p>

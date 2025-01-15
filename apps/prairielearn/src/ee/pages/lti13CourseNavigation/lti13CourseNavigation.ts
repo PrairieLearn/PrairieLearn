@@ -47,11 +47,14 @@ router.get(
       authn_is_administrator: res.locals.authn_is_administrator,
     });
 
-    const options = course_instances.map((ci) => {
-      return `<option value="${ci.id}">${ci.short_name}: ${ci.long_name}</option>`;
-    });
+    const options = course_instances.reduce((html, ci) => {
+      if (ci.has_course_instance_permission_edit) {
+        html += `<option value="${ci.id}">${ci.short_name}: ${ci.long_name}</option>\n`;
+      }
+      return html;
+    }, '');
 
-    res.send(options.join('\n'));
+    res.send(options);
   }),
 );
 
