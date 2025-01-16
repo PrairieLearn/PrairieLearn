@@ -53,8 +53,7 @@ export function Lti13CourseNavigationInstructor({
           ${courses.length === 0
             ? html`<p>
                 <strong>
-                  It doesn't look like you have course editor permissions in any PrairieLearn
-                  courses.
+                  You don't have course editor permissions in any PrairieLearn courses.
                 </strong>
               </p>`
             : html`

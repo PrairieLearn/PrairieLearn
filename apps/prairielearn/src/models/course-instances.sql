@@ -26,7 +26,7 @@ SELECT
   COALESCE(
     $is_administrator
     OR ia.id IS NOT NULL
-    OR cip.course_instance_role = 'Student Data Editor',
+    OR cip.course_instance_role >= 'Student Data Editor',
     FALSE
   ) AS has_course_instance_permission_edit
 FROM

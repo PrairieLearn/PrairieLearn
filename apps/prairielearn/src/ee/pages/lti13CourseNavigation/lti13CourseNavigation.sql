@@ -15,12 +15,10 @@ FROM
   lti13_instances
   JOIN institutions AS i ON i.id = lti13_instances.institution_id
   JOIN pl_courses AS plc ON plc.institution_id = i.id
-  JOIN course_instances AS ci ON (
-    plc.id = ci.course_id
-    AND ci.id = $course_instance_id
-  )
+  JOIN course_instances AS ci ON plc.id = ci.course_id
 WHERE
-  lti13_instances.id = $lti13_instance_id
+  ci.id = $course_instance_id
+  AND lti13_instances.id = $lti13_instance_id
   AND lti13_instances.id = $authn_lti13_instance_id;
 
 -- BLOCK insert_lci

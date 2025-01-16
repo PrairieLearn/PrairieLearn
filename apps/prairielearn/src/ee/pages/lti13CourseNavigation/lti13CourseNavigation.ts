@@ -2,6 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import { html, HtmlSafeString } from '@prairielearn/html';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow, queryAsync } from '@prairielearn/postgres';
 
@@ -35,26 +36,38 @@ function prettyCourseName(ltiClaim) {
 
 async function courseInstancesAllowedToLink({
   course_id,
-  resLocals,
+  user_id,
+  authn_user_id,
+  is_administrator,
+  authn_is_administrator,
 }: {
   course_id: string;
-  resLocals: Record<string, any>;
+  user_id: string;
+  authn_user_id: string;
+  is_administrator: boolean;
+  authn_is_administrator: boolean;
 }) {
   const course_instances = await selectCourseInstancesWithStaffAccess({
     course_id,
-    user_id: resLocals.authn_user.user_id,
-    authn_user_id: resLocals.authn_user.user_id,
-    is_administrator: resLocals.authn_is_administrator,
-    authn_is_administrator: resLocals.authn_is_administrator,
+    user_id,
+    authn_user_id,
+    is_administrator,
+    authn_is_administrator,
   });
 
   return course_instances.filter((ci) => ci.has_course_instance_permission_edit);
 }
 
-async function coursesAllowedToLink({ resLocals }: { resLocals: Record<string, any> }) {
+async function coursesAllowedToLink({
+  user_id,
+  is_administrator,
+}: {
+  user_id: string;
+  is_administrator: boolean;
+}) {
   const courses = await selectCoursesWithEditAccess({
-    user_id: resLocals.authn_user.user_id,
-    is_administrator: resLocals.authn_is_administrator,
+    user_id,
+    is_administrator,
   });
 
   return courses.filter((c) => c.permissions_course.has_course_permission_edit);
@@ -65,22 +78,29 @@ router.get(
   asyncHandler(async (req, res) => {
     const course_instances = await courseInstancesAllowedToLink({
       course_id: z.coerce.string().parse(req.query.unsafe_course_id),
-      resLocals: res.locals,
+      user_id: res.locals.authn_user.user_id,
+      authn_user_id: res.locals.autn_user.user_id,
+      is_administrator: res.locals.is_administrator,
+      authn_is_administrator: res.locals.authn_is_administrator,
     });
 
-    let options: string;
+    let options: HtmlSafeString;
 
     if (course_instances.length === 0) {
-      options =
-        '<option disabled selected>No course instances found where you have student data editor permissions</option>';
+      options = html`<option disabled selected>
+        No course instances found where you have student data editor permissions
+      </option>`;
     } else {
-      options = course_instances.reduce((html, ci) => {
-        html += `<option value="${ci.id}">${ci.short_name}: ${ci.long_name}</option>\n`;
-        return html;
-      }, '');
+      options = course_instances.reduce(
+        (output, ci) => {
+          return html`${output}
+            <option value="${ci.id}">${ci.short_name}: ${ci.long_name}</option>`;
+        },
+        html``,
+      );
     }
 
-    res.send(options);
+    res.send(options.toString());
   }),
 );
 
@@ -153,12 +173,17 @@ router.get(
       return;
     }
 
+    console.log(res.locals);
+
     // Instructors get a prompt for linking
     res.send(
       Lti13CourseNavigationInstructor({
         resLocals: res.locals,
         courseName,
-        courses: await coursesAllowedToLink({ resLocals: res.locals }),
+        courses: await coursesAllowedToLink({
+          user_id: res.locals.authn_user.user_id,
+          is_administrator: res.locals.is_administrator,
+        }),
         originalUrl: req.originalUrl,
       }),
     );
@@ -187,14 +212,18 @@ router.post(
 
     const courseInstancesAllowed = await courseInstancesAllowedToLink({
       course_id: course_instance.course_id,
-      resLocals: res.locals,
+      user_id: res.locals.authn_user.user_id,
+      authn_user_id: res.locals.authn_user.user_id,
+      is_administrator: res.locals.is_administrator,
+      authn_is_administrator: res.locals.authn_is_administrator,
     });
     const hasCourseInstanceAllowed = courseInstancesAllowed.some(
       (ci) => ci.id === course_instance.id,
     );
 
     const coursesAllowed = await coursesAllowedToLink({
-      resLocals: res.locals,
+      user_id: res.locals.authn_user.user_id,
+      is_administrator: res.locals.is_administrator,
     });
     const hasCourseAllowed = coursesAllowed.some((c) => c.id === course_instance.course_id);
 
