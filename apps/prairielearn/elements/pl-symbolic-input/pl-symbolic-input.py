@@ -83,8 +83,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
             )
-        except phs.BaseSympyError:
-            raise ValueError(f'Parsing correct answer "{a_true}" for "{name}" failed.')
+        except phs.BaseSympyError as exc:
+            raise ValueError(
+                f'Parsing correct answer "{a_true}" for "{name}" failed.'
+            ) from exc
 
         data["correct_answers"][name] = a_true
 
@@ -139,7 +141,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "allow_complex": allow_complex,
     }
 
-    with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     info = chevron.render(template, info_params).strip()
@@ -170,12 +172,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
-    else:
-        # Use the existing format text in the invalid popup and render it
-        if parse_error is not None:
-            parse_error += chevron.render(
-                template, {"format_error": True, "format_string": info}
-            ).strip()
+    # Use the existing format text in the invalid popup and render it
+    elif parse_error is not None:
+        parse_error += chevron.render(
+            template, {"format_error": True, "format_string": info}
+        ).strip()
 
     # Next, get some attributes we will use in multiple places
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
@@ -329,7 +330,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = a_sub_json
     except Exception:
         data["format_errors"][name] = (
-            f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed):s}$$"
+            f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed)}$$"
         )
         data["submitted_answers"][name] = None
 

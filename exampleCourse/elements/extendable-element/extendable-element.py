@@ -2,7 +2,7 @@ import chevron
 import prairielearn as pl
 
 
-def render(element_html, data):
+def render(_element_html, data):
     extensions = pl.load_all_extensions(data)
     ext_params = []
     for name, ext in extensions.items():
@@ -14,5 +14,5 @@ def render(element_html, data):
                 ),
             }
         )
-    with open("extendable-element.mustache", "r") as f:
+    with open("extendable-element.mustache") as f:
         return chevron.render(f.read(), {"extensions": ext_params}).strip()

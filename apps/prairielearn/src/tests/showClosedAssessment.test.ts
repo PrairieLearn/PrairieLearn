@@ -59,13 +59,12 @@ describe('Exam assessment with showCloseAssessment access rule', function () {
   });
 
   step('start the exam', async () => {
-    const form = {
-      __action: 'new_instance',
-      __csrf_token: context.__csrf_token,
-    };
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'new_instance',
+        __csrf_token: context.__csrf_token,
+      }),
       headers,
     });
     assert.isTrue(response.ok);
@@ -83,13 +82,12 @@ describe('Exam assessment with showCloseAssessment access rule', function () {
   });
 
   step('simulate a time limit expiration', async () => {
-    const form = {
-      __action: 'timeLimitFinish',
-      __csrf_token: context.__csrf_token,
-    };
     const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'timeLimitFinish',
+        __csrf_token: context.__csrf_token,
+      }),
       headers: headersTimeLimit,
     });
     assert.equal(response.status, 403);
