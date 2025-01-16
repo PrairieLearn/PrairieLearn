@@ -19,6 +19,8 @@ router.get(
       AssessmentSetSchema,
     );
 
+    console.log('assessmentSets', assessmentSets);
+
     res.send(InstructorCourseAdminSets({ resLocals: res.locals, assessmentSets }));
   }),
 );
