@@ -107,15 +107,3 @@ export async function selectCourseHasCourseInstances({
 }): Promise<boolean> {
   return await queryRow(sql.select_course_has_course_instances, { course_id }, z.boolean());
 }
-
-/**
- * Get the first course instance for a course. Used by the onboarding checklist
- * to find a course instance where an assessment can be created from.
- */
-export async function selectFirstCourseInstance({ course_id }: { course_id: string }) {
-  return await queryRow(
-    sql.select_first_course_instance,
-    { course_id },
-    CourseInstanceSchema,
-  );
-}

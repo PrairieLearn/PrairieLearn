@@ -2,10 +2,9 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import {
-  selectCourseHasCourseInstances,
-  selectFirstCourseInstance,
-} from '../models/course-instances.js';
+import { selectCourseHasCourseInstances } from '../models/course-instances.js';
+
+import { CourseInstanceSchema } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -31,8 +30,12 @@ export async function getOnboardingSteps({
 
   // If the course has a course instance, link to the assessments page for the first course instance.
   if (courseHasCourseInstance) {
-    const first_course_instance = await selectFirstCourseInstance({ course_id });
-    assessmentsPageLink = `/pl/course_instance/${first_course_instance.id}/instructor/instance_admin/assessments`;
+    const firstCourseInstance = await queryRow(
+      sql.select_first_course_instance,
+      { course_id },
+      CourseInstanceSchema,
+    );
+    assessmentsPageLink = `/pl/course_instance/${firstCourseInstance.id}/instructor/instance_admin/assessments`;
   }
 
   // Check if the course has at least 2 staff members, since the course creator

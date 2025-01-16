@@ -36,4 +36,15 @@ SELECT
       a.deleted_at IS NULL
       AND ci.course_id = $course_id
       AND ci.deleted_at IS NULL
-  )
+  );
+
+-- BLOCK select_first_course_instance
+SELECT
+  *
+FROM
+  course_instances
+WHERE
+  course_id = $course_id
+  AND deleted_at IS NULL
+LIMIT
+  1;

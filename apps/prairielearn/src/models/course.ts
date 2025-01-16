@@ -217,7 +217,7 @@ export async function updateCourseOnboardingDismissed({
   course_id: string;
   onboarding_dismissed: boolean;
 }) {
-  return await queryAsync(sql.update_course_onboarding_dismissed, {
+  await queryAsync(sql.update_course_onboarding_dismissed, {
     course_id,
     onboarding_dismissed,
   });

@@ -14,9 +14,6 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    if (res.locals.course.onboarding_dismissed) {
-      throw new HttpStatusError(400, 'Onboarding checklist already dismissed');
-    }
     res.send(
       InstructorCourseAdminOnboarding({
         resLocals: res.locals,

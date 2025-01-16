@@ -21,7 +21,7 @@ export function InstructorCourseAdminOnboarding({
       </head>
       <body>
         ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
+        <main id="content" class="container">
           ${CourseSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
             course: resLocals.course,
@@ -32,32 +32,28 @@ export function InstructorCourseAdminOnboarding({
               <h1>Onboarding checklist</h1>
             </div>
             <div class="card-body text-left" style="text-wrap: balance;">
-              <div class="container">
-                <p class="mb-3">
-                  Complete these task suggestions to finish setting up your course.
-                </p>
-                <div class="list-group mb-3">
-                  ${steps.map((step, index) =>
-                    OnboardingStep({
-                      stepNumber: index + 1,
-                      step,
-                    }),
-                  )}
-                </div>
-                ${canDismiss
-                  ? html` <form method="POST">
-                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                      <button
-                        name="__action"
-                        value="dismiss_onboarding"
-                        class="btn btn-sm btn-primary"
-                        type="submit"
-                      >
-                        Dismiss onboarding
-                      </button>
-                    </form>`
-                  : ''}
+              <p class="mb-3">Complete these task suggestions to finish setting up your course.</p>
+              <div class="list-group mb-3">
+                ${steps.map((step, index) =>
+                  OnboardingStep({
+                    stepNumber: index + 1,
+                    step,
+                  }),
+                )}
               </div>
+              ${canDismiss
+                ? html` <form method="POST">
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                    <button
+                      name="__action"
+                      value="dismiss_onboarding"
+                      class="btn btn-sm btn-primary"
+                      type="submit"
+                    >
+                      Dismiss onboarding
+                    </button>
+                  </form>`
+                : ''}
             </div>
           </div>
         </main>
