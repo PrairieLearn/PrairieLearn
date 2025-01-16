@@ -96,8 +96,7 @@ export function InstructorQuestionSettings({
           }
 
           .ts-wrapper.multi .ts-control > span.active {
-            /* Fallback for Bootstrap 4; we can remove when we drop support for it. */
-            background-color: var(--bs-primary, #0d6efd) !important;
+            background-color: var(--bs-primary) !important;
             color: white !important;
           }
         </style>

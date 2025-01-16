@@ -1160,7 +1160,7 @@ Displays question content within a card-styled component. Optionally displays a 
 
 #### Details
 
-The `pl-card` attributes mirror the options of [Bootstrap 4 cards](https://getbootstrap.com/docs/4.6/components/card/).
+The `pl-card` attributes mirror the options of [Bootstrap cards](https://getbootstrap.com/docs/5.3/components/card/).
 
 #### Example implementations
 
