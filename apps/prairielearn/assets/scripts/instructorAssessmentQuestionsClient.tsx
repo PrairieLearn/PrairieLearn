@@ -3,17 +3,17 @@ import { Fragment, h, render } from 'preact';
 import React, { useEffect, useState } from 'preact/hooks';
 import { signal } from '@preact/signals';
 
-import { IssueBadge } from '../../src/components/IssueBadge.html.js';
 import { SyncProblemButton } from '../../src/components/SyncProblemButton.html.js';
-import { AssessmentBadge } from '../../src/components/AssessmentBadge.html.js';
-import { TagBadgeList } from '../../src/components/TagBadge.html.js';
-import { TopicBadge } from '../../src/components/TopicBadge.html.js';
 
 import { onDocumentReady, templateFromAttributes, decodeData } from '@prairielearn/browser-utils';
 
 import { histmini } from './lib/histmini.js';
 
-import { AssessmentQuestionRow } from '../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
+import {
+  AssessmentAlternativeQuestion,
+  AssessmentQuestionRow,
+  Zone,
+} from '../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
 
 onDocumentReady(() => {
   $('#resetQuestionVariantsModal').on('show.bs.modal', (e) => {
@@ -35,9 +35,53 @@ onDocumentReady(() => {
     assessmentQuestionsTable.dataset.hasCoursePermissionPreview === 'true';
   const hasCourseInstancePermissionEdit =
     assessmentQuestionsTable.dataset.hasCourseInstancePermissionEdit === 'true';
-  let questions = signal<AssessmentQuestionRow[]>(decodeData('assessment-questions-data'));
+  let questionsData = decodeData('assessment-questions-data');
   let editMode = signal(false);
   let editedQuestion = signal<AssessmentQuestionRow | null>(null);
+  let editedZone = signal<Zone | null>(null);
+  const editZoneModal = document.querySelector('.js-edit-zone-modal') as HTMLElement;
+  const editQuestionModal = document.querySelector('.js-edit-question-modal') as HTMLElement;
+
+  let zones: Zone[] = [];
+  let currentZone: Zone = {
+    title: null,
+    maxPoints: null,
+    numberChoose: null,
+    bestQuestions: null,
+    questions: [],
+    advanceScorePerc: null,
+    gradeRateMinutes: null,
+  };
+  questionsData.map((question: AssessmentQuestionRow, i: number) => {
+    if (question.start_new_zone && i !== 0) {
+      zones.push(currentZone);
+    }
+    if (question.start_new_zone) {
+      currentZone = {
+        title: question.zone_title ?? null,
+        maxPoints: question.zone_max_points ?? null,
+        numberChoose: question.zone_number_choose ?? null,
+        bestQuestions: question.zone_best_questions ?? null,
+        questions: [],
+        advanceScorePerc: question.assessment_question_advance_score_perc ?? null,
+        gradeRateMinutes: question.grade_rate_minutes ?? null,
+      };
+    }
+    if (question.alternative_group_size === 1) {
+      currentZone.questions?.push(question);
+    } else if (question.start_new_alternative_group) {
+      currentZone.questions?.push({
+        ...question,
+        alternatives: [question],
+      });
+    } else {
+      if (currentZone.questions) {
+        currentZone.questions[currentZone.questions.length - 1].alternatives?.push(question);
+      }
+    }
+  });
+  zones.push(currentZone);
+  let resolvedZones = signal(zones);
 
   function EditModeButtons() {
     return (
@@ -65,12 +109,9 @@ onDocumentReady(() => {
 
   render(<EditModeButtons />, document.querySelector('.js-edit-mode-buttons') as HTMLElement);
 
-  const modal = document.querySelector('.js-edit-question-modal') as HTMLElement;
   function AssessmentQuestionsTable() {
     // If at least one question has a nonzero unlock score, display the Advance Score column
-    const showAdvanceScorePercCol =
-      questions.value.map((q) => q.assessment_question_advance_score_perc !== 0).length >= 1;
-
+    const showAdvanceScorePercCol = true;
     const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
     function maxPoints({
@@ -96,238 +137,323 @@ onDocumentReady(() => {
       }
     }
 
-    const handleEdit = (question: AssessmentQuestionRow, i: number) => {
+    const handleEditZone = ({ zone, zoneIndex }: { zone: Zone; zoneIndex: number }) => {
+      editedZone.value = { ...zone };
+      render(<EditZoneModal zone={zone} zoneIndex={zoneIndex} />, editZoneModal);
+      Modal.getOrCreateInstance(editZoneModal).show();
+    };
+
+    const handleDeleteZone = (question: AssessmentQuestionRow, i: number) => {
+      console.log(question);
+    };
+
+    const handleEditQuestion = ({
+      question,
+      zoneIndex,
+      questionIndex,
+      alternativeGroupIndex,
+    }: {
+      question: AssessmentQuestionRow;
+      zoneIndex: number;
+      questionIndex: number;
+      alternativeGroupIndex?: number;
+    }) => {
       editedQuestion.value = { ...question };
-      render(<EditQuestionModal question={question} i={i} />, modal);
-      Modal.getOrCreateInstance(modal).show();
+      render(
+        <EditQuestionModal
+          question={question}
+          zoneIndex={zoneIndex}
+          questionIndex={questionIndex}
+          alternativeGroupIndex={alternativeGroupIndex ?? undefined}
+        />,
+        editQuestionModal,
+      );
+      Modal.getOrCreateInstance(editQuestionModal).show();
     };
 
-    const handleDelete = (question: AssessmentQuestionRow, i: number) => {
-      const update = questions.value.filter((q) => q !== question);
-      if (update.length === 0) {
-        questions.value = [];
+    const handleDeleteQuestion = ({
+      question,
+      zoneIndex,
+      questionIndex,
+      alternativeGroupIndex,
+    }: {
+      question: AssessmentQuestionRow;
+      zoneIndex: number;
+      questionIndex: number;
+      alternativeGroupIndex?: number;
+    }) => {
+      const update = [...resolvedZones.value];
+      if (alternativeGroupIndex || alternativeGroupIndex === 0) {
+        update[zoneIndex].questions[questionIndex].alternatives?.splice(alternativeGroupIndex, 1);
+        if (update[zoneIndex].questions[questionIndex].alternatives?.length === 0) {
+          update[zoneIndex].questions.splice(questionIndex, 1);
+        }
       } else {
-        if (question.start_new_zone) {
-          update[i].start_new_zone = true;
-        }
-        if (question.start_new_alternative_group) {
-          update[i].start_new_alternative_group = true;
-        }
-        questions.value = [...update];
+        update[zoneIndex].questions.splice(questionIndex, 1);
       }
+      resolvedZones.value = [...update];
     };
 
-    let zoneNumber = 0;
-    let alternativeGroupNumber = 0;
-    let numberInAlternativeGroup = 1;
-    const questionRowMap = questions.value.map((question, i: number) => {
-      if (question.start_new_zone) {
-        zoneNumber++;
-      }
-      if (question.start_new_alternative_group || question.alternative_group_size === 1) {
-        alternativeGroupNumber++;
-      } else {
-        numberInAlternativeGroup++;
-      }
-      const number =
-        question.alternative_group_size === 1
-          ? `${alternativeGroupNumber}.`
-          : `${alternativeGroupNumber}.${numberInAlternativeGroup}.`;
+    let questionNumber = 0;
+    const questionRow = ({
+      question,
+      zoneIndex,
+      questionIndex,
+      alternativeGroupIndex,
+    }: {
+      question: AssessmentQuestionRow | AssessmentAlternativeQuestion;
+      zoneIndex: number;
+      questionIndex: number;
+      alternativeGroupIndex?: number;
+    }) => {
+      return (
+        <tr>
+          {editMode.value ? (
+            <>
+              <td></td>
+              <td>
+                <button
+                  class="btn btn-sm btn-secondary"
+                  onClick={() =>
+                    handleEditQuestion({
+                      question,
+                      zoneIndex,
+                      questionIndex,
+                      alternativeGroupIndex,
+                    })
+                  }
+                >
+                  <i class="fa fa-edit" aria-hidden="true"></i>
+                </button>
+              </td>
+              <td>
+                <button
+                  class="btn btn-sm btn-danger"
+                  onClick={() =>
+                    handleDeleteQuestion({
+                      question,
+                      zoneIndex,
+                      questionIndex,
+                      alternativeGroupIndex,
+                    })
+                  }
+                >
+                  <i class="fa fa-trash" aria-hidden="true"></i>
+                </button>
+              </td>
+            </>
+          ) : (
+            ''
+          )}
+          <td>
+            {hasCoursePermissionPreview ? (
+              <>
+                <a href={`${urlPrefix}/question/${question.question_id}/`}>
+                  {questionNumber}.
+                  {alternativeGroupIndex || alternativeGroupIndex === 0
+                    ? `${alternativeGroupIndex + 1} `
+                    : ' '}
+                  {question.title}
+                </a>{' '}
+                {/* TODO: make this issue badge a component */}
+                {question.open_issue_count ? (
+                  <a
+                    class="badge badge-pill badge-danger"
+                    href={`${urlPrefix}/course_admin/issues${
+                      question.qid ? `?q=is%3Aopen+qid%3A${encodeURIComponent(question.qid)}` : ''
+                    }`}
+                    aria-label={`${question.open_issue_count} open ${question.open_issue_count === 1 ? 'issue' : 'issues'}`}
+                  >
+                    {question.open_issue_count ?? 0}
+                  </a>
+                ) : (
+                  ''
+                )}
+              </>
+            ) : (
+              { questionNumber }
+            )}
+          </td>
+          <td>
+            {question.sync_errors
+              ? SyncProblemButton({
+                  type: 'error',
+                  output: question.sync_errors,
+                })
+              : question.sync_warnings
+                ? SyncProblemButton({
+                    type: 'warning',
+                    output: question.sync_warnings,
+                  })
+                : ''}
+            {question.display_name}
+          </td>
+          <td>
+            <span class={`badge color-${question.topic?.color}`}>{question.topic?.name}</span>
+          </td>
+          <td>
+            {question.tags?.map((tag) => {
+              return <span class={`badge color-${tag.color}`}>{tag.name}</span>;
+            })}
+          </td>
+          <td>
+            {maxPoints({
+              max_auto_points: question.max_auto_points ?? 0,
+              max_manual_points: question.max_manual_points ?? 0,
+              auto_points_list: question.auto_points_list ?? [],
+              init_points: question.init_points ?? 0,
+            })}
+          </td>
+          <td>{question.max_manual_points || '—'}</td>
+          {showAdvanceScorePercCol ? (
+            <td
+              class="${question.assessment_question_advance_score_perc === 0
+                                 ? 'text-muted'
+                                 : ''}"
+              data-testid="advance-score-perc"
+            >
+              {question.assessment_question_advance_score_perc}%
+            </td>
+          ) : (
+            ''
+          )}
+          <td>
+            {question.mean_question_score ? `${question.mean_question_score.toFixed(3)}%` : ''}
+          </td>
+          <td class="text-center">
+            {question.number_submissions_hist ? (
+              <div
+                class="js-histmini"
+                data-data={`${JSON.stringify(question.number_submissions_hist)}`}
+                data-options={`${JSON.stringify({ width: 60, height: 20 })}`}
+              ></div>
+            ) : (
+              ''
+            )}
+          </td>
+          <td>
+            {question.other_assessments?.map((assessment) => {
+              return (
+                <a
+                  href={`${urlPrefix}/assessment/${assessment.assessment_id}`}
+                  class={`btn btn-badge color-${assessment.color}`}
+                >
+                  {assessment.label}
+                </a>
+              );
+            })}
+          </td>
+          <td class="text-right">
+            <div class="dropdown js-question-actions">
+              <button
+                type="button"
+                class="btn btn-secondary btn-xs dropdown-toggle"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                Action <span class="caret"></span>
+              </button>
 
-      const issueBadge = IssueBadge({
-        urlPrefix,
-        count: question.open_issue_count ?? 0,
-        issueQid: question.qid,
-      });
+              <div class="dropdown-menu">
+                {hasCourseInstancePermissionEdit ? (
+                  <button
+                    class="dropdown-item"
+                    data-toggle="modal"
+                    data-target="#resetQuestionVariantsModal"
+                    data-assessment-question-id="${question.id}"
+                  >
+                    Reset question variants
+                  </button>
+                ) : (
+                  <button class="dropdown-item disabled" disabled>
+                    Must have editor permission
+                  </button>
+                )}
+              </div>
+            </div>
+          </td>
+        </tr>
+      );
+    };
 
-      const title = `${number} ${question.title}`;
-
+    const zoneRowMap = resolvedZones.value.map((zone, zoneIndex) => {
       return (
         <>
-          {question.start_new_zone ? (
-            <tr key={`zone-${i}`}>
-              <th colspan={nTableCols}>
-                Zone {zoneNumber}. {question.zone_title}
-                {question.zone_number_choose == null
-                  ? '(Choose all questions)'
-                  : question.zone_number_choose === 1
-                    ? '(Choose 1 question)'
-                    : `(Choose ${question.zone_number_choose} questions)`}
-                {question.zone_has_max_points ? `(maximum ${question.zone_max_points} points)` : ''}
-                {question.zone_has_best_questions
-                  ? `(best ${question.zone_best_questions} questions)`
-                  : ''}
-              </th>
-            </tr>
-          ) : (
-            ''
-          )}
-          {question.start_new_alternative_group && question.alternative_group_size > 1 ? (
-            <tr>
-              <td colspan={nTableCols}>
-                {alternativeGroupNumber}.
-                {question.alternative_group_number_choose == null
-                  ? 'Choose all questions from:'
-                  : question.alternative_group_number_choose === 1
-                    ? 'Choose 1 question from:'
-                    : `Choose ${question.alternative_group_number_choose} questions from:`}
-              </td>
-            </tr>
-          ) : (
-            ''
-          )}
-          <tr key={`question-${i}`}>
+          <tr key={`zone-${zoneIndex}`}>
             {editMode.value ? (
               <>
                 <td>
-                  <button class="btn btn-sm btn-secondary" onClick={() => handleEdit(question, i)}>
+                  <button
+                    class="btn btn-sm btn-secondary"
+                    onClick={() => handleEditZone({ zone, zoneIndex })}
+                  >
                     <i class="fa fa-edit" aria-hidden="true"></i>
-                  </button>
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-danger" onClick={() => handleDelete(question, i)}>
-                    <i class="fa fa-trash" aria-hidden="true"></i>
                   </button>
                 </td>
               </>
             ) : (
               ''
             )}
-            <td>
-              {hasCoursePermissionPreview ? (
-                <>
-                  <a href={`${urlPrefix}/question/${question.question_id}/`}>{title}</a>{' '}
-                  {/* TODO: make this issue badge a component */}
-                  {question.open_issue_count ? (
-                    <a
-                      class="badge badge-pill badge-danger"
-                      href={`${urlPrefix}/course_admin/issues${
-                        question.qid ? `?q=is%3Aopen+qid%3A${encodeURIComponent(question.qid)}` : ''
-                      }`}
-                      aria-label={`${question.open_issue_count} open ${question.open_issue_count === 1 ? 'issue' : 'issues'}`}
-                    >
-                      {question.open_issue_count ?? 0}
-                    </a>
-                  ) : (
-                    ''
-                  )}
-                </>
-              ) : (
-                { title }
-              )}
-            </td>
-            <td>
-              {question.sync_errors
-                ? SyncProblemButton({
-                    type: 'error',
-                    output: question.sync_errors,
-                  })
-                : question.sync_warnings
-                  ? SyncProblemButton({
-                      type: 'warning',
-                      output: question.sync_warnings,
-                    })
-                  : ''}
-              {question.display_name}
-            </td>
-            <td>
-              <span class={`badge color-${question.topic.color}`}>{question.topic.name}</span>
-            </td>
-            <td>
-              {question.tags?.map((tag) => {
-                return <span class={`badge color-${tag.color}`}>{tag.name}</span>;
-              })}
-            </td>
-            <td>
-              {maxPoints({
-                max_auto_points: question.max_auto_points ?? 0,
-                max_manual_points: question.max_manual_points ?? 0,
-                auto_points_list: question.auto_points_list ?? [],
-                init_points: question.init_points ?? 0,
-              })}
-            </td>
-            <td>{question.max_manual_points || '—'}</td>
-            {showAdvanceScorePercCol ? (
-              <td
-                class="${question.assessment_question_advance_score_perc === 0
-                          ? 'text-muted'
-                          : ''}"
-                data-testid="advance-score-perc"
-              >
-                {question.assessment_question_advance_score_perc}%
-              </td>
-            ) : (
-              ''
-            )}
-            <td>
-              {question.mean_question_score ? `${question.mean_question_score.toFixed(3)}%` : ''}
-            </td>
-            <td class="text-center">
-              {question.number_submissions_hist ? (
-                <div
-                  class="js-histmini"
-                  data-data={`${JSON.stringify(question.number_submissions_hist)}`}
-                  data-options={`${JSON.stringify({ width: 60, height: 20 })}`}
-                ></div>
-              ) : (
-                ''
-              )}
-            </td>
-            <td>
-              {question.other_assessments?.map((assessment) => {
-                return (
-                  <a
-                    href={`${urlPrefix}/assessment/${assessment.assessment_id}`}
-                    class={`btn btn-badge color-${assessment.color}`}
-                  >
-                    {assessment.label}
-                  </a>
-                );
-              })}
-            </td>
-            <td class="text-right">
-              <div class="dropdown js-question-actions">
-                <button
-                  type="button"
-                  class="btn btn-secondary btn-xs dropdown-toggle"
-                  data-toggle="dropdown"
-                  aria-haspopup="true"
-                  aria-expanded="false"
-                >
-                  Action <span class="caret"></span>
-                </button>
-
-                <div class="dropdown-menu">
-                  {hasCourseInstancePermissionEdit ? (
-                    <button
-                      class="dropdown-item"
-                      data-toggle="modal"
-                      data-target="#resetQuestionVariantsModal"
-                      data-assessment-question-id="${question.id}"
-                    >
-                      Reset question variants
-                    </button>
-                  ) : (
-                    <button class="dropdown-item disabled" disabled>
-                      Must have editor permission
-                    </button>
-                  )}
-                </div>
-              </div>
-            </td>
+            <th colspan={editMode.value ? nTableCols + 1 : nTableCols}>
+              Zone {zoneIndex + 1}. {zone.title}
+              {zone.numberChoose == null
+                ? '(Choose all questions)'
+                : zone.numberChoose === 1
+                  ? '(Choose 1 question)'
+                  : `(Choose ${zone.numberChoose} questions)`}
+              {zone.maxPoints ? `(maximum ${zone.maxPoints} points)` : ''}
+              {zone.bestQuestions ? `(best ${zone.bestQuestions} questions)` : ''}
+            </th>
           </tr>
+          {zone.questions?.map((question, questionIndex) => {
+            questionNumber++;
+            return (
+              <>
+                {question.start_new_alternative_group && question.alternative_group_size > 1 ? (
+                  <tr>
+                    <td colspan={nTableCols}>
+                      {questionNumber}.
+                      {question.alternative_group_number_choose == null
+                        ? ' Choose all questions from:'
+                        : question.alternative_group_number_choose === 1
+                          ? ' Choose 1 question from:'
+                          : ` Choose ${question.alternative_group_number_choose} questions from:`}
+                    </td>
+                  </tr>
+                ) : (
+                  ''
+                )}
+                {question.alternative_group_size > 1
+                  ? question.alternatives?.map(
+                      (
+                        alternativeQuestion: AssessmentAlternativeQuestion,
+                        alternativeGroupIndex,
+                      ) => {
+                        return questionRow({
+                          question: alternativeQuestion,
+                          zoneIndex,
+                          questionIndex,
+                          alternativeGroupIndex,
+                        });
+                      },
+                    )
+                  : questionRow({ question, zoneIndex, questionIndex })}
+              </>
+            );
+          })}
         </>
       );
     });
-
     return (
       <table class="table table-sm table-hover" aria-label="Assessment questions">
         <thead>
           <tr>
             {editMode.value ? (
               <>
-                <th>Edit</th>
-                <th>Delete</th>
+                <th></th>
+                <th></th>
+                <th></th>
               </>
             ) : (
               ''
@@ -341,25 +467,184 @@ onDocumentReady(() => {
             <th>Auto Points</th>
             <th>Manual Points</th>
             {showAdvanceScorePercCol ? <th>Advance Score</th> : ''}
+            {/* there is an issue with the Preact types here as 'width' is not recognized in 
+            'ThHTMLAttributes<HTMLTableCellElement>' */}
             <th width="100">Mean score</th>
             <th>Num. Submissions Histogram</th>
             <th>Other Assessments</th>
             <th class="text-right">Actions</th>
           </tr>
         </thead>
-        <tbody>{questionRowMap}</tbody>
+        <tbody>{zoneRowMap}</tbody>
       </table>
     );
   }
   render(<AssessmentQuestionsTable />, assessmentQuestionsTable);
 
-  function EditQuestionModal({ question, i }: { question: AssessmentQuestionRow; i: number }) {
+  function EditZoneModal({ zone, zoneIndex }: { zone: Zone; zoneIndex: number }) {
+    const handleSubmit = () => {
+      Modal.getOrCreateInstance(editZoneModal).hide();
+      const update: Zone[] = resolvedZones.value.map((z) => ({ ...z }));
+      update[zoneIndex] = editedZone.value ?? update[zoneIndex];
+      resolvedZones.value = [...update];
+    };
+    return (
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h4">Edit Zone</h2>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="edit-zone-form">
+              <div class="form-group">
+                <label for="zoneTitleInput">Title</label>
+                <div class="input-group">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="zoneTitleInput"
+                    name="zoneTitle"
+                    aria-describedby="zoneTitleHelp"
+                    value={zone.title ?? ''}
+                    onChange={(e) => {
+                      if (editedZone.value) {
+                        editedZone.value.title = (e.target as HTMLInputElement).value;
+                      }
+                    }}
+                  />
+                </div>
+                <small id="zoneNameHelp" class="form-text text-muted">
+                  {' '}
+                  The name of the zone.{' '}
+                </small>
+              </div>
+              <div class="form-group">
+                <label for="bestQuestionsInput">Best Questions</label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="bestQuestionsInput"
+                    name="bestQuestions"
+                    aria-describedby="bestQuestionsHelp"
+                    value={zone.bestQuestions ?? ''}
+                    onChange={(e) => {
+                      if (editedZone.value) {
+                        if ((e.target as HTMLInputElement).value === '') {
+                          editedZone.value.bestQuestions = null;
+                        } else {
+                          editedZone.value.bestQuestions = (
+                            e.target as HTMLInputElement
+                          ).valueAsNumber;
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <small id="bestQuestionsHelp" class="form-text text-muted">
+                  Number of questions with the highest number of awarded points will count towards
+                  the total. Leave blank to allow points from all questions.
+                </small>
+              </div>
+              <div class="form-group">
+                <label for="numberChooseInput">Number Choose</label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="numberChooseInput"
+                    name="numberChoose"
+                    aria-describedby="numberChooseHelp"
+                    value={zone.numberChoose ?? ''}
+                    onChange={(e) => {
+                      if (editedZone.value) {
+                        if ((e.target as HTMLInputElement).value === '') {
+                          editedZone.value.numberChoose = null;
+                        } else {
+                          editedZone.value.numberChoose = (
+                            e.target as HTMLInputElement
+                          ).valueAsNumber;
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <small id="bestQuestionsHelp" class="form-text text-muted">
+                  Number of questions the student can choose from. Leave blank for all questions.
+                </small>
+              </div>
+              <div class="form-group">
+                <label for="maxPointsInput">Max Points</label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="maxPointsInput"
+                    name="maxPoints"
+                    aria-describedby="maxPointsHelp"
+                    value={zone.maxPoints ?? ''}
+                    onChange={(e) => {
+                      if (editedZone.value) {
+                        if ((e.target as HTMLInputElement).value === '') {
+                          editedZone.value.maxPoints = null;
+                        }
+                        editedZone.value.maxPoints = (e.target as HTMLInputElement).valueAsNumber;
+                      }
+                    }}
+                  />
+                </div>
+                <small id="maxPointssHelp" class="form-text text-muted">
+                  Only this many of the points that are awarded for answering questions in this zone
+                  will count toward the total points.
+                </small>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Close
+            </button>
+            <button type="button" class="btn btn-primary" onClick={() => handleSubmit()}>
+              Save changes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function EditQuestionModal({
+    question,
+    zoneIndex,
+    questionIndex,
+    alternativeGroupIndex,
+  }: {
+    question: AssessmentQuestionRow;
+    zoneIndex: number;
+    questionIndex: number;
+    alternativeGroupIndex?: number;
+  }) {
     const [autoGraded, setAutoGraded] = useState(question.max_manual_points === 0);
     const handleSubmit = () => {
-      Modal.getOrCreateInstance(document.querySelector('.js-edit-question-modal')).hide();
-      const update: AssessmentQuestionRow[] = questions.value.map((q) => ({ ...q }));
-      update[i] = editedQuestion.value ?? update[i];
-      questions.value = [...update];
+      Modal.getOrCreateInstance(editQuestionModal).hide();
+      const update: Zone[] = resolvedZones.value.map((z) => ({ ...z }));
+      if (update[zoneIndex].questions) {
+        if (alternativeGroupIndex && update[zoneIndex].questions[questionIndex].alternatives) {
+          update[zoneIndex].questions[questionIndex].alternatives[alternativeGroupIndex] =
+            editedQuestion.value ??
+            update[zoneIndex].questions[questionIndex].alternatives[alternativeGroupIndex];
+        } else {
+          update[zoneIndex].questions[questionIndex] =
+            editedQuestion.value ?? update[zoneIndex].questions[questionIndex];
+        }
+      }
+      resolvedZones.value = [...update];
     };
     useEffect(() => {
       setAutoGraded(question.max_manual_points === 0);
@@ -504,6 +789,7 @@ onDocumentReady(() => {
                             editedQuestion.value.max_manual_points = (
                               e.target as HTMLInputElement
                             ).valueAsNumber;
+                            editedQuestion.value.init_points = 0;
                           }
                         }}
                       />
@@ -585,54 +871,28 @@ onDocumentReady(() => {
       advanceScorePerc?: number;
       gradeRateMinutes?: number;
     }
-    let zones: Zone[] = [];
-    let currentZone: Zone = {
-      questions: [],
-    };
-    function addZone() {
+    const zones = resolvedZones.value.map((zone, i) => {
       const resolvedZone: Zone = Object.fromEntries(
-        Object.entries(currentZone).filter(([_, value]) => value && value !== 0),
+        Object.entries(zone).filter(([_, value]) => value && value !== 0),
       );
-      zones.push(resolvedZone);
-    }
-    questions.value.map((question, i) => {
-      if (question.start_new_zone && i !== 0) {
-        addZone();
-      }
-      if (question.start_new_zone) {
-        currentZone = {
-          title: question.zone_title ?? undefined,
-          maxPoints: question.zone_max_points ?? 0,
-          numberChoose: question.zone_number_choose ?? 0,
-          bestQuestions: question.zone_best_questions ?? 0,
-          questions: [],
-          advanceScorePerc: question.assessment_question_advance_score_perc ?? 0,
-          gradeRateMinutes: question.grade_rate_minutes ?? 0,
-        };
-      }
-      if (question.number_in_alternative_group === 1) {
-        const questionData = {
+      resolvedZone.questions = zone.questions.map((question) => {
+        const resolvedQuestion = {
           id: question.alternative_group_size === 1 ? question.qid : null,
           autoPoints:
             assessmentType === 'Homework' ? question.init_points : question.auto_points_list,
           maxAutoPoints: assessmentType === 'Homework' ? question.max_auto_points : null,
           manualPoints: question.max_manual_points ?? null,
-          alternatives: question.alternative_group_size > 1 ? [question.qid] : null,
+          alternatives:
+            question.alternative_group_size > 1 ? question.alternatives?.map((a) => a.qid) : null,
           forceMaxPoints: question.force_max_points ?? false,
           triesPerVariant: question.tries_per_variant === 1 ? null : question.tries_per_variant,
         };
-        currentZone.questions?.push(
-          Object.fromEntries(
-            Object.entries(questionData).filter(([_, value]) => value && value !== 0),
-          ),
+        return Object.fromEntries(
+          Object.entries(resolvedQuestion).filter(([_, value]) => value && value !== 0),
         );
-      } else {
-        if (currentZone.questions) {
-          currentZone.questions[currentZone.questions.length - 1].alternatives.push(question.qid);
-        }
-      }
+      });
+      return resolvedZone;
     });
-    addZone();
     document.querySelector('.js-zones-input')?.setAttribute('value', JSON.stringify(zones));
     (document.querySelector('#zonesForm') as HTMLFormElement)?.submit();
   }

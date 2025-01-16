@@ -63,9 +63,6 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_assessment_questions') {
-      // console.log(req.body);
-      // flash('success', 'Assessment questions updated successfully');
-      // return res.redirect(req.originalUrl);
       const assessmentPath = path.join(
         res.locals.course.path,
         'courseInstances',
