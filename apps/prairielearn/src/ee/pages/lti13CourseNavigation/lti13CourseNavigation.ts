@@ -76,10 +76,20 @@ async function coursesAllowedToLink({
 router.get(
   '/course_instances',
   asyncHandler(async (req, res) => {
-    const course_instances = await courseInstancesAllowedToLink({
-      course_id: z.coerce.string().parse(req.query.unsafe_course_id),
+    const courses = await coursesAllowedToLink({
       user_id: res.locals.authn_user.user_id,
-      authn_user_id: res.locals.autn_user.user_id,
+      is_administrator: res.locals.is_administrator,
+    });
+
+    const course = courses.find((c) => c.id === req.query.unsafe_course_id);
+    if (!course) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
+
+    const course_instances = await courseInstancesAllowedToLink({
+      course_id: course.id,
+      user_id: res.locals.authn_user.user_id,
+      authn_user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.is_administrator,
       authn_is_administrator: res.locals.authn_is_administrator,
     });
