@@ -35,7 +35,8 @@ export async function getOnboardingSteps({
     assessmentsPageLink = `/pl/course_instance/${first_course_instance.id}/instructor/instance_admin/assessments`;
   }
 
-  // Check if the course has at least 2 staff members. If so,
+  // Check if the course has at least 2 staff members, since the course creator
+  // is added by default.
   const courseHasAddedStaff = await queryRow(
     sql.select_course_has_staff,
     { course_id },

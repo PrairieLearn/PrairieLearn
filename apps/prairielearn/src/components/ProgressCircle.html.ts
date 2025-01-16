@@ -12,12 +12,25 @@ export function ProgressCircle({
   const progressCircleCircumference = 2 * Math.PI * 8;
 
   // The complete portion length is proportional to the percentage of the tasks that are complete
-  const completePortionLength = progressCircleCircumference * (numComplete / numTotal);
+  let completePortionLength = progressCircleCircumference * (numComplete / numTotal);
 
-  // The incomplete portion length is the rest of the circumference
-  const incompletePortionLength = progressCircleCircumference - completePortionLength;
+  // Ensure that the complete portion is not longer than the progress circle's circumference
+  completePortionLength = Math.min(completePortionLength, progressCircleCircumference);
+
+  // Ensure that the complete portion has a non-negative length
+  completePortionLength = Math.max(completePortionLength, 0);
 
   const completePortionLengthFixed = completePortionLength.toFixed(2);
+
+  // The incomplete portion length is the rest of the circumference
+  let incompletePortionLength = progressCircleCircumference - completePortionLength;
+
+  // Ensure that the incomplete portion is not longer than the progress circle's circumference
+  incompletePortionLength = Math.min(incompletePortionLength, progressCircleCircumference);
+
+  // Ensure that the incomplete portion has a non-negative length
+  incompletePortionLength = Math.max(incompletePortionLength, 0);
+
   const incompletePortionLengthFixed = incompletePortionLength.toFixed(2);
 
   return html`<svg

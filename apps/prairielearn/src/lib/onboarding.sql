@@ -8,6 +8,7 @@ SELECT
     WHERE
       cp.course_id = $course_id
     OFFSET
+      -- Offset by 1 to check for at least 2 staff members, since the course creator is added by default
       1
   );
 
@@ -30,7 +31,7 @@ SELECT
       1
     FROM
       assessments AS a
-      LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+      INNER JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     WHERE
       a.deleted_at IS NULL
       AND ci.course_id = $course_id
