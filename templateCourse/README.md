@@ -7,4 +7,4 @@ You can see and edit a live version at [https://prairielearn.com](https://prairi
 
 ### Getting Help
 
-Need help understanding an error or creating content? Visit [https://www.prairielearn.com/support](https://www.prairielearn.com/support).
+Need help understanding an error or creating content? Visit [https://www.prairielearn.com/support](https://www.prairielearn.com/support)
