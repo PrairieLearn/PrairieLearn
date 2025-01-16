@@ -103,7 +103,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 ## HTML style
 
-- Use [Bootstrap](http://getbootstrap.com) as the style. As of 2024-06-05 we are using v4.
+- Use [Bootstrap](http://getbootstrap.com) as the style. As of 2025-01-01 we are using Bootstrap 5.
 
 - Local CSS rules go in `public/stylesheets/local.css`. Try to minimize use of this and use plain Bootstrap styling wherever possible.
 
