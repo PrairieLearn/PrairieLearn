@@ -95,7 +95,8 @@ INSERT INTO
     path,
     repository,
     branch,
-    institution_id
+    institution_id,
+    show_onboarding
   )
 VALUES
   (
@@ -105,7 +106,8 @@ VALUES
     $path,
     $repository,
     $branch,
-    $institution_id
+    $institution_id,
+    TRUE
   )
 RETURNING
   *;
