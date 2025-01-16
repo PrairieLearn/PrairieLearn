@@ -411,12 +411,12 @@ export async function loadFullCourse(
   courseDir: string,
 ): Promise<CourseData> {
   const questions = await loadQuestions(courseDir);
-  const questionTagsInUse = new Set<string>();
+  const tagsInUse = new Set<string>();
 
   for (const question of Object.values(questions)) {
     if (question.data?.tags) {
       for (const tag of question.data.tags) {
-        questionTagsInUse.add(tag);
+        tagsInUse.add(tag);
       }
     }
   }
@@ -459,7 +459,7 @@ export async function loadFullCourse(
     courseId,
     coursePath: courseDir,
     assessmentSetsInUse,
-    questionTagsInUse,
+    tagsInUse,
   });
 
   return {
@@ -680,12 +680,12 @@ export async function loadCourseInfo({
   courseId,
   coursePath,
   assessmentSetsInUse,
-  questionTagsInUse,
+  tagsInUse,
 }: {
   courseId: string | null;
   coursePath: string;
   assessmentSetsInUse: Set<string>;
-  questionTagsInUse: Set<string>;
+  tagsInUse: Set<string>;
 }): Promise<InfoFile<Course>> {
   const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
     coursePath,
@@ -762,10 +762,10 @@ export async function loadCourseInfo({
     defaultAssessmentSetsInUse,
   );
 
-  // Question tags in DEFAULT_TAGS may be in use but not present in the course info JSON
-  // file. This ensures that default question tags are added if a question uses them, and
+  // Tags in DEFAULT_TAGS may be in use but not present in the course info JSON
+  // file. This ensures that default tags are added if a question uses them, and
   // removed if not.
-  const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => questionTagsInUse.has(tag.name));
+  const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => tagsInUse.has(tag.name));
 
   const tags = getFieldWithoutDuplicates('tags', 'name', defaultTagsInUse);
   const topics = getFieldWithoutDuplicates('topics', 'name');
