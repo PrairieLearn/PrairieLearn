@@ -52,7 +52,7 @@ export function InstructorCourseAdminOnboarding({
                   Dismiss onboarding
                 </button>
                 <small id="dismiss_onboarding_help" class="form-text text-muted">
-                  This page can be restored from the course settings later.
+                  This page can be restored from the course settings.
                 </small>
               </form>
             </div>
