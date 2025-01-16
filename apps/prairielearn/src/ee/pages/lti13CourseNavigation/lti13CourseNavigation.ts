@@ -178,6 +178,7 @@ router.get(
         Lti13CourseNavigationNotReady({
           resLocals: res.locals,
           courseName,
+          ltiRoles: ltiClaim.roles,
         }),
       );
       return;
