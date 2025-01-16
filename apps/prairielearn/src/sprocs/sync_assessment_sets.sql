@@ -112,7 +112,7 @@ BEGIN
         DELETE FROM assessment_sets AS aset
         WHERE
             aset.course_id = syncing_course_id
-            AND aset.name != ALL (used_assessment_set_names);
+            AND aset.name != ALL(COALESCE(used_assessment_set_names, '{}'::text[]));
     END IF;
 
     -- Internal consistency check. All assessments should have an

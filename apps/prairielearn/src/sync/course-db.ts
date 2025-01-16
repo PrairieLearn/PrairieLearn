@@ -462,8 +462,6 @@ export async function loadFullCourse(
     questionTagsInUse,
   });
 
-  console.log('Course info', courseInfo);
-
   return {
     course: courseInfo,
     questions,
@@ -723,7 +721,6 @@ export async function loadCourseInfo({
 
     (info[fieldName] || []).forEach((entry) => {
       const entryId = entry[entryIdentifier];
-      console.log('entryId', entryId);
       if (known.has(entryId)) {
         duplicateEntryIds.add(entryId);
       }
@@ -756,8 +753,6 @@ export async function loadCourseInfo({
     assessmentSetsInUse.has(set.name),
   );
 
-  console.log('defaultAssessmentSetsInUse', defaultAssessmentSetsInUse);
-
   const assessmentSets = getFieldWithoutDuplicates(
     'assessmentSets',
     'name',
@@ -766,12 +761,7 @@ export async function loadCourseInfo({
 
   const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => questionTagsInUse.has(tag.name));
 
-  console.log('defaultTagsInUse', defaultTagsInUse);
-
   const tags = getFieldWithoutDuplicates('tags', 'name', defaultTagsInUse);
-
-  console.log('tags', tags);
-
   const topics = getFieldWithoutDuplicates('topics', 'name');
   const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
 
