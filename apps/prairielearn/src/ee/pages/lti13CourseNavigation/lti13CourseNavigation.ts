@@ -173,8 +173,6 @@ router.get(
       return;
     }
 
-    console.log(res.locals);
-
     // Instructors get a prompt for linking
     res.send(
       Lti13CourseNavigationInstructor({
