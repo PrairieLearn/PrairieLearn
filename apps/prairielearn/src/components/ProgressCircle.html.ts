@@ -26,9 +26,15 @@ export function ProgressCircle({
   let incompletePortionLength = progressCircleCircumference - completePortionLength;
 
   // Ensure that the incomplete portion is not longer than the progress circle's circumference
+
+  // This should not be necessary since the completePortionLength is already constrained from 0 to
+  // progressCircleCircumference, but it's included for robustness
   incompletePortionLength = Math.min(incompletePortionLength, progressCircleCircumference);
 
   // Ensure that the incomplete portion has a non-negative length
+
+  // This should not be necessary since the completePortionLength is already constrained from 0 to
+  // progressCircleCircumference, but it's included for robustness
   incompletePortionLength = Math.max(incompletePortionLength, 0);
 
   const incompletePortionLengthFixed = incompletePortionLength.toFixed(2);
