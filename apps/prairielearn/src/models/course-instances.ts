@@ -115,9 +115,7 @@ export async function selectCourseHasCourseInstances({
 export async function selectFirstCourseInstance({ course_id }: { course_id: string }) {
   return await queryRow(
     sql.select_first_course_instance,
-    {
-      course_id,
-    },
+    { course_id },
     CourseInstanceSchema,
   );
 }
