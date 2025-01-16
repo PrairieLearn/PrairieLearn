@@ -4,9 +4,18 @@ PrairieLearn can connect to Learning Management Systems (LMSes) using [LTI 1.3](
 
 Canvas integration via LTI 1.3 is currently available as a public preview. General availability of Canvas integration as well as support for other LMS platforms will be coming in the future.
 
-## Make sure you have the right permissions in PrairieLearn
+## Make sure you have the right permissions
 
-To link a PrairieLearn course instance with Canvas you must be have [Student Data Editor permissions](course/index.md#course-staff) for the course instance in PrairieLearn. To check this, in PrairieLearn go to the "Staff" tab and make sure that the "Student data access" column has an "Editor" badge for the appropriate course instance, in the row corresponding to your name. If you don't have Student Data Editor permission, add this or ask the course owner to do so.
+Linking a PrairieLearn course instance with a Canvas course requires the following permissions:
+
+- Canvas
+  - Instructor or Designer
+- PrairieLearn Course
+  - Editor
+- PrairieLearn Course Instance
+  - [Student Data Editor](course/index.md#course-staff)
+
+To check this, in PrairieLearn go to the "Staff" tab and make sure that the "Student data access" column has an "Editor" badge for the appropriate course instance, in the row corresponding to your name. If you don't have Student Data Editor permission, add this or ask the course owner to do so.
 
 ## Setting up your Canvas course for PrairieLearn
 
