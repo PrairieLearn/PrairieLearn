@@ -102,4 +102,4 @@ WHERE
   course_id = $course_id
   AND deleted_at IS NULL
 LIMIT
-  1
+  1;
