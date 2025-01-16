@@ -121,9 +121,7 @@ router.post(
       } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
-    }
-
-    if (req.body.__action === 'restore_onboarding') {
+    } else if (req.body.__action === 'restore_onboarding') {
       if (!res.locals.course.onboarding_dismissed) {
         throw new error.HttpStatusError(400, 'Onboarding checklist not dismissed');
       }
