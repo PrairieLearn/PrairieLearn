@@ -67,16 +67,19 @@ describe('Assessment set syncing', () => {
   it('renames an assessment set', async () => {
     const courseData = util.getCourseData();
     const oldAssessmentSet = makeAssessmentSet();
+
     courseData.course.assessmentSets.unshift(oldAssessmentSet);
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     const oldName = courseData.course.assessmentSets[0].name;
     const newName = 'new name';
     courseData.course.assessmentSets[0].name = newName;
+
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const dbAssessmentSets = await util.dumpTable('assessment_sets');
     assert.isUndefined(dbAssessmentSets.find((as) => as.name === oldName));
     const dbAssessmentSet = dbAssessmentSets.find((as) => (as.name = newName));
+
     checkAssessmentSet(dbAssessmentSet, courseData.course.assessmentSets[0]);
   });
 

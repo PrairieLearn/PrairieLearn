@@ -64,11 +64,6 @@ BEGIN
     ) VALUES ('Unknown', 'U',          'Unknown', 'red3', 1,      syncing_course_id)
     ON CONFLICT (name, course_id) DO NOTHING;
 
-    -- COALESCE handles the case that used_assessment_set_names is empty.
-    IF ('Unknown' != ALL(COALESCE(used_assessment_set_names, '{}'::text[]))) THEN
-        used_assessment_set_names := used_assessment_set_names || ARRAY['Unknown'];
-    END IF;
-
     -- Make sure we have an assessment set for every assessment that
     -- we have data for. We auto-create assessment sets where needed.
     WITH new_assessment_sets AS (
