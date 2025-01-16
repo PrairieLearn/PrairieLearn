@@ -38,9 +38,7 @@ export async function getOnboardingSteps({
   // Check if the course has at least 2 staff members. If so,
   const courseHasAddedStaff = await queryRow(
     sql.select_course_has_staff,
-    {
-      course_id,
-    },
+    { course_id },
     z.boolean(),
   );
 
