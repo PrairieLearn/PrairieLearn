@@ -11,8 +11,6 @@ export async function sync(
   courseData: CourseData,
   questionIds: Record<string, any>,
 ) {
-  console.log('course data tags', courseData.course.data?.tags);
-
   // We can only safely remove unused tags if both `infoCourse.json` and all
   // question `info.json` files are valid.
   const isInfoCourseValid = !infofile.hasErrors(courseData.course);
@@ -36,21 +34,11 @@ export async function sync(
   });
   const questionTagNames = [...knownQuestionTagsNames];
 
-  console.log({
-    validCourseInfo: !infofile.hasErrors(courseData.course),
-    deleteUnused,
-    courseTags,
-    questionTagNames,
-    courseId,
-  });
-
   const newTags = await sqldb.callRow(
     'sync_course_tags',
     [!infofile.hasErrors(courseData.course), deleteUnused, courseTags, questionTagNames, courseId],
     z.array(z.tuple([z.string(), IdSchema])),
   );
-
-  console.log('newTags', newTags);
 
   const tagIdsByName = new Map(newTags);
 
