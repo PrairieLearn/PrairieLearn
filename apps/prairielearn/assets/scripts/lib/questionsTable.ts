@@ -1,5 +1,3 @@
-/* eslint-env browser, jquery */
-
 import _ from 'lodash';
 
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
@@ -9,6 +7,35 @@ import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js
 import { SyncProblemButton } from '../../../src/components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
+import { type Topic } from '../../../src/lib/db-types.js';
+import { type QuestionsPageData } from '../../../src/models/questions.js';
+
+import { type ExtendedBootstrapTableOptions } from './bootstrapTable.js';
+
+// Allows records like 'Prefix...Suffix'. If key extends `${P}${K}${S}`, allowed, otherwise never.
+type PrefixSuffixObjectKeys<T extends Record<string, any>, P extends string, S extends string> = {
+  [K in keyof T as K extends string ? `${P}${K}${S}` : never]: T[K];
+};
+
+type AssessmentGlobals = PrefixSuffixObjectKeys<Record<string, any>, 'assessments', 'Formatter'> &
+  PrefixSuffixObjectKeys<Record<string, any>, 'assessments', 'List'>;
+
+declare global {
+  interface Window extends AssessmentGlobals {
+    topicList: () => any;
+    tagsList: () => any;
+    sharingSetsList: () => any;
+    versionList: () => any;
+    qidFormatter: (_qid: any, question: QuestionsPageData) => any;
+    topicFormatter: (_topic: any, question: QuestionsPageData) => any;
+    tagsFormatter: (_tags: any, question: QuestionsPageData) => any;
+    sharingSetFormatter: (_sharing_sets: any, question: QuestionsPageData) => any;
+    versionFormatter: (_version: any, question: QuestionsPageData) => any;
+    topicSorter: (topicA: Topic, topicB: Topic) => any;
+    genericFilterSearch: (search: string, value: string) => any;
+    badgeFilterSearch: (search: string, value: string) => any;
+  }
+}
 
 onDocumentReady(() => {
   const {
@@ -19,18 +46,19 @@ onDocumentReady(() => {
     urlPrefix,
     plainUrlPrefix,
   } = decodeData('questions-table-data');
+
   window.topicList = function () {
-    var data = $('#questionsTable').bootstrapTable('getData');
+    const data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
   };
 
   window.tagsList = function () {
-    var data = $('#questionsTable').bootstrapTable('getData');
+    const data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name));
   };
 
   window.sharingSetsList = function () {
-    var data = $('#questionsTable').bootstrapTable('getData');
+    const data = $('#questionsTable').bootstrapTable('getData');
     const sharing_sets = _.keyBy(
       _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
     );
@@ -40,12 +68,12 @@ onDocumentReady(() => {
   };
 
   window.versionList = function () {
-    var data = $('#questionsTable').bootstrapTable('getData');
+    const data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.display_type));
   };
 
-  window.qidFormatter = function (qid, question) {
-    var text = '';
+  window.qidFormatter = function (_qid: any, question: QuestionsPageData) {
+    let text = '';
     if (question.sync_errors) {
       text += SyncProblemButton({
         type: 'error',
@@ -72,7 +100,7 @@ onDocumentReady(() => {
       text += html`<a
         class="badge badge-pill badge-danger ml-1"
         href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
-          question.qid,
+          question.qid ?? '',
         )}"
         >${question.open_issue_count}</a
       >`;
@@ -80,15 +108,15 @@ onDocumentReady(() => {
     return text.toString();
   };
 
-  window.topicFormatter = function (topic, question) {
+  window.topicFormatter = function (_topic: any, question: QuestionsPageData) {
     return TopicBadge(question.topic).toString();
   };
 
-  window.tagsFormatter = function (tags, question) {
+  window.tagsFormatter = function (_tags: any, question: QuestionsPageData) {
     return TagBadgeList(question.tags).toString();
   };
 
-  window.sharingSetFormatter = function (sharing_sets, question) {
+  window.sharingSetFormatter = function (_sharing_sets: any, question: QuestionsPageData) {
     const items = [];
     if (question.shared_publicly) {
       items.push(html`<span class="badge color-green3">Public</span>`);
@@ -104,17 +132,17 @@ onDocumentReady(() => {
     return joinHtml(items, ' ').toString();
   };
 
-  window.versionFormatter = function (version, question) {
+  window.versionFormatter = function (_version: any, question: QuestionsPageData) {
     return html`<span class="badge color-${question.display_type === 'v3' ? 'green1' : 'red1'}"
       >${question.display_type}</span
     >`.toString();
   };
 
-  window.topicSorter = function (topicA, topicB) {
-    return topicA.name.localeCompare(topicB.name);
+  window.topicSorter = function (topicA: Topic, topicB: Topic) {
+    return topicA.name?.localeCompare(topicB.name ?? '');
   };
 
-  window.genericFilterSearch = function (search, value) {
+  window.genericFilterSearch = function (search: string, value: string) {
     return $('<div>')
       .html(value)
       .find('.formatter-data')
@@ -123,11 +151,11 @@ onDocumentReady(() => {
       .includes(search.toUpperCase());
   };
 
-  window.badgeFilterSearch = function (search, value) {
+  window.badgeFilterSearch = function (search: string, value: string) {
     if (search === '(none)') {
       return value === '';
     }
-    var values = $('<div>')
+    const values = $('<div>')
       .html(value)
       .find('.badge, .btn-badge')
       .filter(
@@ -136,7 +164,10 @@ onDocumentReady(() => {
     return !!values;
   };
 
-  let assessmentsByCourseInstanceFormatter = function (course_instance_id, question) {
+  const assessmentsByCourseInstanceFormatter = function (
+    course_instance_id: string,
+    question: QuestionsPageData,
+  ) {
     return (question.assessments ?? [])
       .filter(
         (assessment) => assessment.course_instance_id.toString() === course_instance_id.toString(),
@@ -147,26 +178,29 @@ onDocumentReady(() => {
       .join(' ');
   };
 
-  let assessmentsByCourseInstanceList = function (ci_id) {
-    var data = $('#questionsTable').bootstrapTable('getData');
-    var assessments = _.filter(
+  const assessmentsByCourseInstanceList = function (ci_id: string) {
+    const data = $('#questionsTable').bootstrapTable('getData');
+    const assessments = _.filter(
       _.flatten(_.map(data, (row) => row.assessments)),
       (row) => row && row.course_instance_id === ci_id,
     );
     return _.assign(_.keyBy(_.map(assessments, (row) => row.label)), { '(None)': '(None)' });
   };
 
-  course_instance_ids.forEach((courseInstanceId) => {
+  course_instance_ids.forEach((courseInstanceId: string) => {
     window[`assessments${courseInstanceId}List`] = function () {
       return assessmentsByCourseInstanceList(courseInstanceId);
     };
 
-    window[`assessments${courseInstanceId}Formatter`] = function (_, question) {
+    window[`assessments${courseInstanceId}Formatter`] = function (
+      _: any,
+      question: QuestionsPageData,
+    ) {
       return assessmentsByCourseInstanceFormatter(courseInstanceId, question);
     };
   });
 
-  const tableSettings = {
+  const tableSettings: ExtendedBootstrapTableOptions = {
     // TODO: If we can pick up the following change, we can drop the `icons` config here:
     // https://github.com/wenzhixin/bootstrap-table/pull/7190
     iconsPrefix: 'fa',
@@ -192,7 +226,7 @@ onDocumentReady(() => {
       searchInputs.forEach((searchInput) => {
         searchInput.setAttribute(
           'aria-label',
-          `Filter by ${searchInput.closest('th').querySelector('div.th-inner').textContent.trim()}`,
+          `Filter by ${searchInput.closest('th')?.querySelector('div.th-inner')?.textContent?.trim()}`,
         );
       });
     },
@@ -204,7 +238,7 @@ onDocumentReady(() => {
       icon: 'fa-plus',
       attributes: { title: 'Create a new question' },
       event: () => {
-        $('form[name=add-question-form]').submit();
+        $('#createQuestionModal').modal('show');
       },
     };
   }
@@ -221,6 +255,28 @@ onDocumentReady(() => {
   }
 
   $('#questionsTable').bootstrapTable(tableSettings);
+
+  // The startFromInput either has value 'Template' or 'Empty question'
+  const startFromInput = document.querySelector<HTMLInputElement>('#start_from');
+
+  // The templateQuestionInput lets the user select the template question to start from, and is only
+  // enabled when the startFromInput is set to 'Template'
+  const templateQuestionInput = document.querySelector<HTMLInputElement>('#template_qid');
+
+  // The templateContainerDiv is hidden when the startFromInput is set to 'Empty question',
+  // otherwise it is shown.
+  const templateContainerDiv = document.querySelector<HTMLDivElement>('#templateContainer');
+
+  if (!startFromInput || !templateQuestionInput || !templateContainerDiv) {
+    return;
+  }
+
+  startFromInput.addEventListener('change', () => {
+    // If the startFromInput is set to 'Template', the templateQuestionInput should be visible and enabled
+    // Otherwise, it should be hidden and disabled.
+    templateQuestionInput.disabled = startFromInput.value !== 'Template';
+    templateContainerDiv.hidden = startFromInput.value !== 'Template';
+  });
 
   $(document).keydown((event) => {
     if (

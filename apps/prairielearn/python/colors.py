@@ -67,7 +67,10 @@ class PrairieLearnColor(sRGB):
     """Custom sRGB class to handle custom PrairieLearn colors, via Coloraide."""
 
     def match(
-        self, string: str, start: int = 0, fullmatch: bool = True
+        self,
+        string: str,
+        start: int = 0,
+        fullmatch: bool = True,  # noqa: FBT001, FBT002
     ) -> tuple[tuple[Vector, float], int] | None:
         """
         Match a color string, first trying PrairieLearn.
@@ -108,11 +111,14 @@ class PrairieLearnColor(sRGB):
 
         if names:
             # Get alpha and coordinates resolving undefined values as required
-            alpha_float = serialize.get_alpha(parent, alpha, False, False)
+            alpha_float = serialize.get_alpha(parent, alpha, none=False, legacy=False)
             if alpha_float is None:
                 alpha_float = 1.0
 
-            coords = serialize.get_coords(parent, fit, False, False) + [alpha_float]
+            coords = [
+                *serialize.get_coords(parent, fit, none=False, legacy=False),
+                alpha_float,
+            ]
 
             # See if the color value is a match, if so, return the string
             value = cast(ColorTuple, tuple(alg.round_half_up(c * 255) for c in coords))

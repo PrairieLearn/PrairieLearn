@@ -2,8 +2,9 @@ import itertools as it
 import json
 import math
 import string
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 import lxml.html
 import networkx as nx
@@ -150,7 +151,9 @@ def test_networkx_serialization(networkx_graph: Any) -> None:
     networkx_graph.graph["rankdir"] = "TB"
 
     # Add some data to test that it's retained
-    for i, (in_node, out_node, edge_data) in enumerate(networkx_graph.edges(data=True)):
+    for i, (_in_node, _out_node, edge_data) in enumerate(
+        networkx_graph.edges(data=True)
+    ):
         edge_data["weight"] = i
         edge_data["label"] = chr(ord("a") + i)
 
@@ -179,7 +182,7 @@ def test_inner_html(inner_html_string: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "weight_set_function, score_1, score_2, score_3, expected_score",
+    ("weight_set_function", "score_1", "score_2", "score_3", "expected_score"),
     [
         # Check set weighted score data
         (pl.set_weighted_score_data, 0.0, 0.0, 0.0, 0.0),
@@ -248,7 +251,7 @@ def test_numpy_serialization(numpy_object: Any) -> None:
 
 
 @pytest.mark.parametrize(
-    "object_to_encode, expected_result",
+    ("object_to_encode", "expected_result"),
     [(np.float64(5.0), 5.0), (np.complex128("12+3j"), complex("12+3j"))],
 )
 def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> None:
@@ -268,7 +271,7 @@ class DummyEnum(Enum):
 
 
 @pytest.mark.parametrize(
-    "html_str, expected_result",
+    ("html_str", "expected_result"),
     [
         ("<pl-thing></pl-thing>", DummyEnum.DEFAULT),
         ('<pl-thing test-choice="default"></pl-thing>', DummyEnum.DEFAULT),
@@ -305,12 +308,12 @@ def test_get_enum_attrib(html_str: str, expected_result: DummyEnum) -> None:
 def test_get_enum_attrib_exceptions(html_str: str) -> None:
     element = lxml.html.fragment_fromstring(html_str)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):  # noqa: PT011
         pl.get_enum_attrib(element, "test-choice", DummyEnum)
 
 
 @pytest.mark.parametrize(
-    "question_name, student_answer, weight, expected_grade",
+    ("question_name", "student_answer", "weight", "expected_grade"),
     [
         ("base", "a", 1, True),
         ("base", "a, b", 1, False),
@@ -326,7 +329,7 @@ def test_grade_answer_parametrized_correct(
     question_name: str,
     student_answer: str,
     weight: int,
-    expected_grade: bool,
+    expected_grade: bool,  # noqa: FBT001
 ) -> None:
     question_data["submitted_answers"] = {question_name: student_answer}
 
@@ -379,7 +382,7 @@ def test_grade_answer_parametrized_key_error_blank(
     question_data["submitted_answers"] = {question_name: "True"}
 
     def grading_function(_: str) -> tuple[bool, str | None]:
-        decoy_dict: dict[str, str] = dict()
+        decoy_dict: dict[str, str] = {}
         decoy_dict["junk"]  # This is to throw a key error
         return (True, None)
 
@@ -387,8 +390,8 @@ def test_grade_answer_parametrized_key_error_blank(
         pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
     # Empty out submitted answers
-    question_data["submitted_answers"] = dict()
-    question_data["format_errors"] = dict()
+    question_data["submitted_answers"] = {}
+    question_data["format_errors"] = {}
     pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
     assert question_data["partial_scores"][question_name]["score"] == 0.0
@@ -403,7 +406,7 @@ def test_get_uuid() -> None:
 
     # Assert clauses have standard structure.
     assert len(clauses) == 5
-    assert [8, 4, 4, 4, 12] == list(map(len, clauses))
+    assert list(map(len, clauses)) == [8, 4, 4, 4, 12]
 
     # Assert that all characters are valid.
     seen_characters = set().union(*(clause for clause in clauses))
@@ -415,7 +418,7 @@ def test_get_uuid() -> None:
 
 
 @pytest.mark.parametrize(
-    "length, expected_output",
+    ("length", "expected_output"),
     [
         (1, ["a"]),
         (2, ["a", "b"]),
@@ -427,7 +430,7 @@ def test_iter_keys(length: int, expected_output: list[str]) -> None:
 
 
 @pytest.mark.parametrize(
-    "idx, expected_output",
+    ("idx", "expected_output"),
     [(0, "a"), (1, "b"), (3, "d"), (26, "aa"), (27, "ab")],
 )
 def test_index2key(idx: int, expected_output: str) -> None:
