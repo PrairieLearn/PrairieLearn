@@ -1305,7 +1305,8 @@ export async function initExpress(): Promise<Express> {
       res.locals.navSubPage = 'onboarding';
       next();
     },
-    (await import('./pages/instructorCourseAdminOnboarding/instructorCourseAdminOnboarding.js')).default,
+    (await import('./pages/instructorCourseAdminOnboarding/instructorCourseAdminOnboarding.js'))
+      .default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
@@ -1827,7 +1828,8 @@ export async function initExpress(): Promise<Express> {
       res.locals.navSubPage = 'onboarding';
       next();
     },
-    (await import('./pages/instructorCourseAdminOnboarding/instructorCourseAdminOnboarding.js')).default,
+    (await import('./pages/instructorCourseAdminOnboarding/instructorCourseAdminOnboarding.js'))
+      .default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/issues', [
     function (req: Request, res: Response, next: NextFunction) {

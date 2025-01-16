@@ -8,12 +8,10 @@ export function ProgressCircle({
   numTotal: number;
   isInCourseNavbar?: boolean;
 }) {
-  // The progress circle has radius of 8px, so
-  // its circumference is 2 * PI * 8px
+  // The progress circle has radius of 8px, so its circumference is 2 * PI * 8px
   const progressCircleCircumference = 2 * Math.PI * 8;
 
-  // The complete portion length is proportional
-  // to the percentage of the tasks that are complete
+  // The complete portion length is proportional to the percentage of the tasks that are complete
   const completePortionLength = progressCircleCircumference * (numComplete / numTotal);
 
   // The incomplete portion length is the rest of the circumference

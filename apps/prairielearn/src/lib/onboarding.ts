@@ -30,13 +30,12 @@ export async function getOnboardingSteps({
   let assessmentsPageLink: string | undefined;
 
   // If the course has a course instance, link to the assessments page for the first course instance.
-  // Otherwise, the Create an assessment task will have no link.
   if (courseHasCourseInstance) {
     const first_course_instance = await selectFirstCourseInstance({ course_id });
     assessmentsPageLink = `/pl/course_instance/${first_course_instance.id}/instructor/instance_admin/assessments`;
   }
 
-  // Check if the course has at least 2 staff members (since each course starts with one staff member)
+  // Check if the course has at least 2 staff members. If so,
   const courseHasAddedStaff = await queryRow(
     sql.select_course_has_staff,
     {

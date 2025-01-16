@@ -73,15 +73,14 @@ function OnboardingStep({ stepNumber, step }: { stepNumber: number; step: Onboar
   }
   return html`
     <div class="list-group-item">
-      <div class="d-flex align-items-center gap-3 ${step.isComplete ? 'opacity-50' : ''}">
-        <input
-          type="checkbox"
-          class="custom-control-input"
-          id="customCheck1"
-          ${step.isComplete ? 'checked' : ''}
-          disabled
-        />
-        <div>
+      <div class="d-flex align-items-center gap-3">
+        <i
+          class="fa-regular ${step.isComplete
+            ? 'fa-check-circle text-success'
+            : 'fa-circle text-muted'} "
+          aria-label="${step.isComplete ? 'Complete' : 'Incomplete'}"
+        ></i>
+        <div class=${step.isComplete ? 'opacity-50' : ''}>
           ${!step.isComplete && step.link
             ? html` <a href="${step.link}">
                 <p class="my-0">${stepHeader}</p>
