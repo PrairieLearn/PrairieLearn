@@ -64,6 +64,16 @@ router.post(
       if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
+
+      const show_onboarding = req.body.show_onboarding === 'on';
+
+      if (res.locals.course.show_onboarding !== show_onboarding) {
+        await updateCourseOnboardingDismissed({
+          course_id: res.locals.course.id,
+          show_onboarding,
+        });
+      }
+
       const paths = getPaths(undefined, res.locals);
 
       const courseInfo = JSON.parse(
@@ -96,9 +106,7 @@ router.post(
       } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
-    }
-
-    if (req.body.__action === 'add_configuration') {
+    } else if (req.body.__action === 'add_configuration') {
       const infoJson = {
         uuid: uuidv4(),
         name: path.basename(res.locals.course.path),
@@ -121,16 +129,6 @@ router.post(
       } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
-    } else if (req.body.__action === 'restore_onboarding') {
-      if (!res.locals.course.onboarding_dismissed) {
-        throw new error.HttpStatusError(400, 'Onboarding checklist not dismissed');
-      }
-      await updateCourseOnboardingDismissed({
-        course_id: res.locals.course.id,
-        onboarding_dismissed: false,
-      });
-      flash('success', 'Onboarding checklist restored successfully.');
-      return res.redirect(`${res.locals.urlPrefix}/course_admin/onboarding`);
     } else {
       throw new error.HttpStatusError(400, `Unknown __action: ${req.body.__action}`);
     }

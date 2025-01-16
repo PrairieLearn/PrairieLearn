@@ -678,7 +678,7 @@ function NavbarInstructor({
       </div>
     </li>
 
-    ${authz_data.has_course_permission_edit && !course.onboarding_dismissed
+    ${authz_data.has_course_permission_edit && course.show_onboarding
       ? html`
           <li class="nav-item d-flex align-items-center">
             <a class="nav-link pr-0" href="${urlPrefix}/course_admin/onboarding">Onboarding</a>

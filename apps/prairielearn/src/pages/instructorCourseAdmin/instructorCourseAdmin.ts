@@ -12,7 +12,7 @@ router.get(
       course_id: res.locals.course.id,
     });
 
-    if (!courseHasCourseInstances && !res.locals.course.onboarding_dismissed) {
+    if (!courseHasCourseInstances && res.locals.course.show_onboarding) {
       // For brand new courses, users should be redirected to the onboarding checklist.
       res.redirect(`/pl/course/${res.locals.course.id}/course_admin/onboarding`);
     } else {

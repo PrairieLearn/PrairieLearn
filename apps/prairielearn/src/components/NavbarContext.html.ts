@@ -96,7 +96,7 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
           numTotal: navbarTotalOnboardingTasksCount,
         }),
       renderCondition: ({ authz_data, course }) =>
-        authz_data.has_course_permission_edit && !course.onboarding_dismissed,
+        authz_data.has_course_permission_edit && course.show_onboarding,
     },
     {
       activeSubPage: 'sets',

@@ -172,6 +172,19 @@ export function InstructorCourseAdminSettings({
                     The Github repository that can be used to sync course files.
                   </small>
                 </div>
+                <div class="form-check mb-3">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    id="show_onboarding"
+                    name="show_onboarding"
+                    ${resLocals.course.show_onboarding ? 'checked' : ''}
+                    aria-describedby="show_onboarding_help"
+                  />
+                  <label class="form-check-label" for="show_onboarding_help">
+                    Show onboarding checklist
+                  </label>
+                </div>
                 ${EditActions({
                   coursePathExists,
                   courseInfoExists,
@@ -183,25 +196,6 @@ export function InstructorCourseAdminSettings({
                 })}
               </form>
             </div>
-            ${resLocals.course.onboarding_dismissed
-              ? html`
-                  <div class="card-footer">
-                    <form method="POST">
-                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                      <button
-                        name="__action"
-                        value="restore_onboarding"
-                        class="btn btn-sm btn-primary"
-                        title="Restore onboarding checklist"
-                        type="submit"
-                      >
-                        <i class="fa fa-tasks"></i>
-                        <span>Restore onboarding checklist</span>
-                      </button>
-                    </form>
-                  </div>
-                `
-              : ''}
           </div>
         </main>
       </body>

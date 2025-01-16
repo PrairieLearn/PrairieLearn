@@ -12,7 +12,6 @@ export function InstructorCourseAdminOnboarding({
   steps: OnboardingStepInfo[];
   resLocals: Record<string, any>;
 }) {
-  const canDismiss = steps.every((step) => step.optional || step.isComplete);
   return html`
     <!doctype html>
     <html lang="en">
@@ -41,19 +40,21 @@ export function InstructorCourseAdminOnboarding({
                   }),
                 )}
               </div>
-              ${canDismiss
-                ? html` <form method="POST">
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <button
-                      name="__action"
-                      value="dismiss_onboarding"
-                      class="btn btn-sm btn-primary"
-                      type="submit"
-                    >
-                      Dismiss onboarding
-                    </button>
-                  </form>`
-                : ''}
+              <form method="POST">
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <button
+                  name="__action"
+                  value="dismiss_onboarding"
+                  class="btn btn-sm btn-primary"
+                  type="submit"
+                  aria-describedby="dismiss_onboarding_help"
+                >
+                  Dismiss onboarding
+                </button>
+                <small id="dismiss_onboarding_help" class="form-text text-muted">
+                  This page can be restored from the course settings later.
+                </small>
+              </form>
             </div>
           </div>
         </main>
