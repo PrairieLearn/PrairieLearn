@@ -65,7 +65,7 @@ router.post(
     }
     flash(
       'success',
-      'Onboarding checklist dismissed. You can restore it by clicking "Restore onboarding checklist" in course settings.',
+      'Onboarding checklist dismissed. You can restore it from your course settings.',
     );
     res.redirect(`${res.locals.urlPrefix}/course_admin/settings`);
   }),
