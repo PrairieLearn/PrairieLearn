@@ -13,7 +13,7 @@ router.get(
     });
 
     if (!courseHasCourseInstances && !res.locals.course.onboarding_dismissed) {
-      // For brand new courses, users should be redirected to the onboarding page.
+      // For brand new courses, users should be redirected to the onboarding checklist.
       res.redirect(`/pl/course/${res.locals.course.id}/course_admin/onboarding`);
     } else {
       // Once users have created course instances or completed onboarding, they should have

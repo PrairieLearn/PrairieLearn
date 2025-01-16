@@ -125,13 +125,13 @@ router.post(
 
     if (req.body.__action === 'restore_onboarding') {
       if (!res.locals.course.onboarding_dismissed) {
-        throw new error.HttpStatusError(400, 'Onboarding not dismissed');
+        throw new error.HttpStatusError(400, 'Onboarding checklist not dismissed');
       }
       await updateCourseOnboardingDismissed({
         course_id: res.locals.course.id,
         onboarding_dismissed: false,
       });
-      flash('success', 'Onboarding page restored successfully.');
+      flash('success', 'Onboarding checklist restored successfully.');
       return res.redirect(`${res.locals.urlPrefix}/course_admin/onboarding`);
     } else {
       throw new error.HttpStatusError(400, `Unknown __action: ${req.body.__action}`);

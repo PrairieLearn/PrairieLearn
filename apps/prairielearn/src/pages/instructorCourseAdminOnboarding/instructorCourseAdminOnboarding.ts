@@ -15,7 +15,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (res.locals.course.onboarding_dismissed) {
-      throw new HttpStatusError(400, 'Onboarding already dismissed');
+      throw new HttpStatusError(400, 'Onboarding checklist already dismissed');
     }
     res.send(
       InstructorCourseAdminOnboarding({
@@ -38,7 +38,7 @@ router.post(
     }
 
     if (res.locals.course.onboarding_dismissed) {
-      throw new HttpStatusError(400, 'Onboarding already dismissed');
+      throw new HttpStatusError(400, 'Onboarding checklist already dismissed');
     }
 
     const course_id = res.locals.course.id;
@@ -52,7 +52,7 @@ router.post(
     );
 
     if (!allRequiredOnboardingTasksComplete) {
-      throw new HttpStatusError(400, 'All required onboarding tasks must be complete');
+      throw new HttpStatusError(400, 'All required onboarding checklist tasks must be complete');
     }
 
     if (req.body.__action === 'dismiss_onboarding') {
@@ -65,7 +65,7 @@ router.post(
     }
     flash(
       'success',
-      'Onboarding page dismissed. You can restore it by clicking "Restore onboarding page" in course settings.',
+      'Onboarding checklist dismissed. You can restore it by clicking "Restore onboarding checklist" in course settings.',
     );
     res.redirect(`${res.locals.urlPrefix}/course_admin/settings`);
   }),

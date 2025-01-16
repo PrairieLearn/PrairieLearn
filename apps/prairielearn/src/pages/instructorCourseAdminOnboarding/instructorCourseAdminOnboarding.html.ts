@@ -17,7 +17,7 @@ export function InstructorCourseAdminOnboarding({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, pageTitle: 'Onboarding Tasklist' })}
+        ${HeadContents({ resLocals, pageTitle: 'Onboarding checklist' })}
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -29,7 +29,7 @@ export function InstructorCourseAdminOnboarding({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h1>Onboarding Tasks</h1>
+              <h1>Onboarding checklist</h1>
             </div>
             <div class="card-body text-left" style="text-wrap: balance;">
               <div class="container">
