@@ -78,7 +78,6 @@ function OnboardingStep({ stepNumber, step }: { stepNumber: number; step: Onboar
           class="fa-regular ${step.isComplete
             ? 'fa-check-circle text-success'
             : 'fa-circle text-muted'} "
-          aria-label="${step.isComplete ? 'Complete' : 'Incomplete'}"
         ></i>
         <div class=${step.isComplete ? 'opacity-50' : ''}>
           ${!step.isComplete && step.link

@@ -6,6 +6,7 @@ columns
     course_instance_enrollment_limit: integer
     created_at: timestamp with time zone not null default now()
     deleted_at: timestamp with time zone
+    dismissed: boolean not null default false
     display_timezone: text not null
     draft_number: integer not null default 0
     example_course: boolean not null default false
@@ -23,7 +24,6 @@ columns
     template_course: boolean not null default false
     title: text
     yearly_enrollment_limit: integer
-    dismissed: boolean not null default false
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)
