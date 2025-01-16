@@ -217,11 +217,8 @@ export class Lti13Claim {
   /**
    * Return if user claim has roles for Instructor. Can toggle if a TA is considered an
    * instructor or not.
-   *
-   * @param {boolean} taIsInstructor [false]
-   * @returns boolean
    */
-  isRoleInstructor(taIsInstructor = false) {
+  isRoleInstructor(): boolean {
     this.assertValid();
     /*
      TA roles from Canvas development system
@@ -254,9 +251,9 @@ export class Lti13Claim {
       ].includes(val),
     );
 
-    // TA roles may also have Instructor roles, so check this next
+    // TA roles may also have Instructor roles, so check this next. We don't
+    // currently consider TAs to be instructors.
     if (
-      !taIsInstructor &&
       this.roles.includes(
         'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
       )
