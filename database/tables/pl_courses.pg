@@ -10,14 +10,14 @@ columns
     draft_number: integer not null default 0
     example_course: boolean not null default false
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
-    institution_id: bigint not null default 1: boolean not null default false
+    institution_id: bigint not null default 1
     options: jsonb not null default '{}'::jsonb
     path: text not null
     repository: text
     sharing_name: text
     sharing_token: text not null default gen_random_uuid()
     short_name: text
-    show_onboarding
+    show_onboarding: boolean not null default false
     sync_errors: text
     sync_job_sequence_id: bigint
     sync_warnings: text
