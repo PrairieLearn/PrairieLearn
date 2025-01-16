@@ -179,9 +179,8 @@ export function InstructorCourseAdminSettings({
                     id="show_onboarding"
                     name="show_onboarding"
                     ${resLocals.course.show_onboarding ? 'checked' : ''}
-                    aria-describedby="show_onboarding_help"
                   />
-                  <label class="form-check-label" for="show_onboarding_help">
+                  <label class="form-check-label" for="show_onboarding">
                     Show onboarding checklist
                   </label>
                 </div>
