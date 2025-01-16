@@ -34,10 +34,6 @@ router.post(
       throw new HttpStatusError(403, 'Access denied. Cannot make changes to example course.');
     }
 
-    if (!res.locals.course.show_onboarding) {
-      throw new HttpStatusError(400, 'Onboarding checklist already hidden');
-    }
-
     const course_id = res.locals.course.id;
 
     if (req.body.__action === 'dismiss_onboarding') {
