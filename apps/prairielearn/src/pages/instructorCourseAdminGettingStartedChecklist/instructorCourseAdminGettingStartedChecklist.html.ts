@@ -32,7 +32,7 @@ export function InstructorCourseAdminGettingStartedChecklist({
             </div>
             <div class="card-body">
               <p class="mb-3">Complete these suggested tasks to finish setting up your course.</p>
-              <div class="list-group mb-3">${tasks.map((step) => GettingStartedTask(step))}</div>
+              <div class="list-group mb-3">${tasks.map((task) => GettingStartedTask(task))}</div>
               <form method="POST">
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <button
@@ -57,22 +57,22 @@ export function InstructorCourseAdminGettingStartedChecklist({
   `.toString();
 }
 
-function GettingStartedTask(step: GettingStartedTaskInfo) {
+function GettingStartedTask(task: GettingStartedTaskInfo) {
   return html`
     <div class="list-group-item">
       <div class="d-flex align-items-center gap-3">
         <i
-          class="${step.isComplete
+          class="${task.isComplete
             ? 'fa-solid fa-check-circle text-success'
             : 'fa-regular fa-circle text-muted'} "
         ></i>
         <div>
-          ${!step.isComplete && step.link
-            ? html` <a href="${step.link}">
-                <p class="my-0">${step.header}</p>
+          ${!task.isComplete && task.link
+            ? html` <a href="${task.link}">
+                <p class="my-0">${task.header}</p>
               </a>`
-            : html`<p class="my-0">${step.header}</p>`}
-          <p class="text-muted my-0">${step.description}</p>
+            : html`<p class="my-0">${task.header}</p>`}
+          <p class="text-muted my-0">${task.description}</p>
         </div>
       </div>
     </div>

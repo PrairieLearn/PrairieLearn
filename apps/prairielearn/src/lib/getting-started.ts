@@ -59,11 +59,11 @@ export async function getGettingStartedTasks({
     z.boolean(),
   );
 
-  const steps: GettingStartedTaskInfo[] = [
+  const tasks: GettingStartedTaskInfo[] = [
     {
       header: 'Add course staff (optional)',
       description:
-        'Invite users to the course staff to help manage and deliver the course. If you are working alone, you can skip this step.',
+        'Invite users to the course staff to help manage and deliver the course. If you are working alone, you can skip this task.',
       link: 'staff',
       isComplete: courseHasAddedStaff,
     },
@@ -90,5 +90,5 @@ export async function getGettingStartedTasks({
     },
   ];
 
-  return steps;
+  return tasks;
 }
