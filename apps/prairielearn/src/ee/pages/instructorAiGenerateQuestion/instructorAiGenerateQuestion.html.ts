@@ -14,7 +14,7 @@ const examplePrompts = [
     promptGrading: 'The correct answer is the median of the numbers.',
   },
   {
-    id: 'Sum random integers',
+    id: 'Multiply random integers',
     promptGeneral:
       'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B.',
     promptUserInput: 'Provide an integer input box for the user to enter the product.',

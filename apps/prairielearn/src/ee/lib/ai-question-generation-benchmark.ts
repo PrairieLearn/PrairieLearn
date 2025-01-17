@@ -11,7 +11,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import { AiQuestionGenerationPromptSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { createServerJob, getJobSequence } from '../../lib/server-jobs.js';
+import { createServerJob } from '../../lib/server-jobs.js';
 import { insertCourse } from '../../models/course.js';
 import { syncDiskToSql } from '../../sync/syncFromDisk.js';
 
@@ -92,19 +92,13 @@ export async function benchmarkAiQuestionGeneration({
       client,
       courseId: course.id,
       authnUserId,
-      promptGeneral: '',
-      promptUserInput: '',
-      promptGrading: '',
+      promptGeneral:
+        'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B.',
+      promptUserInput: 'Provide an integer input box for the user to enter the product.',
+      promptGrading: 'The correct answer is the product of A and B.',
       userId: authnUserId,
       hasCoursePermissionEdit: true,
     });
-
-    const generationJobSequence = await getJobSequence(result.jobSequenceId, course.id);
-
-    job.info('Job sequence output:');
-    job.info('==========');
-    job.info(generationJobSequence.jobs[0].output ?? '');
-    job.info('==========');
 
     const prompts = await queryRows(
       sql.select_ai_question_generation_prompts,
@@ -112,18 +106,26 @@ export async function benchmarkAiQuestionGeneration({
       AiQuestionGenerationPromptSchema,
     );
 
-    job.info(JSON.stringify(prompts, null, 2));
+    // Log the prompts, responses, and errors for debugging.
+    for (const prompt of prompts) {
+      job.info('User prompt');
+      job.info('======');
+      job.info(prompt.user_prompt.trimEnd());
+      job.info('\n');
 
-    if (result.htmlResult) {
-      job.info('Generated question.html');
-      job.info(result.htmlResult);
-    } else {
-      job.error('Did not generate question.html');
-    }
+      job.info('Response');
+      job.info('========');
+      job.info(prompt.response.trimEnd());
+      job.info('\n');
 
-    if (result.pythonResult) {
-      job.info('Generated question.py');
-      job.info(result.pythonResult);
+      if (prompt.errors?.length) {
+        job.error('Errors');
+        job.error('======');
+        job.error(JSON.stringify(prompt.errors, null, 2));
+      } else {
+        job.info('No errors detected automatically');
+      }
+      job.error('\n');
     }
   });
 
