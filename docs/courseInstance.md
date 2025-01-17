@@ -120,7 +120,7 @@ Some instructors may wish to hide their course from the list of available course
 }
 ```
 
-Note that _this is not a security setting_. Students may still enroll in the course instance if they get access to the URL, either through friends or by [forced browsing attacks](https://owasp.org/www-community/attacks/Forced_browsing). Instructors that wish to actually restrict course enrollment to a specific list of students should instead use well-defined access rules with restrictions by institution or UIDs, described under ["Access controls"](#access-controls).
+Note that _this is not a security setting_. Students may still enroll in the course instance if they get access to the URL, such as from a friend. Instructors that wish to actually restrict course enrollment to a specific list of students should instead use well-defined access rules with restrictions by institution or UIDs, described under ["Controlling access by UID"](#controlling-access-by-uid).
 
 ## Assessment page organization
 
