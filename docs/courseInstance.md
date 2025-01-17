@@ -90,7 +90,7 @@ By default, only students that belong to the course's institution can access the
 
 ### Controlling access by UID
 
-You can restrict access to particular students by listing their UIDs in the `uid` property. For instance, the following rule only allows `student1@example.com` and `student2@example.com` to access the course instance between the specified dates:
+You can restrict access to particular students by listing their UIDs in the `uids` property. For instance, the following rule only allows `student1@example.com` and `student2@example.com` to access the course instance between the specified dates:
 
 ```json title="infoCourseInstance.json"
 {
@@ -98,7 +98,7 @@ You can restrict access to particular students by listing their UIDs in the `uid
     {
       "startDate": "2015-01-19T00:00:01",
       "endDate": "2015-05-13T23:59:59",
-      "uid": ["student1@example.com", "student2@example.com"]
+      "uids": ["student1@example.com", "student2@example.com"]
     }
   ]
 }
