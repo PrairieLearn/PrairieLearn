@@ -42,7 +42,7 @@ export function InstructorCourseAdminOnboarding({
                   type="submit"
                   aria-describedby="dismiss_onboarding_help"
                 >
-                  Dismiss getting started checklist
+                  Dismiss the getting started checklist
                 </button>
                 <small id="dismiss_onboarding_help" class="form-text text-muted">
                   This page can be restored from the course settings.

@@ -46,7 +46,7 @@ router.post(
     }
     flash(
       'success',
-      'Getting started checklist dismissed. You can restore it from your course settings.',
+      'The getting started checklist has been dismissed. You can restore it from your course settings.',
     );
     res.redirect(`${res.locals.urlPrefix}/course_admin/settings`);
   }),
