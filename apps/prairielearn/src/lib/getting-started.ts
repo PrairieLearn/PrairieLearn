@@ -13,7 +13,6 @@ export interface GettingStartedStepInfo {
   description: string;
   isComplete: boolean;
   link?: string;
-  optional?: boolean;
 }
 
 /**
@@ -62,12 +61,11 @@ export async function getGettingStartedSteps({
 
   const steps: GettingStartedStepInfo[] = [
     {
-      header: 'Add course staff',
+      header: 'Add course staff (optional)',
       description:
         'Invite users to the course staff to help manage and deliver the course. If you are working alone, you can skip this step.',
       link: 'staff',
       isComplete: courseHasAddedStaff,
-      optional: true,
     },
     {
       header: 'Create a question',

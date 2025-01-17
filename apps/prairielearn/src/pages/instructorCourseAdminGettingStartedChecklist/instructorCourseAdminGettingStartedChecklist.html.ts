@@ -57,10 +57,6 @@ export function InstructorCourseAdminGettingStartedChecklist({
 }
 
 function GettingStartedStep(step: GettingStartedStepInfo) {
-  let stepHeader = step.header;
-  if (step.optional) {
-    stepHeader += ' (optional)';
-  }
   return html`
     <div class="list-group-item">
       <div class="d-flex align-items-center gap-3">
@@ -72,9 +68,9 @@ function GettingStartedStep(step: GettingStartedStepInfo) {
         <div>
           ${!step.isComplete && step.link
             ? html` <a href="${step.link}">
-                <p class="my-0">${stepHeader}</p>
+                <p class="my-0">${step.header}</p>
               </a>`
-            : html`<p class="my-0">${stepHeader}</p>`}
+            : html`<p class="my-0">${step.header}</p>`}
           <p class="text-muted my-0">${step.description}</p>
         </div>
       </div>
