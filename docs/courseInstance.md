@@ -108,7 +108,7 @@ You can restrict access to particular students by listing their UIDs in the `uid
 
 Students can enroll in a course instance through one of two ways:
 
-1. They can use a URL specific to the course instance or [to one of its assessments](assessment/index.md#linking-to-assessments). You can find the "student link" to a course instance on the "Settings" tab of the course instance. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
+1. They can use a URL specific to the course instance or [to one of its assessments](assessment/index.md#linking-to-assessments). You can find the "student link" on the "Settings" tab of the course instance. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
 
 2. They can use the "Add or remove courses" button on PrairieLearn's homepage. This button opens a page listing all course instances that are currently available for enrollment, giving students the option to add new courses.
 
