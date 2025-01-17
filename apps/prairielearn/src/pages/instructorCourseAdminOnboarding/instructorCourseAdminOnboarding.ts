@@ -42,7 +42,7 @@ router.post(
         show_onboarding: false,
       });
     } else {
-      throw new HttpStatusError(400, `Unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
     flash(
       'success',
