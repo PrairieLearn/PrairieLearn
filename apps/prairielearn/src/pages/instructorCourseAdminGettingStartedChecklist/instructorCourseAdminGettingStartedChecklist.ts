@@ -34,11 +34,9 @@ router.post(
       throw new HttpStatusError(403, 'Access denied. Cannot make changes to example course.');
     }
 
-    const course_id = res.locals.course.id;
-
     if (req.body.__action === 'dismiss_getting_started_checklist') {
       await updateCourseShowGettingStartedChecklist({
-        course_id,
+        course_id: res.locals.course.id,
         show_getting_started_checklist: false,
       });
     } else {
