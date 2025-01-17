@@ -16,6 +16,7 @@ import { insertCourse } from '../../models/course.js';
 import { syncDiskToSql } from '../../sync/syncFromDisk.js';
 
 import { generateQuestion } from './aiQuestionGeneration.js';
+import { openAiUserFromAuthn } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.filename);
 
@@ -127,7 +128,65 @@ export async function benchmarkAiQuestionGeneration({
       }
       job.error('\n');
     }
+
+    const evaluationResult = await evaluateGeneratedQuestion({
+      client,
+      authnUserId,
+      userPrompt: prompts[0].user_prompt,
+      html: result.htmlResult ?? '',
+      python: result.pythonResult ?? '',
+    });
+    job.info('Evaluation result');
+    job.info('=================');
+    job.info(evaluationResult?.trimEnd() ?? 'No evaluation result returned');
   });
 
   return serverJob.jobSequenceId;
+}
+
+async function evaluateGeneratedQuestion({
+  client,
+  authnUserId,
+  userPrompt,
+  html,
+  python,
+}: {
+  client: OpenAI;
+  authnUserId: string;
+  userPrompt: string;
+  html: string;
+  python: string;
+}) {
+  const systemPrompt = [
+    'Another LLM has generated a PrairieLearn question from the following prompt:',
+    '',
+    '<prompt>',
+    userPrompt
+      .split('\n')
+      .map((line) => line.trim())
+      .join('\n'),
+    '</prompt>',
+    '',
+    'Please evaluate it for correctness and clarity.',
+    'If anything is incorrect or could be improved, please provide feedback.',
+    'If the question looks fine, please indicate that as well.',
+    '',
+    'The user will now provide the question HTML and Python files that the LLM generated for this prompt.',
+  ].join('\n');
+
+  const generatedQuestion: string[] = ['```html', html.trim(), '```'];
+  if (python) {
+    generatedQuestion.push('', '```python', python.trim(), '```');
+  }
+
+  const completion = await client.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: generatedQuestion.join('\n') },
+    ],
+    user: openAiUserFromAuthn(authnUserId),
+  });
+
+  return completion.choices[0].message.content;
 }
