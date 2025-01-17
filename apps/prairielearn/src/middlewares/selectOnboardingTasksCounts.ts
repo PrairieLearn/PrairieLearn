@@ -10,11 +10,6 @@ export default asyncHandler(async (req, res, next) => {
 
     res.locals.navbarCompleteOnboardingTasksCount = steps.filter((step) => step.isComplete).length;
     res.locals.navbarTotalOnboardingTasksCount = steps.length;
-  } else {
-    // Defensively set to zero, since most uses of navbarCompleteOnboardingTasksCount and
-    // navbarTotalOnboardingTasksCount treat them as non-optional values.
-    res.locals.navbarCompleteOnboardingTasksCount = 0;
-    res.locals.navbarTotalOnboardingTasksCount = 0;
   }
   next();
 });
