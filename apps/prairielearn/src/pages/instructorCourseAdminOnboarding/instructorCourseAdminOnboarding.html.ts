@@ -16,7 +16,7 @@ export function InstructorCourseAdminOnboarding({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, pageTitle: 'Onboarding checklist' })}
+        ${HeadContents({ resLocals, pageTitle: 'Getting started checklist' })}
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -28,18 +28,11 @@ export function InstructorCourseAdminOnboarding({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h1>Onboarding checklist</h1>
+              <h1>Getting started checklist</h1>
             </div>
             <div class="card-body">
-              <p class="mb-3">Complete these suggested tasks to finish setting up your course.</p>
-              <div class="list-group mb-3">
-                ${steps.map((step, index) =>
-                  OnboardingStep({
-                    stepNumber: index + 1,
-                    step,
-                  }),
-                )}
-              </div>
+              <p class="mb-3">Complete these task suggestions to finish setting up your course.</p>
+              <div class="list-group mb-3">${steps.map((step) => OnboardingStep(step))}</div>
               <form method="POST">
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <button
@@ -49,7 +42,7 @@ export function InstructorCourseAdminOnboarding({
                   type="submit"
                   aria-describedby="dismiss_onboarding_help"
                 >
-                  Dismiss onboarding
+                  Dismiss getting started checklist
                 </button>
                 <small id="dismiss_onboarding_help" class="form-text text-muted">
                   This page can be restored from the course settings.
@@ -63,7 +56,7 @@ export function InstructorCourseAdminOnboarding({
   `.toString();
 }
 
-function OnboardingStep({ stepNumber, step }: { stepNumber: number; step: OnboardingStepInfo }) {
+function OnboardingStep(step: OnboardingStepInfo) {
   let stepHeader = step.header;
   if (step.optional) {
     stepHeader += ' (optional)';

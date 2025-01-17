@@ -13,7 +13,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getAvailableTimezones } from '../../lib/timezones.js';
-import { updateCourseOnboardingDismissed } from '../../models/course.js';
+import { updateCourseShowOnboarding } from '../../models/course.js';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
@@ -68,7 +68,7 @@ router.post(
       const show_onboarding = req.body.show_onboarding === 'on';
 
       if (res.locals.course.show_onboarding !== show_onboarding) {
-        await updateCourseOnboardingDismissed({
+        await updateCourseShowOnboarding({
           course_id: res.locals.course.id,
           show_onboarding,
         });
@@ -80,32 +80,38 @@ router.post(
         await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
       );
 
-      const origHash = req.body.orig_hash;
+      if (
+        req.body.short_name !== courseInfo.name ||
+        req.body.title !== courseInfo.title ||
+        req.body.display_timezone !== courseInfo.timezone
+      ) {
+        const origHash = req.body.orig_hash;
 
-      const courseInfoEdit = courseInfo;
-      courseInfoEdit.name = req.body.short_name;
-      courseInfoEdit.title = req.body.title;
-      courseInfoEdit.timezone = req.body.display_timezone;
+        const courseInfoEdit = courseInfo;
+        courseInfoEdit.name = req.body.short_name;
+        courseInfoEdit.title = req.body.title;
+        courseInfoEdit.timezone = req.body.display_timezone;
 
-      const editor = new FileModifyEditor({
-        locals: res.locals,
-        container: {
-          rootPath: paths.rootPath,
-          invalidRootPaths: paths.invalidRootPaths,
-        },
-        filePath: path.join(res.locals.course.path, 'infoCourse.json'),
-        editContents: b64EncodeUnicode(JSON.stringify(courseInfoEdit, null, 2)),
-        origHash,
-      });
+        const editor = new FileModifyEditor({
+          locals: res.locals,
+          container: {
+            rootPath: paths.rootPath,
+            invalidRootPaths: paths.invalidRootPaths,
+          },
+          filePath: path.join(res.locals.course.path, 'infoCourse.json'),
+          editContents: b64EncodeUnicode(JSON.stringify(courseInfoEdit, null, 2)),
+          origHash,
+        });
 
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-        flash('success', 'Course configuration updated successfully');
-        return res.redirect(req.originalUrl);
-      } catch {
-        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        const serverJob = await editor.prepareServerJob();
+        try {
+          await editor.executeWithServerJob(serverJob);
+        } catch {
+          return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        }
       }
+      flash('success', 'Course configuration updated successfully');
+      return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_configuration') {
       const infoJson = {
         uuid: uuidv4(),
@@ -130,7 +136,7 @@ router.post(
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else {
-      throw new error.HttpStatusError(400, `Unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

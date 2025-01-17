@@ -5,7 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import { getOnboardingSteps } from '../../lib/onboarding.js';
-import { updateCourseOnboardingDismissed } from '../../models/course.js';
+import { updateCourseShowOnboarding } from '../../models/course.js';
 
 import { InstructorCourseAdminOnboarding } from './instructorCourseAdminOnboarding.html.js';
 
@@ -37,7 +37,7 @@ router.post(
     const course_id = res.locals.course.id;
 
     if (req.body.__action === 'dismiss_onboarding') {
-      await updateCourseOnboardingDismissed({
+      await updateCourseShowOnboarding({
         course_id,
         show_onboarding: false,
       });
@@ -46,7 +46,7 @@ router.post(
     }
     flash(
       'success',
-      'Onboarding checklist dismissed. You can restore it from your course settings.',
+      'Getting started checklist dismissed. You can restore it from your course settings.',
     );
     res.redirect(`${res.locals.urlPrefix}/course_admin/settings`);
   }),

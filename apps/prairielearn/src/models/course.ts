@@ -210,7 +210,7 @@ export async function insertCourse({
 /**
  * Update the show_onboarding field for a course.
  */
-export async function updateCourseOnboardingDismissed({
+export async function updateCourseShowOnboarding({
   course_id,
   show_onboarding,
 }: {

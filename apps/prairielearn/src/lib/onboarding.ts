@@ -17,7 +17,7 @@ export interface OnboardingStepInfo {
 }
 
 /**
- * Retrieve the onboarding checklist steps and if they are complete for a course.
+ * Retrieve the getting started checklist steps and if they are complete for a course.
  */
 export async function getOnboardingSteps({
   course_id,

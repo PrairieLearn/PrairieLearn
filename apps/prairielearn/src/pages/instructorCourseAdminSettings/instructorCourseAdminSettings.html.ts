@@ -181,7 +181,7 @@ export function InstructorCourseAdminSettings({
                     ${resLocals.course.show_onboarding ? 'checked' : ''}
                   />
                   <label class="form-check-label" for="show_onboarding">
-                    Show onboarding checklist
+                    Show getting started checklist
                   </label>
                 </div>
                 ${EditActions({

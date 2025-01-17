@@ -1300,7 +1300,7 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/onboarding', [
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/getting_started', [
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'onboarding';
       next();
@@ -1823,7 +1823,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances.js'))
       .default,
   ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/onboarding', [
+  app.use('/pl/course/:course_id(\\d+)/course_admin/getting_started', [
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'onboarding';
       next();

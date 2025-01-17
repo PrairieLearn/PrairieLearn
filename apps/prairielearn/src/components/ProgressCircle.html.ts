@@ -1,43 +1,36 @@
 import { html } from '@prairielearn/html';
 
-export function ProgressCircle({
-  numComplete,
-  numTotal,
-}: {
-  numComplete: number;
-  numTotal: number;
-  isInCourseNavbar?: boolean;
-}) {
+export function ProgressCircle({ value, maxValue }: { value: number; maxValue: number }) {
   // The progress circle has radius of 8px, so its circumference is 2 * PI * 8px
   const progressCircleCircumference = 2 * Math.PI * 8;
 
-  // The complete portion length is proportional to the percentage of the tasks that are complete
-  let completePortionLength = progressCircleCircumference * (numComplete / numTotal);
+  // The filled portion length is proportional to the ratio of the value to the max value
+  let filledPortionLength = progressCircleCircumference * (value / maxValue);
 
-  // Ensure that the complete portion is not longer than the progress circle's circumference
-  completePortionLength = Math.min(completePortionLength, progressCircleCircumference);
+  // Ensure that the filled portion is not longer than the progress circle's circumference
+  filledPortionLength = Math.min(filledPortionLength, progressCircleCircumference);
 
-  // Ensure that the complete portion has a non-negative length
-  completePortionLength = Math.max(completePortionLength, 0);
+  // Ensure that the filled portion has a non-negative length
+  filledPortionLength = Math.max(filledPortionLength, 0);
 
-  const completePortionLengthFixed = completePortionLength.toFixed(2);
+  const filledPortionLengthFixed = filledPortionLength.toFixed(2);
 
-  // The incomplete portion length is the rest of the circumference
-  let incompletePortionLength = progressCircleCircumference - completePortionLength;
+  // The unfilled portion length is the rest of the circumference
+  let unfilledPortionLength = progressCircleCircumference - filledPortionLength;
 
-  // Ensure that the incomplete portion is not longer than the progress circle's circumference
+  // Ensure that the unfilled portion is not longer than the progress circle's circumference
+
+  // This should not be necessary since the filledPortionLength is already constrained from 0 to
+  // progressCircleCircumference, but it's included for robustness
+  unfilledPortionLength = Math.min(unfilledPortionLength, progressCircleCircumference);
+
+  // Ensure that the unfilled portion has a non-negative length
 
   // This should not be necessary since the completePortionLength is already constrained from 0 to
   // progressCircleCircumference, but it's included for robustness
-  incompletePortionLength = Math.min(incompletePortionLength, progressCircleCircumference);
+  unfilledPortionLength = Math.max(unfilledPortionLength, 0);
 
-  // Ensure that the incomplete portion has a non-negative length
-
-  // This should not be necessary since the completePortionLength is already constrained from 0 to
-  // progressCircleCircumference, but it's included for robustness
-  incompletePortionLength = Math.max(incompletePortionLength, 0);
-
-  const incompletePortionLengthFixed = incompletePortionLength.toFixed(2);
+  const unfilledPortionLengthFixed = unfilledPortionLength.toFixed(2);
 
   return html`<svg
     style="transform:rotate(-90deg)"
@@ -61,7 +54,7 @@ export function ProgressCircle({
       fill="none"
       stroke="var(--bs-primary)"
       stroke-width="2px"
-      stroke-dasharray="${completePortionLengthFixed}px ${incompletePortionLengthFixed}px"
+      stroke-dasharray="${filledPortionLengthFixed}px ${unfilledPortionLengthFixed}px"
     ></circle>
   </svg>`;
 }
