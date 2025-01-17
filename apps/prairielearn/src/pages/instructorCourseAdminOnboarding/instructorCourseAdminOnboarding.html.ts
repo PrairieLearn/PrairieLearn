@@ -64,7 +64,7 @@ export function InstructorCourseAdminOnboarding({
 }
 
 function OnboardingStep({ stepNumber, step }: { stepNumber: number; step: OnboardingStepInfo }) {
-  let stepHeader = `${stepNumber}. ${step.header}`;
+  let stepHeader = step.header;
   if (step.optional) {
     stepHeader += ' (optional)';
   }
@@ -72,11 +72,11 @@ function OnboardingStep({ stepNumber, step }: { stepNumber: number; step: Onboar
     <div class="list-group-item">
       <div class="d-flex align-items-center gap-3">
         <i
-          class="fa-regular ${step.isComplete
-            ? 'fa-check-circle text-success'
-            : 'fa-circle text-muted'} "
+          class="${step.isComplete
+            ? 'fa-solid fa-check-circle text-success'
+            : 'fa-regular fa-circle text-muted'} "
         ></i>
-        <div class=${step.isComplete ? 'opacity-50' : ''}>
+        <div>
           ${!step.isComplete && step.link
             ? html` <a href="${step.link}">
                 <p class="my-0">${stepHeader}</p>
