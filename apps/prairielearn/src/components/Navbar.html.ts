@@ -683,7 +683,7 @@ function NavbarInstructor({
             <a
               style="display: inline-flex; align-items: center;"
               class="nav-link pr-0"
-              href="${urlPrefix}/course_admin/getting_started_checklist"
+              href="${urlPrefix}/course_admin/getting_started"
             >
               Getting Started
               ${ProgressCircle({

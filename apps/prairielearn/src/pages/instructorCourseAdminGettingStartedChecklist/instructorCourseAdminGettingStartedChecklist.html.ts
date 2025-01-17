@@ -38,7 +38,7 @@ export function InstructorCourseAdminGettingStartedChecklist({
                 <button
                   name="__action"
                   value="dismiss_getting_started_checklist"
-                  class="btn btn-sm btn-primary"
+                  class="btn btn-sm btn-primary mb-1"
                   type="submit"
                   aria-describedby="dismiss_getting_started_checklist_help"
                 >

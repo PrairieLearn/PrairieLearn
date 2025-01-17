@@ -87,7 +87,7 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
   course_admin: [
     {
       activeSubPage: 'getting_started_checklist',
-      urlSuffix: '/course_admin/getting_started_checklist',
+      urlSuffix: '/course_admin/getting_started',
       iconClasses: 'fa fa-tasks',
       tabLabel: 'Getting Started',
       htmlSuffix: ({
