@@ -96,7 +96,7 @@ INSERT INTO
     repository,
     branch,
     institution_id,
-    show_getting_started
+    show_getting_started_checklist
   )
 VALUES
   (
@@ -112,9 +112,9 @@ VALUES
 RETURNING
   *;
 
--- BLOCK update_course_show_getting_started
+-- BLOCK update_course_show_getting_started_checklist
 UPDATE pl_courses
 SET
-  show_getting_started = $show_getting_started
+  show_getting_started_checklist = $show_getting_started_checklist
 WHERE
   id = $course_id

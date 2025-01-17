@@ -5,7 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import { getGettingStartedSteps } from '../../lib/getting-started.js';
-import { updateCourseShowGettingStarted } from '../../models/course.js';
+import { updateCourseShowGettingStartedChecklist } from '../../models/course.js';
 
 import { InstructorCourseAdminGettingStartedChecklist } from './instructorCourseAdminGettingStartedChecklist.html.js';
 
@@ -37,9 +37,9 @@ router.post(
     const course_id = res.locals.course.id;
 
     if (req.body.__action === 'dismiss_getting_started_checklist') {
-      await updateCourseShowGettingStarted({
+      await updateCourseShowGettingStartedChecklist({
         course_id,
-        show_getting_started: false,
+        show_getting_started_checklist: false,
       });
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);

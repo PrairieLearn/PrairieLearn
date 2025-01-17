@@ -372,7 +372,7 @@ export const CourseSchema = z.object({
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
   short_name: z.string().nullable(),
-  show_getting_started: z.boolean(),
+  show_getting_started_checklist: z.boolean(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),

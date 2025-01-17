@@ -12,7 +12,7 @@ router.get(
       course_id: res.locals.course.id,
     });
 
-    if (!courseHasCourseInstances && res.locals.course.show_getting_started) {
+    if (!courseHasCourseInstances && res.locals.course.show_getting_started_checklist) {
       // For brand new courses, users should be redirected to the getting started checklist.
       res.redirect(`/pl/course/${res.locals.course.id}/course_admin/getting_started_checklist`);
     } else {

@@ -13,7 +13,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getAvailableTimezones } from '../../lib/timezones.js';
-import { updateCourseShowGettingStarted } from '../../models/course.js';
+import { updateCourseShowGettingStartedChecklist } from '../../models/course.js';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
@@ -65,12 +65,12 @@ router.post(
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
 
-      const show_getting_started = req.body.show_getting_started === 'on';
+      const show_getting_started_checklist = req.body.show_getting_started_checklist === 'on';
 
-      if (res.locals.course.show_getting_started !== show_getting_started) {
-        await updateCourseShowGettingStarted({
+      if (res.locals.course.show_getting_started_checklist !== show_getting_started_checklist) {
+        await updateCourseShowGettingStartedChecklist({
           course_id: res.locals.course.id,
-          show_getting_started,
+          show_getting_started_checklist,
         });
       }
 

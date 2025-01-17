@@ -99,7 +99,7 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
           maxValue: navbarTotalGettingStartedTasksCount,
         }),
       renderCondition: ({ authz_data, course }) =>
-        authz_data.has_course_permission_edit && course.show_getting_started,
+        authz_data.has_course_permission_edit && course.show_getting_started_checklist,
     },
     {
       activeSubPage: 'sets',
