@@ -5,7 +5,7 @@ import { Navbar } from './Navbar.html.js';
 import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
 
 /**
- * Manages the rendering of the head, navbar, and content of a page.
+ * Provides the standard layout for a page, including the head, navbar, and main content.
  *
  * @param resLocals The locals object from the Express response.
  * @param pageTitle The title of the page in the browser.
