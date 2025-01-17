@@ -43,7 +43,7 @@ export function ProgressCircle({ value, maxValue }: { value: number; maxValue: n
       r="8px"
       fill="none"
       stroke="var(--bs-gray-400)"
-      stroke-width="2px"
+      stroke-width="3px"
     ></circle>
     <circle
       cx="10px"
@@ -51,7 +51,7 @@ export function ProgressCircle({ value, maxValue }: { value: number; maxValue: n
       r="8px"
       fill="none"
       stroke="var(--bs-primary)"
-      stroke-width="2px"
+      stroke-width="3px"
       stroke-dasharray="${filledPortionLengthFixed}px ${unfilledPortionLengthFixed}px"
     ></circle>
   </svg>`;

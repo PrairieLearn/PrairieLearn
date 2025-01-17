@@ -3,13 +3,13 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import type { GettingStartedStepInfo } from '../../lib/getting-started.js';
+import type { GettingStartedTaskInfo } from '../../lib/getting-started.js';
 
 export function InstructorCourseAdminGettingStartedChecklist({
-  steps,
+  tasks,
   resLocals,
 }: {
-  steps: GettingStartedStepInfo[];
+  tasks: GettingStartedTaskInfo[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -19,7 +19,7 @@ export function InstructorCourseAdminGettingStartedChecklist({
         ${HeadContents({ resLocals, pageTitle: 'Getting started checklist' })}
       </head>
       <body>
-        ${Navbar({ resLocals })}
+        ${Navbar({ resLocals, navSubPage: 'getting_started_checklist' })}
         <main id="content" class="container">
           ${CourseSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -32,7 +32,7 @@ export function InstructorCourseAdminGettingStartedChecklist({
             </div>
             <div class="card-body">
               <p class="mb-3">Complete these suggested tasks to finish setting up your course.</p>
-              <div class="list-group mb-3">${steps.map((step) => GettingStartedStep(step))}</div>
+              <div class="list-group mb-3">${tasks.map((step) => GettingStartedTask(step))}</div>
               <form method="POST">
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <button
@@ -44,7 +44,8 @@ export function InstructorCourseAdminGettingStartedChecklist({
                 >
                   Dismiss the getting started checklist
                 </button>
-                <small id="dismiss_getting_started_checklist_help" class="form-text text-muted">
+                <br />
+                <small id="dismiss_getting_started_checklist_help" class="text-muted">
                   This page can be restored from the course settings.
                 </small>
               </form>
@@ -56,7 +57,7 @@ export function InstructorCourseAdminGettingStartedChecklist({
   `.toString();
 }
 
-function GettingStartedStep(step: GettingStartedStepInfo) {
+function GettingStartedTask(step: GettingStartedTaskInfo) {
   return html`
     <div class="list-group-item">
       <div class="d-flex align-items-center gap-3">

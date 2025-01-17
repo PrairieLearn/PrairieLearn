@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
-import { getGettingStartedSteps } from '../../lib/getting-started.js';
+import { getGettingStartedTasks } from '../../lib/getting-started.js';
 import { updateCourseShowGettingStartedChecklist } from '../../models/course.js';
 
 import { InstructorCourseAdminGettingStartedChecklist } from './instructorCourseAdminGettingStartedChecklist.html.js';
@@ -17,7 +17,7 @@ router.get(
     res.send(
       InstructorCourseAdminGettingStartedChecklist({
         resLocals: res.locals,
-        steps: await getGettingStartedSteps({ course_id: res.locals.course.id }),
+        tasks: await getGettingStartedTasks({ course_id: res.locals.course.id }),
       }),
     );
   }),
@@ -46,7 +46,7 @@ router.post(
       'success',
       'The getting started checklist has been dismissed. You can restore it from your course settings.',
     );
-    res.redirect(`${res.locals.urlPrefix}/course_admin/settings`);
+    res.redirect(`${res.locals.urlPrefix}/course_admin/instances`);
   }),
 );
 

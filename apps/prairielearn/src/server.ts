@@ -1302,17 +1302,11 @@ export async function initExpress(): Promise<Express> {
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/getting_started_checklist',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'getting_started_checklist';
-        next();
-      },
-      (
-        await import(
-          './pages/instructorCourseAdminGettingStartedChecklist/instructorCourseAdminGettingStartedChecklist.js'
-        )
-      ).default,
-    ],
+    (
+      await import(
+        './pages/instructorCourseAdminGettingStartedChecklist/instructorCourseAdminGettingStartedChecklist.js'
+      )
+    ).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',

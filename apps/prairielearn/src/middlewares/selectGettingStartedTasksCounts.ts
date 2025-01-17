@@ -1,10 +1,10 @@
 import asyncHandler from 'express-async-handler';
 
-import { getGettingStartedSteps } from '../lib/getting-started.js';
+import { getGettingStartedTasks } from '../lib/getting-started.js';
 
 export default asyncHandler(async (req, res, next) => {
   if (res.locals.course?.show_getting_started_checklist) {
-    const steps = await getGettingStartedSteps({
+    const steps = await getGettingStartedTasks({
       course_id: res.locals.course.id,
     });
 
