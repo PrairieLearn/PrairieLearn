@@ -46,7 +46,7 @@ export function Lti13CourseNavigationInstructor({
           ${courses.length === 0
             ? html`<p>
                 <strong>
-                  You don't have course editor permissions in any PrairieLearn courses.
+                  You don't have course owner or editor permissions in any PrairieLearn courses.
                 </strong>
               </p>`
             : html`
@@ -72,7 +72,7 @@ export function Lti13CourseNavigationInstructor({
                       })}
                     </select>
                     <label class="form-label" for="course_instances">
-                      Select a course instance to link:
+                      Select a course instance to connect:
                     </label>
                     <select
                       id="course_instances"
