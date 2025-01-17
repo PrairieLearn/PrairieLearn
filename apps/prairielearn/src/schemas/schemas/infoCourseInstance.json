@@ -93,6 +93,12 @@
       "type": "string",
       "default": "Set",
       "enum": ["Set", "Module"]
-    }
+    },
+    "questionParams": {
+            "description": "Parameters to pass down to questions in this course instance.",
+            "type": "object",
+            "default": {}
+        }
+
   }
 }

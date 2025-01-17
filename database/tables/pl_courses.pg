@@ -12,6 +12,7 @@ columns
     institution_id: bigint not null default 1
     options: jsonb not null default '{}'::jsonb
     path: text not null
+    question_params: jsonb default '{}'::jsonb
     repository: text
     sharing_name: text
     sharing_token: text not null default gen_random_uuid()

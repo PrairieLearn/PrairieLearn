@@ -134,7 +134,8 @@ BEGIN
         display_timezone = COALESCE(src.data->>'display_timezone', c.display_timezone),
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
         sync_errors = NULL,
-        sync_warnings = src.warnings
+        sync_warnings = src.warnings,
+        question_params = (src.data ->> 'question_params')::JSONB
     FROM
         disk_course_instances AS src
         JOIN pl_courses AS c ON (c.id = syncing_course_id)

@@ -38,16 +38,7 @@
         { "id": "element/markdown", "points": 2, "maxPoints": 10 },
         { "id": "demo/survey", "points": 1, "maxPoints": 1 }
       ]
-    },
-    {
-      "title": "Questions using additional customization (elements or grading function)",
-      "questions": [
-        { "id": "demo/custom/element", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/gradeFunction", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/extension", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/elementHiddenTag", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/stylingScripts", "points": 1, "maxPoints": 1 }
-      ]
     }
+  
   ]
 }

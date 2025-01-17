@@ -49,6 +49,11 @@
             "description": "A single feature flag.",
             "type": "string"
           }
+        },
+        "questionParams": {
+            "description": "Parameters to pass down to questions in this course.",
+            "type": "object",
+            "default": {}
         }
       }
     },

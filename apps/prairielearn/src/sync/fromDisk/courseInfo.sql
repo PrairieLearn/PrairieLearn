@@ -10,7 +10,8 @@ SET
   example_course = $example_course,
   options = $options,
   sync_errors = NULL,
-  sync_warnings = $sync_warnings
+  sync_warnings = $sync_warnings,
+  question_params = $question_params
 WHERE
   c.id = $course_id
 RETURNING

@@ -13089,6 +13089,7 @@ __metadata:
   dependencies:
     "@changesets/cli": "npm:^2.27.9"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
+    "@types/mocha": "npm:^10.0.9"
     "@typescript-eslint/eslint-plugin": "npm:^8.12.2"
     "@typescript-eslint/parser": "npm:^8.12.2"
     dependency-cruiser: "npm:^16.5.0"

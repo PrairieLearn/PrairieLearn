@@ -142,11 +142,8 @@ The `question.html` is a template used to render the question to the student. A 
 The `question.html` is regular HTML, with four special features:
 
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
-
 2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md). Note that that **all submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
-
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
-
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
 
 ## Question `server.py`
@@ -256,7 +253,6 @@ def grade(data):
 The `pl.to_json` function supports keyword-only options for different types of encodings (e.g. `pl.to_json(var, df_encoding_version=2)`). These options have been added to allow for new encoding behavior while still retaining backwards compatibility with existing usage.
 
 - `df_encoding_version` controls the encoding of Pandas DataFrames. Encoding a DataFrame `df` by setting `pl.to_json(df, df_encoding_version=2)` allows for missing and date time values whereas `pl.to_json(df, df_encoding_version=1)` (default) does not. However, `df_encoding_version=1` has support for complex numbers, while `df_encoding_version=2` does not.
-
 - `np_encoding_version` controls the encoding of Numpy values. When using `np_encoding_version=1`, then only `np.float64` and `np.complex128` can be serialized by `pl.to_json`, and their types will be erased after deserialization (will become native Python `float` and `complex` respectively). It is recommended to set `np_encoding_version=2`, which supports serialization for all numpy scalars and does not result in type erasure on deserialization.
 
 ## Accessing files on disk
@@ -328,7 +324,7 @@ In general, it is _strongly_ recommended to leave partial credit enabled for all
 
 HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text. To enable this, PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html` that utilizes this element:
 
-```
+```sh
 <markdown>
 # Hello, world!
 
@@ -349,7 +345,7 @@ A few special behaviors have been added to enable Markdown to work better within
 
 Fenced code blocks (those using triple-backticks <code>\`\`\`</code>) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following markdown:
 
-````
+```sql
 <markdown>
 ```cpp{1-2,4}
 int i = 1;
@@ -358,11 +354,12 @@ int k = 3;
 int m = 4;
 ```
 </markdown>
-````
+```
 
 This will be rendered to the following `<pl-code>` element (which itself will eventually be rendered to standard HTML):
 
 <!-- prettier-ignore -->
+
 ```html
 <pl-code language="cpp" highlight-lines="1-2,4">
 int i = 1;
@@ -486,11 +483,8 @@ Example of valid HTML:
 For most elements, there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](elements.md#pl-number-input-element) and [`pl-string-input`](elements.md#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements.md#pl-multiple-choice-element) or [`pl-checkbox`](elements.md#pl-checkbox-element) that are much more constrained. The four ways are:
 
 1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. Given that this option is typically used for answers with a hard-coded value, without randomization, it is not expected to be used frequently.
-
 2. Set `data["correct_answers"][VAR_NAME]` in `server.py`. This is for questions where you can pre-compute a single correct answer based on the (randomized) parameters.
-
 3. Write a [custom `grade(data)`](#question-serverpy) function in server.py that checks `data["submitted_answers"][VAR_NAME]` and sets scores. This can do anything, including having multiple correct answers, testing properties of the submitted answer for correctness, compute correct answers of some elements based on the value of other elements, etc.
-
 4. Write an [external grader](externalGrading.md), though this is typically applied to more complex questions like coding.
 
 If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements.md#pl-answer-panel-element) that any correct answer would be accepted and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
@@ -544,3 +538,90 @@ _Note:_ Data stored under the `"submitted_answers"` key in the data dictionary m
 element sometimes stores very large integers as strings instead of the Python `int` type used in most cases. The best practice for custom grader
 code in this case is to always cast the data to the desired type, for example `int(data["submitted_answers"][name])`. See the
 [PrairieLearn elements documentation](elements.md) for more detailed discussion related to specific elements.
+
+## Initializing parameters from outside the question
+
+The `data["params"]` dictionary normally used to pass parameters to `question.html` can be "seeded" from outside the question's files, allowing some portion of its randomization to be set by an assessment, course instance, or course configuration file. Such "`questionParams`" can change the behavior of a question without needing to alter its source code, so a question can be reused on different assessments but with a different configuration of parameters to alter its actual variants as needed.
+
+A `questionParams` is a JSON object that can be placed in three different PrairieLearn file types. When a question's `generate()` function is called, the `data["params"]` dictionary will be pre-filled with the key-value pairs defined by `questionParams` in these locations:
+
+1. `infoCourse.json`: parameters defined here will be passed to all questions in the course, including when they are previewed by an instructor without being attached to an assessment.
+2. `infoCourseInstance.json`: these parameters will be passed to questions when they are used in one of this course instance's assessments.
+3. `infoAssessment.json`: parameters can be added to the assessment itself, to one of its zones, to one of its lists of alternatives, or to an individual question object. In each case, the parameters will be passed to all questions nested under that element. For example, parameters specified at the top-level assessment apply to every question; parameters for a zone only apply to the questions in that zone; and parameters on an individual question only apply to that question.
+
+Parameters with matching names are overridden by the locations that are farther down the preceding list. That is, a parameter configured by `infoCourse.json` will be supplanted by one configured in `infoCourseInstance.json`, and parameters on an individual question in an assessment will override all others. Parameters are **not** deep merged: a course with parameter `{"a": { "b": 1 } }` and an assessment with parameter `{"a": { "c": 2 } }` will pass `{"a": { "c": 2 } }` to the question, not `{"a": { "b": 1, "c": 2 } }`.
+
+Example of a question's `server.py` that can be customized with `questionParams`:
+
+```python
+import random
+def generate(data):
+  # It is recommended to use .get() with a default value in case params have not been set, for example,
+  # when viewing the question from the Questions list.
+  param_names = data['params'].get('names', [{'name': 'Matt', 'photo': '001'}, {'name': 'Craig', 'photo': '002'}])
+  # Choose a random person to display.
+  chosen = random.choice(param_names)
+  data['params']['photo'] = chosen['photo']
+  data['correct_answers']['name'] = chosen['name']
+```
+
+Any `questionParams` that applies to this question and has a `names` key will provide the list to use as the parameter `names`; otherwise, the default list `[{'name': 'Matt', 'photo': '001'}, {'name': 'Craig', 'photo': '002'}]` will be used.
+
+The chosen name could be used to generate some HTML in `question.html`:
+
+```html
+What is this person's first name?
+
+<pl-figure
+  file-name="student_images/{{params.photo}}.png"
+  width="140px"
+  directory="clientFilesCourse"
+></pl-figure>
+
+<pl-string-input answers-name="name"></pl-string-input>
+```
+
+When a new semester begins and a course instance is created, the `courseInstance.json` can be updated with the names of the course instructor and TAs.
+
+```json
+{
+  "uuid": ...,
+  ...,
+  "questionParams": {
+    "names": [{"name": "Neal", "photo": "003"}, {"name": "Jonatan", "photo": "004"}]
+  }
+}
+```
+
+When the question is used in an assessment for this course instance, Neal and Jonatan will be shown in the HTML instead of Matt and Craig.
+
+The question can be used in a second assessment with a different set of names by setting `questionParams` in the `infoAssessment.json` file:
+
+```json
+{
+  "uuid": ...,
+  ...,
+  "zones": [
+    {
+      "questions": [
+        {
+          "id": "myPhotoMatchingQuestion",
+          "points": 5,
+          "questionParams": {
+            "names": [{"name": "Luke", "photo": "005"}, {"name": "Leia", "photo": "006"}]
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+Doing this does not change the question in the original assessment, which would not be the case if the `server.py` was updated with the new list of names.
+
+Question params can reduce the need to duplicate questions in order to change the data source of its variation. This makes maintenance of the questions easier. Examples:
+
+- A "match each nation with its capital city" question can use a different set of nations depending on what region has been studied most recently. (Instead of different questions for each region.)
+- A question on programming language syntax errors can involve more examples of errors as new features with different syntax rules are learned. (Instead of different questions for later in the course.)
+- A question that generates an indefinite integral can use simple trig functions on an early calculus exam, and later use inverse trig functions. (Instead of two different questions that only vary in the chosen function.)
+- A question can read scenario information from a file parameter set by the course instance, so a new course instance can reuse the question with a new set of scenarios without changing the question's code. (Instead of making a new question just for the course instance.)
