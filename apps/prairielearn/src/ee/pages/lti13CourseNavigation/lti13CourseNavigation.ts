@@ -1,9 +1,8 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
-import { html, HtmlSafeString } from '@prairielearn/html';
 import { HttpStatusError } from '@prairielearn/error';
+import { html, type HtmlSafeString } from '@prairielearn/html';
 import { loadSqlEquiv, queryOptionalRow, queryAsync } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
