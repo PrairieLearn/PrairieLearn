@@ -31,7 +31,7 @@ export function InstructorCourseAdminOnboarding({
               <h1>Getting started checklist</h1>
             </div>
             <div class="card-body">
-              <p class="mb-3">Complete these task suggestions to finish setting up your course.</p>
+              <p class="mb-3">Complete these suggested tasks to finish setting up your course.</p>
               <div class="list-group mb-3">${steps.map((step) => OnboardingStep(step))}</div>
               <form method="POST">
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
