@@ -112,7 +112,7 @@ Students can enroll in a course instance through one of two ways:
 
 2. They can use the "Add or remove courses" button on PrairieLearn's homepage. This button opens a page listing all course instances that are currently available for enrollment, giving students the option to add new courses.
 
-Some instructors may wish to hide their course from the list of available course instances in the Enroll page. This may be done to provide a small level of control over which students get access to the course, or to avoid confusion in case of course instances that are not expected to be visible to students in general. For these instances, the following setting will hide the course instance from the list of instances in the Enroll page, even if the instance is available for enrollment.
+Some instructors may wish to hide their course from the list of available course instances. This may be done to provide a small level of control over which students get access to the course, or to avoid confusion in case of course instances that are not expected to be visible to students in general. For these instances, the following setting will hide the course instance from the list of instances on the add/remove courses page, even if the instance is available for enrollment.
 
 ```json title="infoCourseInstance.json"
 {
