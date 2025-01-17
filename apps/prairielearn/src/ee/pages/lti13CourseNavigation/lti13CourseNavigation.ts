@@ -96,8 +96,8 @@ router.get(
     let options: HtmlSafeString;
 
     if (course_instances.length === 0) {
-      options = html`<option disabled selected>
-        No course instances found where you have student data editor permissions
+      options = html`<option disabled selected value="">
+        No course instances found where you have student data editor permissions.
       </option>`;
     } else {
       options = course_instances.reduce(

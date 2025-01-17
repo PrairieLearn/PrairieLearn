@@ -26,19 +26,11 @@ export function Lti13CourseNavigationInstructor({
       </head>
       <body>
         ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })} ${TerminologyModal()}
-        <script>
-          $(() => {
-            $('#connect_course_instance').one('change', () => {
-              $('#saveButton').prop('disabled', false);
-            });
-          });
-        </script>
-
         <main id="content" class="container mb-4">
           <h1>Welcome to PrairieLearn</h1>
           <p>
             To finish the integration for your course, we need to connect
-            <code>${courseName}</code> with a PrairieLearn course instance.
+            <strong>${courseName}</strong> with a PrairieLearn course instance.
           </p>
           <p>
             <button
@@ -63,7 +55,7 @@ export function Lti13CourseNavigationInstructor({
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
 
                     <label class="form-label" for="connect_course">
-                      Connect ${courseName} with PrairieLearn course:
+                      Select a PrairieLearn course:
                     </label>
                     <select
                       id="connect_course"
@@ -72,8 +64,9 @@ export function Lti13CourseNavigationInstructor({
                       hx-get="/pl/lti13_instance/${lti13_instance_id}/course_navigation/course_instances"
                       hx-include="#link_form"
                       hx-target="#course_instances"
+                      required
                     >
-                      <option selected disabled>Select a course to continue</option>
+                      <option selected disabled value="">Select a course to continue</option>
                       ${courses.map((c) => {
                         return html`<option value="${c.id}">${c.short_name}: ${c.title}</option>`;
                       })}
@@ -85,10 +78,11 @@ export function Lti13CourseNavigationInstructor({
                       id="course_instances"
                       name="unsafe_course_instance_id"
                       class="form-select mb-3"
+                      required
                     >
-                      <option selected disabled>See above</option>
+                      <option selected disabled value="">See above</option>
                     </select>
-                    <input type="submit" class="btn btn-primary" value="Save" />
+                    <input type="submit" class="btn btn-primary" value="Connect courses" />
                   </form>
                 </div>
               `}
@@ -96,11 +90,10 @@ export function Lti13CourseNavigationInstructor({
           <p>
             <details>
               <summary>Why don't I see my course or course instances here?</summary>
-              <p>The following PrairieLearn permissions are required to link:</p>
-              <ul>
-                <li>Course: Editor</li>
-                <li>Course instance: Student Data Editor</li>
-              </ul>
+              <p>
+                You must have PrairieLearn course <strong>Editor</strong> and course instance
+                <strong>Student Data Editor</strong> permissions to link a course.
+              </p>
             </details>
           </p>
           <p>
