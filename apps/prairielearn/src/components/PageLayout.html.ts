@@ -4,39 +4,37 @@ import { HeadContents } from './HeadContents.html.js';
 import { Navbar } from './Navbar.html.js';
 import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
 
-/**
- * Provides the standard layout for a page, including the head, navbar, and main content.
- *
- * @param resLocals The locals object from the Express response.
- * @param pageTitle The title of the page in the browser.
- * @param navPage The main page to highlight in the navbar.
- * @param options.fullWidth Whether the main container should span the entire width of the page.
- * @param options.marginBottom Whether the main container should have a bottom margin of mb-4 in Bootstrap.
- * @param options.pageNote A note to display after the pageTitle, shown in parenthesis.
- * @param options.navSubPage The current subpage, accounted for in the navbar.
- * @param options.navbarType The type of navbar to render, based on the type of user.
- * @param headContent Include scripts and other additional head content here.
- * @param content The main content of the page within the main container.
- */
 export function PageLayout({
   resLocals,
   pageTitle,
   navPage,
-  options = {},
+  options = {
+    marginBottom: true,
+  },
   headContent,
   content,
 }: {
+  /** The locals object from the Express response. */
   resLocals: Record<string, any>;
+  /** The title of the page in the browser. */
   pageTitle: string;
+  /** The main page to highlight in the navbar. */
   navPage: NavPage;
   options?: {
+    /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
+    /** Whether the main container should have a bottom margin of mb-4 in Bootstrap. */
     marginBottom?: boolean;
+    /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
+    /** The current subpage, accounted for in the navbar. */
     navSubPage?: NavSubPage;
+    /** The type of navbar to render, based on the type of user. */
     navbarType?: NavbarType;
   };
+  /** Include scripts and other additional head content here. */
   headContent?: HtmlValue;
+  /** The main content of the page within the main container. */
   content: HtmlValue;
 }) {
   return html`
@@ -60,7 +58,8 @@ export function PageLayout({
           id="content"
           class="
             ${options.fullWidth ? 'container-fluid' : 'container'} 
-            ${options.marginBottom ? 'mb-4' : ''}"
+            ${options.marginBottom ? 'mb-4' : ''}
+          "
         >
           ${content}
         </main>
