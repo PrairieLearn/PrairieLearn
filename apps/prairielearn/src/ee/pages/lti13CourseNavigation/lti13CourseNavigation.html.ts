@@ -11,12 +11,12 @@ export function Lti13CourseNavigationInstructor({
   courseName,
   resLocals,
   courses,
-  originalUrl,
+  lti13_instance_id,
 }: {
   courseName: string;
   resLocals: Record<string, any>;
   courses: Course[];
-  originalUrl: string;
+  lti13_instance_id: string;
 }): string {
   return html`
     <!doctype html>
@@ -69,7 +69,7 @@ export function Lti13CourseNavigationInstructor({
                       id="connect_course"
                       class="form-select mb-3"
                       name="unsafe_course_id"
-                      hx-get="${originalUrl}/course_instances"
+                      hx-get="/pl/lti13_instance/${lti13_instance_id}/course_navigation/course_instances"
                       hx-include="#link_form"
                       hx-target="#course_instances"
                     >

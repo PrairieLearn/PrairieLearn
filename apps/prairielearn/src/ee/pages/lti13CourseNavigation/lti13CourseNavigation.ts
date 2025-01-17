@@ -192,7 +192,7 @@ router.get(
           user_id: res.locals.authn_user.user_id,
           is_administrator: res.locals.is_administrator,
         }),
-        originalUrl: req.originalUrl,
+        lti13_instance_id: req.params.lti13_instance_id,
       }),
     );
   }),
