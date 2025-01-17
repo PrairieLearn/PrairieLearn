@@ -410,21 +410,10 @@ export async function loadFullCourse(
   courseId: string | null,
   courseDir: string,
 ): Promise<CourseData> {
+  const courseInfo = await loadCourseInfo(courseId, courseDir);
   const questions = await loadQuestions(courseDir);
-
-  const questionTagsInUse = new Set<string>();
-
-  for (const question of Object.values(questions)) {
-    if (question.data?.tags) {
-      for (const tag of question.data.tags) {
-        questionTagsInUse.add(tag);
-      }
-    }
-  }
-
   const courseInstanceInfos = await loadCourseInstances(courseDir);
   const courseInstances: Record<string, CourseInstanceData> = {};
-  const assessmentSetsInUse = new Set<string>();
   for (const [courseInstanceId, courseInstance] of Object.entries(courseInstanceInfos)) {
     // Check if the course instance is "expired". A course instance is considered
     // expired if it either has zero `allowAccess` rules (in which case it is never
@@ -443,27 +432,11 @@ export async function loadFullCourse(
       questions,
     );
 
-    for (const assessment of Object.values(assessments)) {
-      if (assessment.data?.set) {
-        assessmentSetsInUse.add(assessment.data?.set);
-      }
-    }
-
     courseInstances[courseInstanceId] = {
       courseInstance,
       assessments,
     };
   }
-
-  const courseInfo = await loadCourseInfo({
-    courseId,
-    coursePath: courseDir,
-    assessmentSetsInUse,
-    questionTagsInUse,
-  });
-
-  console.log('Course info', courseInfo);
-
   return {
     course: courseInfo,
     questions,
@@ -678,17 +651,10 @@ export async function loadInfoFile<T extends { uuid: string }>({
   }
 }
 
-export async function loadCourseInfo({
-  courseId,
-  coursePath,
-  assessmentSetsInUse,
-  questionTagsInUse,
-}: {
-  courseId: string | null;
-  coursePath: string;
-  assessmentSetsInUse: Set<string>;
-  questionTagsInUse: Set<string>;
-}): Promise<InfoFile<Course>> {
+export async function loadCourseInfo(
+  courseId: string | null,
+  coursePath: string,
+): Promise<InfoFile<Course>> {
   const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
     coursePath,
     filePath: 'infoCourse.json',
@@ -723,7 +689,6 @@ export async function loadCourseInfo({
 
     (info[fieldName] || []).forEach((entry) => {
       const entryId = entry[entryIdentifier];
-      console.log('entryId', entryId);
       if (known.has(entryId)) {
         duplicateEntryIds.add(entryId);
       }
@@ -752,26 +717,12 @@ export async function loadCourseInfo({
     return [...known.values()];
   }
 
-  const defaultAssessmentSetsInUse = DEFAULT_ASSESSMENT_SETS.filter((set) =>
-    assessmentSetsInUse.has(set.name),
-  );
-
-  console.log('defaultAssessmentSetsInUse', defaultAssessmentSetsInUse);
-
   const assessmentSets = getFieldWithoutDuplicates(
     'assessmentSets',
     'name',
-    defaultAssessmentSetsInUse,
+    DEFAULT_ASSESSMENT_SETS,
   );
-
-  const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => questionTagsInUse.has(tag.name));
-
-  console.log('defaultTagsInUse', defaultTagsInUse);
-
-  const tags = getFieldWithoutDuplicates('tags', 'name', defaultTagsInUse);
-
-  console.log('tags', tags);
-
+  const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
   const topics = getFieldWithoutDuplicates('topics', 'name');
   const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
 
