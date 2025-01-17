@@ -58,9 +58,9 @@ export function PageLayout({
         })}
         <main
           id="content"
-          class="${options.fullWidth ? 'container-fluid' : 'container'} ${options.marginBottom
-            ? 'mb-4'
-            : ''}"
+          class="
+            ${options.fullWidth ? 'container-fluid' : 'container'} 
+            ${options.marginBottom ? 'mb-4' : ''}"
         >
           ${content}
         </main>
