@@ -171,10 +171,10 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
                 aria-describedBy="validateAudienceHelp"
               />
               <label class="form-check-label" for="validate_audience">Validate audience</label>
-              <small id="validateAudienceHelp" class="form-text text-muted mt-0">
+              <div id="validateAudienceHelp" class="small text-muted">
                 Whether or not to validate the audience of the SAML response. This should be enabled
                 unless the Identity Provider doesn't send a correct value for the audience.
-              </small>
+              </div>
             </div>
 
             <div class="form-group form-check">
@@ -190,10 +190,10 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
               <label class="form-check-label" for="want_assertions_signed">
                 Require signed assertions
               </label>
-              <small id="wantAssertionsSignedHelp" class="form-text text-muted mt-0">
+              <div id="wantAssertionsSignedHelp" class="small text-muted">
                 Whether or not to require that assertions are signed. This should be enabled unless
                 the Identity Provider doesn't sign assertions.
-              </small>
+              </div>
             </div>
 
             <div class="form-group form-check">
@@ -209,10 +209,10 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
               <label class="form-check-label" for="want_authn_response_signed">
                 Require signed response
               </label>
-              <small id="wantAuthnResponseSignedHelp" class="form-text text-muted mt-0">
+              <div id="wantAuthnResponseSignedHelp" class="small text-muted">
                 Whether or not to require that the response is signed. This should be enabled unless
                 the Identity Provider doesn't sign responses.
-              </small>
+              </div>
             </div>
 
             <h3 class="h5">Attribute mappings</h3>

@@ -43,17 +43,30 @@
           "default": false
         },
         "devModeFeatures": {
-          "description": "Feature flags to enable in development mode.",
-          "type": "array",
-          "items": {
-            "description": "A single feature flag.",
-            "type": "string"
-          }
-        },
-        "questionParams": {
-            "description": "Parameters to pass down to questions in this course.",
-            "type": "object",
-            "default": {}
+          "description": "Feature flags to enable/disable in development mode.",
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            },
+            {
+              "description": "Legacy format; use an object instead.",
+              "type": "array",
+              "items": {
+                "description": "A single feature flag.",
+                "type": "string"
+              }
+            },
+            {
+              "questionParams": {
+                "description": "Parameters to pass down to questions in this course.",
+                "type": "object",
+                "default": {}
+              }
+            }
+          ]
         }
       }
     },

@@ -390,7 +390,6 @@ export const CourseInstanceSchema = z.object({
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
   long_name: z.string().nullable(),
-  ps_linked: z.boolean(),
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
@@ -450,6 +449,15 @@ export const CourseRequestSchema = z.object({
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;
 
+export const DraftQuestionMetadataSchema = z.object({
+  created_at: DateFromISOString,
+  created_by: IdSchema.nullable(),
+  id: IdSchema,
+  question_id: IdSchema.nullable(),
+  updated_by: IdSchema.nullable(),
+});
+export type DraftQuestionMetadata = z.infer<typeof DraftQuestionMetadataSchema>;
+
 export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
@@ -490,6 +498,36 @@ export const FileEditSchema = z.object({
   user_id: IdSchema,
 });
 export type FileEdit = z.infer<typeof FileEditSchema>;
+
+export const AiGenerationPromptSchema = z.object({
+  completion: z.any(),
+  system_prompt: z.string().nullable(),
+  errors: z.array(z.string()),
+  html: z.string().nullable(),
+  id: z.string(),
+  prompt_type: z.enum(['initial', 'human_revision', 'auto_revision']),
+  prompting_user_id: z.string(),
+  python: z.string().nullable(),
+  question_id: z.string(),
+  response: z.string(),
+  user_prompt: z.string(),
+  job_sequence_id: z.string().nullable(),
+});
+
+export type AiGenerationPrompt = z.infer<typeof AiGenerationPromptSchema>;
+
+export const FileTransferSchema = z.object({
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  from_course_id: IdSchema,
+  from_filename: z.string(),
+  id: IdSchema,
+  storage_filename: z.string(),
+  to_course_id: IdSchema,
+  transfer_type: z.enum(['CopyQuestion']),
+  user_id: IdSchema,
+});
+export type FileTransfer = z.infer<typeof FileTransferSchema>;
 
 export const GradingJobSchema = z.object({
   auth_user_id: IdSchema.nullable(),
@@ -823,6 +861,7 @@ export const QuestionSchema = z.object({
   external_grading_timeout: z.number().nullable(),
   grading_method: z.enum(['Internal', 'External', 'Manual']),
   id: IdSchema,
+  draft: z.boolean(),
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
@@ -1055,7 +1094,7 @@ export const VariantSchema = z.object({
   question_id: IdSchema,
   true_answer: z.record(z.string(), z.any()).nullable(),
   user_id: IdSchema.nullable(),
-  variant_seed: z.string().nullable(),
+  variant_seed: z.string(),
   workspace_id: IdSchema.nullable(),
 });
 export type Variant = z.infer<typeof VariantSchema>;

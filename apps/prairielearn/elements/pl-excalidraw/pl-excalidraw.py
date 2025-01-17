@@ -130,32 +130,29 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                         initial_content = empty_diagram
                 else:  # submission
                     initial_content = data["submitted_answers"][drawing_name]
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
         case "answer":
             if gradable:
                 show_widget = False
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
         case "submission":
             if gradable:
                 if fresh:
                     raise unreachable
-                else:  # submission
-                    initial_content = data["submitted_answers"][drawing_name]
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+                # submission
+                initial_content = data["submitted_answers"][drawing_name]
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
         case panel:
             assert_never(panel)
@@ -181,7 +178,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "show_widget": show_widget,
     }
 
-    with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
+    with open("pl-excalidraw.mustache", encoding="utf-8") as template:
         return chevron.render(template, render_data)
 
 
@@ -194,9 +191,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             # Check the submissions if available
             if drawing_name in data["submitted_answers"]:
                 json.loads(data["submitted_answers"][drawing_name])
-        except Exception as e:
+        except ValueError as exc:
             if drawing_name not in data["format_errors"]:
                 data["format_errors"][drawing_name] = []
             data["format_errors"][drawing_name].append(
-                f"Invalid drawing submission: {e}"
+                f"Invalid drawing submission: {exc}"
             )

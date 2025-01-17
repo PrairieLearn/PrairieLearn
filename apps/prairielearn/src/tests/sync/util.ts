@@ -12,7 +12,7 @@ import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
-  devModeFeatures: string[];
+  devModeFeatures: Record<string, boolean> | string[];
 }
 
 interface Tag {
@@ -167,7 +167,7 @@ export interface Assessment {
 interface QuestionExternalGradingOptions {
   enabled?: boolean;
   image: string;
-  entrypoint: string;
+  entrypoint: string | string[];
   serverFilesCourse?: string[];
   timeout?: number;
   enableNetworking?: boolean;
@@ -178,7 +178,7 @@ interface QuestionWorkspaceOptions {
   image: string;
   port: number;
   home: string;
-  args?: string;
+  args?: string | string[];
   gradedFiles?: string[];
   rewriteUrl?: string;
   enableNetworking?: boolean;
@@ -193,7 +193,6 @@ export interface Question {
   tags?: string[];
   sharingSets?: string[];
   sharePublicly?: boolean;
-  sharedPublicly?: boolean;
   shareSourcePublicly?: boolean;
   clientFiles?: string[];
   clientTemplates?: string[];
