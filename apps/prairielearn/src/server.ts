@@ -1824,10 +1824,6 @@ export async function initExpress(): Promise<Express> {
       .default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/getting_started', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'getting_started';
-      next();
-    },
     (
       await import(
         './pages/instructorCourseAdminGettingStartedChecklist/instructorCourseAdminGettingStartedChecklist.js'
