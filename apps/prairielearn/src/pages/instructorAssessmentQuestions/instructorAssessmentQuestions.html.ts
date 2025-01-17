@@ -23,7 +23,7 @@ import {
   TopicSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
-import { AssessmentQuestionRow } from './instructorAssessmentQuestions.types.js';
+import { type AssessmentQuestionRow } from './instructorAssessmentQuestions.types.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
@@ -67,8 +67,7 @@ export function InstructorAssessmentQuestions({
               <button type="submit" class="btn btn-danger">Reset question variants</button>
             `,
           })}
-          <div class="js-edit-zone-modal modal fade"></div>
-          <div class="js-edit-question-modal modal fade"></div>
+          <div class="js-edit-modal modal fade"></div>
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
             assessment: resLocals.assessment,

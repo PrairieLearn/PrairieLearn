@@ -39,8 +39,7 @@ onDocumentReady(() => {
   let editMode = signal(false);
   let editedQuestion = signal<AssessmentQuestionRow | null>(null);
   let editedZone = signal<Zone | null>(null);
-  const editZoneModal = document.querySelector('.js-edit-zone-modal') as HTMLElement;
-  const editQuestionModal = document.querySelector('.js-edit-question-modal') as HTMLElement;
+  const editModal = document.querySelector('.js-edit-modal') as HTMLElement;
 
   let zones: Zone[] = [];
   let currentZone: Zone = {
@@ -139,12 +138,8 @@ onDocumentReady(() => {
 
     const handleEditZone = ({ zone, zoneIndex }: { zone: Zone; zoneIndex: number }) => {
       editedZone.value = { ...zone };
-      render(<EditZoneModal zone={zone} zoneIndex={zoneIndex} />, editZoneModal);
-      Modal.getOrCreateInstance(editZoneModal).show();
-    };
-
-    const handleDeleteZone = (question: AssessmentQuestionRow, i: number) => {
-      console.log(question);
+      render(<EditZoneModal zone={zone} zoneIndex={zoneIndex} />, editModal);
+      Modal.getOrCreateInstance(editModal).show();
     };
 
     const handleEditQuestion = ({
@@ -166,9 +161,9 @@ onDocumentReady(() => {
           questionIndex={questionIndex}
           alternativeGroupIndex={alternativeGroupIndex ?? undefined}
         />,
-        editQuestionModal,
+        editModal,
       );
-      Modal.getOrCreateInstance(editQuestionModal).show();
+      Modal.getOrCreateInstance(editModal).show();
     };
 
     const handleDeleteQuestion = ({
@@ -182,16 +177,15 @@ onDocumentReady(() => {
       questionIndex: number;
       alternativeGroupIndex?: number;
     }) => {
-      const update = [...resolvedZones.value];
-      if (alternativeGroupIndex || alternativeGroupIndex === 0) {
-        update[zoneIndex].questions[questionIndex].alternatives?.splice(alternativeGroupIndex, 1);
-        if (update[zoneIndex].questions[questionIndex].alternatives?.length === 0) {
-          update[zoneIndex].questions.splice(questionIndex, 1);
-        }
-      } else {
-        update[zoneIndex].questions.splice(questionIndex, 1);
-      }
-      resolvedZones.value = [...update];
+      render(
+        <DeleteQuestionModal
+          zoneIndex={zoneIndex}
+          questionIndex={questionIndex}
+          alternativeGroupIndex={alternativeGroupIndex}
+        />,
+        editModal,
+      );
+      Modal.getOrCreateInstance(editModal).show();
     };
 
     let questionNumber = 0;
@@ -483,7 +477,7 @@ onDocumentReady(() => {
 
   function EditZoneModal({ zone, zoneIndex }: { zone: Zone; zoneIndex: number }) {
     const handleSubmit = () => {
-      Modal.getOrCreateInstance(editZoneModal).hide();
+      Modal.getOrCreateInstance(editModal).hide();
       const update: Zone[] = resolvedZones.value.map((z) => ({ ...z }));
       update[zoneIndex] = editedZone.value ?? update[zoneIndex];
       resolvedZones.value = [...update];
@@ -632,7 +626,7 @@ onDocumentReady(() => {
   }) {
     const [autoGraded, setAutoGraded] = useState(question.max_manual_points === 0);
     const handleSubmit = () => {
-      Modal.getOrCreateInstance(editQuestionModal).hide();
+      Modal.getOrCreateInstance(editModal).hide();
       const update: Zone[] = resolvedZones.value.map((z) => ({ ...z }));
       if (update[zoneIndex].questions) {
         if (alternativeGroupIndex && update[zoneIndex].questions[questionIndex].alternatives) {
@@ -854,6 +848,54 @@ onDocumentReady(() => {
             </button>
             <button type="button" class="btn btn-primary" onClick={() => handleSubmit()}>
               Save changes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function DeleteQuestionModal({
+    zoneIndex,
+    questionIndex,
+    alternativeGroupIndex,
+  }: {
+    zoneIndex: number;
+    questionIndex: number;
+    alternativeGroupIndex?: number;
+  }) {
+    const handleDelete = () => {
+      const update = [...resolvedZones.value];
+      if (alternativeGroupIndex || alternativeGroupIndex === 0) {
+        update[zoneIndex].questions[questionIndex].alternatives?.splice(alternativeGroupIndex, 1);
+        if (update[zoneIndex].questions[questionIndex].alternatives?.length === 0) {
+          update[zoneIndex].questions.splice(questionIndex, 1);
+        }
+      } else {
+        update[zoneIndex].questions.splice(questionIndex, 1);
+      }
+      resolvedZones.value = [...update];
+    };
+    return (
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h4">Remove Question</h2>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to remove this question from the assessment?</p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-danger js-confirm-delete-button"
+              data-dismiss="modal"
+              onClick={() => handleDelete()}
+            >
+              Remove Question
+            </button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">
+              Cancel
             </button>
           </div>
         </div>
