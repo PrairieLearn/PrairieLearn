@@ -10,7 +10,7 @@
       "abbreviation": "PLEC",
       "name": "Prelecture",
       "heading": "Prelectures",
-      "color": "orange2"
+      "color": "turquoise1"
     },
     {
       "abbreviation": "LEC",
@@ -34,13 +34,13 @@
       "abbreviation": "PQ",
       "name": "Practice Quiz",
       "heading": "Practice Quizzes",
-      "color": "yellow2"
+      "color": "yellow1"
     },
     {
       "abbreviation": "Q",
       "name": "Quiz",
       "heading": "Quizzes",
-      "color": "yellow1"
+      "color": "yellow2"
     },
     {
       "abbreviation": "PE",
@@ -52,7 +52,7 @@
       "abbreviation": "E",
       "name": "Exam",
       "heading": "Exams",
-      "color": "purple2"
+      "color": "pink2"
     },
     {
       "abbreviation": "U",
