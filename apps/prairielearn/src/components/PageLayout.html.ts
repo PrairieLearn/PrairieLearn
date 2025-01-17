@@ -13,7 +13,7 @@ import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
  * @param options.fullWidth Whether the main container should span the entire width of the page.
  * @param options.marginBottom Whether the main container should have a bottom margin of mb-4 in Bootstrap.
  * @param options.pageNote A note to display after the pageTitle, shown in parenthesis.
- * @param options.navSubPage The current subpage, used by the navbar.
+ * @param options.navSubPage The current subpage, accounted for in the navbar.
  * @param options.navbarType The type of navbar to render, based on the type of user.
  * @param headContent Include scripts and other additional head content here.
  * @param content The main content of the page within the main container.
