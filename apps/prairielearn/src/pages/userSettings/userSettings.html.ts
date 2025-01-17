@@ -39,12 +39,8 @@ export function UserSettings({
 }) {
   return PageLayout({
     resLocals,
-    options: {
-      institution: authn_institution,
-      mainClass: 'container',
-      pageTitle: 'User Settings',
-      navPage: 'user_settings',
-    },
+    pageTitle: 'User Settings',
+    navPage: 'user_settings',
     content: html`
       <h1 class="mb-4">Settings</h1>
       <div class="card mb-4">
