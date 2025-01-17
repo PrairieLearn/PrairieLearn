@@ -65,7 +65,13 @@ router.post(
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
       }
 
+      const client = new OpenAI({
+        apiKey: config.openAiApiKey,
+        organization: config.openAiOrganization,
+      });
+
       const jobSequenceId = await benchmarkAiQuestionGeneration({
+        client,
         authnUserId: res.locals.authn_user.user_id,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
