@@ -680,7 +680,7 @@ function NavbarInstructor({
     ${authz_data.has_course_permission_edit && course.show_getting_started
       ? html`
           <li class="nav-item d-flex align-items-center">
-            <a class="nav-link pr-0" href="${urlPrefix}/course_admin/getting_started"
+            <a class="nav-link pr-0" href="${urlPrefix}/course_admin/getting_started_checklist"
               >Getting Started</a
             >
             ${ProgressCircle({
