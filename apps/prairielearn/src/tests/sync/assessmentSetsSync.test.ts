@@ -110,8 +110,12 @@ describe('Assessment set syncing', () => {
   it('adds default assessment sets if used by assessments but not specified in courseData', async () => {
     const courseData = util.getCourseData();
 
+    // Similarly, the Machine Problem set is in DEFAULT_ASSESSMENT_SETS but not in courseData
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID]['set'] =
+      'Machine Problem';
+
     const newAssessment: util.Assessment = {
-      uuid: '123123123',
+      uuid: '03f3b4d2-0264-48b7-bf42-107732142c01',
       title: 'Test assessment 2',
       type: 'Exam',
       set: 'Worksheet', // The Worksheet set is in DEFAULT_ASSESSMENT_SETS but not in courseData
@@ -119,14 +123,9 @@ describe('Assessment set syncing', () => {
     };
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['test1'] = newAssessment;
 
-    // Similarly, the Machine Problem set is in DEFAULT_ASSESSMENT_SETS but not in courseData
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID]['set'] =
-      'Machine Problem';
-
     await util.writeAndSyncCourseData(courseData);
 
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
-
     const syncedWorksheetSet = syncedAssessmentSets.find((as) => as.name === 'Worksheet');
 
     // Ensure that the Worksheet set was added and matches the corresponding set in DEFAULT_ASSESSMENT_SETS
