@@ -96,7 +96,7 @@ INSERT INTO
     repository,
     branch,
     institution_id,
-    show_onboarding
+    show_getting_started
   )
 VALUES
   (
@@ -112,9 +112,9 @@ VALUES
 RETURNING
   *;
 
--- BLOCK update_course_show_onboarding
+-- BLOCK update_course_show_getting_started
 UPDATE pl_courses
 SET
-  show_onboarding = $show_onboarding
+  show_getting_started = $show_getting_started
 WHERE
   id = $course_id

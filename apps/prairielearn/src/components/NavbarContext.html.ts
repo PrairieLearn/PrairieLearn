@@ -86,17 +86,20 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
   ],
   course_admin: [
     {
-      activeSubPage: 'onboarding',
-      urlSuffix: '/course_admin/getting_started',
+      activeSubPage: 'getting_started_checklist',
+      urlSuffix: '/course_admin/getting_started_checklist',
       iconClasses: 'fa fa-tasks',
       tabLabel: 'Getting Started',
-      htmlSuffix: ({ navbarCompleteOnboardingTasksCount, navbarTotalOnboardingTasksCount }) =>
+      htmlSuffix: ({
+        navbarCompleteGettingStartedTasksCount,
+        navbarTotalGettingStartedTasksCount,
+      }) =>
         ProgressCircle({
-          value: navbarCompleteOnboardingTasksCount,
-          maxValue: navbarTotalOnboardingTasksCount,
+          value: navbarCompleteGettingStartedTasksCount,
+          maxValue: navbarTotalGettingStartedTasksCount,
         }),
       renderCondition: ({ authz_data, course }) =>
-        authz_data.has_course_permission_edit && course.show_onboarding,
+        authz_data.has_course_permission_edit && course.show_getting_started,
     },
     {
       activeSubPage: 'sets',

@@ -8,7 +8,7 @@ import { CourseInstanceSchema } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export interface OnboardingStepInfo {
+export interface GettingStartedStepInfo {
   header: string;
   description: string;
   isComplete: boolean;
@@ -19,11 +19,11 @@ export interface OnboardingStepInfo {
 /**
  * Retrieve the getting started checklist steps and if they are complete for a course.
  */
-export async function getOnboardingSteps({
+export async function getGettingStartedSteps({
   course_id,
 }: {
   course_id: string;
-}): Promise<OnboardingStepInfo[]> {
+}): Promise<GettingStartedStepInfo[]> {
   const courseHasCourseInstance = await selectCourseHasCourseInstances({ course_id });
 
   let assessmentsPageLink: string | undefined;
@@ -60,7 +60,7 @@ export async function getOnboardingSteps({
     z.boolean(),
   );
 
-  const steps: OnboardingStepInfo[] = [
+  const steps: GettingStartedStepInfo[] = [
     {
       header: 'Add course staff',
       description:

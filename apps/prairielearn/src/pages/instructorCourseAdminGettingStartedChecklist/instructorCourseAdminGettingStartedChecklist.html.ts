@@ -3,13 +3,13 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import type { OnboardingStepInfo } from '../../lib/onboarding.js';
+import type { GettingStartedStepInfo } from '../../lib/getting-started.js';
 
-export function InstructorCourseAdminOnboarding({
+export function InstructorCourseAdminGettingStartedChecklist({
   steps,
   resLocals,
 }: {
-  steps: OnboardingStepInfo[];
+  steps: GettingStartedStepInfo[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -32,19 +32,19 @@ export function InstructorCourseAdminOnboarding({
             </div>
             <div class="card-body">
               <p class="mb-3">Complete these suggested tasks to finish setting up your course.</p>
-              <div class="list-group mb-3">${steps.map((step) => OnboardingStep(step))}</div>
+              <div class="list-group mb-3">${steps.map((step) => GettingStartedStep(step))}</div>
               <form method="POST">
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <button
                   name="__action"
-                  value="dismiss_onboarding"
+                  value="dismiss_getting_started_checklist"
                   class="btn btn-sm btn-primary"
                   type="submit"
-                  aria-describedby="dismiss_onboarding_help"
+                  aria-describedby="dismiss_getting_started_checklist_help"
                 >
                   Dismiss the getting started checklist
                 </button>
-                <small id="dismiss_onboarding_help" class="form-text text-muted">
+                <small id="dismiss_getting_started_checklist_help" class="form-text text-muted">
                   This page can be restored from the course settings.
                 </small>
               </form>
@@ -56,7 +56,7 @@ export function InstructorCourseAdminOnboarding({
   `.toString();
 }
 
-function OnboardingStep(step: OnboardingStepInfo) {
+function GettingStartedStep(step: GettingStartedStepInfo) {
   let stepHeader = step.header;
   if (step.optional) {
     stepHeader += ' (optional)';

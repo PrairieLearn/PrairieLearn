@@ -13,7 +13,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getAvailableTimezones } from '../../lib/timezones.js';
-import { updateCourseShowOnboarding } from '../../models/course.js';
+import { updateCourseShowGettingStarted } from '../../models/course.js';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
@@ -53,7 +53,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied. Must be course editor to make changes.');
+      throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
     if (res.locals.course.example_course) {
@@ -65,12 +65,12 @@ router.post(
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
 
-      const show_onboarding = req.body.show_onboarding === 'on';
+      const show_getting_started = req.body.show_getting_started === 'on';
 
-      if (res.locals.course.show_onboarding !== show_onboarding) {
-        await updateCourseShowOnboarding({
+      if (res.locals.course.show_getting_started !== show_getting_started) {
+        await updateCourseShowGettingStarted({
           course_id: res.locals.course.id,
-          show_onboarding,
+          show_getting_started,
         });
       }
 

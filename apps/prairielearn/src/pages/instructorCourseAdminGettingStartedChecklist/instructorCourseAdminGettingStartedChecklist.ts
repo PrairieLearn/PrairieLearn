@@ -4,10 +4,10 @@ import asyncHandler from 'express-async-handler';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
-import { getOnboardingSteps } from '../../lib/onboarding.js';
-import { updateCourseShowOnboarding } from '../../models/course.js';
+import { getGettingStartedSteps } from '../../lib/getting-started.js';
+import { updateCourseShowGettingStarted } from '../../models/course.js';
 
-import { InstructorCourseAdminOnboarding } from './instructorCourseAdminOnboarding.html.js';
+import { InstructorCourseAdminGettingStartedChecklist } from './instructorCourseAdminGettingStartedChecklist.html.js';
 
 const router = express.Router();
 
@@ -15,9 +15,9 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.send(
-      InstructorCourseAdminOnboarding({
+      InstructorCourseAdminGettingStartedChecklist({
         resLocals: res.locals,
-        steps: await getOnboardingSteps({ course_id: res.locals.course.id }),
+        steps: await getGettingStartedSteps({ course_id: res.locals.course.id }),
       }),
     );
   }),
@@ -27,7 +27,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw new HttpStatusError(403, 'Access denied. Must be course editor to make changes.');
+      throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
     if (res.locals.course.example_course) {
@@ -36,10 +36,10 @@ router.post(
 
     const course_id = res.locals.course.id;
 
-    if (req.body.__action === 'dismiss_onboarding') {
-      await updateCourseShowOnboarding({
+    if (req.body.__action === 'dismiss_getting_started_checklist') {
+      await updateCourseShowGettingStarted({
         course_id,
-        show_onboarding: false,
+        show_getting_started: false,
       });
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);

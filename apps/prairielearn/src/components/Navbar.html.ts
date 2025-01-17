@@ -624,8 +624,8 @@ function NavbarInstructor({
     assessment_label,
     assessments,
     navbarOpenIssueCount,
-    navbarCompleteOnboardingTasksCount,
-    navbarTotalOnboardingTasksCount,
+    navbarCompleteGettingStartedTasksCount,
+    navbarTotalGettingStartedTasksCount,
     authz_data,
     urlPrefix,
   } = resLocals;
@@ -677,15 +677,15 @@ function NavbarInstructor({
       </div>
     </li>
 
-    ${authz_data.has_course_permission_edit && course.show_onboarding
+    ${authz_data.has_course_permission_edit && course.show_getting_started
       ? html`
           <li class="nav-item d-flex align-items-center">
             <a class="nav-link pr-0" href="${urlPrefix}/course_admin/getting_started"
               >Getting Started</a
             >
             ${ProgressCircle({
-              value: navbarCompleteOnboardingTasksCount,
-              maxValue: navbarTotalOnboardingTasksCount,
+              value: navbarCompleteGettingStartedTasksCount,
+              maxValue: navbarTotalGettingStartedTasksCount,
             })}
           </li>
         `
