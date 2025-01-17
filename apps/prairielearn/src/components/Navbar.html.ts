@@ -626,7 +626,6 @@ function NavbarInstructor({
     navbarOpenIssueCount,
     navbarCompleteOnboardingTasksCount,
     navbarTotalOnboardingTasksCount,
-
     authz_data,
     urlPrefix,
   } = resLocals;
@@ -681,7 +680,9 @@ function NavbarInstructor({
     ${authz_data.has_course_permission_edit && course.show_onboarding
       ? html`
           <li class="nav-item d-flex align-items-center">
-            <a class="nav-link pr-0" href="${urlPrefix}/course_admin/getting_started">Getting Started</a>
+            <a class="nav-link pr-0" href="${urlPrefix}/course_admin/getting_started"
+              >Getting Started</a
+            >
             ${ProgressCircle({
               value: navbarCompleteOnboardingTasksCount,
               maxValue: navbarTotalOnboardingTasksCount,
