@@ -31,7 +31,7 @@ export function InstructorCourseAdminOnboarding({
               <h1>Onboarding checklist</h1>
             </div>
             <div class="card-body text-left" style="text-wrap: balance;">
-              <p class="mb-3">Complete these task suggestions to finish setting up your course.</p>
+              <p class="mb-3">Complete these suggested tasks to finish setting up your course.</p>
               <div class="list-group mb-3">
                 ${steps.map((step, index) =>
                   OnboardingStep({
