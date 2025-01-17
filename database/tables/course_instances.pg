@@ -7,12 +7,12 @@ columns
     hide_in_enroll_page: boolean default false
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     long_name: text
-    question_params: jsonb default '{}'::jsonb
     short_name: text
     sync_errors: text
     sync_job_sequence_id: bigint
     sync_warnings: text
     uuid: uuid
+    question_params: jsonb default '{}'::jsonb
 
 indexes
     course_instances_pkey: PRIMARY KEY (id) USING btree (id)
