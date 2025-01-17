@@ -34,25 +34,25 @@
       "abbreviation": "PQ",
       "name": "Practice Quiz",
       "heading": "Practice Quizzes",
-      "color": "pink1"
+      "color": "yellow2"
     },
     {
       "abbreviation": "Q",
       "name": "Quiz",
       "heading": "Quizzes",
-      "color": "red1"
+      "color": "yellow1"
     },
     {
       "abbreviation": "PE",
       "name": "Practice Exam",
       "heading": "Practice Exams",
-      "color": "yellow1"
+      "color": "pink1"
     },
     {
       "abbreviation": "E",
       "name": "Exam",
       "heading": "Exams",
-      "color": "brown1"
+      "color": "purple2"
     },
     {
       "abbreviation": "U",
