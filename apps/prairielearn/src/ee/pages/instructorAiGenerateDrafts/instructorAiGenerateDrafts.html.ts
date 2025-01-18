@@ -52,7 +52,7 @@ export function InstructorAIGenerateDrafts({
                       <button
                         class="btn btn-sm btn-light mr-2"
                         data-toggle="modal"
-                        data-target="#destroyModal"
+                        data-target="#deleteModal"
                       >
                         <i class="fa fa-trash" aria-hidden="true"></i>
                         <span class="d-none d-sm-inline">Delete all drafts</span>
@@ -114,7 +114,7 @@ export function InstructorAIGenerateDrafts({
 
 function DeleteQuestionsModal(CsrfToken) {
   return Modal({
-    id: 'destroyModal',
+    id: 'deleteModal',
     title: 'Delete all draft questions',
     body: 'This will permanently and unrecoverably delete all draft questions.',
     footer: html`
