@@ -1,8 +1,5 @@
 # WARNING: This file is deprecated and will be removed in the future.
 # Please import from prairielearn.sympy_utils instead.
-import sys
-
-sys.path.append("..")
 
 from prairielearn.sympy_utils import *  # noqa: F403
 from prairielearn.sympy_utils import _Constants  # noqa: F401
