@@ -1101,7 +1101,7 @@ def string_to_number(
         return None
 
 
-class _PartialDataFormatError(TypedDict):
+class _PartialDataFormatErrors(TypedDict):
     format_errors: str
 
 
@@ -1114,7 +1114,7 @@ def string_fraction_to_number(
     allow_fractions: bool = True,  # noqa: FBT001, FBT002
     allow_complex: bool = True,  # noqa: FBT001, FBT002
 ) -> (
-    tuple[None, _PartialDataFormatError]
+    tuple[None, _PartialDataFormatErrors]
     | tuple[np.float64 | np.complex128, _PartialDataSubmittedAnswers]
 ):
     """string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True)
@@ -1234,14 +1234,13 @@ def string_to_2darray(
     # If there are no brackets, treat as scalar
     result_type: Literal["python", "matlab", "scalar"]
     if number_of_left_brackets == 0:
+        # If there are no brackets, treat as scalar
         result_type = "scalar"
-
-    # If there is only one set of brackets, treat as MATLAB format
     elif number_of_left_brackets == 1:
+        # If there is only one set of brackets, treat as MATLAB format
         result_type = "matlab"
-
-    # If there is more than one set of brackets, treat as python format
     else:
+        # If there is more than one set of brackets, treat as python format
         result_type = "python"
 
     # Get string between outer brackets
