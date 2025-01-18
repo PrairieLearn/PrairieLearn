@@ -1,8 +1,8 @@
 import json
 from typing import Any
 
+import prairielearn.internal.zygote_utils as zu
 import pytest
-import zygote_utils as zu
 
 
 @pytest.mark.parametrize(

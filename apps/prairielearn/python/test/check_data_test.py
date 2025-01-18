@@ -1,5 +1,5 @@
 import pytest
-from check_data import check_data
+from prairielearn.internal.check_data import check_data
 
 
 def test_check_data_extra_props() -> None:

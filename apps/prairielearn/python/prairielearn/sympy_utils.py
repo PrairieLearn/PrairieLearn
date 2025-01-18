@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from tokenize import TokenError
 from typing import Any, Literal, TypedDict, cast
 
-import prairielearn as pl
 import sympy
 from sympy.parsing.sympy_parser import (
     eval_expr,
@@ -16,6 +15,8 @@ from sympy.parsing.sympy_parser import (
     stringify_expr,
 )
 from typing_extensions import NotRequired
+
+from prairielearn.unicode_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
@@ -386,7 +387,7 @@ def evaluate_with_source(
 ) -> tuple[sympy.Expr, str]:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    expr = pl.full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
+    expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
 
     local_dict = {
         k: v
