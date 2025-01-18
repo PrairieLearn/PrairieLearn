@@ -55,6 +55,7 @@ RUN apt update \
                  igraph \
                  lahman \
                  lintr \
+                 magick \
                  memoise \
                  microbenchmark \
                  nycflights13 \
@@ -69,6 +70,7 @@ RUN apt update \
                  stringdist \
                  testthat \
                  tidyverse \
+                 tinysnapshot \
                  tinytest \
                  ttdo \
                  unix \
@@ -82,6 +84,16 @@ RUN installGithub.r MangoTheCat/visualTest
 COPY plr /r_autograder/plr
 RUN install2.r --repos=NULL /r_autograder/plr \
         && rm -r /r_autograder/plr
+
+# Install ttdo (until CRAN package updated)
+COPY ttdo_0.0.9.2.tar.gz /r_autograder/ttdo_0.0.9.2.tar.gz
+RUN install2.r --repos=NULL /r_autograder/ttdo_0.0.9.2.tar.gz \
+        && rm /r_autograder/ttdo_0.0.9.2.tar.gz
+
+# Install tinysnapshot (until CRAN package updated)
+COPY tinysnapshot_0.0.7.1.tar.gz /r_autograder/tinysnapshot_0.0.7.1.tar.gz
+RUN install2.r --repos=NULL /r_autograder/tinysnapshot_0.0.7.1.tar.gz \
+        && rm /r_autograder/tinysnapshot_0.0.7.1.tar.gz
 
 # Set up user ag
 RUN useradd ag \ 
