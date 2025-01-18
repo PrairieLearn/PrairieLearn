@@ -92,8 +92,9 @@ describe('Parameterized questions', function () {
 
     questionsArray.forEach((question, index) => {
       it(`should verify question #${index + 1} (${question.qid}) has correct parameters`, async function () {
-        if (!question.url)
+        if (!question.url) {
           throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);
+        }
         const response = await fetch(question.url);
         assert.equal(response.status, 200);
         const $ = cheerio.load(await response.text());
