@@ -1,13 +1,11 @@
 from collections import deque
+from collections.abc import Callable
 from html import escape as html_escape
 from itertools import chain
-from typing import Callable, Deque, List, Optional, Tuple, Union
 
 import lxml.html
 
-ElementReplacement = Optional[
-    Union[str, lxml.html.HtmlElement, List[lxml.html.HtmlElement]]
-]
+ElementReplacement = str | lxml.html.HtmlElement | list[lxml.html.HtmlElement] | None
 
 # https://developer.mozilla.org/en-US/docs/Glossary/Void_element
 VOID_ELEMENTS = frozenset(
@@ -52,6 +50,9 @@ def format_attrib_value(v: str) -> str:
 
 
 def get_source_definition(element: lxml.html.HtmlElement) -> str:
+    if not isinstance(element.tag, str):
+        raise TypeError(f"Invalid tag type: {type(element.tag)}")
+
     attributes = (
         f'''{k}="{format_attrib_value(v)}"''' for k, v in element.attrib.items()
     )
@@ -70,12 +71,12 @@ def traverse_and_replace(
     """
 
     # Initialize result and work data structures
-    result: Deque[str] = deque()
+    result: deque[str] = deque()
 
     initial_list = lxml.html.fragments_fromstring(html)
-    count_stack: Deque[int] = deque([len(initial_list)])
-    work_stack: Deque[Union[str, lxml.html.HtmlElement]] = deque(reversed(initial_list))
-    tail_stack: Deque[Tuple[str, Optional[str]]] = deque()
+    count_stack: deque[int] = deque([len(initial_list)])
+    work_stack: deque[str | lxml.html.HtmlElement] = deque(reversed(initial_list))
+    tail_stack: deque[tuple[str, str | None]] = deque()
 
     while work_stack:
         element = work_stack.pop()
@@ -128,6 +129,9 @@ def traverse_and_replace(
                 if tail:
                     result.append(tail)
             else:
+                if not isinstance(new_elements.tag, str):
+                    raise TypeError(f"Invalid tag type: {type(new_elements.tag)}")
+
                 # Add opening tag and text
                 result.append(get_source_definition(new_elements))
                 if new_elements.text is not None:
@@ -154,8 +158,8 @@ def traverse_and_replace(
                 result.append(f"</{tail_tag}>")
             if tail_text is not None:
                 result.append(tail_text)
-        else:
-            count_stack[-1] -= 1
+
+        count_stack[-1] -= 1
 
     # No need to empty tail stack, should be empty from above.
     # If debugging, you can add the following assertions:

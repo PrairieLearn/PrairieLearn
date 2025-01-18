@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * Converts Docker's custom multiplexed stream format into a normal string.
  * This essentially entails removing each 8-byte header.
@@ -9,11 +7,9 @@
  * https://github.com/apocas/dockerode/issues/456
  * https://github.com/moby/moby/issues/32794
  *
- * @param {Buffer} buffer
- * @returns {Buffer}
  */
-export function parseDockerLogs(buffer) {
-  let outputChunks = [];
+export function parseDockerLogs(buffer: Buffer): Buffer {
+  const outputChunks: Buffer[] = [];
 
   while (buffer.length > 0) {
     // Ensure that we gracefully handle the case where we have a partial header.

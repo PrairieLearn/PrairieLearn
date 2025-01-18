@@ -9,14 +9,14 @@ WIDTH_DEFAULT = "500"
 HEIGHT_DEFAULT = "300"
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["script-name"]
     optional_attribs = ["param-names", "width", "height"]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     script_name = pl.get_string_attrib(element, "script-name", None)
 

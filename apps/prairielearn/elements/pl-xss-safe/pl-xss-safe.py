@@ -35,12 +35,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         source_file_name is not None
         and (submitted_file_name is not None or contents is not None)
     ) or (submitted_file_name is not None and contents is not None):
-        raise Exception(
+        raise ValueError(
             'Only one of the attributes "source-file-name", "submitted-file-name" and "contents" can be used.'
         )
 
     if language not in ["html", "markdown"]:
-        raise Exception('Attribute "language" must be either "html" or "markdown".')
+        raise ValueError('Attribute "language" must be either "html" or "markdown".')
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -57,9 +57,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         base_path = data["options"]["question_path"]
         file_path = os.path.join(base_path, source_file_name)
         if not os.path.exists(file_path):
-            raise Exception(f'Unknown file path: "{file_path}".')
+            raise RuntimeError(f'Unknown file path: "{file_path}".')
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             contents = f.read()
 
     elif submitted_file_name is not None:
@@ -82,5 +82,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
     }
 
-    with open("pl-xss-safe.mustache", "r", encoding="utf-8") as f:
+    with open("pl-xss-safe.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

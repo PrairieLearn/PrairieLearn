@@ -31,7 +31,7 @@ PRESENTATION_TYPE_DEFAULT = "g"
 
 def convert_pandas_dtype_to_r(s: pd.Series) -> str:
     # Force series to avoid odd element-wise output
-    s.dtype
+    _ = s.dtype
 
     if pd.api.types.is_float_dtype(s):
         return "numeric"
@@ -126,7 +126,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     frame = pl.from_json(data["params"][varname])
 
     if not isinstance(frame, pd.DataFrame):
-        raise ValueError(f'Parameter name "{varname}" does not encode a dataframe.')
+        raise TypeError(f'Parameter name "{varname}" does not encode a dataframe.')
 
     frame = cast(pd.DataFrame, frame)
 
@@ -190,5 +190,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if show_dimensions:
         html_params["num_rows"], html_params["num_cols"] = frame.shape
 
-    with open("pl-dataframe.mustache", "r", encoding="utf-8") as f:
+    with open("pl-dataframe.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
