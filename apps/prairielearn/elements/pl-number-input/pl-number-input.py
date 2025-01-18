@@ -351,15 +351,17 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_answer = data["submitted_answers"].get(name, None)
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
         submitted_answer = blank_value
-    value, newdata = pl.string_fraction_to_number(
+
+    res = pl.string_fraction_to_number(
         submitted_answer, allow_fractions=allow_fractions, allow_complex=allow_complex
     )
-
-    if value is not None:
-        data["submitted_answers"][name] = newdata.get("submitted_answers")
+    if res[0] is not None:
+        _, newdata = res
+        data["submitted_answers"][name] = newdata["submitted_answers"]
     else:
+        _, newdata = res
         data["format_errors"][name] = get_format_string(
-            allow_complex, allow_fractions, newdata.get("format_errors")
+            allow_complex, allow_fractions, newdata["format_errors"]
         )
         data["submitted_answers"][name] = None
 
