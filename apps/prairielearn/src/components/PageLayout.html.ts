@@ -36,6 +36,8 @@ export function PageLayout({
   headContent?: HtmlValue;
   /** The main content of the page within the main container. */
   content: HtmlValue;
+  /** Include modals here. */
+  modalContent?: HtmlValue;
 }) {
   const marginBottom = options.marginBottom ?? true;
 
