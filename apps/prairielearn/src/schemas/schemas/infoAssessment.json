@@ -75,10 +75,10 @@
       "default": true
     },
     "questionParams": {
-            "description": "Parameters to pass down to questions in this assessment.",
-            "type": "object",
-            "default": {}
-        },
+      "description": "Parameters to pass down to questions in this assessment.",
+      "type": "object",
+      "default": {}
+    },
     "zones": {
       "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
       "type": "array",
@@ -321,11 +321,10 @@
           "default": []
         },
         "questionParams": {
-                    "description": "Parameters to pass down to questions in this zone.",
-                    "type": "object",
-                    "default": {}
-                }
-
+          "description": "Parameters to pass down to questions in this zone.",
+          "type": "object",
+          "default": {}
+        }
       },
       "required": ["questions"]
     },
@@ -406,7 +405,7 @@
           "description": "Parameters to pass down to this question or its alternatives.",
           "type": "object",
           "default": {}
-      }
+        }
       }
     },
     "questionAlternative": {
@@ -453,8 +452,8 @@
         "questionParams": {
           "description": "Parameters to pass to this question.",
           "type": "object",
-                    "default": {}
-                }
+          "default": {}
+        }
       }
     },
     "points": {

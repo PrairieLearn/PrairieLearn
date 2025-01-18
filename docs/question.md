@@ -345,21 +345,21 @@ A few special behaviors have been added to enable Markdown to work better within
 
 Fenced code blocks (those using triple-backticks <code>\`\`\`</code>) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following markdown:
 
-```sql
+````sql
 <markdown>
 ```cpp{1-2,4}
 int i = 1;
 int j = 2;
 int k = 3;
 int m = 4;
-```
+````
+
 </markdown>
 ```
 
 This will be rendered to the following `<pl-code>` element (which itself will eventually be rendered to standard HTML):
 
 <!-- prettier-ignore -->
-
 ```html
 <pl-code language="cpp" highlight-lines="1-2,4">
 int i = 1;

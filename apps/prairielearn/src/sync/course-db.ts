@@ -232,7 +232,7 @@ interface Course {
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
   sharingSets?: SharingSet[];
-  questionParams: Record<string, any>; // unsure about this 
+  questionParams: Record<string, any>; // unsure about this
 }
 
 interface CourseInstanceAllowAccess {
@@ -283,7 +283,7 @@ interface QuestionAlternative {
   gradeRateMinutes: number;
   canView: string[];
   canSubmit: string[];
-  questionParams: Record<string,any>
+  questionParams: Record<string, any>;
 }
 
 interface ZoneQuestion {
@@ -807,7 +807,7 @@ export async function loadCourseInfo(
       useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
-    questionParams: info.questionParams
+    questionParams: info.questionParams,
   };
 
   loadedData.data = course;

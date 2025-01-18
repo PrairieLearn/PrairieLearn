@@ -90,7 +90,7 @@ function getParamsForAssessment(
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
-      question_params: zone.questionParams || {}
+      question_params: zone.questionParams || {},
     };
   });
 
@@ -120,7 +120,6 @@ function getParamsForAssessment(
         canSubmit: string[] | null;
         advanceScorePerc: number;
         questionParams: Record<string, any>;
-        
       }[] = [];
       const questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
@@ -152,7 +151,7 @@ function getParamsForAssessment(
               : questionGradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
-            questionParams:alternative?.questionParams || {},
+            questionParams: alternative?.questionParams || {},
           };
         });
       } else if (question.id) {
@@ -246,7 +245,7 @@ function getParamsForAssessment(
         number_choose: question.numberChoose,
         advance_score_perc: question.advanceScorePerc,
         questions,
-        question_params:question.questionParams
+        question_params: question.questionParams,
       };
     });
   });

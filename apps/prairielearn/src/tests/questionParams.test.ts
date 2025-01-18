@@ -3,16 +3,15 @@ import * as cheerio from 'cheerio';
 // import { promisify } from 'util';
 import fetch from 'node-fetch';
 
-import * as sqldb from '@prairielearn/postgres'
+import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-
 
 import * as helperServer from './helperServer.js';
 
 // const requestAsync = await fetch()
 // const sql = sqlLoader.loadSqlEquiv(__filename);
-const sql = sqldb.loadSqlEquiv(import.meta.url)
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 interface Question {
   qid: string;
   type: string;
@@ -56,7 +55,7 @@ const questionsArray: Question[] = [
   { qid: 'addNumbersParameterized/1', type: 'Freeform' },
   { qid: 'addNumbersParameterized/2', type: 'Freeform' },
   { qid: 'addNumbersParameterized/3', type: 'Freeform' },
-  { qid: 'addNumbersParameterized/4', type: 'Freeform' }
+  { qid: 'addNumbersParameterized/4', type: 'Freeform' },
 ];
 
 describe('Parameterized questions', function () {
@@ -68,14 +67,14 @@ describe('Parameterized questions', function () {
   it('should verify database contains expected questions', async function () {
     const result = await sqldb.queryAsync(sql.select_questions, []);
     assert.notEqual(result.rowCount, 0, 'No questions found in DB');
-    locals.questions = result.rows.map(row => ({
+    locals.questions = result.rows.map((row) => ({
       qid: row.directory,
       id: row.id,
       url: `${locals.questionBaseUrl}/${row.id}/`,
-      type: 'Freeform'
+      type: 'Freeform',
     }));
-    questionsArray.forEach(question => {
-      const foundQuestion = locals.questions?.find(q => q.qid === question.qid);
+    questionsArray.forEach((question) => {
+      const foundQuestion = locals.questions?.find((q) => q.qid === question.qid);
       assert.isDefined(foundQuestion, `Question ${question.qid} not found`);
       Object.assign(question, foundQuestion);
     });
@@ -93,15 +92,21 @@ describe('Parameterized questions', function () {
 
     questionsArray.forEach((question, index) => {
       it(`should verify question #${index + 1} (${question.qid}) has correct parameters`, async function () {
-        if (!question.url) throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);
+        if (!question.url)
+          throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);
         const response = await fetch(question.url);
         assert.equal(response.status, 200);
         const $ = cheerio.load(await response.text());
-        const expectedRange = index < 2 ? `[0, ${10 * (index + 1)}]` : `[${10 * index}, ${10 * (index + 1)}]`;
+        const expectedRange =
+          index < 2 ? `[0, ${10 * (index + 1)}]` : `[${10 * index}, ${10 * (index + 1)}]`;
         const elemList = $('span').filter(function () {
           return $(this).text().trim() === expectedRange;
         });
-        assert.lengthOf(elemList, 1, `Expected range ${expectedRange} not found for question ${question.qid}`);
+        assert.lengthOf(
+          elemList,
+          1,
+          `Expected range ${expectedRange} not found for question ${question.qid}`,
+        );
       });
     });
   });
