@@ -33,13 +33,13 @@ ignore = [
     "FIX", # flake8-fixme
     "INP001", # implicit-namespace-package
     "S", # flake8-bandit (security rules)
+    "SLF001", # private-member-access 
     "T201", # flake8-print
     "T100", # flake8-debugger
     "TD", # flake8-todos
     "PGH003", # blanket-type-ignore
     "PLE2513", # invalid-character-esc
     "PTH", # flake8-use-pathlib
-    "SLF001", # private-member-access 
 
     # These rules were discussed and disabled
     "ISC003", # explicit-string-concatenation
