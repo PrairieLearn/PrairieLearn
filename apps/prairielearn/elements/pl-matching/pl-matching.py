@@ -1,6 +1,8 @@
 import math
 import random
+from collections.abc import Callable
 from enum import Enum
+from typing import Any
 
 import chevron
 import lxml.html
@@ -27,11 +29,11 @@ class OptionsPlacementType(Enum):
     BOTTOM = "bottom"
 
 
-def get_form_name(answers_name, index):
+def get_form_name(answers_name: str, index: int) -> str:
     return f"{answers_name}-dropdown-{index}"
 
 
-def get_counter(i, counter_type):
+def get_counter(i: int, counter_type: str) -> str:
     """Converts an integer counter to the specified CSS counter type"""
     if counter_type == "lower-alpha":
         return pl.index2key(i - 1)
@@ -47,13 +49,15 @@ def get_counter(i, counter_type):
         )
 
 
-def legal_answer(answer, options):
+def legal_answer(answer: int, options: list) -> bool:
     """Checks that the given answer is within the range of the given counter type."""
     return -1 <= answer < len(options)
 
 
-def get_select_options(options_list, selected_value, blank_used):
-    def transform(i, opt):
+def get_select_options(
+    options_list: list, selected_value: int, blank_used: bool
+) -> list[dict[str, Any]]:
+    def transform(i: int, opt: Any):
         index = i - int(blank_used)
         return {
             "index": index,
@@ -64,7 +68,7 @@ def get_select_options(options_list, selected_value, blank_used):
     return [transform(i, opt) for i, opt in enumerate(options_list)]
 
 
-def partition(data, pred):
+def partition(data: list[Any], pred: Callable) -> tuple[list[Any], list[Any]]:
     """Implements a partition function, splitting the data into two lists based on the predicate."""
     yes, no = [], []
     for d in data:
@@ -75,7 +79,9 @@ def partition(data, pred):
     return (yes, no)
 
 
-def categorize_matches(element, data):
+def categorize_matches(
+    element: lxml.html.HtmlElement,
+) -> tuple[list[dict[str, int | str]], list[dict[str, int | str]]]:
     """Get provided statements and options from the pl-matching element"""
     options = {}
     statements = []
@@ -85,7 +91,7 @@ def categorize_matches(element, data):
     children = element[:]
     children.sort(key=lambda child: child.tag)
 
-    def make_option(name, html):
+    def make_option(name: str, html: str) -> dict[str, int | str]:
         nonlocal index
         option = {"index": index, "name": name, "html": html}
         index += 1
@@ -147,7 +153,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    options, statements = categorize_matches(element, data)
+    options, statements = categorize_matches(element)
 
     # Choose and randomize the options and statements. Each can be in a fixed order.
     fixed_statements_order = pl.get_boolean_attrib(
@@ -260,7 +266,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    display_statements, display_options = data["params"].get(name)
+
+    display_statements, display_options = data["params"][name]
     submitted_answers = data["submitted_answers"]
 
     for i in range(len(display_statements)):
@@ -325,7 +332,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         for i, statement in enumerate(display_statements):
             form_name = get_form_name(name, statement["key"])
             student_answer = int(submitted_answers.get(form_name, -1))
-            correct_answer = data["correct_answers"].get(name)[i]
+            correct_answer = data["correct_answers"][name][i]
 
             statement_html = {
                 "html": statement["html"].strip(),
@@ -364,7 +371,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:
                     html_params["incorrect"] = True
             except Exception as exc:
-                raise ValueError("invalid score" + score) from exc
+                raise ValueError("invalid score" + str(score)) from exc
 
         with open("pl-matching.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
@@ -378,7 +385,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             for i, statement in enumerate(display_statements):
                 form_name = get_form_name(name, statement["key"])
                 student_answer = int(submitted_answers.get(form_name, -1))
-                correct_answer = data["correct_answers"].get(name)[i]
+                correct_answer = data["correct_answers"][name][i]
 
                 parse_error = data["format_errors"].get(form_name, None)
                 display_score_badge = (
@@ -419,6 +426,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             if html_params["display_score_badge"]:
                 try:
+                    if score is None:
+                        raise ValueError
                     score = float(score)
                     if score >= 1:
                         html_params["correct"] = True
@@ -427,7 +436,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     else:
                         html_params["incorrect"] = True
                 except Exception as exc:
-                    raise ValueError("invalid score" + score) from exc
+                    raise ValueError("invalid score" + str(score)) from exc
 
             with open("pl-matching.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
