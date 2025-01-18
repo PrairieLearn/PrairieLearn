@@ -1455,7 +1455,6 @@ export async function loadQuestions(
 export async function loadCourseInstances(
   coursePath: string,
 ): Promise<Record<string, InfoFile<CourseInstance>>> {
-  console.log(schemas.infoCourseInstance);
   const courseInstances = await loadInfoForDirectory({
     coursePath,
     directory: 'courseInstances',
@@ -1469,7 +1468,6 @@ export async function loadCourseInstances(
     courseInstances,
     (uuid, ids) => `UUID "${uuid}" is used in other course instances: ${ids.join(', ')}`,
   );
-  console.log({ courseInstances });
   return courseInstances;
 }
 
