@@ -103,7 +103,7 @@ export function InstructorAIGenerateDrafts({
                 </tbody>
               </table>
 
-              ${DestroyQuestionsModal(resLocals)}
+              ${DeleteQuestionsModal(resLocals.__csrf_token)}
             </div>
           </div>
         </main>
@@ -112,14 +112,14 @@ export function InstructorAIGenerateDrafts({
   `.toString();
 }
 
-function DestroyQuestionsModal(resLocals) {
+function DeleteQuestionsModal(CsrfToken) {
   return Modal({
     id: 'destroyModal',
     title: 'Delete all draft questions',
-    body: html` This will permamently and unrecoverably delete all of the draft questions. `,
+    body: 'This will permanently and unrecoverably delete all draft questions.',
     footer: html`
       <form method="POST" class="mr-2">
-        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <input type="hidden" name="__csrf_token" value="${CsrfToken}" />
         <button class="btn btn-danger" name="__action" value="delete_drafts">
           <i class="fa fa-trash" aria-hidden="true"></i>
           <span class="d-none d-sm-inline">Delete all drafts</span>

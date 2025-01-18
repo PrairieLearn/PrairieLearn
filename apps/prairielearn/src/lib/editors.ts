@@ -1182,21 +1182,21 @@ export class QuestionDeleteEditor extends Editor {
   async write() {
     debug('QuestionDeleteEditor: write()');
 
-    const qids: string[] = [];
-
     for (const question of this.questions) {
-      assert(question.qid, 'question.qid is required');
       //never will be false, but this is to placate typechecks
+      assert(question.qid, 'question.qid is required');
+
       await fs.remove(path.join(this.course.path, 'questions', question.qid));
       await this.removeEmptyPrecedingSubfolders(
         path.join(this.course.path, 'questions'),
         question.qid,
       );
-      qids.push(question.qid);
     }
 
     return {
-      pathsToAdd: qids.map((qid) => path.join(this.course.path, 'questions', qid)),
+      pathsToAdd: this.questions.map((question) =>
+        path.join(this.course.path, 'questions', question.qid),
+      ),
       commitMessage:
         this.questions.length === 1
           ? `delete question ${this.questions[0].qid}`

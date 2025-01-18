@@ -18,8 +18,7 @@ ORDER BY
 
 -- BLOCK select_draft_questions_by_course_id
 SELECT
-  q.id,
-  q.qid
+  q.id
 FROM
   questions as q
 WHERE

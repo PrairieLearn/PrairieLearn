@@ -1,6 +1,5 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
@@ -44,7 +43,7 @@ router.post(
       const questions = await queryRows(
         sql.select_draft_questions_by_course_id,
         { course_id: res.locals.course.id.toString() },
-        z.object({ id: IdSchema, qid: z.string() }),
+        IdSchema,
       );
 
       const client = getCourseFilesClient();
@@ -54,14 +53,11 @@ router.post(
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        question_ids: questions.map((question) => question.id),
+        question_ids: questions,
       });
 
       if (result.status === 'error') {
-        throw new error.HttpStatusError(
-          500,
-          `Cannot delete all draft questions in: (${questions.map((question) => question.qid).join(', ')})`,
-        );
+        throw new error.HttpStatusError(500, 'Failed to delete all draft questions.');
       }
 
       res.redirect(req.originalUrl);
