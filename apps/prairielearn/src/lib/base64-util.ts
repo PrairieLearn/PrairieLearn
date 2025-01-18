@@ -1,10 +1,9 @@
-// @ts-check
 import { logger } from '@prairielearn/logger';
 
-const atob = (s) => String.fromCharCode(...Buffer.from(s, 'base64'));
-const btoa = (s) => Buffer.from(s.split('').map((c) => c.charCodeAt(0))).toString('base64');
+const atob = (s: string) => String.fromCharCode(...Buffer.from(s, 'base64'));
+const btoa = (s: string) => Buffer.from(s.split('').map((c) => c.charCodeAt(0))).toString('base64');
 
-export function b64EncodeUnicode(str) {
+export function b64EncodeUnicode(str: string) {
   // (1) use encodeURIComponent to get percent-encoded UTF-8
   // (2) convert percent encodings to raw bytes
   // (3) convert raw bytes to Base64
@@ -20,7 +19,7 @@ export function b64EncodeUnicode(str) {
   }
 }
 
-export function b64DecodeUnicode(str) {
+export function b64DecodeUnicode(str: string) {
   // Going backwards: from bytestream, to percent-encoding, to original string.
   try {
     return decodeURIComponent(

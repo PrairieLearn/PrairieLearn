@@ -472,7 +472,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     files['question.html'] = b64Util.b64EncodeUnicode(html);
   }
 
-  if (results?.python) {
+  if (results?.python && python !== undefined) {
     files['server.py'] = b64Util.b64EncodeUnicode(python);
   }
 
