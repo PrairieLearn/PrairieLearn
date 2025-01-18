@@ -178,5 +178,5 @@ Note that the key used in the dynamic dependencies will be shared among all elem
 
 You can also find the types of dependencies defined in these schema files:
 
-- [Schema for system-wide elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/infoElementCore.ts)
-- [Schema for course-specific elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/infoElementCourse.ts)
+- [Zod Schema for system-wide elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/infoElementCore.ts)
+- [Zod Schema for course-specific elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/infoElementCourse.ts)

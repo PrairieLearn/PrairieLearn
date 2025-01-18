@@ -49,12 +49,6 @@ This file specifies basic information about the course instance:
 }
 ```
 
-??? note "Format specification for `infoCourseInstance.json`"
-
-    ```json
-    --8<-- "apps/prairielearn/src/schemas/infoCourseInstance.ts"
-    ```
-
 ## Course instance `allowAccess`
 
 See the [access control documentation](accessControl/index.md) for more details on `allowAccess` rules.

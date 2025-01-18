@@ -22,12 +22,6 @@ Each assessment is a single directory in the `assessments` folder or any subfold
 
 The assessment ID is the full path relative to `assessments`.
 
-??? note "Format specification for assessment `infoAssessment.json`"
-
-    ```json
-    --8<-- "apps/prairielearn/src/schemas/infoAssessment.json"
-    ```
-
 ## Assessment naming
 
 Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and within each set the assessment has a `number`. Additionally, each assessment has a `title`. Depending on the context, assessments are referred to by either a _short name_ or a _long name_. The format of these is:

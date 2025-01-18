@@ -75,8 +75,6 @@ The `info.json` file for each question defines properties of the question. For e
 | `shareSourcePublicly`    | boolean | Whether the the source code of the question should be available                                                                                                        |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                             |
 
-For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/infoQuestion.ts)
-
 ### Question Dependencies
 
 Your question can load client-side assets such as scripts or stylesheets from different sources. A full list of dependencies will be compiled based on the question's needs and any dependencies needed by page elements, then they will be deduplicated and loaded onto the page.
