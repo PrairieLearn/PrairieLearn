@@ -1,10 +1,7 @@
-## PrairieLearn Course Repository
+# Welcome to PrairieLearn!
 
-### Welcome to PrairieLearn!
+The content for your course is stored within this repository. You can see and edit a live version at [https://prairielearn.com](https://prairielearn.com).
 
-The content for your course is stored within this repository.
-You can see and edit a live version at [https://prairielearn.com](https://prairielearn.com)
+## Support
 
-### Getting Help
-
-Need help understanding an error or creating content? Visit [https://www.prairielearn.com/support](https://www.prairielearn.com/support)
+For help setting up your course or creating content, visit [https://prairielearn.com/support](https://prairielearn.com/support).
