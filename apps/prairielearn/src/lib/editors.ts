@@ -1194,8 +1194,8 @@ export class QuestionDeleteEditor extends Editor {
     }
 
     return {
-      pathsToAdd: this.questions.map((question) =>
-        path.join(this.course.path, 'questions', question.qid),
+      pathsToAdd: this.questions.flatMap((question) =>
+        question.qid !== null ? path.join(this.course.path, 'questions', question.qid) : [],
       ),
       commitMessage:
         this.questions.length === 1
