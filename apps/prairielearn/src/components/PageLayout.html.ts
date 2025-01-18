@@ -37,6 +37,8 @@ export function PageLayout({
   /** The main content of the page within the main container. */
   content: HtmlValue;
 }) {
+  const marginBottom = options.marginBottom ?? true;
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -58,7 +60,7 @@ export function PageLayout({
           id="content"
           class="
             ${options.fullWidth ? 'container-fluid' : 'container'} 
-            ${options.marginBottom ? 'mb-4' : ''}
+            ${marginBottom ? 'mb-4' : ''}
           "
         >
           ${content}
