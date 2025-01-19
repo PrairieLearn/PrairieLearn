@@ -1,7 +1,7 @@
 import random
 from collections.abc import Callable
 from enum import Enum
-from typing import Any
+from typing import Any, TypeVar
 
 import chevron
 import lxml.html
@@ -67,8 +67,17 @@ def get_select_options(
     return [transform(i, opt) for i, opt in enumerate(options_list)]
 
 
-def partition(data: list[Any], pred: Callable) -> tuple[list[Any], list[Any]]:
-    """Implements a partition function, splitting the data into two lists based on the predicate."""
+ListItem = TypeVar("ListItem")
+
+
+def partition(
+    data: list[ListItem], pred: Callable[[ListItem], bool]
+) -> tuple[list[ListItem], list[ListItem]]:
+    """
+    Implements a partition function, splitting the data into two lists based on the predicate.
+    TODO move this into prairielearn.py once it's used in another element.
+    """
+
     yes, no = [], []
     for d in data:
         if pred(d):
