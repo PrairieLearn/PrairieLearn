@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
-import { render, Fragment } from 'preact';
+import { h, render, Fragment } from 'preact';
 import React, { useState } from 'preact/hooks';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
