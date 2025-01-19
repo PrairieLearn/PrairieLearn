@@ -1094,7 +1094,7 @@ export const VariantSchema = z.object({
   question_id: IdSchema,
   true_answer: z.record(z.string(), z.any()).nullable(),
   user_id: IdSchema.nullable(),
-  variant_seed: z.string().nullable(),
+  variant_seed: z.string(),
   workspace_id: IdSchema.nullable(),
 });
 export type Variant = z.infer<typeof VariantSchema>;

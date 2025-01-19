@@ -177,6 +177,7 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/cacheableElements/:cachebuster/*',
   '/pl/public/course/:course_id/elements/*',
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
+  '/pl/public/course/:course_id/question/:question_id/file_download/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file/*',
 

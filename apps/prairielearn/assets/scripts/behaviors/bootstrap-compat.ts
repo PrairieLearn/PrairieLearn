@@ -365,6 +365,7 @@ makeMigrator({
   selector: 'label',
   migrate(el, { addClass }) {
     if (el.closest('.form-group') == null) return;
+    if (el.classList.contains('form-check-label')) return;
 
     addClass(
       el,

@@ -1760,9 +1760,11 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/editError/editError.js')).default,
   );
 
-  app.use(/^(\/pl\/course\/[0-9]+\/course_admin)\/?$/, (req, res, _next) => {
-    res.redirect(`${req.params[0]}/instances`);
-  });
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin',
+    (await import('./pages/instructorCourseAdmin/instructorCourseAdmin.js')).default,
+  );
+
   app.use('/pl/course/:course_id(\\d+)/course_admin', function (req, res, next) {
     res.locals.navPage = 'course_admin';
     next();
@@ -1967,6 +1969,22 @@ export async function initExpress(): Promise<Express> {
       res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
       next();
     },
+  ]);
+  app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
+    function (req, res, next) {
+      res.locals.navPage = 'public_question';
+      res.locals.navSubPage = 'file_view';
+      next();
+    },
+    (await import('./pages/publicQuestionFileBrowser/publicQuestionFileBrowser.js')).default,
+  ]);
+  app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_download', [
+    function (req, res, next) {
+      res.locals.navPage = 'public_question';
+      res.locals.navSubPage = 'file_download';
+      next();
+    },
+    (await import('./pages/publicQuestionFileDownload/publicQuestionFileDownload.js')).default,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
     function (req: Request, res: Response, next: NextFunction) {
