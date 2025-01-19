@@ -1379,70 +1379,48 @@ export async function initExpress(): Promise<Express> {
       next();
     }),
   );
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/settings', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'settings';
-      next();
-    },
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/settings',
     (await import('./pages/instructorInstanceAdminSettings/instructorInstanceAdminSettings.js'))
       .default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/access', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'access';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/access',
     (await import('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess.js'))
       .default,
-  ]);
+  );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
     function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'assessments';
+      res.locals.navSubPage = 'assessments'; // TODO: Assess if this should be removed
       next();
     },
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'gradebook';
-      next();
-    },
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook',
     (await import('./pages/instructorGradebook/instructorGradebook.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/lti', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'lti';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/lti',
     (await import('./pages/instructorInstanceAdminLti/instructorInstanceAdminLti.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_edit', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'file_edit';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_edit',
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'file_view';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view',
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
-  ]);
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_download',
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
   );
   if (isEnterprise()) {
-    app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/billing', [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'billing';
-        next();
-      },
+    app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/billing', 
       (await import('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling.js'))
         .default,
-    ]);
+    );
     app.use(
       '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13_instance',
       (await import('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13.js'))
