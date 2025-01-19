@@ -62,6 +62,7 @@ export function InstructorAssessmentQuestions({
     headContent: html` ${compiledScriptTag('instructorAssessmentQuestionsClient.ts')} `,
     navPage: 'assessment',
     options: {
+      fullWidth: true,
       navSubPage: 'questions',
     },
     content: html`
