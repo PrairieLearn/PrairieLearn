@@ -1,0 +1,27 @@
+ARG BASE_IMAGE=prairielearn/workspace-vscode-base
+ARG BASE_IMAGE_TAG=latest
+
+FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG}
+
+USER root
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+    build-essential \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && find /tmp -not -path /tmp -delete
+
+USER coder
+
+# After installing C/C++ we install some VS Code extensions.
+# codelldb is installed from a downloaded file because the open-vsx version of
+# the extension downloads the latest version of the extension upon loading,
+# which would not be appropriate in a containerized environment with restricted
+# network access.
+RUN curl -fsSL https://github.com/vadimcn/codelldb/releases/download/v1.11.1/codelldb-linux-x64.vsix -o /tmp/codelldb-linux-x64.vsix && \
+    code-server --disable-telemetry --force  \
+    --install-extension jeff-hykin.better-cpp-syntax \
+    --install-extension ms-vscode.cpptools-themes \
+    --install-extension ms-vscode.makefile-tools \
+    --install-extension /tmp/codelldb-linux-x64.vsix \
+    && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs /tmp/codelldb-linux-x64.vsix
