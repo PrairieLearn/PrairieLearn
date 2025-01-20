@@ -96,7 +96,7 @@ describe('Creating a question', () => {
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
 
     assert.equal(questionInfo.title, 'Test Question');
-    assert.equal(questionInfo.topic, 'Unknown');
+    assert.equal(questionInfo.topic, 'Default');
     assert.isUndefined(questionInfo.shareSourcePublicly);
   });
 
@@ -139,7 +139,7 @@ describe('Creating a question', () => {
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
 
     assert.equal(questionInfo.title, 'Test Random Graph');
-    assert.equal(questionInfo.topic, 'Unknown');
+    assert.equal(questionInfo.topic, 'Default');
     assert.isUndefined(questionInfo.shareSourcePublicly);
 
     // Check that the server.py file has the correct contents
@@ -215,7 +215,7 @@ describe('Creating a question', () => {
     );
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
     assert.equal(questionInfo.title, 'Test Question (2)'); // Verify that the title had (2) appended to it
-    assert.equal(questionInfo.topic, 'Unknown');
+    assert.equal(questionInfo.topic, 'Default');
     assert.isUndefined(questionInfo.shareSourcePublicly);
   });
 

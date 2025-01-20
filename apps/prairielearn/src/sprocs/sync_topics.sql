@@ -64,7 +64,7 @@ BEGIN
             syncing_course_id,
             name,
             (array_length(used_topic_names, 1) + (row_number() OVER ())),
-            'Auto-generated from use in a question; add this topic to your infoCourse.json file to customize',
+            CASE WHEN name = 'Default' THEN 'Default topic' ELSE 'Auto-generated from use in a question; add this topic to your infoCourse.json file to customize' END,
             'gray1',
             TRUE
         FROM 
