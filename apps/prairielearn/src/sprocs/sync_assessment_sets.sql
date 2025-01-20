@@ -64,10 +64,6 @@ BEGIN
     ) VALUES ('Unknown', 'U',          'Unknown', 'red3', 1,      syncing_course_id)
     ON CONFLICT (name, course_id) DO NOTHING;
 
-    IF ('Unknown' != ALL (used_assessment_set_names)) THEN
-        used_assessment_set_names := used_assessment_set_names || 'Unknown';
-    END IF;
-
     -- Make sure we have an assessment set for every assessment that
     -- we have data for. We auto-create assessment sets where needed.
     WITH new_assessment_sets AS (
@@ -112,7 +108,8 @@ BEGIN
         DELETE FROM assessment_sets AS aset
         WHERE
             aset.course_id = syncing_course_id
-            AND aset.name != ALL (used_assessment_set_names);
+            -- COALESCE handles the case that used_assessment_set_names is empty.
+            AND aset.name != ALL(COALESCE(used_assessment_set_names, '{}'::text[]));
     END IF;
 
     -- Internal consistency check. All assessments should have an
