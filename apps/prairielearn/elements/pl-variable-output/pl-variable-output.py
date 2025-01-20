@@ -138,6 +138,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             # Assembling Python array formatting
             if np.isscalar(var_data):
+                assert not isinstance(var_data, memoryview)
                 prefix = ""
                 suffix = ""
             else:
