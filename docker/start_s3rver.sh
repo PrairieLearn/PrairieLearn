@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# When the Docker image runs on an Ubuntu 24.10 host, `lsof` will hang and
+# prevent the container from starting. This is possibly a bug in the
+# `amazonlinux:2023` base image. See the following issue:
+# https://github.com/amazonlinux/container-images/issues/123
+ulimit -Sn 4096
+
 # exit if s3rver is already running
 PID=$(lsof -i :5000 -t)
 if [ -n "$PID" ]; then
