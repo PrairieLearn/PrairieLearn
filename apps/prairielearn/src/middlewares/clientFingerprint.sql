@@ -17,7 +17,8 @@ INSERT INTO
     user_session_id,
     ip_address,
     user_agent,
-    accept_language
+    accept_language,
+    client_hints
   )
 VALUES
   (
@@ -25,7 +26,8 @@ VALUES
     $user_session_id,
     $ip_address,
     $user_agent::VARCHAR(255),
-    $accept_language::VARCHAR(255)
+    $accept_language::VARCHAR(255),
+    $client_hints::JSONB
   )
 ON CONFLICT (
   user_id,
@@ -37,7 +39,8 @@ ON CONFLICT (
 UPDATE
 SET
   -- Force an update so that `RETURNING` will actually return the row.
-  accept_language = EXCLUDED.accept_language
+  -- This is only triggered to handle race conditions, since there is a select before this insert.
+  client_hints = EXCLUDED.client_hints
 RETURNING
   id;
 
