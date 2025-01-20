@@ -85,7 +85,7 @@ BEGIN
             name,
             concat(name, ' (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)'),
             'gray1',
-            (array_length(used_assessment_set_names, 1) + (row_number() OVER ())),
+            1,
             TRUE
         FROM
             (SELECT UNNEST(assessment_set_names) EXCEPT SELECT UNNEST(used_assessment_set_names))

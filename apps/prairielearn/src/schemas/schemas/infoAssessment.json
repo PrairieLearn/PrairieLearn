@@ -74,6 +74,11 @@
       "type": "boolean",
       "default": true
     },
+    "questionParams": {
+      "description": "Parameters to pass down to questions in this assessment.",
+      "type": "object",
+      "default": {}
+    },
     "zones": {
       "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
       "type": "array",
@@ -314,6 +319,11 @@
           },
           "uniqueItems": true,
           "default": []
+        },
+        "questionParams": {
+          "description": "Parameters to pass down to questions in this zone.",
+          "type": "object",
+          "default": {}
         }
       },
       "required": ["questions"]
@@ -390,6 +400,11 @@
           },
           "uniqueItems": true,
           "default": []
+        },
+        "questionParams": {
+          "description": "Parameters to pass down to this question or its alternatives.",
+          "type": "object",
+          "default": {}
         }
       }
     },
@@ -433,6 +448,11 @@
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
           "minimum": 0
+        },
+        "questionParams": {
+          "description": "Parameters to pass to this question.",
+          "type": "object",
+          "default": {}
         }
       }
     },
