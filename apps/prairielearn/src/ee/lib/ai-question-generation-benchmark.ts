@@ -30,10 +30,8 @@ interface Benchmark {
 
 const BENCHMARKS: Benchmark[] = [
   {
-    promptGeneral: [
-      'Write a question that asks the user to multiply two integers.',
-      'You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B.',
-    ].join(' '),
+    promptGeneral:
+      'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B.',
     promptUserInput: 'Provide an integer input box for the user to enter the product.',
     promptGrading: 'The correct answer is the product of A and B.',
   },
@@ -74,6 +72,27 @@ const BENCHMARKS: Benchmark[] = [
       'Generate a random polynomial of the form ax + b = c. Ask the student to solve for x.',
     promptUserInput: 'Provide a numerical input box for the user to enter the solution.',
     promptGrading: 'The correct answer is the solution for x (x = (c - b) / a).',
+  },
+  {
+    promptGeneral:
+      'Write a question that asks the user to calculate the number of moles given a random mass of a substance and its molar mass. Randomly generate the mass and molar mass.',
+    promptUserInput: 'Provide a numeric input box for the user to enter the number of moles.',
+    promptGrading:
+      'The correct answer is the calculated number of moles using (mass / molar mass).',
+  },
+  {
+    promptGeneral:
+      'Write a question that asks the user to calculate the pressure of a gas using the ideal gas law PV = nRT. Randomly generate values for n, V, T, and R.',
+    promptUserInput:
+      'Provide a numeric input box for the user to enter the pressure in atmospheres.',
+    promptGrading: 'The correct answer is the pressure calculated using the ideal gas law.',
+  },
+  {
+    promptGeneral:
+      'Write a question that asks the user to calculate the pH of a solution given the concentration of hydrogen ions [H+]. Randomly generate the concentration; use physically realistic values.',
+    promptUserInput: 'Provide a numeric input box for the user to enter the pH value.',
+    promptGrading:
+      'The correct answer is -log10([H+]) for the given concentration of hydrogen ions.',
   },
   // {
   //   promptGeneral: '',
@@ -266,10 +285,8 @@ async function evaluateGeneratedQuestion({
     'If anything is incorrect or could be improved, please provide feedback.',
     'If the question looks fine, please indicate that as well.',
     '',
-    'The user may also provide a gold-standard implementation.',
-    'If provided, you can compare the generated question to the gold-standard implementation.',
-    'Focus on high level properties like correctness and clarity.',
-    "Don't worry about minor details like wording.",
+    'Do not suggest ways the original prompt could have been improved.',
+    'You should evaluate the question based on the prompt as it is written.',
     '',
     'The user will now provide the question HTML and Python files that the LLM generated for this prompt.',
   ].join('\n');
@@ -277,6 +294,8 @@ async function evaluateGeneratedQuestion({
   const generatedQuestion: string[] = ['```html', html.trim(), '```'];
   if (python) {
     generatedQuestion.push('', '```python', python.trim(), '```');
+  } else {
+    generatedQuestion.push('', 'No Python file was generated.');
   }
 
   const completion = await client.beta.chat.completions.parse({
