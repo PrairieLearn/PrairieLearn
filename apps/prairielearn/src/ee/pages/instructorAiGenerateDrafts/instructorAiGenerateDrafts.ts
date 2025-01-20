@@ -4,6 +4,9 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import { getCourseFilesClient } from '../../../lib/course-files-api.js';
+import { IdSchema } from '../../../lib/db-types.js';
+
 import {
   InstructorAIGenerateDrafts,
   DraftMetadataWithQidSchema,
@@ -26,6 +29,41 @@ router.get(
     );
 
     res.send(InstructorAIGenerateDrafts({ resLocals: res.locals, drafts }));
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
+    }
+
+    if (req.body.__action === 'delete_drafts') {
+      const questions = await queryRows(
+        sql.select_draft_questions_by_course_id,
+        { course_id: res.locals.course.id.toString() },
+        IdSchema,
+      );
+
+      const client = getCourseFilesClient();
+
+      const result = await client.batchDeleteQuestions.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        question_ids: questions,
+      });
+
+      if (result.status === 'error') {
+        throw new error.HttpStatusError(500, 'Failed to delete all draft questions.');
+      }
+
+      res.redirect(req.originalUrl);
+    } else {
+      throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
+    }
   }),
 );
 

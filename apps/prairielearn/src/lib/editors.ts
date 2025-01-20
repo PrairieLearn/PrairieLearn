@@ -1365,28 +1365,45 @@ export class QuestionModifyEditor extends Editor {
 }
 
 export class QuestionDeleteEditor extends Editor {
-  private question: Question;
+  private questions: Question[];
 
-  constructor(params: BaseEditorOptions) {
+  constructor(params: BaseEditorOptions & { questions: Question | Question[] }) {
     super(params);
 
-    this.question = params.locals.question;
-    this.description = `Delete question ${this.question.qid}`;
+    if (Array.isArray(params.questions)) {
+      this.questions = params.questions;
+    } else {
+      this.questions = [params.questions];
+    }
+
+    this.description =
+      this.questions.length === 1
+        ? `Delete question ${this.questions[0].qid}`
+        : `Delete questions ${this.questions.map((x) => x.qid).join(', ')}`;
   }
 
   async write() {
-    assert(this.question.qid, 'question.qid is required');
-
     debug('QuestionDeleteEditor: write()');
-    await fs.remove(path.join(this.course.path, 'questions', this.question.qid));
-    await this.removeEmptyPrecedingSubfolders(
-      path.join(this.course.path, 'questions'),
-      this.question.qid,
-    );
+
+    for (const question of this.questions) {
+      //never will be false, but this is to placate typechecks
+      assert(question.qid, 'question.qid is required');
+
+      await fs.remove(path.join(this.course.path, 'questions', question.qid));
+      await this.removeEmptyPrecedingSubfolders(
+        path.join(this.course.path, 'questions'),
+        question.qid,
+      );
+    }
 
     return {
-      pathsToAdd: [path.join(this.course.path, 'questions', this.question.qid)],
-      commitMessage: `delete question ${this.question.qid}`,
+      pathsToAdd: this.questions.flatMap((question) =>
+        question.qid !== null ? path.join(this.course.path, 'questions', question.qid) : [],
+      ),
+      commitMessage:
+        this.questions.length === 1
+          ? `delete question ${this.questions[0].qid}`
+          : `delete questions (${this.questions.map((x) => x.qid).join(', ')})`,
     };
   }
 }

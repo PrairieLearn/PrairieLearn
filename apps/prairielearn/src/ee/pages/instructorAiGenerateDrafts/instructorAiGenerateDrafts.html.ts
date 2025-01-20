@@ -4,6 +4,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
 
@@ -46,6 +47,18 @@ export function InstructorAIGenerateDrafts({
             >
               AI Generation Draft Questions
               <div class="d-flex flex-row">
+                ${drafts.length > 0
+                  ? html`
+                      <button
+                        class="btn btn-sm btn-light mr-2"
+                        data-toggle="modal"
+                        data-target="#deleteModal"
+                      >
+                        <i class="fa fa-trash" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Delete all drafts</span>
+                      </button>
+                    `
+                  : ''}
                 <a href="${resLocals.urlPrefix}/ai_generate_question" class="btn btn-sm btn-light">
                   <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
                   <span class="d-none d-sm-inline">Generate question with AI</span>
@@ -89,10 +102,30 @@ export function InstructorAIGenerateDrafts({
                   )}
                 </tbody>
               </table>
+
+              ${DeleteQuestionsModal(resLocals.__csrf_token)}
             </div>
           </div>
         </main>
       </body>
     </html>
   `.toString();
+}
+
+function DeleteQuestionsModal(CsrfToken) {
+  return Modal({
+    id: 'deleteModal',
+    title: 'Delete all draft questions',
+    body: 'This will permanently and unrecoverably delete all draft questions.',
+    footer: html`
+      <form method="POST" class="mr-2">
+        <input type="hidden" name="__csrf_token" value="${CsrfToken}" />
+        <button class="btn btn-danger" name="__action" value="delete_drafts">
+          <i class="fa fa-trash" aria-hidden="true"></i>
+          <span class="d-none d-sm-inline">Delete all drafts</span>
+        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </form>
+    `,
+  });
 }
