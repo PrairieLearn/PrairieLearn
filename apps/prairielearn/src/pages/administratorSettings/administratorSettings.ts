@@ -5,7 +5,6 @@ import OpenAI from 'openai';
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 
-import { benchmarkAiQuestionGeneration } from '../../ee/lib/ai-question-generation-benchmark.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
@@ -70,6 +69,9 @@ router.post(
         organization: config.openAiOrganization,
       });
 
+      const { benchmarkAiQuestionGeneration } = await import(
+        '../../ee/lib/ai-question-generation-benchmark.js'
+      );
       const jobSequenceId = await benchmarkAiQuestionGeneration({
         client,
         authnUserId: res.locals.authn_user.user_id,
