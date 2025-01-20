@@ -39,9 +39,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             var_data = pl.from_json(var_data)
 
             if np.isscalar(var_data):
+                assert not isinstance(var_data, memoryview)
                 prefix = ""
                 suffix = ""
-                assert not isinstance(var_data, memoryview)
             else:
                 # Wrap the variable in an ndarray (if it's already one, this does nothing)
                 var_data = np.array(var_data)
