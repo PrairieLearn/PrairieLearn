@@ -19,10 +19,14 @@ export function Navbar({
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
 }) {
-  const { __csrf_token, course, urlPrefix } = resLocals;
+  const { __csrf_token, course, urlPrefix, isIframe } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
+
+  if (isIframe) {
+    return NavbarIframe({ resLocals });
+  }
 
   return html`
     ${config.devMode && __csrf_token
@@ -100,6 +104,30 @@ export function Navbar({
         `
       : ''}
     ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
+  `;
+}
+
+/**
+ * A simple navbar without admin links designed to be used when PL is in an iframe
+ */
+export function NavbarIframe({ resLocals }: { resLocals: Record<string, any> }) {
+  return html`
+    <div class="container-fluid bg-primary">
+      <a href="#content" class="sr-only sr-only-focusable d-inline-flex p-2 m-2 text-white">
+        Skip to main content
+      </a>
+    </div>
+    <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="${config.homeUrl}" target="_blank" aria-label="Homepage">
+          <span class="navbar-brand-label">PrairieLearn</span>
+          <span class="navbar-brand-hover-label">
+            Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
+          </span>
+        </a>
+        <span class="navbar-text">${resLocals.authn_user.name}</span>
+      </div>
+    </nav>
   `;
 }
 
