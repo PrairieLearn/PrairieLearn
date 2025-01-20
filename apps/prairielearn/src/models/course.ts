@@ -206,3 +206,19 @@ export async function insertCourse({
     return course;
   });
 }
+
+/**
+ * Update the show_getting_started_checklist field for a course.
+ */
+export async function updateCourseShowGettingStartedChecklist({
+  course_id,
+  show_getting_started_checklist,
+}: {
+  course_id: string;
+  show_getting_started_checklist: boolean;
+}) {
+  await queryAsync(sql.update_course_show_getting_started_checklist, {
+    course_id,
+    show_getting_started_checklist,
+  });
+}

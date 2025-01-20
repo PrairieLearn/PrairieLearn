@@ -95,7 +95,8 @@ INSERT INTO
     path,
     repository,
     branch,
-    institution_id
+    institution_id,
+    show_getting_started_checklist
   )
 VALUES
   (
@@ -105,7 +106,15 @@ VALUES
     $path,
     $repository,
     $branch,
-    $institution_id
+    $institution_id,
+    TRUE
   )
 RETURNING
   *;
+
+-- BLOCK update_course_show_getting_started_checklist
+UPDATE pl_courses
+SET
+  show_getting_started_checklist = $show_getting_started_checklist
+WHERE
+  id = $course_id

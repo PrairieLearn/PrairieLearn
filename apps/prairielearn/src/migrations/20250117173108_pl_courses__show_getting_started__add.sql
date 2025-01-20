@@ -1,0 +1,2 @@
+ALTER TABLE pl_courses
+ADD COLUMN IF NOT EXISTS show_getting_started_checklist BOOLEAN NOT NULL DEFAULT FALSE;

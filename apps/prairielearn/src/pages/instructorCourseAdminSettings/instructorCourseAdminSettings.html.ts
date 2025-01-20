@@ -172,6 +172,18 @@ export function InstructorCourseAdminSettings({
                     The Github repository that can be used to sync course files.
                   </small>
                 </div>
+                <div class="form-check mb-3">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    id="show_getting_started_checklist"
+                    name="show_getting_started_checklist"
+                    ${resLocals.course.show_getting_started_checklist ? 'checked' : ''}
+                  />
+                  <label class="form-check-label" for="show_getting_started_checklist">
+                    Show the getting started checklist
+                  </label>
+                </div>
                 ${EditActions({
                   coursePathExists,
                   courseInfoExists,
