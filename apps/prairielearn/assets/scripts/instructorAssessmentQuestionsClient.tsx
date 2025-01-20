@@ -167,12 +167,10 @@ onDocumentReady(() => {
     };
 
     const handleDeleteQuestion = ({
-      question,
       zoneIndex,
       questionIndex,
       alternativeGroupIndex,
     }: {
-      question: AssessmentQuestionRow;
       zoneIndex: number;
       questionIndex: number;
       alternativeGroupIndex?: number;
@@ -186,6 +184,179 @@ onDocumentReady(() => {
         editModal,
       );
       Modal.getOrCreateInstance(editModal).show();
+    };
+
+    function handleSwapZones({
+      zoneIndex,
+      targetZoneIndex,
+    }: {
+      zoneIndex: number;
+      targetZoneIndex: number;
+    }) {
+      const update: Zone[] = resolvedZones.value.map((z) => ({ ...z }));
+      const zone = update[zoneIndex];
+      update[zoneIndex] = update[targetZoneIndex];
+      update[targetZoneIndex] = zone;
+      resolvedZones.value = [...update];
+    }
+
+    function swapQuestions({
+      zoneIndex,
+      questionIndex,
+      targetQuestionIndex,
+    }: {
+      zoneIndex: number;
+      questionIndex: number;
+      targetQuestionIndex: number;
+    }) {
+      const update: Zone[] = resolvedZones.value.map((z) => ({ ...z }));
+      const question = update[zoneIndex].questions[questionIndex];
+      update[zoneIndex].questions[questionIndex] = update[zoneIndex].questions[targetQuestionIndex];
+      update[zoneIndex].questions[targetQuestionIndex] = question;
+      resolvedZones.value = [...update];
+    }
+
+    const handleMoveQuestionUp = ({
+      zoneIndex,
+      questionIndex,
+      alternativeGroupIndex,
+    }: {
+      zoneIndex: number;
+      questionIndex: number;
+      alternativeGroupIndex?: number;
+    }) => {
+      const update: Zone[] = resolvedZones.value.map((z) => ({ ...z }));
+      const question = update[zoneIndex].questions[questionIndex];
+      if (
+        zoneIndex === 0 &&
+        questionIndex === 0 &&
+        (alternativeGroupIndex === null || alternativeGroupIndex === 0)
+      ) {
+        return;
+      }
+      // Determine if the question is in an alternative group.
+      if (typeof alternativeGroupIndex === 'number') {
+        const alternatives = question.alternatives;
+        if (!alternatives) return;
+        // If the question is in an alternative group and the alternative is the first alternative
+        // in the group, we need to move the question out of the group.
+        if (alternativeGroupIndex === 0) {
+          if (question.alternatives) {
+            question.alternatives[alternativeGroupIndex].alternative_group_size = 1;
+          }
+          update[zoneIndex].questions.splice(
+            questionIndex,
+            0,
+            alternatives.shift() ?? update[zoneIndex].questions[0],
+          );
+          resolvedZones.value = [...update];
+          return;
+          // else we need to swap the question with the question above it in the alternative group.
+        } else {
+          const question = alternatives[alternativeGroupIndex];
+          alternatives[alternativeGroupIndex] = alternatives[alternativeGroupIndex - 1];
+          alternatives[alternativeGroupIndex - 1] = question;
+          resolvedZones.value = [...update];
+          return;
+        }
+      }
+      // If the question is the first question in the zone, we need to shift it out of the current
+      // zone and push it to the end of the previous zone.
+      if (questionIndex === 0) {
+        update[zoneIndex - 1].questions.push(
+          update[zoneIndex].questions.shift() ?? update[zoneIndex].questions[0],
+        );
+        resolvedZones.value = [...update];
+        return;
+      }
+
+      // If the question above is in an alternative group, we need to move the question into the
+      // group.
+      if (update[zoneIndex].questions[questionIndex - 1].alternatives) {
+        update[zoneIndex].questions[questionIndex - 1].alternatives?.push(question);
+        update[zoneIndex].questions.splice(questionIndex, 1);
+        resolvedZones.value = [...update];
+        console.log(resolvedZones.value);
+        return;
+      }
+
+      // If a question is not the first in its zone and the question above is not in an
+      // alternative group, we can simply swap it with the one above it.
+      swapQuestions({
+        zoneIndex,
+        questionIndex,
+        targetQuestionIndex: questionIndex - 1,
+      });
+    };
+
+    const handleMoveQuestionDown = ({
+      zoneIndex,
+      questionIndex,
+      alternativeGroupIndex,
+    }: {
+      zoneIndex: number;
+      questionIndex: number;
+      alternativeGroupIndex?: number;
+    }) => {
+      const update: Zone[] = resolvedZones.value.map((z) => ({ ...z }));
+      const question = update[zoneIndex].questions[questionIndex];
+      if (
+        zoneIndex === resolvedZones.value.length - 1 &&
+        questionIndex === resolvedZones.value[zoneIndex].questions.length - 1 &&
+        (!resolvedZones.value[zoneIndex].questions[questionIndex].alternatives ||
+          alternativeGroupIndex ===
+            resolvedZones.value[zoneIndex].questions[questionIndex].alternatives?.length - 1)
+      ) {
+        return;
+      }
+      // Determine if the question is in an alternative group.
+      if (typeof alternativeGroupIndex === 'number') {
+        const alternatives = question.alternatives;
+        if (!alternatives) return;
+        // If the question is in an alternative group and the alternative is the last alternative in
+        // the group, we need to move the question out of the group.
+        if (alternativeGroupIndex === alternatives.length - 1) {
+          if (question.alternatives) {
+            question.alternatives[alternativeGroupIndex].alternative_group_size = 1;
+          }
+          update[zoneIndex].questions.splice(
+            questionIndex + 1,
+            0,
+            alternatives.pop() ?? update[zoneIndex].questions[0],
+          );
+          resolvedZones.value = [...update];
+          return;
+          // else we need to swap the question with the question below it in the alternative group.
+        } else {
+          const question = alternatives[alternativeGroupIndex];
+          alternatives[alternativeGroupIndex] = alternatives[alternativeGroupIndex + 1];
+          alternatives[alternativeGroupIndex + 1] = question;
+          resolvedZones.value = [...update];
+          return;
+        }
+      }
+      // If the question is the last question in the zone, we need to move it to the
+      // beginning of the next zone.
+      if (questionIndex === update[zoneIndex].questions.length - 1) {
+        update[zoneIndex + 1].questions.unshift(update[zoneIndex].questions.pop() ?? question);
+        resolvedZones.value = [...update];
+        return;
+      }
+      // If the question below is in an alternative group, we need to move the question into the
+      // group.
+      if (update[zoneIndex].questions[questionIndex + 1].alternatives) {
+        update[zoneIndex].questions[questionIndex + 1].alternatives?.unshift(question);
+        update[zoneIndex].questions.splice(questionIndex, 1);
+        resolvedZones.value = [...update];
+        return;
+      }
+      // If a question is not the last in its zone and the question below is not in an alternative
+      // group, we can simply swap it with the one below it.
+      swapQuestions({
+        zoneIndex,
+        questionIndex,
+        targetQuestionIndex: questionIndex + 1,
+      });
     };
 
     let questionNumber = 0;
@@ -204,8 +375,47 @@ onDocumentReady(() => {
         <tr>
           {editMode.value ? (
             <>
+              {question.alternative_group_size > 1 ? <td></td> : ''}
               <td></td>
-              <td>
+              <td class="align-content-center">
+                <div>
+                  <button
+                    class="btn btn-xs btn-secondary"
+                    type="button"
+                    disabled={
+                      zoneIndex === 0 &&
+                      questionIndex === 0 &&
+                      (!alternativeGroupIndex || alternativeGroupIndex === 0)
+                    }
+                    onClick={() =>
+                      handleMoveQuestionUp({ zoneIndex, questionIndex, alternativeGroupIndex })
+                    }
+                  >
+                    <i class="fa fa-arrow-up" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div>
+                  <button
+                    class="btn btn-xs btn-secondary"
+                    type="button"
+                    disabled={
+                      zoneIndex === resolvedZones.value.length - 1 &&
+                      questionIndex === resolvedZones.value[zoneIndex].questions.length - 1 &&
+                      (!resolvedZones.value[zoneIndex].questions[questionIndex].alternatives ||
+                        alternativeGroupIndex ===
+                          resolvedZones.value[zoneIndex].questions[questionIndex].alternatives
+                            ?.length -
+                            1)
+                    }
+                    onClick={() =>
+                      handleMoveQuestionDown({ zoneIndex, questionIndex, alternativeGroupIndex })
+                    }
+                  >
+                    <i class="fa fa-arrow-down" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </td>
+              <td class="align-content-center">
                 <button
                   class="btn btn-sm btn-secondary"
                   onClick={() =>
@@ -220,12 +430,11 @@ onDocumentReady(() => {
                   <i class="fa fa-edit" aria-hidden="true"></i>
                 </button>
               </td>
-              <td>
+              <td class="align-content-center">
                 <button
                   class="btn btn-sm btn-danger"
                   onClick={() =>
                     handleDeleteQuestion({
-                      question,
                       zoneIndex,
                       questionIndex,
                       alternativeGroupIndex,
@@ -377,7 +586,29 @@ onDocumentReady(() => {
           <tr key={`zone-${zoneIndex}`}>
             {editMode.value ? (
               <>
-                <td>
+                <td class="align-content-center">
+                  <div>
+                    <button
+                      class="btn btn-xs btn-secondary js-zone-up-arrow-button"
+                      type="button"
+                      disabled={zoneIndex === 0}
+                      onClick={() => handleSwapZones({ zoneIndex, targetZoneIndex: zoneIndex - 1 })}
+                    >
+                      <i class="fa fa-arrow-up" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <div>
+                    <button
+                      class="btn btn-xs btn-secondary js-zone-down-arrow-button"
+                      type="button"
+                      disabled={zoneIndex === resolvedZones.value.length - 1}
+                      onClick={() => handleSwapZones({ zoneIndex, targetZoneIndex: zoneIndex + 1 })}
+                    >
+                      <i class="fa fa-arrow-down" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </td>
+                <td class="align-content-center">
                   <button
                     class="btn btn-sm btn-secondary"
                     onClick={() => handleEditZone({ zone, zoneIndex })}
@@ -402,11 +633,15 @@ onDocumentReady(() => {
           </tr>
           {zone.questions?.map((question, questionIndex) => {
             questionNumber++;
+            question.alternative_group_size = question.alternatives
+              ? question.alternatives.length
+              : 1;
             return (
               <>
                 {question.start_new_alternative_group && question.alternative_group_size > 1 ? (
                   <tr>
-                    <td colspan={nTableCols}>
+                    {editMode ? <td></td> : ''}
+                    <td colspan={nTableCols - 1}>
                       {questionNumber}.
                       {question.alternative_group_number_choose == null
                         ? ' Choose all questions from:'
@@ -424,6 +659,8 @@ onDocumentReady(() => {
                         alternativeQuestion: AssessmentAlternativeQuestion,
                         alternativeGroupIndex,
                       ) => {
+                        alternativeQuestion.alternative_group_size =
+                          question.alternative_group_size;
                         return questionRow({
                           question: alternativeQuestion,
                           zoneIndex,
