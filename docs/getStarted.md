@@ -32,7 +32,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
   }
   ```
 
-- in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#course-instance-allowaccess)). For example:
+- in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#access-controls)). For example:
 
   ```json title="infoCourseInstance.json"
   {

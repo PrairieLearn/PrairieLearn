@@ -97,7 +97,7 @@ function ActionsHeader() {
                 Students
               </h2>
               <a href="${config.urlPrefix}/enroll" class="btn btn-xs btn-outline-primary">
-                Enroll course
+                Add or remove courses
               </a>
             </div>
           </div>
