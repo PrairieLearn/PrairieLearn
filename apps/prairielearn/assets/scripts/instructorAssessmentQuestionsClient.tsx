@@ -14,6 +14,7 @@ import {
   AssessmentQuestionRow,
   Zone,
 } from '../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
+import { update } from 'lodash';
 
 onDocumentReady(() => {
   $('#resetQuestionVariantsModal').on('show.bs.modal', (e) => {
@@ -186,6 +187,21 @@ onDocumentReady(() => {
       Modal.getOrCreateInstance(editModal).show();
     };
 
+    const handleAddQuestion = (zoneIndex: number) => {
+      const update = resolvedZones.value.map((z) => ({ ...z }));
+      update[zoneIndex].questions.push(newQuestion);
+      resolvedZones.value = [...update];
+      render(
+        <EditQuestionModal
+          question={newQuestion}
+          zoneIndex={zoneIndex}
+          questionIndex={resolvedZones.value[zoneIndex].questions.length - 1}
+        />,
+        editModal,
+      );
+      Modal.getOrCreateInstance(editModal).show();
+    };
+
     function handleSwapZones({
       zoneIndex,
       targetZoneIndex,
@@ -276,7 +292,6 @@ onDocumentReady(() => {
         update[zoneIndex].questions[questionIndex - 1].alternatives?.push(question);
         update[zoneIndex].questions.splice(questionIndex, 1);
         resolvedZones.value = [...update];
-        console.log(resolvedZones.value);
         return;
       }
 
@@ -448,7 +463,7 @@ onDocumentReady(() => {
           ) : (
             ''
           )}
-          <td>
+          <td class="align-content-center">
             {hasCoursePermissionPreview ? (
               <>
                 <a href={`${urlPrefix}/question/${question.question_id}/`}>
@@ -458,7 +473,6 @@ onDocumentReady(() => {
                     : ' '}
                   {question.title}
                 </a>{' '}
-                {/* TODO: make this issue badge a component */}
                 {question.open_issue_count ? (
                   <a
                     class="badge badge-pill badge-danger"
@@ -474,10 +488,16 @@ onDocumentReady(() => {
                 )}
               </>
             ) : (
-              { questionNumber }
+              <>
+                {questionNumber}.{' '}
+                {alternativeGroupIndex || alternativeGroupIndex === 0
+                  ? `${alternativeGroupIndex + 1} `
+                  : ' '}
+                {question.title}
+              </>
             )}
           </td>
-          <td>
+          <td class="align-content-center">
             {question.sync_errors
               ? SyncProblemButton({
                   type: 'error',
@@ -620,7 +640,7 @@ onDocumentReady(() => {
             ) : (
               ''
             )}
-            <th colspan={editMode.value ? nTableCols + 1 : nTableCols}>
+            <th colspan={editMode.value ? nTableCols + 1 : nTableCols} class="align-content-center">
               Zone {zoneIndex + 1}. {zone.title}
               {zone.numberChoose == null
                 ? '(Choose all questions)'
@@ -673,6 +693,18 @@ onDocumentReady(() => {
               </>
             );
           })}
+          {editMode.value ? (
+            <tr>
+              <td></td>
+              <td colspan={nTableCols - 1}>
+                <button class="btn btn-sm" onClick={() => handleAddQuestion(zoneIndex)}>
+                  <i class="fa fa-add" aria-hidden="true"></i> Add Question to Zone
+                </button>
+              </td>
+            </tr>
+          ) : (
+            ''
+          )}
         </>
       );
     });
@@ -1178,3 +1210,76 @@ onDocumentReady(() => {
 
   document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
 });
+
+// Blank question template, used for adding new questions.
+const newQuestion: AssessmentQuestionRow = {
+  advance_score_perc: null,
+  alternative_group_id: null,
+  alternative_group_number_choose: null,
+  alternative_group_number: null,
+  alternative_group_size: 1,
+  assessment_id: '0',
+  assessment_question_advance_score_perc: null,
+  auto_points_list: [],
+  average_average_submission_score: null,
+  average_first_submission_score: null,
+  average_last_submission_score: null,
+  average_max_submission_score: null,
+  average_number_submissions: null,
+  average_submission_score_hist: null,
+  average_submission_score_variance: null,
+  deleted_at: null,
+  discrimination: null,
+  display_name: null,
+  effective_advance_score_perc: null,
+  first_submission_score_hist: null,
+  first_submission_score_variance: null,
+  force_max_points: null,
+  grade_rate_minutes: null,
+  id: '0',
+  incremental_submission_points_array_averages: null,
+  incremental_submission_points_array_variances: null,
+  incremental_submission_score_array_averages: null,
+  incremental_submission_score_array_variances: null,
+  init_points: null,
+  last_submission_score_hist: null,
+  last_submission_score_variance: null,
+  manual_rubric_id: null,
+  max_auto_points: null,
+  max_manual_points: null,
+  max_points: null,
+  max_submission_score_hist: null,
+  max_submission_score_variance: null,
+  mean_question_score: null,
+  median_question_score: null,
+  number_in_alternative_group: null,
+  number_submissions_hist: null,
+  number_submissions_variance: null,
+  number: null,
+  open_issue_count: null,
+  other_assessments: null,
+  points_list: null,
+  qid: null,
+  question_id: '0',
+  question_score_variance: null,
+  quintile_question_scores: null,
+  some_nonzero_submission_perc: null,
+  some_perfect_submission_perc: null,
+  some_submission_perc: null,
+  start_new_alternative_group: null,
+  start_new_zone: null,
+  submission_score_array_averages: null,
+  submission_score_array_variances: null,
+  sync_errors: null,
+  sync_warnings: null,
+  tags: null,
+  title: null,
+  topic: null,
+  zone_best_questions: null,
+  zone_has_best_questions: null,
+  zone_has_max_points: null,
+  zone_max_points: null,
+  zone_number_choose: null,
+  zone_number: null,
+  zone_title: null,
+};
