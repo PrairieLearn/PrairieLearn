@@ -776,12 +776,12 @@ def numpy_to_matlab(
         return matrix_str
 
 
-FormatLanguage = Literal["python", "matlab", "mathematica", "r", "sympy"]
+_FormatLanguage = Literal["python", "matlab", "mathematica", "r", "sympy"]
 
 
 def string_from_numpy(
     A: np.ndarray | _NumPyScalarType,
-    language: FormatLanguage = "python",
+    language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
 ):
@@ -917,7 +917,7 @@ def string_from_numpy(
 # Deprecated version, keeping for backwards compatibility
 def string_from_2darray(
     A: np.ndarray,
-    language: FormatLanguage = "python",
+    language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
 ):
