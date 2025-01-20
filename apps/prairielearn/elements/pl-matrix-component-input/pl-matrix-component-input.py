@@ -191,7 +191,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             a_submitted = pl.from_json(data["submitted_answers"].get(name, None))
             if (
                 a_submitted is not None
-                and type(a_submitted) is np.ndarray
+                and isinstance(a_submitted, np.ndarray)
                 and len(a_submitted.shape) == 2
             ):
                 m, n = np.shape(a_submitted)
@@ -437,6 +437,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 correct = pl.is_correct_scalar_sf(a_sub, a_tru[i, j], digits)
             elif comparison == "decdig":
                 correct = pl.is_correct_scalar_dd(a_sub, a_tru[i, j], digits)
+            else:
+                assert_never(comparison)
 
             if correct:
                 number_of_correct += 1
@@ -623,7 +625,9 @@ def create_table_for_html_display(
             )
             display_array += '<td class="allborder">'
             display_array += escape(raw_submitted_answer)
-            if feedback_each_entry is not None and type(feedback_each_entry) is dict:
+            if feedback_each_entry is not None and isinstance(
+                feedback_each_entry, dict
+            ):
                 if feedback_each_entry[each_entry_name] == "correct":
                     feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                 elif feedback_each_entry[each_entry_name] == "incorrect":
@@ -652,9 +656,8 @@ def create_table_for_html_display(
                 )
                 display_array += ' <td class="allborder"> '
                 display_array += escape(raw_submitted_answer)
-                if (
-                    feedback_each_entry is not None
-                    and type(feedback_each_entry) is dict
+                if feedback_each_entry is not None and isinstance(
+                    feedback_each_entry, dict
                 ):
                     if feedback_each_entry[each_entry_name] == "correct":
                         feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'

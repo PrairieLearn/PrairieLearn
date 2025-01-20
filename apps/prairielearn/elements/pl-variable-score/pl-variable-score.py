@@ -27,8 +27,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     partial_score = data["partial_scores"].get(name, {"score": None, "feedback": None})
     score = partial_score.get("score", None)
     feedback = partial_score.get("feedback", None)
-    if type(feedback) is not str:
-        raise TypeError(f"feedback must be a string, not {type(feedback)}")
+    if isinstance(feedback, dict):
+        raise TypeError(f"feedback cannot be of type {type(feedback)}")
 
     if score is None:
         return ""
