@@ -587,6 +587,7 @@ describe('Question Sharing', function () {
     step(
       'Try adding question to sharing set that does not exist, ensure live does not sync it',
       async () => {
+        const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets || [];
         sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets?.push(
           'Fake Sharing Set Name',
         );
@@ -596,6 +597,91 @@ describe('Question Sharing', function () {
         );
 
         await ensureInvalidSharingOperationFailsToSync();
+
+        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveSharingSets;
+      },
+    );
+  });
+
+  describe('Test publicly sharing an assessment', function () {
+    before('alter config to check sharing on sync', () => {
+      config.checkSharingOnSync = true;
+    });
+    after('reset config', () => {
+      config.checkSharingOnSync = false;
+    });
+
+    step('Fail to sync a shared assessment containing a nonshared question', async () => {
+      sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
+      sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
+        {
+          questions: [
+            {
+              id: `${SHARING_QUESTION_QID}`,
+              points: 1,
+            },
+            {
+              id: `${PUBLICLY_SHARED_QUESTION_QID}`,
+              points: 1,
+            },
+          ],
+        },
+      ];
+
+      await fs.writeJSON(
+        path.join(
+          sharingCourseLiveDir,
+          'courseInstances/Fa19/assessments/test/infoAssessment.json',
+        ),
+        sharingCourseData.courseInstances['Fa19'].assessments['test'],
+      );
+
+      await ensureInvalidSharingOperationFailsToSync();
+    });
+
+    step('Successfully sync a shared assessment with a shared question', async () => {
+      sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
+        {
+          questions: [
+            {
+              id: `${PUBLICLY_SHARED_QUESTION_QID}`,
+              points: 1,
+            },
+          ],
+        },
+      ];
+
+      await fs.writeJSON(
+        path.join(
+          sharingCourseLiveDir,
+          'courseInstances/Fa19/assessments/test/infoAssessment.json',
+        ),
+        sharingCourseData.courseInstances['Fa19'].assessments['test'],
+      );
+
+      const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
+      if (syncResult.status !== 'complete' || syncResult?.hadJsonErrorsOrWarnings) {
+        throw new Error('Errors or warnings found during sync of sharing course');
+      }
+    });
+
+    step(
+      'Successfully access publicly shared assessment page for the shared assessment',
+      async () => {
+        const courseInstanceId = await sqldb.queryRow(
+          sql.select_course_instance,
+          { short_name: 'Fa19', sharing_course_id: sharingCourse.id },
+          IdSchema,
+        );
+        const sharedAssessmentId = await sqldb.queryRow(
+          sql.select_assessment,
+          { tid: 'test', course_instance_id: courseInstanceId },
+          IdSchema,
+        );
+        const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${courseInstanceId}/assessment/${sharedAssessmentId}/questions`;
+        const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
+
+        assert(sharedAssessmentPage.ok);
       },
     );
 
