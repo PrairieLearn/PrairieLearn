@@ -6,7 +6,7 @@ from io import StringIO
 import chevron
 import lxml.html
 import prairielearn as pl
-from colors import PLColor
+from prairielearn.colors import PLColor
 
 
 def get_file_names_as_array(raw_file_names: str) -> list[str]:
