@@ -1,4 +1,4 @@
-import { Modal } from 'bootstrap';
+import { Dropdown, Modal } from 'bootstrap';
 import { Fragment, h, render } from 'preact';
 import React, { useEffect, useState } from 'preact/hooks';
 import { signal } from '@preact/signals';
@@ -17,15 +17,6 @@ import {
 import { update } from 'lodash';
 
 onDocumentReady(() => {
-  $('#resetQuestionVariantsModal').on('show.bs.modal', (e) => {
-    const button = (e as any).relatedTarget as HTMLElement;
-    const modal = e.target as HTMLElement;
-
-    templateFromAttributes(button, modal, {
-      'data-assessment-question-id': '.js-assessment-question-id',
-    });
-  });
-
   const assessmentQuestionsTable = document.querySelector(
     '.js-assessment-questions-table',
   ) as HTMLElement;
@@ -92,10 +83,7 @@ onDocumentReady(() => {
           </button>
         ) : (
           <span class="js-edit-mode-buttons">
-            <button
-              class="btn btn-sm btn-light js-save-and-sync-button mx-1"
-              onClick={() => handleSave()}
-            >
+            <button class="btn btn-sm btn-light mx-1" onClick={() => handleSave()}>
               <i class="fa fa-save" aria-hidden="true"></i> Save and sync
             </button>
             <button class="btn btn-sm btn-light" onClick={() => window.location.reload()}>
@@ -571,20 +559,22 @@ onDocumentReady(() => {
               <button
                 type="button"
                 class="btn btn-secondary btn-xs dropdown-toggle"
-                data-toggle="dropdown"
+                data-bs-toggle="dropdown"
                 aria-haspopup="true"
                 aria-expanded="false"
+                onClick={(e) => {
+                  Dropdown.getOrCreateInstance(e.target as HTMLElement).toggle();
+                }}
               >
                 Action <span class="caret"></span>
               </button>
-
               <div class="dropdown-menu">
                 {hasCourseInstancePermissionEdit ? (
                   <button
                     class="dropdown-item"
-                    data-toggle="modal"
-                    data-target="#resetQuestionVariantsModal"
-                    data-assessment-question-id="${question.id}"
+                    data-bs-toggle="modal"
+                    data-bs-target="#resetQuestionVariantsModal"
+                    data-assessment-question-id={question.id}
                   >
                     Reset question variants
                   </button>
@@ -609,7 +599,7 @@ onDocumentReady(() => {
                 <td class="align-content-center">
                   <div>
                     <button
-                      class="btn btn-xs btn-secondary js-zone-up-arrow-button"
+                      class="btn btn-xs btn-secondary"
                       type="button"
                       disabled={zoneIndex === 0}
                       onClick={() => handleSwapZones({ zoneIndex, targetZoneIndex: zoneIndex - 1 })}
@@ -619,7 +609,7 @@ onDocumentReady(() => {
                   </div>
                   <div>
                     <button
-                      class="btn btn-xs btn-secondary js-zone-down-arrow-button"
+                      class="btn btn-xs btn-secondary"
                       type="button"
                       disabled={zoneIndex === resolvedZones.value.length - 1}
                       onClick={() => handleSwapZones({ zoneIndex, targetZoneIndex: zoneIndex + 1 })}
@@ -708,19 +698,12 @@ onDocumentReady(() => {
         </>
       );
     });
+
     return (
       <table class="table table-sm table-hover" aria-label="Assessment questions">
         <thead>
           <tr>
-            {editMode.value ? (
-              <>
-                <th></th>
-                <th></th>
-                <th></th>
-              </>
-            ) : (
-              ''
-            )}
+            {editMode.value ? <th colSpan={4}></th> : ''}
             <th>
               <span class="sr-only">Name</span>
             </th>
@@ -730,9 +713,7 @@ onDocumentReady(() => {
             <th>Auto Points</th>
             <th>Manual Points</th>
             {showAdvanceScorePercCol ? <th>Advance Score</th> : ''}
-            {/* there is an issue with the Preact types here as 'width' is not recognized in 
-            'ThHTMLAttributes<HTMLTableCellElement>' */}
-            <th width="100">Mean score</th>
+            <th>Mean score</th>
             <th>Num. Submissions Histogram</th>
             <th>Other Assessments</th>
             <th class="text-right">Actions</th>
@@ -931,7 +912,7 @@ onDocumentReady(() => {
                 <div class="input-group">
                   <input
                     type="text"
-                    class="form-control js-qid-input"
+                    class="form-control"
                     id="qidInput"
                     name="qid"
                     aria-describedby="qidHelp"
@@ -976,7 +957,7 @@ onDocumentReady(() => {
                   </div>
                   {autoGraded ? (
                     <>
-                      <div class="form-group js-hw-auto-points">
+                      <div class="form-group">
                         <label for="autoPointsInput">Auto Points</label>
                         <input
                           type="number"
@@ -996,7 +977,7 @@ onDocumentReady(() => {
                           The amount of points each attempt at the question is worth.
                         </small>
                       </div>
-                      <div class="form-group js-hw-auto-points">
+                      <div class="form-group">
                         <label for="maxAutoPointsInput">Max Points</label>
                         <input
                           type="number"
@@ -1016,7 +997,7 @@ onDocumentReady(() => {
                           The maximum number of points that can be awarded for the question.
                         </small>
                       </div>
-                      <div class="form-group js-hw-auto-points">
+                      <div class="form-group">
                         <label for="triesPerVariantInput">Tries Per Variant</label>
                         <input
                           type="number"
@@ -1039,7 +1020,7 @@ onDocumentReady(() => {
                       </div>
                     </>
                   ) : (
-                    <div class="form-group js-hw-manual-points">
+                    <div class="form-group">
                       <label for="manualPointsInput">Manual Points</label>
                       <input
                         type="number"
@@ -1157,7 +1138,7 @@ onDocumentReady(() => {
           <div class="modal-footer">
             <button
               type="button"
-              class="btn btn-danger js-confirm-delete-button"
+              class="btn btn-danger"
               data-dismiss="modal"
               onClick={() => handleDelete()}
             >
@@ -1207,6 +1188,15 @@ onDocumentReady(() => {
     document.querySelector('.js-zones-input')?.setAttribute('value', JSON.stringify(zones));
     (document.querySelector('#zonesForm') as HTMLFormElement)?.submit();
   }
+
+  $('#resetQuestionVariantsModal').on('show.bs.modal', (e) => {
+    const button = (e as any).relatedTarget as HTMLElement;
+    const modal = e.target as HTMLElement;
+
+    templateFromAttributes(button, modal, {
+      'data-assessment-question-id': '.js-assessment-question-id',
+    });
+  });
 
   document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
 });
