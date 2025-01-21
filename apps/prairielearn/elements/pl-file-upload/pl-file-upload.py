@@ -232,7 +232,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "parse_error": "<br>".join(parse_error),
     }
 
-    with open("pl-file-upload.mustache", "r", encoding="utf-8") as f:
+    with open("pl-file-upload.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
 
 

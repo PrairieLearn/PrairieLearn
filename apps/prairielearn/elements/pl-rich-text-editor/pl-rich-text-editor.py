@@ -27,19 +27,19 @@ DIRECTORY_DEFAULT = "."
 MARKDOWN_SHORTCUTS_DEFAULT = True
 
 
-def get_answer_name(file_name):
-    return "_rich_text_editor_{0}".format(
+def get_answer_name(file_name: str) -> str:
+    return "_rich_text_editor_{}".format(
         hashlib.sha1(file_name.encode("utf-8")).hexdigest()
     )
 
 
-def element_inner_html(element):
+def element_inner_html(element: lxml.html.HtmlElement) -> str:
     return (element.text or "") + "".join(
         [str(lxml.html.tostring(c), "utf-8") for c in element.iterchildren()]
     )
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file-name"]
     optional_attribs = [
@@ -62,18 +62,22 @@ def prepare(element_html, data):
     if "_required_file_names" not in data["params"]:
         data["params"]["_required_file_names"] = []
     elif file_name in data["params"]["_required_file_names"]:
-        raise Exception("There is more than one file editor with the same file name.")
+        raise RuntimeError(
+            "There is more than one file editor with the same file name."
+        )
     data["params"]["_required_file_names"].append(file_name)
 
-    if source_file_name is not None:
-        if element_text and not str(element_text).isspace():
-            raise Exception(
-                'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
-                + element_text
-            )
+    if (
+        source_file_name is not None
+        and element_text
+        and not str(element_text).isspace()
+    ):
+        raise ValueError(
+            'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
+        )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name", "")
     answer_name = get_answer_name(file_name)
@@ -121,12 +125,12 @@ def render(element_html, data):
             else:
                 directory = os.path.join(data["options"]["question_path"], directory)
             file_path = os.path.join(directory, source_file_name)
-            text_display = open(file_path).read()
+            with open(file_path) as f:
+                text_display = f.read()
+        elif element_text is not None:
+            text_display = str(element_text)
         else:
-            if element_text is not None:
-                text_display = str(element_text)
-            else:
-                text_display = ""
+            text_display = ""
 
         html_params["original_file_contents"] = base64.b64encode(
             text_display.encode("UTF-8").strip()
@@ -144,18 +148,18 @@ def render(element_html, data):
             html_params["current_file_contents"] = html_params["original_file_contents"]
 
         html_params["question"] = data["panel"] == "question"
-        with open("pl-rich-text-editor.mustache", "r", encoding="utf-8") as f:
+        with open("pl-rich-text-editor.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
         html = ""
     else:
-        raise Exception("Invalid panel type: " + data["panel"])
+        raise ValueError("Invalid panel type: " + data["panel"])
 
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     file_name = pl.get_string_attrib(element, "file-name", "")

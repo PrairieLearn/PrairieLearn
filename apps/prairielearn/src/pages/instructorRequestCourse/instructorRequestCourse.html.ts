@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
 import { EncodedData } from '@prairielearn/browser-utils';
-import { HtmlValue, html } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
+import { type CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
 export const CourseRequestRowSchema = z.object({
   course_request: CourseRequestSchema,
@@ -136,9 +136,10 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
         <div class="card-body">
           <p>
             This form is for instructors who want to create a new course on PrairieLearn. Students
-            should <strong>not</strong> submit this form and should instead use the "Enroll course"
-            button on the PrairieLearn homepage. Teaching assistants and course staff are granted
-            access by the owner of their course and should <strong>not</strong> submit this form.
+            should <strong>not</strong> submit this form and should instead use the "Add or remove
+            courses" button on the PrairieLearn homepage. Teaching assistants and course staff are
+            granted access by the owner of their course and should <strong>not</strong> submit this
+            form.
           </p>
 
           <div class="form-row">

@@ -13,7 +13,7 @@ import {
 } from '../../../lib/assets.js';
 import type { User } from '../../../lib/db-types.js';
 
-import { InstanceQuestionTableData } from './assessmentQuestion.types.js';
+import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
 
 export function AssessmentQuestion({
   resLocals,

@@ -4,7 +4,7 @@ import io
 import os
 import pathlib
 import sys
-from typing import Any, Literal, Optional, Tuple, TypedDict
+from typing import Any, Literal, TypedDict
 
 import lxml.html
 from check_data import Phase, check_data
@@ -57,7 +57,7 @@ def filelike_to_string(filelike: Any) -> str:
 
 def process(
     phase: Phase, data: dict, context: RenderContext
-) -> Tuple[Optional[str], set[str]]:
+) -> tuple[str | None, set[str]]:
     html = context["html"]
     elements = context["elements"]
     course_path = context["course_path"]
@@ -76,6 +76,13 @@ def process(
     # change based on the element, we'll add and then delete them from
     # `original_data` as needed.
     original_data = copy.deepcopy(data)
+
+    # We'll cache instantiated modules for two reasons:
+    # - This allows us to avoid re-reading/compiling/executing them if the same
+    #   element is used multiple times.
+    # - This allows element code to maintain state across multiple calls. This is useful
+    #   specifically for elements that want to maintain a cache of expensive-to-compute data.
+    mod_cache: dict[pathlib.Path, dict[str, Any]] = {}
 
     def process_element(
         element: lxml.html.HtmlElement,
@@ -110,20 +117,25 @@ def process(
                 sys.path.insert(0, str(pathlib.Path(course_path) / "serverFilesCourse"))
             sys.path.insert(0, str(element_path))
 
-            mod = {}
-            with open(element_controller_path, encoding="utf-8") as inf:
-                # use compile to associate filename with code object, so the
-                # filename appears in the traceback if there is an error
-                # (https://stackoverflow.com/a/437857)
-                code = compile(inf.read(), element_controller_path, "exec")
+            mod = mod_cache.get(element_controller_path)
+            if mod is None:
+                mod = {}
+
+                with open(element_controller_path, encoding="utf-8") as inf:
+                    # Use `compile` to associate filename with code object, so the
+                    # filename appears in the traceback if there is an error:
+                    # https://stackoverflow.com/a/437857
+                    code = compile(inf.read(), element_controller_path, "exec")
+
                 exec(code, mod)
+                mod_cache[element_controller_path] = mod
 
             if phase not in mod:
                 return None
 
             # Add element-specific or phase-specific information to the data.
-            prepare_data(phase, data, context, element)
-            prepare_data(phase, original_data, context, element)
+            prepare_data(phase, data, context, element.tag)
+            prepare_data(phase, original_data, context, element.tag)
 
             # Temporarily strip tail text from the element; the `parse_fragment`
             # function will choke on it.
@@ -146,20 +158,19 @@ def process(
                 return element_value
             elif phase == "file":
                 if result is not None:
-                    raise Exception("Another element already returned a file")
+                    raise RuntimeError("Another element already returned a file")
                 result = element_value
-            else:
-                if element_value is not None and element_value is not data:
-                    # TODO: Once this has been running in production for a while,
-                    # change this to raise an exception.
-                    sys.stderr.write(
-                        f"Function {str(phase)}() in {str(element_controller)} returned a data object other than the one that was passed in.\n\n"
-                        + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
-                        + "For now, the return value will be used instead of the data object that was passed in.\n\n"
-                        + "In the future, returning a different object will trigger a fatal error."
-                    )
-        except Exception:
-            raise Exception(f"Error processing element {element.tag}")
+            elif element_value is not None and element_value is not data:
+                # TODO: Once this has been running in production for a while,
+                # change this to raise an exception.
+                sys.stderr.write(
+                    f"Function {phase}() in {element_controller} returned a data object other than the one that was passed in.\n\n"
+                    + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
+                    + "For now, the return value will be used instead of the data object that was passed in.\n\n"
+                    + "In the future, returning a different object will trigger a fatal error."
+                )
+        except Exception as exc:
+            raise RuntimeError(f"Error processing element {element.tag}") from exc
 
     def process_element_return_none(element: lxml.html.HtmlElement) -> None:
         process_element(element)
@@ -176,14 +187,14 @@ def process(
 
 
 def prepare_data(
-    phase: Phase, data: dict, context: RenderContext, element: lxml.html.HtmlElement
+    phase: Phase, data: dict, context: RenderContext, element_tag: str
 ) -> None:
     element_extensions = context["element_extensions"]
-    element_info = context["elements"][element.tag]
+    element_info = context["elements"][element_tag]
 
     # Make a deep copy of the data so that question/element code can't
     # modify the source data.
-    data["extensions"] = copy.deepcopy(element_extensions.get(element.tag, {}))
+    data["extensions"] = copy.deepcopy(element_extensions.get(element_tag, {}))
 
     # `*_url` options are only present during the render phase.
     if phase == "render":

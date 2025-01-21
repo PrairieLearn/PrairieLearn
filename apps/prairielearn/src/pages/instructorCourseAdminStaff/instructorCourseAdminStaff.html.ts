@@ -6,11 +6,11 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import {
-  CourseInstance,
+  type CourseInstance,
   CourseInstanceSchema,
   CourseInstancePermissionSchema,
   CoursePermissionSchema,
-  User,
+  type User,
   UserSchema,
 } from '../../lib/db-types.js';
 
@@ -263,7 +263,7 @@ function CoursePermissionsInsertForm({
           class="form-control"
           id="addUsersInputUid"
           name="uid"
-          placeholder="student1@example.com, student2@example.com"
+          placeholder="staff1@example.com, staff2@example.com"
           required
           aria-describedby="addUsersInputUidHelp"
         ></textarea>

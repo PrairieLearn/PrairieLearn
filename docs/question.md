@@ -47,7 +47,7 @@ Example questions are in the [`exampleCourse/questions`](https://github.com/Prai
 
 The `info.json` file for each question defines properties of the question. For example:
 
-```json
+```json title="info.json"
 {
   "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
   "title": "Newton's third law",
@@ -71,6 +71,9 @@ The `info.json` file for each question defines properties of the question. For e
 | `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                       |
 | `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)                                                |
 | `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                  |
+| `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                  |
+| `shareSourcePublicly`    | boolean | Whether the the source code of the question should be available                                                                                                        |
+| `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                             |
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoQuestion.json)
 
@@ -80,7 +83,7 @@ Your question can load client-side assets such as scripts or stylesheets from di
 
 These dependencies are specified in the `info.json` file, and can be configured as follows:
 
-```json
+```json title="info.json"
 {
   "dependencies": {
     "nodeModulesScripts": ["three/build/three.min.js"],
@@ -88,6 +91,16 @@ These dependencies are specified in the `info.json` file, and can be configured 
     "clientFilesQuestionStyles": ["my-question-style.css"],
     "clientFilesCourseStyles": ["courseStylesheet1.css", "courseStylesheet2.css"]
   }
+}
+```
+
+### Question Sharing
+
+Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](course/index.md#adding-sharing-sets).
+
+```json title="info.json"
+{
+  "sharingSets": ["python-exercises"]
 }
 ```
 
@@ -361,7 +374,7 @@ int m = 4;
 
 ## Escaping `<markdown>` tags
 
-Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be renderd as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
+Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be rendered as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
 
 ## Rendering panels from `question.html`
 
@@ -445,7 +458,7 @@ And then we're done! This is an obviously more correct way to process questions,
 
 To opt in to the new renderer, add the following to your `infoCourse.json` file:
 
-```json
+```json title="infoCourse.json"
 {
   "options": {
     "useNewQuestionRenderer": true
@@ -493,7 +506,7 @@ Any custom grading function for the whole question should set `data["score"]` as
 
 More detailed information can be found in the docstrings for these functions. If you would prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
 
-To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#question-serverpy) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feeback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
+To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#question-serverpy) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feedback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
 
 For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. For example, the following is problematic:
 

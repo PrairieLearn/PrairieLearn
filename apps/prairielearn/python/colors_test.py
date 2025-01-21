@@ -4,7 +4,7 @@ from colors import PLColor, get_css_color
 
 
 @pytest.mark.parametrize(
-    "color, expected",
+    ("color", "expected"),
     [
         ("red", "#ff0000"),
         ("RED", "#ff0000"),
@@ -22,7 +22,7 @@ def test_get_css_color(color: str, expected: str | None) -> None:
 
 
 @pytest.mark.parametrize(
-    "color, expected",
+    ("color", "expected"),
     [("red", Base("srgb", [1, 0, 0], 1)), ("RED", Base("srgb", [1, 0, 0], 1))],
 )
 def test_color_constructor(color: str, expected: str) -> None:
@@ -37,7 +37,7 @@ def test_color_constructor_custom() -> None:
 
 def test_color_constructor_error() -> None:
     """Assert the color constructor raises a ValueError if given invalid input."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="not a valid color"):
         PLColor("none")
 
 

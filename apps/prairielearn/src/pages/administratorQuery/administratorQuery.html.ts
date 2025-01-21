@@ -8,7 +8,7 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import { QueryRun, QueryRunSchema } from '../../lib/db-types.js';
+import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 
 export const AdministratorQueryRunParamsSchema = z.object({
   name: z.string(),

@@ -10,7 +10,9 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   // Create a record to store the default values of select elements. This is because we do not have access to the default value of a select element like we do for an input element.
   const selectDefaultValues: Record<string, any> = {};
   form.querySelectorAll('select').forEach((element) => {
-    selectDefaultValues[element.id] = (element as HTMLSelectElement).value;
+    selectDefaultValues[element.id] = Array.from(element.selectedOptions).map(
+      (option) => option.value,
+    );
   });
 
   // Add event listenerst to inputs. If the value is different from the default value, set valueHasChanged{} to true. If the value is the same as the default value, set valueHasChanged{} to false. Then call checkDifferences() to see if the save button should be enabled.
@@ -28,13 +30,13 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   // Similar to the above, but for select elements. The difference here being that select elements do not store the default value so we must store those in selectDefaultValues{} and compare against those.
 
   form.addEventListener('change', (e) => {
-    if (
-      (e.target as HTMLInputElement).value === selectDefaultValues[(e.target as HTMLElement).id]
-    ) {
-      valueHasChanged[(e.target as HTMLElement).id] = false;
-    } else {
-      valueHasChanged[(e.target as HTMLElement).id] = true;
-    }
+    if (!(e.target instanceof HTMLSelectElement)) return;
+
+    const selectedOptions = Array.from(e.target.selectedOptions).map((option) => option.value);
+
+    valueHasChanged[e.target.id] =
+      JSON.stringify(selectedOptions.sort()) !==
+      JSON.stringify(selectDefaultValues[e.target.id].sort());
 
     checkDifferences();
   });
@@ -42,7 +44,7 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   // Check if any values have changed (as indicated by a 'true' value in valueHasChanged{}). If so, enable the save button and return. If there are no changes, disable the save button.
   function checkDifferences() {
     for (const element in valueHasChanged) {
-      if (valueHasChanged[element] === true) {
+      if (valueHasChanged[element] === true && form.checkValidity()) {
         saveButton.removeAttribute('disabled');
         return;
       }

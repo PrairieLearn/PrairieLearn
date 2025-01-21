@@ -21,7 +21,6 @@ def test_safe_parse_int_small_ints(item: str) -> None:
         "28000000000000000",
         "-9007199254740992",
         "9007199254740992",
-        "28000000000000000",
         "2.8e16",
     ],
 )
@@ -41,10 +40,8 @@ def test_safe_parse_int_large_ints(item: str) -> None:
     ],
 )
 def test_all_integers_within_limits_no_exception(item: Any) -> None:
-    try:
-        zu.assert_all_integers_within_limits(item)
-    except Exception as err:
-        assert False, err
+    # We are checking that no exception is thrown
+    zu.assert_all_integers_within_limits(item)
 
 
 @pytest.mark.parametrize(
@@ -57,5 +54,5 @@ def test_all_integers_within_limits_no_exception(item: Any) -> None:
     ],
 )
 def test_all_integers_within_limits_raise_exception(item: Any) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="oversized integer"):
         zu.assert_all_integers_within_limits(item)

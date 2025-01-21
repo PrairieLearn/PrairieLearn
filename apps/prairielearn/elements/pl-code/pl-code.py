@@ -1,6 +1,8 @@
 import os
+from collections.abc import Generator, Iterable, Iterator
+from functools import cache
 from html import escape, unescape
-from typing import Any, Generator, Iterable, Iterator, Optional
+from typing import Any
 
 import chevron
 import lxml.html
@@ -9,6 +11,7 @@ import pygments
 import pygments.formatters
 import pygments.lexer
 import pygments.lexers
+import pygments.style
 import pygments.util
 from code_utils import parse_highlight_lines
 from pygments.styles import STYLE_MAP, get_style_by_name
@@ -69,6 +72,12 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
     with highlighted lines.
     """
 
+    def set_highlighted_lines(self, hl_lines: list[int] | None) -> None:
+        self.hl_lines.clear()
+        if hl_lines:
+            for line in hl_lines:
+                self.hl_lines.add(line)
+
     def _highlight_lines(
         self, tokensource: Iterable[tuple[int, str]]
     ) -> Generator[tuple[int, str], None, None]:
@@ -93,10 +102,16 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
         return ""
 
 
-def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
+# Selecting and instantiating a lexer is actually reasonably expensive
+# (on the order of 5-10ms). We cache a resolution from a language name to a
+# lexers to avoid this cost if `<pl-code>` is used with the same language
+# multiple times in the same question.
+@cache
+def get_lexer_by_name(name: str) -> pygments.lexer.Lexer | None:
     """
     Tries to find a lexer by both its proper name and any aliases it has.
     """
+
     # Search by proper class/language names
     # This returns None if not found, and a class if found.
     lexer_class = pygments.lexers.find_lexer_class(name)
@@ -110,6 +125,40 @@ def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
             return pygments.lexers.get_lexer_by_name(name)
         except pygments.util.ClassNotFound:
             return None
+
+
+# Computing this is relatively expensive, so we'll do it once here and reuse it.
+@cache
+def get_ansi_color_tokens() -> dict[_TokenType, str]:
+    return color_tokens(ANSI_COLORS, ANSI_COLORS)
+
+
+# Instantiating a style/formatter is also expensive, so we'll cache it as well.
+# Note that sharing an instance means we'll also share the `hl_lines` instance
+# member, so the caller must take care to set or clear it as needed before use.
+@cache
+def get_formatter(
+    BaseStyle: type[pygments.style.Style], highlight_lines_color: str | None
+) -> HighlightingHtmlFormatter:
+    class CustomStyleWithAnsiColors(BaseStyle):
+        # pygments did not annotate their class variables correctly (https://github.com/pygments/pygments/pull/2838)
+        styles = {**BaseStyle.styles, **get_ansi_color_tokens()}  # noqa: RUF012
+
+        highlight_color = (
+            highlight_lines_color or BaseStyle.highlight_color or "#b3d7ff"
+        )
+
+    formatter_opts = {
+        "style": CustomStyleWithAnsiColors,
+        "nobackground": True,
+        "noclasses": True,
+        # We'll unconditionally render the line numbers, but we'll hide them if
+        # they aren't specifically enabled. This means we only have to deal with
+        # one markup "shape" in our CSS, not two.
+        "linenos": "table",
+    }
+
+    return HighlightingHtmlFormatter(**formatter_opts)
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -147,20 +196,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     source_file_name = pl.get_string_attrib(
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
-    if source_file_name is not None:
-        if element.text is not None and not str(element.text).isspace():
-            raise ValueError(
-                'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
-            )
+    if (
+        source_file_name is not None
+        and element.text is not None
+        and not str(element.text).isspace()
+    ):
+        raise ValueError(
+            'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
+        )
 
     highlight_lines = pl.get_string_attrib(
         element, "highlight-lines", HIGHLIGHT_LINES_DEFAULT
     )
-    if highlight_lines is not None:
-        if parse_highlight_lines(highlight_lines) is None:
-            raise ValueError(
-                "Could not parse highlight-lines attribute; check your syntax"
-            )
+    if highlight_lines is not None and parse_highlight_lines(highlight_lines) is None:
+        raise ValueError("Could not parse highlight-lines attribute; check your syntax")
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -200,7 +249,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if not os.path.exists(file_path):
             raise ValueError(f'Unknown file path: "{file_path}".')
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             code = f.read().removesuffix("\n").removesuffix("\r")
 
         # Automatically escape code in file source (important for: html/xml).
@@ -224,28 +273,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     background_color = pygments_style.background_color or "transparent"
     line_number_color = pygments_style.line_number_color
 
-    class CustomStyleWithAnsiColors(pygments_style):
-        styles = dict(pygments_style.styles)
-        styles.update(color_tokens(ANSI_COLORS, ANSI_COLORS))
-
-        highlight_color = (
-            pygments_style.highlight_color or highlight_lines_color or "#b3d7ff"
-        )
-
-    formatter_opts = {
-        "style": CustomStyleWithAnsiColors,
-        "nobackground": True,
-        "noclasses": True,
-        # We'll unconditionally render the line numbers, but we'll hide them if
-        # they aren't specifically enabled. This means we only have to deal with
-        # one markup "shape" in our CSS, not two.
-        "linenos": "table",
-    }
-
-    if highlight_lines is not None:
-        formatter_opts["hl_lines"] = parse_highlight_lines(highlight_lines)
-
-    formatter = HighlightingHtmlFormatter(**formatter_opts)
+    formatter = get_formatter(pygments_style, highlight_lines_color)
+    formatter.set_highlighted_lines(
+        parse_highlight_lines(highlight_lines) if highlight_lines else None
+    )
 
     code = pygments.highlight(unescape(code), lexer, formatter)
 
@@ -261,5 +292,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ),
     }
 
-    with open("pl-code.mustache", "r", encoding="utf-8") as f:
+    with open("pl-code.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

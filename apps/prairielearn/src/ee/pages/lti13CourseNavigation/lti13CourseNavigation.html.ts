@@ -4,7 +4,8 @@ import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { config } from '../../../lib/config.js';
-import { Course, CourseInstance } from '../../../lib/db-types.js';
+import { type Course, type CourseInstance } from '../../../lib/db-types.js';
+import { STUDENT_ROLE } from '../../lib/lti13.js';
 
 export function Lti13CourseNavigationInstructor({
   courseName,
@@ -27,7 +28,7 @@ export function Lti13CourseNavigationInstructor({
         ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })} ${TerminologyModal()}
         <script>
           $(() => {
-            $('#onepicker').one('change', () => {
+            $('#connect_course_instance').one('change', () => {
               $('#saveButton').prop('disabled', false);
             });
           });
@@ -87,9 +88,15 @@ export function Lti13CourseNavigationInstructor({
                 </ul>
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <label>Connect ${courseName} with:
-                  <div class="input-group">
-                    <select class="custom-select" id="onepicker" name="unsafe_course_instance_id">
+                  <div class="form-group">
+                    <label class="form-label" for="connect_course_instance">
+                      Connect ${courseName} with:
+                    </label>
+                    <select
+                      class="custom-select"
+                      id="connect_course_instance"
+                      name="unsafe_course_instance_id"
+                    >
                       <option value="" disabled selected>
                         Select an existing course instance...
                       </option>
@@ -108,7 +115,6 @@ export function Lti13CourseNavigationInstructor({
                         `;
                       })}
                     </select>
-                    </label>
                   </div>
                   <button class="btn btn-primary" id="saveButton" disabled>Save</button>
                 </form>
@@ -122,9 +128,11 @@ export function Lti13CourseNavigationInstructor({
 export function Lti13CourseNavigationNotReady({
   courseName,
   resLocals,
+  ltiRoles,
 }: {
   courseName: string;
   resLocals: Record<string, any>;
+  ltiRoles: string[];
 }): string {
   return html`
     <!doctype html>
@@ -140,10 +148,30 @@ export function Lti13CourseNavigationNotReady({
 
           <p>An instructor has not yet configured ${courseName} in PrairieLearn.</p>
           <p>Please come back later.</p>
-          <a href="${config.urlPrefix}" class="btn btn-primary">
-            <i class="fa fa-home" aria-hidden="true"></i>
-            PrairieLearn home
-          </a>
+          <p>
+            <a href="${config.urlPrefix}" class="btn btn-primary">
+              <i class="fa fa-home" aria-hidden="true"></i>
+              PrairieLearn home
+            </a>
+          </p>
+          ${ltiRoles.includes(STUDENT_ROLE)
+            ? ''
+            : html`
+                <div class="card">
+                  <div class="card-header bg-info">Debugging information</div>
+                  <div class="card-body">
+                    <p>
+                      You do not have the permissions to integrate PrairieLearn course instances. An
+                      instructor or designer (and not Teaching Assistant) LMS role is needed to do
+                      this.
+                    </p>
+                    <p>Here are your roles that we received from your LMS:</p>
+                    <ul class="mb-0">
+                      ${ltiRoles.map((role) => html`<li><code>${role}</code></li>`)}
+                    </ul>
+                  </div>
+                </div>
+              `}
         </main>
       </body>
     </html>
@@ -172,19 +200,18 @@ export function Lti13CourseNavigationDone({
             <strong>You're all set.</strong> Next time you or students click on the link in your
             LMS, they will be taken directly to your PrairieLearn course instance.
           </p>
-          <ul>
-            <li>
-              The course instance <code>allowAccess</code> rules still apply and may need to be
-              configured.
-            </li>
-          </ul>
+
+          <div class="alert alert-warning">
+            The course instance and assessment <code>allowAccess</code> rules still apply and may
+            need to be configured.
+          </div>
 
           <p>To change this connection, go to your course instance LTI 1.3 page.</p>
 
           <p>
             <a
               href="/pl/lti13_instance/${lti13_instance_id}/course_navigation"
-              class="btn btn-success"
+              class="btn btn-primary"
             >
               Continue to your course instance
             </a>

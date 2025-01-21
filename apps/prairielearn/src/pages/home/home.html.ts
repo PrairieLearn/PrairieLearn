@@ -5,7 +5,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
-import { CourseInstanceSchema, CourseSchema, Institution } from '../../lib/db-types.js';
+import { CourseInstanceSchema, CourseSchema, type Institution } from '../../lib/db-types.js';
 
 export const InstructorCourseSchema = z.object({
   id: CourseSchema.shape.id,
@@ -97,7 +97,7 @@ function ActionsHeader() {
                 Students
               </h2>
               <a href="${config.urlPrefix}/enroll" class="btn btn-xs btn-outline-primary">
-                Enroll course
+                Add or remove courses
               </a>
             </div>
           </div>

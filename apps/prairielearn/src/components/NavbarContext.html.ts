@@ -1,7 +1,7 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 
 import { IssueBadge } from './IssueBadge.html.js';
-import { NavPage, NavSubPage } from './Navbar.types.js';
+import { type NavPage, type NavSubPage } from './Navbar.types.js';
 
 interface TabInfo {
   activeSubPage: NavSubPage | NavSubPage[];
@@ -14,6 +14,21 @@ interface TabInfo {
 
 // Mapping navPage to navtab sets
 const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
+  public_question: [
+    {
+      activeSubPage: 'file_view',
+      urlSuffix: ({ question }) => `/question/${question.id}/file_view`,
+      iconClasses: 'fa fa-edit',
+      tabLabel: 'Files',
+      renderCondition: ({ question }) => question.share_source_publicly,
+    },
+    {
+      activeSubPage: 'preview',
+      urlSuffix: ({ question }) => `/question/${question.id}/preview`,
+      iconClasses: 'fas fa-tv',
+      tabLabel: 'Preview',
+    },
+  ],
   instance_admin: [
     {
       activeSubPage: 'access',

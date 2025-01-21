@@ -3,6 +3,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { AnsiUp } from 'ansi_up';
 import { execa } from 'execa';
 import _ from 'lodash';
+import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -38,12 +39,15 @@ export interface ServerJobResult {
   data: Record<string, any>;
 }
 
-export interface ServerJob {
-  fail(msg: string): never;
+export interface ServerJobLogger {
   error(msg: string): void;
   warn(msg: string): void;
   info(msg: string): void;
   verbose(msg: string): void;
+}
+
+export interface ServerJob extends ServerJobLogger {
+  fail(msg: string): never;
   exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<ServerJobResult>;
   data: Record<string, unknown>;
 }
@@ -85,6 +89,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   private started = false;
   private finished = false;
   public output = '';
+  private lastSent = Date.now();
 
   constructor(jobSequenceId: string, jobId: string) {
     this.jobSequenceId = jobSequenceId;
@@ -117,7 +122,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     args: string[] = [],
     options: ServerJobExecOptions,
   ): Promise<ServerJobResult> {
-    this.addToOutput(chalk.blueBright(`Command: ${file} ${args.join(' ')}\n`));
+    this.addToOutput(chalk.blueBright(`Command: ${shlex.join([file, ...args])}\n`));
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
     const start = performance.now();
@@ -213,17 +218,27 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   private addToOutput(msg: string) {
     this.output += msg;
-    const ansiUp = new AnsiUp();
-    const ansifiedOutput = ansiUp.ansi_to_html(this.output);
-    socketServer.io
-      ?.to('job-' + this.jobId)
-      .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
+    this.flush();
+  }
+
+  private flush(force = false) {
+    if (Date.now() - this.lastSent > 1000 || force) {
+      const ansiUp = new AnsiUp();
+      const ansifiedOutput = ansiUp.ansi_to_html(this.output);
+      socketServer.io
+        ?.to('job-' + this.jobId)
+        .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
+      this.lastSent = Date.now();
+    }
   }
 
   private async finish(err: any = undefined) {
     // Guard against handling job finish more than once.
     if (this.finished) return;
     this.finished = true;
+
+    // Force a send on the current output to ensure all messages are shown.
+    this.flush(true);
 
     // A `ServerJobAbortError` is thrown by the `fail` method. We won't print
     // any details about the error object itself, as `fail` will have already

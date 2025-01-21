@@ -1,10 +1,10 @@
 import { A11yError } from '@sa11y/format';
 import axe from 'axe-core';
-import expressListEndpoints from 'express-list-endpoints';
-import { JSDOM } from 'jsdom';
+import { JSDOM, VirtualConsole } from 'jsdom';
 import { test } from 'mocha';
 import fetch from 'node-fetch';
 
+import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
@@ -26,7 +26,11 @@ async function loadPageJsdom(url: string): Promise<JSDOM> {
     }
     return res.text();
   });
-  return new JSDOM(text);
+  // JSDOM can be very verbose regarding unimplemented features (e.g., canvas).
+  // We don't have a need to see these warnings, so we create a virtual console
+  // that does not log anything.
+  const virtualConsole = new VirtualConsole();
+  return new JSDOM(text, { virtualConsole });
 }
 
 /**
@@ -173,6 +177,7 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/cacheableElements/:cachebuster/*',
   '/pl/public/course/:course_id/elements/*',
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
+  '/pl/public/course/:course_id/question/:question_id/file_download/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file/*',
 
@@ -184,6 +189,8 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/time_remaining',
   '/pl/course/:course_id/question/:question_id/preview/variant/:variant_id/submission/:submission_id',
   '/pl/public/course/:course_id/question/:question_id/preview/variant/:variant_id/submission/:submission_id',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_editor/:question_id/variant/:variant_id/submission/:submission_id',
+  '/pl/course/:course_id/ai_generate_editor/:question_id/variant/:variant_id/submission/:submission_id',
 
   // These pages just redirect to other pages and thus don't have to be tested.
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/next_ungraded',
@@ -236,8 +243,9 @@ const SKIP_ROUTES = [
   // TODO: create a test course with AI generation feature flag enabled to test page
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_question',
   '/pl/course/:course_id/ai_generate_question',
-  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_jobs/:job_id',
-  '/pl/course/:course_id/ai_generate_question_job/:job_id',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_editor/:question_id',
+  '/pl/course/:course_id/ai_generate_editor/:question_id',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/:job_id',
 ];
 
 function shouldSkipPath(path) {
@@ -253,7 +261,7 @@ function shouldSkipPath(path) {
 }
 
 describe('accessibility', () => {
-  let endpoints: expressListEndpoints.Endpoint[] = [];
+  let endpoints: Endpoint[] = [];
   let routeParams: Record<string, any> = {};
   before('set up testing server', async function () {
     config.cronActive = false;
@@ -308,8 +316,8 @@ describe('accessibility', () => {
   test('All pages pass accessibility checks', async function () {
     this.timeout(240_000);
 
-    const missingParamsEndpoints: expressListEndpoints.Endpoint[] = [];
-    const failingEndpoints: [expressListEndpoints.Endpoint, any][] = [];
+    const missingParamsEndpoints: Endpoint[] = [];
+    const failingEndpoints: [Endpoint, any][] = [];
 
     for (const endpoint of endpoints) {
       if (shouldSkipPath(endpoint.path)) {

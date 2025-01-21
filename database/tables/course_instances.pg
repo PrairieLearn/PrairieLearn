@@ -7,7 +7,6 @@ columns
     hide_in_enroll_page: boolean default false
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     long_name: text
-    ps_linked: boolean not null default true
     short_name: text
     sync_errors: text
     sync_job_sequence_id: bigint

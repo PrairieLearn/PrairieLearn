@@ -50,6 +50,8 @@ export function AdministratorInstitutionCourse({
           </ol>
         </nav>
         <main id="content" class="container mb-4">
+          <p><a href="/pl/course/${course.id}">View as instructor</a></p>
+
           <h2 class="h4">Limits</h2>
           <form method="POST" class="mb-3">
             <div class="form-group">

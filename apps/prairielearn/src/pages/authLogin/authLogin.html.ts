@@ -53,7 +53,7 @@ function LoginPageContainer({
           @media (min-width: 576px) {
             html,
             body {
-              background-color: var(--bs-dark, #212529);
+              background-color: var(--bs-dark);
             }
 
             .login-container-wrapper {
@@ -217,7 +217,7 @@ export function AuthLogin({
     service,
     resLocals,
     children: html`
-      ${resLocals.devMode
+      ${config.devMode
         ? html`
             ${DevModeBypass()}
             <hr />

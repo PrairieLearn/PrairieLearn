@@ -21,18 +21,15 @@ const router = Router({ mergeParams: true });
 
 async function selectCourseInstanceAndCourseInInstitution({
   institution_id,
-  unsafe_course_id,
   unsafe_course_instance_id,
 }: {
   institution_id: string;
-  unsafe_course_id: string;
   unsafe_course_instance_id: string;
 }) {
   return await queryRow(
     sql.select_course_and_instance,
     {
       institution_id,
-      course_id: unsafe_course_id,
       course_instance_id: unsafe_course_instance_id,
     },
     z.object({
@@ -48,7 +45,6 @@ router.get(
     const institution = await getInstitution(req.params.institution_id);
     const { course, course_instance } = await selectCourseInstanceAndCourseInInstitution({
       institution_id: req.params.institution_id,
-      unsafe_course_id: req.params.course_id,
       unsafe_course_instance_id: req.params.course_instance_id,
     });
     const planGrants = await getPlanGrantsForCourseInstance({
@@ -72,7 +68,6 @@ router.post(
   asyncHandler(async (req, res) => {
     const { course_instance } = await selectCourseInstanceAndCourseInInstitution({
       institution_id: req.params.institution_id,
-      unsafe_course_id: req.params.course_id,
       unsafe_course_instance_id: req.params.course_instance_id,
     });
 

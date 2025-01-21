@@ -8,7 +8,7 @@ import { IdSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
 import {
   selectCourseInstanceById,
   selectCourseInstancesWithStaffAccess,
-  CourseInstanceAuthz,
+  type CourseInstanceAuthz,
 } from '../../../models/course-instances.js';
 import { selectCoursesWithEditAccess } from '../../../models/course.js';
 import { Lti13Claim } from '../../lib/lti13.js';
@@ -100,6 +100,7 @@ router.get(
         Lti13CourseNavigationNotReady({
           resLocals: res.locals,
           courseName,
+          ltiRoles: ltiClaim.roles,
         }),
       );
       return;

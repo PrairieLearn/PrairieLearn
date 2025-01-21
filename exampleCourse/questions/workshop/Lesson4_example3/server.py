@@ -15,24 +15,16 @@ def parse(data):
     for name in variables:
         var = data["submitted_answers"].get(name, None)
         if var is None:
-            data["format_errors"][name] = "Variable {} is not defined".format(name)
-        else:
-            if name in ["Tb", "T1"]:
-                if var > 100:
-                    data["format_errors"][name] = (
-                        "Temperature {} looks too high.".format(name)
-                    )
-                elif var < 10:
-                    data["format_errors"][name] = (
-                        "Temperature {} looks too low.".format(name)
-                    )
-            elif name in ["D", "L", "x1"]:
-                if var > 0.5:
-                    data["format_errors"][name] = (
-                        "Dimension {} is outside the range of acceptable values for this experiment. Check your units?".format(
-                            name
-                        )
-                    )
+            data["format_errors"][name] = f"Variable {name} is not defined"
+        elif name in ["Tb", "T1"]:
+            if var > 100:
+                data["format_errors"][name] = f"Temperature {name} looks too high."
+            elif var < 10:
+                data["format_errors"][name] = f"Temperature {name} looks too low."
+        elif name in ["D", "L", "x1"] and var > 0.5:
+            data["format_errors"][name] = (
+                f"Dimension {name} is outside the range of acceptable values for this experiment. Check your units?"
+            )
 
 
 def grade(data):

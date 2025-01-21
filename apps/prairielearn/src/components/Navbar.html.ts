@@ -1,5 +1,6 @@
 import { flash, type FlashMessageType } from '@prairielearn/flash';
-import { html, HtmlValue, unsafeHtml } from '@prairielearn/html';
+import { html, type HtmlValue, unsafeHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 
@@ -18,7 +19,7 @@ export function Navbar({
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
 }) {
-  const { __csrf_token, course, urlPrefix, homeUrl } = resLocals;
+  const { __csrf_token, course, urlPrefix } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
@@ -54,7 +55,7 @@ export function Navbar({
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid">
-        <a class="navbar-brand" href="${homeUrl}" aria-label="Homepage">
+        <a class="navbar-brand" href="${config.homeUrl}" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
             Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
@@ -262,9 +263,20 @@ function FlashMessages() {
     error: 'danger',
   } as const;
 
+  // We might fail to fetch flash messages if this ends up running before the
+  // flash middleware has run for this particular request. In that case, we
+  // just assume that there are no flash messages.
+  const flashMessages = run(() => {
+    try {
+      return flash(Object.keys(globalFlashColors) as FlashMessageType[]);
+    } catch {
+      return [];
+    }
+  });
+
   return html`
     <div class="mb-3">
-      ${flash(Object.keys(globalFlashColors) as FlashMessageType[]).map(
+      ${flashMessages.map(
         ({ type, message }) => html`
           <div
             class="alert alert-${globalFlashColors[
@@ -636,7 +648,7 @@ function NavbarInstructor({
         aria-expanded="false"
         ${!authz_data.overrides
           ? html`
-              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show-course-switcher once
+              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show.bs.dropdown once
               delay:200ms" hx-target="#navbarDropdownMenuCourseAdmin"
             `
           : ''}
@@ -709,7 +721,7 @@ function NavbarInstructor({
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher/${course_instance.id}"
-              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-trigger="show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceAdmin"
             ></button>
             <div
@@ -802,7 +814,7 @@ function NavbarInstructor({
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher"
-              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-trigger="show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceChoose"
             >
               Choose course instance...

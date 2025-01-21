@@ -27,13 +27,12 @@ export function RegenerateInstanceModal({ csrfToken }: { csrfToken: string }) {
 
 export function RegenerateInstanceAlert() {
   return html`
-    <div class="alert alert-warning alert-dismissible fade show">
-      You are viewing your own assessment instance and have instructor permissions.
+    <div class="alert alert-warning border-warning alert-dismissible fade show">
+      Course staff:
       <a href="#" role="button" data-toggle="modal" data-target="#regenerateInstanceModal">
-        Regenerate this assessment instance
-      </a>
-      to pick up any changes to the underlying assessment or if you want to get a fresh set of
-      questions.
+        Regenerate your assessment instance</a
+      >
+      to pick up changes to the assessment or to get a fresh set of questions.
 
       <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true">&times;</span>

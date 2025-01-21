@@ -5,7 +5,7 @@ import { callbackify } from 'node:util';
 import debugfn from 'debug';
 import _ from 'lodash';
 import multipipe from 'multipipe';
-import pg, { QueryResult } from 'pg';
+import pg, { type QueryResult } from 'pg';
 import Cursor from 'pg-cursor';
 import { DatabaseError } from 'pg-protocol';
 import { z } from 'zod';
@@ -133,7 +133,7 @@ function escapeIdentifier(identifier: string): string {
   // Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
   // https://github.com/brianc/node-postgres/pull/396
   // https://github.com/brianc/node-postgres/issues/1978
-  // https://www.postgresql.org/docs/12/sql-syntax-lexical.html
+  // https://www.postgresql.org/docs/current/sql-syntax-lexical.html
   return pg.Client.prototype.escapeIdentifier(identifier);
 }
 

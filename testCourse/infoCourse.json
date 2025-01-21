@@ -82,7 +82,7 @@
     { "name": "pearl", "color": "yellow3", "description": "Question originally written by pearl" }
   ],
   "sharingSets": [
-    { "name": "python-exercises", "description": "Python exercises for shraing" },
+    { "name": "python-exercises", "description": "Python exercises for sharing" },
     { "name": "final-exam", "description": "Questions that can be used on a final exam" }
   ]
 }
