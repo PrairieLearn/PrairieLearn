@@ -14,7 +14,6 @@ import {
   AssessmentQuestionRow,
   Zone,
 } from '../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
-import { update } from 'lodash';
 
 onDocumentReady(() => {
   const assessmentQuestionsTable = document.querySelector(
