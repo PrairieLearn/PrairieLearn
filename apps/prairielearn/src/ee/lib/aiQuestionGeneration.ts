@@ -228,7 +228,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     // TODO [very important]: normalize to prevent prompt injection attacks
     const completion = await client.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: sysPrompt },
         { role: 'user', content: userPrompt },
