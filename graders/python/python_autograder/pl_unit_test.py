@@ -135,7 +135,7 @@ class PLTestCase(unittest.TestCase):
         if (
             result is None
             or not isinstance(result, PLTestResult)
-            or (result.done_grading and not result.skip_grading)
+            or (not result.done_grading and not result.skip_grading)
         ):
             super().run(result)
         elif result.skip_grading:
