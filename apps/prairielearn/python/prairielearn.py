@@ -240,123 +240,6 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
     )
 
 
-def to_json(
-    v: Any,
-    *,
-    df_encoding_version: Literal[1, 2] = 1,
-    np_encoding_version: Literal[1, 2] = 1,
-) -> Any:
-    """to_json(v)
-
-    If v has a standard type that cannot be json serialized, it is replaced with
-    a {'_type':..., '_value':...} pair that can be json serialized:
-
-        If np_encoding_version is set to 2, will serialize numpy scalars as follows:
-
-        numpy scalar -> '_type': 'np_scalar'
-
-        If df_encoding_version is set to 2, will serialize pandas DataFrames as follows:
-
-        pandas.DataFrame -> '_type': 'dataframe_v2'
-
-        Otherwise, the following mappings are used:
-
-        any complex scalar (including numpy) -> '_type': 'complex'
-        non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
-        complex ndarray -> '_type': 'complex_ndarray'
-        sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
-        sympy.Matrix -> '_type': 'sympy_matrix'
-        pandas.DataFrame -> '_type': 'dataframe'
-        any networkx graph type -> '_type': 'networkx_graph'
-
-    Note that the 'dataframe_v2' encoding allows for missing and date time values whereas
-    the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
-    numbers while 'dataframe_v2' does not.
-
-    If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
-    a third field in the dictionary).
-
-    If v can be json serialized or does not have a standard type, then it is
-    returned without change.
-    """
-    if np_encoding_version not in {1, 2}:
-        raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
-
-    if np_encoding_version == 2 and isinstance(v, np.number):
-        return {
-            "_type": "np_scalar",
-            "_concrete_type": type(v).__name__,
-            "_value": str(v),
-        }
-
-    if np.isscalar(v) and isinstance(v, np.complexfloating) and np.iscomplexobj(v):
-        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}
-    elif isinstance(v, np.ndarray):
-        if np.isrealobj(v):
-            return {"_type": "ndarray", "_value": v.tolist(), "_dtype": str(v.dtype)}
-        elif np.iscomplexobj(v):
-            return {
-                "_type": "complex_ndarray",
-                "_value": {"real": v.real.tolist(), "imag": v.imag.tolist()},
-                "_dtype": str(v.dtype),
-            }
-    elif isinstance(v, sympy.Expr):
-        return phs.sympy_to_json(v)
-    elif isinstance(v, sympy.Matrix | sympy.ImmutableMatrix):
-        s = [str(a) for a in v.free_symbols]
-        num_rows, num_cols = v.shape
-        matrix = []
-        for i in range(num_rows):
-            row = [str(v[i, j]) for j in range(num_cols)]
-            matrix.append(row)
-        return {
-            "_type": "sympy_matrix",
-            "_value": matrix,
-            "_variables": s,
-            "_shape": [num_rows, num_cols],
-        }
-    elif isinstance(v, pd.DataFrame):
-        if df_encoding_version == 1:
-            return {
-                "_type": "dataframe",
-                "_value": {
-                    "index": list(v.index),
-                    "columns": list(v.columns),
-                    "data": v.to_numpy().tolist(),
-                },
-            }
-
-        elif df_encoding_version == 2:
-            # The next lines of code are required to address the JSON table-orient
-            # generating numeric keys instead of strings for an index sequence with
-            # only numeric values (c.f. pandas-dev/pandas#46392)
-            df_modified_names = v.copy()
-
-            if df_modified_names.columns.dtype in (np.float64, np.int64):
-                df_modified_names.columns = df_modified_names.columns.astype("string")
-
-            # For version 2 storing a data frame, we use the table orientation alongside of
-            # enforcing a date format to allow for passing datetime and missing (`pd.NA`/`np.nan`) values
-            # Details: https://pandas.pydata.org/docs/reference/api/pandas.read_json.html
-            # Convert to JSON string with escape characters
-            encoded_json_str_df = df_modified_names.to_json(
-                orient="table", date_format="iso"
-            )
-            # Export to native JSON structure
-            pure_json_df = json.loads(encoded_json_str_df)
-
-            return {"_type": "dataframe_v2", "_value": pure_json_df}
-
-        else:
-            raise ValueError(
-                f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2"
-            )
-    elif isinstance(v, nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph):
-        return {"_type": "networkx_graph", "_value": nx.adjacency_data(v)}
-    else:
-        return v
-
-
 class _JSONSerializedComplex(TypedDict):
     _type: Literal["complex"]
     _value: dict[str, float]
@@ -428,6 +311,134 @@ _JSONSerializedType = (
 )
 
 
+def to_json(
+    v: Any,
+    *,
+    df_encoding_version: Literal[1, 2] = 1,
+    np_encoding_version: Literal[1, 2] = 1,
+) -> _JSONSerializedType | Any:
+    """to_json(v)
+
+    If v has a standard type that cannot be json serialized, it is replaced with
+    a {'_type':..., '_value':...} pair that can be json serialized:
+
+        If np_encoding_version is set to 2, will serialize numpy scalars as follows:
+
+        numpy scalar -> '_type': 'np_scalar'
+
+        If df_encoding_version is set to 2, will serialize pandas DataFrames as follows:
+
+        pandas.DataFrame -> '_type': 'dataframe_v2'
+
+        Otherwise, the following mappings are used:
+
+        any complex scalar (including numpy) -> '_type': 'complex'
+        non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
+        complex ndarray -> '_type': 'complex_ndarray'
+        sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
+        sympy.Matrix -> '_type': 'sympy_matrix'
+        pandas.DataFrame -> '_type': 'dataframe'
+        any networkx graph type -> '_type': 'networkx_graph'
+
+    Note that the 'dataframe_v2' encoding allows for missing and date time values whereas
+    the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
+    numbers while 'dataframe_v2' does not.
+
+    If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
+    a third field in the dictionary).
+
+    If v can be json serialized or does not have a standard type, then it is
+    returned without change.
+    """
+    if np_encoding_version not in {1, 2}:
+        raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
+
+    if np_encoding_version == 2 and isinstance(v, np.number):
+        return {
+            "_type": "np_scalar",
+            "_concrete_type": type(v).__name__,
+            "_value": str(v),
+        }
+
+    if np.isscalar(v) and np.iscomplexobj(v):  # type: ignore
+        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}  # type: ignore
+    elif isinstance(v, np.ndarray):
+        if np.isrealobj(v):
+            return {"_type": "ndarray", "_value": v.tolist(), "_dtype": str(v.dtype)}
+        elif np.iscomplexobj(v):
+            return {
+                "_type": "complex_ndarray",
+                "_value": {"real": v.real.tolist(), "imag": v.imag.tolist()},
+                "_dtype": str(v.dtype),
+            }
+    elif isinstance(v, sympy.Expr):
+        return phs.sympy_to_json(v)
+    elif isinstance(v, sympy.Matrix | sympy.ImmutableMatrix):
+        s = [str(a) for a in v.free_symbols]
+        num_rows, num_cols = v.shape
+        matrix = []
+        for i in range(num_rows):
+            row = [str(v[i, j]) for j in range(num_cols)]
+            matrix.append(row)
+        return {
+            "_type": "sympy_matrix",
+            "_value": matrix,
+            "_variables": s,
+            "_shape": [num_rows, num_cols],
+        }
+    elif isinstance(v, pd.DataFrame):
+        if df_encoding_version == 1:
+            return {
+                "_type": "dataframe",
+                "_value": {
+                    "index": list(v.index),
+                    "columns": list(v.columns),
+                    "data": v.to_numpy().tolist(),
+                },
+            }
+
+        elif df_encoding_version == 2:
+            # The next lines of code are required to address the JSON table-orient
+            # generating numeric keys instead of strings for an index sequence with
+            # only numeric values (c.f. pandas-dev/pandas#46392)
+            df_modified_names = v.copy()
+
+            if df_modified_names.columns.dtype in (np.float64, np.int64):
+                df_modified_names.columns = df_modified_names.columns.astype("string")
+
+            # For version 2 storing a data frame, we use the table orientation alongside of
+            # enforcing a date format to allow for passing datetime and missing (`pd.NA`/`np.nan`) values
+            # Details: https://pandas.pydata.org/docs/reference/api/pandas.read_json.html
+            # Convert to JSON string with escape characters
+            encoded_json_str_df = df_modified_names.to_json(
+                orient="table", date_format="iso"
+            )
+            # Export to native JSON structure
+            pure_json_df = json.loads(encoded_json_str_df)
+
+            return {"_type": "dataframe_v2", "_value": pure_json_df}
+
+        else:
+            raise ValueError(
+                f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2"
+            )
+    elif isinstance(v, nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph):
+        return {"_type": "networkx_graph", "_value": nx.adjacency_data(v)}
+    else:
+        return v
+
+
+def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
+    """
+    Helper to check for the presence of all fields in the '_value' dictionary
+    """
+    return (
+        "_value" in v
+        and isinstance(v["_value"], dict)
+        and all(field in v["_value"] for field in fields)
+    )
+
+
 def from_json(v: _JSONSerializedType | Any) -> Any:
     """from_json(v)
 
@@ -453,11 +464,7 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
     if isinstance(v, dict) and "_type" in v:
         v_json = cast(_JSONSerializedType, v)
         if v_json["_type"] == "complex":
-            if (
-                ("_value" in v_json)
-                and ("real" in v_json["_value"])
-                and ("imag" in v_json["_value"])
-            ):
+            if _has_value_fields(v_json, ["real", "imag"]):
                 return complex(v_json["_value"]["real"], v_json["_value"]["imag"])
             else:
                 raise ValueError(
@@ -479,11 +486,7 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
             else:
                 raise ValueError("variable of type ndarray should have value")
         elif v_json["_type"] == "complex_ndarray":
-            if (
-                ("_value" in v_json)
-                and ("real" in v_json["_value"])
-                and ("imag" in v_json["_value"])
-            ):
+            if _has_value_fields(v_json, ["real", "imag"]):
                 if "_dtype" in v_json:
                     return (
                         np.array(v_json["_value"]["real"])
@@ -525,12 +528,7 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
                     "variable of type sympy_matrix should have value, variables, and shape"
                 )
         elif v_json["_type"] == "dataframe":
-            if (
-                ("_value" in v_json)
-                and ("index" in v_json["_value"])
-                and ("columns" in v_json["_value"])
-                and ("data" in v_json["_value"])
-            ):
+            if _has_value_fields(v_json, ["index", "columns", "data"]):
                 val = v_json["_value"]
                 return pd.DataFrame(
                     index=val["index"], columns=val["columns"], data=val["data"]
