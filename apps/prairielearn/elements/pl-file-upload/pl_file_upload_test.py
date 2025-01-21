@@ -7,7 +7,7 @@ file_upload = importlib.import_module("pl-file-upload")
 
 
 @pytest.mark.parametrize(
-    "file_list, expected_output",
+    ("file_list", "expected_output"),
     [
         ("", []),
         ("test.txt", ["test.txt"]),
@@ -35,7 +35,7 @@ file_list = ["test.txt", "test.py", "test", "lib.py", "weird name ,~!@#$%^&*()_\
 
 
 @pytest.mark.parametrize(
-    "regex_patterns, file_names, limit_1, expected_output",
+    ("regex_patterns", "file_names", "limit_1", "expected_output"),
     [
         ([], [], True, ([], [])),
         ([], file_list, False, ([], [])),
@@ -74,7 +74,7 @@ def test_match_regex_with_files_fn(
 
 
 @pytest.mark.parametrize(
-    "glob_pattern, expected_output",
+    ("glob_pattern", "expected_output"),
     [
         ("test*test", "^test.*test$"),
         ("test???test", "^test...test$"),
@@ -102,7 +102,7 @@ def test_glob_to_regex_fn(glob_pattern: str, expected_output: str) -> None:
     ],
 )
 def test_glob_to_regex_errors(glob_pattern: str) -> None:
-    with pytest.raises(ValueError) as _:
+    with pytest.raises(ValueError) as _:  # noqa: PT011
         file_upload.glob_to_regex(glob_pattern)
 
 

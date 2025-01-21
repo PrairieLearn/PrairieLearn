@@ -181,7 +181,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     opt_file_regex = [glob_to_regex(f) for f in opt_file_patterns]
 
     # Need to send both converted regex and original pattern to client for matching and printing
-    file_regex_json = json.dumps(list(zip(file_regex, file_patterns, strict=False)), allow_nan=False)
+    file_regex_json = json.dumps(
+        list(zip(file_regex, file_patterns, strict=False)), allow_nan=False
+    )
     opt_file_regex_json = json.dumps(
         list(zip(opt_file_regex, opt_file_patterns, strict=False)), allow_nan=False
     )
@@ -282,7 +284,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
         pattern_files, missing_regex = match_regex_with_files(
             files_regex,
-            [x for x in remaining_files],
+            list(remaining_files),
             limit_1=True,
         )
         remaining_files = [x for x in remaining_files if x not in pattern_files]
@@ -299,9 +301,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
         if len(missing_regex) > 0:
             # Need some awkward mapping to patterns here to ensure we don't remove duplicates
-            missing_patterns = []
-            for r in missing_regex:
-                missing_patterns.append(file_patterns[files_regex.index(r)])
+            missing_patterns = [
+                file_patterns[files_regex.index(r)] for r in missing_regex
+            ]
             add_format_error(
                 answer_name,
                 data,
@@ -313,7 +315,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         # We don't care which optional patterns are matched
         opt_pattern_files, _ = match_regex_with_files(
             opt_files_regex,
-            [x for x in remaining_files],
+            list(remaining_files),
             limit_1=False,
         )
 
