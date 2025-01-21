@@ -12,11 +12,11 @@ router.get(
       course_id: res.locals.course.id,
     });
 
-    if (!courseHasCourseInstances && res.locals.course.show_getting_started_checklist) {
-      // For brand new courses, users should be redirected to the getting started checklist.
+    if (!courseHasCourseInstances && res.locals.course.show_getting_started) {
+      // For brand new courses, users should be redirected to the getting started.
       res.redirect(`/pl/course/${res.locals.course.id}/course_admin/getting_started`);
     } else {
-      // Once users have created course instances or completed the getting started checklist,
+      // Once users have created course instances or completed the getting started,
       // they should have easy access to the course instances via the course instances page.
       res.redirect(`/pl/course/${res.locals.course.id}/course_admin/instances`);
     }

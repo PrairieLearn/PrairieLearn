@@ -1304,7 +1304,7 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/getting_started',
     (
       await import(
-        './pages/instructorCourseAdminGettingStartedChecklist/instructorCourseAdminGettingStartedChecklist.js'
+        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
       )
     ).default,
   );
@@ -1826,7 +1826,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course/:course_id(\\d+)/course_admin/getting_started', [
     (
       await import(
-        './pages/instructorCourseAdminGettingStartedChecklist/instructorCourseAdminGettingStartedChecklist.js'
+        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
       )
     ).default,
   ]);

@@ -677,7 +677,7 @@ function NavbarInstructor({
       </div>
     </li>
 
-    ${authz_data.has_course_permission_edit && course.show_getting_started_checklist
+    ${authz_data.has_course_permission_edit && course.show_getting_started
       ? html`
           <li class="nav-item d-flex align-items-center">
             <a

@@ -176,11 +176,11 @@ export function InstructorCourseAdminSettings({
                   <input
                     type="checkbox"
                     class="form-check-input"
-                    id="show_getting_started_checklist"
-                    name="show_getting_started_checklist"
-                    ${resLocals.course.show_getting_started_checklist ? 'checked' : ''}
+                    id="show_getting_started"
+                    name="show_getting_started"
+                    ${resLocals.course.show_getting_started ? 'checked' : ''}
                   />
-                  <label class="form-check-label" for="show_getting_started_checklist">
+                  <label class="form-check-label" for="show_getting_started">
                     Show the getting started checklist
                   </label>
                 </div>

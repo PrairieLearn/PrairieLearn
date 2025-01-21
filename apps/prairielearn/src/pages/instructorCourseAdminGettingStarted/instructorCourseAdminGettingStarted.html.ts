@@ -5,7 +5,7 @@ import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import type { GettingStartedTaskInfo } from '../../lib/getting-started.js';
 
-export function InstructorCourseAdminGettingStartedChecklist({
+export function InstructorCourseAdminGettingStarted({
   tasks,
   resLocals,
 }: {
@@ -19,7 +19,7 @@ export function InstructorCourseAdminGettingStartedChecklist({
         ${HeadContents({ resLocals, pageTitle: 'Getting started checklist' })}
       </head>
       <body>
-        ${Navbar({ resLocals, navSubPage: 'getting_started_checklist' })}
+        ${Navbar({ resLocals, navSubPage: 'getting_started' })}
         <main id="content" class="container">
           ${CourseSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -37,15 +37,15 @@ export function InstructorCourseAdminGettingStartedChecklist({
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <button
                   name="__action"
-                  value="dismiss_getting_started_checklist"
+                  value="dismiss_getting_started"
                   class="btn btn-sm btn-primary mb-1"
                   type="submit"
-                  aria-describedby="dismiss_getting_started_checklist_help"
+                  aria-describedby="dismiss_getting_started_help"
                 >
                   Dismiss the getting started checklist
                 </button>
                 <br />
-                <small id="dismiss_getting_started_checklist_help" class="text-muted">
+                <small id="dismiss_getting_started_help" class="text-muted">
                   This page can be restored from the course settings.
                 </small>
               </form>
