@@ -864,7 +864,7 @@ def string_from_numpy(
 
     if presentation_type == "sigfig":
         formatter: _FormatDict = {
-            "float_kind": lambda x: to_precision.to_precision(x, digits),
+            "float_kind": lambda x: to_precision(x, digits),
             "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
         }
     else:

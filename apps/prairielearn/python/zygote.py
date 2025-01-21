@@ -66,9 +66,6 @@ import logging
 
 logging.getLogger("matplotlib.font_manager").disabled = True
 
-# Pre-load commonly used modules
-sys.path.insert(0, os.path.abspath("../question-servers/freeformPythonLib"))
-
 import html
 import math
 import random
