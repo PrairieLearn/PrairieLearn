@@ -181,9 +181,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     opt_file_regex = [glob_to_regex(f) for f in opt_file_patterns]
 
     # Need to send both converted regex and original pattern to client for matching and printing
-    file_regex_json = json.dumps(list(zip(file_regex, file_patterns)), allow_nan=False)
+    file_regex_json = json.dumps(list(zip(file_regex, file_patterns, strict=False)), allow_nan=False)
     opt_file_regex_json = json.dumps(
-        list(zip(opt_file_regex, opt_file_patterns)), allow_nan=False
+        list(zip(opt_file_regex, opt_file_patterns, strict=False)), allow_nan=False
     )
 
     answer_name = get_answer_name(

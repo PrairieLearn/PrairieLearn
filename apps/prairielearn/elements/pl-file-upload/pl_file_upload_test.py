@@ -110,7 +110,7 @@ def test_glob_to_regex_errors(glob_pattern: str) -> None:
 # produce the same has as an older version that only supported file-names)
 def test_get_answer_name_backward_compatible() -> None:
     output = file_upload.get_answer_name("test", "", "", "")
-    assert output == "_file_upload_" + hashlib.sha1("test".encode("utf-8")).hexdigest()
+    assert output == "_file_upload_" + hashlib.sha1(b"test").hexdigest()
 
 
 # Function should produce different results for different parameters being used
