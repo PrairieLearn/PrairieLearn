@@ -230,8 +230,12 @@ export const ajvSchemas = {
   questionOptionsv3,
 };
 
-// write ajvSchemas to a file named x.json for x in each schema
+/* eslint-disable */
 import fs from 'fs';
-for (const [name, schema] of Object.entries(ajvSchemas)) {
-  fs.writeFileSync(`./schemas/${name}.json`, JSON.stringify(schema, null, 2));
-}
+const test = () => {
+  // write ajvSchemas to a file named x.json for x in each schema
+  for (const [name, schema] of Object.entries(ajvSchemas)) {
+    fs.writeFileSync(`./schemas/${name}.json`, JSON.stringify(schema, null, 2));
+  }
+};
+/* eslint-enable */
