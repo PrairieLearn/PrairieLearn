@@ -2,8 +2,7 @@
 # as well as general support of STAT 477 Data Science Programming Methods
 # (which was formerly STAT 430 Topics - Data Science Programming Methods
 
-# Alton Barbehenn and Dirk Eddelbuettel, 2019-2022
-# Dirk Eddelbuettel, 2024
+# Alton Barbehenn and Dirk Eddelbuettel, 2019-2025
 
 # We initially based this container on the 'r-ubuntu:20.04' container of the
 # Rocker Project which offers us a well-understood and stable basis
@@ -85,15 +84,15 @@ COPY plr /r_autograder/plr
 RUN install2.r --repos=NULL /r_autograder/plr \
         && rm -r /r_autograder/plr
 
-# Install ttdo (until CRAN package updated)
-COPY ttdo_0.0.9.2.tar.gz /r_autograder/ttdo_0.0.9.2.tar.gz
-RUN install2.r --repos=NULL /r_autograder/ttdo_0.0.9.2.tar.gz \
-        && rm /r_autograder/ttdo_0.0.9.2.tar.gz
-
 # Install tinysnapshot (until CRAN package updated)
-COPY tinysnapshot_0.0.7.1.tar.gz /r_autograder/tinysnapshot_0.0.7.1.tar.gz
-RUN install2.r --repos=NULL /r_autograder/tinysnapshot_0.0.7.1.tar.gz \
-        && rm /r_autograder/tinysnapshot_0.0.7.1.tar.gz
+COPY tinysnapshot_0.0.8.tar.gz /r_autograder/tinysnapshot_0.0.8.tar.gz
+RUN install2.r --repos=NULL /r_autograder/tinysnapshot_0.0.8.tar.gz \
+        && rm /r_autograder/tinysnapshot_0.0.8.tar.gz
+
+# Install ttdo (until updated CRAN package is also r2u)
+COPY ttdo_0.0.10.tar.gz /r_autograder/ttdo_0.0.10.tar.gz
+RUN install2.r --repos=NULL /r_autograder/ttdo_0.0.10.tar.gz \
+        && rm /r_autograder/ttdo_0.0.10.tar.gz
 
 # Set up user ag
 RUN useradd ag \ 
