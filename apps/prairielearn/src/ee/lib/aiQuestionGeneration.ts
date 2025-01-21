@@ -13,6 +13,8 @@ import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-3.5-turbo';
+
 /**
  * Generates the common preamble with general PrairieLearn information for the LLM
  *
@@ -228,7 +230,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     // TODO [very important]: normalize to prevent prompt injection attacks
     const completion = await client.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: MODEL_NAME,
       messages: [
         { role: 'system', content: sysPrompt },
         { role: 'user', content: userPrompt },
@@ -441,7 +443,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   // TODO [very important]: normalize to prevent prompt injection attacks
 
   const completion = await client.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: MODEL_NAME,
     messages: [
       { role: 'system', content: sysPrompt },
       { role: 'user', content: revisionPrompt },
