@@ -6,6 +6,7 @@ import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 
 export function AdministratorSettings({ resLocals }) {
+  const showAiSettings = isEnterprise() && config.openAiApiKey && config.openAiOrganization;
   return html`
     <!doctype html>
     <html lang="en">
@@ -87,15 +88,38 @@ export function AdministratorSettings({ resLocals }) {
             </div>
           </div>
 
-          ${isEnterprise() && config.openAiApiKey && config.openAiOrganization
+          ${showAiSettings
             ? html`
                 <div class="card mb-4">
-                  <div class="card-header bg-primary text-white">LLM Context Documents</div>
+                  <div class="card-header bg-primary text-white">LLM</div>
                   <div class="card-body">
                     <form method="POST">
-                      <input type="hidden" name="__action" value="sync_context_documents" />
                       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                      <button class="btn btn-primary">Resync Documents</button>
+                      <button
+                        class="btn btn-primary"
+                        name="__action"
+                        value="sync_context_documents"
+                      >
+                        Resync context documents
+                      </button>
+
+                      ${config.devMode
+                        ? html`
+                            <hr />
+                            <p>
+                              Benchmarking the AI will generate questions from a set of sample
+                              prompts and ask an LLM to evaluate their quality, including comparing
+                              them to gold standard implementations.
+                            </p>
+                            <button
+                              class="btn btn-primary"
+                              name="__action"
+                              value="benchmark_question_generation"
+                            >
+                              Benchmark question generation
+                            </button>
+                          `
+                        : ''}
                     </form>
                   </div>
                 </div>

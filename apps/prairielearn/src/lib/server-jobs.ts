@@ -222,15 +222,21 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   }
 
   private flush(force = false) {
-    if (Date.now() - this.lastSent > 1000 || force) {
-      const ansiUp = new AnsiUp();
-      const ansifiedOutput = ansiUp.ansi_to_html(this.output);
-      socketServer.io
-        ?.to('job-' + this.jobId)
-        .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
-      this.lastSent = Date.now();
+    if (force) {
+      this.throttledFlush.flush();
+    } else {
+      this.throttledFlush();
     }
   }
+
+  private throttledFlush = _.throttle(() => {
+    const ansiUp = new AnsiUp();
+    const ansifiedOutput = ansiUp.ansi_to_html(this.output);
+    socketServer.io
+      ?.to('job-' + this.jobId)
+      .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
+    this.lastSent = Date.now();
+  }, 1000);
 
   private async finish(err: any = undefined) {
     // Guard against handling job finish more than once.

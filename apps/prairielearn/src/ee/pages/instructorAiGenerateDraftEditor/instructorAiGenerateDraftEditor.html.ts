@@ -6,7 +6,7 @@ import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { type Question, type AiGenerationPrompt } from '../../../lib/db-types.js';
+import { type Question, type AiQuestionGenerationPrompt } from '../../../lib/db-types.js';
 
 export function InstructorAiGenerateDraftEditor({
   resLocals,
@@ -15,7 +15,7 @@ export function InstructorAiGenerateDraftEditor({
   variantId,
 }: {
   resLocals: Record<string, any>;
-  prompts: AiGenerationPrompt[];
+  prompts: AiQuestionGenerationPrompt[];
   question: Question;
   variantId?: string | undefined;
 }) {
@@ -155,7 +155,7 @@ function PromptHistory({
   prompts,
   urlPrefix,
 }: {
-  prompts: AiGenerationPrompt[];
+  prompts: AiQuestionGenerationPrompt[];
   urlPrefix: string;
 }) {
   return prompts
