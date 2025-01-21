@@ -143,7 +143,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         and not pl.get_string_attrib(element, "optional-file-patterns", "")
     ):
         raise ValueError(
-            'At least one attribute of "file-names", "optional-file-names", "file-patterns" or "optional-file-patterns" must be provided.'
+            'At least one attribute of "file-names", "optional-file-names", "file-patterns", or "optional-file-patterns" must be provided.'
         )
 
     if "_required_file_names" not in data["params"]:
@@ -284,7 +284,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
         pattern_files, missing_regex = match_regex_with_files(
             files_regex,
-            list(remaining_files),
+            remaining_files,
             limit_1=True,
         )
         remaining_files = [x for x in remaining_files if x not in pattern_files]
@@ -315,19 +315,18 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         # We don't care which optional patterns are matched
         opt_pattern_files, _ = match_regex_with_files(
             opt_files_regex,
-            list(remaining_files),
+            remaining_files,
             limit_1=False,
         )
 
-        # Finally, we combine all file categories into one big list
-        parsed_files = [
-            x
-            for x in parsed_files
-            if x.get("name", "") in required_files
-            or x.get("name", "") in pattern_files
-            or x.get("name", "") in optional_files
-            or x.get("name", "") in opt_pattern_files
-        ]
-
-        for x in parsed_files:
-            pl.add_submitted_file(data, x.get("name", ""), x.get("contents", ""))
+        # Finally, we filter the parsed files based on the allowed names
+        include_set = (
+            set(required_files)
+            | set(pattern_files)
+            | set(optional_files)
+            | set(opt_pattern_files)
+        )
+        for file in parsed_files:
+            file_name = file.get("name", "")
+            if file_name in include_set:
+                pl.add_submitted_file(data, file_name, file.get("contents", ""))
