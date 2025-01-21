@@ -390,14 +390,13 @@ The `file-patterns` and `optional-file-patterns` attributes support a number of 
 - The `[seq]` placeholder allows a single character from the set of options listed inside the square
   brackets. For example, `file_[abc].txt` allows "file_a.txt", "file_b.txt" and "file_c.txt", but not
   "file_x.txt".
-- The `[seq]` placeholder also supports ranges like "a-z" or "0-9". For example, `file_[0-9].txt`
-  allows "file_5.txt", but not "file_x.txt", while `file*[a-z].txt`allows the "file_x.txt" and
-  not "file_5.txt". Ranges can also be combined. For example,`file\_[0-9a-z]` allows any alphanumeric
-  character.
+- The `[seq]` placeholder also supports ranges like "a-z" or "0-9". For example, `file[0-9].txt`
+  allows "file5.txt", but not "filex.txt". Ranges can also be combined. For example,`file[0-9a-z].txt` allows a single alphanumeric
+  character and therefore both "file5.txt" and "filex.txt".
 
-Uploaded files that match a required name in `file-names` are always assigned to this category. Next, files that match a required pattern in `file-patterns` are assigned to that pattern. Any remaining uploaded files are only accepted if they match either a name in `optional-file-names` or a pattern in `optional-file-patterns`.
+If file names or patterns overlap, uploaded files are first used to fill the required file names in `file-names`. Next, files that match a required pattern in `file-patterns` are used to fill that pattern. Any remaining uploaded files are accepted if they match either a name in `optional-file-names` or a pattern in `optional-file-patterns`.
 
-Note that the same pattern in `file-patterns` can be repeated, for example `*.py,*.py` allows exactly two Python files to be uploaded. However, patterns should not overlap (e.g. `*.py,solution.*`) as files that match both patterns might be assigned to one of them arbitrarily, and this can be confusing for students and lead to unintended behavior.
+Note that the same required pattern in `file-patterns` can be repeated, for example `*.py,*.py` means that exactly two Python files must be uploaded. However, different required patterns should not overlap (e.g. `*.py,solution.*`) because files are assigned to a matching pattern arbitrarily, and this can lead to unintended behavior.
 
 #### Example implementations
 
