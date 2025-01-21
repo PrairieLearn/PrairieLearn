@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "comment": {
+      "$ref": "#/definitions/CommentJsonSchema",
+      "description": "Arbitrary comment for reference purposes."
+    }
+  },
+  "additionalProperties": false,
+  "description": "Options for a v3 question.",
+  "title": "v3 question options",
+  "definitions": {
+    "CommentJsonSchema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        }
+      ],
+      "description": "Arbitrary comment for reference purposes."
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

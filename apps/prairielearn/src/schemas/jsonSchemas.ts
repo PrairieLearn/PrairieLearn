@@ -11,11 +11,17 @@ import {
 import { CommentJsonSchema } from './comment.js';
 import {
   AdvanceScorePercJsonSchema,
+  AssessmentAccessRuleJsonSchema,
   AssessmentJsonSchema,
   ForceMaxPointsJsonSchema,
+  GroupRoleJsonSchema,
   PointsJsonSchema,
+  PointsListJsonSchema,
   PointsSingleJsonSchema,
+  QuestionAlternativeJsonSchema,
   QuestionIdJsonSchema,
+  ZoneAssessmentJsonSchema,
+  ZoneQuestionJsonSchema,
   type AssessmentJson,
 } from './infoAssessment.js';
 import {
@@ -106,9 +112,15 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
   target: 'jsonSchema7',
   definitions: {
     PointsJsonSchema,
+    PointsListJsonSchema,
     PointsSingleJsonSchema,
     QuestionIdJsonSchema,
     ForceMaxPointsJsonSchema,
+    AssessmentAccessRuleJsonSchema,
+    QuestionAlternativeJsonSchema,
+    ZoneAssessmentJsonSchema,
+    ZoneQuestionJsonSchema,
+    GroupRoleJsonSchema,
     AdvanceScorePercJsonSchema,
     CommentJsonSchema,
   },
@@ -231,3 +243,9 @@ export const ajvSchemas = {
   questionOptionsMultipleTrueFalse,
   questionOptionsv3,
 };
+
+// write ajvSchemas to a file named x.json for x in each schema
+import fs from 'fs';
+for (const [name, schema] of Object.entries(ajvSchemas)) {
+  fs.writeFileSync(`./schemas/${name}.json`, JSON.stringify(schema, null, 2));
+}

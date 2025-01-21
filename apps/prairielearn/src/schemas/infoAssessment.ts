@@ -8,7 +8,7 @@ function uniqueArray<T extends ZodSchema>(schema: T) {
   });
 }
 
-const GroupRoleJsonSchema = z
+export const GroupRoleJsonSchema = z
   .object({
     name: z.string().describe("The group role's name (i.e. Manager, Reflector, Recorder)."),
     minimum: z
@@ -114,6 +114,7 @@ export const QuestionIdJsonSchema = z
 
 export const ForceMaxPointsJsonSchema = z
   .boolean()
+  .default(false)
   .describe('Whether to force this question to be awarded maximum points on a regrade.');
 
 export const AdvanceScorePercJsonSchema = z
@@ -132,10 +133,10 @@ const QuestionPointsJsonSchema = z.object({
 
 export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;
 
-const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
+export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
   id: QuestionIdJsonSchema,
-  forceMaxPoints: ForceMaxPointsJsonSchema.optional().default(false),
+  forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
   triesPerVariant: z
     .number()
     .describe('The maximum number of graded submissions allowed for each question instance.')
@@ -213,7 +214,7 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .default([]),
 });
 
-const ZoneJsonSchema = z.object({
+export const ZoneAssessmentJsonSchema = z.object({
   title: z
     .string()
     .describe('Zone title, displayed to the students at the top of the question list for the zone.')
@@ -323,7 +324,7 @@ export const AssessmentJsonSchema = z
       .optional()
       .default(true),
     zones: z
-      .array(ZoneJsonSchema)
+      .array(ZoneAssessmentJsonSchema)
       .describe(
         'Array of "zones" in the assessment, each containing questions that can be randomized within the zone.',
       )
