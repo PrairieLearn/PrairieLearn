@@ -182,7 +182,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:
                     html_params["incorrect"] = True
             except Exception as exc:
-                raise ValueError("invalid score" + str(score)) from exc
+                raise ValueError(f"invalid score: {score}") from exc
 
         with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
@@ -227,7 +227,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:
                     html_params["incorrect"] = True
             except Exception as exc:
-                raise ValueError("invalid score" + str(score)) from exc
+                raise ValueError(f"invalid score: {score}") from exc
 
         if parse_error is None and name in data["submitted_answers"]:
             # Get submitted answer, raising an exception if it does not exist
@@ -639,7 +639,9 @@ def create_table_for_html_display(
                 elif feedback_each_entry[each_entry_name] == "incorrect":
                     feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
                 else:
-                    raise ValueError("invalid feedback type: this should not happen")
+                    raise ValueError(
+                        f"invalid feedback type: {feedback_each_entry[each_entry_name]}"
+                    )
                 display_array += feedback_message
             display_array += "</td> "
         # Add the suffix

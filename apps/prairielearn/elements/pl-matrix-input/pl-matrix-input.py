@@ -124,7 +124,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:
                     html_params["incorrect"] = True
             except Exception as exc:
-                raise ValueError("invalid score" + str(score)) from exc
+                raise ValueError(f"invalid score: {score}") from exc
 
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
@@ -180,7 +180,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:
                     html_params["incorrect"] = True
             except Exception as exc:
-                raise ValueError("invalid score" + str(score)) from exc
+                raise ValueError(f"invalid score: {score}") from exc
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
