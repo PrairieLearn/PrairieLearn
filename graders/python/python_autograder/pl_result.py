@@ -5,7 +5,6 @@ from typing import Any
 from code_feedback import Feedback, GradingComplete
 from pl_execute import UserCodeFailedError
 from pl_helpers import DoNotRunError, GradingSkipped, print_student_code
-from pl_unit_test import PLTestCase
 
 
 class PLTestResult(unittest.TestResult):
@@ -50,14 +49,13 @@ class PLTestResult(unittest.TestResult):
             name = test._testMethodName
         self.results.append({"name": name, "max_points": points, "filename": filename})
 
-    def addSuccess(self, test: PLTestCase | unittest.TestCase) -> None:  # noqa: N802
-        if not isinstance(test, PLTestCase):
-            return
+    def addSuccess(self, test: Any | unittest.TestCase) -> None:  # noqa: N802
         unittest.TestResult.addSuccess(self, test)
-        if test.points is None:
+        # We can't easily import PLTestCase to type these fields
+        if test.points is None:  # type: ignore
             self.results[-1]["points"] = self.results[-1]["max_points"]
         else:
-            self.results[-1]["points"] = test.points * self.results[-1]["max_points"]
+            self.results[-1]["points"] = test.points * self.results[-1]["max_points"]  # type: ignore
 
     def addError(self, test: unittest.TestCase, err: Any) -> None:  # noqa: N802
         if isinstance(err[1], GradingComplete):
@@ -121,12 +119,11 @@ class PLTestResult(unittest.TestResult):
 
     def addFailure(self, test: unittest.TestCase, err: Any) -> None:  # noqa: N802
         unittest.TestResult.addFailure(self, test, err)
-        if not isinstance(test, PLTestCase):
-            return
-        if test.points is None:
+        # # We can't easily import PLTestCase to type these fields
+        if test.points is None:  # type: ignore
             self.results[-1]["points"] = 0
         else:
-            self.results[-1]["points"] = test.points * self.results[-1]["max_points"]
+            self.results[-1]["points"] = test.points * self.results[-1]["max_points"]  # type: ignore
 
     def stopTest(self, test: unittest.TestCase) -> None:  # noqa: N802
         # Never write output back to the console

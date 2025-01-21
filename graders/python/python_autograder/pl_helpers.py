@@ -13,8 +13,6 @@ from code_feedback import Feedback
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer
 
-from graders.python.python_autograder.pl_unit_test import PLTestCase
-
 
 class DoNotRunError(Exception):
     pass
@@ -84,7 +82,8 @@ def name(name: str) -> Callable:
 
     def decorator(f: Callable):
         @wraps(f)
-        def wrapped(test_instance: PLTestCase):
+        def wrapped(test_instance: Any):
+            # PLTestCase
             Feedback.set_name(f.__name__)
             if test_instance.total_iters > 1 and getattr(
                 test_instance, "print_iteration_prefix", True
@@ -104,11 +103,11 @@ def not_repeated(f: Callable) -> Callable:
     """
 
     @wraps(f)
-    def wrapped(test_instance: PLTestCase):
+    def wrapped(test_instance: Any):  # PLTestCase
         if test_instance.iter_num > 0:
             raise DoNotRunError
         Feedback.clear_iteration_prefix()
-        test_instance.print_iteration_prefix = False  # type: ignore
+        test_instance.print_iteration_prefix = False
         f(test_instance)
 
     wrapped.__repeated__ = False  # type: ignore

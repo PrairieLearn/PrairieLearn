@@ -9,8 +9,8 @@ from types import ModuleType
 from typing import Any
 
 import numpy as np
-import pl_helpers
 from faker import Faker
+from pl_helpers import extract_ipynb_contents
 
 
 class UserCodeFailedError(Exception):
@@ -78,7 +78,7 @@ def execute_code(
     with open(fname_student, encoding="utf-8") as f:
         filename, extension = path.splitext(fname_student)
         if extension == ".ipynb":
-            str_student = pl_helpers.extract_ipynb_contents(f, ipynb_key)
+            str_student = extract_ipynb_contents(f, ipynb_key)
         else:
             str_student = f.read()
     str_student = str_leading + "\n" + str_student + "\n" + str_trailing

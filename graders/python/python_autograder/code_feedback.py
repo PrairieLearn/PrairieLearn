@@ -22,15 +22,12 @@ THE SOFTWARE.
 
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Literal, NoReturn
+from typing import Any, Literal, NoReturn
 
 import numpy as np
+from matplotlib.axes import Axes
 from numpy.typing import ArrayLike
-
-if TYPE_CHECKING:
-    from matplotlib.axes import Axes  # noqa: TC004
-    from pandas import DataFrame  # noqa: TC004
-    from pl_unit_test import PLTestCase  # noqa: TC004
+from pandas import DataFrame
 
 
 class GradingComplete(Exception):  # noqa: N818
@@ -60,7 +57,8 @@ class Feedback:
         cls.buffer = ""
 
     @classmethod
-    def set_test(cls, test: PLTestCase | Any) -> None:
+    def set_test(cls, test: Any) -> None:
+        # TODO: test cannot be typed as it would lead to a circular import
         # TODO: In Python 3.11 this can be typed with typing.Self
         cls.test = test
 
