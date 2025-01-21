@@ -110,7 +110,7 @@ describe('Assessment set syncing', () => {
   it('adds default assessment sets if used by assessments but not specified in courseData', async () => {
     const courseData = util.getCourseData();
 
-    // Similarly, the Machine Problem set is in DEFAULT_ASSESSMENT_SETS but not in courseData
+    // The Machine Problem set is in DEFAULT_ASSESSMENT_SETS but not in courseData
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID]['set'] =
       'Machine Problem';
 
