@@ -620,7 +620,7 @@ export function validateHTML(file: string, optimistic: boolean, usesServerPy: bo
 
   const templates = [...file.matchAll(mustacheTemplateExtractorRegex)]
     .map((x) => x[1])
-    .concat([...(mandatoryPythonCorrectAnswers ?? [])].map((x) => `correct_answers.${x[1]}`));
+    .concat([...(mandatoryPythonCorrectAnswers ?? [])].map((x) => `correct_answers.${x}`));
 
   if (!usesServerPy && templates.length > 0) {
     errors.push(`Create a server.py file to generate the following: ${templates.join(', ')}`);
