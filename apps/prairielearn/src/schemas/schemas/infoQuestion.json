@@ -91,64 +91,21 @@
       "description": "Options that define how the question will work, specific to the individual question type."
     },
     "externalGradingOptions": {
-      "$ref": "#/definitions/ExternalGradingOptionsJsonSchema",
-      "description": "Options for externally graded questions."
-    },
-    "dependencies": {
-      "$ref": "#/definitions/DependencyJsonSchema",
-      "description": "The question's client-side dependencies."
-    },
-    "workspaceOptions": {
-      "$ref": "#/definitions/WorkspaceOptionsJsonSchema",
-      "description": "Options for workspace questions."
-    },
-    "sharingSets": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "description": "The name of a sharing set"
-      },
-      "description": "The list of sharing sets that this question belongs to."
-    },
-    "sharePublicly": {
-      "type": "boolean",
-      "description": "Whether this question is publicly shared."
-    },
-    "shareSourcePublicly": {
-      "type": "boolean",
-      "description": "Whether this questions's source code is publicly shared."
-    }
-  },
-  "required": [
-    "uuid",
-    "type",
-    "title",
-    "topic"
-  ],
-  "additionalProperties": false,
-  "description": "Info files for questions.",
-  "title": "Question Info",
-  "definitions": {
-    "WorkspaceOptionsJsonSchema": {
       "type": "object",
       "properties": {
         "comment": {
           "$ref": "#/definitions/CommentJsonSchema",
           "description": "Arbitrary comment for reference purposes."
         },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example."
+        },
         "image": {
           "type": "string",
-          "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image."
+          "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image."
         },
-        "port": {
-          "type": "integer",
-          "description": "The port number used in the Docker image."
-        },
-        "home": {
-          "type": "string",
-          "description": "The home directory of the workspace container."
-        },
-        "args": {
+        "entrypoint": {
           "anyOf": [
             {
               "type": "string"
@@ -160,49 +117,40 @@
               }
             }
           ],
-          "description": "Command line arguments to pass to the Docker."
+          "description": "Program or command to run as the entrypoint to your grader."
         },
-        "rewriteUrl": {
-          "type": "boolean",
-          "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /."
-        },
-        "gradedFiles": {
+        "serverFilesCourse": {
           "type": "array",
           "items": {
             "type": "string",
-            "description": "A single file or directory that will be copied out of the workspace container when saving a submission."
+            "description": "A single file or directory that will be copied to the external grader."
           },
-          "description": "The list of files or directories that will be copied out of the workspace container when saving a submission."
+          "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/"
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "The number of seconds after which the grading job will timeout."
         },
         "enableNetworking": {
           "type": "boolean",
-          "description": "Whether the workspace should have network access. Access is disabled by default.",
+          "description": "Whether the grading containers should have network access. Access is disabled by default.",
           "default": false
         },
         "environment": {
           "type": "object",
           "properties": {},
           "additionalProperties": {},
-          "description": "Environment variables to set inside the workspace container."
-        },
-        "syncIgnore": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "description": "A single file or directory that will be excluded from sync."
-          },
-          "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync."
+          "description": "Environment variables to set inside the grading container."
         }
       },
       "required": [
         "image",
-        "port",
-        "home"
+        "entrypoint"
       ],
       "additionalProperties": false,
-      "description": "Options for workspace questions."
+      "description": "Options for externally graded questions."
     },
-    "DependencyJsonSchema": {
+    "dependencies": {
       "type": "object",
       "properties": {
         "comment": {
@@ -277,6 +225,106 @@
       "additionalProperties": false,
       "description": "The question's client-side dependencies."
     },
+    "workspaceOptions": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "$ref": "#/definitions/CommentJsonSchema",
+          "description": "Arbitrary comment for reference purposes."
+        },
+        "image": {
+          "type": "string",
+          "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image."
+        },
+        "port": {
+          "type": "integer",
+          "description": "The port number used in the Docker image."
+        },
+        "home": {
+          "type": "string",
+          "description": "The home directory of the workspace container."
+        },
+        "args": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Command line arguments to pass to the Docker."
+        },
+        "rewriteUrl": {
+          "type": "boolean",
+          "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /."
+        },
+        "gradedFiles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A single file or directory that will be copied out of the workspace container when saving a submission."
+          },
+          "description": "The list of files or directories that will be copied out of the workspace container when saving a submission."
+        },
+        "enableNetworking": {
+          "type": "boolean",
+          "description": "Whether the workspace should have network access. Access is disabled by default.",
+          "default": false
+        },
+        "environment": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {},
+          "description": "Environment variables to set inside the workspace container."
+        },
+        "syncIgnore": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A single file or directory that will be excluded from sync."
+          },
+          "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync."
+        }
+      },
+      "required": [
+        "image",
+        "port",
+        "home"
+      ],
+      "additionalProperties": false,
+      "description": "Options for workspace questions."
+    },
+    "sharingSets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "The name of a sharing set"
+      },
+      "description": "The list of sharing sets that this question belongs to."
+    },
+    "sharePublicly": {
+      "type": "boolean",
+      "description": "Whether this question is publicly shared."
+    },
+    "shareSourcePublicly": {
+      "type": "boolean",
+      "description": "Whether this questions's source code is publicly shared."
+    }
+  },
+  "required": [
+    "uuid",
+    "type",
+    "title",
+    "topic"
+  ],
+  "additionalProperties": false,
+  "description": "Info files for questions.",
+  "title": "Question Info",
+  "definitions": {
     "CommentJsonSchema": {
       "anyOf": [
         {
@@ -292,66 +340,6 @@
         }
       ],
       "description": "Arbitrary comment for reference purposes."
-    },
-    "ExternalGradingOptionsJsonSchema": {
-      "type": "object",
-      "properties": {
-        "comment": {
-          "$ref": "#/definitions/CommentJsonSchema",
-          "description": "Arbitrary comment for reference purposes."
-        },
-        "enabled": {
-          "type": "boolean",
-          "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example."
-        },
-        "image": {
-          "type": "string",
-          "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image."
-        },
-        "entrypoint": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          ],
-          "description": "Program or command to run as the entrypoint to your grader."
-        },
-        "serverFilesCourse": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "description": "A single file or directory that will be copied to the external grader."
-          },
-          "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/"
-        },
-        "timeout": {
-          "type": "integer",
-          "description": "The number of seconds after which the grading job will timeout."
-        },
-        "enableNetworking": {
-          "type": "boolean",
-          "description": "Whether the grading containers should have network access. Access is disabled by default.",
-          "default": false
-        },
-        "environment": {
-          "type": "object",
-          "properties": {},
-          "additionalProperties": {},
-          "description": "Environment variables to set inside the grading container."
-        }
-      },
-      "required": [
-        "image",
-        "entrypoint"
-      ],
-      "additionalProperties": false,
-      "description": "Options for externally graded questions."
     }
   },
   "$schema": "http://json-schema.org/draft-07/schema#"

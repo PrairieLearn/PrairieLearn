@@ -24,24 +24,13 @@ import {
   ZoneQuestionJsonSchema,
   type AssessmentJson,
 } from './infoAssessment.js';
-import {
-  AssessmentSetJsonSchema,
-  ColorJsonSchema,
-  CourseJsonSchema,
-  type CourseJson,
-} from './infoCourse.js';
+import { ColorJsonSchema, CourseJsonSchema, type CourseJson } from './infoCourse.js';
 import { CourseInstanceJsonSchema, type CourseInstanceJson } from './infoCourseInstance.js';
 import { ElementCoreJsonSchema, type ElementCoreJson } from './infoElementCore.js';
 import { ElementCourseJsonSchema, type ElementCourseJson } from './infoElementCourse.js';
 import { ElementExtensionJsonSchema, type ElementExtensionJson } from './infoElementExtension.js';
 import { NewsItemJsonSchema, type NewsItemJson } from './infoNewsItem.js';
-import {
-  DependencyJsonSchema,
-  ExternalGradingOptionsJsonSchema,
-  QuestionJsonSchema,
-  WorkspaceOptionsJsonSchema,
-  type QuestionJson,
-} from './infoQuestion.js';
+import { QuestionJsonSchema, type QuestionJson } from './infoQuestion.js';
 import {
   QuestionCalculationOptionsJsonSchema,
   type QuestionCalculationOptionsJson,
@@ -130,7 +119,7 @@ export const infoCourse = prairielearnZodToJsonSchema(CourseJsonSchema, {
   name: 'Course information',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-  definitions: { ColorJsonSchema, AssessmentSetJsonSchema, CommentJsonSchema },
+  definitions: { ColorJsonSchema, CommentJsonSchema },
 }) as JSONSchemaType<CourseJson>;
 
 export const infoCourseInstance = prairielearnZodToJsonSchema(CourseInstanceJsonSchema, {
@@ -144,21 +133,21 @@ export const infoElementCore = prairielearnZodToJsonSchema(ElementCoreJsonSchema
   name: 'Element Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-  definitions: { CommentJsonSchema, DependencyJsonSchema },
+  definitions: { CommentJsonSchema },
 }) as JSONSchemaType<ElementCoreJson>;
 
 export const infoElementCourse = prairielearnZodToJsonSchema(ElementCourseJsonSchema, {
   name: 'Element Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-  definitions: { CommentJsonSchema, DependencyJsonSchema },
+  definitions: { CommentJsonSchema },
 }) as JSONSchemaType<ElementCourseJson>;
 
 export const infoElementExtension = prairielearnZodToJsonSchema(ElementExtensionJsonSchema, {
   name: 'Element Extension Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-  definitions: { CommentJsonSchema, DependencyJsonSchema },
+  definitions: { CommentJsonSchema },
 }) as JSONSchemaType<ElementExtensionJson>;
 
 export const infoQuestion = prairielearnZodToJsonSchema(QuestionJsonSchema, {
@@ -166,10 +155,7 @@ export const infoQuestion = prairielearnZodToJsonSchema(QuestionJsonSchema, {
   nameStrategy: 'title',
   target: 'jsonSchema7',
   definitions: {
-    WorkspaceOptionsJsonSchema,
-    DependencyJsonSchema,
     CommentJsonSchema,
-    ExternalGradingOptionsJsonSchema,
   },
 }) as JSONSchemaType<QuestionJson>;
 

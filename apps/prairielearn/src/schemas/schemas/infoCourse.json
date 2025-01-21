@@ -65,7 +65,36 @@
     "assessmentSets": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/AssessmentSetJsonSchema"
+        "type": "object",
+        "properties": {
+          "comment": {
+            "$ref": "#/definitions/CommentJsonSchema",
+            "description": "Arbitrary comment for reference purposes."
+          },
+          "abbreviation": {
+            "type": "string",
+            "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc."
+          },
+          "name": {
+            "type": "string",
+            "description": "Full singular name (preferably 1 to 3 words), e.g., 'Homework', 'Quiz', 'Practice Quiz'."
+          },
+          "heading": {
+            "type": "string",
+            "description": "Plural heading for a group of assessments (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'."
+          },
+          "color": {
+            "$ref": "#/definitions/ColorJsonSchema"
+          }
+        },
+        "required": [
+          "abbreviation",
+          "name",
+          "heading",
+          "color"
+        ],
+        "additionalProperties": false,
+        "description": "A single assessment set description."
       },
       "description": "Assessment sets."
     },
@@ -228,38 +257,6 @@
         "gray3"
       ],
       "description": "A color name."
-    },
-    "AssessmentSetJsonSchema": {
-      "type": "object",
-      "properties": {
-        "comment": {
-          "$ref": "#/definitions/CommentJsonSchema",
-          "description": "Arbitrary comment for reference purposes."
-        },
-        "abbreviation": {
-          "type": "string",
-          "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc."
-        },
-        "name": {
-          "type": "string",
-          "description": "Full singular name (preferably 1 to 3 words), e.g., 'Homework', 'Quiz', 'Practice Quiz'."
-        },
-        "heading": {
-          "type": "string",
-          "description": "Plural heading for a group of assessments (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'."
-        },
-        "color": {
-          "$ref": "#/definitions/ColorJsonSchema"
-        }
-      },
-      "required": [
-        "abbreviation",
-        "name",
-        "heading",
-        "color"
-      ],
-      "additionalProperties": false,
-      "description": "A single assessment set description."
     },
     "CommentJsonSchema": {
       "anyOf": [

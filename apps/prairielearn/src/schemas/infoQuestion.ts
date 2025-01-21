@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 
-export const DependencyJsonSchema = z
+export const QuestionDependencyJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     coreStyles: z
@@ -210,7 +210,7 @@ export const QuestionJsonSchema = z
       )
       .optional(),
     externalGradingOptions: ExternalGradingOptionsJsonSchema.optional(),
-    dependencies: DependencyJsonSchema.optional(),
+    dependencies: QuestionDependencyJsonSchema.optional(),
     workspaceOptions: WorkspaceOptionsJsonSchema.optional(),
     sharingSets: z
       .array(z.string().describe('The name of a sharing set'))
