@@ -173,16 +173,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception as exc:
-                raise ValueError(f"invalid score: {score}") from exc
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
@@ -218,16 +210,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception as exc:
-                raise ValueError(f"invalid score: {score}") from exc
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         if parse_error is None and name in data["submitted_answers"]:
             # Get submitted answer, raising an exception if it does not exist
