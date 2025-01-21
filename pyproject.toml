@@ -85,7 +85,7 @@ ignore = [
     # ignore unused parameters in functions
     "ARG"
 ]
-"apps/prairielearn/python/*.py" = ["N803"]
+"apps/prairielearn/python/**/*.py" = ["N803"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
@@ -115,5 +115,11 @@ pythonVersion = "3.10"
 reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.pytest.ini_options]
+pythonpath = [
+    "apps/prairielearn/python"
+]
 addopts = "--cov=apps"
-testpaths = ["apps/prairielearn/elements", "apps/prairielearn/python"]
+testpaths = [
+    "apps/prairielearn/elements",
+    "apps/prairielearn/python/test",
+]
