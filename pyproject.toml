@@ -111,7 +111,16 @@ exclude = [
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
+executionEnvironments = [
+    { root = "./graders/python", pythonVersion = "3.12" },
+    { root = "./graders/c", pythonVersion = "3.12" }
+]
 reportUnnecessaryTypeIgnoreComment = "error"
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+typeCheckingMode = "strict"
 
 [tool.pytest.ini_options]
 pythonpath = [
