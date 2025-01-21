@@ -59,7 +59,7 @@ class Feedback:
     @classmethod
     def set_test(cls, test: Any) -> None:
         # TODO: test cannot be typed as it would lead to a circular import
-        # TODO: In Python 3.11 this can be typed with typing.Self
+        # TODO: In Python 3.11 cls can be typed with typing.Self
         cls.test = test
 
     @classmethod

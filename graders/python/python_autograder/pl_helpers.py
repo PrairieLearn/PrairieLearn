@@ -83,7 +83,6 @@ def name(name: str) -> Callable:
     def decorator(f: Callable):
         @wraps(f)
         def wrapped(test_instance: Any):
-            # PLTestCase
             Feedback.set_name(f.__name__)
             if test_instance.total_iters > 1 and getattr(
                 test_instance, "print_iteration_prefix", True
@@ -103,7 +102,8 @@ def not_repeated(f: Callable) -> Callable:
     """
 
     @wraps(f)
-    def wrapped(test_instance: Any):  # PLTestCase
+    def wrapped(test_instance: Any):
+        # test_instance should be typed as PLTestCase if there was no circular import
         if test_instance.iter_num > 0:
             raise DoNotRunError
         Feedback.clear_iteration_prefix()

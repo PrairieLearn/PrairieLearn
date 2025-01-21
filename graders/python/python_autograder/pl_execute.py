@@ -210,9 +210,9 @@ def execute_code(
                 plot_value = student_code[key]
         if not plot_value:
             import matplotlib as mpl
+            import matplotlib.pyplot as plt
 
             mpl.use("Agg")
-            import matplotlib.pyplot as plt
 
             plot_value = plt
 

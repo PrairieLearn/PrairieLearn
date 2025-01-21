@@ -148,12 +148,16 @@ if __name__ == "__main__":
 
         with open(output_fname, mode="w", encoding="utf-8") as out:
             json.dump(grading_result, out)
-    except:  # noqa: E722
+    except BaseException as exc:
         # Last-ditch effort to capture meaningful error information
         grading_result = {}
         grading_result["score"] = 0.0
         grading_result["succeeded"] = False
         grading_result["output"] = traceback.format_exc()
-        if output_fname:
-            with open(output_fname, mode="w") as out:
-                json.dump(grading_result, out)
+        if not output_fname:
+            raise ValueError(
+                "No output_fname, can't capture error information"
+            ) from exc
+
+        with open(output_fname, mode="w") as out:
+            json.dump(grading_result, out)
