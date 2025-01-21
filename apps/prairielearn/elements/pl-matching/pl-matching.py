@@ -174,7 +174,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # Organize the list of options to use.
     # First, select all the options associated with the chosen statements.
     needed_options_keys = {s["match"] for s in statements}
-    needed_options, distractors = partition(
+    needed_options, distractors = pl.partition(
         options, lambda opt: opt["name"] in needed_options_keys
     )
 
