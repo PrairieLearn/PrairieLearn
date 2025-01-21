@@ -5,7 +5,11 @@ type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
 const mustacheTemplateExtractorRegex = /\{\{((?:[^}]|\}[^}])*)\}\}/g;
-const answersNameExtractorRegex = /answers-name="([^"]*)"/g;
+
+interface ValidationResult {
+  errors: string[];
+  mandatoryPythonCorrectAnswers?: Set<string>;
+}
 
 /**
  * Checks that the required attribute is an int (or mustache template) or adds an error to the provided list.
@@ -106,7 +110,7 @@ function assertBool(tag: string, key: string, val: string, errors: string[]) {
  * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns The list of errors for the tag, if any.
  */
-function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): string[] {
+function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): ValidationResult {
   if ('tagName' in ast) {
     switch (ast.tagName) {
       case 'pl-multiple-choice':
@@ -120,18 +124,20 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): strin
       case 'pl-checkbox':
         return checkCheckbox(ast);
       case 'pl-question-panel':
-        return [];
+        return { errors: [] };
       case 'pl-answer':
-        return []; //covered elsewhere
+        return { errors: [] }; //covered elsewhere
       default:
         if (ast.tagName && ast.tagName.substring(0, 3) === 'pl-' && !optimistic) {
-          return [
-            `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\``,
-          ];
+          return {
+            errors: [
+              `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\``,
+            ],
+          };
         }
     }
   }
-  return [];
+  return { errors: [] };
 }
 
 /**
@@ -139,7 +145,7 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): strin
  * @param ast The tree to consider, rooted at the tag.
  * @returns The list of errors for the tag, if any.
  */
-function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
+function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
   let usedAnswersName = false;
   let displayDropdown = false;
@@ -241,7 +247,7 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
     }
   }
 
-  return errors.concat(errorsChildren);
+  return { errors: errors.concat(errorsChildren) };
 }
 
 /**
@@ -249,16 +255,16 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkIntegerInput(ast: DocumentFragment | ChildNode): string[] {
+function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
-  let usedAnswersName = false;
+  let answersName: string | null = null;
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
       const key = attr.name;
       const val = attr.value;
       switch (key) {
         case 'answers-name':
-          usedAnswersName = true;
+          answersName = val;
           break;
         case 'weight':
         case 'blank-answer':
@@ -288,10 +294,13 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): string[] {
       }
     }
   }
-  if (!usedAnswersName) {
+  if (!answersName) {
     errors.push('pl-integer-input: answers-name is a required attribute.');
   }
-  return errors;
+  return {
+    errors,
+    mandatoryPythonCorrectAnswers: answersName ? new Set([answersName]) : undefined,
+  };
 }
 
 /**
@@ -299,9 +308,9 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): string[] {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkNumericalInput(ast: DocumentFragment | ChildNode): string[] {
+function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
-  let usedAnswersName = false;
+  let answersName: string | null = null;
   let usedRelabs = true;
   let usedRtol = false;
   let usedAtol = false;
@@ -315,7 +324,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): string[] {
       const val = attr.value;
       switch (key) {
         case 'answers-name':
-          usedAnswersName = true;
+          answersName = val;
           break;
         case 'weight':
         case 'size':
@@ -370,7 +379,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): string[] {
       }
     }
   }
-  if (!usedAnswersName) {
+  if (!answersName) {
     errors.push('pl-number-input: answers-name is a required attribute.');
   }
   if ((usedRtol || usedAtol) && !usedRelabs) {
@@ -384,7 +393,10 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): string[] {
   if (usedBlankValue && !allowsBlank) {
     errors.push('pl-number-input: you must set allow-blank to true to use blank-value.');
   }
-  return errors;
+  return {
+    errors,
+    mandatoryPythonCorrectAnswers: answersName ? new Set([answersName]) : undefined,
+  };
 }
 
 /**
@@ -441,9 +453,9 @@ function checkAnswerCheckbox(ast: DocumentFragment | ChildNode): string[] {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkStringInput(ast: DocumentFragment | ChildNode): string[] {
+function checkStringInput(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
-  let usedAnswersName = false;
+  let answersName: string | null = null;
   let usedCorrectAnswer = false;
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
@@ -451,7 +463,7 @@ function checkStringInput(ast: DocumentFragment | ChildNode): string[] {
       const val = attr.value;
       switch (key) {
         case 'answers-name':
-          usedAnswersName = true;
+          answersName = val;
           break;
         case 'weight':
         case 'size':
@@ -480,10 +492,16 @@ function checkStringInput(ast: DocumentFragment | ChildNode): string[] {
       }
     }
   }
-  if (usedAnswersName === usedCorrectAnswer) {
-    errors.push('pl-string-input: exactly one of answers-name and correct-answer should be set.');
+  if (!answersName) {
+    errors.push('pl-string-input: answers-name is a required attribute.');
   }
-  return errors;
+  return {
+    errors,
+    // If a correct answer was not specified with the `correct-answer` attribute,
+    // then the `answers-name` attribute must be generated in Python.
+    mandatoryPythonCorrectAnswers:
+      !usedCorrectAnswer && answersName ? new Set([answersName]) : undefined,
+  };
 }
 
 /**
@@ -491,7 +509,7 @@ function checkStringInput(ast: DocumentFragment | ChildNode): string[] {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
+function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
   let usedAnswersName = false;
   let usedPartialCredit = true;
@@ -560,7 +578,7 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
     }
   }
 
-  return errors.concat(errorsChildren);
+  return { errors: errors.concat(errorsChildren) };
 }
 
 /**
@@ -569,15 +587,25 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
  * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns A list of human-readable error messages, if any.
  */
-function dfsCheckParseTree(ast: DocumentFragment | ChildNode, optimistic: boolean): string[] {
-  let errors = checkTag(ast, optimistic);
+function dfsCheckParseTree(
+  ast: DocumentFragment | ChildNode,
+  optimistic: boolean,
+): ValidationResult {
+  let { errors, mandatoryPythonCorrectAnswers } = checkTag(ast, optimistic);
+
+  mandatoryPythonCorrectAnswers ??= new Set<string>();
+
   if ('childNodes' in ast && ast.childNodes) {
     for (const child of ast.childNodes) {
-      errors = errors.concat(dfsCheckParseTree(child, optimistic));
+      const childResult = dfsCheckParseTree(child, optimistic);
+      errors = errors.concat(childResult.errors);
+      childResult.mandatoryPythonCorrectAnswers?.forEach((x) =>
+        mandatoryPythonCorrectAnswers.add(x),
+      );
     }
   }
 
-  return errors;
+  return { errors, mandatoryPythonCorrectAnswers };
 }
 
 /**
@@ -588,10 +616,11 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, optimistic: boolea
  */
 export function validateHTML(file: string, optimistic: boolean, usesServerPy: boolean): string[] {
   const tree = parse5.parseFragment(file);
+  const { errors, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree, optimistic);
+
   const templates = [...file.matchAll(mustacheTemplateExtractorRegex)]
     .map((x) => x[1])
-    .concat([...file.matchAll(answersNameExtractorRegex)].map((x) => `correct_answers.${x[1]}`));
-  const errors = dfsCheckParseTree(tree, optimistic);
+    .concat([...(mandatoryPythonCorrectAnswers ?? [])].map((x) => `correct_answers.${x[1]}`));
 
   if (!usesServerPy && templates.length > 0) {
     errors.push(`Create a server.py file to generate the following: ${templates.join(', ')}`);

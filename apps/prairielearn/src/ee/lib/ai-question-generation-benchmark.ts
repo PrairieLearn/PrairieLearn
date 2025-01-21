@@ -43,7 +43,7 @@ const BENCHMARKS: Benchmark[] = [
   },
   {
     promptGeneral:
-      'Write a question that asks the user to identify which of four planets is the third farthest from the sun. The order of planets should be randomized.',
+      'Write a question that asks the user to identify which of four planets is the third from the sun. The order of planets should be randomized.',
     promptUserInput:
       'Provide a multiple-choice radio button input with four options, including one correct answer and three distractors.',
     promptGrading:
@@ -64,7 +64,7 @@ const BENCHMARKS: Benchmark[] = [
   {
     promptGeneral:
       'Write a question that asks the user to convert a randomly generated angle from radians to degrees.',
-    promptUserInput: 'Provide an integer input box for the user to enter the degree equivalent.',
+    promptUserInput: 'Provide a numerical input box for the user to enter the degree equivalent.',
     promptGrading: 'The correct answer is the degree equivalent of the given angle in radians.',
   },
   {
@@ -271,6 +271,10 @@ async function evaluateGeneratedQuestion({
   html: string;
   python: string;
 }): Promise<QuestionGenerationEvaluation | null> {
+  // TODO: include documentation for elements used in the generated question. The judge LLM
+  // sometimes mistakenly complains about missing behavior that's actually just the default
+  // behavior of the element. For instance, it might complain that a `<pl-multiple-choice>`
+  // doesn't randomize the order of the choices, even though that's the default behavior.
   const systemPrompt = [
     'Another LLM has generated a PrairieLearn question from the following prompt:',
     '',
