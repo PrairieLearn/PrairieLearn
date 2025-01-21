@@ -110,11 +110,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # so we don't have to worry about all the alignment possibilities
         if left is not None:
             x = left
+        elif right is None or width is None:
+            raise ValueError("Either left or width+right must be specified")
         else:
             x = width - right
 
         if top is not None:
             y = top
+        elif bottom is None or height is None:
+            raise ValueError("Either top or height+bottom must be specified")
         else:
             y = height - bottom
 
