@@ -78,7 +78,8 @@ markdown_extensions:
 
   - tables
   # https://facelessuser.github.io/pymdown-extensions/extensions/snippets/#snippets
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      check_paths: true
   - pymdownx.details
 
   - toc:

@@ -208,12 +208,12 @@ def execute_code(
                 and student_code[key].__dict__["__name__"] == "matplotlib.pyplot"
             ):
                 plot_value = student_code[key]
+
         if not plot_value:
             import matplotlib as mpl
             import matplotlib.pyplot as plt
 
             mpl.use("Agg")
-
             plot_value = plt
 
     # Re-seed before running tests

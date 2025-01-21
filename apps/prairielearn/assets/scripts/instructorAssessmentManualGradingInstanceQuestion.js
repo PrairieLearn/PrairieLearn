@@ -458,19 +458,19 @@ function computePointsFromRubric(sourceInput = null) {
 }
 
 function enableRubricItemLongTextField(event) {
-  if (!(event.target instanceof HTMLElement)) return;
-  const container = event.target.closest('td');
-  const label = container.querySelector('label');
+  if (!(event.currentTarget instanceof HTMLElement)) return;
+  const container = event.currentTarget.closest('td');
+  const label = container.querySelector('label'); // May be null
   const button = container.querySelector('button');
-  if (!container || !label || !button) return;
+  if (!container || !button) return;
   const input = document.createElement('textarea');
   input.classList.add('form-control');
   input.name = button.dataset.inputName;
   input.setAttribute('maxlength', 10000);
   input.textContent = button.dataset.currentValue || '';
 
-  container.insertBefore(input, label);
-  label.remove();
+  container.insertBefore(input, button);
+  label?.remove();
   button.remove();
   input.focus();
   input.addEventListener('input', () => adjustHeightFromContent(input));

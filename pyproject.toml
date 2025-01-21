@@ -28,11 +28,14 @@ ignore = [
     "D", # pydocstyle
     "ERA", # eradicate (code in comments)
     "EM", # flake8-errmsg
+    "EXE", # flake8-executable
     "E501", # line-too-long
     "FIX", # flake8-fixme
     "INP001", # implicit-namespace-package
     "S", # flake8-bandit (security rules)
-    "T", # flake8-print, flake8-debugger
+    "SLF001", # private-member-access 
+    "T201", # flake8-print
+    "T100", # flake8-debugger
     "TD", # flake8-todos
     "PGH003", # blanket-type-ignore
     "PLE2513", # invalid-character-esc
@@ -54,10 +57,6 @@ ignore = [
     "TRY300", # try-consider-else (returns in try blocks)
     "TRY301", # raise-within-try
     "TRY003", # raise-vanilla-args (long messages in raise statements)
-
-    # These rules need to be implemented
-    "SLF001", # private-member-access 
-    "EXE", # flake8-executable
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
@@ -102,7 +101,7 @@ exclude = [
 include = [
     "./apps/prairielearn/elements",
     "./apps/prairielearn/python",
-    "./graders/python"
+    "./graders",
 ]
 exclude = [
     "./apps/prairielearn/elements/pl-drawing", # requires refactor
