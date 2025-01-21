@@ -31,19 +31,21 @@ router.get(
   }),
 );
 
-router.get('/generation_logs.json', asyncHandler(async (req, res) => {
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
-  }
-  
-  const file = await queryRows(
-    sql.select_ai_question_generation_prompts_by_course_id,
-    { course_id: res.locals.course.id },
-    AiGenerationPromptSchema,
-  );
+router.get(
+  '/generation_logs.json',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
+    }
 
-  res.send(file);
+    const file = await queryRows(
+      sql.select_ai_question_generation_prompts_by_course_id,
+      { course_id: res.locals.course.id },
+      AiGenerationPromptSchema,
+    );
 
-}))
+    res.send(file);
+  }),
+);
 
 export default router;
