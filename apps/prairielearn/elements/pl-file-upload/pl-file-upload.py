@@ -301,13 +301,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
         if len(missing_regex) > 0:
             # Need some awkward mapping to patterns here to ensure we don't remove duplicates
-            missing_patterns = [
+            missing_patterns = ", ".join(
                 file_patterns[files_regex.index(r)] for r in missing_regex
-            ]
+            )
             add_format_error(
                 answer_name,
                 data,
-                f"The following required file patterns were missing: {', '.join(missing_patterns)}",
+                f"The following required file patterns were missing: {missing_patterns}",
             )
 
         optional_files, remaining_files = pl.partition(
