@@ -15,3 +15,12 @@ WHERE
   AND q.qid IS NOT NULL
 ORDER BY
   qid ASC;
+
+-- BLOCK select_ai_question_generation_prompts_by_course_id
+SELECT
+  p.*
+FROM
+  ai_question_generation_prompts AS p
+  JOIN questions AS q ON q.id = p.question_id
+WHERE
+  q.course_id = $course_id;
