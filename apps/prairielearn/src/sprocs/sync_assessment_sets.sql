@@ -108,8 +108,7 @@ BEGIN
         DELETE FROM assessment_sets AS aset
         WHERE
             aset.course_id = syncing_course_id
-            -- COALESCE handles the case that used_assessment_set_names is empty.
-            AND aset.name != ALL(COALESCE(used_assessment_set_names, '{}'::text[]));
+            AND aset.name != ALL (used_assessment_set_names);
     END IF;
 
     -- Internal consistency check. All assessments should have an
