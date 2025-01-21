@@ -214,6 +214,7 @@ def execute_code(
             import matplotlib.pyplot as plt
 
             mpl.use("Agg")
+
             plot_value = plt
 
     # Re-seed before running tests
