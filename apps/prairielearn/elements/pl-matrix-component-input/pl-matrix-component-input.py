@@ -1,5 +1,6 @@
 import math
 import random
+from enum import Enum
 from html import escape
 from typing import Literal
 
@@ -10,9 +11,16 @@ import prairielearn as pl
 from sympy import Expr
 from typing_extensions import assert_never
 
+
+class ComparisonMode(Enum):
+    RELABS = "relabs"
+    SIGFIG = "sigfig"
+    DECDIG = "decdig"
+
+
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
-COMPARISON_DEFAULT = "relabs"
+COMPARISON_DEFAULT = ComparisonMode.RELABS
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
@@ -104,7 +112,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         input_array = create_table_for_html_display(m, n, name, label, data, "input")
 
         # Get comparison parameters and info strings
-        comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
+        comparison = pl.get_enum_attrib(
+            element, "comparison", ComparisonMode, COMPARISON_DEFAULT
+        )
         if comparison == "relabs":
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
@@ -270,8 +280,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             a_tru = np.array(a_tru)
 
             # Get comparison parameters and create the display data
-            comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
-            if comparison == "relabs":
+            comparison = pl.get_enum_attrib(
+                element, "comparison", ComparisonMode, COMPARISON_DEFAULT
+            )
+            if comparison == ComparisonMode.RELABS:
                 rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
                 atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
                 # FIXME: render correctly with respect to rtol and atol
@@ -280,7 +292,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     + pl.latex_from_2darray(a_tru, presentation_type="g", digits=12)
                     + "$"
                 )
-            elif comparison == "sigfig":
+            elif comparison == ComparisonMode.SIGFIG:
                 digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
                 latex_data = (
                     "$"
@@ -289,7 +301,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     )
                     + "$"
                 )
-            elif comparison == "decdig":
+            elif comparison == ComparisonMode.DECDIG:
                 digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
                 latex_data = (
                     "$"
@@ -349,15 +361,17 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             a_sub = data["submitted_answers"].get(each_entry_name, None)
             if allow_blank and a_sub is not None and a_sub.strip() == "":
                 a_sub = blank_value
-            value, newdata = pl.string_fraction_to_number(
+            res = pl.string_fraction_to_number(
                 a_sub, allow_fractions=allow_fractions, allow_complex=False
             )
-            if value is not None:
+            if res[0] is not None:
+                value, newdata = res
                 matrix[i, j] = value
                 data["submitted_answers"][each_entry_name] = newdata[
                     "submitted_answers"
                 ]
             else:
+                _, newdata = res
                 invalid_format = True
                 data["format_errors"][each_entry_name] = newdata["format_errors"]
                 data["submitted_answers"][each_entry_name] = None
@@ -383,12 +397,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # Get method of comparison, with relabs as default
-    raw_comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
-    if raw_comparison not in ("relabs", "sigfig", "decdig"):
-        raise ValueError(
-            f'method of comparison "{raw_comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
-        )
-    comparison: Literal["relabs", "sigfig", "decdig"] = raw_comparison
+    comparison = pl.get_enum_attrib(
+        element, "comparison", ComparisonMode, COMPARISON_DEFAULT
+    )
 
     rtol, atol, digits = RTOL_DEFAULT, ATOL_DEFAULT, DIGITS_DEFAULT
     if comparison == "relabs":
@@ -397,7 +408,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     elif comparison in ("sigfig", "decdig"):
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
     else:
-        assert_never(comparison)
+        raise ValueError(
+            f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
+        )
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -438,8 +451,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             elif comparison == "decdig":
                 correct = pl.is_correct_scalar_dd(a_sub, a_tru[i, j], digits)
             else:
-                assert_never(comparison)
-
+                raise ValueError(
+                    f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
+                )
             if correct:
                 number_of_correct += 1
                 feedback.update({each_entry_name: "correct"})
@@ -533,7 +547,7 @@ def create_table_for_html_display(
     label: str | None,
     data: pl.QuestionData,
     format_type: Literal["output-invalid", "output-feedback", "input"],
-):
+) -> str:
     editable = data["editable"]
 
     if format_type == "output-invalid":
