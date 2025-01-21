@@ -41,7 +41,7 @@ class PartialScore(TypedDict):
 
     score: float | None
     weight: NotRequired[int]
-    feedback: NotRequired[str | dict[str, str]]
+    feedback: NotRequired[str | dict[str, str] | Any]
 
 
 # TODO: This type definition should not yet be seen as authoritative, it may
