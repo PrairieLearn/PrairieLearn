@@ -441,6 +441,9 @@ async function evaluateGeneratedQuestion({
     'Do not suggest ways the original prompt could have been improved.',
     'You should evaluate the question based on the prompt as it is written.',
     '',
+    'Remember that for pedagogical reasons, instructors may include extra information or distractors.',
+    'These are not considered errors unless they are factually incorrect or misleading.',
+    '',
     'The user will now provide the question HTML and Python files that the LLM generated for this prompt.',
   ].join('\n');
 
