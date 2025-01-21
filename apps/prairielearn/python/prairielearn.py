@@ -1888,3 +1888,22 @@ def add_submitted_file(
         add_files_format_error(
             data, '"_files" is present in "submitted_answers" but is not an array'
         )
+
+
+ListItem = TypeVar("ListItem")
+
+
+def partition(
+    data: list[ListItem], pred: Callable[[ListItem], bool]
+) -> tuple[list[ListItem], list[ListItem]]:
+    """
+    Implements a partition function, splitting the data into two lists based on the predicate.
+    """
+
+    yes, no = [], []
+    for d in data:
+        if pred(d):
+            yes.append(d)
+        else:
+            no.append(d)
+    return (yes, no)

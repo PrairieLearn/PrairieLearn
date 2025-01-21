@@ -310,8 +310,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 f"The following required file patterns were missing: {', '.join(missing_patterns)}",
             )
 
-        optional_files = [x for x in remaining_files if x in opt_file_names]
-        remaining_files = [x for x in remaining_files if x not in optional_files]
+        optional_files, remaining_files = pl.partition(
+            remaining_files, lambda file: file in opt_file_names
+        )
         # We don't care which optional patterns are matched
         opt_pattern_files, _ = match_regex_with_files(
             opt_files_regex,

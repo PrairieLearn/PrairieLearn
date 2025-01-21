@@ -1,5 +1,4 @@
 import random
-from collections.abc import Callable
 from enum import Enum
 from typing import Any, TypeVar
 
@@ -68,23 +67,6 @@ def get_select_options(
 
 
 ListItem = TypeVar("ListItem")
-
-
-def partition(
-    data: list[ListItem], pred: Callable[[ListItem], bool]
-) -> tuple[list[ListItem], list[ListItem]]:
-    """
-    Implements a partition function, splitting the data into two lists based on the predicate.
-    TODO move this into prairielearn.py once it's used in another element.
-    """
-
-    yes, no = [], []
-    for d in data:
-        if pred(d):
-            yes.append(d)
-        else:
-            no.append(d)
-    return (yes, no)
 
 
 def categorize_matches(
