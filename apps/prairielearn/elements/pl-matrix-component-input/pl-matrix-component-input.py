@@ -115,7 +115,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         comparison = pl.get_enum_attrib(
             element, "comparison", ComparisonMode, COMPARISON_DEFAULT
         )
-        if comparison == "relabs":
+        if comparison == ComparisonMode.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
@@ -128,7 +128,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "rtol": f"{rtol:g}",
                 "atol": f"{atol:g}",
             }
-        elif comparison == "sigfig":
+        elif comparison == ComparisonMode.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
                 raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
@@ -138,7 +138,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 1)),
             }
-        elif comparison == "decdig":
+        elif comparison == ComparisonMode.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
                 raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
@@ -402,10 +402,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     )
 
     rtol, atol, digits = RTOL_DEFAULT, ATOL_DEFAULT, DIGITS_DEFAULT
-    if comparison == "relabs":
+    if comparison == ComparisonMode.RELABS:
         rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
         atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
-    elif comparison in ("sigfig", "decdig"):
+    elif comparison in (ComparisonMode.SIGFIG, ComparisonMode.DECDIG):
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
     else:
         raise ValueError(
@@ -444,11 +444,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 return
 
             # Compare submitted answer with true answer
-            if comparison == "relabs":
+            if comparison == ComparisonMode.RELABS:
                 correct = pl.is_correct_scalar_ra(a_sub, a_tru[i, j], rtol, atol)
-            elif comparison == "sigfig":
+            elif comparison == ComparisonMode.SIGFIG:
                 correct = pl.is_correct_scalar_sf(a_sub, a_tru[i, j], digits)
-            elif comparison == "decdig":
+            elif comparison == ComparisonMode.DECDIG:
                 correct = pl.is_correct_scalar_dd(a_sub, a_tru[i, j], digits)
             else:
                 raise ValueError(
