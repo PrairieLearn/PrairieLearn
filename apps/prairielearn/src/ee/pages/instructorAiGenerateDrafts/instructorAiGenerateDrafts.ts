@@ -44,7 +44,7 @@ router.get(
       AiGenerationPromptSchema,
     );
 
-    res.send(file);
+    res.json(file);
   }),
 );
 

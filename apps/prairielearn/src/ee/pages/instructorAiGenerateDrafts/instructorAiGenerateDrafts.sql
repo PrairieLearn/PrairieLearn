@@ -23,4 +23,7 @@ FROM
   ai_question_generation_prompts AS p
   JOIN questions AS q ON q.id = p.question_id
 WHERE
-  q.course_id = $course_id;
+  (q.course_id = $course_id)
+ORDER BY
+  q.id ASC,
+  p.id ASC;
