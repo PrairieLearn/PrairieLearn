@@ -12,16 +12,10 @@ the section entitled "Personal Access Tokens", you can generate tokens for
 yourself. These tokens give you all the permissions that your normal user
 account has.
 
-You can provide your token via the `Private-Token` header:
+Provide your token via the `Private-Token` header:
 
 ```sh
 curl -H "Private-Token: TOKEN" https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
-```
-
-You can also provide the token via a `private_token` query parameter:
-
-```sh
-curl https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>?private_token=TOKEN
 ```
 
 ## Example access script

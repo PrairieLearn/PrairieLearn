@@ -648,7 +648,7 @@ function NavbarInstructor({
         aria-expanded="false"
         ${!authz_data.overrides
           ? html`
-              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show-course-switcher once
+              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show.bs.dropdown once
               delay:200ms" hx-target="#navbarDropdownMenuCourseAdmin"
             `
           : ''}
@@ -721,7 +721,7 @@ function NavbarInstructor({
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher/${course_instance.id}"
-              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-trigger="show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceAdmin"
             ></button>
             <div
@@ -814,7 +814,7 @@ function NavbarInstructor({
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher"
-              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-trigger="show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceChoose"
             >
               Choose course instance...
