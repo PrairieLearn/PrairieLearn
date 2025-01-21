@@ -66,6 +66,7 @@ import logging
 
 logging.getLogger("matplotlib.font_manager").disabled = True
 
+# Pre-load commonly used modules
 import html
 import math
 import random
