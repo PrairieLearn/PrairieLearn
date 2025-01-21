@@ -18,10 +18,14 @@ USER coder
 # the extension downloads the latest version of the extension upon loading,
 # which would not be appropriate in a containerized environment with restricted
 # network access.
-RUN curl -fsSL https://github.com/vadimcn/codelldb/releases/download/v1.11.1/codelldb-linux-x64.vsix -o /tmp/codelldb-linux-x64.vsix && \
+RUN arch=$(uname -m) && \
+    if [ "$arch" = "x86_64" ]; then arch="x64"; \
+    elif [ "$arch" = "aarch64" ]; then arch="arm64"; \
+    else echo "Unsupported architecture: $arch"; exit 1; fi && \
+    curl -fsSL https://github.com/vadimcn/codelldb/releases/download/v1.11.1/codelldb-linux-${arch}.vsix -o /tmp/codelldb-linux.vsix && \
     code-server --disable-telemetry --force  \
     --install-extension jeff-hykin.better-cpp-syntax \
     --install-extension ms-vscode.cpptools-themes \
     --install-extension ms-vscode.makefile-tools \
-    --install-extension /tmp/codelldb-linux-x64.vsix \
-    && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs /tmp/codelldb-linux-x64.vsix
+    --install-extension /tmp/codelldb-linux.vsix \
+    && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs /tmp/codelldb-linux.vsix
