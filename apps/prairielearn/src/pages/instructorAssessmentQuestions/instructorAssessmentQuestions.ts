@@ -1,8 +1,9 @@
+import * as path from 'path';
+
+import sha256 from 'crypto-js/sha256.js';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import * as path from 'path';
 import fs from 'fs-extra';
-import sha256 from 'crypto-js/sha256.js';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';

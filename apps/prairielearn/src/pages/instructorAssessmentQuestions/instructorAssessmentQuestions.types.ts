@@ -75,7 +75,7 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
 });
 export type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
 
-export type Zone = {
+export interface Zone {
   title: string | null;
   maxPoints: number | null;
   numberChoose: number | null;
@@ -83,4 +83,4 @@ export type Zone = {
   questions: AssessmentQuestionRow[];
   advanceScorePerc: number | null;
   gradeRateMinutes?: number | null;
-};
+}

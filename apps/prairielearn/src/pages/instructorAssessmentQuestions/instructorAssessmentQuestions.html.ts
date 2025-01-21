@@ -1,28 +1,12 @@
-import { z } from 'zod';
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
-import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
-import { TagBadgeList } from '../../components/TagBadge.html.js';
-import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  AlternativeGroupSchema,
-  AssessmentQuestionSchema,
-  AssessmentsFormatForQuestionSchema,
-  QuestionSchema,
-  TagSchema,
-  TopicSchema,
-  ZoneSchema,
-} from '../../lib/db-types.js';
+
 import { type AssessmentQuestionRow } from './instructorAssessmentQuestions.types.js';
 
 export function InstructorAssessmentQuestions({
