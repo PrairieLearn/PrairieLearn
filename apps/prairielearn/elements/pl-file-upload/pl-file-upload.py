@@ -279,8 +279,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
         # Match submitted and accepted files 1:1 in this order: required_files, then required patterns, then optional files.
         # All remaining files are then matched 1:n with optional patterns, and eventually discarded in there is no match
-        required_files = [x for x in parsed_file_names if x in file_names]
-        remaining_files = [x for x in parsed_file_names if x not in required_files]
+        required_files, remaining_files = pl.partition(
+            parsed_file_names, file_names.__contains__
+        )
 
         pattern_files, missing_regex = match_regex_with_files(
             files_regex,
@@ -311,7 +312,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
 
         optional_files, remaining_files = pl.partition(
-            remaining_files, lambda file: file in opt_file_names
+            remaining_files, opt_file_names.__contains__
         )
         # We don't care which optional patterns are matched
         opt_pattern_files, _ = match_regex_with_files(

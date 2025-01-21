@@ -13,7 +13,7 @@ import string
 import unicodedata
 import uuid
 from collections import namedtuple
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Iterable
 from enum import Enum
 from io import StringIO
 from types import ModuleType
@@ -1892,7 +1892,7 @@ ListItem = TypeVar("ListItem")
 
 
 def partition(
-    data: list[ListItem], pred: Callable[[ListItem], bool]
+    data: Iterable[ListItem], pred: Callable[[ListItem], bool]
 ) -> tuple[list[ListItem], list[ListItem]]:
     """
     Implements a partition function, splitting the data into two lists based on the predicate.

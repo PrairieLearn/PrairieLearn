@@ -1,6 +1,6 @@
 import random
 from enum import Enum
-from typing import Any, TypeVar
+from typing import Any
 
 import chevron
 import lxml.html
@@ -64,9 +64,6 @@ def get_select_options(
         }
 
     return [transform(i, opt) for i, opt in enumerate(options_list)]
-
-
-ListItem = TypeVar("ListItem")
 
 
 def categorize_matches(
