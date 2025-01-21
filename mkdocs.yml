@@ -92,7 +92,6 @@ plugins:
             - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv
               domains: []
 docs_dir: docs
-docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/
 
