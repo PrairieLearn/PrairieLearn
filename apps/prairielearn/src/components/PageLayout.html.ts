@@ -11,14 +11,13 @@ export function PageLayout({
   options = {
     marginBottom: true,
   },
-  headContent,
   content,
 }: {
   /** The locals object from the Express response. */
   resLocals: Record<string, any>;
   /** The title of the page in the browser. */
   pageTitle: string;
-  /** The main page to highlight in the navbar. */
+  /** The information used to configure the navbar. */
   navContext: NavContext;
   options?: {
     /** Whether the main container should span the entire width of the page. */
@@ -28,8 +27,6 @@ export function PageLayout({
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
   };
-  /** Include scripts and other additional head content here. */
-  headContent?: HtmlValue;
   /** The main content of the page within the main container. */
   content: HtmlValue;
 }) {
@@ -44,7 +41,6 @@ export function PageLayout({
           pageTitle,
           pageNote: options.pageNote,
         })}
-        ${headContent}
       </head>
       <body>
         ${Navbar({
