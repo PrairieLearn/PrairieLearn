@@ -60,10 +60,13 @@ export function InstructorAssessmentQuestions({
     resLocals,
     pageTitle: 'Assessment questions', // TODO: could this be improved?
     headContent: html` ${compiledScriptTag('instructorAssessmentQuestionsClient.ts')} `,
-    navPage: 'assessment',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'questions',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'questions',
     },
     content: html`
       ${AssessmentSyncErrorsAndWarnings({

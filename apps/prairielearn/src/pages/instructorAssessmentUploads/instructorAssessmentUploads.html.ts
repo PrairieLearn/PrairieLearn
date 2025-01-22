@@ -25,7 +25,10 @@ export function InstructorAssessmentUploads({
   return PageLayout({
     resLocals,
     pageTitle: 'Uploads',
-    navPage: 'assessment',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+    },
     options: {
       fullWidth: true,
     },

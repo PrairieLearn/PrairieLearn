@@ -28,9 +28,10 @@ export function InstructorAssessmentSettings({
   return PageLayout({
     resLocals,
     pageTitle: 'Assessment settings',
-    navPage: 'assessment',
-    options: {
-      navSubPage: 'settings',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'settings',
     },
     headContent: html`
       ${compiledScriptTag('instructorAssessmentSettingsClient.ts')}

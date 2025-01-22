@@ -35,11 +35,13 @@ export function InstanceQuestion({
       instance_question_info: undefined,
     },
     pageTitle: 'Manual grading',
-    navPage: 'assessment',
-    
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'manual_grading',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'manual_grading',
       pageNote: `Instance - question ${resLocals.instance_question_info.instructor_question_number}`,
     },
     headContent: html`

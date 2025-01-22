@@ -25,10 +25,13 @@ export function InstructorAssessmentRegrading({
   return PageLayout({
     resLocals,
     pageTitle: 'Regrading',
-    navPage: 'assessment',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'regrading',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'regrading',
     },
     content: html`
       ${AssessmentSyncErrorsAndWarnings({
