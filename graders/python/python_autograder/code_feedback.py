@@ -131,14 +131,15 @@ class Feedback:
 
     @classmethod
     def check_numpy_array_sanity(
-        cls, name: str, num_axes: int, data: ArrayLike | None | Any
+        cls, name: str, num_axes: int, data: ArrayLike | None
     ) -> None:
         """
         Perform a sanity check on a NumPy array, making sure that it is in fact defined and has the correct dimensionality. If the checks fail then grading will automatically stop.
 
-        - `name`: Name of the array that is being checked. This will be used to give feedback.
-        - `num_axes`: Number of axes that the array should have.
-        - `data`: NumPy array to check.
+        Parameters:
+            name: Name of the array that is being checked. This will be used to give feedback.
+            num_axes: Number of axes that the array should have.
+            data: NumPy array to check.
 
         Examples:
             >>> Feedback.check_numpy_array_sanity(name, num_axes, data)
@@ -175,14 +176,14 @@ class Feedback:
         cls,
         name: str,
         ref: np.ndarray,
-        data: None | ArrayLike | Any,
+        data: None | ArrayLike,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
     ) -> bool | None:
         """
         Check that a student NumPy array has the same shape and datatype as a reference solution NumPy array.
 
-        Attributes:
+        Parameters:
             name: Name of the array that is being checked. This will be used to give feedback.
             ref: Reference NumPy array.
             data: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
@@ -245,7 +246,7 @@ class Feedback:
         Check that a student NumPy array has similar values to a reference NumPy array. Note that this checks value according to the numpy.allclose function, which goes by the following check:
         `absolute(a - b) <= (atol + rtol * absolute(b))`
 
-        Attributes:
+        Parameters:
             name: Name of the array that is being checked. This will be used to give feedback.
             ref: Reference NumPy array.
             data: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
@@ -283,7 +284,7 @@ class Feedback:
         cls,
         name: str,
         ref: list,
-        data: list | None | Any,
+        data: list | None,
         entry_type: Any | None = None,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
@@ -291,7 +292,7 @@ class Feedback:
         """
         Check that a student list has correct length with respect to a reference list. Can also check for a homogeneous data type for the list.
 
-        Attributes:
+        Parameters:
             name: Name of the list that is being checked. This will be used to give feedback.
             ref: Reference list.
             data: Student list to be checked. Do not mix this up with the previous list! This argument is subject to more strict type checking.
@@ -335,7 +336,7 @@ class Feedback:
         cls,
         name: str,
         ref: tuple,
-        data: tuple | None | Any,
+        data: tuple | None,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
         report_success: bool = True,  # noqa: FBT001
@@ -343,7 +344,7 @@ class Feedback:
         """
         Check that a student tuple has correct length with respect to a reference tuple, and same values.
 
-        Attributes:
+        Parameters:
             name: Name of the tuple that is being checked. This will be used to give feedback.
             ref: Reference tuple.
             data: Student tuple to be checked. Do not mix this up with the previous tuple! This argument is subject to more strict type checking.
@@ -413,7 +414,7 @@ class Feedback:
         One of rtol or atol can be omitted (set to None) if that check is unwanted.
         Or both, but then nothing would be graded :)
 
-        Attributes:
+        Parameters:
             name: Name of the scalar that is being checked. This will be used to give feedback.
             ref: Reference scalar.
             data: Student scalar to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
@@ -515,11 +516,11 @@ class Feedback:
         """
         Checks that a student plot has the same lines as a reference plot solution. Can optionally check the axis scales to ensure they are the same as the reference.
 
-        Attributes:
+        Parameters:
             name: Name of plot scalar that is being checked. This will be used to give feedback.
             ref: Reference plot.
             data: Student plot to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
-            check_axes_scale: One of None, 'x', 'y', or 'xy'. Signals which axis scale should be checked against the reference solution.
+            check_axes_scale: Signals which axis scale should be checked against the reference solution.
             accuracy_critical: If true, grading will halt on failure.
             report_failure: If true, feedback will be given on failure.
             report_success: If true, feedback will be given on success.
@@ -611,12 +612,13 @@ class Feedback:
         display_input: bool = False,  # noqa: FBT001
     ) -> bool:
         """
-        Checks and adds feedback regarding the correctness of a pandas `DataFrame`.
-        Author: Wade Fagen-Ulmschneider (waf)
+        Checks and adds feedback regarding the correctness of a pandas! `DataFrame`.
+
+        **Author**: Wade Fagen-Ulmschneider (waf)
 
         By default, checks if the student DataFrame `data` contains the same contents as the reference DataFrame `ref` by using `pandas.testing.assert_frame_equal` after basic sanity checks.
 
-        Attributes:
+        Parameters:
             name: The human-readable name of the DataFrame being checked
             ref: The reference (correct) DataFrame
             data: The student DataFrame

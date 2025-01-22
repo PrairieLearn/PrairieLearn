@@ -79,7 +79,7 @@ plugins:
             modernize_annotations: true # e.g. 'Optional[int]' -> 'int | None'
             show_docstring_examples: true # Examples:
             show_docstring_attributes: true # Attributes:
-            docstring_section_style: list
+            docstring_section_style: table
             show_symbol_type_heading: false # class, meth, attr
 
             members_order: source
