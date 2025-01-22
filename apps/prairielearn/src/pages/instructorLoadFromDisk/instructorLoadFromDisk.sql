@@ -1,5 +1,5 @@
 -- BLOCK select_all_courses
-SELECt
+SELECT
   *
 FROM
   pl_courses
