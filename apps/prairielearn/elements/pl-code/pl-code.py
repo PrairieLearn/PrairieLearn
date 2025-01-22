@@ -148,17 +148,15 @@ def get_formatter(
             highlight_lines_color or BaseStyle.highlight_color or "#b3d7ff"
         )
 
-    formatter_opts = {
-        "style": CustomStyleWithAnsiColors,
-        "nobackground": True,
-        "noclasses": True,
+    return HighlightingHtmlFormatter(
+        style=CustomStyleWithAnsiColors,
+        nobackground=True,
+        noclasses=True,
         # We'll unconditionally render the line numbers, but we'll hide them if
         # they aren't specifically enabled. This means we only have to deal with
         # one markup "shape" in our CSS, not two.
-        "linenos": "table",
-    }
-
-    return HighlightingHtmlFormatter(**formatter_opts)
+        linenos="table",
+    )
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
