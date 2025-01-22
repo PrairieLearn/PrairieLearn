@@ -84,16 +84,6 @@ COPY plr /r_autograder/plr
 RUN install2.r --repos=NULL /r_autograder/plr \
         && rm -r /r_autograder/plr
 
-# Install tinysnapshot (until CRAN package updated)
-COPY tinysnapshot_0.0.8.tar.gz /r_autograder/tinysnapshot_0.0.8.tar.gz
-RUN install2.r --repos=NULL /r_autograder/tinysnapshot_0.0.8.tar.gz \
-        && rm /r_autograder/tinysnapshot_0.0.8.tar.gz
-
-# Install ttdo (until updated CRAN package is also r2u)
-COPY ttdo_0.0.10.tar.gz /r_autograder/ttdo_0.0.10.tar.gz
-RUN install2.r --repos=NULL /r_autograder/ttdo_0.0.10.tar.gz \
-        && rm /r_autograder/ttdo_0.0.10.tar.gz
-
 # Set up user ag
 RUN useradd ag \ 
         && mkdir /home/ag \
