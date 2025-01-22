@@ -146,9 +146,7 @@ function UserDropdownMenu({
     authn_user,
     viewType,
     course_instance,
-    urlPrefix,
     access_as_administrator,
-    news_item_notification_count: newsCount,
     authn_is_administrator,
   } = resLocals;
 
@@ -198,9 +196,6 @@ function UserDropdownMenu({
           aria-expanded="false"
         >
           ${displayedName}
-          ${newsCount
-            ? html`<span class="badge badge-pill badge-primary news-item-count">${newsCount}</span>`
-            : ''}
         </button>
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
           ${authn_is_administrator
@@ -233,21 +228,6 @@ function UserDropdownMenu({
               `
             : ''}
           <a class="dropdown-item" href="${config.urlPrefix}/settings">Settings</a>
-          <a
-            class="dropdown-item news-item-link"
-            href="${urlPrefix}/news_items"
-            title="News${newsCount ? ` (${newsCount} unread)` : ''}"
-            aria-label="News${newsCount ? ` (${newsCount} unread)` : ''}"
-          >
-            News
-            ${newsCount
-              ? html`
-                  <span class="badge badge-pill badge-primary news-item-link-count">
-                    ${newsCount}
-                  </span>
-                `
-              : ''}
-          </a>
 
           <a class="dropdown-item" href="${config.urlPrefix}/logout">Log out</a>
         </div>

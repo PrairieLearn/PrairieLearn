@@ -14,7 +14,6 @@ const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
 
 export default asyncHandler(async (req, res, next) => {
   res.locals.is_administrator = false;
-  res.locals.news_item_notification_count = 0;
 
   if (req.method === 'OPTIONS') {
     // don't authenticate for OPTIONS requests, as these are just for CORS

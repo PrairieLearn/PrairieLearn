@@ -78,7 +78,6 @@ import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
-import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 process.on('warning', (e) => console.warn(e));
@@ -586,24 +585,6 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/authPassword/authPassword.js')).default,
   ]);
-  app.use('/pl/news_items', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'news';
-      next();
-    },
-    (await import('./pages/newsItems/newsItems.js')).default,
-  ]);
-  app.use('/pl/news_item', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'news';
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'news_item';
-      next();
-    },
-    (await import('./pages/newsItem/newsItem.js')).default,
-  ]);
   app.use(
     '/pl/request_course',
     (await import('./pages/instructorRequestCourse/instructorRequestCourse.js')).default,
@@ -706,16 +687,6 @@ export async function initExpress(): Promise<Express> {
     },
   ]);
 
-  // Some course instance student pages only require course instance authorization (already checked)
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
-  );
-
   // Some course instance student pages only require the authn user to have permissions
   app.use('/pl/course_instance/:course_instance_id(\\d+)/effectiveUser', [
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
@@ -741,14 +712,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/effectiveUser',
     (await import('./pages/instructorEffectiveUser/instructorEffectiveUser.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course instance student pages require the effective user to have permissions
@@ -1684,14 +1647,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/effectiveUser',
     (await import('./pages/instructorEffectiveUser/instructorEffectiveUser.js')).default,
-  );
-  app.use(
-    '/pl/course/:course_id(\\d+)/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course/:course_id(\\d+)/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course pages require the effective user to have permission
@@ -2662,16 +2617,6 @@ if (esMain(import.meta) && config.startServer) {
           });
           process.exit(0);
         }
-      },
-      async () => {
-        if (!config.initNewsItems) return;
-
-        // We initialize news items asynchronously so that servers can boot up
-        // in production as quickly as possible.
-        news_items.initInBackground({
-          // Always notify in production environments.
-          notifyIfPreviouslyEmpty: !config.devMode,
-        });
       },
       // We need to initialize these first, as the code callers require these
       // to be set up.

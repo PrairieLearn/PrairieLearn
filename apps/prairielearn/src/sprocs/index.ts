@@ -80,7 +80,6 @@ export async function init() {
       'sync_course_instances.sql',
       'sync_topics.sql',
       'sync_questions.sql',
-      'sync_news_items.sql',
       'sync_course_tags.sql',
       'sync_question_tags.sql',
       'sync_assessment_sets.sql',
