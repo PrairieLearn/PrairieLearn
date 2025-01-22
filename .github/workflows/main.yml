@@ -326,7 +326,7 @@ jobs:
 
       - name: Install additional dependencies
         run: sudo curl -fsSL https://d2lang.com/install.sh | sh -s -- && \
-          curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
+          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
           chmod +x /bin/hadolint
       - name: Set up Python
         uses: actions/setup-python@v5
