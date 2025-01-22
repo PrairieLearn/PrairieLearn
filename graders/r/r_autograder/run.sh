@@ -19,10 +19,10 @@ TEST_DIR="${JOB_DIR}/tests"
 OUT_DIR="${JOB_DIR}/results"
 
 ## the default directory for the autograder
-#AG_DIR="/r_autograder"
-## alternate entrypoint within a course repo, to use it
-## adjust info.json for 'entrypoint' and 'serverFilesCourse'
-AG_DIR="${JOB_DIR}/serverFilesCourse/r_autograder"
+AG_DIR="/r_autograder"
+## alternate entrypoint within a course repo, to use it set
+## value of info.json for 'entrypoint' and mount 'serverFilesCourse'
+#AG_DIR="${JOB_DIR}/serverFilesCourse/r_autograder"
 
 ## where we will copy everything
 MERGE_DIR="${JOB_DIR}/run"
