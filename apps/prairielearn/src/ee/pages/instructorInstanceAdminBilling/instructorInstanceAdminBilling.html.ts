@@ -33,9 +33,10 @@ export function InstructorCourseInstanceBilling({
   return PageLayout({
     resLocals,
     pageTitle: 'Billing',
-    navPage: 'instance_admin',
-    options: {
-      navSubPage: 'billing',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'billing',
     },
     headContent: html` ${compiledScriptTag('instructorInstanceAdminBillingClient.ts')} `,
     content: html`

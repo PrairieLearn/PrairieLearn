@@ -58,10 +58,13 @@ export function InstructorAssessments({
   return PageLayout({
     resLocals,
     pageTitle: 'Assessments',
-    navPage: 'instance_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'assessments',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'assessments',
     },
     headContent: html`
       ${compiledScriptTag('instructorAssessmentsClient.ts')}

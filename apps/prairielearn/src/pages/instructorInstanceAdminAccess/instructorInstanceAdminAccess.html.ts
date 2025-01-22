@@ -17,10 +17,13 @@ export function InstructorInstanceAdminAccess({
   return PageLayout({
     resLocals,
     pageTitle: 'Course instance access rules',
-    navPage: 'instance_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'access',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'access',
     },
     content: html`
       ${CourseInstanceSyncErrorsAndWarnings({

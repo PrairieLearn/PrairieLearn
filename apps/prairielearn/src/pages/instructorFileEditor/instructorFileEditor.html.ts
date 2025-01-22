@@ -48,10 +48,13 @@ export function InstructorFileEditor({
   return PageLayout({
     resLocals,
     pageTitle: `Edit ${editorData.fileName}`,
-    navPage: 'instance_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'file_edit', // TODO: Files tab isn't highlighted on click - look into
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'file_edit',
     },
     headContent: html`
       <meta

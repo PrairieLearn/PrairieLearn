@@ -22,10 +22,13 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
   return PageLayout({
     resLocals,
     pageTitle: 'LTI',
-    navPage: 'instance_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'lti',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'lti',
     },
     content: html`
       ${CourseInstanceSyncErrorsAndWarnings({ authz_data, courseInstance, course, urlPrefix })}

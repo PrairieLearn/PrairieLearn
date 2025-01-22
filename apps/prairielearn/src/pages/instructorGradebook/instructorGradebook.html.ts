@@ -32,10 +32,13 @@ export function InstructorGradebook({
   return PageLayout({
     resLocals,
     pageTitle: 'Gradebook',
-    navPage: 'gradebook',
+    navContext: {
+      type: 'instructor',
+      page: 'gradebook',
+      subPage: 'gradebook',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'gradebook',
     },
     headContent: html`
       <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'

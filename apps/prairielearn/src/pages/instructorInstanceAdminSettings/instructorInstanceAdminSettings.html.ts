@@ -20,9 +20,10 @@ export function InstructorInstanceAdminSettings({
   return PageLayout({
     resLocals,
     pageTitle: 'Course instance settings',
-    navPage: 'instance_admin',
-    options: {
-      navSubPage: 'assessments',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'assessment',
     },
     headContent: html`
       ${compiledScriptTag('instructorInstanceAdminSettingsClient.ts')}
