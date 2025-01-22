@@ -11,7 +11,10 @@ export function PageLayout({
   options = {
     marginBottom: true,
   },
+  headContent,
+  preContent,
   content,
+  postContent,
 }: {
   /** The locals object from the Express response. */
   resLocals: Record<string, any>;
@@ -26,9 +29,17 @@ export function PageLayout({
     marginBottom?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
+    /** Enables an htmx extension for an element and all its children */
+    hxExt?: string;
   };
+  /** Include scripts and other additional head content here. */
+  headContent?: HtmlValue;
+  /** The content of the page in the body before the main container. */
+  preContent?: HtmlValue;
   /** The main content of the page within the main container. */
   content: HtmlValue;
+  /** The content of the page in the body after the main container. */
+  postContent?: HtmlValue;
 }) {
   const marginBottom = options.marginBottom ?? true;
 
@@ -41,14 +52,16 @@ export function PageLayout({
           pageTitle,
           pageNote: options.pageNote,
         })}
+        ${headContent}
       </head>
-      <body>
+      <body ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}>
         ${Navbar({
           resLocals,
           navPage: navContext.page,
           navSubPage: navContext.subPage,
           navbarType: navContext.type,
         })}
+        ${preContent}
         <main
           id="content"
           class="
@@ -58,6 +71,7 @@ export function PageLayout({
         >
           ${content}
         </main>
+        ${postContent}
       </body>
     </html>
   `.toString();
