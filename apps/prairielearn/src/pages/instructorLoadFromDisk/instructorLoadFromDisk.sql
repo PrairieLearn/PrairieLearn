@@ -4,4 +4,6 @@ SELECT
 FROM
   pl_courses
 WHERE
-  deleted_at IS NULL;
+  deleted_at IS NULL
+ORDER BY
+  id ASC;

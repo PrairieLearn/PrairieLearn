@@ -29,6 +29,11 @@ async function update(locals: Record<string, any>) {
     let anyCourseHadJsonErrors = false;
 
     // Merge the list of courses in the config with the list of courses in the database.
+    // We use a set to ensure that we don't double-count courses that are both
+    // in the config and in the database.
+    //
+    // A set also maintains insertion order, which ensures that courses that are
+    // listed in the config (and listed earlier in the config) are synced first.
     const courseDirs = new Set<string>(config.courseDirs);
     const courses = await queryRows(sql.select_all_courses, CourseSchema);
     courses.forEach((course) => courseDirs.add(course.path));
