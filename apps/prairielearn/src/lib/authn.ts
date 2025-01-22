@@ -69,7 +69,6 @@ export async function loadUser(
       user: UserSchema,
       institution: InstitutionSchema,
       is_administrator: z.boolean(),
-      news_item_notification_count: z.number(),
     }),
   );
 
@@ -117,6 +116,4 @@ export async function loadUser(
   res.locals.access_as_administrator = accessType === 'active';
   res.locals.is_administrator =
     res.locals.authn_is_administrator && res.locals.access_as_administrator;
-
-  res.locals.news_item_notification_count = selectedUser.news_item_notification_count;
 }

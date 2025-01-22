@@ -10,7 +10,6 @@ function readSchema(filePath: string) {
   );
 }
 
-export const infoNewsItem = readSchema('./infoNewsItem.json');
 export const infoAssessment = readSchema('./infoAssessment.json');
 export const infoCourse = readSchema('./infoCourse.json');
 export const infoCourseInstance = readSchema('./infoCourseInstance.json');

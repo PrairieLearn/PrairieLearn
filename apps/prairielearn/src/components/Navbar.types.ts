@@ -26,8 +26,6 @@ export type NavPage =
   | 'enroll'
   | 'request_course'
   | 'home'
-  | 'news_item'
-  | 'news_items'
   | 'user_settings'
   | undefined;
 
