@@ -620,9 +620,7 @@ class Feedback:
             name: The human-readable name of the DataFrame being checked
             ref: The reference (correct) DataFrame
             data: The student DataFrame
-            subset_columns:
-          If `subset_columns` is an empty array, all columns are used in the check.
-          Otherwise, only columns named in `subset_columns` are used in the check and other columns are dropped.
+            subset_columns: If `subset_columns` is an empty array, all columns are used in the check. Otherwise, only columns named in `subset_columns` are used in the check and other columns are dropped.
             check_values: Check the values of each cell, in addition to the dimensions of the DataFrame
             allow_order_variance: Allow rows to appear in any order (so long as the dimensions and values are correct)
             display_input: Display the student's answer in the feedback area.

@@ -58,3 +58,7 @@ foreignObject .md pre {
   align-items: center;
   font-size: 1.5em;
 }
+
+.doc-function {
+  border-top: 0.5px solid gray;
+}
