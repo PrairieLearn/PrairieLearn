@@ -2658,7 +2658,6 @@ if (esMain(import.meta) && config.startServer) {
 
     // We need to initialize these first, as the code callers require these
     // to be set up.
-
     load.initEstimator('request', 1);
     load.initEstimator('authed_request', 1);
     load.initEstimator('python', 1, false);
