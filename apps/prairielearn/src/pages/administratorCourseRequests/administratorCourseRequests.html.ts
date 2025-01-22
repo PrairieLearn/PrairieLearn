@@ -19,9 +19,10 @@ export function AdministratorCourseRequests({
   return PageLayout({
     resLocals,
     pageTitle: 'Course Requests',
-    navPage: 'admin',
-    options: {
-      navSubPage: 'courses',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'courses',
     },
     content: html`
       <h1 class="sr-only">All Course Requests</h1>

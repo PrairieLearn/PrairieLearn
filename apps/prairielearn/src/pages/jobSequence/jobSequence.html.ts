@@ -15,9 +15,12 @@ export function JobSequence({
   return PageLayout({
     resLocals,
     pageTitle: `${job_sequence.description} #${job_sequence.number}`,
-    navPage: 'admin', // TODO: Check if this is correct (it did not have navPage specified)
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'batchedMigrations', // TODO: Check if this is correct (it did not have navPage specified)
+    },
     options: {
-      navSubPage: 'batchedMigrations',
       fullWidth: true,
     },
     headContent: html`${compiledScriptTag('jobSequenceClient.ts')}`,

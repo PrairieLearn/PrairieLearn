@@ -62,9 +62,12 @@ export function AdministratorQuery({
   return PageLayout({
     resLocals,
     pageTitle: queryFilename,
-    navPage: 'admin',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'queries',
+    },
     options: {
-      navSubPage: 'queries',
       fullWidth: true,
     },
     headContent: html`

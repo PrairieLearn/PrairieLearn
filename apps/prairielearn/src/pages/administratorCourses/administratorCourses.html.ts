@@ -29,9 +29,12 @@ export function AdministratorCourses({
   return PageLayout({
     resLocals,
     pageTitle: 'Courses',
-    navPage: 'admin',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'courses',
+    },
     options: {
-      navSubPage: 'courses',
       fullWidth: true,
     },
     content: html`

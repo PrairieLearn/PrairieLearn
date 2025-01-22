@@ -34,9 +34,12 @@ export function AdministratorQueries({
   return PageLayout({
     resLocals,
     pageTitle: 'Administrator Queries',
-    navPage: 'admin',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'queries',
+    },
     options: {
-      navSubPage: 'queries',
       fullWidth: true,
     },
     content: html`

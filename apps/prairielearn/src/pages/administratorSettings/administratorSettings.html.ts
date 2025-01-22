@@ -8,10 +8,13 @@ export function AdministratorSettings({ resLocals }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Administrator Settings',
-    navPage: 'admin',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'settings',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'settings',
     },
     content: html`
       <h1 class="sr-only">Administrator Settings</h1>

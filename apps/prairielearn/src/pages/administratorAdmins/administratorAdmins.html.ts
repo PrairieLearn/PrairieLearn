@@ -13,10 +13,13 @@ export function AdministratorAdmins({
   return PageLayout({
     resLocals,
     pageTitle: 'Administrators',
-    navPage: 'admin',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'administrators',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'administrators',
     },
     content: html`
       <div class="card mb-4">

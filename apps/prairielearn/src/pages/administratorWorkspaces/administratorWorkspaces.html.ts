@@ -36,9 +36,10 @@ export function AdministratorWorkspaces({
   return PageLayout({
     resLocals,
     pageTitle: 'Workspaces',
-    navPage: 'admin',
-    options: {
-      navSubPage: 'workspaces',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'workspaces',
     },
     headContent: html`
       <script>

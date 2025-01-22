@@ -6,9 +6,12 @@ export function AdministratorNetworks({ resLocals }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Exam-mode networks',
-    navPage: 'admin',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'networks',
+    },
     options: {
-      navSubPage: 'networks',
       fullWidth: true,
     },
     content: html`

@@ -36,9 +36,10 @@ export function AdministratorFeatures({
   return PageLayout({
     resLocals,
     pageTitle: 'Features',
-    navPage: 'admin',
-    options: {
-      navSubPage: 'features',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'features',
     },
     content: html`
       <div class="card mb-4">
@@ -84,9 +85,10 @@ export function AdministratorFeature({
   return PageLayout({
     resLocals,
     pageTitle: 'Features',
-    navPage: 'admin',
-    options: {
-      navSubPage: 'features',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'features',
     },
     headContent: html`
       ${compiledScriptTag('administratorFeaturesClient.ts')}
@@ -143,7 +145,7 @@ export function AdministratorFeature({
             `}
       </div>
     `,
-    modalContent: html`
+    postContent: html`
       ${AddFeatureGrantModal({
         feature,
         // Default to enabled for new grants.

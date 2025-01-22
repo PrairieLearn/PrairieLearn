@@ -26,9 +26,12 @@ export function AdministratorInstitutions({
   return PageLayout({
     resLocals,
     pageTitle: 'Institutions',
-    navPage: 'admin',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'institutions',
+    },
     options: {
-      navSubPage: 'institutions',
       fullWidth: true,
     },
     content: html`

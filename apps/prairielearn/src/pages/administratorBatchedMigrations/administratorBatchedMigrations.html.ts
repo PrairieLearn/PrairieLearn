@@ -19,9 +19,10 @@ export function AdministratorBatchedMigrations({
   return PageLayout({
     resLocals,
     pageTitle: 'Batched migrations',
-    navPage: 'admin',
-    options: {
-      navSubPage: 'batchedMigrations',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'batchedMigrations',
     },
     content: html`
       <div class="card mb-4">
@@ -64,9 +65,10 @@ export function AdministratorBatchedMigration({
   return PageLayout({
     resLocals,
     pageTitle: `Batched migration ${batchedMigration.filename}`, // TODO: Is this okay? Or should we just leave pageTitle empty?
-    navPage: 'admin',
-    options: {
-      navSubPage: 'batchedMigrations',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'batchedMigrations',
     },
     content: html`
       <div class="card mb-4">
