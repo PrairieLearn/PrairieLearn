@@ -95,7 +95,8 @@ const BENCHMARKS: Benchmark[] = [
     promptGrading:
       'The correct answer is -log10([H+]) for the given concentration of hydrogen ions.',
   },
-  // These are unedited prompts from users.
+  // These are prompts from actual user studies. They have been lightly edited
+  // for correctness in case of egregious errors, but are otherwise unmodified.
   {
     promptGeneral:
       'A toy car is pushed off a table with height h at speed v0. Assume acceleration due to gravity as 9.81 m/s^2. H is a number with 1 decimal digit selected at random between 1 and 2 meters. V0 is a an integer between 1 and 4 m/s. How long does it take for the car to reach the ground?',
@@ -137,15 +138,9 @@ const BENCHMARKS: Benchmark[] = [
   },
   {
     promptGeneral:
-      'given a mass (M) on a spring of stiffness (K) with an initial position (x), velocity (xdot) and acceleration (xddot) write a symbolic expression for the kinetic energy of the system.',
-    promptUserInput: 'student input should be symbolic expression in terms of K,x,xdot,xddot',
-    promptGrading: 'kinetic energy is 1/2*m*xdot^2',
-  },
-  {
-    promptGeneral:
       'An initial population of size Xi reaches a size Xf after N years. Find the size of the population after Ny years, where Ny = alpha*N and alpha is an integer greater than 1. Xi is an integer between 100 and 300, Xf is an integer between 400 and 500, N is an integer number of years between 1 and 5 inclusive.',
     promptUserInput:
-      'The student should enter the answer into a box using a decimal number. The units should be years. The final answer should be labeled Y.',
+      'The student should enter the answer into a box using a decimal number. The final answer should be labeled Y.',
     promptGrading: 'The final answer Y is Y = Xi*(Rate^(Ny/N)), where Rate = Xf/Xi',
   },
   {
@@ -174,7 +169,7 @@ const BENCHMARKS: Benchmark[] = [
     promptUserInput:
       'The students should choose the right answer form a set of multiple choice options',
     promptGrading:
-      'The correct answer is Y = x^4 + C. The four distractors should be Y = x^4, 4*x^4+C, 4*x^4, 2*x^2 + C',
+      'The correct answer is Y = (a/(b+1))*x^(b+1) + C. The four distractors should be Y = x^(b+1) + C, (a/(b+1))*x^(b+1), a*x^(b+1), and ((a * (b+1))/b)*x^b.',
   },
   {
     promptGeneral:
@@ -211,7 +206,7 @@ const BENCHMARKS: Benchmark[] = [
       "A big medicine company is creating a new drug and needs to determine how much of the drug is left in someone's system given its exponential decay. We know the initial concentration of the drug, C0, and the decay constant k. How long will it take for the drug to drop below 1/N of its initial concentration (solve for time t in hours)? The initial concentration C0 is a random number with 1 decimal digit from 200-700 mg. k is a random number with three decimal places from 0-1 1/hour. N is a random integer from 3-7.",
     promptUserInput:
       'Students should enter the solution t using a decimal number with 4 decimal points. The answer should be in hours.',
-    promptGrading: 't = -ln(k)/((C0/N)/C0)',
+    promptGrading: 't = -ln(1/N)/k',
   },
   {
     promptGeneral:
@@ -226,15 +221,15 @@ const BENCHMARKS: Benchmark[] = [
   },
   {
     promptGeneral:
-      'A car is accelerating forward with acceleration a (ranging from 2 to 5, with precision .1), with initial velocity and position = 0. Find the position and velocity of the car after elasped time t (integer from 2 to 20)',
+      'A car is accelerating forward with acceleration a (ranging from 2 to 5, with precision .1), with initial velocity and position = 0. Find the position and velocity of the car after elapsed time t (integer from 2 to 20)',
     promptUserInput: '2 numerical input boxes',
-    promptGrading: 'v = v0 + a*t, x = x0 + v*t + 1/2*a*t^2',
+    promptGrading: 'v = v0 + a*t, x = x0 + v0*t + 1/2*a*t^2',
   },
   {
     promptGeneral:
       'Find the population of rabbits given an exponential growth model. Generate a value of alpha (scalar integer), N in years, Xi = initial population, and Xf = population after N years. Find the population after alpha*N years',
     promptUserInput: 'numerical input box',
-    promptGrading: 'Y = Xf^(alpha)',
+    promptGrading: 'Y = Xi*(Xf/Xi)^alpha',
   },
   {
     promptGeneral:
@@ -243,11 +238,6 @@ const BENCHMARKS: Benchmark[] = [
       'students should enter the solution using a decimal number. The answer should be in seconds.',
     promptGrading: 'the answer is computed as sqrt(2 * h / g) where g = 9.81 m/s^2',
   },
-  // {
-  //   promptGeneral: '',
-  //   promptUserInput: '',
-  //   promptGrading: '',
-  // },
 ];
 
 const QuestionGenerationEvaluationSchema = z.object({
@@ -442,7 +432,8 @@ async function evaluateGeneratedQuestion({
     'You should evaluate the question based on the prompt as it is written.',
     '',
     'Remember that for pedagogical reasons, instructors may include extra information or distractors.',
-    'These are not considered errors unless they are factually incorrect or misleading.',
+    'They may also choose to make students carefully consider unit conversions without explicitly prompting for them.',
+    'These are not considered errors unless they are factually incorrect or egregiously misleading; do not factor them into your evaluation.',
     '',
     'The user will now provide the question HTML and Python files that the LLM generated for this prompt.',
   ].join('\n');
