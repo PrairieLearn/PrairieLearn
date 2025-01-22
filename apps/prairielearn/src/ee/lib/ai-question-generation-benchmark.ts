@@ -360,6 +360,7 @@ export async function benchmarkAiQuestionGeneration({
       const evaluationResult = await evaluateGeneratedQuestion({
         client,
         authnUserId,
+        originalSystemPrompt: prompts[0].system_prompt,
         userPrompt: prompts[0].user_prompt,
         html: result.htmlResult ?? '',
         python: result.pythonResult ?? '',
@@ -400,20 +401,18 @@ export async function benchmarkAiQuestionGeneration({
 async function evaluateGeneratedQuestion({
   client,
   authnUserId,
+  originalSystemPrompt,
   userPrompt,
   html,
   python,
 }: {
   client: OpenAI;
   authnUserId: string;
+  originalSystemPrompt: string | null;
   userPrompt: string;
   html: string;
   python: string;
 }): Promise<QuestionGenerationEvaluation | null> {
-  // TODO: include documentation for elements used in the generated question. The judge LLM
-  // sometimes mistakenly complains about missing behavior that's actually just the default
-  // behavior of the element. For instance, it might complain that a `<pl-multiple-choice>`
-  // doesn't randomize the order of the choices, even though that's the default behavior.
   const systemPrompt = [
     'Another LLM has generated a PrairieLearn question from the following prompt:',
     '',
@@ -435,8 +434,24 @@ async function evaluateGeneratedQuestion({
     'They may also choose to make students carefully consider unit conversions without explicitly prompting for them.',
     'These are not considered errors unless they are factually incorrect or egregiously misleading; do not factor them into your evaluation.',
     '',
+    // This should include relevant documentation for the elements used in the
+    // generated question, as well as oru baseline context about how PrairieLearn
+    // works and some example questions. This is a lot of tokens, but it's
+    // important for accurate evaluation since it'll tell the LLM about which
+    // elements/attributes are available and how elements behave.
+    originalSystemPrompt
+      ? [
+          'The following context was provided to the LLM when it was asked to generate the question:',
+          '<context>',
+          originalSystemPrompt,
+          '</context>',
+          '',
+        ]
+      : [],
     'The user will now provide the question HTML and Python files that the LLM generated for this prompt.',
-  ].join('\n');
+  ]
+    .flat()
+    .join('\n');
 
   const generatedQuestion: string[] = ['```html', html.trim(), '```'];
   if (python) {
