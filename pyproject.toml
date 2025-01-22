@@ -113,6 +113,7 @@ exclude = [
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
 executionEnvironments = [
+    # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
     { root = "./graders/python", pythonVersion = "3.12", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none" },
     { root = "./graders/c", pythonVersion = "3.12", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none" },
 ]
