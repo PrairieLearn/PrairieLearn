@@ -70,7 +70,7 @@ lint-html:
 lint-links:
 	@node tools/validate-links.mjs
 lint-docker:
-	@hadolint {graders,workspaces,images}/**/Dockerfile Dockerfile
+	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 
 format: format-js format-python
 format-js:
