@@ -92,6 +92,7 @@ plugins:
 
           import:
             - url: https://numpy.org/doc/stable/objects.inv
+            - url: https://pandas.pydata.org/pandas-docs/stable/objects.inv
             - url: https://docs.python.org/3/objects.inv
               domains: [py, std, typing]
             - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv
