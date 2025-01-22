@@ -1,12 +1,8 @@
 [tool.ruff]
 include = [
-    "./apps/prairielearn/elements/**/*.py",
-    "./apps/prairielearn/python/*.py",
-    "./graders/**/*.py",
-    "./exampleCourse/**/*.py",
-    "./testCourse/**/*.py",
-    "./tools/**/*.py"
+    "**/*.py",
 ]
+
 exclude = [
     # These files are intentionally not parseable as Python.
     "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_binary_file/fib.py",
@@ -20,32 +16,48 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = [
-    "E",
-    "N",
-    # isort
-    "I",
-    # flake8-bugbear
-    "B",
-    # flake8-simplify
-    "SIM",
-    # pyupgrade
-    "UP",
-    # flake8-pie
-    "PIE",
-    # Perflint
-    "PERF",
-    # ruff-specific rules
-    "RUF",
-    # refurb
-    "FURB"
-]
-ignore = [
-    # Ignore line length errors
-    "E501",
-    # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
-    "SIM108"
+    "ALL"
 ]
 
+ignore = [
+    # These rules provide little value to us
+    "ANN", # flake8-annotations
+    "BLE", # flake8-blind-except
+    "COM", # flake8-commas
+    "C901", # mccabe (complexity checks)
+    "D", # pydocstyle
+    "ERA", # eradicate (code in comments)
+    "EM", # flake8-errmsg
+    "EXE", # flake8-executable
+    "E501", # line-too-long
+    "FIX", # flake8-fixme
+    "INP001", # implicit-namespace-package
+    "S", # flake8-bandit (security rules)
+    "SLF001", # private-member-access 
+    "T201", # flake8-print
+    "T100", # flake8-debugger
+    "TD", # flake8-todos
+    "PGH003", # blanket-type-ignore
+    "PLE2513", # invalid-character-esc
+    "PTH", # flake8-use-pathlib
+
+    # These rules were discussed and disabled
+    "ISC003", # explicit-string-concatenation
+    "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
+    "PD901", # pandas-df-variable-name (we use `df` in many places)
+    "PLR0911", # too-many-return-statements
+    "PLR0912", # too-many-branches
+    "PLR0913", # too-many-arguments
+    "PLR0915", # too-many-statements
+    "PLR2004", # magic-value-comparison
+    "RET503", # implicit-return
+    "RET504", # unnecessary-assign
+    "RET505", # superfluous-else-return
+    "SIM108", # if-else-block-instead-of-if-exp
+    "TRY300", # try-consider-else (returns in try blocks)
+    "TRY301", # raise-within-try
+    "TRY003", # raise-vanilla-args (long messages in raise statements)
+]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
 # broken in isolation. We'll allow specific errors in these files to
@@ -54,20 +66,31 @@ ignore = [
 # - F401: module imported but unused
 # - F821: undefined name
 # - F841: local variable name is assigned to but never used
+# - ARG001: Unused function argument
 "exampleCourse/questions/**/tests/setup_code.py" = ["F401", "F821"]
-"exampleCourse/questions/**/tests/leading_code.py" = ["F401", "F821", "F841"]
+"exampleCourse/questions/**/tests/leading_code.py" = ["F401", "F821", "F841", "ARG001"]
 "exampleCourse/questions/**/tests/ans.py" = ["F821"]
+"exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/**/*.py" = ["ARG001"]
+
 # Ignore uppercase variables and function parameters (e.g. G for a graph)
 "exampleCourse/questions/**/*.py" = ["N806", "N803"]
 # The zygote specifically uses imports in strange places to facilitate the
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
-# Ignore uppercase function parameters (e.g. G for a graph)
-"apps/prairielearn/elements/**/*.py" = ["N803"]
-"apps/prairielearn/python/*.py" = ["N803"]
+"apps/prairielearn/elements/**/*.py" = [
+    # Ignore uppercase function parameters (e.g. G for a graph)
+    "N803",
+    # Allow boolean trap pattern in method signatures
+    "FBT001", "FBT002", "FBT003",
+    # ignore unused parameters in functions
+    "ARG"
+]
+"apps/prairielearn/python/**/*.py" = ["N803"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
+# Boolean default positional argument
+"graders/**/*.py" = ["FBT002"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
@@ -75,61 +98,50 @@ exclude = [
 ]
 
 [tool.pyright]
+typeCheckingMode = "strict"
 include = [
-    "./apps/prairielearn/elements/pl-answer-panel",
-    "./apps/prairielearn/elements/pl-big-o-input",
-    "./apps/prairielearn/elements/pl-card",
-    "./apps/prairielearn/elements/pl-code",
-    "./apps/prairielearn/elements/pl-dataframe",
-    "./apps/prairielearn/elements/pl-excalidraw",
-    "./apps/prairielearn/elements/pl-external-grader-results",
-    "./apps/prairielearn/elements/pl-external-grader-variables",
-    "./apps/prairielearn/elements/pl-figure",
-    "./apps/prairielearn/elements/pl-file-download",
-    "./apps/prairielearn/elements/pl-file-editor",
-    "./apps/prairielearn/elements/pl-file-preview",
-    "./apps/prairielearn/elements/pl-file-upload",
-    "./apps/prairielearn/elements/pl-graph",
-    "./apps/prairielearn/elements/pl-hidden-hints",
-    "./apps/prairielearn/elements/pl-hide-in-manual-grading",
-    "./apps/prairielearn/elements/pl-hide-in-panel",
-    "./apps/prairielearn/elements/pl-integer-input",
-    "./apps/prairielearn/elements/pl-manual-grading-only",
-    "./apps/prairielearn/elements/pl-matrix-latex",
-    "./apps/prairielearn/elements/pl-multiple-choice",
-    "./apps/prairielearn/elements/pl-number-input",
-    "./apps/prairielearn/elements/pl-overlay",
-    "./apps/prairielearn/elements/pl-order-blocks",
-    "./apps/prairielearn/elements/pl-python-variable",
-    "./apps/prairielearn/elements/pl-question-panel",
-    "./apps/prairielearn/elements/pl-string-input",
-    "./apps/prairielearn/elements/pl-submission-panel",
-    "./apps/prairielearn/elements/pl-symbolic-input",
-    "./apps/prairielearn/elements/pl-template",
-    "./apps/prairielearn/elements/pl-units-input",
-    "./apps/prairielearn/elements/pl-variable-output",
-    "./apps/prairielearn/elements/pl-workspace",
-    "./apps/prairielearn/elements/pl-xss-safe",
-    "./apps/prairielearn/python/check_data_test.py",
-    "./apps/prairielearn/python/check_data.py",
-    "./apps/prairielearn/python/colors_test.py",
-    "./apps/prairielearn/python/colors.py",
-    "./apps/prairielearn/python/conftest.py",
-    "./apps/prairielearn/python/prairielearn_test.py",
-    "./apps/prairielearn/python/prairielearn.py",
-    "./apps/prairielearn/python/python_helper_sympy_test.py",
-    "./apps/prairielearn/python/python_helper_sympy.py",
-    "./apps/prairielearn/python/question_phases.py",
-    "./apps/prairielearn/python/traverse_test.py",
-    "./apps/prairielearn/python/traverse.py",
-    "./apps/prairielearn/python/zygote.py",
-    "./apps/prairielearn/python/zygote_utils.py",
-    "./apps/prairielearn/python/zygote_utils_test.py",
+    "./apps/prairielearn/elements",
+    "./apps/prairielearn/python",
+    "./graders",
+]
+exclude = [
+    "./apps/prairielearn/elements/pl-drawing", # requires refactor
+    "./apps/prairielearn/elements/pl-checkbox", # requires refactor
+    "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
+    "./apps/prairielearn/elements/pl-threejs", # deprecated
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
+executionEnvironments = [
+    # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
+    { root = "./graders/python", pythonVersion = "3.12", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none" },
+    { root = "./graders/c", pythonVersion = "3.12", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none" },
+]
 reportUnnecessaryTypeIgnoreComment = "error"
+# These rules would require significant changes
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+reportMissingTypeStubs = "none"
+# These rules don't provide much value
+reportPrivateUsage = "none"
+reportUnnecessaryIsInstance = "none"
+reportUnknownLambdaType = "none"
+# These rules can be enabled alongside typing / code improvements
+reportUnusedVariable = "none"
+reportMissingParameterType = "none"
+reportMissingTypeArgument = "none"
+reportArgumentType = "none"
+reportUnnecessaryComparison = "information"
+reportUnnecessaryCast = "information"
 
 [tool.pytest.ini_options]
+pythonpath = [
+    "apps/prairielearn/python"
+]
 addopts = "--cov=apps"
-testpaths = ["apps/prairielearn/elements", "apps/prairielearn/python"]
+testpaths = [
+    "apps/prairielearn/elements",
+    "apps/prairielearn/python/test",
+]

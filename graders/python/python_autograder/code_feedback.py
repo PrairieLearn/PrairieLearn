@@ -21,6 +21,15 @@ THE SOFTWARE.
 """
 
 
+from collections.abc import Callable
+from typing import Any, Literal, NoReturn
+
+import numpy as np
+from matplotlib.axes import Axes
+from numpy.typing import ArrayLike
+from pandas import DataFrame
+
+
 class GradingComplete(Exception):  # noqa: N818
     pass
 
@@ -36,23 +45,25 @@ class Feedback:
     buffer = ""
 
     @classmethod
-    def set_name(cls, name):
+    def set_name(cls, name: str) -> None:
         cls.test_name = name
         cls.feedback_file = "feedback_" + name
         cls.buffer = ""
 
     @classmethod
-    def set_main_output(cls):
+    def set_main_output(cls) -> None:
         cls.test_name = "output"
         cls.feedback_file = "output"
         cls.buffer = ""
 
     @classmethod
-    def set_test(cls, test):
+    def set_test(cls, test: Any) -> None:
+        # TODO: test cannot be typed as it would lead to a circular import
+        # TODO: In Python 3.11 cls can be typed with typing.Self
         cls.test = test
 
     @classmethod
-    def set_score(cls, score):
+    def set_score(cls, score: float) -> None:
         """
         Feedback.set_score(percentage)
 
@@ -66,20 +77,23 @@ class Feedback:
         cls.test.points = score
 
     @classmethod
-    def add_iteration_prefix(cls, iter_prefix):
+    def add_iteration_prefix(cls, iter_prefix: int) -> None:
         cls.buffer = cls.prefix_message % iter_prefix
 
     @classmethod
-    def clear_iteration_prefix(cls):
+    def clear_iteration_prefix(cls) -> None:
         cls.buffer = ""
 
     @classmethod
-    def add_feedback(cls, text):
+    def add_feedback(cls, text: str) -> None:
         """
         Feedback.add_feedback(text)
 
         Adds some text to the feedback output for the current test.
         """
+        if cls.feedback_file is None:
+            raise RuntimeError("Cannot add feedback without a feedback file set. ")
+
         with open(
             "/grade/run/" + cls.feedback_file + ".txt", "a+", encoding="utf-8"
         ) as f:
@@ -88,17 +102,17 @@ class Feedback:
             cls.buffer = ""
 
     @classmethod
-    def finish(cls, fb_text):
+    def finish(cls, fb_text: str) -> NoReturn:
         """
         Feedback.finish(fb_text)
 
         Complete grading immediately, additionally outputting the message in fb_text.
         """
         cls.add_feedback(fb_text)
-        raise GradingComplete()
+        raise GradingComplete("Grading complete")
 
     @staticmethod
-    def not_allowed(*args, **kwargs):
+    def not_allowed(*_args, **_kwargs) -> NoReturn:
         """
         Used to hook into disallowed functions, raises an exception if
         the student tries to call it.
@@ -113,7 +127,9 @@ class Feedback:
         raise RuntimeError("The use of this function is not allowed.")
 
     @classmethod
-    def check_numpy_array_sanity(cls, name, num_axes, data):
+    def check_numpy_array_sanity(
+        cls, name: str, num_axes: int, data: ArrayLike | None | Any
+    ) -> None:
         """
         Feedback.check_numpy_array_sanity(name, num_axes, data)
 
@@ -152,8 +168,13 @@ class Feedback:
 
     @classmethod
     def check_numpy_array_features(
-        cls, name, ref, data, accuracy_critical=False, report_failure=True
-    ):
+        cls,
+        name: str,
+        ref: np.ndarray,
+        data: None | ArrayLike | Any,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+    ) -> bool | None:
         """
         Feedback.check_numpy_array_features(name, ref, data)
 
@@ -167,7 +188,7 @@ class Feedback:
         """
         import numpy as np
 
-        def bad(msg):
+        def bad(msg) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -205,15 +226,15 @@ class Feedback:
     @classmethod
     def check_numpy_array_allclose(
         cls,
-        name,
-        ref,
-        data,
-        accuracy_critical=False,
-        rtol=1e-05,
-        atol=1e-08,
-        report_success=True,
-        report_failure=True,
-    ):
+        name: str,
+        ref: np.ndarray,
+        data: ArrayLike,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        rtol: float = 1e-05,
+        atol: float = 1e-08,
+        report_success: bool = True,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+    ) -> bool:
         """
         Feedback.check_numpy_allclose(name, ref, data)
 
@@ -241,25 +262,24 @@ class Feedback:
         if not good:
             if report_failure:
                 cls.add_feedback(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         if accuracy_critical and not good:
-            raise GradingComplete()
+            raise GradingComplete("Inaccurate, grading halted")
 
         return good
 
     @classmethod
     def check_list(
         cls,
-        name,
-        ref,
-        data,
-        entry_type=None,
-        accuracy_critical=False,
-        report_failure=True,
-    ):
+        name: str,
+        ref: list,
+        data: list | None | Any,
+        entry_type: Any | None = None,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+    ) -> bool:
         """
         Feedback.check_list(name, ref, data)
 
@@ -273,9 +293,10 @@ class Feedback:
         - ``report_failure``: If true, feedback will be given on failure.
         """
 
-        def bad(msg):
+        def bad(msg) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
+
             if accuracy_critical:
                 cls.finish("")
             else:
@@ -302,13 +323,13 @@ class Feedback:
     @classmethod
     def check_tuple(
         cls,
-        name,
-        ref,
-        data,
-        accuracy_critical=False,
-        report_failure=True,
-        report_success=True,
-    ):
+        name: str,
+        ref: tuple,
+        data: tuple | None | Any,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
+    ) -> bool:
         """
         Feedback.check_tuple(name, ref, data)
 
@@ -322,7 +343,7 @@ class Feedback:
         - ``report_success``: If true, feedback will be given on success.
         """
 
-        def bad(msg):
+        def bad(msg) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -354,24 +375,23 @@ class Feedback:
 
         if not good:
             return bad(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         return True
 
     @classmethod
     def check_scalar(
         cls,
-        name,
-        ref,
-        data,
-        accuracy_critical=False,
-        rtol=1e-5,
-        atol=1e-8,
-        report_success=True,
-        report_failure=True,
-    ):
+        name: str,
+        ref: complex | np.number,
+        data: complex | np.number | None | Any,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        rtol: float = 1e-5,
+        atol: float = 1e-8,
+        report_success: bool = True,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+    ) -> bool:
         """
         Feedback.check_scalar(name, ref, data)
 
@@ -395,7 +415,7 @@ class Feedback:
 
         import numpy as np
 
-        def bad(msg):
+        def bad(msg) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -426,14 +446,13 @@ class Feedback:
 
         if not good:
             return bad(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         return True
 
     @classmethod
-    def call_user(cls, f, *args, **kwargs):
+    def call_user(cls, f: Callable, *args, **kwargs) -> Any:
         """
         Feedback.call_user(f)
 
@@ -465,19 +484,19 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete() from exc
+            raise GradingComplete from exc
 
     @classmethod
     def check_plot(
         cls,
-        name,
-        ref,
-        plot,
-        check_axes_scale=None,
-        accuracy_critical=False,
-        report_failure=True,
-        report_success=True,
-    ):
+        name: str,
+        ref: Axes,
+        plot: Axes,
+        check_axes_scale: Literal[None, "x", "y", "xy"] = None,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
+    ) -> bool:
         """
         Feedback.check_plot(name, ref, plot, check_axes_scale)
 
@@ -495,7 +514,7 @@ class Feedback:
         import matplotlib.axes
         import numpy as np
 
-        def bad(msg):
+        def bad(msg) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -550,10 +569,10 @@ class Feedback:
         for line in user_lines:
             data = np.array([line.get_data()[0], line.get_data()[1]])
             data = data[np.lexsort(data.T)]
-            for j, ref in ref_datas.items():
-                if data.shape == ref.shape and np.allclose(data, ref):
+            for j, ref_data in ref_datas.items():
+                if data.shape == ref_data.shape and np.allclose(data, ref_data):
                     num_correct += 1
-                    del [ref_datas[j]]
+                    del ref_datas[j]
                     break
 
         if num_correct == len(ref_lines):
@@ -566,14 +585,14 @@ class Feedback:
     @classmethod
     def check_dataframe(
         cls,
-        name,
-        ref,
-        data,
-        subset_columns=None,
-        check_values=True,
-        allow_order_variance=True,
-        display_input=False,
-    ):
+        name: str,
+        ref: DataFrame,
+        data: DataFrame,
+        subset_columns: list[str] | None = None,
+        check_values: bool = True,  # noqa: FBT001
+        allow_order_variance: bool = True,  # noqa: FBT001
+        display_input: bool = False,  # noqa: FBT001
+    ) -> bool:
         """
         ``check_dataframe``
         Checks and adds feedback regarding the correctness of
@@ -597,7 +616,7 @@ class Feedback:
 
         import pandas as pd
 
-        def bad(msg):
+        def bad(msg) -> Literal[False]:
             cls.add_feedback(msg)
             if display_input and isinstance(data, pd.DataFrame):
                 cls.add_feedback("----------")

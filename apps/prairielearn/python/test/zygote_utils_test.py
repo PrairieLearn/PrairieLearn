@@ -1,8 +1,8 @@
 import json
 from typing import Any
 
+import prairielearn.internal.zygote_utils as zu
 import pytest
-import zygote_utils as zu
 
 
 @pytest.mark.parametrize(
@@ -21,7 +21,6 @@ def test_safe_parse_int_small_ints(item: str) -> None:
         "28000000000000000",
         "-9007199254740992",
         "9007199254740992",
-        "28000000000000000",
         "2.8e16",
     ],
 )
@@ -55,5 +54,5 @@ def test_all_integers_within_limits_no_exception(item: Any) -> None:
     ],
 )
 def test_all_integers_within_limits_raise_exception(item: Any) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="oversized integer"):
         zu.assert_all_integers_within_limits(item)

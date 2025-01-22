@@ -96,17 +96,12 @@ export function InstructorQuestionSettings({
           }
 
           .ts-wrapper.multi .ts-control > span.active {
-            /* Fallback for Bootstrap 4; we can remove when we drop support for it. */
-            background-color: var(--bs-primary, #0d6efd) !important;
+            background-color: var(--bs-primary) !important;
             color: white !important;
           }
         </style>
         <link
-          href="${nodeModulesAssetPath(
-            resLocals.use_bootstrap_4
-              ? 'tom-select/dist/css/tom-select.bootstrap4.css'
-              : 'tom-select/dist/css/tom-select.bootstrap5.css',
-          )}"
+          href="${nodeModulesAssetPath('tom-select/dist/css/tom-select.bootstrap5.css')}"
           rel="stylesheet"
         />
       </head>

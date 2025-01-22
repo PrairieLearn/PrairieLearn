@@ -3,7 +3,7 @@ from code_utils import parse_highlight_lines
 
 
 @pytest.mark.parametrize(
-    "input_str, expected_output",
+    ("input_str", "expected_output"),
     [
         ("1-2-3", None),
         ("asdf", None),
