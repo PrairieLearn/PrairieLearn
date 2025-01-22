@@ -29,7 +29,9 @@ export function NewsItems({
     resLocals,
     pageTitle: 'News',
     navContext: {
-      type: 'public',
+      // A value wasn't hardcoded because this
+      // type depends on the route that serves this page
+      type: resLocals.navbarType,
       page: 'news_items',
     },
     options: {
