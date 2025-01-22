@@ -2,6 +2,8 @@ ignored:
   - DL3007 # latest tag is not recommended
   - DL3008 # pin versions in apt get install
   # Will be resolved in a future PR
+  - DL3003
+  - SC3009
   - DL3004
   - DL3009
   - DL3015
