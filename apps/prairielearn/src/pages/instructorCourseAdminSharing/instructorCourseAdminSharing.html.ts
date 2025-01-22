@@ -133,10 +133,13 @@ export function InstructorCourseAdminSharing({
   return PageLayout({
     resLocals,
     pageTitle: 'Course sharing',
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'sharing',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'sharing',
     },
     content: html`
       ${CourseSyncErrorsAndWarnings({

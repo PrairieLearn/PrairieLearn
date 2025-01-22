@@ -14,10 +14,13 @@ export function InstructorCourseAdminModules({
   return PageLayout({
     resLocals,
     pageTitle: 'Assessment modules',
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'modules',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'modules',
     },
     content: html`
       ${CourseSyncErrorsAndWarnings({

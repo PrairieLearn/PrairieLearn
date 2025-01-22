@@ -15,10 +15,13 @@ export function InstructorCourseAdminTags({
   return PageLayout({
     resLocals,
     pageTitle: 'Tags',
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'tags',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'tags',
     },
     content: html`
       ${CourseSyncErrorsAndWarnings({

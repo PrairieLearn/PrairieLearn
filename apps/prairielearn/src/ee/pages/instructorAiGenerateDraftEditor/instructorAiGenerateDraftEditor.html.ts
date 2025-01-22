@@ -21,9 +21,12 @@ export function InstructorAiGenerateDraftEditor({
   return PageLayout({
     resLocals,
     pageTitle: 'Generate question with AI',
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'questions',
+    },
     options: {
-      navSubPage: 'questions',
       hxExt: 'loading-states',
     },
     headContent: html`

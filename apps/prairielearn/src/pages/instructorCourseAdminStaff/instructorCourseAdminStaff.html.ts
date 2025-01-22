@@ -58,9 +58,12 @@ export function InstructorCourseAdminStaff({
   return PageLayout({
     resLocals,
     pageTitle: 'Staff',
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'staff',
+    },
     options: {
-      navSubPage: 'staff',
       fullWidth: true,
     },
     headContent: html`

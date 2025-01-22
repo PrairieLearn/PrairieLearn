@@ -80,9 +80,12 @@ export function InstructorIssues({
   return PageLayout({
     resLocals,
     pageTitle: 'Issues',
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'issues',
+    },
     options: {
-      navSubPage: 'issues',
       fullWidth: true,
     },
     headContent: html`${compiledStylesheetTag('instructorIssues.css')}`,

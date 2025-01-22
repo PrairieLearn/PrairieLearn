@@ -24,10 +24,13 @@ export const QuestionsPage = ({
   return PageLayout({
     resLocals,
     pageTitle: 'Questions',
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'questions',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'questions',
     },
     headContent: html`${QuestionsTableHead()}`,
     content: html`

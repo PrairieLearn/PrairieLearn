@@ -48,10 +48,13 @@ export function InstructorFileEditor({
   return PageLayout({
     resLocals,
     pageTitle: `Edit ${editorData.fileName}`,
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'file_edit',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'file_edit',
     },
     headContent: html`
       <meta

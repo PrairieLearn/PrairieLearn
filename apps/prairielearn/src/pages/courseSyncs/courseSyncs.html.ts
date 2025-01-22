@@ -46,10 +46,13 @@ export function CourseSyncs({
   return PageLayout({
     resLocals,
     pageTitle: 'Course Sync', // TODO: Casing?
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'syncs',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'syncs',
     },
     content: html`
       <h1 class="sr-only">Course Sync</h1>

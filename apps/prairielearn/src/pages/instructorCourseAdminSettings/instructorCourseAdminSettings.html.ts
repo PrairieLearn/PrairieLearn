@@ -21,7 +21,10 @@ export function InstructorCourseAdminSettings({
   return PageLayout({
     resLocals,
     pageTitle: 'Course Settings',
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+    },
     headContent: html`${compiledScriptTag('instructorCourseAdminSettingsClient.ts')}`,
     content: html`
       ${CourseSyncErrorsAndWarnings({

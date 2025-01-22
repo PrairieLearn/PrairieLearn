@@ -17,8 +17,6 @@ import * as editorUtil from '../lib/editorUtil.js';
 import type { InstructorFilePaths } from '../lib/instructorFiles.js';
 import { encodePath } from '../lib/uri-util.js';
 
-import { HeadContents } from './HeadContents.html.js';
-import { Navbar } from './Navbar.html.js';
 import { PageLayout } from './PageLayout.html.js';
 import {
   AssessmentSyncErrorsAndWarnings,
@@ -329,10 +327,13 @@ export function FileBrowser({
   return PageLayout({
     resLocals,
     pageTitle,
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'file_view',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'file_view'
     },
     headContent: html`
       <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />

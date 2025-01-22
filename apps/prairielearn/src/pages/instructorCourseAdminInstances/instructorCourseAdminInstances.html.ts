@@ -43,10 +43,13 @@ export function InstructorCourseAdminInstances({
   return PageLayout({
     resLocals,
     pageTitle: 'Course instances',
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'instances',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'instances',
     },
     headContent: html`${compiledScriptTag('instructorCourseAdminInstancesClient.ts')}`,
     content: html`
