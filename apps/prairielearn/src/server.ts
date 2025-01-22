@@ -1764,11 +1764,8 @@ export async function initExpress(): Promise<Express> {
       )
     ).default,
   ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/issues', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'issues';
-      next();
-    },
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/issues',
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
   );
   app.use(
