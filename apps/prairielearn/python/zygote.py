@@ -29,8 +29,8 @@ from importlib.abc import MetaPathFinder
 from inspect import signature
 from typing import Any
 
-import question_phases
-import zygote_utils as zu
+import prairielearn.internal.zygote_utils as zu
+from prairielearn.internal import question_phases
 
 saved_path = copy.copy(sys.path)
 
@@ -67,7 +67,6 @@ import logging
 logging.getLogger("matplotlib.font_manager").disabled = True
 
 # Pre-load commonly used modules
-sys.path.insert(0, os.path.abspath("../question-servers/freeformPythonLib"))
 import html
 import math
 import random
