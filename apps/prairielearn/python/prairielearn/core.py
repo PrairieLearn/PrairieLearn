@@ -1789,7 +1789,7 @@ def load_extension(data: QuestionData, extension_name: str) -> Any:
     }
 
     # Return functions and variables as a namedtuple, so we get the nice dot access syntax
-    module_tuple = namedtuple(clean_identifier_name(extension_name), loaded.keys())  # noqa: PYI024
+    module_tuple = namedtuple(clean_identifier_name(extension_name), loaded.keys())  # noqa: PYI024 # pyright: ignore[reportUntypedNamedTuple]
     return module_tuple(**loaded)
 
 
