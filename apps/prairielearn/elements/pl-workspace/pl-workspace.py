@@ -16,7 +16,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     # Create and return html
     html_params = {"workspace_url": workspace_url}
-    with open("pl-workspace.mustache", "r", encoding="utf-8") as f:
+    with open("pl-workspace.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
 
 
@@ -33,5 +33,5 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if missing_files:
         pl.add_files_format_error(
             data,
-            f'The following required files were missing: {", ".join(missing_files)}',
+            f"The following required files were missing: {', '.join(missing_files)}",
         )

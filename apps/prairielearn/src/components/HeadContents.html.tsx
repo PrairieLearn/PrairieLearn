@@ -22,27 +22,20 @@ interface TitleOptions {
     navPage?: string;
     navSubPage?: string;
     navbarType?: string;
-    use_bootstrap_4?: boolean;
   };
   pageTitle?: string;
   pageNote?: string;
 }
 
 export function PreactHeadContents(props: TitleOptions) {
-  const bootstrapModule = props.resLocals.use_bootstrap_4 ? 'bootstrap-4' : 'bootstrap';
-  const bootstrapVersion = props.resLocals.use_bootstrap_4 ? '4' : '5';
   return (
     <Fragment>
       <meta charset="utf-8" />
       <meta http-equiv="X-UA-Compatible" content="IE=edge" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <meta name="bootstrap-version" content={bootstrapVersion} />
       {config.cookieDomain && <meta name="cookie-domain" content={config.cookieDomain} />}
       <title>{getTitle(props)}</title>
-      <link
-        href={nodeModulesAssetPath(`${bootstrapModule}/dist/css/bootstrap.min.css`)}
-        rel="stylesheet"
-      />
+      <link href={nodeModulesAssetPath('bootstrap/dist/css/bootstrap.min.css')} rel="stylesheet" />
       <link
         href={nodeModulesAssetPath('bootstrap-icons/font/bootstrap-icons.css')}
         rel="stylesheet"
@@ -50,9 +43,7 @@ export function PreactHeadContents(props: TitleOptions) {
       <link href={assetPath('stylesheets/colors.css')} rel="stylesheet" />
       <link href={assetPath('stylesheets/local.css')} rel="stylesheet" />
       <script src={nodeModulesAssetPath('jquery/dist/jquery.min.js')}></script>
-      <script
-        src={nodeModulesAssetPath(`${bootstrapModule}/dist/js/bootstrap.bundle.min.js`)}
-      ></script>
+      <script src={nodeModulesAssetPath('bootstrap/dist/js/bootstrap.bundle.min.js')}></script>
       <script src={nodeModulesAssetPath('@fortawesome/fontawesome-free/js/all.min.js')}></script>
       <script src={compiledScriptPath('application.ts')}></script>
       <script src={compiledScriptPath('navbarClient.ts')}></script>

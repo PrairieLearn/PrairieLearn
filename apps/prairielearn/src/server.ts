@@ -726,6 +726,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor', [
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
     (await import('./middlewares/selectOpenIssueCount.js')).default,
+    (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       next();
@@ -766,6 +767,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course/:course_id(\\d+)', [
     (await import('./middlewares/authzCourseOrInstance.js')).default, // set res.locals.course
     (await import('./middlewares/selectOpenIssueCount.js')).default,
+    (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       next();
@@ -1299,6 +1301,14 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/getting_started',
+    (
+      await import(
+        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
+      )
+    ).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
 
     (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
@@ -1760,9 +1770,11 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/editError/editError.js')).default,
   );
 
-  app.use(/^(\/pl\/course\/[0-9]+\/course_admin)\/?$/, (req, res, _next) => {
-    res.redirect(`${req.params[0]}/instances`);
-  });
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin',
+    (await import('./pages/instructorCourseAdmin/instructorCourseAdmin.js')).default,
+  );
+
   app.use('/pl/course/:course_id(\\d+)/course_admin', function (req, res, next) {
     res.locals.navPage = 'course_admin';
     next();
@@ -1810,6 +1822,13 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances.js'))
       .default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/course_admin/getting_started', [
+    (
+      await import(
+        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
+      )
+    ).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/issues', [
     function (req: Request, res: Response, next: NextFunction) {
@@ -1967,6 +1986,22 @@ export async function initExpress(): Promise<Express> {
       res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
       next();
     },
+  ]);
+  app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
+    function (req, res, next) {
+      res.locals.navPage = 'public_question';
+      res.locals.navSubPage = 'file_view';
+      next();
+    },
+    (await import('./pages/publicQuestionFileBrowser/publicQuestionFileBrowser.js')).default,
+  ]);
+  app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_download', [
+    function (req, res, next) {
+      res.locals.navPage = 'public_question';
+      res.locals.navSubPage = 'file_download';
+      next();
+    },
+    (await import('./pages/publicQuestionFileDownload/publicQuestionFileDownload.js')).default,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
     function (req: Request, res: Response, next: NextFunction) {
@@ -2571,7 +2606,7 @@ if (esMain(import.meta) && config.startServer) {
       },
       async () => {
         // We create and activate a random DB schema name
-        // (https://www.postgresql.org/docs/12/ddl-schemas.html)
+        // (https://www.postgresql.org/docs/current/ddl-schemas.html)
         // after we have run the migrations but before we create
         // the sprocs. This means all tables (from migrations) are
         // in the public schema, but all sprocs are in the random

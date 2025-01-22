@@ -9,6 +9,7 @@ import { config } from '../lib/config.js';
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
+import { ProgressCircle } from './ProgressCircle.html.js';
 
 export function PreactNavbar(props: {
   resLocals: Record<string, any>;
@@ -634,6 +635,8 @@ function NavbarInstructor({
     assessment_label,
     assessments,
     navbarOpenIssueCount,
+    navbarCompleteGettingStartedTasksCount,
+    navbarTotalGettingStartedTasksCount,
     authz_data,
     urlPrefix,
   } = resLocals;
@@ -659,7 +662,7 @@ function NavbarInstructor({
         aria-expanded="false"
         ${!authz_data.overrides
           ? html`
-              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show-course-switcher once
+              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show.bs.dropdown once
               delay:200ms" hx-target="#navbarDropdownMenuCourseAdmin"
             `
           : ''}
@@ -684,6 +687,24 @@ function NavbarInstructor({
             `}
       </div>
     </li>
+
+    ${authz_data.has_course_permission_edit && course.show_getting_started
+      ? html`
+          <li class="nav-item d-flex align-items-center">
+            <a
+              style="display: inline-flex; align-items: center;"
+              class="nav-link pr-0"
+              href="${urlPrefix}/course_admin/getting_started"
+            >
+              Getting Started
+              ${ProgressCircle({
+                value: navbarCompleteGettingStartedTasksCount,
+                maxValue: navbarTotalGettingStartedTasksCount,
+              })}
+            </a>
+          </li>
+        `
+      : ''}
 
     <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'issues' ? 'active' : ''}">
       <a class="nav-link" href="${urlPrefix}/course_admin/issues">
@@ -732,7 +753,7 @@ function NavbarInstructor({
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher/${course_instance.id}"
-              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-trigger="show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceAdmin"
             ></button>
             <div
@@ -825,7 +846,7 @@ function NavbarInstructor({
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher"
-              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-trigger="show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceChoose"
             >
               Choose course instance...

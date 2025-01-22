@@ -40,7 +40,6 @@ export function QuestionContainer({
     authz_data,
     is_administrator,
     showTrueAnswer,
-    showSubmissions,
     submissions,
     submissionHtmls,
     answerHtml,
@@ -72,7 +71,7 @@ export function QuestionContainer({
         <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
       </div>
 
-      ${showSubmissions
+      ${submissions.length > 0
         ? html`
             ${SubmissionList({
               resLocals,

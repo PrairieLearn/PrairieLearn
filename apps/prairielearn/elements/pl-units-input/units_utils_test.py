@@ -1,5 +1,4 @@
 import math
-from typing import Optional
 
 import pytest
 import unit_utils as uu
@@ -12,7 +11,7 @@ def ureg() -> UnitRegistry:
 
 
 @pytest.mark.parametrize(
-    "a_true, a_sub, expected_grade",
+    ("a_true", "a_sub", "expected_grade"),
     [
         ("m", "m", True),
         ("m", "meter", True),
@@ -33,7 +32,7 @@ def test_only_units_grading_fn(
 
 
 @pytest.mark.parametrize(
-    "a_true, a_sub, rtol, atol, expected_grade",
+    ("a_true", "a_sub", "rtol", "atol", "expected_grade"),
     [
         ("1m", "1 meter", 0.0, "1cm", True),
         ("1m", "1.009 meter", 0.0, "1cm", True),
@@ -66,7 +65,7 @@ def test_with_units_grading_fn(
 
 
 @pytest.mark.parametrize(
-    "a_true, partial_credit, a_sub, expected_grade",
+    ("a_true", "partial_credit", "a_sub", "expected_grade"),
     [
         ("1m", None, "1m", 1.0),
         ("1m", None, "1 meter", 1.0),
@@ -80,7 +79,7 @@ def test_with_units_grading_fn(
 def test_exact_units_grading_fn(
     ureg: UnitRegistry,
     a_true: str,
-    partial_credit: Optional[float],
+    partial_credit: float | None,
     a_sub: str,
     expected_grade: float,
 ) -> None:
@@ -100,7 +99,7 @@ def test_exact_units_grading_fn(
 
 
 @pytest.mark.parametrize(
-    "a_sub, expected_result",
+    ("a_sub", "expected_result"),
     [
         ("m", True),
         ("feet", True),

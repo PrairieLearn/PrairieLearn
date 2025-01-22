@@ -311,7 +311,7 @@ jobs:
       - name: Copy coverage reports to the host
         run: ./tools/copy_docker_coverage_reports.sh test_container
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5.0.7
+        uses: codecov/codecov-action@v5.1.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 

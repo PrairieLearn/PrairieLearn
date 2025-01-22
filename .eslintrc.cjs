@@ -23,17 +23,18 @@ module.exports = {
     'eslint:recommended',
     'plugin:import-x/recommended',
     'plugin:import-x/typescript',
+    'plugin:@eslint-react/recommended-legacy',
     'plugin:@typescript-eslint/stylistic',
     'plugin:@typescript-eslint/strict',
     'prettier',
   ],
   plugins: [
-    '@typescript-eslint',
     'no-floating-promise',
     'no-only-tests',
     'mocha',
-    'react',
+    '@eslint-react',
     '@prairielearn',
+    '@typescript-eslint',
   ],
   parserOptions: {
     ecmaVersion: 13,
@@ -93,10 +94,6 @@ module.exports = {
     // these two rules.
     'mocha/no-exclusive-tests': 'error',
     'mocha/no-skipped-tests': 'error',
-
-    // Allows us to use JSX in files.
-    'react/jsx-uses-react': 'error',
-    'react/jsx-uses-vars': 'error',
 
     // These rules are implemented in `packages/eslint-plugin-prairielearn`.
     '@prairielearn/aws-client-mandatory-config': 'error',

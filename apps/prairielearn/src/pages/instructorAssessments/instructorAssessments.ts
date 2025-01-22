@@ -5,6 +5,7 @@ import asyncHandler from 'express-async-handler';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import {
   loadSqlEquiv,
   queryRows,
@@ -17,7 +18,13 @@ import {
   updateAssessmentStatistics,
   updateAssessmentStatisticsForCourseInstance,
 } from '../../lib/assessment.js';
-import { AssessmentSchema, IdSchema } from '../../lib/db-types.js';
+import {
+  type AssessmentModule,
+  AssessmentModuleSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  IdSchema,
+} from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
@@ -55,6 +62,22 @@ router.get(
       .filter((row) => row.needs_statistics_update)
       .map((row) => row.id);
 
+    const assessmentSets = await queryRows(
+      sql.select_assessment_sets,
+      { course_id: res.locals.course.id },
+      AssessmentSetSchema,
+    );
+
+    let assessmentModules: AssessmentModule[] = [];
+
+    if (res.locals.course_instance.assessments_group_by === 'Module') {
+      assessmentModules = await queryRows(
+        sql.select_assessment_modules,
+        { course_id: res.locals.course.id },
+        AssessmentModuleSchema,
+      );
+    }
+
     function renderWithTiming(name: string, fn: () => string) {
       const start = performance.now();
       const result = fn();
@@ -80,6 +103,9 @@ router.get(
           rows,
           assessmentIdsNeedingStatsUpdate,
           csvFilename,
+          assessmentSets,
+          assessmentModules,
+          assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
         }),
       );
     } else {
@@ -89,6 +115,9 @@ router.get(
           rows,
           assessmentIdsNeedingStatsUpdate,
           csvFilename,
+          assessmentSets,
+          assessmentModules,
+          assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
         }),
       );
     }
@@ -208,7 +237,33 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_assessment') {
-      const editor = new AssessmentAddEditor({ locals: res.locals });
+      if (!req.body.title) {
+        throw new HttpStatusError(400, 'title is required');
+      }
+      if (!req.body.aid) {
+        throw new HttpStatusError(400, 'aid is required');
+      }
+      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.aid)) {
+        throw new HttpStatusError(
+          400,
+          `Invalid aid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.aid}`,
+        );
+      }
+      if (!req.body.type) {
+        throw new HttpStatusError(400, 'type is required');
+      }
+      if (!req.body.set) {
+        throw new HttpStatusError(400, 'set is required');
+      }
+
+      const editor = new AssessmentAddEditor({
+        locals: res.locals,
+        title: req.body.title,
+        aid: req.body.aid,
+        type: req.body.type,
+        set: req.body.set,
+        module: req.body.module,
+      });
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
@@ -217,12 +272,14 @@ router.post(
         return;
       }
 
+      flash('success', 'Assessment created successfully.');
+
       const assessment_id = await queryRow(
         sql.select_assessment_id_from_uuid,
         { uuid: editor.uuid, course_instance_id: res.locals.course_instance.id },
         IdSchema,
       );
-      res.redirect(`${res.locals.urlPrefix}/assessment/${assessment_id}/settings`);
+      res.redirect(`${res.locals.urlPrefix}/assessment/${assessment_id}/questions`);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
