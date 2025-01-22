@@ -36,6 +36,7 @@ export function InstanceQuestion({
     },
     pageTitle: 'Manual grading',
     navPage: 'assessment',
+    
     options: {
       fullWidth: true,
       navSubPage: 'manual_grading',

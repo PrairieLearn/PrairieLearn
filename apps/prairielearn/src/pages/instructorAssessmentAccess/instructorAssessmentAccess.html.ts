@@ -33,10 +33,13 @@ export function InstructorAssessmentAccess({
   return PageLayout({
     resLocals,
     pageTitle: `${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access`, // TODO: could this title be better?
-    navPage: 'assessment',
+    navContext: {
+      type: 'public',
+      page: 'assessment',
+      subPage: 'access',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'access',
     },
     content: html`
       ${AssessmentSyncErrorsAndWarnings({

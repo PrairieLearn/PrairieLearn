@@ -32,10 +32,13 @@ export function InstructorAssessmentGroups({
   return PageLayout({
     resLocals,
     pageTitle: 'Assessment groups',
-    navPage: 'assessment',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'groups',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'groups',
     },
     headContent: html`
       <link

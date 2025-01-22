@@ -44,10 +44,13 @@ export function ManualGradingAssessment({
   return PageLayout({
     resLocals,
     pageTitle: 'Manual grading queue',
-    navPage: 'assessment',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'manual_grading',
+    },
     options: {
       fullWidth: true,
-      navSubPage: 'manual_grading',
     },
     headContent: html`
       ${compiledScriptTag('instructorAssessmentManualGradingAssessmentClient.ts')}

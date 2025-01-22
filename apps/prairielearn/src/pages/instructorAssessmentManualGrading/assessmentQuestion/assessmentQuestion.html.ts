@@ -40,11 +40,14 @@ export function AssessmentQuestion({
   return PageLayout({
     resLocals,
     pageTitle: `${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}`,
-    navPage: 'assessment',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'manual_grading',
+    },
     options: {
       fullWidth: true,
       pageNote: `Question ${number_in_alternative_group}`,
-      navSubPage: 'manual_grading',
     },
     headContent: html`
       <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'

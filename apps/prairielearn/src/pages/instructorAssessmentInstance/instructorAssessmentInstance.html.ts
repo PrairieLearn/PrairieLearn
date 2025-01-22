@@ -76,7 +76,10 @@ export function InstructorAssessmentInstance({
   return PageLayout({
     resLocals,
     pageTitle: resLocals.instance_group?.name || resLocals.instance_user?.uid,
-    navPage: 'assessment',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+    },
     options: {
       fullWidth: true,
     },
