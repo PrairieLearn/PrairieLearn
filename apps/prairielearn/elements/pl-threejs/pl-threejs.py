@@ -309,7 +309,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     else:
                         html_params["incorrect"] = True
                 except Exception as exc:
-                    raise ValueError("invalid score" + score) from exc
+                    raise ValueError(f"invalid score: {score}") from exc
 
         with open("pl-threejs.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()

@@ -726,6 +726,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor', [
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
     (await import('./middlewares/selectOpenIssueCount.js')).default,
+    (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       next();
@@ -766,6 +767,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course/:course_id(\\d+)', [
     (await import('./middlewares/authzCourseOrInstance.js')).default, // set res.locals.course
     (await import('./middlewares/selectOpenIssueCount.js')).default,
+    (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       next();
@@ -1299,6 +1301,14 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/getting_started',
+    (
+      await import(
+        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
+      )
+    ).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
 
     (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
@@ -1790,6 +1800,13 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances.js'))
       .default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/course_admin/getting_started', [
+    (
+      await import(
+        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
+      )
+    ).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/issues', [
     function (req: Request, res: Response, next: NextFunction) {
