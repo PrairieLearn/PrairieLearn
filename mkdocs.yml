@@ -78,6 +78,8 @@ plugins:
             show_labels: true # e.g. 'instance-attribute'
             show_docstring_examples: true
             modernize_annotations: true # e.g. 'Optional[int]' -> 'int | None'
+            show_docstring_attributes: true
+            docstring_section_style: table
 
             members_order: source
 
@@ -88,6 +90,7 @@ plugins:
             show_if_no_docstring: true
 
           import:
+            - url: https://numpy.org/doc/stable/objects.inv
             - url: https://docs.python.org/3/objects.inv
               domains: [py, std, typing]
             - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv

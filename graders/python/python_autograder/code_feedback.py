@@ -182,11 +182,12 @@ class Feedback:
         """
         Check that a student NumPy array has the same shape and datatype as a reference solution NumPy array.
 
-        - `name`: Name of the array that is being checked. This will be used to give feedback.
-        - `ref`: Reference NumPy array.
-        - `data`: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
-        - `accuracy_critical`: If true, grading will halt on failure.
-        - `report_failure`: If true, feedback will be given on failure.
+        Attributes:
+            name: Name of the array that is being checked. This will be used to give feedback.
+            ref: Reference NumPy array.
+            data: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
 
         Examples:
             >>> Feedback.check_numpy_array_features("b", self.ref.a, self.st.b, accuracy_critical=True)
@@ -244,13 +245,14 @@ class Feedback:
         Check that a student NumPy array has similar values to a reference NumPy array. Note that this checks value according to the numpy.allclose function, which goes by the following check:
         `absolute(a - b) <= (atol + rtol * absolute(b))`
 
-        - `name`: Name of the array that is being checked. This will be used to give feedback.
-        - `ref`: Reference NumPy array.
-        - `data`: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
-        - `rtol`: Maximum relative tolerance between values.
-        - `atol`: Maximum absolute tolerance between values.
-        - `accuracy_critical`: If true, grading will halt on failure.
-        - `report_failure`: If true, feedback will be given on failure.
+        Attributes:
+            name: Name of the array that is being checked. This will be used to give feedback.
+            ref: Reference NumPy array.
+            data: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
+            rtol: Maximum relative tolerance between values.
+            atol: Maximum absolute tolerance between values.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
 
         Examples:
             >>> Feedback.check_numpy_array_allclose("G", self.ref.G, self.st.G)
@@ -289,12 +291,13 @@ class Feedback:
         """
         Check that a student list has correct length with respect to a reference list. Can also check for a homogeneous data type for the list.
 
-        - `name`: Name of the list that is being checked. This will be used to give feedback.
-        - `ref`: Reference list.
-        - `data`: Student list to be checked. Do not mix this up with the previous list! This argument is subject to more strict type checking.
-        - `entry_type`: If not None, requires that each element in the student solution be of this type.
-        - `accuracy_critical`: If true, grading will halt on failure.
-        - `report_failure`: If true, feedback will be given on failure.
+        Attributes:
+            name: Name of the list that is being checked. This will be used to give feedback.
+            ref: Reference list.
+            data: Student list to be checked. Do not mix this up with the previous list! This argument is subject to more strict type checking.
+            entry_type: If not None, requires that each element in the student solution be of this type.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
 
         Examples:
             >>> Feedback.check_list(name, ref, data)
@@ -340,12 +343,13 @@ class Feedback:
         """
         Check that a student tuple has correct length with respect to a reference tuple, and same values.
 
-        - `name`: Name of the tuple that is being checked. This will be used to give feedback.
-        - `ref`: Reference tuple.
-        - `data`: Student tuple to be checked. Do not mix this up with the previous tuple! This argument is subject to more strict type checking.
-        - `accuracy_critical`: If true, grading will halt on failure.
-        - `report_failure`: If true, feedback will be given on failure.
-        - `report_success`: If true, feedback will be given on success.
+        Attributes:
+            name: Name of the tuple that is being checked. This will be used to give feedback.
+            ref: Reference tuple.
+            data: Student tuple to be checked. Do not mix this up with the previous tuple! This argument is subject to more strict type checking.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
 
         Examples:
             >>> Feedback.check_tuple(name, ref, data)
@@ -409,14 +413,15 @@ class Feedback:
         One of rtol or atol can be omitted (set to None) if that check is unwanted.
         Or both, but then nothing would be graded :)
 
-        - `name`: Name of the scalar that is being checked. This will be used to give feedback.
-        - `ref`: Reference scalar.
-        - `data`: Student scalar to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
-        - `accuracy_critical`: If true, grading will halt on failure.
-        - `rtol`: Maximum relative tolerance.
-        - `atol`: Maximum absolute tolerance.
-        - `report_failure`: If true, feedback will be given on failure.
-        - `report_success`: If true, feedback will be given on success.
+        Attributes:
+            name: Name of the scalar that is being checked. This will be used to give feedback.
+            ref: Reference scalar.
+            data: Student scalar to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
+            accuracy_critical: If true, grading will halt on failure.
+            rtol: Maximum relative tolerance.
+            atol: Maximum absolute tolerance.
+            report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
 
         Examples:
             >>> Feedback.check_scalar("y", self.ref.y, self.st.y)
@@ -510,13 +515,14 @@ class Feedback:
         """
         Checks that a student plot has the same lines as a reference plot solution. Can optionally check the axis scales to ensure they are the same as the reference.
 
-        - `name`: Name of plot scalar that is being checked. This will be used to give feedback.
-        - `ref`: Reference plot.
-        - `data`: Student plot to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
-        - `check_axes_scale`: One of None, 'x', 'y', or 'xy'. Signals which axis scale should be checked against the reference solution.
-        - `accuracy_critical`: If true, grading will halt on failure.
-        - `report_failure`: If true, feedback will be given on failure.
-        - `report_success`: If true, feedback will be given on success.
+        Attributes:
+            name: Name of plot scalar that is being checked. This will be used to give feedback.
+            ref: Reference plot.
+            data: Student plot to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
+            check_axes_scale: One of None, 'x', 'y', or 'xy'. Signals which axis scale should be checked against the reference solution.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
 
         Examples:
             >>> Feedback.check_plot("plot", self.ref.plot, self.st.plot, check_axes_scale="xy")
@@ -610,17 +616,16 @@ class Feedback:
 
         By default, checks if the student DataFrame `data` contains the same contents as the reference DataFrame `ref` by using `pandas.testing.assert_frame_equal` after basic sanity checks.
 
-        Parameters:
-
-        - `name`, String: The human-readable name of the DataFrame being checked
-        - `ref`, DataFrame: The reference (correct) DataFrame
-        - `data`, DataFrame: The student DataFrame
-        - `subset_columns` = None, Array of Strings:
+        Attributes:
+            name: The human-readable name of the DataFrame being checked
+            ref: The reference (correct) DataFrame
+            data: The student DataFrame
+            subset_columns:
           If `subset_columns` is an empty array, all columns are used in the check.
           Otherwise, only columns named in `subset_columns` are used in the check and other columns are dropped.
-        - `check_values` = True, Boolean: Check the values of each cell, in addition to the dimensions of the DataFrame
-        - `allow_order_variance` = True, Boolean: Allow rows to appear in any order (so long as the dimensions and values are correct)
-        - `display_input` = False, Boolean: Display the student's answer in the feedback area.
+            check_values: Check the values of each cell, in addition to the dimensions of the DataFrame
+            allow_order_variance: Allow rows to appear in any order (so long as the dimensions and values are correct)
+            display_input: Display the student's answer in the feedback area.
         """
 
         import pandas as pd
