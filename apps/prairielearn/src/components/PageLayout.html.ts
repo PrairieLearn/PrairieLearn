@@ -2,12 +2,12 @@ import { html, type HtmlValue } from '@prairielearn/html';
 
 import { HeadContents } from './HeadContents.html.js';
 import { Navbar } from './Navbar.html.js';
-import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
+import type { NavContext } from './Navbar.types.js';
 
 export function PageLayout({
   resLocals,
   pageTitle,
-  navPage,
+  navContext,
   options = {
     marginBottom: true,
   },
@@ -19,7 +19,7 @@ export function PageLayout({
   /** The title of the page in the browser. */
   pageTitle: string;
   /** The main page to highlight in the navbar. */
-  navPage: NavPage;
+  navContext: NavContext;
   options?: {
     /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
@@ -27,10 +27,6 @@ export function PageLayout({
     marginBottom?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
-    /** The current subpage, accounted for in the navbar. */
-    navSubPage?: NavSubPage;
-    /** The type of navbar to render, based on the type of user. */
-    navbarType?: NavbarType;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlValue;
@@ -53,8 +49,9 @@ export function PageLayout({
       <body>
         ${Navbar({
           resLocals,
-          navPage,
-          navSubPage: options.navSubPage,
+          navPage: navContext.page,
+          navSubPage: navContext.subPage,
+          navbarType: navContext.type,
         })}
         <main
           id="content"

@@ -28,7 +28,10 @@ export function NewsItems({
   return PageLayout({
     resLocals,
     pageTitle: 'News',
-    navPage: 'news_items',
+    navContext: {
+      type: 'public',
+      page: 'news_items',
+    },
     options: {
       pageNote:
         (newsItemNotificationCount ?? 0 > 0) ? `${newsItemNotificationCount} Unread` : undefined,

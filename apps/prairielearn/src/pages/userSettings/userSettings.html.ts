@@ -40,7 +40,10 @@ export function UserSettings({
   return PageLayout({
     resLocals,
     pageTitle: 'User Settings',
-    navPage: 'user_settings',
+    navContext: {
+      page: 'user_settings',
+      type: 'plain',
+    },
     content: html`
       <h1 class="mb-4">Settings</h1>
       <div class="card mb-4">
