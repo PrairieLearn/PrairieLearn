@@ -1,7 +1,11 @@
-import * as sqldb from '@prairielearn/postgres';
+import { z } from 'zod';
+
+import { callOneRowAsync, queryRow, queryAsync, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function sync(courseId: string, courseData: CourseData) {
   // We can only safely remove unused assessment sets if both `infoCourse.json`
@@ -29,7 +33,24 @@ export async function sync(courseId: string, courseData: CourseData) {
   });
   const assessmentSetNames = [...knownAssessmentSetNames];
 
-  await sqldb.callOneRowAsync('sync_assessment_sets', [
+  // Make sure we have the "Unknown" assessment set, because
+  // we will use this as a last resort for assessments.
+
+  const unknownSetExists = await queryRow(
+    sql.unknown_set_exists,
+    {
+      course_id: courseId,
+    },
+    z.boolean(),
+  );
+
+  if (!unknownSetExists) {
+    await queryAsync(sql.create_unknown_set, {
+      course_id: courseId,
+    });
+  }
+
+  await callOneRowAsync('sync_assessment_sets', [
     isInfoCourseValid,
     deleteUnused,
     courseAssessmentSets,
