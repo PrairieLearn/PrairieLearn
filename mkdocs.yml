@@ -76,6 +76,7 @@ plugins:
             show_source: true
             show_bases: false # e.g. 'TypedDict'
             show_labels: true # e.g. 'instance-attribute'
+            show_docstring_examples: true
             modernize_annotations: true # e.g. 'Optional[int]' -> 'int | None'
 
             members_order: source
