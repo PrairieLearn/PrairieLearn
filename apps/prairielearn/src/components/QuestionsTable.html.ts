@@ -239,25 +239,29 @@ export function QuestionsTable({
                   >question documentation</a
                 >.
               </p>
-              <div class="d-flex flex-row flex-wrap justify-content-center gap-3">
-                <form class="ml-1 btn-group" method="POST">
-                  <button class="btn btn-sm btn-primary">
-                    <i class="fa fa-plus" aria-hidden="true"></i>
-                    Add question
-                  </button>
-                </form>
-                ${showAiGenerateQuestionButton
-                  ? html`
-                      <a
-                        class="btn btn-sm btn-primary"
-                        href="${urlPrefix}/ai_generate_question_drafts"
-                      >
-                        <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
-                        Generate question with AI
-                      </a>
-                    `
-                  : ''}
-              </div>
+              ${showAddQuestionButton
+                ? html`
+                    <div class="d-flex flex-row flex-wrap justify-content-center gap-3">
+                      <form class="ml-1 btn-group" method="POST">
+                        <button class="btn btn-sm btn-primary">
+                          <i class="fa fa-plus" aria-hidden="true"></i>
+                          Add question
+                        </button>
+                      </form>
+                      ${showAiGenerateQuestionButton
+                        ? html`
+                            <a
+                              class="btn btn-sm btn-primary"
+                              href="${urlPrefix}/ai_generate_question_drafts"
+                            >
+                              <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+                              Generate question with AI
+                            </a>
+                          `
+                        : ''}
+                    </div>
+                  `
+                : ''}
             </div>
           `}
     </div>
