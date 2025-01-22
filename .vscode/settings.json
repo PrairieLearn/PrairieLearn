@@ -29,5 +29,23 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "json.schemas": [
+    {
+      "fileMatch": ["**/infoAssessment.json"],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoAssessment.json"
+    },
+    {
+      "fileMatch": ["**/infoCourseInstance.json"],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
+    },
+    {
+      "fileMatch": ["**/infoCourse.json"],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoCourse.json"
+    },
+    {
+      "fileMatch": ["**/questions/**/info.json"],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoQuestion.json"
+    }
+  ]
 }
