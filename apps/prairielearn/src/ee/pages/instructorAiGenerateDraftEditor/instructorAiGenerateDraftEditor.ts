@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { config } from '../../../lib/config.js';
 import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { AiGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
+import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant, setRendererHeader } from '../../../lib/question-render.js';
@@ -102,7 +102,7 @@ router.get(
         question_id: req.params.question_id,
         course_id: res.locals.course.id,
       },
-      AiGenerationPromptSchema,
+      AiQuestionGenerationPromptSchema,
     );
 
     if (prompts.length === 0) {
@@ -169,7 +169,7 @@ router.post(
           question_id: req.params.question_id,
           course_id: res.locals.course.id,
         },
-        AiGenerationPromptSchema,
+        AiQuestionGenerationPromptSchema,
       );
 
       if (prompts.length < 1) {
@@ -209,7 +209,7 @@ router.post(
           question_id: question.id,
           course_id: res.locals.course.id,
         },
-        AiGenerationPromptSchema,
+        AiQuestionGenerationPromptSchema,
       );
 
       if (prompts.length === 0) {
