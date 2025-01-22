@@ -519,7 +519,7 @@ class Feedback:
         Parameters:
             name: Name of plot scalar that is being checked. This will be used to give feedback.
             ref: Reference plot.
-            data: Student plot to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
+            plot: Student plot to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
             check_axes_scale: Signals which axis scale should be checked against the reference solution.
             accuracy_critical: If true, grading will halt on failure.
             report_failure: If true, feedback will be given on failure.
