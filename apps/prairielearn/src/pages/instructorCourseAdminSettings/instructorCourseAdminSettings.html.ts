@@ -165,10 +165,69 @@ export function InstructorCourseAdminSettings({
                     <i class="far fa-clipboard"></i>
                   </button>
                 </div>
-              </span>
-              <small class="form-text text-muted">
-                The Github repository that can be used to sync course files.
-              </small>
+                <div class="form-group">
+                  <label for="path">Path</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="path"
+                    name="path"
+                    value="${resLocals.course.path}"
+                    disabled
+                  />
+                  <small class="form-text text-muted">
+                    The path where course files can be found.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="repository">Repository</label>
+                  <span class="input-group">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="repository"
+                      name="repository"
+                      value="${resLocals.course.repository}"
+                      disabled
+                    />
+                    <div class="input-group-append">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary btn-copy"
+                        data-clipboard-text="${resLocals.course.repository}"
+                        aria-label="Copy repository"
+                        ${resLocals.course.repository ? '' : 'disabled'}
+                      >
+                        <i class="far fa-clipboard"></i>
+                      </button>
+                    </div>
+                  </span>
+                  <small class="form-text text-muted">
+                    The Github repository that can be used to sync course files.
+                  </small>
+                </div>
+                <div class="form-check mb-3">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    id="show_getting_started"
+                    name="show_getting_started"
+                    ${resLocals.course.show_getting_started ? 'checked' : ''}
+                  />
+                  <label class="form-check-label" for="show_getting_started">
+                    Show the getting started checklist
+                  </label>
+                </div>
+                ${EditActions({
+                  coursePathExists,
+                  courseInfoExists,
+                  hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
+                  hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
+                  exampleCourse: resLocals.course.example_course,
+                  urlPrefix: resLocals.urlPrefix,
+                  navPage: resLocals.navPage,
+                })}
+              </form>
             </div>
             ${EditActions({
               coursePathExists,
