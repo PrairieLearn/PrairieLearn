@@ -88,8 +88,7 @@ BEGIN
         DELETE FROM tags AS t
         WHERE
             t.course_id = syncing_course_id
-            -- COALESCE handles the case that used_tag_names is empty.
-            AND t.name != ALL(COALESCE(used_tag_names, '{}'::text[]));
+            AND t.name != ALL (used_tag_names);
     END IF;
 
     -- Make a map from tag name to ID to return to the caller
