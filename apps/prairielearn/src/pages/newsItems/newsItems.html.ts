@@ -29,8 +29,7 @@ export function NewsItems({
     resLocals,
     pageTitle: 'News',
     navContext: {
-      // A value wasn't hardcoded because this
-      // type depends on the route that serves this page
+      // A value wasn't hardcoded because the type depends on the route that serves the page
       type: resLocals.navbarType,
       page: 'news_items',
     },
