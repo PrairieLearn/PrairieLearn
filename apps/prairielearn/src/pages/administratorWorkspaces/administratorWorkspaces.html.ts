@@ -39,7 +39,7 @@ export function AdministratorWorkspaces({
       page: 'admin',
       subPage: 'workspaces',
     },
-    headContent: html`
+    preContent: html`
       <script>
         $(() => {
           const toggleButton = document.querySelector('#toggle-all-workspaces');
