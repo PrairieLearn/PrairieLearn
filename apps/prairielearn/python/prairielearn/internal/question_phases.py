@@ -8,9 +8,10 @@ from inspect import signature
 from typing import Any, Literal, TypedDict
 
 import lxml.html
+from typing_extensions import assert_never
+
 from prairielearn.internal.check_data import Phase, check_data
 from prairielearn.internal.traverse import traverse_and_execute, traverse_and_replace
-from typing_extensions import assert_never
 
 PYTHON_PATH = pathlib.Path(__file__).parent.parent.parent.resolve()
 CORE_ELEMENTS_PATH = (PYTHON_PATH.parent / "elements").resolve()
