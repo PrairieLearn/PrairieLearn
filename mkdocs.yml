@@ -69,6 +69,7 @@ plugins:
         python:
           paths:
             - graders/python/python_autograder
+            - apps/prairielearn/python
           options:
             show_root_heading: true
             summary:
@@ -177,6 +178,7 @@ nav:
       - 'Python autograder': 'python-grader/index.md'
       - 'C/C++ autograder': 'c-grader/index.md'
       - 'Java autograder': 'java-grader/index.md'
+      - 'Python Reference': 'python-reference/index.md'
       - 'Workspaces': 'workspaces/index.md'
       - 'Manual grading': 'manualGrading/index.md'
       - 'Question sharing': 'questionSharing.md'

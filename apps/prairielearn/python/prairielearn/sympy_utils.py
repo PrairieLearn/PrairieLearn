@@ -451,6 +451,21 @@ def convert_string_to_sympy(
     custom_functions: None | Iterable[str] = None,
     assumptions: None | AssumptionsDictT = None,
 ) -> sympy.Expr:
+    """
+    Converts a string to a sympy expression, with optional restrictions on
+    the variables and functions that can be used. If the string is invalid,
+    an exception is raised with a message that can be displayed to the user.
+
+    Parameters:
+        expr: The string to convert to a sympy expression.
+        variables: A list of variable names that are allowed in the expression.
+        allow_hidden: Whether to allow hidden variables (like pi and e).
+        allow_complex: Whether to allow complex numbers (like i).
+        allow_trig_functions: Whether to allow trigonometric functions.
+        custom_functions: A list of custom function names that are allowed in the expression.
+        assumptions: A dictionary of assumptions for variables in the expression.
+
+    """
     return convert_string_to_sympy_with_source(
         expr,
         variables=variables,

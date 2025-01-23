@@ -246,20 +246,20 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
 
 
 def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
-    """to_json(v)
+    """
 
     If v has a standard type that cannot be json serialized, it is replaced with
     a {'_type':..., '_value':...} pair that can be json serialized:
 
-        If np_encoding_version is set to 2, will serialize numpy scalars as follows:
+    If np_encoding_version is set to 2, will serialize numpy scalars as follows:
 
         numpy scalar -> '_type': 'np_scalar'
 
-        If df_encoding_version is set to 2, will serialize pandas DataFrames as follows:
+    If df_encoding_version is set to 2, will serialize pandas DataFrames as follows:
 
         pandas.DataFrame -> '_type': 'dataframe_v2'
 
-        Otherwise, the following mappings are used:
+    Otherwise, the following mappings are used:
 
         any complex scalar (including numpy) -> '_type': 'complex'
         non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
@@ -269,9 +269,10 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
         pandas.DataFrame -> '_type': 'dataframe'
         any networkx graph type -> '_type': 'networkx_graph'
 
-    Note that the 'dataframe_v2' encoding allows for missing and date time values whereas
-    the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
-    numbers while 'dataframe_v2' does not.
+    !!! note
+        The 'dataframe_v2' encoding allows for missing and date time values whereas
+        the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
+        numbers while 'dataframe_v2' does not.
 
     If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
     a third field in the dictionary).
@@ -358,7 +359,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
 
 
 def from_json(v):
-    """from_json(v)
+    """
 
     If v has the format {'_type':..., '_value':...} as would have been created
     using to_json(...), then it is replaced:
