@@ -8,9 +8,7 @@ export function PageLayout({
   resLocals,
   pageTitle,
   navContext,
-  options = {
-    marginBottom: true,
-  },
+  options = {},
   headContent,
   preContent,
   content,
@@ -29,6 +27,8 @@ export function PageLayout({
     marginBottom?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
+    /** Enables an htmx extension for an element and all its children */
+    hxExt?: string;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlValue;
@@ -52,7 +52,7 @@ export function PageLayout({
         })}
         ${headContent}
       </head>
-      <body>
+      <body ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}>
         ${Navbar({
           resLocals,
           navPage: navContext.page,
