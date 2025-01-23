@@ -35,7 +35,7 @@ export function AdministratorWorkspaces({
     resLocals,
     pageTitle: 'Workspaces',
     navContext: {
-      type: 'plain', // resLocals.navType?
+      type: 'plain',
       page: 'admin',
       subPage: 'workspaces',
     },
@@ -53,92 +53,90 @@ export function AdministratorWorkspaces({
       </script>
     `,
     content: html`
-      <main id="content" class="container">
-        <div class="card mb-4">
-          <div class="card-header bg-primary text-white d-flex align-items-center">
-            <h1>Workspace hosts</h1>
-            <button class="btn btn-light ml-auto" id="toggle-all-workspaces" data-state="collapsed">
-              Expand all
-            </button>
-          </div>
-          <div class="list-group list-group-flush">
-            ${workspaceHostRows.map((workspaceHostRow) => {
-              const workspaceHost = workspaceHostRow.workspace_host;
-              const workspaces = workspaceHostRow.workspaces;
-              const instanceId = workspaceHost.instance_id;
-              return html`
-                <div class="list-group-item">
-                  <div class="d-flex flex-row flex-wrap align-items-center">
-                    <div class="d-flex align-items-center mr-auto pr-2 text-monospace">
-                      <a
-                        href="workspaces-${workspaceHost.id}"
-                        class="mr-2"
-                        data-target="#workspaces-${workspaceHost.id}"
-                        data-toggle="collapse"
-                        aria-expanded="false"
-                        aria-controls="workspaces-${workspaceHost.id}"
-                        >${workspaceHost.hostname}</a
-                      >
-                      ${instanceId
-                        ? html`<span class="text-muted mr-2">(${instanceId})</span>`
-                        : null}
-                      ${WorkspaceHostState({ state: workspaceHost.state })}
-                      <span class="badge badge-secondary">
-                        ${workspaceHostRow.workspace_host_time_in_state}
-                      </span>
-                    </div>
-                    ${Capacity({
-                      total: workspaceLoadHostCapacity,
-                      current: workspaces.length,
-                    })}
-                  </div>
-                  <div id="workspaces-${workspaceHost.id}" class="collapse">
-                    ${workspaces.length === 0
-                      ? html`
-                          <div class="text-muted my-2">
-                            There are no workspaces running on this host.
-                          </div>
-                        `
-                      : html`
-                          <div class="list-group list-group my-2">
-                            ${workspaces.map((workspace) => {
-                              const maybeCourseInstanceName = workspace.course_instance_name
-                                ? html`(<span title="Course instance"
-                                      >${workspace.course_instance_name}</span
-                                    >)`
-                                : null;
-                              return html`
-                                <div class="list-group-item">
-                                  <div class="d-flex align-items-center">
-                                    <span class="mr-2" style="font-variant-numeric: tabular-nums;">
-                                      ${workspace.id}
-                                    </span>
-                                    ${WorkspaceState({ state: workspace.state })}
-                                    <span class="badge badge-secondary">
-                                      ${workspace.time_in_state}
-                                    </span>
-                                  </div>
-                                  <div class="text-muted text-small">
-                                    <span class="text-monospace" title="Question"
-                                      >${workspace.question_name}</span
-                                    >
-                                    &bull;
-                                    <span title="Course">${workspace.course_name}</span>
-                                    ${maybeCourseInstanceName} &bull;
-                                    <span title="Institution">${workspace.institution_name}</span>
-                                  </div>
-                                </div>
-                              `;
-                            })}
-                          </div>
-                        `}
-                  </div>
-                </div>
-              `;
-            })}
-          </div>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h1>Workspace hosts</h1>
+          <button class="btn btn-light ml-auto" id="toggle-all-workspaces" data-state="collapsed">
+            Expand all
+          </button>
         </div>
-      </main>
+        <div class="list-group list-group-flush">
+          ${workspaceHostRows.map((workspaceHostRow) => {
+            const workspaceHost = workspaceHostRow.workspace_host;
+            const workspaces = workspaceHostRow.workspaces;
+            const instanceId = workspaceHost.instance_id;
+            return html`
+              <div class="list-group-item">
+                <div class="d-flex flex-row flex-wrap align-items-center">
+                  <div class="d-flex align-items-center mr-auto pr-2 text-monospace">
+                    <a
+                      href="workspaces-${workspaceHost.id}"
+                      class="mr-2"
+                      data-target="#workspaces-${workspaceHost.id}"
+                      data-toggle="collapse"
+                      aria-expanded="false"
+                      aria-controls="workspaces-${workspaceHost.id}"
+                      >${workspaceHost.hostname}</a
+                    >
+                    ${instanceId
+                      ? html`<span class="text-muted mr-2">(${instanceId})</span>`
+                      : null}
+                    ${WorkspaceHostState({ state: workspaceHost.state })}
+                    <span class="badge badge-secondary">
+                      ${workspaceHostRow.workspace_host_time_in_state}
+                    </span>
+                  </div>
+                  ${Capacity({
+                    total: workspaceLoadHostCapacity,
+                    current: workspaces.length,
+                  })}
+                </div>
+                <div id="workspaces-${workspaceHost.id}" class="collapse">
+                  ${workspaces.length === 0
+                    ? html`
+                        <div class="text-muted my-2">
+                          There are no workspaces running on this host.
+                        </div>
+                      `
+                    : html`
+                        <div class="list-group list-group my-2">
+                          ${workspaces.map((workspace) => {
+                            const maybeCourseInstanceName = workspace.course_instance_name
+                              ? html`(<span title="Course instance"
+                                    >${workspace.course_instance_name}</span
+                                  >)`
+                              : null;
+                            return html`
+                              <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                  <span class="mr-2" style="font-variant-numeric: tabular-nums;">
+                                    ${workspace.id}
+                                  </span>
+                                  ${WorkspaceState({ state: workspace.state })}
+                                  <span class="badge badge-secondary">
+                                    ${workspace.time_in_state}
+                                  </span>
+                                </div>
+                                <div class="text-muted text-small">
+                                  <span class="text-monospace" title="Question"
+                                    >${workspace.question_name}</span
+                                  >
+                                  &bull;
+                                  <span title="Course">${workspace.course_name}</span>
+                                  ${maybeCourseInstanceName} &bull;
+                                  <span title="Institution">${workspace.institution_name}</span>
+                                </div>
+                              </div>
+                            `;
+                          })}
+                        </div>
+                      `}
+                </div>
+              </div>
+            `;
+          })}
+        </div>
+      </div>
     `,
   });
 }
