@@ -6,7 +6,7 @@ from io import StringIO
 import chevron
 import lxml.html
 import prairielearn as pl
-from colors import PLColor
+from prairielearn.colors import PLColor
 
 
 def get_file_names_as_array(raw_file_names: str) -> list[str]:
@@ -24,7 +24,7 @@ def get_file_names_as_array(raw_file_names: str) -> list[str]:
 # Each pl-file-upload element is uniquely identified by the SHA1 hash of its
 # file_names attribute
 def get_answer_name(file_names: str) -> str:
-    return "_file_upload_{0}".format(
+    return "_file_upload_{}".format(
         hashlib.sha1(file_names.encode("utf-8")).hexdigest()
     )
 
@@ -79,7 +79,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "check_icon_color": PLColor("correct_green"),
     }
 
-    with open("pl-file-upload.mustache", "r", encoding="utf-8") as f:
+    with open("pl-file-upload.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
 
 

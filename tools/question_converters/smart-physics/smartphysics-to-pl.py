@@ -1,22 +1,24 @@
-import sys
-import os
-import uuid
 import json
+import os
+import sys
+import uuid
 import xml.etree.ElementTree as ET
+
 """
 Command line usage:
 
 smartphysics-to-pl.py [xml file] [PrairieLearn question name]
 
-This converts multiple choice questions from smart.physics XML format to 
-the PrairieLearn directory structure. A new UUID is assigned automatically. 
+This converts multiple choice questions from smart.physics XML format to
+the PrairieLearn directory structure. A new UUID is assigned automatically.
 
-If you want to convert free-answer questions (ex. homeworks), the main difference would be to change 
+If you want to convert free-answer questions (ex. homeworks), the main difference would be to change
 write_question().
 
-The question may require some cleanup. Known problems include '{' characters in LaTeX formulas (which 
+The question may require some cleanup. Known problems include '{' characters in LaTeX formulas (which
 get replaced indiscriminantly), and images, which are just ignored.
 """
+
 
 def transform_code(xml_code):
     xml_code = xml_code.replace("^", "**")
@@ -98,7 +100,7 @@ def write_question(xml_root, f):
             """
 <div class="card my-2">
   <div class="card-header">
-      
+
   </div>
 
   <div class="card-body">
@@ -140,18 +142,17 @@ def write_question(xml_root, f):
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print(f"usage: {sys.argv[0]} [xml filename] [question directory]")
-        exit(1)
+        sys.exit(1)
     tree = ET.parse(sys.argv[1])
     xml_root = tree.getroot()
 
     dirname = sys.argv[2]
-    try:
-        os.mkdir(dirname)
-    except:
-        print("looks like ", dirname, "already exists")
-        exit(1)
+    os.makedirs(dirname, exist_ok=True)
     my_id = uuid.uuid4()
     info = gen_info(my_id, xml_root)
-    json.dump(info, open(dirname + "/info.json", "w"))
-    write_server(xml_root, open(dirname + "/server.py", "w"))
-    write_question(xml_root, open(dirname + "/question.html","w"))
+    with open(dirname + "/info.json", "w") as f:
+        json.dump(info, f)
+    with open(dirname + "/server.py", "w") as f:
+        write_server(xml_root, f)
+    with open(dirname + "/question.html", "w") as f:
+        write_question(xml_root, f)
