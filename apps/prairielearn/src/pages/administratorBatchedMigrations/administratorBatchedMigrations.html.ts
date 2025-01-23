@@ -64,7 +64,7 @@ export function AdministratorBatchedMigration({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: `Batched migration ${batchedMigration.filename}`, // TODO: Is this okay? Or should we just leave pageTitle empty?
+    pageTitle: 'Batched migrations',
     navContext: {
       type: 'plain',
       page: 'admin',

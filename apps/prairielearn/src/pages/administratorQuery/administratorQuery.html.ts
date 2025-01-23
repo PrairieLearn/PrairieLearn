@@ -82,20 +82,7 @@ export function AdministratorQuery({
       <script src="${nodeModulesAssetPath(
           'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
         )}"></script>
-      <script>
-        $(function () {
-          $('.tablesorter').tablesorter({
-            theme: 'bootstrap',
-            widthFixed: true,
-            headerTemplate: '{content} {icon}',
-            widgets: ['uitheme', 'zebra'],
-            widgetOptions: {
-              zebra: ['even', 'odd'],
-            },
-          });
-        });
-      </script>
-    `, // TODO: Can this tablesorter script go in head?
+    `,
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -246,6 +233,21 @@ export function AdministratorQuery({
               `}
         </div>
       </div>
+    `,
+    postContent: html`
+      <script>
+        $(function () {
+          $('.tablesorter').tablesorter({
+            theme: 'bootstrap',
+            widthFixed: true,
+            headerTemplate: '{content} {icon}',
+            widgets: ['uitheme', 'zebra'],
+            widgetOptions: {
+              zebra: ['even', 'odd'],
+            },
+          });
+        });
+      </script>
     `,
   });
 }

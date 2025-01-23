@@ -31,13 +31,11 @@ export function AdministratorWorkspaces({
   workspaceLoadHostCapacity: number;
   resLocals: Record<string, any>;
 }) {
-  // TODO: Test
-
   return PageLayout({
     resLocals,
     pageTitle: 'Workspaces',
     navContext: {
-      type: 'plain',
+      type: 'plain', // resLocals.navType?
       page: 'admin',
       subPage: 'workspaces',
     },
