@@ -37,7 +37,7 @@ export type NavPage =
 export type NavSubPage = string | undefined;
 
 export interface NavContext {
-  type?: NavbarType;
+  type: NavbarType;
   page: NavPage;
   subPage?: NavSubPage;
 }

@@ -1245,7 +1245,7 @@ export class QuestionAddEditor extends Editor {
       infoJson.uuid = this.uuid;
 
       // Reset the topic.
-      infoJson.topic = 'Unknown';
+      infoJson.topic = 'Default';
 
       // Delete values that might not make sense in the target course.
       delete infoJson.tags;
@@ -1266,7 +1266,7 @@ export class QuestionAddEditor extends Editor {
       const data = {
         uuid: this.uuid,
         title,
-        topic: 'Unknown',
+        topic: 'Default',
         type: 'v3',
       };
 
