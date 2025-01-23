@@ -58,6 +58,8 @@ export function InstructorAIGenerateDrafts({
   resLocals: Record<string, any>;
   drafts: DraftMetadataWithQid[];
 }) {
+  const hasDrafts = drafts.length > 0;
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -70,13 +72,14 @@ export function InstructorAIGenerateDrafts({
             left: 0;
             width: 100%;
             height: 30px;
-            background: linear-gradient(to bottom, transparent, white);
+            background: linear-gradient(to bottom, transparent, var(--bs-light));
             pointer-events: none;
           }
         </style>
         <script>
           $(() => {
             const addQuestionCard = document.querySelector('#add-question-card');
+            const addQuestionForm = addQuestionCard.querySelector('form');
             const addQuestionCardBody = addQuestionCard.querySelector('.card-body');
             const revealFade = addQuestionCard.querySelector('.reveal-fade');
             const expandButtonContainer = addQuestionCard.querySelector(
@@ -90,9 +93,8 @@ export function InstructorAIGenerateDrafts({
               if (formExpanded) return;
 
               addQuestionCardBody.style.maxHeight = '';
-              addQuestionCardBody.style.overflowY = '';
-              revealFade.remove();
-              expandButtonContainer.remove();
+              revealFade?.remove();
+              expandButtonContainer?.remove();
 
               formExpanded = true;
             }
@@ -101,8 +103,29 @@ export function InstructorAIGenerateDrafts({
               expandQuestionForm();
             });
 
-            expandButton.addEventListener('click', () => {
+            expandButton?.addEventListener('click', () => {
               expandQuestionForm();
+            });
+
+            addQuestionForm.addEventListener('submit', () => {
+              // Shuffle the loading phrases for a unique order on each page load.
+              for (let i = LOADING_PHRASES.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [LOADING_PHRASES[i], LOADING_PHRASES[j]] = [LOADING_PHRASES[j], LOADING_PHRASES[i]];
+              }
+
+              let phraseIndex = 0;
+
+              const loadingPhraseContainer = document.querySelector('#loading-phrases');
+
+              (async () => {
+                while (true) {
+                  loadingPhraseContainer.textContent = LOADING_PHRASES[phraseIndex];
+                  phraseIndex = (phraseIndex + 1) % LOADING_PHRASES.length;
+
+                  await delay(3000);
+                }
+              })();
             });
           });
 
@@ -114,9 +137,24 @@ export function InstructorAIGenerateDrafts({
             document.getElementById('user-prompt-llm-user-input').value = selection.promptUserInput;
             document.getElementById('user-prompt-llm-grading').value = selection.promptGrading;
           }
+
+          function delay(ms) {
+            return new Promise((resolve, reject) => setTimeout(resolve, ms));
+          }
+
+          const LOADING_PHRASES = [
+            'Hiring more TAs...',
+            'Refining prompts...',
+            'Collapsing wave functions...',
+            'Randomizing numbers...',
+            'Sharpening pencils...',
+            'Warming up the neural network...',
+            'Optimizing learning curves...',
+            'Accessing forbidden knowledge...',
+          ];
         </script>
       </head>
-      <body>
+      <body hx-ext="loading-states">
         ${Navbar({ navPage: 'course_admin', navSubPage: 'questions', resLocals })}
         <main id="content" class="container mb-4">
           <div class="mb-3">
@@ -125,9 +163,16 @@ export function InstructorAIGenerateDrafts({
               Back to all questions
             </a>
           </div>
-          <div class="card mb-3" id="add-question-card">
-            <div class="card-body position-relative" style="max-height: 150px; overflow-y: hidden;">
-              <h1 class="h3">Generate a new question with AI</h1>
+          <div
+            id="add-question-card"
+            class="card mb-5 overflow-hidden mx-auto"
+            style="max-width: 700px"
+          >
+            <div
+              class="card-body position-relative overflow-hidden"
+              style="${hasDrafts ? 'max-height: 150px;' : ''}"
+            >
+              <h1 class="h3 text-center">Generate a new question with AI</h1>
               <form
                 id="add-question-form"
                 name="add-question-form"
@@ -138,10 +183,11 @@ export function InstructorAIGenerateDrafts({
               >
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <input type="hidden" name="__action" value="generate_question" />
+
                 <div class="form-group">
                   <label for="user-prompt-llm">
                     Give a high-level overview of the question. What internal parameters need to be
-                    generated and what information do we provide to students?
+                    generated and what information should be provided to students?
                   </label>
                   <textarea name="prompt" id="user-prompt-llm" class="form-control"></textarea>
                   <div class="form-text form-muted">
@@ -152,6 +198,9 @@ export function InstructorAIGenerateDrafts({
                       m/s. How long does it take for the car to reach the ground?
                     </em>
                   </div>
+                </div>
+
+                <div class="form-group">
                   <label for="user-prompt-llm-user-input">
                     How should students input their solution? What choices or input boxes are they
                     given?
@@ -167,6 +216,9 @@ export function InstructorAIGenerateDrafts({
                       should be in seconds.
                     </em>
                   </div>
+                </div>
+
+                <div class="form-group">
                   <label for="user-prompt-llm-grading">
                     How is the correct answer determined?
                   </label>
@@ -218,57 +270,76 @@ export function InstructorAIGenerateDrafts({
                   </span>
                   Create question
                 </button>
+
+                <div
+                  id="loading-phrases"
+                  class="d-none mt-1"
+                  data-loading-class-remove="d-none"
+                ></div>
               </form>
               <div id="generation-results"></div>
-              <div class="reveal-fade"></div>
+              ${hasDrafts ? html`<div class="reveal-fade"></div>` : ''}
             </div>
-            <div class="m-2 d-flex justify-content-center js-expand-question-form-container">
-              <button type="button" class="btn btn-sm btn-link js-expand-question-form">
-                Expand
-              </button>
-            </div>
+            ${hasDrafts
+              ? html`
+                  <div
+                    class="p-2 d-flex justify-content-center bg-light js-expand-question-form-container"
+                  >
+                    <button type="button" class="btn btn-sm btn-link js-expand-question-form">
+                      Expand
+                    </button>
+                  </div>
+                `
+              : ''}
           </div>
-          <h1 class="h4">Continue working on a draft question</h1>
-          <div class="card">
-            <div class="table-responsive">
-              <table class="table table-sm table-hover" aria-label="AI question generation jobs">
-                <thead>
-                  <tr>
-                    <th>QID</th>
-                    <th>Created At</th>
-                    <th>Created By</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${drafts.map(
-                    (row) => html`
-                      <tr>
-                        <td>${row.qid}</td>
-                        <td>
-                          ${row.draft_question_metadata?.created_at == null
-                            ? html`&mdash;`
-                            : formatDate(
-                                row.draft_question_metadata.created_at,
-                                resLocals.course.display_timezone,
-                              )}
-                        </td>
-                        <td>${row.uid ?? '(System)'}</td>
-                        <td>
-                          <a
-                            href="${resLocals.urlPrefix}/ai_generate_editor/${row.question_id}"
-                            class="btn btn-xs btn-primary"
-                          >
-                            Continue editing
-                          </a>
-                        </td>
-                      </tr>
-                    `,
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          ${hasDrafts
+            ? html`
+                <h1 class="h5">Continue working on a draft question</h1>
+                <div class="card">
+                  <div class="table-responsive">
+                    <table
+                      class="table table-sm table-hover"
+                      aria-label="AI question generation jobs"
+                    >
+                      <thead>
+                        <tr>
+                          <th>QID</th>
+                          <th>Created At</th>
+                          <th>Created By</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${drafts.map(
+                          (row) => html`
+                            <tr>
+                              <td>${row.qid}</td>
+                              <td>
+                                ${row.draft_question_metadata?.created_at == null
+                                  ? html`&mdash;`
+                                  : formatDate(
+                                      row.draft_question_metadata.created_at,
+                                      resLocals.course.display_timezone,
+                                    )}
+                              </td>
+                              <td>${row.uid ?? '(System)'}</td>
+                              <td>
+                                <a
+                                  href="${resLocals.urlPrefix}/ai_generate_editor/${row.question_id}"
+                                  class="btn btn-xs btn-primary"
+                                >
+                                  Continue editing
+                                </a>
+                              </td>
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              `
+            : ''}
         </main>
       </body>
     </html>
