@@ -4,6 +4,7 @@ import io
 import os
 import pathlib
 import sys
+from inspect import signature
 from typing import Any, Literal, TypedDict
 
 import lxml.html
@@ -143,7 +144,16 @@ def process(
             temp_tail = element.tail
             element.tail = None
 
-            element_value = mod[phase](lxml.html.tostring(element), data)
+            args = [lxml.html.tostring(element), data]
+
+            # We need to support legacy element functions, which take three arguments.
+            # The second argument is `element_index`; we'll pass `None`. This is
+            # consistent with the same backwards-compatibility logic in `zygote.py`.
+            arg_names = list(signature(mod[phase]).parameters.keys())
+            if arg_names == ["element_html", "element_index", "data"]:
+                args.insert(1, None)
+
+            element_value = mod[phase](*args)
 
             # Restore the tail text.
             element.tail = temp_tail

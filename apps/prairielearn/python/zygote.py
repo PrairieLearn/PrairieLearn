@@ -326,12 +326,7 @@ def worker_loop() -> None:
                 # check if the desired function is a legacy element function - if
                 # so, we add an argument for element_index
                 arg_names = list(signature(method).parameters.keys())
-                if (
-                    len(arg_names) == 3
-                    and arg_names[0] == "element_html"
-                    and arg_names[1] == "element_index"
-                    and arg_names[2] == "data"
-                ):
+                if arg_names == ["element_html", "element_index", "data"]:
                     args.insert(1, None)
 
                 # call the desired function in the loaded module
