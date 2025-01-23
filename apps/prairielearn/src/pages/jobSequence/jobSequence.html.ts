@@ -18,7 +18,6 @@ export function JobSequence({
     navContext: {
       type: 'plain',
       page: 'admin',
-      subPage: 'batchedMigrations', // TODO: Check if this is correct (it did not have navPage specified)
     },
     options: {
       fullWidth: true,
