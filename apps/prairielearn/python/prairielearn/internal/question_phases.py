@@ -150,12 +150,7 @@ def process(
             # The second argument is `element_index`; we'll pass `None`. This is
             # consistent with the same backwards-compatibility logic in `zygote.py`.
             arg_names = list(signature(mod[phase]).parameters.keys())
-            if (
-                len(arg_names) == 3
-                and arg_names[0] == "element_html"
-                and arg_names[1] == "element_index"
-                and arg_names[2] == "data"
-            ):
+            if arg_names == ["element_html", "element_index", "data"]:
                 args.insert(1, None)
 
             element_value = mod[phase](*args)
