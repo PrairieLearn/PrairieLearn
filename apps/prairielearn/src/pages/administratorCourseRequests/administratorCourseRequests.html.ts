@@ -24,6 +24,9 @@ export function AdministratorCourseRequests({
       page: 'admin',
       subPage: 'courses',
     },
+    options: {
+      fullWidth: true,
+    },
     content: html`
       <h1 class="sr-only">All Course Requests</h1>
       ${CourseRequestsTable({
