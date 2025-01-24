@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
@@ -64,7 +65,7 @@ export function InstructorAIGenerateDrafts({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${[HeadContents({ resLocals }), compiledScriptTag('instructorAiGenerateDraftsClient.ts')]}
         <style>
           .reveal-fade {
             position: absolute;
@@ -76,83 +77,6 @@ export function InstructorAIGenerateDrafts({
             pointer-events: none;
           }
         </style>
-        <script>
-          $(() => {
-            const addQuestionCard = document.querySelector('#add-question-card');
-            const addQuestionForm = addQuestionCard.querySelector('form');
-            const addQuestionCardBody = addQuestionCard.querySelector('.card-body');
-            const revealFade = addQuestionCard.querySelector('.reveal-fade');
-            const expandButtonContainer = addQuestionCard.querySelector(
-              '.js-expand-question-form-container',
-            );
-            const expandButton = addQuestionCard.querySelector('.js-expand-question-form');
-
-            let formExpanded = false;
-
-            function expandQuestionForm() {
-              if (formExpanded) return;
-
-              addQuestionCardBody.style.maxHeight = '';
-              revealFade?.remove();
-              expandButtonContainer?.remove();
-
-              formExpanded = true;
-            }
-
-            addQuestionCard.addEventListener('focusin', () => {
-              expandQuestionForm();
-            });
-
-            expandButton?.addEventListener('click', () => {
-              expandQuestionForm();
-            });
-
-            addQuestionForm.addEventListener('submit', () => {
-              // Shuffle the loading phrases for a unique order on each page load.
-              for (let i = LOADING_PHRASES.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [LOADING_PHRASES[i], LOADING_PHRASES[j]] = [LOADING_PHRASES[j], LOADING_PHRASES[i]];
-              }
-
-              let phraseIndex = 0;
-
-              const loadingPhraseContainer = document.querySelector('#loading-phrases');
-
-              (async () => {
-                while (true) {
-                  loadingPhraseContainer.textContent = LOADING_PHRASES[phraseIndex];
-                  phraseIndex = (phraseIndex + 1) % LOADING_PHRASES.length;
-
-                  await delay(3000);
-                }
-              })();
-            });
-          });
-
-          function setPromptToExample() {
-            const options = document.getElementById('user-prompt-example').options;
-            const selection = options[options.selectedIndex].dataset;
-
-            document.getElementById('user-prompt-llm').value = selection.promptGeneral;
-            document.getElementById('user-prompt-llm-user-input').value = selection.promptUserInput;
-            document.getElementById('user-prompt-llm-grading').value = selection.promptGrading;
-          }
-
-          function delay(ms) {
-            return new Promise((resolve, reject) => setTimeout(resolve, ms));
-          }
-
-          const LOADING_PHRASES = [
-            'Hiring more TAs...',
-            'Refining prompts...',
-            'Collapsing wave functions...',
-            'Randomizing numbers...',
-            'Sharpening pencils...',
-            'Warming up the neural network...',
-            'Optimizing learning curves...',
-            'Accessing forbidden knowledge...',
-          ];
-        </script>
       </head>
       <body hx-ext="loading-states">
         ${Navbar({ navPage: 'course_admin', navSubPage: 'questions', resLocals })}
@@ -184,12 +108,18 @@ export function InstructorAIGenerateDrafts({
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <input type="hidden" name="__action" value="generate_question" />
 
+                <!-- Ensure first textbox is fully visible when collapsed -->
                 <div class="form-group">
                   <label for="user-prompt-llm">
                     Give a high-level overview of the question. What internal parameters need to be
                     generated and what information should be provided to students?
                   </label>
-                  <textarea name="prompt" id="user-prompt-llm" class="form-control"></textarea>
+                  <textarea
+                    name="prompt"
+                    id="user-prompt-llm"
+                    class="form-control js-textarea-autosize"
+                    style="resize: none;"
+                  ></textarea>
                   <div class="form-text form-muted">
                     <em>
                       Example: A toy car is pushed off a table with height h at speed v0. Assume
@@ -208,7 +138,8 @@ export function InstructorAIGenerateDrafts({
                   <textarea
                     name="prompt_user_input"
                     id="user-prompt-llm-user-input"
-                    class="form-control"
+                    class="form-control js-textarea-autosize"
+                    style="resize: none;"
                   ></textarea>
                   <div class="form-text form-muted">
                     <em>
@@ -225,7 +156,8 @@ export function InstructorAIGenerateDrafts({
                   <textarea
                     name="prompt_grading"
                     id="user-prompt-llm-grading"
-                    class="form-control"
+                    class="form-control js-textarea-autosize"
+                    style="resize: none;"
                   ></textarea>
                   <div class="form-text form-muted">
                     <em>
@@ -234,31 +166,41 @@ export function InstructorAIGenerateDrafts({
                   </div>
                 </div>
 
-                <hr />
+                ${
+                  // We think this will mostly be useful in local dev or for
+                  // global admins who will want to iterate rapidly and don't
+                  // want to retype a whole prompt each time. For actual users,
+                  // we think this will mostly be confusing if we show it.
+                  resLocals.is_administrator
+                    ? html`
+                        <hr />
 
-                <div class="mb-3">
-                  <label for="user-prompt-example" class="form-label">
-                    Or choose an example prompt:
-                  </label>
-                  <select
-                    id="user-prompt-example"
-                    onchange="setPromptToExample()"
-                    class="custom-select"
-                  >
-                    <option value=""></option>
-                    ${examplePrompts.map(
-                      (question) =>
-                        html`<option
-                          value="${question.id}"
-                          data-prompt-general="${question.promptGeneral}"
-                          data-prompt-user-input="${question.promptUserInput}"
-                          data-prompt-grading="${question.promptGrading}"
-                        >
-                          ${question.id}
-                        </option>`,
-                    )}
-                  </select>
-                </div>
+                        <div class="mb-3">
+                          <label for="user-prompt-example" class="form-label">
+                            Or choose an example prompt:
+                          </label>
+                          <select
+                            id="user-prompt-example"
+                            onchange="setPromptToExample()"
+                            class="custom-select"
+                          >
+                            <option value=""></option>
+                            ${examplePrompts.map(
+                              (question) =>
+                                html`<option
+                                  value="${question.id}"
+                                  data-prompt-general="${question.promptGeneral}"
+                                  data-prompt-user-input="${question.promptUserInput}"
+                                  data-prompt-grading="${question.promptGrading}"
+                                >
+                                  ${question.id}
+                                </option>`,
+                            )}
+                          </select>
+                        </div>
+                      `
+                    : ''
+                }
 
                 <button class="btn btn-primary">
                   <span
