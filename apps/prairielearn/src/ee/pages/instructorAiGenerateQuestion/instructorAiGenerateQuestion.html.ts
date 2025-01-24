@@ -40,25 +40,14 @@ export function InstructorAiGenerateQuestion({ resLocals }: { resLocals: Record<
   return PageLayout({
     resLocals,
     pageTitle: 'Generate question with AI',
-    navPage: 'course_admin',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'questions',
+    },
     options: {
-      navSubPage: 'questions',
       hxExt: 'loading-states',
     },
-    headContent: html`
-      ${compiledScriptTag('question.ts')}
-      <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
-      <script>
-        function setPromptToExample() {
-          const options = document.getElementById('user-prompt-example').options;
-          const selection = options[options.selectedIndex].dataset;
-
-          document.getElementById('user-prompt-llm').value = selection.promptGeneral;
-          document.getElementById('user-prompt-llm-user-input').value = selection.promptUserInput;
-          document.getElementById('user-prompt-llm-grading').value = selection.promptGrading;
-        }
-      </script>
-    `, // TODO: CHeck is this okay?
     content: html`
       <div class="mb-3">
         <a href="${resLocals.urlPrefix}/ai_generate_question_drafts" class="btn btn-sm btn-primary">
@@ -165,6 +154,20 @@ export function InstructorAiGenerateQuestion({ resLocals }: { resLocals: Record<
           </div>
         </div>
       </div>
+    `,
+    postContent: html`
+      ${compiledScriptTag('question.ts')}
+      <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+      <script>
+        function setPromptToExample() {
+          const options = document.getElementById('user-prompt-example').options;
+          const selection = options[options.selectedIndex].dataset;
+
+          document.getElementById('user-prompt-llm').value = selection.promptGeneral;
+          document.getElementById('user-prompt-llm-user-input').value = selection.promptUserInput;
+          document.getElementById('user-prompt-llm-grading').value = selection.promptGrading;
+        }
+      </script>
     `,
   });
 }

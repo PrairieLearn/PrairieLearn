@@ -32,17 +32,7 @@ export function InstructorAiGenerateDraftEditor({
     headContent: html`
       ${compiledScriptTag('question.ts')}
       <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
-      <script>
-        function setPromptToExample() {
-          const options = document.getElementById('user-prompt-example').options;
-          const selection = options[options.selectedIndex].dataset;
-
-          document.getElementById('user-prompt-llm').value = selection.promptGeneral;
-          document.getElementById('user-prompt-llm-user-input').value = selection.promptUserInput;
-          document.getElementById('user-prompt-llm-grading').value = selection.promptGrading;
-        }
-      </script>
-    `, // TODO: is the placement if this script tag okay? should this be put into some "footerContent" property?
+    `,
     content: html`
       <div class="mb-3">
         <a href="${resLocals.urlPrefix}/ai_generate_question_drafts" class="btn btn-sm btn-primary">
@@ -139,6 +129,18 @@ export function InstructorAiGenerateDraftEditor({
           to use it on assessments and make manual edits.
         </div>
       </div>
+    `,
+    postContent: html`
+      <script>
+        function setPromptToExample() {
+          const options = document.getElementById('user-prompt-example').options;
+          const selection = options[options.selectedIndex].dataset;
+
+          document.getElementById('user-prompt-llm').value = selection.promptGeneral;
+          document.getElementById('user-prompt-llm-user-input').value = selection.promptUserInput;
+          document.getElementById('user-prompt-llm-grading').value = selection.promptGrading;
+        }
+      </script>
     `,
   });
 }

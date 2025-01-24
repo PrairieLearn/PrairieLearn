@@ -45,7 +45,7 @@ export function CourseSyncs({
 
   return PageLayout({
     resLocals,
-    pageTitle: 'Course Sync', // TODO: Casing?
+    pageTitle: 'Course sync',
     navContext: {
       type: 'instructor',
       page: 'course_admin',
