@@ -3,11 +3,9 @@ def parse(data):
     for name in variables:
         var = data["submitted_answers"].get(name, None)
         if var is None:
-            data["format_errors"][name] = "Variable {} is not defined".format(name)
+            data["format_errors"][name] = f"Variable {name} is not defined"
         elif var > 1 or var < 0:
-            data["format_errors"][name] = "Variable {} has to be either 0 or 1".format(
-                name
-            )
+            data["format_errors"][name] = f"Variable {name} has to be either 0 or 1"
 
 
 def grade(data):

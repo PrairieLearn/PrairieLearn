@@ -372,6 +372,7 @@ export const CourseSchema = z.object({
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
   short_name: z.string().nullable(),
+  show_getting_started: z.boolean(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
@@ -390,7 +391,6 @@ export const CourseInstanceSchema = z.object({
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
   long_name: z.string().nullable(),
-  ps_linked: z.boolean(),
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
@@ -1095,7 +1095,7 @@ export const VariantSchema = z.object({
   question_id: IdSchema,
   true_answer: z.record(z.string(), z.any()).nullable(),
   user_id: IdSchema.nullable(),
-  variant_seed: z.string().nullable(),
+  variant_seed: z.string(),
   workspace_id: IdSchema.nullable(),
 });
 export type Variant = z.infer<typeof VariantSchema>;

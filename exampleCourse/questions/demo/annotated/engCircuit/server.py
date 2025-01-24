@@ -7,7 +7,7 @@ from schemdraw import Drawing
 
 def file(data):
     if data["filename"] != "figure.svg":
-        return
+        return None
 
     drawing = Drawing()
     params_dict = data["params"]

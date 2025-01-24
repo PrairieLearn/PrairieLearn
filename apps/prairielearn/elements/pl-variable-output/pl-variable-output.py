@@ -138,6 +138,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             # Assembling Python array formatting
             if np.isscalar(var_data):
+                assert not isinstance(var_data, memoryview)
                 prefix = ""
                 suffix = ""
             else:
@@ -206,5 +207,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
     }
 
-    with open("pl-variable-output.mustache", "r", encoding="utf-8") as f:
+    with open("pl-variable-output.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

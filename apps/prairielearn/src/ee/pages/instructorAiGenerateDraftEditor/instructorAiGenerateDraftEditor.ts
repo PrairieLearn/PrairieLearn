@@ -120,7 +120,7 @@ router.get(
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
     // Render the preview.
-    await getAndRenderVariant(variant_id, null, res.locals, {
+    await getAndRenderVariant(variant_id, null, res.locals as any, {
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.

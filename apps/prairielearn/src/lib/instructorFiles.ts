@@ -78,7 +78,7 @@ function getContextPaths(
       clientDir: path.join(rootPath, 'clientFilesAssessment'),
       urlPrefix: `${locals.urlPrefix}/assessment/${locals.assessment.id}`,
     };
-  } else if (locals.navPage === 'question') {
+  } else if (locals.navPage === 'question' || locals.navPage === 'public_question') {
     const rootPath = path.join(coursePath, 'questions', locals.question.qid);
     return {
       rootPath,
