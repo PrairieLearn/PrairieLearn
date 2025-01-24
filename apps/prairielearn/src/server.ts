@@ -1309,10 +1309,6 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   ]);
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view',
-    (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
-  );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view', [
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'file_view';
@@ -1815,6 +1811,10 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/file_view', [
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navSubPage = 'file_view';
+      next();
+    },
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
   ]);
   app.use(
