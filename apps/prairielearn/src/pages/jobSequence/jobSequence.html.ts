@@ -16,7 +16,7 @@ export function JobSequence({
     resLocals,
     pageTitle: `${job_sequence.description} #${job_sequence.number}`,
     navContext: {
-      type: 'plain',
+      type: resLocals.navbarType,
       page: 'admin',
     },
     options: {
