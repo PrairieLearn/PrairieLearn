@@ -140,7 +140,6 @@ router.post(
       if (!(await fs.pathExists(infoAssessmentPath))) {
         throw new error.HttpStatusError(400, 'infoAssessment.json does not exist');
       }
-      const paths = getPaths(undefined, res.locals);
 
       if (!req.body.aid) {
         throw new error.HttpStatusError(400, `Invalid TID (was falsy): ${req.body.aid}`);
@@ -151,6 +150,8 @@ router.post(
           `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
         );
       }
+
+      const paths = getPaths(undefined, res.locals);
 
       const assessmentInfo = JSON.parse(await fs.readFile(infoAssessmentPath, 'utf8'));
       assessmentInfo.title = req.body.title;
