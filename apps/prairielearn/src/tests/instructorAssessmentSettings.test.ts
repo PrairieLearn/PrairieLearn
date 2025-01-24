@@ -335,10 +335,15 @@ describe('Editing assessment settings', () => {
       {
         method: 'POST',
         body: new URLSearchParams({
-          __action: 'change_id',
+          __action: 'update_assessment',
           __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
           orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-          id: 'A1',
+          title: 'Test Title',
+          type: 'Homework',
+          set: 'Homework',
+          number: '1',
+          module: 'Module1',
+          aid: 'A1',
         }),
       },
     );
@@ -365,10 +370,15 @@ describe('Editing assessment settings', () => {
         {
           method: 'POST',
           body: new URLSearchParams({
-            __action: 'change_id',
+            __action: 'update_assessment',
             __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
             orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-            id: '../A2',
+            title: 'Test Title',
+            type: 'Homework',
+            set: 'Homework',
+            number: '1',
+            module: 'Module1',
+            aid: '../A2',
           }),
         },
       );

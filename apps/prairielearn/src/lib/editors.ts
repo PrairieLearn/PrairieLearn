@@ -180,8 +180,16 @@ export function getUniqueNames({
   }
 }
 
-interface BaseEditorOptions {
-  locals: Record<string, any>;
+interface BaseEditorOptions<ResLocals = object> {
+  locals: {
+    authz_data: Record<string, any>;
+    course: Course;
+    user: User;
+  } & ResLocals;
+}
+
+interface BaseEditorOptionsInternal extends BaseEditorOptions {
+  description: string;
 }
 
 interface WriteResult {
@@ -193,30 +201,24 @@ export abstract class Editor {
   protected authz_data: Record<string, any>;
   protected course: Course;
   protected user: User;
-  protected description: string;
+  public readonly description: string;
 
-  constructor(params: BaseEditorOptions) {
+  protected constructor(params: BaseEditorOptionsInternal) {
     this.authz_data = params.locals.authz_data;
     this.course = params.locals.course;
     this.user = params.locals.user;
+    this.description = params.description;
   }
 
   /**
    * Write changes to disk. Returns an object with that paths that `git` should
    * add and the commit message that should be used.
+   *
+   * If no files were changed, return null.
    */
-  protected abstract write(): Promise<WriteResult>;
+  abstract write(): Promise<WriteResult | null>;
 
-  /**
-   * Determines whether or not the edit should be executed. For instance, this
-   * can check if the edit would actually modify a file and skip the write/commit/push
-   * steps if it would not.
-   */
-  protected async shouldEdit(): Promise<boolean> {
-    return true;
-  }
-
-  protected assertCanEdit() {
+  assertCanEdit() {
     // Do not allow users to edit without permission
     if (!this.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
@@ -312,13 +314,16 @@ export abstract class Editor {
         const writeAndCommitChanges = async () => {
           job.data.saveAttempted = true;
 
-          if (!(await this.shouldEdit())) return;
-
           job.info('Write changes to disk');
-          const { pathsToAdd, commitMessage } = await this.write();
+          const writeResult = await this.write();
+
+          if (!writeResult) {
+            job.info('No files were changed');
+            return;
+          }
 
           job.info('Commit changes');
-          await job.exec('git', ['add', ...pathsToAdd], {
+          await job.exec('git', ['add', ...writeResult.pathsToAdd], {
             cwd: this.course.path,
             env: gitEnv,
           });
@@ -331,7 +336,7 @@ export abstract class Editor {
               `user.email="${this.user.email || this.user.uid}"`,
               'commit',
               '-m',
-              commitMessage,
+              writeResult.commitMessage,
             ],
             {
               cwd: this.course.path,
@@ -581,12 +586,18 @@ export class AssessmentCopyEditor extends Editor {
 
   public readonly uuid: string;
 
-  constructor(params: BaseEditorOptions) {
-    super(params);
+  constructor(
+    params: BaseEditorOptions<{ course_instance: CourseInstance; assessment: Assessment }>,
+  ) {
+    const { course_instance, assessment } = params.locals;
 
-    this.assessment = params.locals.assessment;
-    this.course_instance = params.locals.course_instance;
-    this.description = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid}`;
+    super({
+      ...params,
+      description: `${course_instance.short_name}: copy assessment ${assessment.tid}`,
+    });
+
+    this.assessment = assessment;
+    this.course_instance = course_instance;
 
     this.uuid = uuidv4();
   }
@@ -650,12 +661,18 @@ export class AssessmentDeleteEditor extends Editor {
   private course_instance: CourseInstance;
   private assessment: Assessment;
 
-  constructor(params: BaseEditorOptions) {
-    super(params);
+  constructor(
+    params: BaseEditorOptions<{ course_instance: CourseInstance; assessment: Assessment }>,
+  ) {
+    const { course_instance, assessment } = params.locals;
 
-    this.course_instance = params.locals.course_instance;
-    this.assessment = params.locals.assessment;
-    this.description = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
+    super({
+      ...params,
+      description: `${course_instance.short_name}: delete assessment ${assessment.tid}`,
+    });
+
+    this.course_instance = course_instance;
+    this.assessment = assessment;
   }
 
   async write() {
@@ -684,13 +701,21 @@ export class AssessmentRenameEditor extends Editor {
   private course_instance: CourseInstance;
   private assessment: Assessment;
 
-  constructor(params: BaseEditorOptions & { tid_new: string }) {
-    super(params);
+  constructor(
+    params: BaseEditorOptions<{ course_instance: CourseInstance; assessment: Assessment }> & {
+      tid_new: string;
+    },
+  ) {
+    const { course_instance, assessment } = params.locals;
+
+    super({
+      ...params,
+      description: `${course_instance.short_name}: rename assessment ${assessment.tid}`,
+    });
 
     this.tid_new = params.tid_new;
-    this.course_instance = params.locals.course_instance;
-    this.assessment = params.locals.assessment;
-    this.description = `${this.course_instance.short_name}: rename assessment ${this.assessment.tid}`;
+    this.course_instance = course_instance;
+    this.assessment = assessment;
   }
 
   async write() {
@@ -704,8 +729,11 @@ export class AssessmentRenameEditor extends Editor {
       this.course_instance.short_name,
       'assessments',
     );
-    const oldPath = path.join(assessmentsPath, this.assessment.tid);
-    const newPath = path.join(assessmentsPath, this.tid_new);
+    const oldPath = path.normalize(path.join(assessmentsPath, this.assessment.tid));
+    const newPath = path.normalize(path.join(assessmentsPath, this.tid_new));
+
+    // Skip editing if the paths are the same.
+    if (oldPath === newPath) return null;
 
     // Ensure that the assessment folder path is fully contained in the assessments directory
     if (!contains(assessmentsPath, newPath)) {
@@ -745,7 +773,7 @@ export class AssessmentAddEditor extends Editor {
   private module?: string;
 
   constructor(
-    params: BaseEditorOptions & {
+    params: BaseEditorOptions<{ course_instance: CourseInstance }> & {
       aid: string;
       title: string;
       type: 'Homework' | 'Exam';
@@ -753,11 +781,14 @@ export class AssessmentAddEditor extends Editor {
       module?: string;
     },
   ) {
-    super(params);
+    const { course_instance } = params.locals;
 
-    this.course_instance = params.locals.course_instance;
+    super({
+      ...params,
+      description: `${course_instance.short_name}: add assessment`,
+    });
 
-    this.description = `${this.course_instance.short_name}: add assessment`;
+    this.course_instance = course_instance;
 
     this.uuid = uuidv4();
 
@@ -847,11 +878,15 @@ export class CourseInstanceCopyEditor extends Editor {
 
   public readonly uuid: string;
 
-  constructor(params: BaseEditorOptions) {
-    super(params);
+  constructor(params: BaseEditorOptions<{ course_instance: CourseInstance }>) {
+    const { course_instance } = params.locals;
 
-    this.course_instance = params.locals.course_instance;
-    this.description = `Copy course instance ${this.course_instance.short_name}`;
+    super({
+      ...params,
+      description: `Copy course instance ${course_instance.short_name}`,
+    });
+
+    this.course_instance = course_instance;
 
     this.uuid = uuidv4();
   }
@@ -910,11 +945,15 @@ export class CourseInstanceCopyEditor extends Editor {
 export class CourseInstanceDeleteEditor extends Editor {
   private course_instance: CourseInstance;
 
-  constructor(params: BaseEditorOptions) {
-    super(params);
+  constructor(params: BaseEditorOptions<{ course_instance: CourseInstance }>) {
+    const { course_instance } = params.locals;
 
-    this.course_instance = params.locals.course_instance;
-    this.description = `Delete course instance ${this.course_instance.short_name}`;
+    super({
+      ...params,
+      description: `Delete course instance ${course_instance.short_name}`,
+    });
+
+    this.course_instance = course_instance;
   }
 
   async write() {
@@ -936,11 +975,21 @@ export class CourseInstanceRenameEditor extends Editor {
   private ciid_new: string;
   private course_instance: CourseInstance;
 
-  constructor(params: BaseEditorOptions & { ciid_new: string }) {
-    super(params);
-    this.ciid_new = params.ciid_new;
-    this.course_instance = params.locals.course_instance;
-    this.description = `Rename course instance ${this.course_instance.short_name}`;
+  constructor(
+    params: BaseEditorOptions<{ course_instance: CourseInstance }> & { ciid_new: string },
+  ) {
+    const {
+      locals: { course_instance },
+      ciid_new,
+    } = params;
+
+    super({
+      ...params,
+      description: `Rename course instance ${course_instance.short_name} to ${ciid_new}`,
+    });
+
+    this.ciid_new = ciid_new;
+    this.course_instance = course_instance;
   }
 
   async write() {
@@ -996,11 +1045,13 @@ export class CourseInstanceAddEditor extends Editor {
       end_access_date?: Temporal.ZonedDateTime;
     },
   ) {
-    super(params);
+    super({
+      ...params,
+      description: 'Add course instance',
+    });
 
     this.uuid = uuidv4();
 
-    this.description = 'Add course instance';
     this.short_name = params.short_name;
     this.long_name = params.long_name;
 
@@ -1124,9 +1175,10 @@ export class QuestionAddEditor extends Editor {
       isDraft?: boolean;
     },
   ) {
-    super(params);
-
-    this.description = 'Add question';
+    super({
+      ...params,
+      description: 'Add question',
+    });
 
     this.uuid = uuidv4();
     this.qid = params.qid;
@@ -1327,7 +1379,10 @@ export class QuestionModifyEditor extends Editor {
       files: Record<string, string>;
     },
   ) {
-    super(params);
+    super({
+      ...params,
+      description: `Modify question ${params.locals.question.qid}`,
+    });
 
     this.question = params.locals.question;
     this.files = params.files;
@@ -1571,15 +1626,18 @@ export class QuestionTransferEditor extends Editor {
       from_path: string;
     },
   ) {
-    super(params);
+    const { from_qid, from_course_short_name, from_path } = params;
 
-    this.from_qid = params.from_qid;
-    this.from_course =
-      params.from_course_short_name == null
-        ? 'unknown course'
-        : `course ${params.from_course_short_name}`;
-    this.from_path = params.from_path;
-    this.description = `Copy question ${this.from_qid} from ${this.from_course}`;
+    const from_course =
+      from_course_short_name == null ? 'unknown course' : `course ${from_course_short_name}`;
+
+    super({
+      ...params,
+      description: `Copy question ${from_qid} from ${from_course}`,
+    });
+
+    this.from_qid = from_qid;
+    this.from_path = from_path;
 
     this.uuid = uuidv4();
   }
@@ -1655,17 +1713,24 @@ export class FileDeleteEditor extends Editor {
       deletePath: string;
     },
   ) {
-    super(params);
-
-    this.container = params.container;
-    this.deletePath = params.deletePath;
+    const {
+      locals: { course },
+      container,
+      deletePath,
+    } = params;
 
     let prefix = '';
-    if (this.course.path !== this.container.rootPath) {
-      prefix = `${path.basename(this.container.rootPath)}: `;
+    if (course.path !== container.rootPath) {
+      prefix = `${path.basename(container.rootPath)}: `;
     }
 
-    this.description = `${prefix}delete ${path.relative(this.container.rootPath, this.deletePath)}`;
+    super({
+      ...params,
+      description: `${prefix}delete ${path.relative(container.rootPath, deletePath)}`,
+    });
+
+    this.container = container;
+    this.deletePath = deletePath;
   }
 
   assertCanEdit() {
@@ -1727,20 +1792,29 @@ export class FileRenameEditor extends Editor {
       newPath: string;
     },
   ) {
-    super(params);
-    this.container = params.container;
-    this.oldPath = params.oldPath;
-    this.newPath = params.newPath;
+    const {
+      locals: { course },
+      container,
+      oldPath,
+      newPath,
+    } = params;
 
     let prefix = '';
-    if (this.course.path !== this.container.rootPath) {
-      prefix = `${path.basename(this.container.rootPath)}: `;
+    if (course.path !== container.rootPath) {
+      prefix = `${path.basename(container.rootPath)}: `;
     }
 
-    this.description = `${prefix}rename ${path.relative(
-      this.container.rootPath,
-      this.oldPath,
-    )} to ${path.relative(this.container.rootPath, this.newPath)}`;
+    const relativeOldPath = path.relative(container.rootPath, oldPath);
+    const relativeNewPath = path.relative(container.rootPath, newPath);
+
+    super({
+      ...params,
+      description: `${prefix}rename ${relativeOldPath} to ${relativeNewPath}`,
+    });
+
+    this.container = container;
+    this.oldPath = oldPath;
+    this.newPath = newPath;
   }
 
   assertCanEdit() {
@@ -1840,17 +1914,25 @@ export class FileUploadEditor extends Editor {
       fileContents: Buffer;
     },
   ) {
-    super(params);
-    this.container = params.container;
-    this.filePath = params.filePath;
-    this.fileContents = params.fileContents;
+    const {
+      locals: { course },
+      container,
+      filePath,
+      fileContents,
+    } = params;
 
     let prefix = '';
-    if (this.course.path !== this.container.rootPath) {
-      prefix = `${path.basename(this.container.rootPath)}: `;
+    if (course.path !== container.rootPath) {
+      prefix = `${path.basename(container.rootPath)}: `;
     }
+    super({
+      ...params,
+      description: `${prefix}upload ${path.relative(container.rootPath, params.filePath)}`,
+    });
 
-    this.description = `${prefix}upload ${path.relative(this.container.rootPath, this.filePath)}`;
+    this.container = container;
+    this.filePath = filePath;
+    this.fileContents = fileContents;
   }
 
   getHashFromBuffer(buffer: Buffer) {
@@ -1923,6 +2005,8 @@ export class FileUploadEditor extends Editor {
   async write() {
     debug('FileUploadEditor: write()');
 
+    if (!(await this.shouldEdit())) return null;
+
     debug('ensure path exists');
     await fs.ensureDir(path.dirname(this.filePath));
 
@@ -1963,19 +2047,28 @@ export class FileModifyEditor extends Editor {
       origHash: string;
     },
   ) {
-    super(params);
-
-    this.container = params.container;
-    this.filePath = params.filePath;
-    this.editContents = params.editContents;
-    this.origHash = params.origHash;
+    const {
+      locals: { course },
+      container,
+      filePath,
+      editContents,
+      origHash,
+    } = params;
 
     let prefix = '';
-    if (this.course.path !== this.container.rootPath) {
-      prefix = `${path.basename(this.container.rootPath)}: `;
+    if (course.path !== container.rootPath) {
+      prefix = `${path.basename(container.rootPath)}: `;
     }
 
-    this.description = `${prefix}modify ${path.relative(this.container.rootPath, this.filePath)}`;
+    super({
+      ...params,
+      description: `${prefix}modify ${path.relative(container.rootPath, filePath)}`,
+    });
+
+    this.container = container;
+    this.filePath = filePath;
+    this.editContents = editContents;
+    this.origHash = origHash;
   }
 
   getHash(contents: string) {
@@ -2034,6 +2127,8 @@ export class FileModifyEditor extends Editor {
   async write() {
     debug('FileModifyEditor: write()');
 
+    if (!(await this.shouldEdit())) return null;
+
     debug('ensure path exists');
     await fs.ensureDir(path.dirname(this.filePath));
 
@@ -2059,9 +2154,11 @@ export class CourseInfoCreateEditor extends Editor {
   private infoJson: any;
 
   constructor(params: BaseEditorOptions & { infoJson: any }) {
-    super(params);
+    super({
+      ...params,
+      description: 'Create infoCourse.json',
+    });
 
-    this.description = 'Create infoCourse.json';
     this.infoJson = params.infoJson;
   }
 
@@ -2079,6 +2176,48 @@ export class CourseInfoCreateEditor extends Editor {
     return {
       pathsToAdd: [infoPath],
       commitMessage: 'create infoCourse.json',
+    };
+  }
+}
+
+export class MultiEditor extends Editor {
+  private editors: Editor[];
+
+  constructor(params: BaseEditorOptions, editors: Editor[]) {
+    super({
+      ...params,
+      description: editors.map((editor) => editor.description).join('; '),
+    });
+
+    this.editors = editors;
+  }
+
+  assertCanEdit() {
+    for (const editor of this.editors) {
+      editor.assertCanEdit();
+    }
+  }
+
+  async write() {
+    const pathsToAdd = new Set<string>();
+    const commitMessages: string[] = [];
+
+    let didChange = false;
+
+    for (const editor of this.editors) {
+      const result = await editor.write();
+      if (result) {
+        didChange = true;
+        result.pathsToAdd.forEach((path) => pathsToAdd.add(path));
+        commitMessages.push(result.commitMessage);
+      }
+    }
+
+    if (!didChange) return null;
+
+    return {
+      pathsToAdd: Array.from(pathsToAdd),
+      commitMessage: commitMessages.join('; '),
     };
   }
 }
