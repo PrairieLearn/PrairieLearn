@@ -8,9 +8,7 @@ export function PageLayout({
   resLocals,
   pageTitle,
   navContext,
-  options = {
-    marginBottom: true,
-  },
+  options = {},
   headContent,
   preContent,
   content,
