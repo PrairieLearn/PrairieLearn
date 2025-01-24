@@ -2211,6 +2211,10 @@ export class MultiEditor extends Editor {
   }
 
   assertCanEdit() {
+    // This should be handled automatically by the individual editors, but
+    // we'll check it here just in case.
+    this.assertCanEdit();
+
     for (const editor of this.editors) {
       editor.assertCanEdit();
     }
