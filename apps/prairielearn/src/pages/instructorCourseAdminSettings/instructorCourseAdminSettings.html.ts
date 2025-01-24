@@ -26,27 +26,26 @@ export function InstructorCourseAdminSettings({
       page: 'course_admin',
       subPage: 'settings',
     },
-    headContent: html`${compiledScriptTag('instructorCourseAdminSettingsClient.ts')}`,
+    headContent: [compiledScriptTag('instructorCourseAdminSettingsClient.ts')],
     content: html`
       ${CourseSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,
         course: resLocals.course,
         urlPrefix: resLocals.urlPrefix,
       })}
+
       <div class="card  mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>Course Settings</h1>
         </div>
         <div class="card-body">
-          ${
-            !courseInfoExists || !coursePathExists
-              ? CourseDirectoryMissingAlert({
-                  resLocals,
-                  coursePathExists,
-                  courseInfoExists,
-                })
-              : ''
-          }
+          ${!courseInfoExists || !coursePathExists
+            ? CourseDirectoryMissingAlert({
+                resLocals,
+                coursePathExists,
+                courseInfoExists,
+              })
+            : ''}
           <form name="edit-course-settings-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
@@ -59,13 +58,11 @@ export function InstructorCourseAdminSettings({
                 name="short_name"
                 value="${resLocals.course.short_name}"
                 required
-                ${
-                  courseInfoExists &&
-                  resLocals.authz_data.has_course_permission_edit &&
-                  !resLocals.course.example_course
-                    ? ''
-                    : 'disabled'
-                }
+                ${courseInfoExists &&
+                resLocals.authz_data.has_course_permission_edit &&
+                !resLocals.course.example_course
+                  ? ''
+                  : 'disabled'}
               />
               <small class="form-text text-muted">
                 The short name of the course. Often this is the course rubric and number (e.g.,
@@ -81,13 +78,11 @@ export function InstructorCourseAdminSettings({
                 name="title"
                 value="${resLocals.course.title}"
                 required
-                ${
-                  courseInfoExists &&
-                  resLocals.authz_data.has_course_permission_edit &&
-                  !resLocals.course.example_course
-                    ? ''
-                    : 'disabled'
-                }
+                ${courseInfoExists &&
+                resLocals.authz_data.has_course_permission_edit &&
+                !resLocals.course.example_course
+                  ? ''
+                  : 'disabled'}
               />
               <small class="form-text text-muted">
                 This is the official title of the course, as given in the course catalog.
@@ -99,13 +94,11 @@ export function InstructorCourseAdminSettings({
                 class="custom-select"
                 id="display_timezone"
                 name="display_timezone"
-                ${
-                  courseInfoExists &&
-                  resLocals.authz_data.has_course_permission_edit &&
-                  !resLocals.course.example_course
-                    ? ''
-                    : 'disabled'
-                }
+                ${courseInfoExists &&
+                resLocals.authz_data.has_course_permission_edit &&
+                !resLocals.course.example_course
+                  ? ''
+                  : 'disabled'}
               >
                 ${availableTimezones.map(
                   (tz) => html`
@@ -152,7 +145,6 @@ export function InstructorCourseAdminSettings({
               </small>
             </div>
             <div class="form-group">
-              s
               <label for="repository">Repository</label>
               <span class="input-group">
                 <input
@@ -174,69 +166,22 @@ export function InstructorCourseAdminSettings({
                     <i class="far fa-clipboard"></i>
                   </button>
                 </div>
-                <div class="form-group">
-                  <label for="path">Path</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="path"
-                    name="path"
-                    value="${resLocals.course.path}"
-                    disabled
-                  />
-                  <small class="form-text text-muted">
-                    The path where course files can be found.
-                  </small>
-                </div>
-                <div class="form-group">
-                  <label for="repository">Repository</label>
-                  <span class="input-group">
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="repository"
-                      name="repository"
-                      value="${resLocals.course.repository}"
-                      disabled
-                    />
-                    <div class="input-group-append">
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-outline-secondary btn-copy"
-                        data-clipboard-text="${resLocals.course.repository}"
-                        aria-label="Copy repository"
-                        ${resLocals.course.repository ? '' : 'disabled'}
-                      >
-                        <i class="far fa-clipboard"></i>
-                      </button>
-                    </div>
-                  </span>
-                  <small class="form-text text-muted">
-                    The Github repository that can be used to sync course files.
-                  </small>
-                </div>
-                <div class="form-check mb-3">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="show_getting_started"
-                    name="show_getting_started"
-                    ${resLocals.course.show_getting_started ? 'checked' : ''}
-                  />
-                  <label class="form-check-label" for="show_getting_started">
-                    Show the getting started checklist
-                  </label>
-                </div>
-                ${EditActions({
-                  coursePathExists,
-                  courseInfoExists,
-                  hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
-                  hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
-                  exampleCourse: resLocals.course.example_course,
-                  urlPrefix: resLocals.urlPrefix,
-                  navPage: resLocals.navPage,
-                })}
-              </form>
+              </span>
+              <small class="form-text text-muted">
+                The Github repository that can be used to sync course files.
+              </small>
+            </div>
+            <div class="form-check mb-3">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="show_getting_started"
+                name="show_getting_started"
+                ${resLocals.course.show_getting_started ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="show_getting_started">
+                Show the getting started checklist
+              </label>
             </div>
             ${EditActions({
               coursePathExists,
