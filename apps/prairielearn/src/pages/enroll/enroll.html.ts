@@ -6,6 +6,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),
@@ -23,6 +24,8 @@ export function Enroll({
   courseInstances: CourseInstance[];
   resLocals: Record<string, any>;
 }) {
+
+
   return html`
     <!doctype html>
     <html lang="en">
