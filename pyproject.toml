@@ -28,11 +28,14 @@ ignore = [
     "D", # pydocstyle
     "ERA", # eradicate (code in comments)
     "EM", # flake8-errmsg
+    "EXE", # flake8-executable
     "E501", # line-too-long
     "FIX", # flake8-fixme
     "INP001", # implicit-namespace-package
     "S", # flake8-bandit (security rules)
-    "T", # flake8-print, flake8-debugger
+    "SLF001", # private-member-access 
+    "T201", # flake8-print
+    "T100", # flake8-debugger
     "TD", # flake8-todos
     "PGH003", # blanket-type-ignore
     "PLE2513", # invalid-character-esc
@@ -54,10 +57,6 @@ ignore = [
     "TRY300", # try-consider-else (returns in try blocks)
     "TRY301", # raise-within-try
     "TRY003", # raise-vanilla-args (long messages in raise statements)
-
-    # These rules need to be implemented
-    "SLF001", # private-member-access 
-    "EXE", # flake8-executable
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
@@ -86,7 +85,7 @@ ignore = [
     # ignore unused parameters in functions
     "ARG"
 ]
-"apps/prairielearn/python/*.py" = ["N803"]
+"apps/prairielearn/python/**/*.py" = ["N803"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
@@ -99,23 +98,49 @@ exclude = [
 ]
 
 [tool.pyright]
+typeCheckingMode = "strict"
 include = [
     "./apps/prairielearn/elements",
     "./apps/prairielearn/python",
-    "./graders/c",
+    "./graders",
 ]
 exclude = [
     "./apps/prairielearn/elements/pl-drawing", # requires refactor
     "./apps/prairielearn/elements/pl-checkbox", # requires refactor
-    "./apps/prairielearn/elements/pl-matrix-component-input", # multiple errors
-    "./apps/prairielearn/elements/pl-matching", # multiple errors
     "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
     "./apps/prairielearn/elements/pl-threejs", # deprecated
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
+executionEnvironments = [
+    # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
+    { root = "./graders/python", pythonVersion = "3.12", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none" },
+    { root = "./graders/c", pythonVersion = "3.12", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none" },
+]
 reportUnnecessaryTypeIgnoreComment = "error"
+# These rules would require significant changes
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+reportMissingTypeStubs = "none"
+# These rules don't provide much value
+reportPrivateUsage = "none"
+reportUnnecessaryIsInstance = "none"
+reportUnknownLambdaType = "none"
+# These rules should be progressively enabled 
+reportMissingParameterType = "none"
+reportMissingTypeArgument = "none"
+reportArgumentType = "none"
+reportUnnecessaryComparison = "information"
+reportUnnecessaryCast = "information"
 
 [tool.pytest.ini_options]
+pythonpath = [
+    "apps/prairielearn/python"
+]
 addopts = "--cov=apps"
-testpaths = ["apps/prairielearn/elements", "apps/prairielearn/python"]
+testpaths = [
+    "apps/prairielearn/elements",
+    "apps/prairielearn/python/test",
+]
