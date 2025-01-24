@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
+import { AiQuestionGenerationPromptSchema } from '../../../lib/db-types.js';
 import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
 import { GenerationFailure } from '../instructorAiGenerateQuestion/instructorAiGenerateQuestion.html.js';
 
@@ -86,6 +87,23 @@ router.post(
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
+  }),
+);
+
+router.get(
+  '/generation_logs.json',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
+    }
+
+    const file = await queryRows(
+      sql.select_ai_question_generation_prompts_by_course_id,
+      { course_id: res.locals.course.id },
+      AiQuestionGenerationPromptSchema,
+    );
+
+    res.json(file);
   }),
 );
 
