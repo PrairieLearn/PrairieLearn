@@ -1310,6 +1310,13 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view',
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
   );
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view', [
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navSubPage = 'file_view';
+      next();
+    },
+    (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
+  ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_download',
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
@@ -1797,10 +1804,13 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/course_admin/tags',
     (await import('./pages/instructorCourseAdminTags/instructorCourseAdminTags.js')).default,
   );
-  app.use(
-    '/pl/course/:course_id(\\d+)/course_admin/file_edit',
+  app.use('/pl/course/:course_id(\\d+)/course_admin/file_edit', [
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navSubPage = 'file_edit';
+      next();
+    },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
-  );
+  ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/file_view', [
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
   ]);
