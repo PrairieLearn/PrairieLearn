@@ -20,7 +20,6 @@ import {
   QuestionRenameEditor,
   QuestionDeleteEditor,
   QuestionCopyEditor,
-  type Editor,
   MultiEditor,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -153,7 +152,8 @@ router.post(
         }
       });
 
-      const editors: Editor[] = [
+      const editor = new MultiEditor({ locals: res.locals as any }, [
+        // Each of these editors will no-op if there wasn't any change.
         new FileModifyEditor({
           locals: res.locals as any,
           container: {
@@ -168,9 +168,7 @@ router.post(
           locals: res.locals as any,
           qid_new,
         }),
-      ];
-
-      const editor = new MultiEditor({ locals: res.locals as any }, editors);
+      ]);
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);

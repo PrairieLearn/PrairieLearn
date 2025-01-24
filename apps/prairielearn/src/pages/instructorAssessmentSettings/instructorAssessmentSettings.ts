@@ -18,7 +18,6 @@ import {
   AssessmentRenameEditor,
   AssessmentDeleteEditor,
   FileModifyEditor,
-  type Editor,
   MultiEditor,
 } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -173,8 +172,8 @@ router.post(
         }
       });
 
-      // Each of these editors will no-op if there wasn't any change.
-      const editors: Editor[] = [
+      const editor = new MultiEditor({ locals: res.locals as any }, [
+        // Each of these editors will no-op if there wasn't any change.
         new FileModifyEditor({
           locals: res.locals as any,
           container: {
@@ -186,9 +185,7 @@ router.post(
           origHash: req.body.orig_hash,
         }),
         new AssessmentRenameEditor({ locals: res.locals as any, tid_new }),
-      ];
-
-      const editor = new MultiEditor({ locals: res.locals as any }, editors);
+      ]);
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
