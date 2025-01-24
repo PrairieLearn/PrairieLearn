@@ -28,6 +28,7 @@ export function InstructorAssessmentUploads({
     navContext: {
       type: 'instructor',
       page: 'assessment',
+      subPage: 'uploads',
     },
     options: {
       fullWidth: true,
