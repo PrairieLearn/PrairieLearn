@@ -127,19 +127,12 @@ reportMissingTypeStubs = "none"
 # These rules don't provide much value
 reportPrivateUsage = "none"
 reportUnnecessaryIsInstance = "none"
-# These rules can be enabled alongside typing improvements
 reportUnknownLambdaType = "none"
-reportUnusedVariable = "none"
+# These rules should be progressively enabled 
 reportMissingParameterType = "none"
 reportMissingTypeArgument = "none"
 reportArgumentType = "none"
-# These rules indicate that the code can be improved
-reportAttributeAccessIssue = "information"
-reportOperatorIssue = "information"
 reportUnnecessaryComparison = "information"
-reportIndexIssue = "information"
-reportCallIssue = "information"
-reportUntypedNamedTuple = "information"
 reportUnnecessaryCast = "information"
 
 [tool.pytest.ini_options]
