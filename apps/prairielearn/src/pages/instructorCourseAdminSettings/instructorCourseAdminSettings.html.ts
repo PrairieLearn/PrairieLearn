@@ -24,6 +24,7 @@ export function InstructorCourseAdminSettings({
     navContext: {
       type: 'instructor',
       page: 'course_admin',
+      subPage: 'settings',
     },
     headContent: html`${compiledScriptTag('instructorCourseAdminSettingsClient.ts')}`,
     content: html`
@@ -37,13 +38,15 @@ export function InstructorCourseAdminSettings({
           <h1>Course Settings</h1>
         </div>
         <div class="card-body">
-          ${!courseInfoExists || !coursePathExists
-            ? CourseDirectoryMissingAlert({
-                resLocals,
-                coursePathExists,
-                courseInfoExists,
-              })
-            : ''}
+          ${
+            !courseInfoExists || !coursePathExists
+              ? CourseDirectoryMissingAlert({
+                  resLocals,
+                  coursePathExists,
+                  courseInfoExists,
+                })
+              : ''
+          }
           <form name="edit-course-settings-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
@@ -56,11 +59,13 @@ export function InstructorCourseAdminSettings({
                 name="short_name"
                 value="${resLocals.course.short_name}"
                 required
-                ${courseInfoExists &&
-                resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course
-                  ? ''
-                  : 'disabled'}
+                ${
+                  courseInfoExists &&
+                  resLocals.authz_data.has_course_permission_edit &&
+                  !resLocals.course.example_course
+                    ? ''
+                    : 'disabled'
+                }
               />
               <small class="form-text text-muted">
                 The short name of the course. Often this is the course rubric and number (e.g.,
@@ -76,11 +81,13 @@ export function InstructorCourseAdminSettings({
                 name="title"
                 value="${resLocals.course.title}"
                 required
-                ${courseInfoExists &&
-                resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course
-                  ? ''
-                  : 'disabled'}
+                ${
+                  courseInfoExists &&
+                  resLocals.authz_data.has_course_permission_edit &&
+                  !resLocals.course.example_course
+                    ? ''
+                    : 'disabled'
+                }
               />
               <small class="form-text text-muted">
                 This is the official title of the course, as given in the course catalog.
@@ -92,11 +99,13 @@ export function InstructorCourseAdminSettings({
                 class="custom-select"
                 id="display_timezone"
                 name="display_timezone"
-                ${courseInfoExists &&
-                resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course
-                  ? ''
-                  : 'disabled'}
+                ${
+                  courseInfoExists &&
+                  resLocals.authz_data.has_course_permission_edit &&
+                  !resLocals.course.example_course
+                    ? ''
+                    : 'disabled'
+                }
               >
                 ${availableTimezones.map(
                   (tz) => html`

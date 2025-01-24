@@ -42,7 +42,7 @@ export function InstructorCourseAdminInstances({
 
   return PageLayout({
     resLocals,
-    pageTitle: 'Course instances',
+    pageTitle: 'Course nstances',
     navContext: {
       type: 'instructor',
       page: 'course_admin',

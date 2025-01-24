@@ -13,7 +13,7 @@ export function InstructorCourseAdminSets({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: 'Assessment sets',
+    pageTitle: 'Assessment Sets',
     navContext: {
       type: 'instructor',
       page: 'course_admin',

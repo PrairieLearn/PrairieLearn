@@ -13,7 +13,7 @@ export function InstructorCourseAdminModules({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: 'Assessment modules',
+    pageTitle: 'Assessment Modules',
     navContext: {
       type: 'instructor',
       page: 'course_admin',
