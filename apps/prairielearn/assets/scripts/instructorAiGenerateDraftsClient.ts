@@ -86,12 +86,32 @@ onDocumentReady(() => {
   });
 });
 
+function resizeTextarea(textarea: HTMLTextAreaElement) {
+  textarea.style.height = 'auto';
+  console.log(textarea.scrollHeight);
+  textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      resizeTextarea(entry.target as HTMLTextAreaElement);
+    }
+  });
+});
+
 observe('.js-textarea-autosize', {
-  constructor: HTMLElement,
+  constructor: HTMLTextAreaElement,
   add(el) {
-    el.addEventListener('input', () => {
-      el.style.height = 'auto';
-      el.style.height = el.scrollHeight + 'px';
-    });
+    resizeTextarea(el);
+    el.addEventListener('input', () => resizeTextarea(el));
+
+    // A textarea might not be immediately visible when the page loads. So when
+    // that changes, we should recompute the height since it would have had
+    // an initial height of 0.
+    observer.observe(el);
+  },
+  remove(el) {
+    observer.unobserve(el);
   },
 });
