@@ -31,7 +31,7 @@ export function InstructorAssessmentGroups({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: 'Assessment groups',
+    pageTitle: 'Groups',
     navContext: {
       type: 'instructor',
       page: 'assessment',

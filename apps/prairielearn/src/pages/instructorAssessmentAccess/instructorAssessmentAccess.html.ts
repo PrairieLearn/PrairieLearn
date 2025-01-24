@@ -25,7 +25,7 @@ type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
 
 export function InstructorAssessmentAccess({
   resLocals,
-  accessRules,
+  accessRules
 }: {
   resLocals: Record<string, any>;
   accessRules: AssessmentAccessRules[];

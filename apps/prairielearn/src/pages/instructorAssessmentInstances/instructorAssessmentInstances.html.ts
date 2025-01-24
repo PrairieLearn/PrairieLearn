@@ -8,7 +8,7 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record<string, any> }) {
   return PageLayout({
     resLocals,
-    pageTitle: 'Students',
+    pageTitle: 'Instances',
     navContext: {
       type: 'instructor',
       page: 'assessment',

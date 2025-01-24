@@ -39,7 +39,7 @@ export function AssessmentQuestion({
 
   return PageLayout({
     resLocals,
-    pageTitle: `${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}`,
+    pageTitle: 'Manual Grading',
     navContext: {
       type: 'instructor',
       page: 'assessment',
