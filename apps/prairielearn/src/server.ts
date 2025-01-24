@@ -1418,10 +1418,6 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   ]);
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view',
-    (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
-  );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view', [
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'file_view';
