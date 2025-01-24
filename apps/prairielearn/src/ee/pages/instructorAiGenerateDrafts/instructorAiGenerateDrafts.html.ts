@@ -283,3 +283,20 @@ export function InstructorAIGenerateDrafts({
     </html>
   `.toString();
 }
+
+export function GenerationFailure({
+  urlPrefix,
+  jobSequenceId,
+}: {
+  urlPrefix: string;
+  jobSequenceId: string;
+}): string {
+  return html`
+    <div id="generation-results">
+      <h3>Generation Failed</h3>
+
+      <p>The LLM did not generate any question file.</p>
+      <a href="${urlPrefix + '/jobSequence/' + jobSequenceId}">See job logs</a>
+    </div>
+  `.toString();
+}

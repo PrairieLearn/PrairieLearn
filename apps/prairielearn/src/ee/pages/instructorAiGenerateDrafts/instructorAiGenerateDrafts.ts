@@ -8,11 +8,11 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { config } from '../../../lib/config.js';
 import { AiQuestionGenerationPromptSchema } from '../../../lib/db-types.js';
 import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
-import { GenerationFailure } from '../instructorAiGenerateQuestion/instructorAiGenerateQuestion.html.js';
 
 import {
   InstructorAIGenerateDrafts,
   DraftMetadataWithQidSchema,
+  GenerationFailure,
 } from './instructorAiGenerateDrafts.html.js';
 
 const router = express.Router();
