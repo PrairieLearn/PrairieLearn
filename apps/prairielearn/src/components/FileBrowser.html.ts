@@ -17,7 +17,8 @@ import * as editorUtil from '../lib/editorUtil.js';
 import type { InstructorFilePaths } from '../lib/instructorFiles.js';
 import { encodePath } from '../lib/uri-util.js';
 
-import { PageLayout } from './PageLayout.html.js';
+import { HeadContents } from './HeadContents.html.js';
+import { Navbar } from './Navbar.html.js';
 import {
   AssessmentSyncErrorsAndWarnings,
   CourseInstanceSyncErrorsAndWarnings,
@@ -324,67 +325,64 @@ export function FileBrowser({
     return paths.branch.slice(1);
   });
 
-  return PageLayout({
-    resLocals,
-    pageTitle,
-    navContext: {
-      type: resLocals.navbarType,
-      page: resLocals.navPage,
-      subPage: resLocals.navSubPage,
-    },
-    options: {
-      fullWidth: true,
-    },
-    headContent: html`
-      <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
-      ${compiledScriptTag('instructorFileBrowserClient.ts')}
-      <style>
-        .popover {
-          max-width: 50%;
-        }
-      </style>
-    `,
-    content: html`
-      ${syncErrorsAndWarnings}
-      <h1 class="sr-only">Files</h1>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <div class="row align-items-center justify-content-between">
-            <div class="col-auto text-monospace d-flex">
-              ${joinHtml(
-                breadcrumbPaths.map(
-                  (dir) => html`
-                    ${dir.canView
-                      ? html`
-                          <a
-                            class="text-white"
-                            href="${paths.urlPrefix}/file_view/${encodePath(dir.path)}"
-                          >
-                            ${dir.name}
-                          </a>
-                        `
-                      : html`<span>${dir.name}</span>`}
-                  `,
-                ),
-                html`<span class="mx-2">/</span>`,
-              )}
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${HeadContents({ resLocals, pageTitle })}
+        <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
+        ${compiledScriptTag('instructorFileBrowserClient.ts')}
+        <style>
+          .popover {
+            max-width: 50%;
+          }
+        </style>
+      </head>
+      <body>
+        ${Navbar({ resLocals })}
+        <main id="content" class="container-fluid">
+          ${syncErrorsAndWarnings}
+          <h1 class="sr-only">Files</h1>
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+              <div class="row align-items-center justify-content-between">
+                <div class="col-auto text-monospace d-flex">
+                  ${joinHtml(
+                    breadcrumbPaths.map(
+                      (dir) => html`
+                        ${dir.canView
+                          ? html`
+                              <a
+                                class="text-white"
+                                href="${paths.urlPrefix}/file_view/${encodePath(dir.path)}"
+                              >
+                                ${dir.name}
+                              </a>
+                            `
+                          : html`<span>${dir.name}</span>`}
+                      `,
+                    ),
+                    html`<span class="mx-2">/</span>`,
+                  )}
+                </div>
+                <div class="col-auto">
+                  ${isFile
+                    ? FileBrowserActions({ paths, fileInfo, isReadOnly, csrfToken })
+                    : paths.hasEditPermission && !isReadOnly
+                      ? DirectoryBrowserActions({ paths, csrfToken })
+                      : ''}
+                </div>
+              </div>
             </div>
-            <div class="col-auto">
-              ${isFile
-                ? FileBrowserActions({ paths, fileInfo, isReadOnly, csrfToken })
-                : paths.hasEditPermission && !isReadOnly
-                  ? DirectoryBrowserActions({ paths, csrfToken })
-                  : ''}
-            </div>
-          </div>
-        </div>
 
-        ${isFile
-          ? html`<div class="card-body">${FileContentPreview({ paths, fileInfo })}</div>`
-          : DirectoryBrowserBody({ paths, directoryListings, isReadOnly, csrfToken })}
-      </div>
-    `,
-  });
+            ${isFile
+              ? html`<div class="card-body">${FileContentPreview({ paths, fileInfo })}</div>`
+              : DirectoryBrowserBody({ paths, directoryListings, isReadOnly, csrfToken })}
+          </div>
+        </main>
+      </body>
+    </html>
+  `.toString();
 }
 
 function FileBrowserActions({
