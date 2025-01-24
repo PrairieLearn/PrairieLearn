@@ -593,7 +593,7 @@ export class AssessmentCopyEditor extends Editor {
 
     super({
       ...params,
-      description: `${course_instance.short_name}: copy assessment ${assessment.tid}`,
+      description: `${course_instance.short_name}: Copy assessment ${assessment.tid}`,
     });
 
     this.assessment = assessment;
@@ -668,7 +668,7 @@ export class AssessmentDeleteEditor extends Editor {
 
     super({
       ...params,
-      description: `${course_instance.short_name}: delete assessment ${assessment.tid}`,
+      description: `${course_instance.short_name}: Delete assessment ${assessment.tid}`,
     });
 
     this.course_instance = course_instance;
@@ -710,7 +710,7 @@ export class AssessmentRenameEditor extends Editor {
 
     super({
       ...params,
-      description: `${course_instance.short_name}: rename assessment ${assessment.tid}`,
+      description: `${course_instance.short_name}: Rename assessment ${assessment.tid}`,
     });
 
     this.tid_new = params.tid_new;
@@ -785,7 +785,7 @@ export class AssessmentAddEditor extends Editor {
 
     super({
       ...params,
-      description: `${course_instance.short_name}: add assessment`,
+      description: `${course_instance.short_name}: Add assessment`,
     });
 
     this.course_instance = course_instance;
@@ -1747,7 +1747,7 @@ export class FileDeleteEditor extends Editor {
 
     super({
       ...params,
-      description: `${prefix}delete ${path.relative(container.rootPath, deletePath)}`,
+      description: `${prefix}Delete ${path.relative(container.rootPath, deletePath)}`,
     });
 
     this.container = container;
@@ -1830,7 +1830,7 @@ export class FileRenameEditor extends Editor {
 
     super({
       ...params,
-      description: `${prefix}rename ${relativeOldPath} to ${relativeNewPath}`,
+      description: `${prefix}Rename ${relativeOldPath} to ${relativeNewPath}`,
     });
 
     this.container = container;
@@ -1948,7 +1948,7 @@ export class FileUploadEditor extends Editor {
     }
     super({
       ...params,
-      description: `${prefix}upload ${path.relative(container.rootPath, params.filePath)}`,
+      description: `${prefix}Upload ${path.relative(container.rootPath, params.filePath)}`,
     });
 
     this.container = container;
@@ -2083,7 +2083,7 @@ export class FileModifyEditor extends Editor {
 
     super({
       ...params,
-      description: `${prefix}modify ${path.relative(container.rootPath, filePath)}`,
+      description: `${prefix}Modify ${path.relative(container.rootPath, filePath)}`,
     });
 
     this.container = container;
