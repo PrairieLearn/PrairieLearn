@@ -45,6 +45,23 @@ router.get(
   }),
 );
 
+router.get(
+  '/generation_logs.json',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
+    }
+
+    const file = await queryRows(
+      sql.select_ai_question_generation_prompts_by_course_id,
+      { course_id: res.locals.course.id },
+      AiQuestionGenerationPromptSchema,
+    );
+
+    res.json(file);
+  }),
+);
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -87,23 +104,6 @@ router.post(
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
-  }),
-);
-
-router.get(
-  '/generation_logs.json',
-  asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
-    }
-
-    const file = await queryRows(
-      sql.select_ai_question_generation_prompts_by_course_id,
-      { course_id: res.locals.course.id },
-      AiQuestionGenerationPromptSchema,
-    );
-
-    res.json(file);
   }),
 );
 
