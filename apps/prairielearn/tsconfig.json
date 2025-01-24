@@ -1,4 +1,10 @@
 {
+  "compilerOptions": {
+    // Bun requires these to be set at the root `tsconfig.json` file.
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment"
+  },
   "files": [],
   "include": [],
   "references": [{ "path": "./src/tsconfig.json" }, { "path": "./assets/scripts/tsconfig.json" }]

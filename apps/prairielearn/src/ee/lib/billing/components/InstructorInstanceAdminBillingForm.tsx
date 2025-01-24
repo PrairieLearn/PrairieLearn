@@ -1,5 +1,5 @@
 import { h } from 'preact';
-import React, { useState } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 
 import { type PlanName, planGrantsMatchPlanFeatures } from '../plans-types.js';
 
