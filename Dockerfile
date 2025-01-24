@@ -30,10 +30,11 @@ COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/
 #
 # If the following issue is ever addressed, we can use that instead:
 # https://github.com/yarnpkg/berry/issues/6339
-RUN cd /PrairieLearn && yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
+WORKDIR /PrairieLearn
+RUN yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
-COPY . /PrairieLearn/
+COPY . .
 
 # set up PrairieLearn and run migrations to initialize the DB
 RUN chmod +x /PrairieLearn/scripts/init.sh \
@@ -52,4 +53,4 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && git config --global safe.directory '*'
 
 HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
-CMD /PrairieLearn/scripts/init.sh
+CMD [ "/PrairieLearn/scripts/init.sh" ]
