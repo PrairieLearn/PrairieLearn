@@ -30,6 +30,17 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
     options: {
       fullWidth: true,
     },
+    preContent: html`
+      <script>
+        function copyToClipboard(element) {
+          var $temp = $('<input>');
+          $('body').append($temp);
+          $temp.val($(element).text()).select();
+          document.execCommand('copy');
+          $temp.remove();
+        }
+      </script>
+    `,
     content: html`
       ${CourseInstanceSyncErrorsAndWarnings({ authz_data, courseInstance, course, urlPrefix })}
       ${!authz_data.has_course_permission_edit

@@ -23,7 +23,7 @@ export function InstructorInstanceAdminSettings({
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
-      subPage: 'assessment',
+      subPage: 'settings',
     },
     headContent: html`
       ${compiledScriptTag('instructorInstanceAdminSettingsClient.ts')}
