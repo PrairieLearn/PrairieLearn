@@ -27,7 +27,7 @@ PROPS: dict[str, PropInfo] = {
     "params": {
         "type": "object",
         "present_phases": all_phases,
-        "edit_phases": frozenset({"generate", "prepare", "grade"}),
+        "edit_phases": frozenset({"generate", "prepare", "parse", "grade"}),
     },
     "correct_answers": {
         "type": "object",

@@ -1020,9 +1020,9 @@ def string_partition_first_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
     # Split at first left delimiter
-    (s_before_left, s_left, s) = s.partition(left)
+    (s_before_left, _, s) = s.partition(left)
     # Split at first right delimiter
-    (s, s_right, s_after_right) = s.partition(right)
+    (s, _, s_after_right) = s.partition(right)
     # Return results
     return s_before_left, s, s_after_right
 
@@ -1031,9 +1031,9 @@ def string_partition_outer_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
     # Split at first left delimiter
-    (s_before_left, s_left, s) = s.partition(left)
+    (s_before_left, _, s) = s.partition(left)
     # Split at last right delimiter
-    (s, s_right, s_after_right) = s.rpartition(right)
+    (s, _, s_after_right) = s.rpartition(right)
     # Return results
     return s_before_left, s, s_after_right
 

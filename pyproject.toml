@@ -128,8 +128,7 @@ reportMissingTypeStubs = "none"
 reportPrivateUsage = "none"
 reportUnnecessaryIsInstance = "none"
 reportUnknownLambdaType = "none"
-# These rules can be enabled alongside typing / code improvements
-reportUnusedVariable = "none"
+# These rules should be progressively enabled 
 reportMissingParameterType = "none"
 reportMissingTypeArgument = "none"
 reportArgumentType = "none"
