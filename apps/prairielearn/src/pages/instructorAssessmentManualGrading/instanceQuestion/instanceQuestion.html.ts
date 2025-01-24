@@ -32,6 +32,7 @@ export function InstanceQuestion({
   return PageLayout({
     resLocals: {
       ...resLocals,
+      // instance_question_info is reset to keep the default title from showing the student question number
       instance_question_info: undefined,
     },
     pageTitle: 'Manual grading',

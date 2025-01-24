@@ -897,7 +897,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
     function (req, res, next) {
-      res.locals.navPage = 'assessment'; // TODO: Should this be removed?
+      res.locals.navPage = 'assessment';
       next();
     },
   );
@@ -933,14 +933,8 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/downloads',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'downloads'; // TODO: OK to leave the same? this is because these are download links
-        next();
-      },
-      (await import('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads.js'))
-        .default,
-    ],
+    (await import('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads.js'))
+      .default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
@@ -959,7 +953,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_edit',
     [
-      // TODO: edited in page-layout-for-course-instance-admin-pages
       function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'file_edit';
         next();
@@ -970,7 +963,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_view',
     [
-      // TODO: edited in page-layout-for-course-admin-pages
       function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'file_view';
         next();
@@ -986,10 +978,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/assessment_question/:assessment_question_id(\\d+)',
     [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'manual_grading'; // TODO: Check if this is needed
-        next();
-      },
       (await import('./middlewares/selectAndAuthzAssessmentQuestion.js')).default,
       (
         await import(
@@ -1001,10 +989,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/instance_question/:instance_question_id(\\d+)',
     [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'manual_grading'; // TODO: Check if this is needed
-        next();
-      },
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
       (
         await import(

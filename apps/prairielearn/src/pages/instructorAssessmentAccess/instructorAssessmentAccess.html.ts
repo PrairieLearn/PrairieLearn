@@ -32,9 +32,9 @@ export function InstructorAssessmentAccess({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: `${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access`, // TODO: could this title be better?
+    pageTitle: 'Access',
     navContext: {
-      type: 'public',
+      type: 'instructor',
       page: 'assessment',
       subPage: 'access',
     },

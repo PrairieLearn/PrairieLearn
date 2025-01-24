@@ -58,7 +58,7 @@ export function InstructorAssessmentQuestions({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: 'Assessment questions', // TODO: could this be improved?
+    pageTitle: 'Questions',
     headContent: html` ${compiledScriptTag('instructorAssessmentQuestionsClient.ts')} `,
     navContext: {
       type: 'instructor',
