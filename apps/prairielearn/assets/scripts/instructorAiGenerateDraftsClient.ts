@@ -8,7 +8,7 @@ const LOADING_PHRASES = [
   'Collapsing wave functions...',
   'Randomizing numbers...',
   'Sharpening pencils...',
-  'Warming up the neural network...',
+  'Warming up neural networks...',
   'Optimizing learning curves...',
   'Accessing forbidden knowledge...',
 ];
@@ -18,28 +18,26 @@ function delay(ms: number) {
 }
 
 onDocumentReady(() => {
-  const addQuestionCard = document.querySelector('#add-question-card') as HTMLElement;
-  const addQuestionForm = addQuestionCard.querySelector('form') as HTMLElement;
-  const addQuestionCardBody = addQuestionCard.querySelector('.card-body') as HTMLElement;
-  const revealFade = addQuestionCard.querySelector('.reveal-fade') as HTMLElement;
-  const expandButtonContainer = addQuestionCard.querySelector(
-    '.js-expand-question-form-container',
-  ) as HTMLElement;
-  const expandButton = addQuestionCard.querySelector('.js-expand-question-form') as HTMLElement;
+  const addQuestionCard = document.querySelector('#add-question-card');
+  const addQuestionForm = addQuestionCard?.querySelector('form');
+  const hiddenInputsContainer = addQuestionCard?.querySelector('.js-hidden-inputs-container');
+  const revealFade = addQuestionCard?.querySelector('.reveal-fade');
+  const expandButtonContainer = addQuestionCard?.querySelector('.js-expand-button-container');
+  const expandButton = addQuestionCard?.querySelector('button');
 
   let formExpanded = false;
 
   function expandQuestionForm() {
     if (formExpanded) return;
 
-    addQuestionCardBody.style.maxHeight = '';
     revealFade?.remove();
     expandButtonContainer?.remove();
+    hiddenInputsContainer?.classList?.remove('d-none');
 
     formExpanded = true;
   }
 
-  addQuestionCard.addEventListener('focusin', () => {
+  addQuestionCard?.addEventListener('focusin', () => {
     expandQuestionForm();
   });
 
@@ -47,7 +45,7 @@ onDocumentReady(() => {
     expandQuestionForm();
   });
 
-  addQuestionForm.addEventListener('submit', () => {
+  addQuestionForm?.addEventListener('submit', () => {
     // Shuffle the loading phrases for a unique order on each page load.
     for (let i = LOADING_PHRASES.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));

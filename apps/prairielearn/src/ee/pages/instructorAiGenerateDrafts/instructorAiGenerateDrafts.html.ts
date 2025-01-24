@@ -72,8 +72,8 @@ export function InstructorAIGenerateDrafts({
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 30px;
-            background: linear-gradient(to bottom, transparent, var(--bs-light));
+            height: 6rem;
+            background: linear-gradient(to bottom, transparent, 25%, var(--bs-light));
             pointer-events: none;
           }
         </style>
@@ -89,13 +89,10 @@ export function InstructorAIGenerateDrafts({
           </div>
           <div
             id="add-question-card"
-            class="card mb-5 overflow-hidden mx-auto"
+            class="card mb-5 mx-auto overflow-hidden"
             style="max-width: 700px"
           >
-            <div
-              class="card-body position-relative overflow-hidden"
-              style="${hasDrafts ? 'max-height: 150px;' : ''}"
-            >
+            <div class="card-body position-relative">
               <h1 class="h3 text-center">Generate a new question with AI</h1>
               <form
                 id="add-question-form"
@@ -108,7 +105,6 @@ export function InstructorAIGenerateDrafts({
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <input type="hidden" name="__action" value="generate_question" />
 
-                <!-- Ensure first textbox is fully visible when collapsed -->
                 <div class="form-group">
                   <label for="user-prompt-llm">
                     Give a high-level overview of the question. What internal parameters need to be
@@ -130,106 +126,106 @@ export function InstructorAIGenerateDrafts({
                   </div>
                 </div>
 
-                <div class="form-group">
-                  <label for="user-prompt-llm-user-input">
-                    How should students input their solution? What choices or input boxes are they
-                    given?
-                  </label>
-                  <textarea
-                    name="prompt_user_input"
-                    id="user-prompt-llm-user-input"
-                    class="form-control js-textarea-autosize"
-                    style="resize: none;"
-                  ></textarea>
-                  <div class="form-text form-muted">
-                    <em>
-                      Example: students should enter the solution using a decimal number. The answer
-                      should be in seconds.
-                    </em>
+                <div class="js-hidden-inputs-container ${hasDrafts ? 'd-none' : ''}">
+                  <div class="form-group">
+                    <label for="user-prompt-llm-user-input">
+                      How should students input their solution? What choices or input boxes are they
+                      given?
+                    </label>
+                    <textarea
+                      name="prompt_user_input"
+                      id="user-prompt-llm-user-input"
+                      class="form-control js-textarea-autosize"
+                      style="resize: none;"
+                    ></textarea>
+                    <div class="form-text form-muted">
+                      <em>
+                        Example: students should enter the solution using a decimal number. The
+                        answer should be in seconds.
+                      </em>
+                    </div>
                   </div>
-                </div>
 
-                <div class="form-group">
-                  <label for="user-prompt-llm-grading">
-                    How is the correct answer determined?
-                  </label>
-                  <textarea
-                    name="prompt_grading"
-                    id="user-prompt-llm-grading"
-                    class="form-control js-textarea-autosize"
-                    style="resize: none;"
-                  ></textarea>
-                  <div class="form-text form-muted">
-                    <em>
-                      Example: the answer is computed as sqrt(2 * h / g) where g = 9.81 m/s^2
-                    </em>
+                  <div class="form-group">
+                    <label for="user-prompt-llm-grading">
+                      How is the correct answer determined?
+                    </label>
+                    <textarea
+                      name="prompt_grading"
+                      id="user-prompt-llm-grading"
+                      class="form-control js-textarea-autosize"
+                      style="resize: none;"
+                    ></textarea>
+                    <div class="form-text form-muted">
+                      <em>
+                        Example: the answer is computed as sqrt(2 * h / g) where g = 9.81 m/s^2
+                      </em>
+                    </div>
                   </div>
-                </div>
 
-                ${
-                  // We think this will mostly be useful in local dev or for
-                  // global admins who will want to iterate rapidly and don't
-                  // want to retype a whole prompt each time. For actual users,
-                  // we think this will mostly be confusing if we show it.
-                  resLocals.is_administrator
-                    ? html`
-                        <hr />
+                  ${
+                    // We think this will mostly be useful in local dev or for
+                    // global admins who will want to iterate rapidly and don't
+                    // want to retype a whole prompt each time. For actual users,
+                    // we think this will mostly be confusing if we show it.
+                    resLocals.is_administrator
+                      ? html`
+                          <hr />
 
-                        <div class="mb-3">
-                          <label for="user-prompt-example" class="form-label">
-                            Or choose an example prompt:
-                          </label>
-                          <select
-                            id="user-prompt-example"
-                            onchange="setPromptToExample()"
-                            class="custom-select"
-                          >
-                            <option value=""></option>
-                            ${examplePrompts.map(
-                              (question) =>
-                                html`<option
-                                  value="${question.id}"
-                                  data-prompt-general="${question.promptGeneral}"
-                                  data-prompt-user-input="${question.promptUserInput}"
-                                  data-prompt-grading="${question.promptGrading}"
-                                >
-                                  ${question.id}
-                                </option>`,
-                            )}
-                          </select>
-                        </div>
-                      `
-                    : ''
-                }
+                          <div class="mb-3">
+                            <label for="user-prompt-example" class="form-label">
+                              Or choose an example prompt:
+                            </label>
+                            <select
+                              id="user-prompt-example"
+                              onchange="setPromptToExample()"
+                              class="custom-select"
+                            >
+                              <option value=""></option>
+                              ${examplePrompts.map(
+                                (question) =>
+                                  html`<option
+                                    value="${question.id}"
+                                    data-prompt-general="${question.promptGeneral}"
+                                    data-prompt-user-input="${question.promptUserInput}"
+                                    data-prompt-grading="${question.promptGrading}"
+                                  >
+                                    ${question.id}
+                                  </option>`,
+                              )}
+                            </select>
+                          </div>
+                        `
+                      : ''
+                  }
 
-                <button class="btn btn-primary">
-                  <span
-                    class="spinner-grow spinner-grow-sm d-none"
-                    role="status"
-                    aria-hidden="true"
+                  <button class="btn btn-primary">
+                    <span
+                      class="spinner-grow spinner-grow-sm d-none"
+                      role="status"
+                      aria-hidden="true"
+                      data-loading-class-remove="d-none"
+                    >
+                    </span>
+                    Create question
+                  </button>
+
+                  <div
+                    id="loading-phrases"
+                    class="d-none mt-1"
                     data-loading-class-remove="d-none"
-                  >
-                  </span>
-                  Create question
-                </button>
-
-                <div
-                  id="loading-phrases"
-                  class="d-none mt-1"
-                  data-loading-class-remove="d-none"
-                ></div>
+                  ></div>
+                  <div id="generation-results"></div>
+                </div>
               </form>
-              <div id="generation-results"></div>
               ${hasDrafts ? html`<div class="reveal-fade"></div>` : ''}
             </div>
             ${hasDrafts
               ? html`
                   <div
-                    class="p-2 d-flex justify-content-center bg-light js-expand-question-form-container"
+                    class="p-2 d-flex justify-content-center bg-light js-expand-button-container"
                   >
-                    <button type="button" class="btn btn-sm btn-link js-expand-question-form">
-                      Expand
-                    </button>
+                    <button type="button" class="btn btn-sm btn-link">Expand</button>
                   </div>
                 `
               : ''}
