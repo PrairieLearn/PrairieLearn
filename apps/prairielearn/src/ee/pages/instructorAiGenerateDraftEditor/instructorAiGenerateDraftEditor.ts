@@ -9,7 +9,7 @@ import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { AiGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
+import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant, setRendererHeader } from '../../../lib/question-render.js';
@@ -103,7 +103,7 @@ router.get(
         question_id: req.params.question_id,
         course_id: res.locals.course.id,
       },
-      AiGenerationPromptSchema,
+      AiQuestionGenerationPromptSchema,
     );
 
     if (prompts.length === 0) {
@@ -170,7 +170,7 @@ router.post(
           question_id: req.params.question_id,
           course_id: res.locals.course.id,
         },
-        AiGenerationPromptSchema,
+        AiQuestionGenerationPromptSchema,
       );
 
       if (prompts.length < 1) {
@@ -210,7 +210,7 @@ router.post(
           question_id: question.id,
           course_id: res.locals.course.id,
         },
-        AiGenerationPromptSchema,
+        AiQuestionGenerationPromptSchema,
       );
 
       if (prompts.length === 0) {
@@ -277,7 +277,7 @@ router.post(
       const prompts = await queryRows(
         sql.select_ai_question_generation_prompt_by_id_and_question,
         { prompt_id: req.body.unsafe_prompt_id, question_id: req.params.question_id },
-        AiGenerationPromptSchema,
+        AiQuestionGenerationPromptSchema,
       );
       if (prompts.length !== 1) {
         throw new error.HttpStatusError(
