@@ -21,16 +21,16 @@ import { run } from '@prairielearn/run';
 import { escapeRegExp } from '@prairielearn/sanitize';
 
 import {
-  getLockNameForCoursePath,
   getCourseCommitHash,
-  updateCourseCommitHash,
+  getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
+  updateCourseCommitHash,
 } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import * as b64Util from './base64-util.js';
-import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
+import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -635,9 +635,9 @@ export class AssessmentCopyEditor extends Editor {
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
     infoJson.uuid = this.uuid;
-    await fs.writeJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
-      spaces: 4,
-    });
+
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(assessmentPath, 'infoAssessment.json'), formattedJson);
 
     return {
       pathsToAdd: [assessmentPath],
@@ -896,9 +896,9 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Write infoCourseInstance.json with new longName and uuid');
     infoJson.longName = names.longName;
     infoJson.uuid = this.uuid;
-    await fs.writeJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
-      spaces: 4,
-    });
+
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
     return {
       pathsToAdd: [courseInstancePath],
@@ -1111,6 +1111,7 @@ export class QuestionAddEditor extends Editor {
 
   private qid?: string;
   private title?: string;
+  private template_qid?: string;
   private files?: Record<string, string>;
   private isDraft?: boolean;
 
@@ -1118,6 +1119,7 @@ export class QuestionAddEditor extends Editor {
     params: BaseEditorOptions & {
       qid?: string;
       title?: string;
+      template_qid?: string;
       files?: Record<string, string>;
       isDraft?: boolean;
     },
@@ -1129,6 +1131,7 @@ export class QuestionAddEditor extends Editor {
     this.uuid = uuidv4();
     this.qid = params.qid;
     this.title = params.title;
+    this.template_qid = params.template_qid;
     this.files = params.files;
     this.isDraft = params.isDraft;
   }
@@ -1138,9 +1141,7 @@ export class QuestionAddEditor extends Editor {
     const questionsPath = path.join(this.course.path, 'questions');
 
     const { qid, title } = await run(async () => {
-      if (this.qid && this.title) {
-        return { qid: this.qid, title: this.title };
-      } else if (this.isDraft) {
+      if (!(this.qid && this.title) && this.isDraft) {
         let draftNumber = await sqldb.queryRow(
           sql.update_draft_number,
           { course_id: this.course.id },
@@ -1172,34 +1173,126 @@ export class QuestionAddEditor extends Editor {
       const { shortName, longName } = getUniqueNames({
         shortNames: oldNamesShort,
         longNames: oldNamesLong,
+        shortName: this.qid,
+        longName: this.title,
       });
 
       return { qid: shortName, title: longName };
     });
 
-    const questionPath = path.join(questionsPath, qid);
+    const newQuestionPath = path.join(questionsPath, qid);
 
-    const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
-    const toPath = questionPath;
+    // Ensure that the question folder path is fully contained in the questions directory of the course
+    if (!contains(questionsPath, newQuestionPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The path of the question folder to add</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${newQuestionPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
+          </div>
+        `,
+      });
+    }
 
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+    if (this.template_qid) {
+      const exampleCourseQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
+      const fromPath = path.join(exampleCourseQuestionsPath, this.template_qid);
+
+      // Ensure that the template_qid folder path is fully contained in the example course questions directory
+      if (!contains(exampleCourseQuestionsPath, fromPath)) {
+        throw new AugmentedError('Invalid folder path', {
+          info: html`
+            <p>The path of the template question folder</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${fromPath}</pre>
+            </div>
+            <p>must be inside the root directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${exampleCourseQuestionsPath}</pre>
+            </div>
+          `,
+        });
+      }
+
+      // Ensure that the question folder path is fully contained in the questions directory of the course
+      if (!contains(questionsPath, newQuestionPath)) {
+        throw new AugmentedError('Invalid folder path', {
+          info: html`
+            <p>The path of the question folder to add</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${newQuestionPath}</pre>
+            </div>
+            <p>must be inside the root directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
+            </div>
+          `,
+        });
+      }
+
+      debug(`Copy template\n from ${fromPath}\n to ${newQuestionPath}`);
+      await fs.copy(fromPath, newQuestionPath, { overwrite: false, errorOnExist: true });
+
+      debug('Read info.json');
+      const infoJson = await fs.readJson(path.join(newQuestionPath, 'info.json'));
+
+      debug('Write info.json with the new title and uuid');
+      infoJson.title = this.title;
+      infoJson.uuid = this.uuid;
+
+      // Reset the topic.
+      infoJson.topic = 'Default';
+
+      // Delete values that might not make sense in the target course.
+      delete infoJson.tags;
+      delete infoJson.shareSourcePublicly;
+      delete infoJson.sharingSets;
+      delete infoJson.sharePublicly;
+
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+
+      await fs.writeFile(path.join(newQuestionPath, 'info.json'), formattedJson);
+    } else {
+      debug(`Create an empty question at ${newQuestionPath}`);
+
+      const newQuestionInfoFilePath = path.join(newQuestionPath, 'info.json');
+      const newQuestionHtmlFilePath = path.join(newQuestionPath, 'question.html');
+      const newQuestionScriptFilePath = path.join(newQuestionPath, 'server.py');
+
+      const data = {
+        uuid: this.uuid,
+        title,
+        topic: 'Default',
+        type: 'v3',
+      };
+
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(data));
+
+      await fs.ensureDir(newQuestionPath);
+      await fs.writeFile(newQuestionInfoFilePath, formattedJson);
+      await fs.ensureFile(newQuestionHtmlFilePath);
+      await fs.ensureFile(newQuestionScriptFilePath);
+    }
 
     if (this.files != null) {
       debug('Remove template files when file texts provided');
-      await fs.remove(path.join(toPath, 'question.html'));
-      await fs.remove(path.join(toPath, 'server.py'));
+      await fs.remove(path.join(newQuestionPath, 'question.html'));
+      await fs.remove(path.join(newQuestionPath, 'server.py'));
 
       if ('info.json' in this.files) {
-        await fs.remove(path.join(toPath, 'info.json'));
+        await fs.remove(path.join(newQuestionPath, 'info.json'));
       }
 
       debug('Load files from text');
       for (const file of Object.keys(this.files)) {
-        const newPath = path.join(toPath, file);
+        const newPath = path.join(newQuestionPath, file);
 
         // Ensure that files are fully contained in the question directory.
-        if (contains(toPath, newPath)) {
+        if (contains(newQuestionPath, newPath)) {
           await fs.writeFile(newPath, this.files[file]);
         } else {
           throw new AugmentedError('Invalid file path', {
@@ -1210,26 +1303,15 @@ export class QuestionAddEditor extends Editor {
               </div>
               <p>must be inside the root directory</p>
               <div class="container">
-                <pre class="bg-dark text-white rounded p-2">${toPath}</pre>
+                <pre class="bg-dark text-white rounded p-2">${newQuestionPath}</pre>
               </div>
             `,
           });
         }
       }
     }
-
-    debug('Read info.json');
-    const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
-
-    debug('Write info.json with new title and uuid');
-    infoJson.title = title;
-    infoJson.uuid = this.uuid;
-    // The template question contains tags that shouldn't be copied to the new question.
-    delete infoJson.tags;
-    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
-
     return {
-      pathsToAdd: [questionPath],
+      pathsToAdd: [newQuestionPath],
       commitMessage: `add question ${qid}`,
     };
   }
@@ -1465,7 +1547,8 @@ export class QuestionCopyEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['shareSourcePublicly'];
 
-    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 
     return {
       pathsToAdd: [questionPath],
@@ -1552,7 +1635,8 @@ export class QuestionTransferEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['shareSourcePublicly'];
 
-    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 
     return {
       pathsToAdd: [questionPath],
@@ -1985,10 +2069,12 @@ export class CourseInfoCreateEditor extends Editor {
     debug('CourseInfoEditor: write()');
     const infoPath = path.join(this.course.path, 'infoCourse.json');
 
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(this.infoJson));
+
     // This will error if:
-    // - this.course.path does not exist (use of writeJson)
+    // - this.course.path does not exist (use of writeFile)
     // - Creating a new file and infoPath does exist (use of 'wx')
-    await fs.writeJson(infoPath, this.infoJson, { spaces: 4, flag: 'wx' });
+    await fs.writeFile(infoPath, formattedJson, { flag: 'wx' });
 
     return {
       pathsToAdd: [infoPath],

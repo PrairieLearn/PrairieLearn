@@ -21,6 +21,8 @@ import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-4o';
+
 /**
  * Generates the common preamble with general PrairieLearn information for the LLM
  *
@@ -32,19 +34,26 @@ function promptPreamble(context: string): string {
 
 You are an assistant that helps instructors write questions for PrairieLearn.
 
-A question has a \`question.html\` file that can contain standard HTML, CSS, and JavaScript. It also includes PrairieLearn elements like \`<pl-multiple-choice>\` and \`<pl-number-input>\`.
+A question has a \`question.html\` file that can contain standard HTML, CSS, and JavaScript. It can also include PrairieLearn elements like \`<pl-multiple-choice>\` and \`<pl-number-input>\`.
 
-A question may also have a \`server.py\` file that can randomly generate unique parameters and answers, and which can also assign grades to student submissions. \`server.py\` may be omitted if it's not necessary.
+A question may also have a \`server.py\` file that can randomly generate unique parameters and answers, and which can also assign grades to student submissions.
 
-## Generating random parameters
+## Generating and using random parameters
 
 \`server.py\` may define a \`generate\` function. \`generate\` has a single parameter \`data\` which can be modified by reference. It has the following properties:
 
 - \`params\`: A dictionary. Random parameters, choices, etc. can be written here for later retrieval.
-
-## Using random parameters
+- \`correct_answers\`: A dictionary. Correct answers can be written here for later retrieval, if needed.
 
 Parameters can be read in \`question.html\` with Mustache syntax. For instance, if \`server.py\` contains \`data["params"]["answer"]\`, it can be read with \`{{ params.answer }}\` in \`question.html\`.
+
+If a \`question.html\` file includes Mustache templates, a \`server.py\` should be provided to generate the necessary parameters.
+
+If the question does not use random parameters, \`server.py\` can be omitted.
+
+## Formatting
+
+You can use LaTeX to format numerical quantities, equations, formulas, and so on. For inline LaTeX, use \`$...$\`. For block LaTeX, use \`$$...$$\`.
 
 # Context
 
@@ -264,7 +273,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     // TODO [very important]: normalize to prevent prompt injection attacks
     const completion = await client.chat.completions.create({
-      model: 'gpt-4o',
+      model: MODEL_NAME,
       messages: [
         { role: 'system', content: sysPrompt },
         { role: 'user', content: userPrompt },
@@ -481,7 +490,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   // TODO [very important]: normalize to prevent prompt injection attacks
 
   const completion = await client.chat.completions.create({
-    model: 'gpt-4o',
+    model: MODEL_NAME,
     messages: [
       { role: 'system', content: sysPrompt },
       { role: 'user', content: revisionPrompt },

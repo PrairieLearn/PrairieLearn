@@ -42,7 +42,6 @@ async function setLocals(req, res) {
   ) {
     throw new error.HttpStatusError(404, 'Not Found');
   }
-  return;
 }
 
 router.post(

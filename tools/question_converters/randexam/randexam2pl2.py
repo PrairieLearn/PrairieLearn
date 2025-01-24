@@ -6,22 +6,10 @@
 
 # ruff: noqa: B023 -- script abuses inline functions; don't lint unbound variables
 
-import collections
-import csv
-import difflib
-import email.mime.application
-import email.mime.multipart
-import email.mime.text
-import getpass
-import itertools
 import os
-import random
 import re
-import smtplib
 import string
-import subprocess
 import sys
-import time
 import uuid
 
 import numpy as np
@@ -60,11 +48,11 @@ log_file = None
 
 
 def init_logging(output_filename):
-    global log_file
+    global log_file  # noqa: PLW0603
     try:
         print(f"Logging information to file: {output_filename}")
         if log_file is not None:
-            raise Exception("logging already initialized")
+            raise RuntimeError("logging already initialized")
         log_file = open(output_filename, "w")  # noqa: SIM115
     except Exception as exc:
         print(f"ERROR: failed to initialize logging: {exc}")
@@ -72,10 +60,9 @@ def init_logging(output_filename):
 
 
 def log(msg):
-    global log_file
     try:
         if log_file is None:
-            raise Exception("logging not initialized")
+            raise RuntimeError("logging not initialized")
         log_file.write(msg + "\n")
     except Exception as exc:
         print(f"ERROR: logging failed for message '{msg}': {exc}")
@@ -174,7 +161,7 @@ class LibraryRegexp:
     no_tail indicates whether trailing text after the regexp is permitted
     """
 
-    def __init__(self, name, regexp, no_tail=False):
+    def __init__(self, name, regexp, *, no_tail=False):
         self.name = name
         self.regexp = regexp
         self.no_tail = no_tail
@@ -360,7 +347,7 @@ def read_library(input_filename):
                 state.variant.incorrect_answers.append(state.answer.body)
             if len(state.variant.answers) > 5:
                 print(f"Too many answers at line {state.answer.line_number}")
-                exit(1)
+                sys.exit(1)
 
         def append_to_preamble():
             file_log("appending line to preamble")
@@ -391,7 +378,7 @@ def read_library(input_filename):
                 transition("coverpage")
             elif match_name == "comment":
                 file_log("skipping comment line")
-            elif match_name == "text" or match_name == "blank":
+            elif match_name in ("text", "blank"):
                 append_to_preamble()
             else:
                 bad_transition()
@@ -410,7 +397,7 @@ def read_library(input_filename):
         elif state.name == "zone":
             if match_name == "comment":
                 file_log("skipping comment line")
-            elif match_name == "text" or match_name == "blank":
+            elif match_name in ("text", "blank"):
                 append_to_zone_body()
             elif match_name == "question":
                 transition("question")
@@ -443,7 +430,7 @@ def read_library(input_filename):
             else:
                 bad_transition()
         elif state.name == "variant":
-            if match_name == "comment" or match_name == "text" or match_name == "blank":
+            if match_name in ("comment", "text", "blank"):
                 append_to_variant_body()
             elif match_name == "begin_answers":
                 transition("answers")
@@ -465,7 +452,7 @@ def read_library(input_filename):
             else:
                 bad_transition()
         elif state.name == "answer":
-            if match_name == "comment" or match_name == "text" or match_name == "blank":
+            if match_name in ("comment", "text", "blank"):
                 append_to_answer_body()
             elif match_name == "correct_answer":
                 transition("answer")
@@ -485,7 +472,7 @@ def read_library(input_filename):
             else:
                 bad_transition()
         elif state.name == "solution":
-            if match_name == "text" or match_name == "blank":
+            if match_name in ("text", "blank"):
                 append_to_solution_body()
             elif match_name == "end_solution":
                 transition("question")
@@ -571,18 +558,18 @@ def check_library(library):
 
 
 ######################################################################
-def mkdir_or_die(dir):
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+def mkdir_or_die(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-    if not os.path.isdir(dir):
-        print(f"Could not create directory ({dir})")
+    if not os.path.isdir(directory):
+        print(f"Could not create directory ({directory})")
         sys.exit(1)
 
 
 ######################################################################
 def escape_json_string(s):
-    s = s.replace("\n", "").replace("\[", "$$").replace("\]", "$$")  # Harry modified
+    s = s.replace("\n", "").replace("[", "$$").replace("]", "$$")  # Harry modified
     return s.replace("\\", "\\\\").replace('"', '\\"')  # Harry modified
 
 
@@ -721,7 +708,7 @@ def write_qids(output_directory, topic, qids):
         out_f.write('"\n')
 
 
-def export_library(output_directory, library, topic, tags, library_filename):
+def export_library(output_directory, library, topic, tags):
     log_and_print(f"Exporting to {output_directory}")
     question_base_directory = os.path.join(output_directory, "questions")
     mkdir_or_die(question_base_directory)

@@ -12,21 +12,15 @@ the section entitled "Personal Access Tokens", you can generate tokens for
 yourself. These tokens give you all the permissions that your normal user
 account has.
 
-You can provide your token via the `Private-Token` header:
+Provide your token via the `Private-Token` header:
 
 ```sh
 curl -H "Private-Token: TOKEN" https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
 ```
 
-You can also provide the token via a `private_token` query parameter:
-
-```sh
-curl https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>?private_token=TOKEN
-```
-
 ## Example access script
 
-An example script that will download all API data for a course instance is at <https://github.com/PrairieLearn/PrairieLearn/blob/master/tools/api_download.py>. You can use it like this:
+An example script that will download all API data for a course instance is at [api_download.py](https://github.com/PrairieLearn/PrairieLearn/blob/master/tools/api_download.py). You can use it like this:
 
 ```sh
 python api_download.py --token 9a6932a1-e356-4ddc-ad82-4cf30ad896ac --course-instance-id 29832 --output-dir tam212fa18

@@ -9,7 +9,7 @@ import requests
 class ExtendAction(argparse.Action):
     """Add argparse action='extend' for pre-3.8 python"""
 
-    def __call__(self, parser, namespace, values, option_string=None):
+    def __call__(self, _parser, namespace, values, _option_string=None):
         items = getattr(namespace, self.dest) or []
         items.extend(values)
         setattr(namespace, self.dest, items)
@@ -18,7 +18,7 @@ class ExtendAction(argparse.Action):
 class Canvas:
     """Canvas"""
 
-    def __init__(self, token=None, args=None):
+    def __init__(self, args=None):
         self.debug = args.debug if args else False
         with open(os.path.join(os.path.dirname(__file__), "config.json")) as config:
             self.config = json.load(config)
@@ -27,7 +27,7 @@ class Canvas:
         self.token_header = {"Authorization": f"Bearer {self.token}"}
 
     @staticmethod
-    def add_arguments(parser, course=True, quiz=False, assignment=False):
+    def add_arguments(parser, *, course=True, quiz=False, assignment=False):
         """docstring"""
 
         parser.add_argument(
@@ -40,7 +40,7 @@ class Canvas:
         if assignment:
             parser.add_argument("-a", "--assignment", type=int, help="Assignment ID")
 
-    def request(self, request, stop_at_first=False):
+    def request(self, request, *, stop_at_first=False):
         """docstring"""
         retval = []
         response = requests.get(self.api_url + request, headers=self.token_header)
@@ -96,7 +96,7 @@ class Canvas:
             courses.extend(result)
         return courses
 
-    def course(self, course_id, prompt_if_needed=False):
+    def course(self, course_id, *, prompt_if_needed=False):
         """docstring"""
         if course_id:
             for course in self.request(f"/courses/{course_id}?include[]=term"):
@@ -137,7 +137,7 @@ class Course(Canvas):
             # individually for each page.
             for page_data in result:
                 new_page_datas = self.request(
-                    f'{self.url_prefix}/pages/{page_data["url"]}'
+                    f"{self.url_prefix}/pages/{page_data['url']}"
                 )
                 if len(new_page_datas) == 1:
                     pages.append(Page(self, new_page_datas[0]))
@@ -158,7 +158,7 @@ class Course(Canvas):
             ]
         return quizzes
 
-    def quiz(self, quiz_id, prompt_if_needed=False):
+    def quiz(self, quiz_id, *, prompt_if_needed=False):
         """docstring"""
         if quiz_id:
             for quiz in self.request(f"{self.url_prefix}/quizzes/{quiz_id}"):
@@ -182,7 +182,7 @@ class Course(Canvas):
             ]
         return assignments
 
-    def assignment(self, assignment_id, prompt_if_needed=False):
+    def assignment(self, assignment_id, *, prompt_if_needed=False):
         """docstring"""
         if assignment_id:
             for assignment in self.request(
@@ -214,7 +214,7 @@ class Course(Canvas):
         return students
 
 
-class CourseSubObject(Canvas):
+class CourseSubObject(Course):
     # If not provided, the request_param_name defaults to the lower-cased class name.
     def __init__(
         self, parent, route_name, data, id_field="id", request_param_name=None
@@ -366,6 +366,7 @@ class Quiz(CourseSubObject):
 
     def submissions(
         self,
+        *,
         include_user=True,
         include_submission=True,
         include_history=True,
@@ -427,7 +428,7 @@ class QuizQuestion(CourseSubObject):
                 raise RuntimeError(
                     f"No quiz provided and cannot find quiz id for: {quiz_question_data}"
                 )
-            quiz = course.quiz(quiz_question_data)
+            quiz = self.quiz(quiz_question_data)
         super().__init__(
             quiz, "questions", quiz_question_data, request_param_name="question"
         )
