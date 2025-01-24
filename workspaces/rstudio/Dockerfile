@@ -170,4 +170,4 @@ ENV WORKSPACE_BASE_URL rstudio
 # PL_USER should be user 1001's intended name. The gosu helper uses this to
 # make sure local testing works even if the PL Docker tries to run as root.
 ENV PL_USER rstudio
-ENTRYPOINT /pl-bin/pl-gosu-helper.sh /pl-bin/pl-start.sh
+ENTRYPOINT [ "/pl-bin/pl-gosu-helper.sh", "/pl-bin/pl-start.sh" ]

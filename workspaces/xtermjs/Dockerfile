@@ -5,7 +5,7 @@ RUN apt-get install -y emacs-nox vim tmux
 COPY src /xterm
 
 WORKDIR /xterm
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile && yarn cache clean
 
 RUN useradd -m student
 ENTRYPOINT ["node", "server.js", "-w", "/home/student"]

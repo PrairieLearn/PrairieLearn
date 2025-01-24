@@ -8,7 +8,8 @@ SHELL ["/bin/bash", "-c"]
 # This is a prerequisite for the VS Code extensions in the following steps.
 USER coder
 COPY requirements.txt /
-RUN export arch=`uname -m` \
+# hadolint ignore=SC1091
+RUN export arch=`$(uname -m)` \
  && curl -sfLO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
  && chmod +x "Miniforge3-Linux-${arch}.sh" \
  && ./"Miniforge3-Linux-${arch}.sh" -b -p /home/coder/conda \
@@ -22,8 +23,8 @@ RUN export arch=`uname -m` \
  # and `graphviz-dev` to be installed at the OS level, which would increase the
  # image size. Instead, we install it from Conda, which prebuilds it and also
  # automatically installs a Conda-specific `graphviz` dependency.
- && mamba install --yes $(grep pygraphviz /requirements.txt | head -n 1) \
- && pip install -r /requirements.txt \
+ && mamba install --yes "$(grep pygraphviz /requirements.txt | head -n 1)" \
+ && pip install --no-cache-dir -r /requirements.txt \
  && rm "Miniforge3-Linux-${arch}.sh" \
  && mamba clean --all --yes --quiet \
  && pip cache purge
