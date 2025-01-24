@@ -172,20 +172,27 @@ router.post(
         }
       });
 
-      const editor = new MultiEditor({ locals: res.locals as any }, [
-        // Each of these editors will no-op if there wasn't any change.
-        new FileModifyEditor({
+      const editor = new MultiEditor(
+        {
           locals: res.locals as any,
-          container: {
-            rootPath: paths.rootPath,
-            invalidRootPaths: paths.invalidRootPaths,
-          },
-          filePath: infoAssessmentPath,
-          editContents: b64EncodeUnicode(formattedJson),
-          origHash: req.body.orig_hash,
-        }),
-        new AssessmentRenameEditor({ locals: res.locals as any, tid_new }),
-      ]);
+          // This won't reflect if the operation is an update or a rename; we think that's OK.
+          description: `${res.locals.course_instance.short_name}: Update assessment ${res.locals.assessment.tid}`,
+        },
+        [
+          // Each of these editors will no-op if there wasn't any change.
+          new FileModifyEditor({
+            locals: res.locals as any,
+            container: {
+              rootPath: paths.rootPath,
+              invalidRootPaths: paths.invalidRootPaths,
+            },
+            filePath: infoAssessmentPath,
+            editContents: b64EncodeUnicode(formattedJson),
+            origHash: req.body.orig_hash,
+          }),
+          new AssessmentRenameEditor({ locals: res.locals as any, tid_new }),
+        ],
+      );
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);

@@ -2204,11 +2204,8 @@ export class CourseInfoCreateEditor extends Editor {
 export class MultiEditor extends Editor {
   private editors: Editor[];
 
-  constructor(params: BaseEditorOptions, editors: Editor[]) {
-    super({
-      ...params,
-      description: editors.map((editor) => editor.description).join('; '),
-    });
+  constructor(params: BaseEditorOptions & { description: string }, editors: Editor[]) {
+    super(params);
 
     this.editors = editors;
   }

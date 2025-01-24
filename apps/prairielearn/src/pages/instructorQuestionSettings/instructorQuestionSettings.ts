@@ -152,23 +152,30 @@ router.post(
         }
       });
 
-      const editor = new MultiEditor({ locals: res.locals as any }, [
-        // Each of these editors will no-op if there wasn't any change.
-        new FileModifyEditor({
+      const editor = new MultiEditor(
+        {
           locals: res.locals as any,
-          container: {
-            rootPath: paths.rootPath,
-            invalidRootPaths: paths.invalidRootPaths,
-          },
-          filePath: path.join(paths.rootPath, 'info.json'),
-          editContents: b64EncodeUnicode(formattedJson),
-          origHash,
-        }),
-        new QuestionRenameEditor({
-          locals: res.locals as any,
-          qid_new,
-        }),
-      ]);
+          // This won't reflect if the operation is an update or a rename; we think that's OK.
+          description: `Update question ${res.locals.question.qid}`,
+        },
+        [
+          // Each of these editors will no-op if there wasn't any change.
+          new FileModifyEditor({
+            locals: res.locals as any,
+            container: {
+              rootPath: paths.rootPath,
+              invalidRootPaths: paths.invalidRootPaths,
+            },
+            filePath: path.join(paths.rootPath, 'info.json'),
+            editContents: b64EncodeUnicode(formattedJson),
+            origHash,
+          }),
+          new QuestionRenameEditor({
+            locals: res.locals as any,
+            qid_new,
+          }),
+        ],
+      );
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
