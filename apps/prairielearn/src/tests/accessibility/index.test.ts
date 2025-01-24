@@ -90,6 +90,8 @@ const SKIP_ROUTES = [
   /^\/pl\/api\/v1\//,
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/raw_data.json',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/instances.json',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/generation_logs.json',
+  '/pl/course/:course_id/ai_generate_question_drafts/generation_logs.json',
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
