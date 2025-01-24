@@ -1399,8 +1399,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess.js'))
       .default,
   );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', 
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
   );
   app.use(
@@ -1424,8 +1423,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
   );
   if (isEnterprise()) {
-    app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/billing',
+    app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/billing', 
       (await import('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling.js'))
         .default,
     );
