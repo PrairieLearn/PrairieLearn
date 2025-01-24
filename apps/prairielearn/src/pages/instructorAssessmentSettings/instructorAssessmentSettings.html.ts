@@ -27,7 +27,7 @@ export function InstructorAssessmentSettings({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: 'Assessment settings',
+    pageTitle: 'Settings',
     navContext: {
       type: 'instructor',
       page: 'assessment',

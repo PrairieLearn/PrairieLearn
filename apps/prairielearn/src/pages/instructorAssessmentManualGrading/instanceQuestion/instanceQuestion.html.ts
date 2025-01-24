@@ -35,7 +35,7 @@ export function InstanceQuestion({
       // instance_question_info is reset to keep the default title from showing the student question number
       instance_question_info: undefined,
     },
-    pageTitle: 'Manual grading',
+    pageTitle: 'Manual Grading',
     navContext: {
       type: 'instructor',
       page: 'assessment',
@@ -131,7 +131,7 @@ export function InstanceQuestion({
         </div>
       </div>
     `,
-    postContent: html` ${RubricSettingsModal({ resLocals })} `,
+    postContent: [RubricSettingsModal({ resLocals })],
   });
 }
 

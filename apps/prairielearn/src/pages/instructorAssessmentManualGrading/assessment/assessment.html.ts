@@ -43,7 +43,7 @@ export function ManualGradingAssessment({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: 'Manual grading queue',
+    pageTitle: 'Manual Grading',
     navContext: {
       type: 'instructor',
       page: 'assessment',

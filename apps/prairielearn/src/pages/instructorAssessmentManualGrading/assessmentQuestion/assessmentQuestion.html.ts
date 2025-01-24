@@ -119,7 +119,7 @@ export function AssessmentQuestion({
         </form>
       </div>
     `,
-    postContent: html` ${GradingConflictModal()} `,
+    postContent: [GradingConflictModal()],
   });
 }
 
