@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { AiGenerationPromptSchema } from '../../../lib/db-types.js';
+import { AiQuestionGenerationPromptSchema } from '../../../lib/db-types.js';
 
 import {
   InstructorAIGenerateDrafts,
@@ -41,7 +41,7 @@ router.get(
     const file = await queryRows(
       sql.select_ai_question_generation_prompts_by_course_id,
       { course_id: res.locals.course.id },
-      AiGenerationPromptSchema,
+      AiQuestionGenerationPromptSchema,
     );
 
     res.json(file);
