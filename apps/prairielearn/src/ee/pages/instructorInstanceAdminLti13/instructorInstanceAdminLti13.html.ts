@@ -51,7 +51,7 @@ export function InstructorInstanceAdminLti13({
 
   return PageLayout({
     resLocals,
-    pageTitle: 'LTI 1.3 configuration',
+    pageTitle: 'LTI 1.3',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',

@@ -19,7 +19,7 @@ export function InstructorInstanceAdminSettings({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: 'Course instance settings',
+    pageTitle: 'Settings',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',

@@ -16,7 +16,7 @@ export function InstructorInstanceAdminAccess({
 
   return PageLayout({
     resLocals,
-    pageTitle: 'Course instance access rules',
+    pageTitle: 'Access',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
