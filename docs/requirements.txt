@@ -3,3 +3,5 @@ mdx_truly_sane_lists>=1.3
 pymdown-extensions>=10.12
 mkdocs-material>=9.5.47
 mkdocs-d2-plugin==1.6.0
+mkdocstrings==0.27.0
+mkdocstrings-python==1.13.0

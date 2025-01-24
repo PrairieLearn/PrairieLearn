@@ -76,7 +76,7 @@ def execute_code(
 
     # Read student code (and transform if necessary) and append leading/trailing code
     with open(fname_student, encoding="utf-8") as f:
-        filename, extension = path.splitext(fname_student)
+        _, extension = path.splitext(fname_student)
         if extension == ".ipynb":
             str_student = extract_ipynb_contents(f, ipynb_key)
         else:

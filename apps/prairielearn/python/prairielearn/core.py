@@ -23,14 +23,19 @@ import lxml.html
 import networkx as nx
 import numpy as np
 import pandas as pd
-import python_helper_sympy as phs
 import sympy
-import to_precision
-from colors import PLColor
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
-from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
+
+from prairielearn.colors import PLColor
+from prairielearn.sympy_utils import (
+    convert_string_to_sympy,
+    json_to_sympy,
+    sympy_to_json,
+)
+from prairielearn.to_precision import to_precision
+from prairielearn.unicode_utils import full_unidecode
 
 if TYPE_CHECKING:
     from numpy.core.arrayprint import _FormatDict
@@ -41,7 +46,7 @@ class PartialScore(TypedDict):
 
     score: float | None
     weight: NotRequired[int]
-    feedback: NotRequired[str]
+    feedback: NotRequired[str | dict[str, str] | Any]
 
 
 # TODO: This type definition should not yet be seen as authoritative, it may
@@ -296,7 +301,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
                 "_dtype": str(v.dtype),
             }
     elif isinstance(v, sympy.Expr):
-        return phs.sympy_to_json(v)
+        return sympy_to_json(v)
     elif isinstance(v, sympy.Matrix | sympy.ImmutableMatrix):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
@@ -414,7 +419,7 @@ def from_json(v):
                     "variable of type complex_ndarray should have value with real and imaginary pair"
                 )
         elif v["_type"] == "sympy":
-            return phs.json_to_sympy(v)
+            return json_to_sympy(v)
         elif v["_type"] == "sympy_matrix":
             if ("_value" in v) and ("_variables" in v) and ("_shape" in v):
                 value = v["_value"]
@@ -423,9 +428,7 @@ def from_json(v):
                 matrix = sympy.Matrix.zeros(shape[0], shape[1])
                 for i in range(shape[0]):
                     for j in range(shape[1]):
-                        matrix[i, j] = phs.convert_string_to_sympy(
-                            value[i][j], variables
-                        )
+                        matrix[i, j] = convert_string_to_sympy(value[i][j], variables)
                 return matrix
             else:
                 raise ValueError(
@@ -861,7 +864,7 @@ def string_from_numpy(
 
     if presentation_type == "sigfig":
         formatter: _FormatDict = {
-            "float_kind": lambda x: to_precision.to_precision(x, digits),
+            "float_kind": lambda x: to_precision(x, digits),
             "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
         }
     else:
@@ -937,7 +940,7 @@ def string_from_number_sigfig(
     if not isinstance(a, numbers.Number) and np.iscomplexobj(a):
         return _string_from_complex_sigfig(a, digits=digits)
     else:
-        return to_precision.to_precision(a, digits)
+        return to_precision(a, digits)
 
 
 def _string_from_complex_sigfig(
@@ -948,8 +951,8 @@ def _string_from_complex_sigfig(
     This function assumes that "a" is a complex number. It returns "a" as a string
     in which the real and imaginary parts have digits significant digits.
     """
-    re = to_precision.to_precision(a.real, digits)
-    im = to_precision.to_precision(np.abs(a.imag), digits)
+    re = to_precision(a.real, digits)
+    im = to_precision(np.abs(a.imag), digits)
     if a.imag >= 0:
         return f"{re}+{im}j"
     else:
@@ -976,7 +979,7 @@ def numpy_to_matlab_sf(A: _NumPyScalarType | np.ndarray, ndigits: int = 2) -> st
                 raise TypeError(f"A must be a number, is {type(A)}")
             scalar_str = _string_from_complex_sigfig(A, ndigits)
         else:
-            scalar_str = to_precision.to_precision(A, ndigits)
+            scalar_str = to_precision(A, ndigits)
         return scalar_str
     assert isinstance(A, np.ndarray)
     if A.ndim == 1:
@@ -987,7 +990,7 @@ def numpy_to_matlab_sf(A: _NumPyScalarType | np.ndarray, ndigits: int = 2) -> st
             if np.iscomplexobj(A[i]):
                 vector_str += _string_from_complex_sigfig(A[i], ndigits)
             else:
-                vector_str += to_precision.to_precision(A[i], ndigits)
+                vector_str += to_precision(A[i], ndigits)
             if i < m - 1:
                 vector_str += ", "
         vector_str += "]"
@@ -1002,7 +1005,7 @@ def numpy_to_matlab_sf(A: _NumPyScalarType | np.ndarray, ndigits: int = 2) -> st
                 if np.iscomplexobj(A[i, j]):
                     matrix_str += _string_from_complex_sigfig(A[i, j], ndigits)
                 else:
-                    matrix_str += to_precision.to_precision(A[i, j], ndigits)
+                    matrix_str += to_precision(A[i, j], ndigits)
                 if j == n - 1:
                     if i == m - 1:
                         matrix_str += "]"
@@ -1017,9 +1020,9 @@ def string_partition_first_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
     # Split at first left delimiter
-    (s_before_left, s_left, s) = s.partition(left)
+    (s_before_left, _, s) = s.partition(left)
     # Split at first right delimiter
-    (s, s_right, s_after_right) = s.partition(right)
+    (s, _, s_after_right) = s.partition(right)
     # Return results
     return s_before_left, s, s_after_right
 
@@ -1028,9 +1031,9 @@ def string_partition_outer_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
     # Split at first left delimiter
-    (s_before_left, s_left, s) = s.partition(left)
+    (s_before_left, _, s) = s.partition(left)
     # Split at last right delimiter
-    (s, s_right, s_after_right) = s.rpartition(right)
+    (s, _, s_after_right) = s.rpartition(right)
     # Return results
     return s_before_left, s, s_after_right
 
@@ -1550,7 +1553,7 @@ def latex_from_2darray(
     # Using Any annotation here because of weird Pyright-isms.
     if presentation_type == "sigfig":
         formatter: Any = {
-            "float_kind": lambda x: to_precision.to_precision(x, digits),
+            "float_kind": lambda x: to_precision(x, digits),
             "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
         }
     else:
@@ -1786,7 +1789,7 @@ def load_extension(data: QuestionData, extension_name: str) -> Any:
     }
 
     # Return functions and variables as a namedtuple, so we get the nice dot access syntax
-    module_tuple = namedtuple(clean_identifier_name(extension_name), loaded.keys())  # noqa: PYI024
+    module_tuple = namedtuple(clean_identifier_name(extension_name), loaded.keys())  # noqa: PYI024 # pyright: ignore[reportUntypedNamedTuple]
     return module_tuple(**loaded)
 
 
@@ -1847,11 +1850,6 @@ def index2key(i: int) -> str:
 
 def is_int_json_serializable(n: int) -> bool:
     return -((2**53) - 1) <= n <= 2**53 - 1
-
-
-def full_unidecode(input_str: str) -> str:
-    """Does unidecode of input and replaces the unicode minus with the normal one."""
-    return unidecode(input_str.replace("\u2212", "-"))
 
 
 def add_files_format_error(data: QuestionData, error: str) -> None:

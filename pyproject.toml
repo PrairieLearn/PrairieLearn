@@ -85,7 +85,7 @@ ignore = [
     # ignore unused parameters in functions
     "ARG"
 ]
-"apps/prairielearn/python/*.py" = ["N803"]
+"apps/prairielearn/python/**/*.py" = ["N803"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
@@ -98,6 +98,7 @@ exclude = [
 ]
 
 [tool.pyright]
+typeCheckingMode = "strict"
 include = [
     "./apps/prairielearn/elements",
     "./apps/prairielearn/python",
@@ -106,14 +107,40 @@ include = [
 exclude = [
     "./apps/prairielearn/elements/pl-drawing", # requires refactor
     "./apps/prairielearn/elements/pl-checkbox", # requires refactor
-    "./apps/prairielearn/elements/pl-matrix-component-input", # multiple errors
     "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
     "./apps/prairielearn/elements/pl-threejs", # deprecated
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
+executionEnvironments = [
+    # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
+    { root = "./graders/python", pythonVersion = "3.12", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none" },
+    { root = "./graders/c", pythonVersion = "3.12", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none" },
+]
 reportUnnecessaryTypeIgnoreComment = "error"
+# These rules would require significant changes
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+reportMissingTypeStubs = "none"
+# These rules don't provide much value
+reportPrivateUsage = "none"
+reportUnnecessaryIsInstance = "none"
+reportUnknownLambdaType = "none"
+# These rules should be progressively enabled 
+reportMissingParameterType = "none"
+reportMissingTypeArgument = "none"
+reportArgumentType = "none"
+reportUnnecessaryComparison = "information"
+reportUnnecessaryCast = "information"
 
 [tool.pytest.ini_options]
+pythonpath = [
+    "apps/prairielearn/python"
+]
 addopts = "--cov=apps"
-testpaths = ["apps/prairielearn/elements", "apps/prairielearn/python"]
+testpaths = [
+    "apps/prairielearn/elements",
+    "apps/prairielearn/python/test",
+]

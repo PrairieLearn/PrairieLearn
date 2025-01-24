@@ -124,7 +124,7 @@ def print_student_code(
     """
 
     with open(st_code, encoding="utf-8") as f:
-        filename, extension = splitext(st_code)
+        _, extension = splitext(st_code)
         if extension == ".ipynb":
             contents = extract_ipynb_contents(f, ipynb_key).strip()
             lines = filter(
