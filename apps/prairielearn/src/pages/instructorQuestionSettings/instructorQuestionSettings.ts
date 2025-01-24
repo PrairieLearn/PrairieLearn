@@ -132,7 +132,7 @@ router.post(
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
       const editor = new FileModifyEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
@@ -170,7 +170,7 @@ router.post(
       }
       if (res.locals.question.qid !== qid_new) {
         const editor = new QuestionRenameEditor({
-          locals: res.locals,
+          locals: res.locals as any,
           qid_new,
         });
         const serverJob = await editor.prepareServerJob();
@@ -186,7 +186,7 @@ router.post(
       if (idsEqual(req.body.to_course_id, res.locals.course.id)) {
         // In this case, we are making a duplicate of this question in the same course
         const editor = new QuestionCopyEditor({
-          locals: res.locals,
+          locals: res.locals as any,
         });
         const serverJob = await editor.prepareServerJob();
         try {
@@ -214,7 +214,7 @@ router.post(
       }
     } else if (req.body.__action === 'delete_question') {
       const editor = new QuestionDeleteEditor({
-        locals: res.locals,
+        locals: res.locals as any,
       });
       const serverJob = await editor.prepareServerJob();
       try {

@@ -97,7 +97,7 @@ router.post(
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'copy_assessment') {
       const editor = new AssessmentCopyEditor({
-        locals: res.locals,
+        locals: res.locals as any,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -119,7 +119,7 @@ router.post(
       res.redirect(res.locals.urlPrefix + '/assessment/' + assessmentId + '/settings');
     } else if (req.body.__action === 'delete_assessment') {
       const editor = new AssessmentDeleteEditor({
-        locals: res.locals,
+        locals: res.locals as any,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -175,7 +175,7 @@ router.post(
       // Each of these editors will no-op if there wasn't any change.
       const editors: Editor[] = [
         new FileModifyEditor({
-          locals: res.locals,
+          locals: res.locals as any,
           container: {
             rootPath: paths.rootPath,
             invalidRootPaths: paths.invalidRootPaths,
@@ -184,10 +184,10 @@ router.post(
           editContents: b64EncodeUnicode(formattedJson),
           origHash: req.body.orig_hash,
         }),
-        new AssessmentRenameEditor({ locals: res.locals, tid_new }),
+        new AssessmentRenameEditor({ locals: res.locals as any, tid_new }),
       ];
 
-      const editor = new MultiEditor({ locals: res.locals }, editors);
+      const editor = new MultiEditor({ locals: res.locals as any }, editors);
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);

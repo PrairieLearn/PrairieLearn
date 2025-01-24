@@ -93,7 +93,7 @@ router.post(
         courseInfoEdit.timezone = req.body.display_timezone;
 
         const editor = new FileModifyEditor({
-          locals: res.locals,
+          locals: res.locals as any,
           container: {
             rootPath: paths.rootPath,
             invalidRootPaths: paths.invalidRootPaths,
@@ -125,7 +125,7 @@ router.post(
         topics: [],
       };
       const editor = new CourseInfoCreateEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         infoJson,
       });
       const serverJob = await editor.prepareServerJob();

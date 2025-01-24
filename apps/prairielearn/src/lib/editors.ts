@@ -1375,18 +1375,22 @@ export class QuestionModifyEditor extends Editor {
   private files: Record<string, string>;
 
   constructor(
-    params: BaseEditorOptions & {
+    params: BaseEditorOptions<{ question: Question }> & {
       files: Record<string, string>;
     },
   ) {
+    const {
+      locals: { question },
+      files,
+    } = params;
+
     super({
       ...params,
-      description: `Modify question ${params.locals.question.qid}`,
+      description: `Modify question ${question.qid}`,
     });
 
-    this.question = params.locals.question;
-    this.files = params.files;
-    this.description = `Modify question ${this.question.qid}`;
+    this.question = question;
+    this.files = files;
   }
 
   async write() {
@@ -1422,11 +1426,15 @@ export class QuestionModifyEditor extends Editor {
 export class QuestionDeleteEditor extends Editor {
   private question: Question;
 
-  constructor(params: BaseEditorOptions) {
-    super(params);
+  constructor(params: BaseEditorOptions<{ question: Question }>) {
+    const { question } = params.locals;
 
-    this.question = params.locals.question;
-    this.description = `Delete question ${this.question.qid}`;
+    super({
+      ...params,
+      description: `Delete question ${question.qid}`,
+    });
+
+    this.question = question;
   }
 
   async write() {
@@ -1450,12 +1458,19 @@ export class QuestionRenameEditor extends Editor {
   private qid_new: string;
   private question: Question;
 
-  constructor(params: BaseEditorOptions & { qid_new: string }) {
-    super(params);
+  constructor(params: BaseEditorOptions<{ question: Question }> & { qid_new: string }) {
+    const {
+      locals: { question },
+      qid_new,
+    } = params;
 
-    this.qid_new = params.qid_new;
-    this.question = params.locals.question;
-    this.description = `Rename question ${this.question.qid}`;
+    super({
+      ...params,
+      description: `Rename question ${question.qid}`,
+    });
+
+    this.qid_new = qid_new;
+    this.question = question;
   }
 
   async write() {
@@ -1549,11 +1564,17 @@ export class QuestionCopyEditor extends Editor {
 
   public readonly uuid: string;
 
-  constructor(params: BaseEditorOptions) {
-    super(params);
+  constructor(params: BaseEditorOptions<{ question: Question }>) {
+    const {
+      locals: { question },
+    } = params;
 
-    this.question = params.locals.question;
-    this.description = `Copy question ${this.question.qid}`;
+    super({
+      ...params,
+      description: `Copy question ${question.qid}`,
+    });
+
+    this.question = question;
 
     this.uuid = uuidv4();
   }
