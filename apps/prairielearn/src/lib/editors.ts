@@ -1482,6 +1482,9 @@ export class QuestionRenameEditor extends Editor {
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
 
+    // Skip editing if the paths are the same.
+    if (oldPath === newPath) return null;
+
     // Ensure that the updated question folder path is fully contained in the questions directory
     if (!contains(questionsPath, newPath)) {
       throw new AugmentedError('Invalid folder path', {
@@ -2213,7 +2216,7 @@ export class MultiEditor extends Editor {
   assertCanEdit() {
     // This should be handled automatically by the individual editors, but
     // we'll check it here just in case.
-    this.assertCanEdit();
+    super.assertCanEdit();
 
     for (const editor of this.editors) {
       editor.assertCanEdit();

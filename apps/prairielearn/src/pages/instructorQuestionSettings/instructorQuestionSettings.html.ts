@@ -123,6 +123,27 @@ export function InstructorQuestionSettings({
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <input type="hidden" name="orig_hash" value="${origHash}" />
                 <div class="form-group">
+                  <label for="qid">QID</label>
+                  ${questionGHLink
+                    ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
+                    : ''}
+                  <input
+                    type="text"
+                    class="form-control text-monospace"
+                    id="qid"
+                    name="qid"
+                    value="${resLocals.question.qid}"
+                    pattern="[\\-A-Za-z0-9_\\/]+"
+                    data-other-values="${qids.join(',')}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    This is a unique identifier for the question, e.g. "addNumbers". Use only
+                    letters, numbers, dashes, and underscores, with no spaces. You may use forward
+                    slashes to separate directories.
+                  </small>
+                </div>
+                <div class="form-group">
                   <h2 class="h4">General</h2>
                   <label for="title">Title</label>
                   <input
@@ -135,27 +156,6 @@ export function InstructorQuestionSettings({
                   />
                   <small class="form-text text-muted">
                     The title of the question (e.g., "Add two numbers").
-                  </small>
-                </div>
-                <div class="form-group">
-                  <label for="qid">QID</label>
-                  ${questionGHLink
-                    ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
-                    : ''}
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="qid"
-                    name="qid"
-                    value="${resLocals.question.qid}"
-                    pattern="[\\-A-Za-z0-9_\\/]+"
-                    data-other-values="${qids.join(',')}"
-                    ${canEdit ? '' : 'disabled'}
-                  />
-                  <small class="form-text text-muted">
-                    This is a unique identifier for the question, e.g. "addNumbers". Use only
-                    letters, numbers, dashes, and underscores, with no spaces. You may use forward
-                    slashes to separate directories.
                   </small>
                 </div>
                 <div class="table-responsive card mb-3 overflow-visible">
