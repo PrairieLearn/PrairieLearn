@@ -1311,6 +1311,7 @@ export async function initExpress(): Promise<Express> {
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view', [
     function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'course_admin';
       res.locals.navSubPage = 'file_view';
       next();
     },
@@ -1730,12 +1731,6 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/course_admin',
     (await import('./pages/instructorCourseAdmin/instructorCourseAdmin.js')).default,
   );
-
-  app.use('/pl/course/:course_id(\\d+)/course_admin', function (req, res, next) {
-    res.locals.navPage = 'course_admin';
-    next();
-  });
-
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/settings',
     (await import('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings.js'))
@@ -1805,6 +1800,7 @@ export async function initExpress(): Promise<Express> {
   );
   app.use('/pl/course/:course_id(\\d+)/course_admin/file_edit', [
     function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'course_admin';
       res.locals.navSubPage = 'file_edit';
       next();
     },
@@ -1812,6 +1808,7 @@ export async function initExpress(): Promise<Express> {
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/file_view', [
     function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'course_admin';
       res.locals.navSubPage = 'file_view';
       next();
     },
