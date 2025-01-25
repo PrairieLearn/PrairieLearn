@@ -215,7 +215,7 @@ function CourseDirectoryMissingAlert({
     return html`
       <div class="alert alert-danger">
         Course directory not found. You must
-        <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs">sync your course</a>.
+        <a href="${resLocals.urlPrefix}/course_admin/syncs">sync your course</a>.
       </div>
     `;
   } else if (!courseInfoExists) {
