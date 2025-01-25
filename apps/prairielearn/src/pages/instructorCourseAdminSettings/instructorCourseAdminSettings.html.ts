@@ -190,7 +190,7 @@ export function InstructorCourseAdminSettings({
               hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
               exampleCourse: resLocals.course.example_course,
               urlPrefix: resLocals.urlPrefix,
-              navPage: resLocals.navPage,
+              navPage: 'course_admin',
             })}
           </form>
         </div>
