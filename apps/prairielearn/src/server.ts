@@ -1147,23 +1147,11 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/settings',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'settings';
-        next();
-      },
-      (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
-    ],
+    (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/preview',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'preview';
-        next();
-      },
-      (await import('./pages/instructorQuestionPreview/instructorQuestionPreview.js')).default,
-    ],
+    (await import('./pages/instructorQuestionPreview/instructorQuestionPreview.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/statistics',
@@ -1648,27 +1636,18 @@ export async function initExpress(): Promise<Express> {
     res.locals.navPage = 'question';
     next();
   });
-  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/settings', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'settings';
-      next();
-    },
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/settings',
     (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'preview';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/preview',
     (await import('./pages/instructorQuestionPreview/instructorQuestionPreview.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/statistics', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'statistics';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/statistics',
     (await import('./pages/instructorQuestionStatistics/instructorQuestionStatistics.js')).default,
-  ]);
+  );
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_edit',
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
