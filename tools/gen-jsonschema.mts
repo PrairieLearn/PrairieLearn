@@ -13,14 +13,15 @@ console.log(check ? 'Checking schemas...' : 'Writing schemas...');
 const schemaDir = path.resolve(import.meta.dirname, '../apps/prairielearn/src/schemas/schemas');
 if (check) {
   for (const [name, schema] of Object.entries(ajvSchemas)) {
-    const file = fs.readFileSync(`${schemaDir}/${name}.json`, 'utf8');
-    if (file !== JSON.stringify(schema, null, 2)) {
+    const file = JSON.stringify(JSON.parse(fs.readFileSync(`${schemaDir}/${name}.json`, 'utf8')));
+    if (file !== JSON.stringify(schema)) {
       console.error(`Mismatch in ${name} (Do you need to run \`tsx tools/gen-jsonschema.mts\`?)`);
       process.exit(1);
     }
   }
 } else {
   for (const [name, schema] of Object.entries(ajvSchemas)) {
-    fs.writeFileSync(`${schemaDir}/${name}.json`, JSON.stringify(schema, null, 2));
+    // These schemas still need to be prettified, so we won't format them at all
+    fs.writeFileSync(`${schemaDir}/${name}.json`, JSON.stringify(schema));
   }
 }
