@@ -489,7 +489,11 @@ class Feedback:
 
     @classmethod
     def call_user(
-        cls, f: Callable, stop_on_exception: bool = False, *args: Any, **kwargs: Any
+        cls,
+        f: Callable,
+        stop_on_exception: bool = False,  # noqa: FBT001
+        *args: Any,
+        **kwargs: Any,
     ) -> Any:
         """
         Attempts to call a student defined function, with any arbitrary arguments.
