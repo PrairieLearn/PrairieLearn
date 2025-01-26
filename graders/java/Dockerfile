@@ -4,7 +4,9 @@ LABEL maintainer="jonatan@yorku.ca"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y make openjdk-21-jdk-headless jq && apt-get clean
+RUN apt-get update && \
+    apt-get install -y make openjdk-21-jdk-headless jq && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV LANG=en_US.UTF-8
 
