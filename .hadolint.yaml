@@ -3,9 +3,9 @@ ignored:
   - DL3007 # latest tag is not recommended
   - DL3008 # pin versions in apt get install
   # Will be resolved in a future PR
-  - DL3004
-  - DL3009
   - DL3015
   - DL3059
   - SC2086
   - DL4006
+  # TODO: https://github.com/PrairieLearn/PrairieLearn/issues/11232
+  - DL3025

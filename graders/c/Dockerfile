@@ -6,7 +6,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get install -y python3.12 gcc make python3-pip valgrind check pkg-config clang && \
-    apt-get clean
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN ln -sf /usr/bin/python3.12 /usr/bin/python3
 

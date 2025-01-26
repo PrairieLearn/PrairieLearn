@@ -37,6 +37,7 @@ RUN apt-get update \
                       pandoc \
                       sqlite3 \
                       sudo \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
     && install.r bench \        
                  data.table \
                  devtools \
