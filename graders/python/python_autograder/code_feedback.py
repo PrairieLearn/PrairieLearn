@@ -490,9 +490,15 @@ class Feedback:
     @classmethod
     def call_user(cls, f: Callable, stop_on_exception=False, *args, **kwargs) -> Any:
         """
-        Attempts to call a student defined function, with any arbitrary arguments specified in `*args` and `**kwargs`. If the student code raises an exception, this will be caught and user feedback will be given.
-
+        Attempts to call a student defined function, with any arbitrary arguments.
+        If the student code raises an exception, this will be caught and user feedback will be given.
         If the function call succeeds, the user return value will be returned from this function.
+
+        Parameters:
+            f: Student defined function to be called.
+            stop_on_exception: If true, grading will halt on failure.
+            *args: Arbitrary positional arguments to be passed to the student function.
+            **kwargs: Arbitrary keyword arguments to be passed to the student function.
 
         Examples:
             >>> user_val = Feedback.call_user(self.st.fib, 5)
