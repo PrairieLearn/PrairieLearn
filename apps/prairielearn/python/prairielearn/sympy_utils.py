@@ -5,7 +5,7 @@ from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from tokenize import TokenError
-from typing import Any, Literal, TypedDict, cast
+from typing import Any, Literal, TypedDict, TypeGuard, cast
 
 import sympy
 from sympy.parsing.sympy_parser import (
@@ -33,6 +33,17 @@ class SympyJson(TypedDict):
     _variables: list[str]
     _assumptions: NotRequired[AssumptionsDictT]
     _custom_functions: NotRequired[list[str]]
+
+
+def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
+    return (
+        isinstance(json, dict)
+        and json.get("_type") == "sympy"
+        and isinstance(json.get("_value"), str)
+        and isinstance(json.get("_variables"), list)
+        and isinstance(json.get("_assumptions", {}), dict)
+        and isinstance(json.get("_custom_functions", []), list)
+    )
 
 
 class LocalsForEval(TypedDict):

@@ -17,7 +17,7 @@ from collections.abc import Callable, Generator
 from enum import Enum
 from io import StringIO
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, cast, overload
 
 import lxml.html
 import networkx as nx
@@ -31,6 +31,7 @@ from typing_extensions import NotRequired, assert_never
 from prairielearn.colors import PLColor
 from prairielearn.sympy_utils import (
     convert_string_to_sympy,
+    is_sympy_json,
     json_to_sympy,
     sympy_to_json,
 )
@@ -245,7 +246,87 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
     )
 
 
-def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
+class _JSONSerializedGeneric(TypedDict):
+    _type: Literal[
+        "sympy",
+        "sympy_matrix",
+        "dataframe",
+        "dataframe_v2",
+        "networkx_graph",
+        "complex",
+        "ndarray",
+        "np_scalar",
+        "complex_ndarray",
+    ]
+    _value: Any
+
+
+class _JSONSerializedNumpyScalar(_JSONSerializedGeneric):
+    _concrete_type: str
+
+
+class _JSONSerializedNdarray(_JSONSerializedGeneric, total=False):
+    _dtype: str
+
+
+class _JSONSerializedComplexNdarray(_JSONSerializedGeneric, total=False):
+    _dtype: str
+
+
+class _JSONSerializedSympyMatrix(_JSONSerializedGeneric):
+    _variables: list[str]
+    _shape: tuple[int, int]
+
+
+# This represents the output object formats for the to_json function
+_JSONSerializedType = (
+    _JSONSerializedGeneric
+    | _JSONSerializedNumpyScalar
+    | _JSONSerializedNdarray
+    | _JSONSerializedComplexNdarray
+    | _JSONSerializedSympyMatrix
+)
+
+# This represents the object formats that will be serialized by the to_json function
+_JSONPythonType = (
+    np.complexfloating
+    | np.number
+    | np.ndarray
+    | sympy.Expr
+    | sympy.Matrix
+    | sympy.ImmutableMatrix
+    | pd.DataFrame
+    | nx.Graph
+    | nx.DiGraph
+    | nx.MultiGraph
+    | nx.MultiDiGraph
+)
+
+
+@overload
+def to_json(
+    v: _JSONPythonType,
+    *,
+    df_encoding_version: Literal[1, 2] = 1,
+    np_encoding_version: Literal[1, 2] = 1,
+) -> _JSONSerializedType: ...
+
+
+@overload
+def to_json(
+    v: Any,
+    *,
+    df_encoding_version: Literal[1, 2] = 1,
+    np_encoding_version: Literal[1, 2] = 1,
+) -> Any: ...
+
+
+def to_json(
+    v: Any | _JSONPythonType,
+    *,
+    df_encoding_version: Literal[1, 2] = 1,
+    np_encoding_version: Literal[1, 2] = 1,
+) -> Any | _JSONSerializedType:
     """to_json(v)
 
     If v has a standard type that cannot be json serialized, it is replaced with
@@ -290,7 +371,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
         }
 
     if np.isscalar(v) and np.iscomplexobj(v):
-        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}
+        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}  # type: ignore
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
             return {"_type": "ndarray", "_value": v.tolist(), "_dtype": str(v.dtype)}
@@ -332,7 +413,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             # only numeric values (c.f. pandas-dev/pandas#46392)
             df_modified_names = v.copy()
 
-            if df_modified_names.columns.dtype in (np.float64, np.int64):
+            if df_modified_names.columns.dtype in (np.float64, np.int64):  # type: ignore
                 df_modified_names.columns = df_modified_names.columns.astype("string")
 
             # For version 2 storing a data frame, we use the table orientation alongside of
@@ -357,7 +438,28 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
         return v
 
 
-def from_json(v):
+def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
+    """
+    Helper to check for the presence of all fields in the '_value' dictionary
+    """
+    return (
+        "_value" in v
+        and isinstance(v["_value"], dict)
+        and all(field in v["_value"] for field in fields)
+    )
+
+
+@overload
+def from_json(
+    v: _JSONSerializedType,
+) -> _JSONPythonType: ...
+
+
+@overload
+def from_json(v: Any) -> Any: ...
+
+
+def from_json(v: _JSONSerializedType | Any) -> _JSONPythonType | Any:
     """from_json(v)
 
     If v has the format {'_type':..., '_value':...} as would have been created
@@ -380,45 +482,50 @@ def from_json(v):
     returned without change.
     """
     if isinstance(v, dict) and "_type" in v:
-        if v["_type"] == "complex":
-            if ("_value" in v) and ("real" in v["_value"]) and ("imag" in v["_value"]):
-                return complex(v["_value"]["real"], v["_value"]["imag"])
+        v_json = cast(_JSONSerializedType, v)
+        if v_json["_type"] == "complex":
+            if _has_value_fields(v_json, ["real", "imag"]):
+                return complex(v_json["_value"]["real"], v_json["_value"]["imag"])
             else:
                 raise ValueError(
                     "variable of type complex should have value with real and imaginary pair"
                 )
-        elif v["_type"] == "np_scalar":
-            if "_concrete_type" in v and "_value" in v:
-                return getattr(np, v["_concrete_type"])(v["_value"])
+        elif v_json["_type"] == "np_scalar":
+            if "_concrete_type" in v_json and "_value" in v_json:
+                return getattr(np, v_json["_concrete_type"])(v_json["_value"])
             else:
                 raise ValueError(
-                    f"variable of type {v['_type']} needs both concrete type and value information"
+                    f"variable of type {v_json['_type']} needs both concrete type and value information"
                 )
-        elif v["_type"] == "ndarray":
-            if "_value" in v:
-                if "_dtype" in v:
-                    return np.array(v["_value"]).astype(v["_dtype"])
+        elif v_json["_type"] == "ndarray":
+            if "_value" in v_json:
+                if "_dtype" in v_json:
+                    return np.array(v_json["_value"]).astype(v_json["_dtype"])
                 else:
-                    return np.array(v["_value"])
+                    return np.array(v_json["_value"])
             else:
                 raise ValueError("variable of type ndarray should have value")
-        elif v["_type"] == "complex_ndarray":
-            if ("_value" in v) and ("real" in v["_value"]) and ("imag" in v["_value"]):
-                if "_dtype" in v:
+        elif v_json["_type"] == "complex_ndarray":
+            if _has_value_fields(v_json, ["real", "imag"]):
+                if "_dtype" in v_json:
                     return (
-                        np.array(v["_value"]["real"])
-                        + np.array(v["_value"]["imag"]) * 1j
-                    ).astype(v["_dtype"])
+                        np.array(v_json["_value"]["real"])
+                        + np.array(v_json["_value"]["imag"]) * 1j
+                    ).astype(v_json["_dtype"])
                 else:
                     return (
-                        np.array(v["_value"]["real"])
-                        + np.array(v["_value"]["imag"]) * 1j
+                        np.array(v_json["_value"]["real"])
+                        + np.array(v_json["_value"]["imag"]) * 1j
                     )
             else:
                 raise ValueError(
                     "variable of type complex_ndarray should have value with real and imaginary pair"
                 )
         elif v["_type"] == "sympy":
+            if not is_sympy_json(v_json):
+                raise ValueError(
+                    "variable claiming to be of type sympy doesn't pass typechecks"
+                )
             return json_to_sympy(v)
         elif v["_type"] == "sympy_matrix":
             if ("_value" in v) and ("_variables" in v) and ("_shape" in v):
@@ -434,14 +541,9 @@ def from_json(v):
                 raise ValueError(
                     "variable of type sympy_matrix should have value, variables, and shape"
                 )
-        elif v["_type"] == "dataframe":
-            if (
-                ("_value" in v)
-                and ("index" in v["_value"])
-                and ("columns" in v["_value"])
-                and ("data" in v["_value"])
-            ):
-                val = v["_value"]
+        elif v_json["_type"] == "dataframe":
+            if _has_value_fields(v_json, ["index", "columns", "data"]):
+                val = v_json["_value"]
                 return pd.DataFrame(
                     index=val["index"], columns=val["columns"], data=val["data"]
                 )
@@ -449,15 +551,15 @@ def from_json(v):
                 raise ValueError(
                     "variable of type dataframe should have value with index, columns, and data"
                 )
-        elif v["_type"] == "dataframe_v2":
+        elif v_json["_type"] == "dataframe_v2":
             # Convert native JSON back to a string representation so that
             # pandas read_json() can process it.
-            value_str = StringIO(json.dumps(v["_value"]))
+            value_str = StringIO(json.dumps(v_json["_value"]))
             return pd.read_json(value_str, orient="table")
-        elif v["_type"] == "networkx_graph":
-            return nx.adjacency_graph(v["_value"])
+        elif v_json["_type"] == "networkx_graph":
+            return nx.adjacency_graph(v_json["_value"])
         else:
-            raise ValueError("variable has unknown type {}".format(v["_type"]))
+            raise ValueError("variable has unknown type {}".format(v_json["_type"]))
     return v
 
 
@@ -557,14 +659,16 @@ def get_string_attrib(
 ) -> str | None: ...
 
 
-def get_string_attrib(element, name, *args):
+def get_string_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: str | None
+) -> str | None:
     """value = get_string_attrib(element, name, default)
 
     Returns the named attribute for the element, or the (optional)
     default value. If the default value is not provided and the
     attribute is missing then an exception is thrown.
     """
-    (str_val, is_default) = _get_attrib(element, name, *args)
+    str_val, _ = _get_attrib(element, name, *args)
     return str_val
 
 
@@ -585,7 +689,9 @@ def get_boolean_attrib(
 ) -> bool | None: ...
 
 
-def get_boolean_attrib(element, name, *args):
+def get_boolean_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: bool | None
+) -> bool | None:
     """value = get_boolean_attrib(element, name, default)
 
     Returns the named attribute for the element, or the (optional)
@@ -637,7 +743,9 @@ def get_integer_attrib(
 ) -> int | None: ...
 
 
-def get_integer_attrib(element, name, *args):
+def get_integer_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: int | None
+) -> int | None:
     """value = get_integer_attrib(element, name, default)
 
     Returns the named attribute for the element, or the (optional)
@@ -659,7 +767,25 @@ def get_integer_attrib(element, name, *args):
     return int_val
 
 
-def get_float_attrib(element, name, *args):
+@overload
+def get_float_attrib(element: lxml.html.HtmlElement, name: str) -> float: ...
+
+
+@overload
+def get_float_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: float
+) -> float: ...
+
+
+@overload
+def get_float_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: None
+) -> float | None: ...
+
+
+def get_float_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: float | None
+) -> float | None:
     """value = get_float_attrib(element, name, default)
 
     Returns the named attribute for the element, or the (optional)
@@ -691,7 +817,9 @@ def get_color_attrib(
 ) -> str | None: ...
 
 
-def get_color_attrib(element, name, *args):
+def get_color_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: str | None
+) -> str | None:
     """value = get_color_attrib(element, name, default)
 
     Returns a 3-digit or 6-digit hex RGB string in CSS format (e.g., '#123'
