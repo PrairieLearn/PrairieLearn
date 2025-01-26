@@ -664,7 +664,7 @@ def get_string_attrib(
     default value. If the default value is not provided and the
     attribute is missing then an exception is thrown.
     """
-    (str_val, is_default) = _get_attrib(element, name, *args)
+    str_val, _ = _get_attrib(element, name, *args)
     return str_val
 
 
