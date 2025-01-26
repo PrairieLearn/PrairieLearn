@@ -2,7 +2,7 @@ FROM prairielearn/workspace-vscode-base:latest
 
 # Make sure to build using bash as the shell so that conda/mamba hooks will
 # work during installation.
-SHELL ["/bin/bash", "-c"]
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install Python and required packages via miniconda.
 # This is a prerequisite for the VS Code extensions in the following steps.
