@@ -373,7 +373,8 @@ jobs:
         run: make build-docs
       - name: Check dependency structure
         run: make check-dependencies
-
+      - name: Check that JSON schema is up-to-date
+        run: make check-jsonschema
       # The rest of our code is typechecked in the `build` Makefile target, which
       # is run above.
       - name: Run the TypeScript typechecker for tools

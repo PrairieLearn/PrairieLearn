@@ -58,6 +58,9 @@ test-prairielearn: start-support
 check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
+check-jsonschema:
+	@tsx tools/gen-jsonschema.ts check
+
 lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
