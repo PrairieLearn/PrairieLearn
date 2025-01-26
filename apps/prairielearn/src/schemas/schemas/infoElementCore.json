@@ -102,9 +102,7 @@
       "description": "Any additional names to give this element, i.e. for backwards compatibility."
     }
   },
-  "required": [
-    "controller"
-  ],
+  "required": ["controller"],
   "additionalProperties": false,
   "description": "Info files for v3 elements.",
   "title": "Element Info",

@@ -12,14 +12,7 @@
     },
     "type": {
       "type": "string",
-      "enum": [
-        "Calculation",
-        "MultipleChoice",
-        "Checkbox",
-        "File",
-        "MultipleTrueFalse",
-        "v3"
-      ],
+      "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"],
       "description": "Type of the question."
     },
     "title": {
@@ -45,9 +38,7 @@
         "description": "A single file accessible by the client."
       },
       "description": "The list of question files accessible by the client (defaults to [\"client.js\"]).",
-      "default": [
-        "client.js"
-      ]
+      "default": ["client.js"]
     },
     "clientTemplates": {
       "type": "array",
@@ -63,11 +54,7 @@
     },
     "gradingMethod": {
       "type": "string",
-      "enum": [
-        "Internal",
-        "External",
-        "Manual"
-      ],
+      "enum": ["Internal", "External", "Manual"],
       "description": "The grading method used for this question."
     },
     "singleVariant": {
@@ -143,10 +130,7 @@
           "description": "Environment variables to set inside the grading container."
         }
       },
-      "required": [
-        "image",
-        "entrypoint"
-      ],
+      "required": ["image", "entrypoint"],
       "additionalProperties": false,
       "description": "Options for externally graded questions."
     },
@@ -290,11 +274,7 @@
           "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync."
         }
       },
-      "required": [
-        "image",
-        "port",
-        "home"
-      ],
+      "required": ["image", "port", "home"],
       "additionalProperties": false,
       "description": "Options for workspace questions."
     },
@@ -315,12 +295,7 @@
       "description": "Whether this questions's source code is publicly shared."
     }
   },
-  "required": [
-    "uuid",
-    "type",
-    "title",
-    "topic"
-  ],
+  "required": ["uuid", "type", "title", "topic"],
   "additionalProperties": false,
   "description": "Info files for questions.",
   "title": "Question Info",

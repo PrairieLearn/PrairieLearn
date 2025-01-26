@@ -23,11 +23,7 @@
       "description": "Whether the news item should be shown to students."
     }
   },
-  "required": [
-    "uuid",
-    "title",
-    "visible_to_students"
-  ],
+  "required": ["uuid", "title", "visible_to_students"],
   "additionalProperties": false,
   "description": "Info files for news items.",
   "title": "News Item Info",

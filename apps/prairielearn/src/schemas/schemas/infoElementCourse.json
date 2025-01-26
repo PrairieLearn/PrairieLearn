@@ -117,9 +117,7 @@
       "description": "The element's client-side dynamic dependencies."
     }
   },
-  "required": [
-    "controller"
-  ],
+  "required": ["controller"],
   "additionalProperties": false,
   "description": "Info files for v3 elements.",
   "title": "Element Info",

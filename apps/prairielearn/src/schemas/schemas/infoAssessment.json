@@ -12,10 +12,7 @@
     },
     "type": {
       "type": "string",
-      "enum": [
-        "Homework",
-        "Exam"
-      ],
+      "enum": ["Homework", "Exam"],
       "description": "Type of the assessment."
     },
     "title": {
@@ -162,13 +159,7 @@
       "description": "Module that this assessment belongs to, as defined in infoCourse.json."
     }
   },
-  "required": [
-    "uuid",
-    "type",
-    "title",
-    "set",
-    "number"
-  ],
+  "required": ["uuid", "type", "title", "set", "number"],
   "additionalProperties": false,
   "description": "Configuration data for an assessment.",
   "title": "Assessment info",
@@ -215,10 +206,7 @@
         },
         "mode": {
           "type": "string",
-          "enum": [
-            "Public",
-            "Exam"
-          ],
+          "enum": ["Public", "Exam"],
           "description": "The server mode required for access."
         },
         "examUuid": {
@@ -228,11 +216,7 @@
         },
         "role": {
           "type": "string",
-          "enum": [
-            "Student",
-            "TA",
-            "Instructor"
-          ],
+          "enum": ["Student", "TA", "Instructor"],
           "description": "DEPRECATED -- do not use."
         },
         "uids": {
@@ -348,9 +332,7 @@
           "default": []
         }
       },
-      "required": [
-        "id"
-      ],
+      "required": ["id"],
       "additionalProperties": false
     },
     "ZoneAssessmentJsonSchema": {
@@ -418,9 +400,7 @@
           "default": []
         }
       },
-      "required": [
-        "questions"
-      ],
+      "required": ["questions"],
       "additionalProperties": false
     },
     "ZoneQuestionJsonSchema": {
@@ -531,9 +511,7 @@
           "default": false
         }
       },
-      "required": [
-        "name"
-      ],
+      "required": ["name"],
       "additionalProperties": false,
       "description": "A custom role for use in group assessments that allows control over certain permissions."
     },

@@ -24,10 +24,7 @@
       "description": "A list of false statements for the question. Each is an HTML string."
     }
   },
-  "required": [
-    "trueStatements",
-    "falseStatements"
-  ],
+  "required": ["trueStatements", "falseStatements"],
   "additionalProperties": false,
   "description": "Options for a MultipleTrueFalse question.",
   "title": "MultipleTrueFalse question options",

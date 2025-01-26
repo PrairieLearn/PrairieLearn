@@ -87,12 +87,7 @@
             "$ref": "#/definitions/ColorJsonSchema"
           }
         },
-        "required": [
-          "abbreviation",
-          "name",
-          "heading",
-          "color"
-        ],
+        "required": ["abbreviation", "name", "heading", "color"],
         "additionalProperties": false,
         "description": "A single assessment set description."
       },
@@ -112,10 +107,7 @@
             "description": "Full name of the module (visible to students)"
           }
         },
-        "required": [
-          "name",
-          "heading"
-        ],
+        "required": ["name", "heading"],
         "additionalProperties": false,
         "description": "A single course module description."
       },
@@ -146,10 +138,7 @@
             "description": "Description of the topic."
           }
         },
-        "required": [
-          "name",
-          "color"
-        ],
+        "required": ["name", "color"],
         "additionalProperties": false,
         "description": "A single assessment set description."
       },
@@ -180,10 +169,7 @@
             "description": "Description of the tag."
           }
         },
-        "required": [
-          "name",
-          "color"
-        ],
+        "required": ["name", "color"],
         "additionalProperties": false,
         "description": "A single tag description."
       },
@@ -203,21 +189,14 @@
             "description": "Description of the sharing set."
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "additionalProperties": false,
         "description": "A sharing set description."
       },
       "description": "Sharing sets"
     }
   },
-  "required": [
-    "uuid",
-    "name",
-    "title",
-    "topics"
-  ],
+  "required": ["uuid", "name", "title", "topics"],
   "additionalProperties": false,
   "description": "The specification file for a course.",
   "title": "Course information",

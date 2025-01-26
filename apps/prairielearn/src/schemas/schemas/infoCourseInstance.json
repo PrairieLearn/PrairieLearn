@@ -50,12 +50,7 @@
           },
           "role": {
             "type": "string",
-            "enum": [
-              "Student",
-              "TA",
-              "Instructor",
-              "Superuser"
-            ],
+            "enum": ["Student", "TA", "Instructor", "Superuser"],
             "description": "DEPRECATED -- do not use."
           },
           "uids": {
@@ -85,18 +80,12 @@
     },
     "groupAssessmentsBy": {
       "type": "string",
-      "enum": [
-        "Set",
-        "Module"
-      ],
+      "enum": ["Set", "Module"],
       "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
       "default": "Set"
     }
   },
-  "required": [
-    "uuid",
-    "longName"
-  ],
+  "required": ["uuid", "longName"],
   "additionalProperties": false,
   "description": "The specification file for a course instance.",
   "title": "Course instance information",

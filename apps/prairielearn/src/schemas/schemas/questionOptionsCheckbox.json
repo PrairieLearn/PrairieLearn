@@ -39,11 +39,7 @@
       "description": "The maximum number of correct answers in the list of possible answers."
     }
   },
-  "required": [
-    "text",
-    "correctAnswers",
-    "incorrectAnswers"
-  ],
+  "required": ["text", "correctAnswers", "incorrectAnswers"],
   "additionalProperties": false,
   "description": "Options for a MultipleChoice question.",
   "title": "MultipleChoice question options",
