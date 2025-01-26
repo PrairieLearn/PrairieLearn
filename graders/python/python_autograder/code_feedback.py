@@ -125,7 +125,7 @@ class Feedback:
         raise GradingComplete("Your answer is correct.")
 
     @classmethod
-    def finish_test(cls, fb_text):
+    def finish_test(cls, fb_text: str) -> NoReturn:
         """
         Feedback.finish(fb_text)
 
@@ -488,7 +488,9 @@ class Feedback:
         return True
 
     @classmethod
-    def call_user(cls, f: Callable, stop_on_exception: bool = False, *args, **kwargs) -> Any:
+    def call_user(
+        cls, f: Callable, stop_on_exception: bool = False, *args: Any, **kwargs: Any
+    ) -> Any:
         """
         Attempts to call a student defined function, with any arbitrary arguments.
         If the student code raises an exception, this will be caught and user feedback will be given.
