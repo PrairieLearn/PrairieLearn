@@ -321,9 +321,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     if a_tru_parsed is None:
         raise ValueError(f"Could not parse correct answer: {a_tru}")
 
-    if not isinstance(a_tru_parsed, int | np.complexfloating | np.number):
+    if not isinstance(
+        a_tru_parsed, int | float | complex | np.complexfloating | np.number
+    ):
         raise TypeError(
-            f"Correct answer '{a_tru}' is not of the correct type, got {type(a_tru)}"
+            f"Correct answer '{a_tru}' is not a valid type, got {type(a_tru)}"
         )
 
     result = data["test_type"]

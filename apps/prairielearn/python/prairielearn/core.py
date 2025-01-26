@@ -278,6 +278,7 @@ class _JSONSerializedSympyMatrix(_JSONSerializedGeneric):
     _shape: tuple[int, int]
 
 
+# This represents the output object formats for the to_json function
 _JSONSerializedType = (
     _JSONSerializedGeneric
     | _JSONSerializedNumpyScalar
@@ -286,6 +287,7 @@ _JSONSerializedType = (
     | _JSONSerializedSympyMatrix
 )
 
+# This represents the object formats that will be serialized by the to_json function
 _JSONPythonType = (
     np.complexfloating
     | np.number
