@@ -49,17 +49,17 @@ FROM rocker/rstudio:4.4.3
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.
 USER 0
-RUN export OLD_UID=$(id -u rstudio) && \
-    export OLD_GID=$(id -g rstudio) && \
-    export NEW_UID=1001 && \
-    export NEW_GID=1001 && \
+RUN OLD_UID="$(id -u rstudio)" && \
+    OLD_GID="$(id -g rstudio)" && \
+    export OLD_GID OLD_UID NEW_UID=1001 NEW_GID=1001 && \
     groupmod -g 1001 rstudio && \
     usermod -u 1001 -g 1001 rstudio && \
-    find /home -user $OLD_UID -execdir chown -h $NEW_UID {} + && \
-    find /home -group $OLD_GID -execdir chgrp -h $NEW_GID {} + && \
+    find /home -user "$OLD_UID" -execdir chown -h "$NEW_UID" {} + && \
+    find /home -group "$OLD_GID" -execdir chgrp -h "$NEW_GID" {} + && \
     unset OLD_UID OLD_GID NEW_UID NEW_GID
 
 USER 0
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update && \
     # Run 'unminimize' to add docs
     apt-get install -y --no-install-recommends man-db unminimize && \
