@@ -496,7 +496,9 @@ def check_attribs(
         raise ValueError(f'Unknown attribute "{name}"')
 
 
-def _get_attrib(element: lxml.html.HtmlElement, name: str, *args) -> tuple[Any, bool]:
+def _get_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: Any
+) -> tuple[Any, bool]:
     """(value, is_default) = _get_attrib(element, name, default)
 
     Internal function, do not all. Use one of the typed variants
@@ -1581,17 +1583,17 @@ def latex_from_2darray(
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_dd(*args, **kwargs) -> bool:  # noqa: N802
+def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
     return is_correct_ndarray2d_dd(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_sf(*args, **kwargs) -> bool:  # noqa: N802
+def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
     return is_correct_ndarray2d_sf(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_ra(*args, **kwargs) -> bool:  # noqa: N802
+def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
     return is_correct_ndarray2d_ra(*args, **kwargs)
 
 
@@ -1765,7 +1767,7 @@ def load_extension(data: QuestionData, extension_name: str) -> Any:
         if not callable(f):
             return f
 
-        def wrapped_function(*args, **kwargs) -> Any:
+        def wrapped_function(*args: Any, **kwargs: Any) -> Any:
             old_wd = os.getcwd()
             os.chdir(ext_info["directory"])
             ret_val = f(*args, **kwargs)
@@ -1813,7 +1815,7 @@ def load_all_extensions(data: QuestionData) -> dict[str, Any]:
     return loaded_extensions
 
 
-def load_host_script(script_name) -> ModuleType:
+def load_host_script(script_name: str) -> ModuleType:
     """
     load_host_script(script_name)
 
