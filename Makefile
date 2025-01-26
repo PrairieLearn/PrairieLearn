@@ -61,7 +61,7 @@ check-dependencies:
 check-jsonschema:
 	@tsx tools/gen-jsonschema.ts check
 
-lint: lint-js lint-python lint-html lint-links
+lint: lint-js lint-python lint-html lint-links lint-docker
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
 	@yarn prettier --check "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
@@ -72,6 +72,8 @@ lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
 lint-links:
 	@node tools/validate-links.mjs
+lint-docker:
+	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 
 format: format-js format-python
 format-js:

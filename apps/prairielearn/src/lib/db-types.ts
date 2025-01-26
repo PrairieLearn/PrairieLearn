@@ -372,6 +372,7 @@ export const CourseSchema = z.object({
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
   short_name: z.string().nullable(),
+  show_getting_started: z.boolean(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
@@ -499,7 +500,7 @@ export const FileEditSchema = z.object({
 });
 export type FileEdit = z.infer<typeof FileEditSchema>;
 
-export const AiGenerationPromptSchema = z.object({
+export const AiQuestionGenerationPromptSchema = z.object({
   completion: z.any(),
   system_prompt: z.string().nullable(),
   errors: z.array(z.string()),
@@ -514,7 +515,7 @@ export const AiGenerationPromptSchema = z.object({
   job_sequence_id: z.string().nullable(),
 });
 
-export type AiGenerationPrompt = z.infer<typeof AiGenerationPromptSchema>;
+export type AiQuestionGenerationPrompt = z.infer<typeof AiQuestionGenerationPromptSchema>;
 
 export const FileTransferSchema = z.object({
   created_at: DateFromISOString,
