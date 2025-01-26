@@ -115,7 +115,7 @@ class Feedback:
         raise GradingComplete("Your answer is correct.")
 
     @staticmethod
-    def not_allowed(*_args, **_kwargs) -> NoReturn:
+    def not_allowed(*_args: Any, **_kwargs: Any) -> NoReturn:
         """
         Used to hook into disallowed functions, raises an exception if
         the student tries to call it.
@@ -195,7 +195,7 @@ class Feedback:
         """
         import numpy as np
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -304,7 +304,7 @@ class Feedback:
             >>> Feedback.check_list(name, ref, data)
         """
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -356,7 +356,7 @@ class Feedback:
             >>> Feedback.check_tuple(name, ref, data)
         """
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -430,7 +430,7 @@ class Feedback:
 
         import numpy as np
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -467,7 +467,7 @@ class Feedback:
         return True
 
     @classmethod
-    def call_user(cls, f: Callable, *args, **kwargs) -> Any:
+    def call_user(cls, f: Callable, *args: Any, **kwargs: Any) -> Any:
         """
         Attempts to call a student defined function, with any arbitrary arguments specified in `*args` and `**kwargs`. If the student code raises an exception, this will be caught and user feedback will be given.
 
@@ -532,7 +532,7 @@ class Feedback:
         import matplotlib.axes
         import numpy as np
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -630,7 +630,7 @@ class Feedback:
 
         import pandas as pd
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             cls.add_feedback(msg)
             if display_input and isinstance(data, pd.DataFrame):
                 cls.add_feedback("----------")

@@ -129,7 +129,6 @@ reportPrivateUsage = "none"
 reportUnnecessaryIsInstance = "none"
 reportUnknownLambdaType = "none"
 # These rules should be progressively enabled 
-reportMissingParameterType = "none"
 reportMissingTypeArgument = "none"
 reportArgumentType = "none"
 reportUnnecessaryComparison = "information"
