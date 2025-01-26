@@ -246,83 +246,85 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
     )
 
 
-class _JSONSerializedComplex(TypedDict):
-    _type: Literal["complex"]
-    _value: dict[str, float]
+class _JSONSerializedGeneric(TypedDict):
+    _type: Literal[
+        "sympy",
+        "sympy_matrix",
+        "dataframe",
+        "dataframe_v2",
+        "networkx_graph",
+        "complex",
+        "ndarray",
+        "np_scalar",
+        "complex_ndarray",
+    ]
+    _value: Any
 
 
-class _JSONSerializedNumpyScalar(TypedDict):
-    _type: Literal["np_scalar"]
+class _JSONSerializedNumpyScalar(_JSONSerializedGeneric):
     _concrete_type: str
-    _value: str | int | float | bool
 
 
-class _JSONSerializedNdarrayPartial(TypedDict):
-    _type: Literal["ndarray"]
-    _value: list[list[Any]]
-
-
-# TODO: This type can be simplified in python 3.11
-class _JSONSerializedNdarray(_JSONSerializedNdarrayPartial, total=False):
+class _JSONSerializedNdarray(_JSONSerializedGeneric, total=False):
     _dtype: str
 
 
-class _JSONSerializedComplexNdarrayPartial(TypedDict):
-    _type: Literal["complex_ndarray"]
-    _value: dict[str, list[list[Any]]]
-
-
-# TODO: This type can be simplified in python 3.11
-class _JSONSerializedComplexNdarray(_JSONSerializedComplexNdarrayPartial, total=False):
+class _JSONSerializedComplexNdarray(_JSONSerializedGeneric, total=False):
     _dtype: str
 
 
-class _JSONSerializedSympy(TypedDict):
-    _type: Literal["sympy"]
-    _value: dict[str, Any]
-
-
-class _JSONSerializedSympyMatrix(TypedDict):
-    _type: Literal["sympy_matrix"]
-    _value: list[list[str]]
+class _JSONSerializedSympyMatrix(_JSONSerializedGeneric):
     _variables: list[str]
     _shape: tuple[int, int]
 
 
-class _JSONSerializedDataframe(TypedDict):
-    _type: Literal["dataframe"]
-    _value: dict[Literal["index", "columns", "data"], Any]
-
-
-class _JSONSerializedDataframeV2(TypedDict):
-    _type: Literal["dataframe_v2"]
-    _value: Any
-
-
-class _JSONSerializedNetworkxGraph(TypedDict):
-    _type: Literal["networkx_graph"]
-    _value: dict[Any, Any]
-
-
 _JSONSerializedType = (
-    _JSONSerializedComplex
+    _JSONSerializedGeneric
     | _JSONSerializedNumpyScalar
     | _JSONSerializedNdarray
     | _JSONSerializedComplexNdarray
-    | _JSONSerializedSympy
     | _JSONSerializedSympyMatrix
-    | _JSONSerializedDataframe
-    | _JSONSerializedDataframeV2
-    | _JSONSerializedNetworkxGraph
+)
+
+_JSONPythonType = (
+    np.complexfloating
+    | np.number
+    | np.ndarray
+    | sympy.Expr
+    | sympy.Matrix
+    | sympy.ImmutableMatrix
+    | pd.DataFrame
+    | nx.Graph
+    | nx.DiGraph
+    | nx.MultiGraph
+    | nx.MultiDiGraph
 )
 
 
+@overload
+def to_json(
+    v: _JSONPythonType,
+    *,
+    df_encoding_version: Literal[1, 2] = 1,
+    np_encoding_version: Literal[1, 2] = 1,
+) -> _JSONSerializedType: ...
+
+
+@overload
 def to_json(
     v: Any,
     *,
     df_encoding_version: Literal[1, 2] = 1,
     np_encoding_version: Literal[1, 2] = 1,
-) -> _JSONSerializedType | Any:
+) -> Any: ...
+
+
+def to_json(
+    v: Any | _JSONPythonType,
+    *,
+    df_encoding_version: Literal[1, 2] = 1,
+    np_encoding_version: Literal[1, 2] = 1,
+) -> Any | _JSONSerializedType:
     """to_json(v)
 
     If v has a standard type that cannot be json serialized, it is replaced with
@@ -445,7 +447,17 @@ def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
     )
 
 
-def from_json(v: _JSONSerializedType | Any) -> Any:
+@overload
+def from_json(
+    v: _JSONSerializedType,
+) -> _JSONPythonType: ...
+
+
+@overload
+def from_json(v: Any) -> Any: ...
+
+
+def from_json(v: _JSONSerializedType | Any) -> _JSONPythonType | Any:
     """from_json(v)
 
     If v has the format {'_type':..., '_value':...} as would have been created
