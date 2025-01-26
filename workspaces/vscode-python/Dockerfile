@@ -19,9 +19,9 @@ RUN OLD_UID=$(id -u coder) && \
 
 # Remove sudo permissions for default user, then test
 USER root
+# hadolint ignore=DL3004
 RUN find /etc/sudoers.d -type f -not -name README -delete && \
     sudo -u coder bash -c 'if sudo echo "Test failed: User can sudo" ; then false ; fi'
-
 # Apt installs: Enable manpages with "unminimize", and then install common utilities.
 USER root
 ARG DEBIAN_FRONTEND=noninteractive
