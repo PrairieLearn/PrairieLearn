@@ -62,7 +62,7 @@ RUN export OLD_UID=$(id -u rstudio) && \
 USER 0
 RUN apt-get update && \
     # Run 'unminimize' to add docs
-    apt-get install -y man-db unminimize && \
+    apt-get install -y --no-install-recommends man-db unminimize && \
     yes | unminimize && \
     apt-get install -y --no-install-recommends \
     # Reverse proxy workaround for PrairieLearn:
