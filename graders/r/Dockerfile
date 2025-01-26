@@ -32,7 +32,7 @@ ENV PYTHONIOENCODING=UTF-8
 # users to adapt and adjust the package list.  We also install sqlite3 to support the
 # SQL lectures. (Adding a duckdb binary may be an option too.)
 RUN apt-get update \
-    && apt-get install -y curl \
+    && apt-get install -y --no-install-recommends curl \
                       git \
                       pandoc \
                       sqlite3 \
