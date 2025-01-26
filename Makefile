@@ -59,7 +59,7 @@ check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
 check-jsonschema:
-	@tsx tools/gen-jsonschema.ts check
+	@yarn dlx tsx tools/gen-jsonschema.mts check
 
 lint: lint-js lint-python lint-html lint-links lint-docker
 lint-js:
