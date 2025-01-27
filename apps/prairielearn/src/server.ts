@@ -2248,8 +2248,10 @@ export async function startServer() {
 
   // In production, startup the server normally
   if ((import.meta as any).env.PROD) {
+    console.log('Running in production mode');
     server.listen(config.serverPort);
   } else if (httpDevServer) {
+    console.log('Running in development mode');
     // TODO: currently, must be a connect handler, not an instance of a http server
     httpDevServer.on('request', app);
     httpDevServer.on('error', (err) => {
