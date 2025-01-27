@@ -9,7 +9,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
-import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -46,7 +46,7 @@ async function checkPage(url: string) {
 
 const STATIC_ROUTE_PARAMS = {
   // These are trivially known because there will only be one course and course
-  // instance in the database after syncing the example course.
+  // instance in the database after syncing the test course.
   course_id: 1,
   course_instance_id: 1,
 };
@@ -265,7 +265,9 @@ describe('accessibility', () => {
   let routeParams: Record<string, any> = {};
   before('set up testing server', async function () {
     config.cronActive = false;
-    await helperServer.before(EXAMPLE_COURSE_PATH).call(this);
+    // We use the test course since editing functionality is disabled in the
+    // example course.
+    await helperServer.before(TEST_COURSE_PATH).call(this);
     config.cronActive = true;
 
     // We want to test a news item page, so we need to "init" them.
@@ -283,17 +285,17 @@ describe('accessibility', () => {
       {},
     );
 
-    const questionGalleryAssessmentResult = await sqldb.queryOneRowAsync(
+    const assessmentResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM assessments WHERE tid = $tid',
       {
-        tid: 'gallery/elements',
+        tid: 'hw1-automaticTestSuite',
       },
     );
 
-    const codeElementQuestionResult = await sqldb.queryOneRowAsync(
+    const questionResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM questions WHERE qid = $qid',
       {
-        qid: 'element/code',
+        qid: 'downloadFile',
       },
     );
 
@@ -302,8 +304,8 @@ describe('accessibility', () => {
     routeParams = {
       ...STATIC_ROUTE_PARAMS,
       news_item_id: firstNewsItemResult.rows[0].id,
-      assessment_id: questionGalleryAssessmentResult.rows[0].id,
-      question_id: codeElementQuestionResult.rows[0].id,
+      assessment_id: assessmentResult.rows[0].id,
+      question_id: questionResult.rows[0].id,
     };
 
     await sqldb.queryOneRowAsync(
