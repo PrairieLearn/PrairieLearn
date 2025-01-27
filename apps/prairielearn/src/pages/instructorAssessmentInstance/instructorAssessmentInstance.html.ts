@@ -12,7 +12,12 @@ import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentQuestionSchema, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
+import {
+  AssessmentQuestionSchema,
+  type ClientFingerprint,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
@@ -603,20 +608,11 @@ export function InstructorAssessmentInstance({
                                   data-html="true"
                                   data-placement="auto"
                                   title="Fingerprint ${row.client_fingerprint_number}"
-                                  data-content="${escapeHtml(html`
-                                    <div>
-                                      IP Address:
-                                      <a
-                                        href="https://client.rdap.org/?type=ip&object=${row
-                                          .client_fingerprint.ip_address}"
-                                        target="_blank"
-                                      >
-                                        ${row.client_fingerprint.ip_address}
-                                      </a>
-                                    </div>
-                                    <div>Session ID: ${row.client_fingerprint.user_session_id}</div>
-                                    <div>User Agent: ${row.client_fingerprint.user_agent}</div>
-                                  `)}"
+                                  data-content="${escapeHtml(
+                                    ClientFingerprintContent({
+                                      fingerprint: row.client_fingerprint,
+                                    }),
+                                  )}"
                                 >
                                   ${row.client_fingerprint_number}
                                 </button>
@@ -701,6 +697,50 @@ export function InstructorAssessmentInstance({
       </body>
     </html>
   `.toString();
+}
+
+function ClientFingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint }) {
+  let browserVersion: string = fingerprint.client_hints?.['sec-ch-ua-full-version-list'];
+  const mobile: string = fingerprint.client_hints?.['sec-ch-ua-mobile'];
+  const osPlatform: string = fingerprint.client_hints?.['sec-ch-ua-platform']?.replaceAll('"', '');
+  let osPlatformVersion: string = fingerprint.client_hints?.['sec-ch-ua-platform-version'];
+
+  if (browserVersion) {
+    const match = browserVersion.match(/^"([^"]+)";v="([^"]+)"/);
+    if (match) {
+      browserVersion = `${match[1]} v${match[2]}`;
+    }
+  }
+
+  // Special handing of Windows platform version
+  // https://learn.microsoft.com/en-us/microsoft-edge/web-platform/how-to-detect-win11#detecting-specific-windows-versions
+  if (osPlatform === 'Windows' && osPlatformVersion != null) {
+    const platformMatch = osPlatformVersion.match(/^"([0-9]+)[0-9.]+"/);
+    if (platformMatch) {
+      const platformMajorVersion = Number(platformMatch[1]);
+      if (platformMajorVersion === 0) {
+        osPlatformVersion = '8.1 or older';
+      } else if (Number(platformMajorVersion) > 0 && Number(platformMajorVersion) < 13) {
+        osPlatformVersion = `10 (platform ${osPlatformVersion})`;
+      } else {
+        osPlatformVersion = `11 or newer (platform ${osPlatformVersion})`;
+      }
+    }
+  }
+
+  return html`
+    <div>
+      IP Address:
+      <a href="https://client.rdap.org/?type=ip&object=${fingerprint.ip_address}" target="_blank">
+        ${fingerprint.ip_address}
+      </a>
+    </div>
+    <div>Session ID: ${fingerprint.user_session_id}</div>
+    <div>User Agent: <code>${fingerprint.user_agent}</code></div>
+    ${mobile ? html`<div>Mobile mode: ${mobile === '?1' ? 'Yes' : 'No'}</div>` : ''}
+    ${browserVersion ? html`<div>Browser: ${browserVersion}</div>` : ''}
+    ${osPlatform ? html`<div>OS: ${osPlatform} ${osPlatformVersion ?? ''}</div>` : ''}
+  `;
 }
 
 function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) {
