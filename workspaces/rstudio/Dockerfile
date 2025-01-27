@@ -59,7 +59,6 @@ RUN OLD_UID="$(id -u rstudio)" && \
     unset OLD_UID OLD_GID NEW_UID NEW_GID
 
 USER 0
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update && \
     # Run 'unminimize' to add docs
     apt-get install -y --no-install-recommends man-db unminimize && \
