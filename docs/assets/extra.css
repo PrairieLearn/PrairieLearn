@@ -71,6 +71,12 @@ foreignObject .md pre {
   margin: 1em 0 0.5em;
 }
 
+/**
+ * Add a border to tabbed content. This also requires adding padding, which
+ * in turn requires conditionally adding/removing other padding/margins to
+ * ensure that tabbed code blocks look their nicest.
+ */
+
 .tabbed-set {
   border: 1px solid var(--md-default-fg-color--lightest);
 }
