@@ -73,7 +73,7 @@ export function InstructorAIGenerateDrafts({
             left: 0;
             width: 100%;
             height: 6rem;
-            background: linear-gradient(to bottom, transparent, 25%, var(--bs-light));
+            background: linear-gradient(to bottom, transparent, var(--bs-light));
             pointer-events: none;
           }
         </style>
