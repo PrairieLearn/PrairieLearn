@@ -578,31 +578,9 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl', (await import('./pages/home/home.js')).default);
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
-  app.use('/pl/password', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'password';
-      next();
-    },
-    (await import('./pages/authPassword/authPassword.js')).default,
-  ]);
-  app.use('/pl/news_items', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'news';
-      next();
-    },
-    (await import('./pages/newsItems/newsItems.js')).default,
-  ]);
-  app.use('/pl/news_item', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'news';
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'news_item';
-      next();
-    },
-    (await import('./pages/newsItem/newsItem.js')).default,
-  ]);
+  app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
+  app.use('/pl/news_items', (await import('./pages/newsItems/newsItems.js')).default);
+  app.use('/pl/news_item', (await import('./pages/newsItem/newsItem.js')).default);
   app.use(
     '/pl/request_course',
     (await import('./pages/instructorRequestCourse/instructorRequestCourse.js')).default,
