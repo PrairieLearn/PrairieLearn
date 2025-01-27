@@ -3,7 +3,7 @@
   "params": [
     {
       "name": "institution_short_name",
-      "description": "Restrict to a particular institution.",
+      "description": "The short name of the institution (required).",
       "default": ""
     },
     {
