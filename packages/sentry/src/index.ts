@@ -83,7 +83,7 @@ export function requestHandler() {
 // We export every type and function from `@sentry/node` *except* for init,
 // which we replace with our own version up above.
 
-export {
+export type {
   Breadcrumb,
   BreadcrumbHint,
   Event,

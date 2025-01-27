@@ -61,15 +61,15 @@ def translate_variables(token):
     if token[0] != "$":
         return token
 
-    str = token.replace("$", "").replace("[", "_").replace("]", "_")
+    str_token = token.replace("$", "").replace("[", "_").replace("]", "_")
     punct = ""
 
     # we don't want to include punctuation in the variable
-    if str[-1] in ".?,;!;:=+-":
-        punct = str[-1]
-        str = str[:-1]
+    if str_token[-1] in ".?,;!;:=+-":
+        punct = str_token[-1]
+        str_token = str_token[:-1]
 
-    return "{{ params." + str + " }}" + punct
+    return "{{ params." + str_token + " }}" + punct
 
 
 def translate_variables_line(line):
@@ -120,7 +120,7 @@ def read_xml_from_file_and_remove_ampersands(xml_filename):
         lines = in_file.readlines()
 
         # remove the ampersands because they break xml parsing
-        lines = map(lambda x: x.replace("&", ""), lines)
+        lines = (x.replace("&", "") for x in lines)
 
         xml_str = "".join(lines)
         return xml_str
@@ -170,8 +170,8 @@ def generate_server_py(script, question_dir):
     tab = "    "
     with open(question_dir + "/server.py", "w") as out_file:
         out_file.write("import random\nimport math\n\ndef generate(data):\n")
-        for statement in script.split(";"):
-            statement = statement.replace("\n", " ").strip()
+        for raw_statement in script.split(";"):
+            statement = raw_statement.replace("\n", " ").strip()
             if len(statement) == 0:
                 continue
             out_file.write(tab + "# " + statement + "\n")
