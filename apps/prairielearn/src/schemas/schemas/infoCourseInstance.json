@@ -19,6 +19,11 @@
       "description": "The long name of this course instance (e.g., 'Spring 2015').",
       "type": "string"
     },
+    "questionParams": {
+      "description": "Parameters to pass down to questions in this course instance.",
+      "type": "object",
+      "default": {}
+    },
     "shortName": {
       "description": "DEPRECATED -- do not use.",
       "type": "string"
@@ -93,11 +98,6 @@
       "type": "string",
       "default": "Set",
       "enum": ["Set", "Module"]
-    },
-    "questionParams": {
-      "description": "Parameters to pass down to questions in this course instance.",
-      "type": "object",
-      "default": {}
     }
   }
 }

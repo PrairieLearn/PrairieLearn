@@ -83,7 +83,26 @@
       "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/zone"
+        "$ref": "#/definitions/zone",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "questionParams": {
+            "description": "Parameters to pass down to questions in this zone.",
+            "type": "object",
+            "properties": {
+              "param1": {
+                "type": "string"
+              },
+              "param2": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": ["questions"]
       }
     },
     "constantQuestionValue": {
@@ -291,7 +310,29 @@
           "type": "array",
           "minItems": 1,
           "items": {
-            "$ref": "#/definitions/zoneQuestion"
+            "$ref": "#/definitions/zoneQuestion",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "points": {
+                "type": "number"
+              },
+              "questionParams": {
+                "description": "Parameters specific to this question.",
+                "type": "object",
+                "properties": {
+                  "param1": {
+                    "type": "string"
+                  },
+                  "param2": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": ["id", "points"]
           }
         },
         "advanceScorePerc": {
@@ -494,6 +535,19 @@
       "type": "number",
       "minimum": 0,
       "maximum": 100
+    },
+    "questionParams": {
+      "description": "Parameters to pass down to questions in this assessment.",
+      "type": "object",
+      "properties": {
+        "param1": {
+          "type": "string"
+        },
+        "param2": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }
