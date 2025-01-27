@@ -63,6 +63,41 @@ plugins:
       layout: dagre
       pad: 20
       theme: 0
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths:
+            - graders/python/python_autograder
+          options:
+            show_root_heading: true
+            summary:
+              attributes: false
+            show_source: false
+            show_bases: false # e.g. 'TypedDict'
+            show_labels: true # e.g. 'instance-attribute'
+            modernize_annotations: true # e.g. 'Optional[int]' -> 'int | None'
+            show_docstring_examples: true # Examples:
+            show_docstring_attributes: true # Attributes:
+            docstring_section_style: table
+            show_symbol_type_heading: false # class, meth, attr
+
+            members_order: source
+
+            show_signature_annotations: true
+            separate_signature: true
+            signature_crossrefs: true
+
+            show_if_no_docstring: true
+
+          import:
+            - url: https://numpy.org/doc/stable/objects.inv
+            - url: https://pandas.pydata.org/pandas-docs/stable/objects.inv
+            - url: https://matplotlib.org/objects.inv
+            - url: https://docs.python.org/3/objects.inv
+              domains: [py, std, typing]
+            - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv
+              domains: []
 docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/
@@ -78,7 +113,8 @@ markdown_extensions:
 
   - tables
   # https://facelessuser.github.io/pymdown-extensions/extensions/snippets/#snippets
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      check_paths: true
   - pymdownx.details
 
   - toc:
@@ -176,7 +212,7 @@ not_in_nav: |
   workshop/lesson3.md
   workshop/lesson4.md
   workshop/lesson5.md
-  python-grader/sphinx-docs.md
+  python-grader/reference-docs.md
 
 validation:
   omitted_files: warn

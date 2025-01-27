@@ -2,5 +2,5 @@ def generate(data):
     data["correct_answers"]["x"] = 3
 
 
-def grade(data):
-    raise Exception("deliberately broken grading function")
+def grade(_data):
+    raise RuntimeError("deliberately broken grading function")

@@ -20,12 +20,11 @@ def validate_grouping(
                 != 0
             ):
                 return False
-        else:
-            if not all(
-                group_belonging.get(dependency) == group_tag
-                for (dependency, _) in graph.in_edges(node)
-            ):
-                return False
+        elif not all(
+            group_belonging.get(dependency) == group_tag
+            for (dependency, _) in graph.in_edges(node)
+        ):
+            return False
     return True
 
 
@@ -134,9 +133,9 @@ def add_edges_for_groups(
         )
 
     # if a group G depends on a node N, all blocks in the group G should depend on Node N
-    for group_tag in groups:
+    for group_tag, nodes in groups.items():
         for dependency, _ in graph.in_edges(group_tag):
-            for node in groups[group_tag]:
+            for node in nodes:
                 graph.add_edge(dependency, node)
 
     # if a node N depends on a group G, node N should depend on all blocks in G
@@ -227,10 +226,8 @@ def lcs_partial_credit(
             ) != group_belonging.get(node2):
                 continue
             if not all(
-                [
-                    group_belonging[x] == group_belonging[node1]
-                    for x in submission_no_distractors[i : j + 1]
-                ]
+                group_belonging[x] == group_belonging[node1]
+                for x in submission_no_distractors[i : j + 1]
             ):
                 problematic_subgraph.add_nodes_from(
                     submission_no_distractors[i : j + 1]

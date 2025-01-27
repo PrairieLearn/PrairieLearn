@@ -188,7 +188,6 @@ export interface Question {
   tags?: string[];
   sharingSets?: string[];
   sharePublicly?: boolean;
-  sharedPublicly?: boolean;
   shareSourcePublicly?: boolean;
   clientFiles?: string[];
   clientTemplates?: string[];
