@@ -98,6 +98,7 @@ exclude = [
 ]
 
 [tool.pyright]
+typeCheckingMode = "strict"
 include = [
     "./apps/prairielearn/elements",
     "./apps/prairielearn/python",
@@ -111,7 +112,27 @@ exclude = [
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
+executionEnvironments = [
+    # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
+    { root = "./graders/python", pythonVersion = "3.12", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none" },
+    { root = "./graders/c", pythonVersion = "3.12", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none" },
+]
 reportUnnecessaryTypeIgnoreComment = "error"
+# These rules would require significant changes
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+reportMissingTypeStubs = "none"
+# These rules don't provide much value
+reportPrivateUsage = "none"
+reportUnnecessaryIsInstance = "none"
+reportUnknownLambdaType = "none"
+# These rules should be progressively enabled 
+reportMissingTypeArgument = "none"
+reportArgumentType = "none"
+reportUnnecessaryComparison = "information"
+reportUnnecessaryCast = "information"
 
 [tool.pytest.ini_options]
 pythonpath = [

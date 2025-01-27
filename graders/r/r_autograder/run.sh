@@ -4,13 +4,12 @@
 # INIT
 ##########################
 
+echo "[run.sh] --- New run started at $(date)"
+
 ## switch to control if more values are displayed on console or not
 DEBUG="off"
 export DEBUG
-if [ ${DEBUG} == "on" ]; then VFLAG="-v" else VFLAG=""; fi
-
-## the directory for the autograder
-AG_DIR="/r_autograder"
+if [ ${DEBUG} == "on" ]; then VFLAG="-v"; else VFLAG=""; fi
 
 ## the directory where the file pertaining to the job are mounted
 JOB_DIR="/grade"
@@ -18,6 +17,12 @@ JOB_DIR="/grade"
 STUDENT_DIR="${JOB_DIR}/student"
 TEST_DIR="${JOB_DIR}/tests"
 OUT_DIR="${JOB_DIR}/results"
+
+## the default directory for the autograder
+AG_DIR="/r_autograder"
+## alternate entrypoint within a course repo, to use it set
+## value of info.json for 'entrypoint' and mount 'serverFilesCourse'
+#AG_DIR="${JOB_DIR}/serverFilesCourse/r_autograder"
 
 ## where we will copy everything
 MERGE_DIR="${JOB_DIR}/run"
@@ -71,5 +76,4 @@ echo "[run.sh] autograder completed"
 
 # get the results from the file
 cp  ${VFLAG}  ${MERGE_DIR}/results.json  ${OUT_DIR}
-echo "[run.sh] copied results and DONE."
-echo "[run.sh] DONE"
+echo "[run.sh] --- copied results, done at $(date)"
