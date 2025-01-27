@@ -24,7 +24,6 @@ RUN find /etc/sudoers.d -type f -not -name README -delete && \
     sudo -u coder bash -c 'if sudo echo "Test failed: User can sudo" ; then false ; fi'
 # Apt installs: Enable manpages with "unminimize", and then install common utilities.
 USER root
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
@@ -42,7 +41,7 @@ RUN apt-get update && \
 
 # Make sure to build using bash as the shell so that conda/mamba hooks will
 # work during installation.
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+SHELL ["/bin/bash", "-c"]
 
 # Install Python and required packages via miniconda.
 # This is a prerequisite for the VS Code extensions in the following steps.
