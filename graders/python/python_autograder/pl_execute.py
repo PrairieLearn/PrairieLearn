@@ -14,7 +14,7 @@ from pl_helpers import extract_ipynb_contents
 
 
 class UserCodeFailedError(Exception):
-    def __init__(self, err: Any, *args) -> None:
+    def __init__(self, err: Any, *args: Any) -> None:
         self.err = err
         super().__init__(err, *args)
 
