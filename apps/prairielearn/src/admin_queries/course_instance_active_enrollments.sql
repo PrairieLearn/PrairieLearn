@@ -1,5 +1,9 @@
 WITH
   course_instance_user_data AS (
+    -- We filter using ai.modified_at and iq.modified_at for efficiency. This
+    -- means we might miss some activity (e.g., if a student has later worked on
+    -- a question or assessment) but this should be accurate enough when we are
+    -- looking at whole terms.
     SELECT
       ci.id AS course_instance_id,
       u.user_id,
@@ -41,6 +45,10 @@ WITH
       course_instance_id
   ),
   workspace_data AS (
+    -- We exhaustively find all workspaces in the given time range and then
+    -- filter them down to only those that are associated with a course
+    -- instance. This is more thorough than the approach above for instance
+    -- questions because we don't want to miss any compute activity.
     SELECT
       ci.id AS course_instance_id,
       COUNT(*) AS workspace_count,
@@ -67,6 +75,8 @@ WITH
       ci.id
   ),
   grading_job_data AS (
+    -- We use a similar exhaustive approach for grading jobs as we do for
+    -- workspaces above.
     SELECT
       ci.id AS course_instance_id,
       COUNT(*) AS external_grading_count,
