@@ -164,7 +164,9 @@ export function InstructorQuestionSettings({
                     aria-label="Question topic, tags, and assessments"
                   >
                     <tr>
-                      <th class="align-middle">Topic</th>
+                      <th class="align-middle">
+                        <label for="topic">Topic</label>
+                      </th>
                       <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
                       <!-- This is used by tom-select to style the active item in the dropdown -->
                       <td style="--bs-tertiary-bg: #f8f9fa">
@@ -188,7 +190,9 @@ export function InstructorQuestionSettings({
                       </td>
                     </tr>
                     <tr>
-                      <th class="align-middle">Tags</th>
+                      <th class="align-middle">
+                        <label for="tags">Tags</label>
+                      </th>
                       <td>
                         ${canEdit
                           ? html`
@@ -417,7 +421,7 @@ function DeleteQuestionModal({
               ${assessmentsWithQuestion.map((a_with_q) => {
                 return html`
                   <li class="list-group-item">
-                    <h6>${a_with_q.short_name} (${a_with_q.long_name})</h6>
+                    <div class="h6">${a_with_q.short_name} (${a_with_q.long_name})</div>
                     ${a_with_q.assessments.map((assessment) =>
                       AssessmentBadge({
                         plainUrlPrefix: config.urlPrefix,
