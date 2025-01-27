@@ -3410,12 +3410,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/bind-mount@workspace:packages/bind-mount"
   dependencies:
-    "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.9"
     bindings: "npm:^1.5.0"
     nan: "npm:^2.22.0"
     node-gyp: "npm:^11.0.0"
-    typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft
 
