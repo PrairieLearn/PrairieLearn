@@ -23,7 +23,7 @@ onDocumentReady(() => {
   const hiddenInputsContainer = addQuestionCard?.querySelector('.js-hidden-inputs-container');
   const revealFade = addQuestionCard?.querySelector('.reveal-fade');
   const expandButtonContainer = addQuestionCard?.querySelector('.js-expand-button-container');
-  const expandButton = addQuestionCard?.querySelector('button');
+  const expandButton = expandButtonContainer?.querySelector('button');
 
   let formExpanded = false;
 
