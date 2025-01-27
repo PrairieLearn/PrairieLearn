@@ -346,6 +346,12 @@
         "forceMaxPoints": {
           "$ref": "#/definitions/forceMaxPoints"
         },
+        "manualPerc": {
+          "description": "The percentage of the question's points assigned to manual grading.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
         "alternatives": {
           "description": "Array of question alternatives to choose from.",
           "type": "array",
