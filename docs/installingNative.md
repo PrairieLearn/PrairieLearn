@@ -39,6 +39,8 @@ Now you can install the other dependencies.
 
 === "Ubuntu (WSL2)"
 
+    Python 3.10 is not available in the default Ubuntu repositories -- you can install it through the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
+
     ```sh
     sudo add-apt-repository ppa:deadsnakes/ppa
     sudo apt update
