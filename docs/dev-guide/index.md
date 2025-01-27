@@ -60,7 +60,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 ## Debugging SQL and PL/pgSQL
 
-- Use the [`psql`](https://www.postgresql.org/docs/current/app-psql.html) commandline interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
+- Use the [`psql`](https://www.postgresql.org/docs/current/app-psql.html) command-line interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
 
   ```sh
   psql postgres
@@ -103,7 +103,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 ## HTML style
 
-- Use [Bootstrap](http://getbootstrap.com) as the style. As of 2024-06-05 we are using v4.
+- Use [Bootstrap](http://getbootstrap.com) as the style. As of 2025-01-01 we are using Bootstrap 5.
 
 - Local CSS rules go in `public/stylesheets/local.css`. Try to minimize use of this and use plain Bootstrap styling wherever possible.
 

@@ -132,16 +132,24 @@ def categorize_options(
             obj = json.load(f)
 
         for text in obj.get(correct_attrib, []):
-            correct_answers.append(
+            correct_answers.append(  # noqa: PERF401
                 AnswerTuple(
-                    next(index_counter), True, text, None, SCORE_CORRECT_DEFAULT
+                    next(index_counter),
+                    correct=True,
+                    html=text,
+                    feedback=None,
+                    score=SCORE_CORRECT_DEFAULT,
                 )
             )
 
         for text in obj.get(incorrect_attrib, []):
-            incorrect_answers.append(
+            incorrect_answers.append(  # noqa: PERF401
                 AnswerTuple(
-                    next(index_counter), False, text, None, SCORE_INCORRECT_DEFAULT
+                    next(index_counter),
+                    correct=False,
+                    html=text,
+                    feedback=None,
+                    score=SCORE_INCORRECT_DEFAULT,
                 )
             )
 
@@ -165,9 +173,7 @@ def get_nota_aota_attrib(
         )
         return AotaNotaType.RANDOM if boolean_value else AotaNotaType.FALSE
     except Exception:
-        pass
-
-    return pl.get_enum_attrib(element, name, AotaNotaType, default)
+        return pl.get_enum_attrib(element, name, AotaNotaType, default)
 
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:

@@ -3410,9 +3410,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/bind-mount@workspace:packages/bind-mount"
   dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/bindings": "npm:^1.5.5"
+    "@types/node": "npm:^20.17.9"
     bindings: "npm:^1.5.0"
     nan: "npm:^2.22.0"
     node-gyp: "npm:^11.0.0"
+    typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft
 
@@ -3994,7 +3998,6 @@ __metadata:
     ansi_up: "npm:^6.0.2"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
-    async-mutex: "npm:^0.5.0"
     axe-core: "npm:^4.10.2"
     backbone: "npm:^1.6.0"
     better-ajv-errors: "npm:^1.2.0"
@@ -4002,7 +4005,6 @@ __metadata:
     blocked-at: "npm:^1.2.0"
     body-parser: "npm:^1.20.3"
     bootstrap: "npm:5.2.3"
-    bootstrap-4: "npm:bootstrap@^4.6.2"
     bootstrap-icons: "npm:^1.11.3"
     bootstrap-table: "npm:1.21.2"
     bowser: "npm:^2.11.0"
@@ -4256,6 +4258,7 @@ __metadata:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/run": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -4271,6 +4274,7 @@ __metadata:
     dockerode: "npm:^4.0.2"
     express: "npm:^4.21.2"
     express-async-handler: "npm:^1.2.0"
+    fast-glob: "npm:^3.3.2"
     ioredis: "npm:^5.4.2"
     lodash: "npm:^4.17.21"
     mocha: "npm:^10.8.2"
@@ -5390,6 +5394,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/bindings@npm:^1.5.5":
+  version: 1.5.5
+  resolution: "@types/bindings@npm:1.5.5"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/c8b252f44d9b45df870b31d464424fb93d022650fcb70cc54378cbc63cbe097ef30d51a69d2fb2df14ffb2e76230d222a24d3858735f6898be66d1ca47072eee
+  languageName: node
+  linkType: hard
+
 "@types/blocked-at@npm:^1.0.4":
   version: 1.0.4
   resolution: "@types/blocked-at@npm:1.0.4"
@@ -6109,7 +6122,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.17.11":
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.17.11, @types/node@npm:^20.17.9":
   version: 20.17.12
   resolution: "@types/node@npm:20.17.12"
   dependencies:
@@ -7251,16 +7264,6 @@ __metadata:
   version: 1.0.0
   resolution: "boolbase@npm:1.0.0"
   checksum: 10c0/e4b53deb4f2b85c52be0e21a273f2045c7b6a6ea002b0e139c744cb6f95e9ec044439a52883b0d74dedd1ff3da55ed140cfdddfed7fb0cccbed373de5dce1bcf
-  languageName: node
-  linkType: hard
-
-"bootstrap-4@npm:bootstrap@^4.6.2":
-  version: 4.6.2
-  resolution: "bootstrap@npm:4.6.2"
-  peerDependencies:
-    jquery: 1.9.1 - 3
-    popper.js: ^1.16.1
-  checksum: 10c0/aae7178a306cd9376d10302bf557e00ba7e3bffffb4c0533687c1e0de90f9d30d8883a9b0ac629a2e64131954eca4e03ee06ee665e52b8c44ca66b3599024e8a
   languageName: node
   linkType: hard
 
