@@ -2001,10 +2001,14 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/publicQuestionFileDownload/publicQuestionFileDownload.js')).default,
   ]);
-  app.use(
-    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview',
+  app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'public_question';
+      res.locals.navSubPage = 'preview';
+      next();
+    },
     (await import('./pages/publicQuestionPreview/publicQuestionPreview.js')).default,
-  );
+  ]);
   app.use(
     '/pl/public/course/:course_id(\\d+)/questions',
     (await import('./pages/publicQuestions/publicQuestions.js')).default,

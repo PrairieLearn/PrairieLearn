@@ -9,7 +9,7 @@ import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string, any> }) {
   return PageLayout({
     resLocals,
-    pageTitle: resLocals.questin.qid,
+    pageTitle: resLocals.question.qid,
     navContext: {
       type: 'public',
       page: 'public_question',
