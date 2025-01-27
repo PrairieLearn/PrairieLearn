@@ -35,13 +35,9 @@ Most of these prerequisites can be installed using the package manager of your O
     brew install git graphviz postgresql@15 redis@6.2
     ```
 
----
-
 Now you can install the other dependencies.
 
 === "Ubuntu (WSL2)"
-
-    Python 3.10 is not available in the default Ubuntu repositories -- you can install it through the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
 
     ```sh
     sudo add-apt-repository ppa:deadsnakes/ppa
@@ -120,8 +116,6 @@ Now you can install the other dependencies.
 
     !!! note
         `uv` does not override the system Python, it is only active inside a `venv`.
-
----
 
 - Clone the latest code:
 
