@@ -491,8 +491,8 @@ class Feedback:
     def call_user(
         cls,
         f: Callable,
-        stop_on_exception: bool = False,  # noqa: FBT001
         *args: Any,
+        stop_on_exception: bool = False,
         **kwargs: Any,
     ) -> Any:
         """
@@ -502,8 +502,8 @@ class Feedback:
 
         Parameters:
             f: Student defined function to be called.
-            stop_on_exception: If true, grading will halt on failure.
             *args: Arbitrary positional arguments to be passed to the student function.
+            stop_on_exception: If true, grading will halt on failure.
             **kwargs: Arbitrary keyword arguments to be passed to the student function.
 
         Examples:
