@@ -8,6 +8,8 @@ import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
 
+import { run } from '@prairielearn/run';
+
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
@@ -185,6 +187,7 @@ type InfoFile<T> = infofile.InfoFile<T>;
 
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
+  devModeFeatures: Record<string, boolean> | string[];
 }
 
 interface Tag {
@@ -389,7 +392,6 @@ export interface Question {
   dependencies: Record<string, string>;
   sharingSets?: string[];
   sharePublicly: boolean;
-  sharedPublicly: boolean;
   shareSourcePublicly: boolean;
 }
 
@@ -726,8 +728,19 @@ export async function loadCourseInfo(
 
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
-  const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
-  if (devModeFeatures.length > 0) {
+  const devModeFeatures = run(() => {
+    const features = info?.options?.devModeFeatures ?? {};
+
+    // Support for legacy values, where features were an array of strings instead
+    // of an object mapping feature names to booleans.
+    if (Array.isArray(features)) {
+      return Object.fromEntries(features.map((feature) => [feature, true]));
+    }
+
+    return features;
+  });
+
+  if (Object.keys(devModeFeatures).length > 0) {
     if (courseId == null) {
       if (!config.devMode) {
         infofile.addWarning(
@@ -738,7 +751,7 @@ export async function loadCourseInfo(
     } else {
       const institution = await selectInstitutionForCourse({ course_id: courseId });
 
-      for (const feature of new Set(devModeFeatures)) {
+      for (const [feature, overrideEnabled] of Object.entries(devModeFeatures)) {
         // Check if the feature even exists.
         if (!features.hasFeature(feature)) {
           infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
@@ -753,8 +766,16 @@ export async function loadCourseInfo(
           institution_id: institution.id,
           course_id: courseId,
         });
-        if (!featureEnabled) {
-          infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        if (overrideEnabled && !featureEnabled) {
+          infofile.addWarning(
+            loadedData,
+            `Feature "${feature}" is enabled in devModeFeatures, but is actually disabled.`,
+          );
+        } else if (!overrideEnabled && featureEnabled) {
+          infofile.addWarning(
+            loadedData,
+            `Feature "${feature}" is disabled in devModeFeatures, but is actually enabled.`,
+          );
         }
       }
     }
@@ -778,7 +799,7 @@ export async function loadCourseInfo(
     sharingSets,
     exampleCourse,
     options: {
-      useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
+      useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
   };
@@ -1048,14 +1069,6 @@ async function validateQuestion(
         `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
       );
       question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
-    }
-  }
-
-  if ('sharedPublicly' in question) {
-    if ('sharePublicly' in question) {
-      errors.push('Cannot specify both "sharedPublicly" and "sharePublicly" in one question.');
-    } else {
-      warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
     }
   }
 

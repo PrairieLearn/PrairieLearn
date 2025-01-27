@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
+import { type Temporal } from '@js-temporal/polyfill';
 import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
@@ -10,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -19,16 +21,16 @@ import { run } from '@prairielearn/run';
 import { escapeRegExp } from '@prairielearn/sanitize';
 
 import {
-  getLockNameForCoursePath,
   getCourseCommitHash,
-  updateCourseCommitHash,
+  getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
+  updateCourseCommitHash,
 } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import * as b64Util from './base64-util.js';
-import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
+import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -94,6 +96,88 @@ async function cleanAndResetRepository(
     cwd: course.path,
     env,
   });
+}
+
+export function getUniqueNames({
+  shortNames,
+  longNames,
+  shortName = 'New',
+  longName = 'New',
+}: {
+  shortNames: string[];
+  longNames: string[];
+  /**
+   * Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
+   * Long name is matched case-sensitively
+   */
+  shortName?: string;
+  /**
+   * Defaults to 'New' because this function previously only handled the case where the longName was 'New'
+   * Short name is always matched case-insensitively, as it is generally used to construct file paths
+   */
+  longName?: string;
+}): { shortName: string; longName: string } {
+  function getNumberShortName(oldShortNames: string[]): number {
+    let numberOfMostRecentCopy = 1;
+
+    const shortNameCompare = shortName.toLowerCase();
+
+    oldShortNames.forEach((oldShortName) => {
+      // shortName is a copy of oldShortName if:
+      // it matches (case-sensitively), or
+      // if oldShortName matches {shortName}_{number from 0-9}
+
+      const oldShortNameCompare = oldShortName.toLowerCase();
+      const found =
+        shortNameCompare === oldShortNameCompare ||
+        oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
+      if (found) {
+        const foundNumber = shortNameCompare === oldShortNameCompare ? 1 : parseInt(found[1]);
+        if (foundNumber >= numberOfMostRecentCopy) {
+          numberOfMostRecentCopy = foundNumber + 1;
+        }
+      }
+    });
+    return numberOfMostRecentCopy;
+  }
+
+  function getNumberLongName(oldLongNames: string[]): number {
+    let numberOfMostRecentCopy = 1;
+    // longName is a copy of oldLongName if:
+    // it matches exactly, or
+    // if oldLongName matches {longName} ({number from 0-9})
+
+    oldLongNames.forEach((oldLongName) => {
+      if (!_.isString(oldLongName)) return;
+      const found =
+        oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
+      if (found) {
+        const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
+        if (foundNumber >= numberOfMostRecentCopy) {
+          numberOfMostRecentCopy = foundNumber + 1;
+        }
+      }
+    });
+    return numberOfMostRecentCopy;
+  }
+
+  const numberShortName = getNumberShortName(shortNames);
+  const numberLongName = getNumberLongName(longNames);
+  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+
+  if (number === 1 && shortName !== 'New' && longName !== 'New') {
+    // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
+    return {
+      shortName,
+      longName,
+    };
+  } else {
+    // If there are existing copies, a number is needed at the end of the names
+    return {
+      shortName: `${shortName}_${number}`,
+      longName: `${longName} (${number})`,
+    };
+  }
 }
 
 interface BaseEditorOptions {
@@ -489,48 +573,6 @@ export abstract class Editor {
       longName: `${baseLongName} (copy ${number})`,
     };
   }
-
-  getNamesForAdd(
-    shortNames: string[],
-    longNames: string[],
-  ): { shortName: string; longName: string } {
-    function getNumberShortName(oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        const found = oldname.match(new RegExp('^New_([0-9]+)$'));
-        if (found) {
-          const foundNumber = parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    }
-
-    function getNumberLongName(oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        if (!_.isString(oldname)) return;
-        const found = oldname.match(new RegExp('^New \\(([0-9]+)\\)$'));
-        if (found) {
-          const foundNumber = parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    }
-
-    const numberShortName = getNumberShortName(shortNames);
-    const numberLongName = getNumberLongName(longNames);
-    const number = numberShortName > numberLongName ? numberShortName : numberLongName;
-    return {
-      shortName: `New_${number}`,
-      longName: `New (${number})`,
-    };
-  }
 }
 
 export class AssessmentCopyEditor extends Editor {
@@ -583,6 +625,7 @@ export class AssessmentCopyEditor extends Editor {
 
     const fromPath = path.join(assessmentsPath, this.assessment.tid);
     const toPath = assessmentPath;
+
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
@@ -592,9 +635,9 @@ export class AssessmentCopyEditor extends Editor {
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
     infoJson.uuid = this.uuid;
-    await fs.writeJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
-      spaces: 4,
-    });
+
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(assessmentPath, 'infoAssessment.json'), formattedJson);
 
     return {
       pathsToAdd: [assessmentPath],
@@ -655,17 +698,34 @@ export class AssessmentRenameEditor extends Editor {
     assert(this.assessment.tid, 'assessment.tid is required');
 
     debug('AssessmentRenameEditor: write()');
-    const basePath = path.join(
+    const assessmentsPath = path.join(
       this.course.path,
       'courseInstances',
       this.course_instance.short_name,
       'assessments',
     );
-    const oldPath = path.join(basePath, this.assessment.tid);
-    const newPath = path.join(basePath, this.tid_new);
+    const oldPath = path.join(assessmentsPath, this.assessment.tid);
+    const newPath = path.join(assessmentsPath, this.tid_new);
+
+    // Ensure that the assessment folder path is fully contained in the assessments directory
+    if (!contains(assessmentsPath, newPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The updated path of the assessments folder</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${assessmentsPath}</pre>
+          </div>
+        `,
+      });
+    }
+
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
-    await this.removeEmptyPrecedingSubfolders(basePath, this.assessment.tid);
+    await this.removeEmptyPrecedingSubfolders(assessmentsPath, this.assessment.tid);
 
     return {
       pathsToAdd: [oldPath, newPath],
@@ -678,14 +738,34 @@ export class AssessmentAddEditor extends Editor {
   private course_instance: CourseInstance;
 
   public readonly uuid: string;
+  private aid: string;
+  private title: string;
+  private type: 'Homework' | 'Exam';
+  private set: string;
+  private module?: string;
 
-  constructor(params: BaseEditorOptions) {
+  constructor(
+    params: BaseEditorOptions & {
+      aid: string;
+      title: string;
+      type: 'Homework' | 'Exam';
+      set: string;
+      module?: string;
+    },
+  ) {
     super(params);
 
     this.course_instance = params.locals.course_instance;
+
     this.description = `${this.course_instance.short_name}: add assessment`;
 
     this.uuid = uuidv4();
+
+    this.aid = params.aid;
+    this.title = params.title;
+    this.type = params.type;
+    this.set = params.set;
+    this.module = params.module;
   }
 
   async write() {
@@ -709,18 +789,39 @@ export class AssessmentAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
-    const tid = names.shortName;
-    const assessmentTitle = names.longName;
+    const { shortName: tid, longName: assessmentTitle } = getUniqueNames({
+      shortNames: oldNamesShort,
+      longNames: oldNamesLong,
+      shortName: this.aid,
+      longName: this.title,
+    });
+
     const assessmentPath = path.join(assessmentsPath, tid);
+
+    // Ensure that the assessment folder path is fully contained in the assessments directory
+    if (!contains(assessmentsPath, assessmentPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The path of the assessments folder to add</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${assessmentPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${assessmentsPath}</pre>
+          </div>
+        `,
+      });
+    }
 
     debug('Write infoAssessment.json');
 
     const infoJson = {
       uuid: this.uuid,
-      type: 'Homework',
+      type: this.type,
       title: assessmentTitle,
-      set: 'Homework',
+      set: this.set,
+      module: this.module,
       number: '1',
       allowAccess: [],
       zones: [],
@@ -785,6 +886,7 @@ export class CourseInstanceCopyEditor extends Editor {
 
     const fromPath = path.join(courseInstancesPath, this.course_instance.short_name);
     const toPath = courseInstancePath;
+
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
@@ -794,9 +896,9 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Write infoCourseInstance.json with new longName and uuid');
     infoJson.longName = names.longName;
     infoJson.uuid = this.uuid;
-    await fs.writeJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
-      spaces: 4,
-    });
+
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
     return {
       pathsToAdd: [courseInstancePath],
@@ -845,8 +947,26 @@ export class CourseInstanceRenameEditor extends Editor {
     assert(this.course_instance.short_name, 'course_instance.short_name is required');
 
     debug('CourseInstanceRenameEditor: write()');
-    const oldPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name);
-    const newPath = path.join(this.course.path, 'courseInstances', this.ciid_new);
+    const courseInstancesPath = path.join(this.course.path, 'courseInstances');
+    const oldPath = path.join(courseInstancesPath, this.course_instance.short_name);
+    const newPath = path.join(courseInstancesPath, this.ciid_new);
+
+    // Ensure that the updated course instance folder path is fully contained in the course instances directory
+    if (!contains(courseInstancesPath, newPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The updated path of the course instance folder</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${courseInstancesPath}</pre>
+          </div>
+        `,
+      });
+    }
+
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(
@@ -863,13 +983,37 @@ export class CourseInstanceRenameEditor extends Editor {
 
 export class CourseInstanceAddEditor extends Editor {
   public readonly uuid: string;
+  private short_name: string;
+  private long_name: string;
+  private start_access_date?: Temporal.ZonedDateTime;
+  private end_access_date?: Temporal.ZonedDateTime;
 
-  constructor(params: BaseEditorOptions) {
+  constructor(
+    params: BaseEditorOptions & {
+      short_name: string;
+      long_name: string;
+      start_access_date?: Temporal.ZonedDateTime;
+      end_access_date?: Temporal.ZonedDateTime;
+    },
+  ) {
     super(params);
 
-    this.description = 'Add course instance';
-
     this.uuid = uuidv4();
+
+    this.description = 'Add course instance';
+    this.short_name = params.short_name;
+    this.long_name = params.long_name;
+
+    if (
+      params.start_access_date &&
+      params.end_access_date &&
+      params.start_access_date.epochMilliseconds > params.end_access_date.epochMilliseconds
+    ) {
+      throw new HttpStatusError(400, 'Start date must be before end date');
+    }
+
+    this.start_access_date = params.start_access_date;
+    this.end_access_date = params.end_access_date;
   }
 
   async write() {
@@ -889,16 +1033,62 @@ export class CourseInstanceAddEditor extends Editor {
     );
 
     debug('Generate short_name and long_name');
-    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
-    const short_name = names.shortName;
-    const courseInstancePath = path.join(courseInstancesPath, short_name);
+    const { shortName, longName } = getUniqueNames({
+      shortNames: oldNamesShort,
+      longNames: oldNamesLong,
+      shortName: this.short_name,
+      longName: this.long_name,
+    });
+
+    const courseInstancePath = path.join(courseInstancesPath, shortName);
+
+    // Ensure that the new course instance folder path is fully contained in the course instances directory
+    if (!contains(courseInstancesPath, courseInstancePath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The path of the course instance folder to add</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${courseInstancePath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${courseInstancesPath}</pre>
+          </div>
+        `,
+      });
+    }
 
     debug('Write infoCourseInstance.json');
 
+    let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
+
+    if (this.start_access_date || this.end_access_date) {
+      allowAccess = {
+        startDate: this.start_access_date
+          ? formatDate(
+              new Date(this.start_access_date.epochMilliseconds),
+              this.course.display_timezone,
+              {
+                includeTz: false,
+              },
+            )
+          : undefined,
+        endDate: this.end_access_date
+          ? formatDate(
+              new Date(this.end_access_date.epochMilliseconds),
+              this.course.display_timezone,
+              {
+                includeTz: false,
+              },
+            )
+          : undefined,
+      };
+    }
+
     const infoJson = {
       uuid: this.uuid,
-      longName: names.longName,
-      allowAccess: [],
+      longName,
+      allowAccess: allowAccess !== undefined ? [allowAccess] : [],
     };
 
     // We use outputJson to create the directory this.courseInstancePath if it
@@ -911,7 +1101,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `add course instance ${short_name}`,
+      commitMessage: `add course instance ${shortName}`,
     };
   }
 }
@@ -921,6 +1111,7 @@ export class QuestionAddEditor extends Editor {
 
   private qid?: string;
   private title?: string;
+  private template_qid?: string;
   private files?: Record<string, string>;
   private isDraft?: boolean;
 
@@ -928,6 +1119,7 @@ export class QuestionAddEditor extends Editor {
     params: BaseEditorOptions & {
       qid?: string;
       title?: string;
+      template_qid?: string;
       files?: Record<string, string>;
       isDraft?: boolean;
     },
@@ -939,6 +1131,7 @@ export class QuestionAddEditor extends Editor {
     this.uuid = uuidv4();
     this.qid = params.qid;
     this.title = params.title;
+    this.template_qid = params.template_qid;
     this.files = params.files;
     this.isDraft = params.isDraft;
   }
@@ -948,9 +1141,7 @@ export class QuestionAddEditor extends Editor {
     const questionsPath = path.join(this.course.path, 'questions');
 
     const { qid, title } = await run(async () => {
-      if (this.qid && this.title) {
-        return { qid: this.qid, title: this.title };
-      } else if (this.isDraft) {
+      if (!(this.qid && this.title) && this.isDraft) {
         let draftNumber = await sqldb.queryRow(
           sql.update_draft_number,
           { course_id: this.course.id },
@@ -979,34 +1170,129 @@ export class QuestionAddEditor extends Editor {
       const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
       debug('Generate qid and title');
-      const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+      const { shortName, longName } = getUniqueNames({
+        shortNames: oldNamesShort,
+        longNames: oldNamesLong,
+        shortName: this.qid,
+        longName: this.title,
+      });
 
-      return { qid: names.shortName, title: names.longName };
+      return { qid: shortName, title: longName };
     });
 
-    const questionPath = path.join(questionsPath, qid);
+    const newQuestionPath = path.join(questionsPath, qid);
 
-    const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
-    const toPath = questionPath;
+    // Ensure that the question folder path is fully contained in the questions directory of the course
+    if (!contains(questionsPath, newQuestionPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The path of the question folder to add</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${newQuestionPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
+          </div>
+        `,
+      });
+    }
 
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+    if (this.template_qid) {
+      const exampleCourseQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
+      const fromPath = path.join(exampleCourseQuestionsPath, this.template_qid);
+
+      // Ensure that the template_qid folder path is fully contained in the example course questions directory
+      if (!contains(exampleCourseQuestionsPath, fromPath)) {
+        throw new AugmentedError('Invalid folder path', {
+          info: html`
+            <p>The path of the template question folder</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${fromPath}</pre>
+            </div>
+            <p>must be inside the root directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${exampleCourseQuestionsPath}</pre>
+            </div>
+          `,
+        });
+      }
+
+      // Ensure that the question folder path is fully contained in the questions directory of the course
+      if (!contains(questionsPath, newQuestionPath)) {
+        throw new AugmentedError('Invalid folder path', {
+          info: html`
+            <p>The path of the question folder to add</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${newQuestionPath}</pre>
+            </div>
+            <p>must be inside the root directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
+            </div>
+          `,
+        });
+      }
+
+      debug(`Copy template\n from ${fromPath}\n to ${newQuestionPath}`);
+      await fs.copy(fromPath, newQuestionPath, { overwrite: false, errorOnExist: true });
+
+      debug('Read info.json');
+      const infoJson = await fs.readJson(path.join(newQuestionPath, 'info.json'));
+
+      debug('Write info.json with the new title and uuid');
+      infoJson.title = this.title;
+      infoJson.uuid = this.uuid;
+
+      // Reset the topic.
+      infoJson.topic = 'Default';
+
+      // Delete values that might not make sense in the target course.
+      delete infoJson.tags;
+      delete infoJson.shareSourcePublicly;
+      delete infoJson.sharingSets;
+      delete infoJson.sharePublicly;
+
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+
+      await fs.writeFile(path.join(newQuestionPath, 'info.json'), formattedJson);
+    } else {
+      debug(`Create an empty question at ${newQuestionPath}`);
+
+      const newQuestionInfoFilePath = path.join(newQuestionPath, 'info.json');
+      const newQuestionHtmlFilePath = path.join(newQuestionPath, 'question.html');
+      const newQuestionScriptFilePath = path.join(newQuestionPath, 'server.py');
+
+      const data = {
+        uuid: this.uuid,
+        title,
+        topic: 'Default',
+        type: 'v3',
+      };
+
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(data));
+
+      await fs.ensureDir(newQuestionPath);
+      await fs.writeFile(newQuestionInfoFilePath, formattedJson);
+      await fs.ensureFile(newQuestionHtmlFilePath);
+      await fs.ensureFile(newQuestionScriptFilePath);
+    }
 
     if (this.files != null) {
       debug('Remove template files when file texts provided');
-      await fs.remove(path.join(toPath, 'question.html'));
-      await fs.remove(path.join(toPath, 'server.py'));
+      await fs.remove(path.join(newQuestionPath, 'question.html'));
+      await fs.remove(path.join(newQuestionPath, 'server.py'));
 
       if ('info.json' in this.files) {
-        await fs.remove(path.join(toPath, 'info.json'));
+        await fs.remove(path.join(newQuestionPath, 'info.json'));
       }
 
       debug('Load files from text');
       for (const file of Object.keys(this.files)) {
-        const newPath = path.join(toPath, file);
+        const newPath = path.join(newQuestionPath, file);
 
         // Ensure that files are fully contained in the question directory.
-        if (contains(toPath, newPath)) {
+        if (contains(newQuestionPath, newPath)) {
           await fs.writeFile(newPath, this.files[file]);
         } else {
           throw new AugmentedError('Invalid file path', {
@@ -1017,26 +1303,15 @@ export class QuestionAddEditor extends Editor {
               </div>
               <p>must be inside the root directory</p>
               <div class="container">
-                <pre class="bg-dark text-white rounded p-2">${toPath}</pre>
+                <pre class="bg-dark text-white rounded p-2">${newQuestionPath}</pre>
               </div>
             `,
           });
         }
       }
     }
-
-    debug('Read info.json');
-    const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
-
-    debug('Write info.json with new title and uuid');
-    infoJson.title = title;
-    infoJson.uuid = this.uuid;
-    // The template question contains tags that shouldn't be copied to the new question.
-    delete infoJson.tags;
-    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
-
     return {
-      pathsToAdd: [questionPath],
+      pathsToAdd: [newQuestionPath],
       commitMessage: `add question ${qid}`,
     };
   }
@@ -1136,6 +1411,22 @@ export class QuestionRenameEditor extends Editor {
     const questionsPath = path.join(this.course.path, 'questions');
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
+
+    // Ensure that the updated question folder path is fully contained in the questions directory
+    if (!contains(questionsPath, newPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The updated path of the question folder</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
+          </div>
+        `,
+      });
+    }
 
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
@@ -1239,6 +1530,7 @@ export class QuestionCopyEditor extends Editor {
 
     const fromPath = path.join(questionsPath, this.question.qid);
     const toPath = questionPath;
+
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
@@ -1253,10 +1545,10 @@ export class QuestionCopyEditor extends Editor {
     // sharing settings because they cannot be undone
     delete infoJson['sharingSets'];
     delete infoJson['sharePublicly'];
-    delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
 
-    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 
     return {
       pathsToAdd: [questionPath],
@@ -1321,6 +1613,7 @@ export class QuestionTransferEditor extends Editor {
 
     const fromPath = this.from_path;
     const toPath = questionPath;
+
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
@@ -1340,10 +1633,10 @@ export class QuestionTransferEditor extends Editor {
     // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];
     delete infoJson['sharePublicly'];
-    delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
 
-    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 
     return {
       pathsToAdd: [questionPath],
@@ -1776,10 +2069,12 @@ export class CourseInfoCreateEditor extends Editor {
     debug('CourseInfoEditor: write()');
     const infoPath = path.join(this.course.path, 'infoCourse.json');
 
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(this.infoJson));
+
     // This will error if:
-    // - this.course.path does not exist (use of writeJson)
+    // - this.course.path does not exist (use of writeFile)
     // - Creating a new file and infoPath does exist (use of 'wx')
-    await fs.writeJson(infoPath, this.infoJson, { spaces: 4, flag: 'wx' });
+    await fs.writeFile(infoPath, formattedJson, { flag: 'wx' });
 
     return {
       pathsToAdd: [infoPath],

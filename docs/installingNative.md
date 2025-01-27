@@ -1,24 +1,127 @@
 # Running natively
 
-This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS.
+This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS. PrairieLearn supports native execution on macOS, Linux, and Windows inside [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install).
 
 - Install the prerequisites:
 
   - [Git](https://git-scm.com)
   - [Node.js 20](https://nodejs.org)
-  - [Yarn](https://classic.yarnpkg.com)
+  - [Yarn](https://yarnpkg.com)
   - [Python 3.10](https://www.python.org)
-  - [PostgreSQL 15](https://www.postgresql.org)
-  - [Redis](https://redis.io)
+  - [PostgreSQL 16](https://www.postgresql.org)
+  - [Redis 6](https://redis.io)
   - [Graphviz](https://graphviz.org)
+  - [d2](https://d2lang.com)
 
-  On macOS, these can be installed with [Homebrew](http://brew.sh/). On Linux, these should all be standard packages from the OS distribution.
+Most of these prerequisites can be installed using the package manager of your OS:
 
-  On macOS, you should ensure you have installed the XCode command line tools:
+=== "Ubuntu (WSL2)"
 
-  ```sh
-  xcode-select --install
-  ```
+    On Ubuntu, these can be installed with `apt`:
+
+    ```sh
+    sudo apt install git gcc libc6-dev graphviz graphviz-dev redis6 postgresql15 postgresql15-server postgresql15-contrib
+    ```
+
+=== "macOS"
+
+    On macOS, these can be installed with [Homebrew](http://brew.sh/). You should also ensure you have installed the XCode command line tools:
+
+    ```sh
+    xcode-select --install
+    ```
+
+    ```sh
+    brew install git graphviz postgresql@15 redis@6.2
+    ```
+
+---
+
+Now you can install the other dependencies.
+
+=== "Ubuntu (WSL2)"
+
+    Python 3.10 is not available in the default Ubuntu repositories -- you can install it through the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
+
+    ```sh
+    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo apt update
+    sudo apt install python3.10 python3.10-dev
+    ```
+
+    Node.js 20 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
+
+    ```sh
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+    source ~/.bashrc # or your shell's equivalent
+    nvm install 20
+    ```
+
+    You can then install yarn through npm:
+
+    ```sh
+    npm install -g yarn
+    ```
+
+    d2 can be installed through the install script:
+
+    ```sh
+    curl -fsSL https://d2lang.com/install.sh | sh -s --
+    ```
+
+=== "macOS"
+
+    Brew can install the rest of the dependencies.
+
+    ```sh
+    brew install node@20 python@3.10
+    ```
+
+    You can install yarn through npm:
+
+    ```sh
+    npm install -g yarn
+    ```
+
+    d2 can be installed through the install script:
+
+    ```sh
+    curl -fsSL https://d2lang.com/install.sh | sh -s --
+    ```
+
+=== "mise + uv"
+
+    [Mise](https://mise.jdx.dev/) is a cross-platform package manager that supports per-directory tool versioning.
+
+    ```sh
+    curl https://mise.run | sh
+    ```
+
+    If you want to install globally, you can use `mise use -g`. Otherwise, you can omit the flag, causing the tool to be available only in that directory (e.g. the `PrairieLearn` directory).
+
+    ```sh
+    mise use -g node@20
+    mise use -g npm:yarn
+    mise use -g ubi:terrastruct/d2
+    ```
+
+    You can install Python 3.10 through mise:
+
+    ```sh
+    mise use -g python@3.10
+    ```
+
+    Or you can install it through [uv](https://github.com/astral-sh/uv) (reccomended):
+
+    ```sh
+    mise use -g uv
+    uv python install 3.10
+    ```
+
+    !!! note
+        `uv` does not override the system Python, it is only active inside a `venv`.
+
+---
 
 - Clone the latest code:
 
@@ -27,6 +130,7 @@ This page describes the procedure to install and run PrairieLearn without any us
   cd PrairieLearn
   ```
 
+<<<<<<< HEAD
 - Set up a Python virtual environment:
 
   ```sh
@@ -44,6 +148,25 @@ This page describes the procedure to install and run PrairieLearn without any us
                      --config-settings="--global-option=-L$(brew --prefix graphviz)/lib/" \
                      pygraphviz
   ```
+=======
+!!! note "Setup a venv"
+
+    It is recommended to use a virtual environment for Python dependencies. You can create a virtual environment within PrairieLearn:
+
+    === "Native"
+
+        ```sh
+        python3.10 -m venv venv
+        source venv/bin/activate
+        ```
+
+    === "uv"
+
+        ```sh
+        uv venv --python 3.10
+        source venv/bin/activate
+        ```
+>>>>>>> master
 
 - Install all dependencies and transpile local packages:
 
@@ -86,7 +209,7 @@ This page describes the procedure to install and run PrairieLearn without any us
 
 - Create the file `PrairieLearn/config.json` with the path of your local course repository and with the path of a directory into which temporary files will be saved when using the in-browser file editor (edit both paths as needed):
 
-  ```json
+  ```json title="config.json"
   {
     "courseDirs": ["/Users/mwest/git/pl-tam212", "exampleCourse"],
     "filesRoot": "../filesRoot"

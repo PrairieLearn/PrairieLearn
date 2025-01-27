@@ -1,5 +1,6 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -243,7 +244,7 @@ describe('Exam and homework assessment with active access restriction', function
   );
 
   step('access the exam when it is no longer active', async () => {
-    headers.cookie = 'pl_test_date=2010-01-02T00:01:01Z';
+    headers.cookie = 'pl_test_date=2010-01-10T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
       headers,
@@ -272,6 +273,30 @@ describe('Exam and homework assessment with active access restriction', function
     });
     assert.equal(response.status, 403);
     assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
+  });
+
+  step('access clientFilesCourse when exam is not active', async () => {
+    const response = await fetch(`${context.examUrl}clientFilesCourse/data.txt`, {
+      headers,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), 'This data is specific to the course.');
+  });
+
+  step('access clientFilesCourseInstance when exam is not active', async () => {
+    const response = await fetch(`${context.examUrl}clientFilesCourseInstance/data.txt`, {
+      headers,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), 'This data is specific to the course instance.');
+  });
+
+  step('access clientFilesAssessment when exam is not active', async () => {
+    const response = await fetch(`${context.examUrl}clientFilesAssessment/data.txt`, {
+      headers,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), 'This data is specific to the assessment.');
   });
 
   step('ensure that no new variants have been created', async () => {
