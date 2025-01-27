@@ -9,7 +9,7 @@ Canvas integration via LTI 1.3 is currently available as a public preview. Gener
 Linking a PrairieLearn course instance with a Canvas course requires the following permissions:
 
 - Canvas
-  - Instructor or Designer
+  - Teacher or Designer
 - PrairieLearn Course
   - Editor
 - PrairieLearn Course Instance
