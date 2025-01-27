@@ -55,8 +55,8 @@ def generate(data):
     for i, name in enumerate(name_list):
         data["params"]["name" + str(i + 1)] = name
 
-    Ix = df["Ix (in^4)"].iloc[select].values
-    h = df["h (in)"].iloc[select].values
+    Ix = df["Ix (in^4)"].iloc[select].to_numpy()
+    h = df["h (in)"].iloc[select].to_numpy()
 
     M = np.random.randint(2, 8)
     data["params"]["M"] = M
@@ -69,10 +69,10 @@ def generate(data):
 
 def make_pl_polygon_input(*arg):
     npoints = len(arg)
-    input = "[ "
+    polygon_input = "[ "
     for i, point in enumerate(arg):
-        input += '{"x":' + str(point[0]) + ', "y":' + str(point[1]) + "}"
+        polygon_input += '{"x":' + str(point[0]) + ', "y":' + str(point[1]) + "}"
         if i < npoints - 1:
-            input += ","
-    input += " ] "
-    return input
+            polygon_input += ","
+    polygon_input += " ] "
+    return polygon_input

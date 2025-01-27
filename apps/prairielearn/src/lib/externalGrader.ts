@@ -1,5 +1,4 @@
 import assert from 'node:assert';
-import type { EventEmitter } from 'node:events';
 
 import _ from 'lodash';
 import { z } from 'zod';
@@ -17,12 +16,8 @@ import {
   GradingJobSchema,
   SubmissionSchema,
   VariantSchema,
-  type GradingJob,
-  type Submission,
-  type Variant,
-  type Question,
-  type Course,
 } from './db-types.js';
+import { type Grader } from './externalGraderCommon.js';
 import { ExternalGraderLocal } from './externalGraderLocal.js';
 import { ExternalGraderSqs } from './externalGraderSqs.js';
 import * as externalGradingSocket from './externalGradingSocket.js';
@@ -37,16 +32,6 @@ const GradingJobInfoSchema = z.object({
   question: QuestionSchema,
   course: CourseSchema,
 });
-
-interface Grader {
-  handleGradingRequest(
-    grading_job: GradingJob,
-    submission: Submission,
-    variant: Variant,
-    question: Question,
-    course: Course,
-  ): EventEmitter;
-}
 
 let grader: Grader | null = null;
 

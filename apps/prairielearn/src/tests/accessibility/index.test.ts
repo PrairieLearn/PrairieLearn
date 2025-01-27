@@ -90,6 +90,8 @@ const SKIP_ROUTES = [
   /^\/pl\/api\/v1\//,
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/raw_data.json',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/instances.json',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/generation_logs.json',
+  '/pl/course/:course_id/ai_generate_question_drafts/generation_logs.json',
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
@@ -177,6 +179,7 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/cacheableElements/:cachebuster/*',
   '/pl/public/course/:course_id/elements/*',
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
+  '/pl/public/course/:course_id/question/:question_id/file_download/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file/*',
 

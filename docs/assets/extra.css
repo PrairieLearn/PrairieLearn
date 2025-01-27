@@ -13,8 +13,8 @@ code {
   text-align: left;
 }
 
-/* Prevent wrapping attributes inside tables */
-td code {
+/* Prevent wrapping attributes inside tables, but not mkdocstrings */
+td:not(.code) code {
   white-space: nowrap;
 }
 
@@ -57,4 +57,16 @@ foreignObject .md pre {
   flex-direction: row;
   align-items: center;
   font-size: 1.5em;
+}
+
+.doc-class:not(:first-of-type) {
+  margin-top: 2em;
+  border-top: 1px solid gray;
+}
+.doc-function {
+  border-top: 0.5px solid lightgray;
+}
+
+.doc h3.doc-heading {
+  margin: 1em 0 0.5em;
 }

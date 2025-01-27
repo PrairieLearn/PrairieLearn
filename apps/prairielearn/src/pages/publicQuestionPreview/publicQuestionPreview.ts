@@ -42,7 +42,6 @@ async function setLocals(req, res) {
   ) {
     throw new error.HttpStatusError(404, 'Not Found');
   }
-  return;
 }
 
 router.post(
@@ -92,7 +91,7 @@ router.get(
     await setLocals(req, res);
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
-    await getAndRenderVariant(variant_id, variant_seed, res.locals);
+    await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
     await logPageView('publicQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
     setRendererHeader(res);
