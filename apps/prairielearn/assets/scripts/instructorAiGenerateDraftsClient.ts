@@ -86,7 +86,6 @@ onDocumentReady(() => {
 
 function resizeTextarea(textarea: HTMLTextAreaElement) {
   textarea.style.height = 'auto';
-  console.log(textarea.scrollHeight);
   textarea.style.height = textarea.scrollHeight + 'px';
 }
 
