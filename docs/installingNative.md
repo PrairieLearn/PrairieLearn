@@ -20,7 +20,7 @@ Most of these prerequisites can be installed using the package manager of your O
     On Ubuntu, these can be installed with `apt`:
 
     ```sh
-    sudo apt install git gcc libc6-dev graphviz graphviz-dev redis6 postgresql15 postgresql15-server postgresql15-contrib
+    sudo apt install git gcc libc6-dev graphviz graphviz-dev redis6 postgresql16 postgresql16-server postgresql16-contrib
     ```
 
 === "macOS"
@@ -32,7 +32,7 @@ Most of these prerequisites can be installed using the package manager of your O
     ```
 
     ```sh
-    brew install git graphviz postgresql@15 redis@6.2
+    brew install git graphviz postgresql redis uv d2
     ```
 
 ---
@@ -71,22 +71,11 @@ Now you can install the other dependencies.
 
 === "macOS"
 
-    Brew can install the rest of the dependencies.
+    Brew can install the rest of the dependencies. Enabling `corepack` makes `yarn` available.
 
     ```sh
-    brew install node@20 python@3.10
-    ```
-
-    You can install yarn through npm:
-
-    ```sh
-    npm install -g yarn
-    ```
-
-    d2 can be installed through the install script:
-
-    ```sh
-    curl -fsSL https://d2lang.com/install.sh | sh -s --
+    brew install node npm
+    corepack enable
     ```
 
 === "mise + uv"
@@ -130,61 +119,46 @@ Now you can install the other dependencies.
   cd PrairieLearn
   ```
 
-<<<<<<< HEAD
 - Set up a Python virtual environment:
 
-  ```sh
-  python3 -m venv venv
-  source venv/bin/activate
-  ```
-
-  You can run `deactivate` to exit the virtual environment, and `source venv/bin/activate` to re-enter it.
-
-- If you are on macOS and installed Graphviz with Homebrew, you should manually install `pygraphviz` to specify the location of the Graphviz headers (see [the Graphviz install docs](https://github.com/pygraphviz/pygraphviz/blob/main/INSTALL.txt) for details):
-
-  ```sh
-  pip install --config-settings="--global-option=build_ext" \
-                     --config-settings="--global-option=-I$(brew --prefix graphviz)/include/" \
-                     --config-settings="--global-option=-L$(brew --prefix graphviz)/lib/" \
-                     pygraphviz
-  ```
-=======
-!!! note "Setup a venv"
-
-    It is recommended to use a virtual environment for Python dependencies. You can create a virtual environment within PrairieLearn:
-
-    === "Native"
+  === "uv"
 
         ```sh
-        python3.10 -m venv venv
-        source venv/bin/activate
+        uv venv --python 3.10 --seed
+        source .venv/bin/activate
         ```
 
-    === "uv"
+  === "Native"
 
         ```sh
-        uv venv --python 3.10
-        source venv/bin/activate
+        python3.10 -m venv .venv
+        source .venv/bin/activate
         ```
->>>>>>> master
+
+  You can run `deactivate` to exit the virtual environment, and `source .venv/bin/activate` to re-enter it.
+
+- On macOS, set the following environment variables so that `pygraphviz` can [find the necessary headers](https://github.com/pygraphviz/pygraphviz/blob/main/INSTALL.txt):
+
+  ```sh
+  cat <<EOF >> .venv/bin/activate
+  export CFLAGS="-I$(brew --prefix graphviz)/include"
+  export LDFLAGS="-L$(brew --prefix graphviz)/lib"
+  EOF
+  source .venv/bin/activate
+  ```
 
 - Install all dependencies and transpile local packages:
 
   ```sh
-  # This one command will do everything!
   make deps
+  ```
 
-  # Alternatively, you can run each step individually:
+  The above command installs everything. Alternatively, you can run each step individually:
+
+  ```
   yarn
   make build
   make python-deps
-  ```
-
-  On macOS, you may need to first set the following environment variables so that `pygraphviz` can find the necessary headers:
-
-  ```sh
-  export CFLAGS="-I$(brew --prefix graphviz)/include"
-  export LDFLAGS="-L$(brew --prefix graphviz)/lib"
   ```
 
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):
