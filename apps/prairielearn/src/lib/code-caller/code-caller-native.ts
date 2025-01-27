@@ -125,7 +125,7 @@ export class CodeCallerNative implements CodeCaller {
       }
 
       // Assume we're using the system Python.
-      return 'python3.10';
+      return 'python3.12';
     });
 
     const codeCaller = new CodeCallerNative({
