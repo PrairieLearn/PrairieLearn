@@ -9,7 +9,7 @@ elements = pl.load_host_script("elements.py")
 
 # Elements
 class PrairieLearnLogo(elements.BaseElement):
-    def generate(el, data):
+    def generate(el, data) -> dict[str, str | float]:  # pyright: ignore[reportSelfClsParameterName,reportMissingParameterType] # noqa: N805
         return {
             "left": pl.get_float_attrib(el, "x", 20),
             "top": pl.get_float_attrib(el, "y", 20),
@@ -17,7 +17,7 @@ class PrairieLearnLogo(elements.BaseElement):
             "image_url": path.join(data["clientFilesUrl"], "logo.png"),
         }
 
-    def get_attributes():
+    def get_attributes() -> list[str]:  # pyright: ignore[reportSelfClsParameterName]
         return ["x", "y", "angle"]
 
 
