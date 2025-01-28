@@ -242,7 +242,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     preview_mode = not pl.get_boolean_attrib(
         element, "gradable", defaults.element_defaults["gradable"]
     )
-    with open("pl-drawing.mustache") as f:
+    with open("pl_drawing.mustache") as f:
         template = f.read()
 
     btn_markup = ""

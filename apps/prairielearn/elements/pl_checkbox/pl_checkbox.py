@@ -348,7 +348,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             info_params.update({"gradingtext": gradingtext})
 
-        with open("pl-checkbox.mustache", encoding="utf-8") as f:
+        with open("pl_checkbox.mustache", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
 
         html_params = {
@@ -378,7 +378,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             except Exception as exc:
                 raise ValueError(f"invalid score: {score}") from exc
 
-        with open("pl-checkbox.mustache", encoding="utf-8") as f:
+        with open("pl_checkbox.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -431,7 +431,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 except Exception as exc:
                     raise ValueError(f"invalid score: {score}") from exc
 
-            with open("pl-checkbox.mustache", encoding="utf-8") as f:
+            with open("pl_checkbox.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html_params = {
@@ -439,7 +439,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "parse_error": parse_error,
                 "inline": inline,
             }
-            with open("pl-checkbox.mustache", encoding="utf-8") as f:
+            with open("pl_checkbox.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -457,7 +457,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
                 ),
             }
-            with open("pl-checkbox.mustache", encoding="utf-8") as f:
+            with open("pl_checkbox.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ""

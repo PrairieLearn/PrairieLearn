@@ -41,7 +41,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
     }
 
-    with open("pl-prairiedraw-figure.mustache") as f:
+    with open("pl_prairiedraw_figure.mustache") as f:
         html = chevron.render(f, html_params).strip()
 
     return html

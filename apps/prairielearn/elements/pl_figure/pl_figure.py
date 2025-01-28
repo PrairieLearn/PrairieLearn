@@ -100,5 +100,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     # Create and return html
     html_params = {"src": file_url, "width": width, "inline": inline, "alt": alt_text}
-    with open("pl-figure.mustache", encoding="utf-8") as f:
+    with open("pl_figure.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

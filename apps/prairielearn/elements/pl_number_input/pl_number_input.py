@@ -40,7 +40,7 @@ ANSWER_INSUFFICIENT_PRECISION_WARNING = (
     "Your answer does not have precision within the specified relative tolerance."
 )
 
-NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-number-input.mustache"
+NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl_number_input.mustache"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:

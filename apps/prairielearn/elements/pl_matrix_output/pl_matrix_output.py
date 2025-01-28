@@ -77,7 +77,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
     }
 
-    with open("pl-matrix-output.mustache", encoding="utf-8") as f:
+    with open("pl_matrix_output.mustache", encoding="utf-8") as f:
         html = chevron.render(f, html_params).strip()
 
     return html

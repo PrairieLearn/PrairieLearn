@@ -39,7 +39,7 @@ ALLOW_FEEDBACK_DEFAULT = True
 CUSTOM_FORMAT_DEFAULT = None
 SHOW_SCORE_DEFAULT = True
 
-UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-units-input.mustache"
+UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl_units_input.mustache"
 
 
 def get_with_units_atol(

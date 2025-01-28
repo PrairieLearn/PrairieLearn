@@ -536,7 +536,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_layout": "pl-order-blocks-horizontal" if inline else "",
         }
 
-        with open("pl-order-blocks.mustache", encoding="utf-8") as f:
+        with open("pl_order_blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
         return html
 
@@ -592,7 +592,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
                 ) from exc
 
-        with open("pl-order-blocks.mustache", encoding="utf-8") as f:
+        with open("pl_order_blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
         return html
 
@@ -654,7 +654,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else "pl-order-blocks-right"
             ),
         }
-        with open("pl-order-blocks.mustache", encoding="utf-8") as f:
+        with open("pl_order_blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
         return html
 

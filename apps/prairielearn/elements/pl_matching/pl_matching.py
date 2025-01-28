@@ -373,7 +373,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        with open("pl-matching.mustache", encoding="utf-8") as f:
+        with open("pl_matching.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
@@ -428,7 +428,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 score_type, score_value = pl.determine_score_params(score)
                 html_params[score_type] = score_value
 
-            with open("pl-matching.mustache", encoding="utf-8") as f:
+            with open("pl_matching.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
     elif data["panel"] == "answer":
         if not pl.get_boolean_attrib(
@@ -463,7 +463,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "counter_type": counter_type,
                 "no_counters": no_counters,
             }
-            with open("pl-matching.mustache", encoding="utf-8") as f:
+            with open("pl_matching.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
 
     return html

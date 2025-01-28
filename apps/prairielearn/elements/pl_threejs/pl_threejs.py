@@ -250,7 +250,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "options": json.dumps(options, allow_nan=False),
         }
 
-        with open("pl-threejs.mustache", encoding="utf-8") as f:
+        with open("pl_threejs.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     elif data["panel"] == "submission":
         will_be_graded = pl.get_boolean_attrib(element, "grade", GRADE_DEFAULT)
@@ -311,7 +311,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 except Exception as exc:
                     raise ValueError(f"invalid score: {score}") from exc
 
-        with open("pl-threejs.mustache", encoding="utf-8") as f:
+        with open("pl_threejs.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     elif data["panel"] == "answer":
         will_be_graded = pl.get_boolean_attrib(element, "grade", GRADE_DEFAULT)
@@ -373,7 +373,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "options": json.dumps(options, allow_nan=False),
         }
 
-        with open("pl-threejs.mustache", encoding="utf-8") as f:
+        with open("pl_threejs.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     else:
         raise ValueError("Invalid panel type: {}".format(data["panel"]))

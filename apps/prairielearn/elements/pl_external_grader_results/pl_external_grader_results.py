@@ -185,5 +185,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     elif not grading_succeeded:
         html_params["message"] = ansi_to_html(feedback.get("message", None))
 
-    with open("pl-external-grader-results.mustache", encoding="utf-8") as f:
+    with open("pl_external_grader_results.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

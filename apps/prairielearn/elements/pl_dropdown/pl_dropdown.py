@@ -142,7 +142,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     else:
         assert_never(data["panel"])
 
-    with open("pl-dropdown.mustache", encoding="utf-8") as f:
+    with open("pl_dropdown.mustache", encoding="utf-8") as f:
         html = chevron.render(f, html_params).strip()
     return html
 

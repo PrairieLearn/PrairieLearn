@@ -82,5 +82,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
     }
 
-    with open("pl-xss-safe.mustache", encoding="utf-8") as f:
+    with open("pl_xss_safe.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

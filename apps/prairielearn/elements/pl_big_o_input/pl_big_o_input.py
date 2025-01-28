@@ -41,7 +41,7 @@ PLACEHOLDER_DEFAULT = "asymptotic expression"
 SHOW_SCORE_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "1"
-BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-big-o-input.mustache"
+BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl_big_o_input.mustache"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:

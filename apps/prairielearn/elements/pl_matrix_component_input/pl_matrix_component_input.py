@@ -152,9 +152,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             assert_never(comparison)
 
         info_params["allow_fractions"] = allow_fractions
-        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
+        with open("pl_matrix_component_input.mustache", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
-        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
+        with open("pl_matrix_component_input.mustache", encoding="utf-8") as f:
             info_params.pop("format", None)
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
@@ -176,7 +176,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
+        with open("pl_matrix_component_input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -252,7 +252,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "missing_input", False
         )
 
-        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
+        with open("pl_matrix_component_input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -299,7 +299,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "latex_data": latex_data,
             }
 
-            with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
+            with open("pl_matrix_component_input.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ""
@@ -357,7 +357,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 data["submitted_answers"][each_entry_name] = None
 
     if invalid_format:
-        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
+        with open("pl_matrix_component_input.mustache", encoding="utf-8") as f:
             data["format_errors"][name] = chevron.render(
                 f, {"format_error": True, "allow_fractions": allow_fractions}
             ).strip()

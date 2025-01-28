@@ -146,7 +146,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     else:
         html_params["current_file_contents"] = html_params["original_file_contents"]
 
-    with open("pl-file-editor.mustache", encoding="utf-8") as f:
+    with open("pl_file_editor.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
 
 

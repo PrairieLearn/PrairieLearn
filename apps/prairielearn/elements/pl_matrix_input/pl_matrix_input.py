@@ -91,9 +91,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         info_params["allow_complex"] = pl.get_boolean_attrib(
             element, "allow-complex", ALLOW_COMPLEX_DEFAULT
         )
-        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
+        with open("pl_matrix_input.mustache", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
-        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
+        with open("pl_matrix_input.mustache", encoding="utf-8") as f:
             info_params.pop("format", None)
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
@@ -121,7 +121,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                 raw_submitted_answer
             )
-        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
+        with open("pl_matrix_input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -169,7 +169,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "missing_input", False
         )
 
-        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
+        with open("pl_matrix_input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -223,7 +223,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 html_params["default_is_matlab"] = True
             else:
                 html_params["default_is_python"] = True
-            with open("pl-matrix-input.mustache", encoding="utf-8") as f:
+            with open("pl_matrix_input.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ""
@@ -236,7 +236,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 def get_format_string(message: str) -> str:
     params = {"format_error": True, "format_error_message": message}
-    with open("pl-matrix-input.mustache", encoding="utf-8") as f:
+    with open("pl_matrix_input.mustache", encoding="utf-8") as f:
         return chevron.render(f, params).strip()
 
 

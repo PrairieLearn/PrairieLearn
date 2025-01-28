@@ -80,5 +80,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "names_user_description": names_user_description,
         "has_names_user_description": has_names_user_description,
     }
-    with open("pl-external-grader-variables.mustache", encoding="utf-8") as f:
+    with open("pl_external_grader_variables.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

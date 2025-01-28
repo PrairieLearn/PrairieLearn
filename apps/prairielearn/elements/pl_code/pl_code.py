@@ -290,5 +290,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ),
     }
 
-    with open("pl-code.mustache", encoding="utf-8") as f:
+    with open("pl_code.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

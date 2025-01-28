@@ -207,5 +207,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
     }
 
-    with open("pl-variable-output.mustache", encoding="utf-8") as f:
+    with open("pl_variable_output.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

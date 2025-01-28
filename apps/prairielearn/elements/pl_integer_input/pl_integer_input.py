@@ -26,7 +26,7 @@ BLANK_VALUE_DEFAULT = 0
 BASE_DEFAULT = 10
 SHOW_SCORE_DEFAULT = True
 
-INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-integer-input.mustache"
+INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl_integer_input.mustache"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:

@@ -145,5 +145,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "clip": pl.get_boolean_attrib(element, "clip", CLIP_DEFAULT),
     }
 
-    with open("pl-overlay.mustache", encoding="utf-8") as f:
+    with open("pl_overlay.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

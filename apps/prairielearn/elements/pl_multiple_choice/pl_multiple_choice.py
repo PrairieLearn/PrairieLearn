@@ -59,7 +59,7 @@ SIZE_DEFAULT = None
 PLACEHOLDER_DEFAULT = "Select an option"
 SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
-MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl-multiple-choice.mustache"
+MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl_multiple_choice.mustache"
 
 
 def categorize_options(

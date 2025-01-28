@@ -29,7 +29,7 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
 PLACEHOLDER_DEFAULT = "symbolic expression"
 SHOW_SCORE_DEFAULT = True
-SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
+SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl_symbolic_input.mustache"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:

@@ -58,5 +58,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             hints_to_display.append(hint_dict)
 
-    with open("pl-hidden-hints.mustache") as f:
+    with open("pl_hidden_hints.mustache") as f:
         return chevron.render(f, {"hints": hints_to_display}).strip()
