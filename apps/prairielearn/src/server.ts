@@ -1902,22 +1902,14 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/publicQuestionFileBrowser/publicQuestionFileBrowser.js')).default,
   ]);
-  app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_download', [
-    function (req, res, next) {
-      res.locals.navPage = 'public_question';
-      res.locals.navSubPage = 'file_download';
-      next();
-    },
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_download',
     (await import('./pages/publicQuestionFileDownload/publicQuestionFileDownload.js')).default,
-  ]);
-  app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'public_question';
-      res.locals.navSubPage = 'preview';
-      next();
-    },
+  );
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview',
     (await import('./pages/publicQuestionPreview/publicQuestionPreview.js')).default,
-  ]);
+  );
   app.use(
     '/pl/public/course/:course_id(\\d+)/questions',
     (await import('./pages/publicQuestions/publicQuestions.js')).default,
