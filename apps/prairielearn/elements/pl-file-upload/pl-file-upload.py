@@ -264,7 +264,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     del data["submitted_answers"][answer_name]
 
     try:
-        parsed_files = json.loads(files)  # pyright: ignore [reportArgumentType]
+        parsed_files = json.loads(files)
     except Exception:
         add_format_error(answer_name, data, "Could not parse submitted files.")
         parsed_files = []
