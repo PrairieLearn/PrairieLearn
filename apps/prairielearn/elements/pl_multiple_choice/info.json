@@ -1,5 +1,5 @@
 {
-  "controller": "pl-multiple-choice.py",
+  "controller": "pl_multiple_choice.py",
   "dependencies": {
     "elementStyles": ["pl-multiple-choice.css"],
     "elementScripts": ["pl-multiple-choice.js"],

@@ -1,5 +1,5 @@
 {
-  "controller": "pl-dataframe.py",
+  "controller": "pl_dataframe.py",
   "dependencies": {
     "elementStyles": ["pl-dataframe.css"]
   }

@@ -1,5 +1,5 @@
 {
-  "controller": "pl-rich-text-editor.py",
+  "controller": "pl_rich_text_editor.py",
   "dependencies": {
     "nodeModulesScripts": [
       "quill/dist/quill.js",

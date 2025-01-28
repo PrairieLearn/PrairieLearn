@@ -1,5 +1,5 @@
 {
-  "controller": "pl-prairiedraw-figure.py",
+  "controller": "pl_prairiedraw_figure.py",
   "dependencies": {
     "coreScripts": [
       "sylvester.js",

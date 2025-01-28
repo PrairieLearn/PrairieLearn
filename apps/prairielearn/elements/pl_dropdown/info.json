@@ -1,5 +1,5 @@
 {
-  "controller": "pl-dropdown.py",
+  "controller": "pl_dropdown.py",
   "dependencies": {
     "elementStyles": ["pl-dropdown.css"]
   }

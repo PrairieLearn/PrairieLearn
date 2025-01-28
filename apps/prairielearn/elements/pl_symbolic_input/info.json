@@ -1,5 +1,5 @@
 {
-  "controller": "pl-symbolic-input.py",
+  "controller": "pl_symbolic_input.py",
   "dependencies": {
     "elementStyles": ["pl-symbolic-input.css"]
   }

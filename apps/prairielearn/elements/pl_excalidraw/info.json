@@ -1,5 +1,5 @@
 {
-  "controller": "pl-excalidraw.py",
+  "controller": "pl_excalidraw.py",
   "dependencies": {
     "nodeModulesStyles": ["@prairielearn/excalidraw-builds/dist/index.css"],
     "elementStyles": ["pl-excalidraw.css"]

@@ -1,5 +1,5 @@
 {
-  "controller": "pl-graph.py",
+  "controller": "pl_graph.py",
   "dependencies": {
     "elementStyles": ["pl-graph.css"]
   },
