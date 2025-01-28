@@ -17,29 +17,11 @@ Most of these prerequisites can be installed using the package manager of your O
 
 === "Ubuntu (WSL2)"
 
-    On Ubuntu, these can be installed with `apt`:
+    On Ubuntu, use `apt` for the main prerequisites:
 
     ```sh
     sudo apt install git gcc libc6-dev graphviz graphviz-dev redis6 postgresql16 postgresql16-server postgresql16-contrib
     ```
-
-=== "macOS"
-
-    On macOS, these can be installed with [Homebrew](http://brew.sh/). You should also ensure you have installed the XCode command line tools:
-
-    ```sh
-    xcode-select --install
-    ```
-
-    ```sh
-    brew install git graphviz postgresql redis uv d2
-    ```
-
----
-
-Now you can install the other dependencies.
-
-=== "Ubuntu (WSL2)"
 
     Python 3.10 is not available in the default Ubuntu repositories -- you can install it through the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
 
@@ -47,6 +29,12 @@ Now you can install the other dependencies.
     sudo add-apt-repository ppa:deadsnakes/ppa
     sudo apt update
     sudo apt install python3.10 python3.10-dev
+    ```
+
+    Install `uv`:
+
+    ```sh
+    pip install uv
     ```
 
     Node.js 20 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
@@ -57,7 +45,7 @@ Now you can install the other dependencies.
     nvm install 20
     ```
 
-     Enable `corepack` to make `yarn` available:
+    Enable `corepack` to make `yarn` available:
 
     ```sh
     corepack enable
@@ -71,16 +59,31 @@ Now you can install the other dependencies.
 
 === "macOS"
 
-    Brew can install the rest of the dependencies. Enabling `corepack` makes `yarn` available.
+    On macOS, ensure you have installed the XCode command line tools:
 
     ```sh
-    brew install node npm
+    xcode-select --install
+    ```
+
+    The main prerequisites can be installed with [Homebrew](http://brew.sh/):
+
+    ```sh
+    brew install git graphviz postgresql redis uv d2 node npm
+    ```
+
+    Enable `corepack` to make `yarn` available:
+
+    ```sh
     corepack enable
     ```
 
 === "mise + uv"
 
     [Mise](https://mise.jdx.dev/) is a cross-platform package manager that supports per-directory tool versioning.
+
+    First install git, graphviz, redis, and postgresql for Ubuntu or MacOS.
+
+    Next install mise:
 
     ```sh
     curl https://mise.run | sh
