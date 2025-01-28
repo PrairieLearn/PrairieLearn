@@ -22,6 +22,8 @@ import { openAiUserFromAuthn } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.filename);
 
+const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
+
 interface Benchmark {
   promptGeneral: string;
   promptUserInput: string;
@@ -461,7 +463,7 @@ async function evaluateGeneratedQuestion({
   }
 
   const completion = await client.beta.chat.completions.parse({
-    model: 'gpt-4o',
+    model: MODEL_NAME,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: generatedQuestion.join('\n') },
