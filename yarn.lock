@@ -4005,7 +4005,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@sentry/node": "npm:^8.49.0"
-    "@sentry/utils": "npm:^8.47.0"
+    "@sentry/utils": "npm:^8.49.0"
     "@types/node": "npm:^20.17.11"
     execa: "npm:^9.5.2"
     tsx: "npm:^4.19.2"
@@ -4276,13 +4276,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/core@npm:8.47.0":
-  version: 8.47.0
-  resolution: "@sentry/core@npm:8.47.0"
-  checksum: 10c0/64fc9c89e96f2989b63bd6e776afd09993ce59caca9d4003033a12ea2b938ba28b588a9d171462605467ebe18b75a465ca875faf10f69f00ef2cc5d7d05df43a
-  languageName: node
-  linkType: hard
-
 "@sentry/core@npm:8.52.0":
   version: 8.52.0
   resolution: "@sentry/core@npm:8.52.0"
@@ -4348,12 +4341,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/utils@npm:^8.47.0":
-  version: 8.47.0
-  resolution: "@sentry/utils@npm:8.47.0"
+"@sentry/utils@npm:^8.49.0":
+  version: 8.52.0
+  resolution: "@sentry/utils@npm:8.52.0"
   dependencies:
-    "@sentry/core": "npm:8.47.0"
-  checksum: 10c0/6be4c375732ac382dbc93513c26d04fa3ad454e3c459e2b7ec43805282fb11f2fabb9fed40dd0ff8f2131f31912e3f9763cfd5f1b6543cea2e0cd441e973cf31
+    "@sentry/core": "npm:8.52.0"
+  checksum: 10c0/1a8dbfba5340fe1c63e03cb33ae5566a3909b2205f3a8876723a8a3d8d010266252ad65fabf7dbc8106178dcbb04d5cad4547161881d4766db1a0552901c6896
   languageName: node
   linkType: hard
 
