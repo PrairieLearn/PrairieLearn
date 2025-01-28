@@ -23,7 +23,7 @@ Most of these prerequisites can be installed using the package manager of your O
     sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql postgresql-contrib
     ```
 
-    Make sure you startup postgres:
+    Make sure you start Postgres:
 
     ```sh
     sudo systemctl start postgresql.service
