@@ -1,5 +1,5 @@
 {
-  "controller": "pl-threejs.py",
+  "controller": "pl_threejs.py",
   "dependencies": {
     "nodeModulesScripts": [
       "three/build/three.min.js",

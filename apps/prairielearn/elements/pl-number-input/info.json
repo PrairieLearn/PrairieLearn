@@ -1,5 +1,5 @@
 {
-  "controller": "pl-number-input.py",
+  "controller": "pl_number_input.py",
   "dependencies": {
     "elementStyles": ["pl-number-input.css"]
   }

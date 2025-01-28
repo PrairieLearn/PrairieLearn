@@ -80,7 +80,7 @@ The extension could then access `STATIC_VARIABLE` by importing the host script:
 ```python hl_lines="3"
 import prairielearn as pl
 
-host_element = pl.load_host_script("pl-host-element.py")
+host_element = pl.load_host_script("pl_host_element.py")
 
 def my_cool_function():
     return host_element.STATIC_VARIABLE

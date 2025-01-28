@@ -1,5 +1,5 @@
 {
-  "controller": "pl-file-editor.py",
+  "controller": "pl_file_editor.py",
   "dependencies": {
     "nodeModulesScripts": [
       "ace-builds/src-min-noconflict/ace.js",

@@ -1,5 +1,5 @@
 {
-  "controller": "pl-checkbox.py",
+  "controller": "pl_checkbox.py",
   "dependencies": {
     "elementStyles": ["pl-checkbox.css"]
   }

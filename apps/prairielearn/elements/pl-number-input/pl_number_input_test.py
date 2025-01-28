@@ -1,8 +1,5 @@
-import importlib
-
+import pl_number_input
 import pytest
-
-number_input = importlib.import_module("pl-number-input")
 
 
 @pytest.mark.parametrize(
@@ -22,7 +19,7 @@ number_input = importlib.import_module("pl-number-input")
 def test_only_string_precision_fn(
     number_string: str, expected_precision: float
 ) -> None:
-    precision = number_input.get_string_precision(number_string)
+    precision = pl_number_input.get_string_precision(number_string)
     assert precision == expected_precision
 
 
@@ -47,7 +44,7 @@ def test_only_string_precision_fn(
 def test_only_significant_digits_fn(
     number_string: str, expected_significant_digits: float
 ) -> None:
-    precision = number_input.get_string_significant_digits(number_string)
+    precision = pl_number_input.get_string_significant_digits(number_string)
     assert precision == expected_significant_digits
 
 
@@ -71,5 +68,5 @@ def test_only_significant_digits_fn(
 def test_only_decimal_digits_fn(
     number_string: str, expected_decimal_digits: float
 ) -> None:
-    precision = number_input.get_string_decimal_digits(number_string)
+    precision = pl_number_input.get_string_decimal_digits(number_string)
     assert precision == expected_decimal_digits

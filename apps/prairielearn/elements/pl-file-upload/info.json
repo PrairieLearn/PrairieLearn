@@ -1,5 +1,5 @@
 {
-  "controller": "pl-file-upload.py",
+  "controller": "pl_file_upload.py",
   "dependencies": {
     "nodeModulesScripts": ["lodash/lodash.min.js", "dropzone/dist/dropzone.js"],
     "elementScripts": ["pl-file-upload.js"],

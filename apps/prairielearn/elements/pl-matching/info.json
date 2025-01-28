@@ -1,5 +1,5 @@
 {
-  "controller": "pl-matching.py",
+  "controller": "pl_matching.py",
   "dependencies": {
     "elementStyles": ["pl-matching.css"]
   }

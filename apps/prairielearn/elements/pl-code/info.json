@@ -1,5 +1,5 @@
 {
-  "controller": "pl-code.py",
+  "controller": "pl_code.py",
   "dependencies": {
     "elementStyles": ["pl-code.css"],
     "nodeModulesScripts": ["clipboard/dist/clipboard.min.js"],

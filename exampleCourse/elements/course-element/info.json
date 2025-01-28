@@ -1,5 +1,5 @@
 {
-  "controller": "course-element.py",
+  "controller": "course_element.py",
   "dependencies": {
     "elementScripts": ["course-element.js"],
     "elementStyles": ["course-element.css"],

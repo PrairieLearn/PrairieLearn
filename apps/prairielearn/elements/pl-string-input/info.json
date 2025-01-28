@@ -1,5 +1,5 @@
 {
-  "controller": "pl-string-input.py",
+  "controller": "pl_string_input.py",
   "dependencies": {
     "elementStyles": ["pl-string-input.css"]
   }
