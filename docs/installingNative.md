@@ -144,6 +144,7 @@ Now you can install the other dependencies.
   export CFLAGS="-I$(brew --prefix graphviz)/include"
   export LDFLAGS="-L$(brew --prefix graphviz)/lib"
   EOF
+
   source .venv/bin/activate
   ```
 
