@@ -20,7 +20,7 @@ Most of these prerequisites can be installed using the package manager of your O
     On Ubuntu, use `apt` for the main prerequisites:
 
     ```sh
-    sudo apt install git gcc libc6-dev graphviz graphviz-dev redis6 postgresql16 postgresql16-server postgresql16-contrib
+    sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql
     ```
 
     Python 3.10 is not available in the default Ubuntu repositories -- you can install it through the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):

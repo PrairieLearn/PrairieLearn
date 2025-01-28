@@ -35,6 +35,7 @@ dnf -y install \
     texlive-type1cm \
     tmux
 
+ln -s /usr/bin/redis6-cli /usr/bin/redis-cli && ln -s /usr/bin/redis6-server /usr/bin/redis-server
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm
 cd /nvm
