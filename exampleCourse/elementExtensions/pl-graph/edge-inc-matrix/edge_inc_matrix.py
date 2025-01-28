@@ -3,7 +3,7 @@ import prairielearn as pl
 import pygraphviz
 
 # Import the host element for all the attrib defaults
-pl_graph = pl.load_host_script("pl-graph.py")
+pl_graph = pl.load_host_script("pl_graph.py")
 
 
 def graphviz_from_inc_matrix(element, data):
