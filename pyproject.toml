@@ -130,8 +130,7 @@ reportUnnecessaryIsInstance = "none"
 reportUnknownLambdaType = "none"
 # These rules should be progressively enabled 
 reportMissingTypeArgument = "none"
-reportArgumentType = "none"
-reportUnnecessaryCast = "information"
+reportArgumentType = "information"
 
 [tool.pytest.ini_options]
 pythonpath = [
