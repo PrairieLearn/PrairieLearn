@@ -1,5 +1,5 @@
 {
-  "controller": "clickable-image.py",
+  "controller": "clickable_image.py",
   "comment": "use comments to discuss top-level details",
   "dependencies": {
     "comment": "or to explain dependencies",

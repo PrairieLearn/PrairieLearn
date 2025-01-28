@@ -12,5 +12,5 @@ def render(_element_html, data):
         "number": data["params"]["random_number"],
         "image_url": data["options"]["client_files_element_url"] + "/block_i.png",
     }
-    with open("course-element.mustache") as f:
+    with open("course_element.mustache") as f:
         return chevron.render(f, html_params).strip()

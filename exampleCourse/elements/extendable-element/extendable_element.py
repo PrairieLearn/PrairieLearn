@@ -14,5 +14,5 @@ def render(_element_html, data):
                 ),
             }
         )
-    with open("extendable-element.mustache") as f:
+    with open("extendable_element.mustache") as f:
         return chevron.render(f.read(), {"extensions": ext_params}).strip()
