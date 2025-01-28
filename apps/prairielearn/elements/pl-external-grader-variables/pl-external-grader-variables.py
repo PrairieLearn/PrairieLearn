@@ -28,7 +28,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
             html_variables.append(var_dict)
 
-        elif isinstance(child.tag, lxml.etree._Comment):
+        elif isinstance(child, lxml.etree._Comment):
             continue
 
         else:

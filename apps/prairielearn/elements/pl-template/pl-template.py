@@ -39,7 +39,7 @@ def check_tags(element_html: str) -> None:
         element_list.pop(0)
 
     for e in chain.from_iterable(element.iter() for element in element_list):
-        if isinstance(e.tag, lxml.etree._Comment):
+        if isinstance(e, lxml.etree._Comment):
             continue
 
         is_tag_invald = (
@@ -124,7 +124,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if pl.get_boolean_attrib(child, "trim-whitespace", TRIM_WHITESPACE_DEFAULT):
                 variable_dict[name] = variable_dict[name].strip()
 
-        elif isinstance(child.tag, lxml.etree._Comment):
+        elif isinstance(child, lxml.etree._Comment):
             continue
 
         else:
