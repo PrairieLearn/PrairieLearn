@@ -256,7 +256,7 @@ If you want to write your own submission mechanism (as a custom element, for ins
 }
 ```
 
-For a working example of this, see [the implementation of `pl-file-upload`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-file-upload/pl-file-upload.py).
+For a working example of this, see [the implementation of `pl-file-upload`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-file-upload/pl_file_upload.py).
 
 ## Running locally for development
 
