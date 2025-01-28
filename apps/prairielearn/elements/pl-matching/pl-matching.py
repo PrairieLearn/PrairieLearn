@@ -281,12 +281,16 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     for i in range(len(display_statements)):
         expected_html_name = get_form_name(name, i)
         try:
-            student_answer = int(submitted_answers.get(expected_html_name, None))
+            student_answer = int(submitted_answers[expected_html_name])
         except (ValueError, TypeError):
-            # This could happen if the input field is missing or not parsable.
+            # This could happen if the not parsable.
             data["format_errors"][expected_html_name] = (
                 "The submitted answer is not a legal option."
             )
+            continue
+        except KeyError:
+            # This could happen if the input field is missing.
+            data["format_errors"][expected_html_name] = "No answer was submitted."
             continue
 
         # A blank is a valid submission from the HTML, but causes a format error.

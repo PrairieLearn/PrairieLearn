@@ -635,7 +635,7 @@ def create_table_for_html_display(
             + str(m)
             + '"></td>'
         )
-        if len(score_message) > 0:
+        if score_message:
             display_array += '<td rowspan="0">&nbsp;' + score_message + "</td>"
         display_array += "</tr>"
         # Add the other rows
