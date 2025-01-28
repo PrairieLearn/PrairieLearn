@@ -32,11 +32,15 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "json.schemas": [
     {
-      "fileMatch": ["{exampleCourse,testCourse,templateCourse}/courseInstances/**/assessments/**/infoAssessment.json"],
+      "fileMatch": [
+        "{exampleCourse,testCourse,templateCourse}/courseInstances/**/assessments/**/infoAssessment.json"
+      ],
       "url": "/apps/prairielearn/src/schemas/schemas/infoAssessment.json"
     },
     {
-      "fileMatch": ["{exampleCourse,testCourse,templateCourse}/courseInstances/**/infoCourseInstance.json"],
+      "fileMatch": [
+        "{exampleCourse,testCourse,templateCourse}/courseInstances/**/infoCourseInstance.json"
+      ],
       "url": "/apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
     },
     {
