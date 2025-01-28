@@ -57,10 +57,10 @@ Now you can install the other dependencies.
     nvm install 20
     ```
 
-    You can then install yarn through npm:
+     Enable `corepack` to make `yarn` available:
 
     ```sh
-    npm install -g yarn
+    corepack enable
     ```
 
     d2 can be installed through the install script:
