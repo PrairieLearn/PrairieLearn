@@ -145,7 +145,9 @@ def test_encoding_legacy(df: pd.DataFrame) -> None:
         nx.gnc_graph(20),
     ],
 )
-def test_networkx_serialization(networkx_graph: Any) -> None:
+def test_networkx_serialization(
+    networkx_graph: nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph,
+) -> None:
     """Test equality after conversion of various numpy objects."""
 
     networkx_graph.graph["rankdir"] = "TB"
@@ -160,7 +162,10 @@ def test_networkx_serialization(networkx_graph: Any) -> None:
     json_object = json.dumps(pl.to_json(networkx_graph), allow_nan=False)
     decoded_json_object = pl.from_json(json.loads(json_object))
 
-    assert type(networkx_graph) == type(decoded_json_object)  # noqa: E721
+    assert type(decoded_json_object) is type(networkx_graph)
+
+    # This check is needed because pyright cannot infer the type of decoded_json_object
+    assert isinstance(decoded_json_object, type(networkx_graph))
 
     assert nx.utils.nodes_equal(networkx_graph.nodes(), decoded_json_object.nodes())
     assert nx.utils.edges_equal(networkx_graph.edges(), decoded_json_object.edges())

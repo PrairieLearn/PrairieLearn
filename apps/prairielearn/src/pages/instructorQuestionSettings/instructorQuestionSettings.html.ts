@@ -79,7 +79,6 @@ export function InstructorQuestionSettings({
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
-
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
@@ -169,7 +168,9 @@ export function InstructorQuestionSettings({
                 aria-label="Question topic, tags, and assessments"
               >
                 <tr>
-                  <th class="align-middle">Topic</th>
+                  <th class="align-middle">
+                    <label for="topic">Topic</label>
+                  </th>
                   <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
                   <!-- This is used by tom-select to style the active item in the dropdown -->
                   <td style="--bs-tertiary-bg: #f8f9fa">
@@ -193,7 +194,9 @@ export function InstructorQuestionSettings({
                   </td>
                 </tr>
                 <tr>
-                  <th class="align-middle">Tags</th>
+                  <th class="align-middle">
+                    <label for="tags">Tags</label>
+                  </th>
                   <td>
                     ${canEdit
                       ? html`
@@ -302,58 +305,58 @@ export function InstructorQuestionSettings({
         </div>
         ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) || canEdit
           ? html`
-              <div class="card-footer">
-                  ${
-                    editableCourses.length > 0 &&
-                    resLocals.authz_data.has_course_permission_view &&
-                    resLocals.question.course_id === resLocals.course.id
-                      ? html`
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-primary"
-                            id="copyQuestionButton"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Copy this question"
-                            data-content="${escapeHtml(
-                              CopyForm({
-                                csrfToken: resLocals.__csrf_token,
-                                editableCourses,
-                                courseId: resLocals.course.id,
-                              }),
-                            )}"
-                          >
-                            <i class="fa fa-clone"></i>
-                            <span>Make a copy of this question</span>
-                          </button>
-                        `
-                      : ''
-                  }
-                  ${
-                    canEdit
-                      ? html`
-                          <button
-                            class="btn btn-sm btn-primary"
-                            id
-                            href="#"
-                            data-toggle="modal"
-                            data-target="#deleteQuestionModal"
-                          >
-                            <i class="fa fa-times" aria-hidden="true"></i> Delete this question
-                          </button>
-                          ${DeleteQuestionModal({
-                            qid: resLocals.question.qid,
-                            assessmentsWithQuestion,
-                            csrfToken: resLocals.__csrf_token,
-                          })}
-                        `
-                      : ''
-                  }
-                </div>
+            <div class="card-footer">
+                ${
+                  editableCourses.length > 0 &&
+                  resLocals.authz_data.has_course_permission_view &&
+                  resLocals.question.course_id === resLocals.course.id
+                    ? html`
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-primary"
+                          id="copyQuestionButton"
+                          data-toggle="popover"
+                          data-container="body"
+                          data-html="true"
+                          data-placement="auto"
+                          title="Copy this question"
+                          data-content="${escapeHtml(
+                            CopyForm({
+                              csrfToken: resLocals.__csrf_token,
+                              editableCourses,
+                              courseId: resLocals.course.id,
+                            }),
+                          )}"
+                        >
+                          <i class="fa fa-clone"></i>
+                          <span>Make a copy of this question</span>
+                        </button>
+                      `
+                    : ''
+                }
+                ${
+                  canEdit
+                    ? html`
+                        <button
+                          class="btn btn-sm btn-primary"
+                          id
+                          href="#"
+                          data-toggle="modal"
+                          data-target="#deleteQuestionModal"
+                        >
+                          <i class="fa fa-times" aria-hidden="true"></i> Delete this question
+                        </button>
+                        ${DeleteQuestionModal({
+                          qid: resLocals.question.qid,
+                          assessmentsWithQuestion,
+                          csrfToken: resLocals.__csrf_token,
+                        })}
+                      `
+                    : ''
+                }
               </div>
-            `
+            </div>
+          `
           : ''}
       </div>
     `,
@@ -419,7 +422,7 @@ function DeleteQuestionModal({
               ${assessmentsWithQuestion.map((a_with_q) => {
                 return html`
                   <li class="list-group-item">
-                    <h6>${a_with_q.short_name} (${a_with_q.long_name})</h6>
+                    <div class="h6">${a_with_q.short_name} (${a_with_q.long_name})</div>
                     ${a_with_q.assessments.map((assessment) =>
                       AssessmentBadge({
                         plainUrlPrefix: config.urlPrefix,

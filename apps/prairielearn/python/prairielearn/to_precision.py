@@ -50,7 +50,7 @@ def to_precision(
     return converter(value, precision, filler)
 
 
-def std_notation(value: float, precision: int, _extra=None) -> str:
+def std_notation(value: float, precision: int, _extra: Any = None) -> str:
     """
     standard notation (US version)
     ref: http://www.mathsisfun.com/definitions/standard-notation.html
