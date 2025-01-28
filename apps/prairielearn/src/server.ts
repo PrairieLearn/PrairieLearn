@@ -1294,14 +1294,6 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts', [
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'questions';
-      next();
-    },
-    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js'))
-      .default,
-  ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs', [
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'syncs';
@@ -1828,14 +1820,6 @@ export async function initExpress(): Promise<Express> {
   );
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question_drafts', [
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'questions';
-      next();
-    },
-    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js'))
-      .default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/syncs', [
     function (req: Request, res: Response, next: NextFunction) {

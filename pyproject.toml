@@ -132,7 +132,6 @@ reportUnknownLambdaType = "none"
 reportMissingTypeArgument = "none"
 reportArgumentType = "none"
 reportUnnecessaryComparison = "information"
-reportUnnecessaryCast = "information"
 
 [tool.pytest.ini_options]
 pythonpath = [
