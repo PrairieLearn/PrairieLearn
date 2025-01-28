@@ -58,7 +58,7 @@ export function InstructorInstanceAdminLti13({
             let li = $('#selectLti13Instance option:selected');
             window.location.href =
               '/pl/course_instance/' +
-              resLocals.course_instance.id +
+              ${resLocals.course_instance.id} +
               '/instructor/instance_admin/lti13_instance/' +
               li.val();
           });
