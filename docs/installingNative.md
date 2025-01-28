@@ -113,8 +113,6 @@ Most of these prerequisites can be installed using the package manager of your O
     !!! note
         `uv` does not override the system Python, it is only active inside a `venv`.
 
----
-
 - Clone the latest code:
 
   ```sh
