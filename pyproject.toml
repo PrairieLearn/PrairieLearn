@@ -131,7 +131,6 @@ reportUnknownLambdaType = "none"
 # These rules should be progressively enabled 
 reportMissingTypeArgument = "none"
 reportArgumentType = "none"
-reportUnnecessaryComparison = "information"
 reportUnnecessaryCast = "information"
 
 [tool.pytest.ini_options]

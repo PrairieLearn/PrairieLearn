@@ -122,7 +122,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if pl.get_boolean_attrib(child, "trim-whitespace", TRIM_WHITESPACE_DEFAULT):
                 variable_dict[name] = variable_dict[name].strip()
 
-        elif child.tag is lxml.etree.Comment:
+        elif child.tag is lxml.etree.Comment:  # pyright: ignore[reportUnnecessaryComparison]
             continue
 
         else:

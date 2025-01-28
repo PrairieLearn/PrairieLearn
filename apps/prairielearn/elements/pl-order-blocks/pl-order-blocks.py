@@ -311,7 +311,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     index = 0
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
-        if html_tags.tag is Comment:
+        if html_tags.tag is Comment:  # pyright: ignore[reportUnnecessaryComparison]
             continue
         if html_tags.tag == "pl-block-group":
             if grading_method is not GradingMethodType.DAG:
@@ -327,7 +327,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             used_tags.add(group_tag)
 
             for grouped_tag in html_tags:
-                if html_tags.tag is Comment:
+                if html_tags.tag is Comment:  # pyright: ignore[reportUnnecessaryComparison]
                     continue
                 prepare_tag(
                     grouped_tag, index, {"tag": group_tag, "depends": group_depends}
@@ -382,7 +382,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         assert_never(source_blocks_order)
 
     # prep for visual pairing
-    correct_tags = {block["tag"] for block in all_blocks if block["tag"] is not None}
+    correct_tags = {block["tag"] for block in all_blocks}
     incorrect_tags = {
         block["distractor_for"] for block in all_blocks if block["distractor_for"]
     }
@@ -400,7 +400,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             block2
             for block2 in all_blocks
             if (block["tag"] == block2.get("distractor_for"))
-            and (block["tag"] is not None)
         ]
 
         if len(distractors) == 0:
