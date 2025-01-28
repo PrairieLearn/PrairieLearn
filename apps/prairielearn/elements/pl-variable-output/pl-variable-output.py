@@ -184,7 +184,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             r_data += f"{var_name_disp} = {var_r_data}{var_r_comment}\n"
             sympy_data += f"{var_name_disp} = {var_sympy_data}{var_sympy_comment}\n"
 
-        elif isinstance(child.tag, lxml.etree._Comment):
+        elif isinstance(child, lxml.etree._Comment):
             continue
 
         else:
