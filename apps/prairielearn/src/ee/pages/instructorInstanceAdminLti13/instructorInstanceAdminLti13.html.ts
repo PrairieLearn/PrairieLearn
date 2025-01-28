@@ -43,12 +43,6 @@ export function InstructorInstanceAdminLti13({
 }): string {
   const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
-  const selectLti13InstanceOnChange = html`
-    let li = $('#selectLti13Instance option:selected'); window.location.href =
-    '/pl/course_instance/${resLocals.course_instance.id}/instructor/instance_admin/lti13_instance/'
-    + li.val();
-  `;
-
   return PageLayout({
     resLocals,
     pageTitle: 'LTI 1.3',
@@ -61,7 +55,12 @@ export function InstructorInstanceAdminLti13({
       <script>
         $(() => {
           $('#selectLti13Instance').on('change', () => {
-            ${selectLti13InstanceOnChange};
+            let li = $('#selectLti13Instance option:selected');
+            window.location.href =
+              '/pl/course_instance/' +
+              resLocals.course_instance.id +
+              '/instructor/instance_admin/lti13_instance/' +
+              li.val();
           });
         });
       </script>
