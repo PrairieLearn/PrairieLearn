@@ -23,7 +23,7 @@ router.get(
 
     const course = await selectCourseByCourseInstanceId(course_instance_id.toString());
     res.locals.course = course;
-    const assessment = await selectAssessmentById(assessment_id);
+    res.locals.assessment = await selectAssessmentById(assessment_id);
 
     const questions = await selectAssessmentQuestions({
       assessment_id,
@@ -39,7 +39,7 @@ router.get(
     res.send(
       PublicAssessmentQuestions({
         resLocals: res.locals,
-        assessment,
+        assessment: res.locals.assessment,
         course,
         course_instance_id,
         questions,

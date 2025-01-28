@@ -15,6 +15,14 @@ interface TabInfo {
 
 // Mapping navPage to navtab sets
 const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
+  public_assessment: [
+    {
+      activeSubPage: 'questions',
+      urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
+      iconClasses: 'far fa-file-alt',
+      tabLabel: 'Questions',
+    },
+  ],
   public_question: [
     {
       activeSubPage: 'file_view',

@@ -2036,7 +2036,7 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     [
       function (req, res, next) {
-        res.locals.navPage = 'public_question';
+        res.locals.navPage = 'public_assessment';
         res.locals.navSubPage = 'questions';
         res.locals.navbarType = 'public';
         next();
