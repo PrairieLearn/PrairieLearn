@@ -206,11 +206,6 @@ export function InstructorAIGenerateDrafts({
                     Create question
                   </button>
 
-                  <div
-                    id="loading-phrases"
-                    class="d-none mt-1"
-                    data-loading-class-remove="d-none"
-                  ></div>
                   <div id="generation-results"></div>
                 </div>
               </form>
