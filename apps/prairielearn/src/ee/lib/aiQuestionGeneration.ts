@@ -66,7 +66,7 @@ ${context}
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
  */
-async function makeContext(
+export async function makeContext(
   client: OpenAI,
   prompt: string,
   promptUserInput: string | undefined,
@@ -199,6 +199,11 @@ export async function generateQuestion({
   questionId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
+  /**
+   * The context about our elements and example questions that was provided
+   * to the LLM.
+   */
+  context: string | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -297,6 +302,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     job.data.html = html;
     job.data.python = results?.python;
+    job.data.context = context;
 
     if (
       saveResults.status === 'success' &&
@@ -328,6 +334,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     questionId: jobData.data.questionId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
+    context: jobData.data.context,
   };
 }
 
