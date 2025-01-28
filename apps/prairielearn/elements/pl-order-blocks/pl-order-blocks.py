@@ -11,7 +11,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
-from lxml.etree import Comment
+from lxml.etree import _Comment
 from typing_extensions import NotRequired, assert_never
 
 
@@ -311,7 +311,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     index = 0
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
-        if html_tags.tag is Comment:  # pyright: ignore[reportUnnecessaryComparison]
+        if isinstance(html_tags, _Comment):
             continue
         if html_tags.tag == "pl-block-group":
             if grading_method is not GradingMethodType.DAG:
@@ -327,7 +327,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             used_tags.add(group_tag)
 
             for grouped_tag in html_tags:
-                if html_tags.tag is Comment:  # pyright: ignore[reportUnnecessaryComparison]
+                if isinstance(grouped_tag, _Comment):
                     continue
                 prepare_tag(
                     grouped_tag, index, {"tag": group_tag, "depends": group_depends}
