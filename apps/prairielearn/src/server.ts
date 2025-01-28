@@ -881,52 +881,113 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/settings',
-    (await import('./pages/instructorAssessmentSettings/instructorAssessmentSettings.js')).default,
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'settings';
+        next();
+      },
+      (await import('./pages/instructorAssessmentSettings/instructorAssessmentSettings.js'))
+        .default,
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
-    (await import('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions.js'))
-      .default,
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'questions';
+        next();
+      },
+      (await import('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions.js'))
+        .default,
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
-    (await import('./pages/instructorAssessmentGroups/instructorAssessmentGroups.js')).default,
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'groups';
+        next();
+      },
+      (await import('./pages/instructorAssessmentGroups/instructorAssessmentGroups.js')).default,
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/access',
-    (await import('./pages/instructorAssessmentAccess/instructorAssessmentAccess.js')).default,
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'access';
+        next();
+      },
+      (await import('./pages/instructorAssessmentAccess/instructorAssessmentAccess.js')).default,
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_statistics',
-    (await import('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics.js'))
-      .default,
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'assessment_statistics';
+        next();
+      },
+      (await import('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics.js'))
+        .default,
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/question_statistics',
-    (
-      await import(
-        './pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.js'
-      )
-    ).default,
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'question_statistics';
+        next();
+      },
+      (
+        await import(
+          './pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.js'
+        )
+      ).default,
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/downloads',
-    (await import('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads.js'))
-      .default,
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'downloads';
+        next();
+      },
+      (await import('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads.js'))
+        .default,
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
-    (await import('./pages/instructorAssessmentUploads/instructorAssessmentUploads.js')).default,
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'uploads';
+        next();
+      },
+      (await import('./pages/instructorAssessmentUploads/instructorAssessmentUploads.js')).default,
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/regrading',
-    (await import('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading.js'))
-      .default,
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'regrading';
+        next();
+      },
+      (await import('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading.js'))
+        .default,
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/instances',
-    (await import('./pages/instructorAssessmentInstances/instructorAssessmentInstances.js'))
-      .default,
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'instances';
+        next();
+      },
+      (await import('./pages/instructorAssessmentInstances/instructorAssessmentInstances.js'))
+        .default,
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_edit',
@@ -956,6 +1017,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/assessment_question/:assessment_question_id(\\d+)',
     [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
       (await import('./middlewares/selectAndAuthzAssessmentQuestion.js')).default,
       (
         await import(
@@ -967,6 +1032,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/instance_question/:instance_question_id(\\d+)',
     [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
       (
         await import(
@@ -1021,7 +1090,13 @@ export async function initExpress(): Promise<Express> {
 
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading',
-    (await import('./pages/instructorAssessmentManualGrading/assessment/assessment.js')).default,
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
+      (await import('./pages/instructorAssessmentManualGrading/assessment/assessment.js')).default,
+    ],
   );
 
   app.use(

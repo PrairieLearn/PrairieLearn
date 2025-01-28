@@ -39,7 +39,7 @@ export function RequestCourse({
     pageTitle: 'Request a Course',
     resLocals,
     navContext: {
-      type: resLocals.navbarType,
+      type: 'plain',
       page: 'request_course',
     },
     headContent: [compiledScriptTag('instructorRequestCourseClient.ts')],

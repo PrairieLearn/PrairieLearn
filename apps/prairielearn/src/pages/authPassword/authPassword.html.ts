@@ -13,7 +13,7 @@ export function AuthPassword({
     resLocals,
     pageTitle: 'Password',
     navContext: {
-      type: resLocals.navbarType,
+      type: 'plain',
       page: 'password',
     },
     content: html`

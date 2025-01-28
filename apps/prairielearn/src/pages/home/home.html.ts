@@ -45,7 +45,7 @@ export function Home({
     resLocals,
     pageTitle: 'Home',
     navContext: {
-      type: resLocals.navbarType,
+      type: 'plain',
       page: 'home',
     },
     content: html`

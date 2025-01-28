@@ -9,8 +9,7 @@ export function Terms({ user, resLocals }: { user: User; resLocals: Record<strin
     pageTitle: 'Terms and conditions',
     navContext: {
       type: 'plain',
-      page: resLocals.navPage,
-      subPage: resLocals.navSubPage,
+      page: 'home',
     },
     content: html`
       <h1>Terms and Conditions</h1>

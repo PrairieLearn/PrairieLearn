@@ -28,7 +28,7 @@ export function Enroll({
     resLocals,
     pageTitle: 'Enrollment - Courses',
     navContext: {
-      type: resLocals.navbarType,
+      type: 'plain',
       page: 'enroll',
     },
     headContent: [compiledScriptTag('enrollClient.ts')],
@@ -149,7 +149,7 @@ export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Recor
     resLocals,
     pageTitle: 'Enrollment - Courses',
     navContext: {
-      type: resLocals.navbarType,
+      type: 'plain',
       page: 'enroll',
     },
     content: html`
