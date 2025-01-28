@@ -31,7 +31,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             hints.append((priority, position, hint_name, pl.inner_html(child)))
 
-        elif child.tag is lxml.etree.Comment:  # pyright: ignore[reportUnnecessaryComparison]
+        elif isinstance(child.tag, lxml.etree._Comment):
             continue
 
         else:

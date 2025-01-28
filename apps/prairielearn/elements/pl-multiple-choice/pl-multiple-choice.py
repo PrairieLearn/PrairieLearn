@@ -103,7 +103,7 @@ def categorize_options(
             else:
                 incorrect_answers.append(answer_tuple)
 
-        elif child.tag is lxml.etree.Comment:  # pyright: ignore[reportUnnecessaryComparison]
+        elif isinstance(child.tag, lxml.etree._Comment):
             continue
 
         else:

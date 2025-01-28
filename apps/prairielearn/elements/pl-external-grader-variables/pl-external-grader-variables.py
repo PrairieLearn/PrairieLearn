@@ -28,7 +28,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
             html_variables.append(var_dict)
 
-        elif child.tag is lxml.etree.Comment:  # pyright: ignore[reportUnnecessaryComparison]
+        elif isinstance(child.tag, lxml.etree._Comment):
             continue
 
         else:
