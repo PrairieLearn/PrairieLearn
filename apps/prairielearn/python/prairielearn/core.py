@@ -1948,10 +1948,15 @@ def load_host_script(script_name: str) -> ModuleType:
     load_host_script(script_name)
 
     Small convenience function to load a host element script from an extension.
+
+    For backwards compatibility, this function accepts a script name with dashes, but will import the underscored version.
     """
 
     # Chop off the file extension because it's unnecessary here
     script_name = script_name.removesuffix(".py")
+
+    # Backwards compatibility for imports that use dashes from #11241
+    script_name = script_name.replace("-", "_")
     return __import__(script_name)
 
 
