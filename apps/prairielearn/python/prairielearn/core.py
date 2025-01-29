@@ -1175,7 +1175,7 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
 
     Returns a number with type int, or None on parse error.
     """
-    if s is None:
+    if not isinstance(s, str):
         return None
 
     # Do unidecode before parsing

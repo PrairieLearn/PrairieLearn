@@ -39,16 +39,18 @@ def check_tags(element_html: str) -> None:
         element_list.pop(0)
 
     for e in chain.from_iterable(element.iter() for element in element_list):
-        if e.tag is not lxml.etree.Comment:
-            is_tag_invald = (
-                e.tag.startswith("pl-") and e.tag not in ALLOWED_PL_TAGS
-            ) or e.tag == "markdown"
+        if isinstance(e, lxml.etree._Comment):
+            continue
 
-            if is_tag_invald:
-                warnings.warn(
-                    f'Element "{e.tag}" may not work correctly when used inside of "pl-template" element.',
-                    stacklevel=2,
-                )
+        is_tag_invald = (
+            e.tag.startswith("pl-") and e.tag not in ALLOWED_PL_TAGS
+        ) or e.tag == "markdown"
+
+        if is_tag_invald:
+            warnings.warn(
+                f'Element "{e.tag}" may not work correctly when used inside of "pl-template" element.',
+                stacklevel=2,
+            )
 
 
 def get_file_path(element: lxml.html.HtmlElement, data: pl.QuestionData) -> str:
@@ -122,7 +124,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if pl.get_boolean_attrib(child, "trim-whitespace", TRIM_WHITESPACE_DEFAULT):
                 variable_dict[name] = variable_dict[name].strip()
 
-        elif child.tag is lxml.etree.Comment:
+        elif isinstance(child, lxml.etree._Comment):
             continue
 
         else:
