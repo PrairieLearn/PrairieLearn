@@ -45,7 +45,7 @@ export function PageLayout({
 
   return html`
     <!doctype html>
-    <html lang="en" ${options.fullHeight ? 'class="h-100"' : ''}>
+    <html lang="en" class="${options.fullHeight ? 'h-100' : ''}">
       <head>
         ${HeadContents({
           resLocals,
@@ -56,7 +56,7 @@ export function PageLayout({
       </head>
       <body
         ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
-        ${options.fullHeight ? 'class="d-flex flex-column h-100"' : ''}
+        class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
       >
         ${Navbar({
           resLocals,
@@ -70,6 +70,7 @@ export function PageLayout({
           class="
             ${options.fullWidth ? 'container-fluid' : 'container'} 
             ${marginBottom ? 'mb-4' : ''}
+            ${options.fullHeight ? 'flex-grow-1' : ''}
           "
         >
           ${content}
