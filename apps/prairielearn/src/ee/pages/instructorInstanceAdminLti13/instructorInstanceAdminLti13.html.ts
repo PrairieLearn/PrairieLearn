@@ -6,6 +6,7 @@ import { html, type HtmlSafeString } from '@prairielearn/html';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
+import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Lti13CourseInstance,
   type Lti13Instance,
@@ -48,19 +49,9 @@ export function InstructorInstanceAdminLti13({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorInstanceAdminLti13Client.ts')}
       </head>
       <body>
-        <script>
-          $(() => {
-            $('#selectLti13Instance').on('change', () => {
-              let li = $('#selectLti13Instance option:selected');
-              window.location.href =
-                '/pl/course_instance/${resLocals.course_instance
-                  .id}/instructor/instance_admin/lti13_instance/' + li.val();
-            });
-          });
-        </script>
         ${Navbar({ resLocals, navSubPage: 'lti13' })}
         <main id="content" class="container-fluid mb-4">
           <div class="card mb-4">
@@ -70,7 +61,12 @@ export function InstructorInstanceAdminLti13({
             <div class="card-body">
               <div class="row">
                 <div class="col-2">
-                  <select class="custom-select mb-2" id="selectLti13Instance">
+                  <select
+                    class="custom-select mb-2"
+                    id="selectLti13Instance"
+                    data-url-prefix="/pl/course_instance/${resLocals.course_instance
+                      .id}/instructor/instance_admin/lti13_instance/"
+                  >
                     ${instances.map((i) => {
                       return html`
                         <option
