@@ -9,6 +9,8 @@ onDocumentReady(() => {
   selectLti13Instance?.addEventListener('change', () => {
     const selectedOption = selectLti13Instance?.querySelector<HTMLOptionElement>('option:selected');
     const selectedVal = selectedOption?.value;
-    window.location.href = `${prefix}/${selectedVal}`;
+    if (selectedVal) {
+      window.location.href = `${prefix}/${selectedVal}`;
+    }
   });
 });
