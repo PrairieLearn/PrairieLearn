@@ -1,65 +1,53 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MultipleChoice question options",
+  "description": "Options for a MultipleChoice question.",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "comment": {
-      "$ref": "#/definitions/CommentJsonSchema",
-      "description": "Arbitrary comment for reference purposes."
-    },
-    "text": {
-      "type": "string",
-      "description": "The question HTML text that comes before the options."
+      "description": "Arbitrary comment for reference purposes.",
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "correctAnswers": {
+      "description": "A list of correct answers to the question. Each is an HTML string.",
       "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "A list of correct answers to the question. Each is an HTML string."
+      "items": { "type": "string" }
     },
     "incorrectAnswers": {
+      "description": "A list of incorrect answers to the question. Each is an HTML string.",
       "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "A list of incorrect answers to the question. Each is an HTML string."
-    },
-    "numberAnswers": {
-      "type": "integer",
-      "minimum": 1,
-      "description": "The total number of answers in the list of possible answers."
-    },
-    "minCorrectAnswers": {
-      "type": "integer",
-      "minimum": 0,
-      "description": "The minimum number of correct answers in the list of possible answers."
+      "items": { "type": "string" }
     },
     "maxCorrectAnswers": {
+      "description": "The maximum number of correct answers in the list of possible answers.",
       "type": "integer",
-      "minimum": 0,
-      "description": "The maximum number of correct answers in the list of possible answers."
+      "minimum": 0
+    },
+    "minCorrectAnswers": {
+      "description": "The minimum number of correct answers in the list of possible answers.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "numberAnswers": {
+      "description": "The total number of answers in the list of possible answers.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "text": {
+      "description": "The question HTML text that comes before the options.",
+      "type": "string"
     }
   },
   "required": ["text", "correctAnswers", "incorrectAnswers"],
-  "additionalProperties": false,
-  "description": "Options for a MultipleChoice question.",
-  "title": "MultipleChoice question options",
   "definitions": {
     "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array"
-        },
-        {
-          "type": "object",
-          "properties": {},
-          "additionalProperties": {}
-        }
-      ],
-      "description": "Arbitrary comment for reference purposes."
+        { "type": "string" },
+        { "type": "array" },
+        { "type": "object", "additionalProperties": {}, "properties": {} }
+      ]
     }
-  },
-  "$schema": "http://json-schema.org/draft-07/schema#"
+  }
 }

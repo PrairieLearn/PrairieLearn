@@ -1,542 +1,481 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Assessment info",
+  "description": "Configuration data for an assessment.",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
-    "comment": {
-      "$ref": "#/definitions/CommentJsonSchema",
-      "description": "Arbitrary comment for reference purposes."
-    },
-    "uuid": {
-      "type": "string",
-      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "description": "Unique identifier (UUID v4)."
+    "title": {
+      "description": "The title of the assessment (e.g., 'Derivatives and anti-derivatives').",
+      "type": "string"
     },
     "type": {
+      "description": "Type of the assessment.",
       "type": "string",
-      "enum": ["Homework", "Exam"],
-      "description": "Type of the assessment."
+      "enum": ["Homework", "Exam"]
     },
-    "title": {
-      "type": "string",
-      "description": "The title of the assessment (e.g., 'Derivatives and anti-derivatives')."
-    },
-    "set": {
-      "type": "string",
-      "description": "Which assessmentSet this one belongs to (e.g., 'Homework', 'Practice Quiz')."
-    },
-    "number": {
-      "type": "string",
-      "description": "The number of this assessment within the set (e.g., '1', '2R', '3B')."
-    },
-    "allowIssueReporting": {
-      "type": "boolean",
-      "description": "Whether to allow students to report issues for assessment questions",
-      "default": true
-    },
-    "multipleInstance": {
-      "type": "boolean",
-      "description": "Whether to allow students to create additional instances of the assessment",
-      "default": false
-    },
-    "shuffleQuestions": {
-      "type": "boolean",
-      "description": "Whether the questions will be shuffled in the student view of an assessment",
-      "default": false
+    "advanceScorePerc": {
+      "description": "Minimum score percentage to unlock access to subsequent questions",
+      "$ref": "#/definitions/AdvanceScorePercJsonSchema"
     },
     "allowAccess": {
+      "description": "List of access rules for the assessment. Access is permitted if any access rule is satisfied.",
       "type": "array",
-      "items": {
-        "$ref": "#/definitions/AssessmentAccessRuleJsonSchema"
-      },
-      "description": "List of access rules for the assessment. Access is permitted if any access rule is satisfied."
+      "items": { "$ref": "#/definitions/AssessmentAccessRuleJsonSchema" }
     },
-    "text": {
-      "type": "string",
-      "description": "HTML text shown on the assessment overview page."
-    },
-    "maxPoints": {
-      "type": "number",
-      "description": "The number of points that must be earned in this assessment to achieve a score of 100%."
-    },
-    "maxBonusPoints": {
-      "type": "number",
-      "description": "The maximum number of additional points that can be earned beyond maxPoints."
+    "allowIssueReporting": {
+      "description": "Whether to allow students to report issues for assessment questions",
+      "type": "boolean",
+      "default": true
     },
     "allowPersonalNotes": {
-      "type": "boolean",
-      "description": "Whether students are allowed to upload personal notes for this assessment."
-    },
-    "autoClose": {
-      "type": "boolean",
-      "description": "Whether to automatically close the assessment after a period of inactivity.",
-      "default": true
-    },
-    "zones": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/ZoneAssessmentJsonSchema"
-      },
-      "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone."
-    },
-    "constantQuestionValue": {
-      "type": "boolean",
-      "description": "Whether to keep the value of a question constant after a student solves it correctly.",
-      "default": false
+      "description": "Whether students are allowed to upload personal notes for this assessment.",
+      "type": "boolean"
     },
     "allowRealTimeGrading": {
-      "type": "boolean",
       "description": "Removes the student \"Grade\" buttons to prevent real-time grading while the assessment is being taken.",
+      "type": "boolean",
       "default": true
     },
-    "requireHonorCode": {
+    "autoClose": {
+      "description": "Whether to automatically close the assessment after a period of inactivity.",
       "type": "boolean",
-      "description": "Requires the student to accept an honor code before starting exam assessments.",
       "default": true
-    },
-    "groupWork": {
-      "type": "boolean",
-      "description": "Whether the assessment will support group work.",
-      "default": false
-    },
-    "groupMaxSize": {
-      "type": "number",
-      "description": "Maximum number of students in a group."
-    },
-    "groupMinSize": {
-      "type": "number",
-      "description": "Minimum number of students in a group."
-    },
-    "groupRoles": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/GroupRoleJsonSchema"
-      },
-      "description": "Array of custom user roles in a group."
     },
     "canSubmit": {
       "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
       "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true,
-      "default": []
+      "default": [],
+      "items": { "type": "string" },
+      "uniqueItems": true
     },
     "canView": {
       "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
       "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true,
-      "default": []
+      "default": [],
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "comment": {
+      "description": "Arbitrary comment for reference purposes.",
+      "$ref": "#/definitions/CommentJsonSchema"
+    },
+    "constantQuestionValue": {
+      "description": "Whether to keep the value of a question constant after a student solves it correctly.",
+      "type": "boolean",
+      "default": false
+    },
+    "gradeRateMinutes": {
+      "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+      "type": "number",
+      "minimum": 0
+    },
+    "groupMaxSize": { "description": "Maximum number of students in a group.", "type": "number" },
+    "groupMinSize": { "description": "Minimum number of students in a group.", "type": "number" },
+    "groupRoles": {
+      "description": "Array of custom user roles in a group.",
+      "type": "array",
+      "items": { "$ref": "#/definitions/GroupRoleJsonSchema" }
+    },
+    "groupWork": {
+      "description": "Whether the assessment will support group work.",
+      "type": "boolean",
+      "default": false
+    },
+    "maxBonusPoints": {
+      "description": "The maximum number of additional points that can be earned beyond maxPoints.",
+      "type": "number"
+    },
+    "maxPoints": {
+      "description": "The number of points that must be earned in this assessment to achieve a score of 100%.",
+      "type": "number"
+    },
+    "module": {
+      "description": "Module that this assessment belongs to, as defined in infoCourse.json.",
+      "type": "string"
+    },
+    "multipleInstance": {
+      "description": "Whether to allow students to create additional instances of the assessment",
+      "type": "boolean",
+      "default": false
+    },
+    "number": {
+      "description": "The number of this assessment within the set (e.g., '1', '2R', '3B').",
+      "type": "string"
+    },
+    "requireHonorCode": {
+      "description": "Requires the student to accept an honor code before starting exam assessments.",
+      "type": "boolean",
+      "default": true
+    },
+    "set": {
+      "description": "Which assessmentSet this one belongs to (e.g., 'Homework', 'Practice Quiz').",
+      "type": "string"
+    },
+    "shuffleQuestions": {
+      "description": "Whether the questions will be shuffled in the student view of an assessment",
+      "type": "boolean",
+      "default": false
     },
     "studentGroupCreate": {
-      "type": "boolean",
       "description": "Whether students can create groups.",
+      "type": "boolean",
       "default": false
     },
     "studentGroupJoin": {
-      "type": "boolean",
       "description": "Whether students can join groups.",
+      "type": "boolean",
       "default": false
     },
     "studentGroupLeave": {
-      "type": "boolean",
       "description": "Whether students can leave groups.",
+      "type": "boolean",
       "default": false
     },
-    "advanceScorePerc": {
-      "$ref": "#/definitions/AdvanceScorePercJsonSchema",
-      "description": "Minimum score percentage to unlock access to subsequent questions"
-    },
-    "gradeRateMinutes": {
-      "type": "number",
-      "minimum": 0,
-      "description": "Minimum amount of time (in minutes) between graded submissions to the same question."
-    },
-    "module": {
+    "text": { "description": "HTML text shown on the assessment overview page.", "type": "string" },
+    "uuid": {
+      "description": "Unique identifier (UUID v4).",
       "type": "string",
-      "description": "Module that this assessment belongs to, as defined in infoCourse.json."
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "zones": {
+      "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
+      "type": "array",
+      "items": { "$ref": "#/definitions/ZoneAssessmentJsonSchema" }
     }
   },
   "required": ["uuid", "type", "title", "set", "number"],
-  "additionalProperties": false,
-  "description": "Configuration data for an assessment.",
-  "title": "Assessment info",
   "definitions": {
-    "PointsJsonSchema": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/PointsSingleJsonSchema"
-        },
-        {
-          "$ref": "#/definitions/PointsListJsonSchema"
-        }
-      ]
-    },
-    "PointsListJsonSchema": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/PointsSingleJsonSchema"
-      },
-      "minItems": 1,
-      "description": "An array of point values."
-    },
-    "PointsSingleJsonSchema": {
+    "AdvanceScorePercJsonSchema": {
+      "description": "Minimum score percentage to unlock access to subsequent questions",
       "type": "number",
-      "minimum": 0,
-      "description": "A single point value.",
-      "default": 0
-    },
-    "QuestionIdJsonSchema": {
-      "type": "string",
-      "description": "Question ID (directory name of the question)."
-    },
-    "ForceMaxPointsJsonSchema": {
-      "type": "boolean",
-      "default": false,
-      "description": "Whether to force this question to be awarded maximum points on a regrade."
+      "maximum": 100,
+      "minimum": 0
     },
     "AssessmentAccessRuleJsonSchema": {
+      "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
       "type": "object",
+      "additionalProperties": false,
       "properties": {
+        "active": {
+          "description": "Whether the student can create a new assessment instance and submit answers to questions. If set to false, the available credit must be 0.",
+          "type": "boolean",
+          "default": true
+        },
         "comment": {
-          "$ref": "#/definitions/CommentJsonSchema",
-          "description": "Arbitrary comment for reference purposes."
-        },
-        "mode": {
-          "type": "string",
-          "enum": ["Public", "Exam"],
-          "description": "The server mode required for access."
-        },
-        "examUuid": {
-          "type": "string",
-          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-          "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam."
-        },
-        "role": {
-          "type": "string",
-          "enum": ["Student", "TA", "Instructor"],
-          "description": "DEPRECATED -- do not use."
-        },
-        "uids": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "A list of UIDs (like 'username@example.com'), one of which is required for access"
+          "description": "Arbitrary comment for reference purposes.",
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "credit": {
+          "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
           "type": "integer",
-          "minimum": 0,
-          "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit)."
-        },
-        "startDate": {
-          "type": "string",
-          "description": "The earliest date on which access is permitted."
+          "minimum": 0
         },
         "endDate": {
-          "type": "string",
-          "description": "The latest date on which access is permitted."
+          "description": "The latest date on which access is permitted.",
+          "type": "string"
         },
-        "timeLimitMin": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "The time limit to complete the assessment, in minutes (only for Exams)."
+        "examUuid": {
+          "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "mode": {
+          "description": "The server mode required for access.",
+          "type": "string",
+          "enum": ["Public", "Exam"]
         },
         "password": {
+          "description": "Password to begin the assessment (only for Exams).",
+          "type": "string"
+        },
+        "role": {
+          "description": "DEPRECATED -- do not use.",
           "type": "string",
-          "description": "Password to begin the assessment (only for Exams)."
+          "enum": ["Student", "TA", "Instructor"]
         },
         "showClosedAssessment": {
-          "type": "boolean",
           "description": "Whether the student can view the assessment after it has been closed",
+          "type": "boolean",
           "default": true
         },
         "showClosedAssessmentScore": {
-          "type": "boolean",
           "description": "Whether the student can view the assessment grade after it has been closed. Only works if showClosedAssessment is also set to false",
+          "type": "boolean",
           "default": true
         },
-        "active": {
+        "startDate": {
+          "description": "The earliest date on which access is permitted.",
+          "type": "string"
+        },
+        "timeLimitMin": {
+          "description": "The time limit to complete the assessment, in minutes (only for Exams).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "uids": {
+          "description": "A list of UIDs (like 'username@example.com'), one of which is required for access",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        { "type": "string" },
+        { "type": "array" },
+        { "type": "object", "additionalProperties": {}, "properties": {} }
+      ]
+    },
+    "ForceMaxPointsJsonSchema": {
+      "description": "Whether to force this question to be awarded maximum points on a regrade.",
+      "type": "boolean",
+      "default": false
+    },
+    "GroupRoleJsonSchema": {
+      "description": "A custom role for use in group assessments that allows control over certain permissions.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "canAssignRoles": {
+          "description": "Whether users with this role can assign other users' group roles.",
           "type": "boolean",
-          "description": "Whether the student can create a new assessment instance and submit answers to questions. If set to false, the available credit must be 0.",
-          "default": true
+          "default": false
+        },
+        "maximum": {
+          "description": "The maximum number of users that should be in this role in a group.",
+          "type": "number"
+        },
+        "minimum": {
+          "description": "The minimum number of users that should be in this role in a group.",
+          "type": "number",
+          "default": 0
+        },
+        "name": {
+          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
+          "type": "string"
         }
       },
-      "additionalProperties": false,
-      "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access."
+      "required": ["name"]
+    },
+    "PointsJsonSchema": {
+      "anyOf": [
+        { "$ref": "#/definitions/PointsSingleJsonSchema" },
+        { "$ref": "#/definitions/PointsListJsonSchema" }
+      ]
+    },
+    "PointsListJsonSchema": {
+      "description": "An array of point values.",
+      "type": "array",
+      "items": { "$ref": "#/definitions/PointsSingleJsonSchema" },
+      "minItems": 1
+    },
+    "PointsSingleJsonSchema": {
+      "description": "A single point value.",
+      "type": "number",
+      "default": 0,
+      "minimum": 0
     },
     "QuestionAlternativeJsonSchema": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "points": {
-          "$ref": "#/definitions/PointsJsonSchema"
-        },
-        "autoPoints": {
-          "$ref": "#/definitions/PointsJsonSchema"
-        },
-        "maxPoints": {
-          "$ref": "#/definitions/PointsSingleJsonSchema",
-          "description": "A single point value."
-        },
-        "maxAutoPoints": {
-          "$ref": "#/definitions/PointsSingleJsonSchema",
-          "description": "A single point value."
-        },
-        "manualPoints": {
-          "$ref": "#/definitions/PointsSingleJsonSchema",
-          "description": "A single point value."
-        },
-        "comment": {
-          "$ref": "#/definitions/CommentJsonSchema",
-          "description": "Arbitrary comment for reference purposes."
-        },
-        "id": {
-          "$ref": "#/definitions/QuestionIdJsonSchema"
-        },
-        "forceMaxPoints": {
-          "$ref": "#/definitions/ForceMaxPointsJsonSchema",
-          "description": "Whether to force this question to be awarded maximum points on a regrade."
-        },
-        "triesPerVariant": {
-          "type": "number",
-          "description": "The maximum number of graded submissions allowed for each question instance.",
-          "default": 1
-        },
         "advanceScorePerc": {
-          "$ref": "#/definitions/AdvanceScorePercJsonSchema",
-          "description": "Minimum score percentage to unlock access to subsequent questions"
+          "description": "Minimum score percentage to unlock access to subsequent questions",
+          "$ref": "#/definitions/AdvanceScorePercJsonSchema"
         },
-        "gradeRateMinutes": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Minimum amount of time (in minutes) between graded submissions to the same question."
-        },
+        "autoPoints": { "$ref": "#/definitions/PointsJsonSchema" },
         "canSubmit": {
           "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
+          "default": [],
+          "items": { "type": "string" },
+          "uniqueItems": true
         },
         "canView": {
           "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
+          "default": [],
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "comment": {
+          "description": "Arbitrary comment for reference purposes.",
+          "$ref": "#/definitions/CommentJsonSchema"
+        },
+        "forceMaxPoints": {
+          "description": "Whether to force this question to be awarded maximum points on a regrade.",
+          "$ref": "#/definitions/ForceMaxPointsJsonSchema"
+        },
+        "gradeRateMinutes": {
+          "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+          "type": "number",
+          "minimum": 0
+        },
+        "id": { "$ref": "#/definitions/QuestionIdJsonSchema" },
+        "manualPoints": {
+          "description": "A single point value.",
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        "maxAutoPoints": {
+          "description": "A single point value.",
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        "maxPoints": {
+          "description": "A single point value.",
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        "points": { "$ref": "#/definitions/PointsJsonSchema" },
+        "triesPerVariant": {
+          "description": "The maximum number of graded submissions allowed for each question instance.",
+          "type": "number",
+          "default": 1
         }
       },
-      "required": ["id"],
-      "additionalProperties": false
+      "required": ["id"]
+    },
+    "QuestionIdJsonSchema": {
+      "description": "Question ID (directory name of the question).",
+      "type": "string"
     },
     "ZoneAssessmentJsonSchema": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "title": {
-          "type": "string",
-          "description": "Zone title, displayed to the students at the top of the question list for the zone."
-        },
-        "comment": {
-          "$ref": "#/definitions/CommentJsonSchema",
-          "description": "Arbitrary comment for reference purposes."
-        },
-        "comments": {
-          "$ref": "#/definitions/CommentJsonSchema",
-          "description": "DEPRECATED -- do not use."
-        },
-        "maxPoints": {
-          "type": "number",
-          "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points."
-        },
-        "numberChoose": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Number of questions to choose from this zone."
-        },
-        "bestQuestions": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points."
-        },
-        "questions": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ZoneQuestionJsonSchema"
-          },
-          "minItems": 1,
-          "description": "Array of questions in the zone."
+          "description": "Zone title, displayed to the students at the top of the question list for the zone.",
+          "type": "string"
         },
         "advanceScorePerc": {
-          "$ref": "#/definitions/AdvanceScorePercJsonSchema",
-          "description": "Minimum score percentage to unlock access to subsequent questions"
+          "description": "Minimum score percentage to unlock access to subsequent questions",
+          "$ref": "#/definitions/AdvanceScorePercJsonSchema"
         },
-        "gradeRateMinutes": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Minimum amount of time (in minutes) between graded submissions to the same question."
+        "bestQuestions": {
+          "description": "Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.",
+          "type": "integer",
+          "minimum": 0
         },
         "canSubmit": {
           "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
+          "default": [],
+          "items": { "type": "string" },
+          "uniqueItems": true
         },
         "canView": {
           "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
+          "default": [],
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "comment": {
+          "description": "Arbitrary comment for reference purposes.",
+          "$ref": "#/definitions/CommentJsonSchema"
+        },
+        "comments": {
+          "description": "DEPRECATED -- do not use.",
+          "$ref": "#/definitions/CommentJsonSchema"
+        },
+        "gradeRateMinutes": {
+          "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+          "type": "number",
+          "minimum": 0
+        },
+        "maxPoints": {
+          "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points.",
+          "type": "number"
+        },
+        "numberChoose": {
+          "description": "Number of questions to choose from this zone.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "questions": {
+          "description": "Array of questions in the zone.",
+          "type": "array",
+          "items": { "$ref": "#/definitions/ZoneQuestionJsonSchema" },
+          "minItems": 1
         }
       },
-      "required": ["questions"],
-      "additionalProperties": false
+      "required": ["questions"]
     },
     "ZoneQuestionJsonSchema": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "points": {
-          "$ref": "#/definitions/PointsJsonSchema"
-        },
-        "autoPoints": {
-          "$ref": "#/definitions/PointsJsonSchema"
-        },
-        "maxPoints": {
-          "$ref": "#/definitions/PointsSingleJsonSchema",
-          "description": "A single point value."
-        },
-        "maxAutoPoints": {
-          "$ref": "#/definitions/PointsSingleJsonSchema",
-          "description": "A single point value."
-        },
-        "manualPoints": {
-          "$ref": "#/definitions/PointsSingleJsonSchema",
-          "description": "A single point value."
-        },
-        "comment": {
-          "$ref": "#/definitions/CommentJsonSchema",
-          "description": "Arbitrary comment for reference purposes."
-        },
-        "id": {
-          "$ref": "#/definitions/QuestionIdJsonSchema",
-          "description": "Question ID (directory name of the question)."
-        },
-        "forceMaxPoints": {
-          "$ref": "#/definitions/ForceMaxPointsJsonSchema",
-          "description": "Whether to force this question to be awarded maximum points on a regrade."
+        "advanceScorePerc": {
+          "description": "Minimum score percentage to unlock access to subsequent questions",
+          "$ref": "#/definitions/AdvanceScorePercJsonSchema"
         },
         "alternatives": {
+          "description": "Array of question alternatives to choose from.",
           "type": "array",
-          "items": {
-            "$ref": "#/definitions/QuestionAlternativeJsonSchema"
-          },
-          "minItems": 1,
-          "description": "Array of question alternatives to choose from."
+          "items": { "$ref": "#/definitions/QuestionAlternativeJsonSchema" },
+          "minItems": 1
         },
-        "numberChoose": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Number of questions to choose from this group.",
-          "default": 1
-        },
-        "triesPerVariant": {
-          "type": "number",
-          "description": "The maximum number of graded submissions allowed for each question instance.",
-          "default": 1
-        },
-        "advanceScorePerc": {
-          "$ref": "#/definitions/AdvanceScorePercJsonSchema",
-          "description": "Minimum score percentage to unlock access to subsequent questions"
-        },
-        "singleVariant": {
-          "type": "boolean",
-          "description": "Whether the question is not randomized and only generates a single variant (defaults to \"false\")."
-        },
-        "gradeRateMinutes": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Minimum amount of time (in minutes) between graded submissions to the same question."
-        },
+        "autoPoints": { "$ref": "#/definitions/PointsJsonSchema" },
         "canSubmit": {
           "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
+          "default": [],
+          "items": { "type": "string" },
+          "uniqueItems": true
         },
         "canView": {
           "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
-        }
-      },
-      "additionalProperties": false
-    },
-    "GroupRoleJsonSchema": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "The group role's name (i.e. Manager, Reflector, Recorder)."
+          "default": [],
+          "items": { "type": "string" },
+          "uniqueItems": true
         },
-        "minimum": {
+        "comment": {
+          "description": "Arbitrary comment for reference purposes.",
+          "$ref": "#/definitions/CommentJsonSchema"
+        },
+        "forceMaxPoints": {
+          "description": "Whether to force this question to be awarded maximum points on a regrade.",
+          "$ref": "#/definitions/ForceMaxPointsJsonSchema"
+        },
+        "gradeRateMinutes": {
+          "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
-          "description": "The minimum number of users that should be in this role in a group.",
-          "default": 0
+          "minimum": 0
         },
-        "maximum": {
+        "id": {
+          "description": "Question ID (directory name of the question).",
+          "$ref": "#/definitions/QuestionIdJsonSchema"
+        },
+        "manualPoints": {
+          "description": "A single point value.",
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        "maxAutoPoints": {
+          "description": "A single point value.",
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        "maxPoints": {
+          "description": "A single point value.",
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        "numberChoose": {
+          "description": "Number of questions to choose from this group.",
+          "type": "integer",
+          "default": 1,
+          "minimum": 0
+        },
+        "points": { "$ref": "#/definitions/PointsJsonSchema" },
+        "singleVariant": {
+          "description": "Whether the question is not randomized and only generates a single variant (defaults to \"false\").",
+          "type": "boolean"
+        },
+        "triesPerVariant": {
+          "description": "The maximum number of graded submissions allowed for each question instance.",
           "type": "number",
-          "description": "The maximum number of users that should be in this role in a group."
-        },
-        "canAssignRoles": {
-          "type": "boolean",
-          "description": "Whether users with this role can assign other users' group roles.",
-          "default": false
+          "default": 1
         }
-      },
-      "required": ["name"],
-      "additionalProperties": false,
-      "description": "A custom role for use in group assessments that allows control over certain permissions."
-    },
-    "AdvanceScorePercJsonSchema": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 100,
-      "description": "Minimum score percentage to unlock access to subsequent questions"
-    },
-    "CommentJsonSchema": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array"
-        },
-        {
-          "type": "object",
-          "properties": {},
-          "additionalProperties": {}
-        }
-      ],
-      "description": "Arbitrary comment for reference purposes."
+      }
     }
-  },
-  "$schema": "http://json-schema.org/draft-07/schema#"
+  }
 }

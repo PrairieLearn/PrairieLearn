@@ -1,134 +1,105 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Element Extension Info",
+  "description": "Info files for v3 element extensions.",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "controller": {
-      "type": "string",
-      "description": "The name of the extension's Python controller file."
+      "description": "The name of the extension's Python controller file.",
+      "type": "string"
     },
     "dependencies": {
+      "description": "The extension's client-side dependencies.",
       "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "coreStyles": {
+        "clientFilesCourseScripts": {
+          "description": "The styles required by this extension from clientFilesCourse.",
           "type": "array",
-          "items": {
-            "type": "string",
-            "description": "A .css file located in /public/stylesheets."
-          },
-          "description": "[DEPRECATED, DO NOT USE] The styles required by this extension from /public/stylesheets."
-        },
-        "coreScripts": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "description": "A .js file located in /public/javascripts."
-          },
-          "description": "[DEPRECATED, DO NOT USE] The scripts required by this extension from /public/javascripts."
-        },
-        "nodeModulesStyles": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "description": "A .css file located in /node_modules."
-          },
-          "description": "The styles required by this extension from /node_modules."
-        },
-        "nodeModulesScripts": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "description": "A .js file located in /node_modules."
-          },
-          "description": "The scripts required by this extension from /node_modules."
+          "items": { "description": "A .js file located in clientFilesCourse.", "type": "string" }
         },
         "clientFilesCourseStyles": {
+          "description": "The styles required by this extension from clientFilesCourse.",
           "type": "array",
-          "items": {
-            "type": "string",
-            "description": "A .css file located in clientFilesCourse."
-          },
-          "description": "The styles required by this extension from clientFilesCourse."
+          "items": { "description": "A .css file located in clientFilesCourse.", "type": "string" }
         },
-        "clientFilesCourseScripts": {
+        "coreScripts": {
+          "description": "[DEPRECATED, DO NOT USE] The scripts required by this extension from /public/javascripts.",
+          "type": "array",
+          "items": { "description": "A .js file located in /public/javascripts.", "type": "string" }
+        },
+        "coreStyles": {
+          "description": "[DEPRECATED, DO NOT USE] The styles required by this extension from /public/stylesheets.",
           "type": "array",
           "items": {
-            "type": "string",
-            "description": "A .js file located in clientFilesCourse."
-          },
-          "description": "The styles required by this extension from clientFilesCourse."
+            "description": "A .css file located in /public/stylesheets.",
+            "type": "string"
+          }
+        },
+        "extensionScripts": {
+          "description": "The scripts required by this extension from the extension's directory.",
+          "type": "array",
+          "items": {
+            "description": "A .js file located in the extension's directory.",
+            "type": "string"
+          }
         },
         "extensionStyles": {
+          "description": "The styles required by this extension from the extension's directory.",
           "type": "array",
           "items": {
-            "type": "string",
-            "description": "A .css file located in the extension's directory."
-          },
-          "description": "The styles required by this extension from the extension's directory."
-        },
-        "extensionScripts": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "description": "A .js file located in the extension's directory."
-          },
-          "description": "The scripts required by this extension from the extension's directory."
-        }
-      },
-      "additionalProperties": false,
-      "description": "The extension's client-side dependencies."
-    },
-    "dynamicDependencies": {
-      "type": "object",
-      "properties": {
-        "comment": {
-          "$ref": "#/definitions/CommentJsonSchema",
-          "description": "Arbitrary comment for reference purposes."
+            "description": "A .css file located in the extension's directory.",
+            "type": "string"
+          }
         },
         "nodeModulesScripts": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "The scripts required by this element from /node_modules as an importmap."
+          "description": "The scripts required by this extension from /node_modules.",
+          "type": "array",
+          "items": { "description": "A .js file located in /node_modules.", "type": "string" }
         },
+        "nodeModulesStyles": {
+          "description": "The styles required by this extension from /node_modules.",
+          "type": "array",
+          "items": { "description": "A .css file located in /node_modules.", "type": "string" }
+        }
+      }
+    },
+    "dynamicDependencies": {
+      "description": "The element's client-side dynamic dependencies.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
         "clientFilesCourseScripts": {
+          "description": "The styles required by this element from clientFilesCourse as an importmap.",
           "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "The styles required by this element from clientFilesCourse as an importmap."
+          "additionalProperties": { "type": "string" }
+        },
+        "comment": {
+          "description": "Arbitrary comment for reference purposes.",
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "extensionScripts": {
+          "description": "The scripts required by this extension from the extension's directory.",
           "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "The scripts required by this extension from the extension's directory."
+          "additionalProperties": { "type": "string" }
+        },
+        "nodeModulesScripts": {
+          "description": "The scripts required by this element from /node_modules as an importmap.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         }
-      },
-      "additionalProperties": false,
-      "description": "The element's client-side dynamic dependencies."
+      }
     }
   },
-  "additionalProperties": false,
-  "description": "Info files for v3 element extensions.",
-  "title": "Element Extension Info",
   "definitions": {
     "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array"
-        },
-        {
-          "type": "object",
-          "properties": {},
-          "additionalProperties": {}
-        }
-      ],
-      "description": "Arbitrary comment for reference purposes."
+        { "type": "string" },
+        { "type": "array" },
+        { "type": "object", "additionalProperties": {}, "properties": {} }
+      ]
     }
-  },
-  "$schema": "http://json-schema.org/draft-07/schema#"
+  }
 }
