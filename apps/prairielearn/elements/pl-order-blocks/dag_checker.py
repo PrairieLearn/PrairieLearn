@@ -1,6 +1,6 @@
 import itertools
 from collections import Counter
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from copy import deepcopy
 
 import networkx as nx
@@ -54,7 +54,9 @@ def solve_dag(
     return sort
 
 
-def check_topological_sorting(submission: list[str | None], graph: nx.DiGraph) -> int:
+def check_topological_sorting(
+    submission: Sequence[str | None], graph: nx.DiGraph
+) -> int:
     """
     :param submission: candidate for topological sorting
     :param graph: graph to check topological sorting over
@@ -69,7 +71,7 @@ def check_topological_sorting(submission: list[str | None], graph: nx.DiGraph) -
 
 
 def check_grouping(
-    submission: list[str | None], group_belonging: Mapping[str, str | None]
+    submission: Sequence[str | None], group_belonging: Mapping[str, str | None]
 ) -> int:
     """
     :param submission: candidate solution
@@ -81,7 +83,7 @@ def check_grouping(
     cur_group = None
     cur_group_size = 0
     for i, node in enumerate(submission):
-        group_id = group_belonging.get(node)
+        group_id = None if node is None else group_belonging.get(node)
         if group_id is not None and cur_group is None:
             cur_group = group_id
         elif group_id is None and cur_group is not None:
@@ -149,7 +151,7 @@ def add_edges_for_groups(
 
 
 def grade_dag(
-    submission: list[str | None],
+    submission: Sequence[str | None],
     depends_graph: Mapping[str, list[str]],
     group_belonging: Mapping[str, str | None],
 ) -> tuple[int, int]:
@@ -179,7 +181,7 @@ def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
 
 
 def lcs_partial_credit(
-    submission: list[str],
+    submission: Sequence[str | None],
     depends_graph: Mapping[str, list[str]],
     group_belonging: Mapping[str, str | None],
 ) -> int:
@@ -204,7 +206,9 @@ def lcs_partial_credit(
     """
     graph = dag_to_nx(depends_graph, group_belonging)
     trans_clos = nx.transitive_closure(graph)
-    submission_no_distractors = [node for node in submission if node in depends_graph]
+    submission_no_distractors = [
+        node for node in submission if node in depends_graph and node is not None
+    ]
 
     # if node1 must occur before node2 in any correct solution, but node2 occurs before
     # node1 in the submission, add them both and an edge between them to the problematic subgraph
