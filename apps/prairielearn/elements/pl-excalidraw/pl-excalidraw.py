@@ -6,7 +6,6 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from lxml.html import HtmlElement
-from typing_extensions import assert_never
 
 ATTR_ANSWER_NAME = "answers-name"
 ATTR_WIDTH = "width"
@@ -153,9 +152,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 initial_content = load_file_content(element, data)
             else:
                 raise unreachable
-
-        case panel:
-            assert_never(panel)
 
     content_bytes = json.dumps(
         {

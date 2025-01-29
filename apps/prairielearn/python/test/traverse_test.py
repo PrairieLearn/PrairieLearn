@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import lxml.html
 from prairielearn.internal.traverse import (
     ElementReplacement,
@@ -5,10 +7,13 @@ from prairielearn.internal.traverse import (
     traverse_and_replace,
 )
 
+if TYPE_CHECKING:
+    from lxml.etree import QName
+
 
 def test_traverse_and_execute() -> None:
     text: list[str] = []
-    tags: list[str] = []
+    tags: list[str | bytearray | bytes | QName] = []
 
     def capture_element(element: lxml.html.HtmlElement) -> None:
         if element.text:
