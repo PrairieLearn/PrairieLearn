@@ -298,10 +298,10 @@ _JSONPythonType = (
     | sympy.Matrix
     | sympy.ImmutableMatrix
     | pd.DataFrame
-    | nx.Graph
-    | nx.DiGraph
-    | nx.MultiGraph
-    | nx.MultiDiGraph
+    | nx.Graph[str]
+    | nx.DiGraph[str]
+    | nx.MultiGraph[str]
+    | nx.MultiDiGraph[str]
 )
 
 

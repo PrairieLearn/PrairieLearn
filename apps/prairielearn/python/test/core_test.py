@@ -147,7 +147,10 @@ def test_encoding_legacy(df: pd.DataFrame) -> None:
     ],
 )
 def test_networkx_serialization(
-    networkx_graph: nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph,
+    networkx_graph: nx.Graph[str]
+    | nx.DiGraph[str]
+    | nx.MultiGraph[str]
+    | nx.MultiDiGraph[str],
 ) -> None:
     """Test equality after conversion of various numpy objects."""
 

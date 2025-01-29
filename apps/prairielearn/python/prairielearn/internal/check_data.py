@@ -157,7 +157,7 @@ def check_prop(
 
 
 def check_data(
-    old_data: dict[str, Any], new_data: dict[str, Any], phase: Phase
+    old_data: dict[Any, Any], new_data: dict[Any, Any], phase: Phase
 ) -> None:
     # First, check for extra keys on `new_data`.
     extra_keys = set(new_data.keys()) - set(PROPS.keys())

@@ -7,7 +7,7 @@ import networkx as nx
 
 
 def validate_grouping(
-    graph: nx.DiGraph, group_belonging: Mapping[str, str | None]
+    graph: nx.DiGraph[str], group_belonging: Mapping[str, str | None]
 ) -> bool:
     for node in graph:
         group_tag = group_belonging.get(node)
@@ -55,7 +55,7 @@ def solve_dag(
 
 
 def check_topological_sorting(
-    submission: Sequence[str | None], graph: nx.DiGraph
+    submission: Sequence[str | None], graph: nx.DiGraph[str]
 ) -> int:
     """
     :param submission: candidate for topological sorting
@@ -102,7 +102,7 @@ def check_grouping(
 
 def dag_to_nx(
     depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, str | None]
-) -> nx.DiGraph:
+) -> nx.DiGraph[str]:
     """Convert input graph format into NetworkX object to utilize their algorithms."""
     graph = nx.DiGraph()
     for node in depends_graph:
@@ -122,7 +122,7 @@ def dag_to_nx(
 
 
 def add_edges_for_groups(
-    graph: nx.DiGraph, group_belonging: Mapping[str, str | None]
+    graph: nx.DiGraph[str], group_belonging: Mapping[str, str | None]
 ) -> None:
     groups = {
         group: [tag for tag in group_belonging if group_belonging[tag] == group]
@@ -172,7 +172,7 @@ def grade_dag(
     return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes()
 
 
-def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
+def is_vertex_cover(G: nx.DiGraph[str], vertex_cover: Iterable[str]) -> bool:
     """this function from
     https://docs.ocean.dwavesys.com/en/stable/docs_dnx/reference/algorithms/generated/dwave_networkx.algorithms.cover.is_vertex_cover.html
     """
