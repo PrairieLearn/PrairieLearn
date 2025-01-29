@@ -400,8 +400,8 @@ class Feedback:
     def check_scalar(
         cls,
         name: str,
-        ref: complex | np.number,
-        data: complex | np.number | None | Any,
+        ref: complex | np.number[Any],
+        data: complex | np.number[Any] | None,
         accuracy_critical: bool = False,  # noqa: FBT001
         rtol: float = 1e-5,
         atol: float = 1e-8,

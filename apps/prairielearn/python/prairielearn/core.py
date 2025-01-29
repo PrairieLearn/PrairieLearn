@@ -290,8 +290,9 @@ _JSONSerializedType = (
 
 # This represents the object formats that will be serialized by the to_json function
 _JSONPythonType = (
-    np.complexfloating
-    | np.number
+    np.complex64
+    | np.complex128
+    | np.number[Any]
     | npt.NDArray[Any]
     | sympy.Expr
     | sympy.Matrix
@@ -851,7 +852,15 @@ def get_color_attrib(
 
 # This internal represents most the types that would pass a np.isscalar check
 _NumPyScalarType = (
-    np.complexfloating | bool | int | float | complex | str | bytes | np.generic
+    np.complex64
+    | np.complex128
+    | bool
+    | int
+    | float
+    | complex
+    | str
+    | bytes
+    | np.generic
 )
 
 
@@ -1060,7 +1069,7 @@ def string_from_2darray(
 
 
 def string_from_number_sigfig(
-    a: complex | np.complexfloating | numbers.Number, digits: int = 2
+    a: complex | np.complex64 | np.complex128 | numbers.Number, digits: int = 2
 ) -> str:
     """string_from_complex_sigfig(a, digits=2)
 
@@ -1075,7 +1084,7 @@ def string_from_number_sigfig(
 
 
 def _string_from_complex_sigfig(
-    a: complex | np.complexfloating, digits: int = 2
+    a: complex | np.complex64 | np.complex128, digits: int = 2
 ) -> str:
     """_string_from_complex_sigfig(a, digits=2)
 
@@ -1893,9 +1902,9 @@ def load_extension(data: QuestionData, extension_name: str) -> Any:
         # Nothing to load, just return an empty dict
         return {}
 
-    # wrap extension functions so that they execute in their own directory
     T = TypeVar("T")
 
+    # wrap extension functions so that they execute in their own directory
     def wrap(f: Callable[..., T]) -> Callable[..., T]:
         # If not a function, just return
         if not callable(f):

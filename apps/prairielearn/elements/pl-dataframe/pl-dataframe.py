@@ -1,5 +1,6 @@
 import pprint
 from enum import Enum
+from typing import Any
 
 import chevron
 import lxml.html
@@ -28,7 +29,7 @@ WIDTH_DEFAULT = 500
 PRESENTATION_TYPE_DEFAULT = "g"
 
 
-def convert_pandas_dtype_to_r(s: pd.Series) -> str:
+def convert_pandas_dtype_to_r(s: pd.Series[Any]) -> str:
     # Force series to avoid odd element-wise output
     _ = s.dtype
 
@@ -55,7 +56,7 @@ def convert_pandas_dtype_to_r(s: pd.Series) -> str:
     return "Unknown"
 
 
-def get_pandas_dtype(s: pd.Series) -> str:
+def get_pandas_dtype(s: pd.Series[Any]) -> str:
     return str(s.dtype)
 
 

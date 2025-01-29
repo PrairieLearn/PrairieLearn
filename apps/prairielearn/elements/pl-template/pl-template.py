@@ -12,6 +12,7 @@ import prairielearn as pl
 LOG_VARIABLE_WARNINGS_DEFAULT = False
 TRIM_WHITESPACE_DEFAULT = True
 DIRECTORY_CHOICE_DEFAULT = "serverFilesCourse"
+
 LOG_TAG_WARNINGS_DEFAULT = True
 
 # These elements should be display only
@@ -32,7 +33,9 @@ DATA_ENTRIES_TO_COPY = ("params",)
 
 
 def check_tags(element_html: str) -> None:
-    element_list = cast(list, lxml.html.fragments_fromstring(element_html))
+    element_list = cast(
+        list[lxml.html.HtmlElement], lxml.html.fragments_fromstring(element_html)
+    )
 
     # First element can be a string, remove since there's nothing to check.
     if isinstance(element_list[0], str):
@@ -43,7 +46,9 @@ def check_tags(element_html: str) -> None:
             continue
 
         is_tag_invald = (
-            e.tag.startswith("pl-") and e.tag not in ALLOWED_PL_TAGS
+            isinstance(e.tag, str)
+            and e.tag.startswith("pl-")
+            and e.tag not in ALLOWED_PL_TAGS
         ) or e.tag == "markdown"
 
         if is_tag_invald:
