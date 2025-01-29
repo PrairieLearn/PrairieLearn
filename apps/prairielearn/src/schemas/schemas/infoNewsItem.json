@@ -4,9 +4,9 @@
   "description": "Info files for news items.",
   "type": "object",
   "additionalProperties": false,
+  "required": ["uuid", "title", "visible_to_students"],
   "properties": {
     "title": { "description": "The title of the news item.", "type": "string" },
-    "author": { "description": "The author of the news item.", "type": "string" },
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
@@ -16,12 +16,12 @@
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
+    "author": { "description": "The author of the news item.", "type": "string" },
     "visible_to_students": {
       "description": "Whether the news item should be shown to students.",
       "type": "boolean"
     }
   },
-  "required": ["uuid", "title", "visible_to_students"],
   "definitions": {
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",

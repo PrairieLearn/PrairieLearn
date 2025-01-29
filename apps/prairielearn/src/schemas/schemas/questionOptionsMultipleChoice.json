@@ -4,10 +4,15 @@
   "description": "Options for a MultipleChoice question.",
   "type": "object",
   "additionalProperties": false,
+  "required": ["text", "correctAnswers", "incorrectAnswers"],
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
+    },
+    "text": {
+      "description": "The question HTML text that comes before the options.",
+      "type": "string"
     },
     "correctAnswers": {
       "description": "A list of correct answers to the question. Each is an HTML string.",
@@ -22,13 +27,8 @@
     "numberAnswers": {
       "description": "The total number of answers in the list of possible answers.",
       "type": "integer"
-    },
-    "text": {
-      "description": "The question HTML text that comes before the options.",
-      "type": "string"
     }
   },
-  "required": ["text", "correctAnswers", "incorrectAnswers"],
   "definitions": {
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",

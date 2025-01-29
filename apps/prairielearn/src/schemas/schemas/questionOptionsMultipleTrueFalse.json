@@ -4,15 +4,11 @@
   "description": "Options for a MultipleTrueFalse question.",
   "type": "object",
   "additionalProperties": false,
+  "required": ["trueStatements", "falseStatements"],
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
-    },
-    "falseStatements": {
-      "description": "A list of false statements for the question. Each is an HTML string.",
-      "type": "array",
-      "items": { "type": "string" }
     },
     "text": {
       "description": "Text to precede the set of statements being given.",
@@ -22,9 +18,13 @@
       "description": "A list of true statements for the question. Each is an HTML string.",
       "type": "array",
       "items": { "type": "string" }
+    },
+    "falseStatements": {
+      "description": "A list of false statements for the question. Each is an HTML string.",
+      "type": "array",
+      "items": { "type": "string" }
     }
   },
-  "required": ["trueStatements", "falseStatements"],
   "definitions": {
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",

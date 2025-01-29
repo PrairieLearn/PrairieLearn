@@ -23,7 +23,15 @@ if (check) {
   for (const [name, schema] of Object.entries(ajvSchemas)) {
     // These schemas still need to be prettified, so we won't format them at all
     // However, we want to preserve the order of the keys, so we'll use the replacer function
-    const headKeys = ['$schema', 'title', 'description', 'type'];
+    const headKeys = [
+      '$schema',
+      'title',
+      'description',
+      'type',
+      'additionalProperties',
+      'required',
+      'comment',
+    ];
 
     const tailKeys = ['definitions'];
     // Thanks chatgpt!
@@ -49,7 +57,7 @@ if (check) {
             if (tailKeys.includes(b)) {
               return -1;
             }
-            return a.localeCompare(b);
+            return 0;
           })
           .reduce((acc, key) => {
             acc[key] = value[key];

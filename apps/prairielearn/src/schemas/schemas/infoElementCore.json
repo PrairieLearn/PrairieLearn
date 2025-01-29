@@ -4,15 +4,8 @@
   "description": "Info files for v3 elements.",
   "type": "object",
   "additionalProperties": false,
+  "required": ["controller"],
   "properties": {
-    "additionalNames": {
-      "description": "Any additional names to give this element, i.e. for backwards compatibility.",
-      "type": "array",
-      "items": {
-        "description": "A name for this element to be used in question HTML files.",
-        "type": "string"
-      }
-    },
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
@@ -27,16 +20,34 @@
           "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
         },
-        "coreScripts": {
-          "description": "[DEPRECATED, DO NOT USE] The scripts required by this element from /public/javascripts.",
-          "type": "array",
-          "items": { "description": "A .js file located in /public/javascripts.", "type": "string" }
-        },
         "coreStyles": {
           "description": "[DEPRECATED, DO NOT USE] The styles required by this element from /public/stylesheets.",
           "type": "array",
           "items": {
             "description": "A .css file located in /public/stylesheets.",
+            "type": "string"
+          }
+        },
+        "coreScripts": {
+          "description": "[DEPRECATED, DO NOT USE] The scripts required by this element from /public/javascripts.",
+          "type": "array",
+          "items": { "description": "A .js file located in /public/javascripts.", "type": "string" }
+        },
+        "nodeModulesStyles": {
+          "description": "The styles required by this element from /node_modules.",
+          "type": "array",
+          "items": { "description": "A .css file located in /node_modules.", "type": "string" }
+        },
+        "nodeModulesScripts": {
+          "description": "The scripts required by this element from /node_modules.",
+          "type": "array",
+          "items": { "description": "A .js file located in /node_modules.", "type": "string" }
+        },
+        "elementStyles": {
+          "description": "The styles required by this element from the element's directory.",
+          "type": "array",
+          "items": {
+            "description": "A .css file located in the element's directory.",
             "type": "string"
           }
         },
@@ -47,24 +58,6 @@
             "description": "A .js file located in the element's directory.",
             "type": "string"
           }
-        },
-        "elementStyles": {
-          "description": "The styles required by this element from the element's directory.",
-          "type": "array",
-          "items": {
-            "description": "A .css file located in the element's directory.",
-            "type": "string"
-          }
-        },
-        "nodeModulesScripts": {
-          "description": "The scripts required by this element from /node_modules.",
-          "type": "array",
-          "items": { "description": "A .js file located in /node_modules.", "type": "string" }
-        },
-        "nodeModulesStyles": {
-          "description": "The styles required by this element from /node_modules.",
-          "type": "array",
-          "items": { "description": "A .css file located in /node_modules.", "type": "string" }
         }
       }
     },
@@ -77,20 +70,27 @@
           "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
         },
-        "elementScripts": {
-          "description": "The scripts required by this element from the element's directory as an importmap.",
-          "type": "object",
-          "additionalProperties": { "type": "string" }
-        },
         "nodeModulesScripts": {
           "description": "The scripts required by this element from /node_modules as an importmap.",
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "elementScripts": {
+          "description": "The scripts required by this element from the element's directory as an importmap.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         }
+      }
+    },
+    "additionalNames": {
+      "description": "Any additional names to give this element, i.e. for backwards compatibility.",
+      "type": "array",
+      "items": {
+        "description": "A name for this element to be used in question HTML files.",
+        "type": "string"
       }
     }
   },
-  "required": ["controller"],
   "definitions": {
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",

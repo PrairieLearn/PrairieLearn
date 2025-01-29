@@ -4,10 +4,15 @@
   "description": "Options for a MultipleChoice question.",
   "type": "object",
   "additionalProperties": false,
+  "required": ["text", "correctAnswers", "incorrectAnswers"],
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
+    },
+    "text": {
+      "description": "The question HTML text that comes before the options.",
+      "type": "string"
     },
     "correctAnswers": {
       "description": "A list of correct answers to the question. Each is an HTML string.",
@@ -19,27 +24,22 @@
       "type": "array",
       "items": { "type": "string" }
     },
-    "maxCorrectAnswers": {
-      "description": "The maximum number of correct answers in the list of possible answers.",
+    "numberAnswers": {
+      "description": "The total number of answers in the list of possible answers.",
       "type": "integer",
-      "minimum": 0
+      "minimum": 1
     },
     "minCorrectAnswers": {
       "description": "The minimum number of correct answers in the list of possible answers.",
       "type": "integer",
       "minimum": 0
     },
-    "numberAnswers": {
-      "description": "The total number of answers in the list of possible answers.",
+    "maxCorrectAnswers": {
+      "description": "The maximum number of correct answers in the list of possible answers.",
       "type": "integer",
-      "minimum": 1
-    },
-    "text": {
-      "description": "The question HTML text that comes before the options.",
-      "type": "string"
+      "minimum": 0
     }
   },
-  "required": ["text", "correctAnswers", "incorrectAnswers"],
   "definitions": {
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
