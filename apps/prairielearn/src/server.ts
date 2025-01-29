@@ -1181,7 +1181,8 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
   );
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs', 
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
   );
   app.use(
@@ -1648,7 +1649,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
   );
   app.use(
-    '/pl/course/:course_id(\\d+)/course_admin/syncs', 
+    '/pl/course/:course_id(\\d+)/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
   );
   app.use(
