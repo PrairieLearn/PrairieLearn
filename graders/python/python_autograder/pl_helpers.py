@@ -63,24 +63,24 @@ def save_plot(plt: ModuleType, iternum: int = 0) -> None:
             f.write(imgsrc)
 
 
-def points(points: float) -> Callable:
+def points(points: float) -> Callable[..., Any]:
     """
     Set the number of points that a test case should award.
     """
 
-    def decorator(f: Any):
+    def decorator(f: Callable[..., Any]):
         f.__dict__["points"] = points
         return f
 
     return decorator
 
 
-def name(name: str) -> Callable:
+def name(name: str) -> Callable[..., Any]:
     """
     Set the name of a test case, this will appear on the "results" tab.
     """
 
-    def decorator(f: Callable):
+    def decorator(f: Callable[..., Any]):
         @wraps(f)
         def wrapped(test_instance: Any):
             Feedback.set_name(f.__name__)
@@ -96,7 +96,7 @@ def name(name: str) -> Callable:
     return decorator
 
 
-def not_repeated(f: Callable) -> Callable:
+def not_repeated(f: Callable[..., Any]) -> Callable[..., Any]:
     """
     Marks this test as running only once, if the test suite is to be run multiple times.
     """
