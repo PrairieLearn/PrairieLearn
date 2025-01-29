@@ -54,7 +54,7 @@ def solve_dag(
     return sort
 
 
-def check_topological_sorting(submission: list[str], graph: nx.DiGraph) -> int:
+def check_topological_sorting(submission: list[str | None], graph: nx.DiGraph) -> int:
     """
     :param submission: candidate for topological sorting
     :param graph: graph to check topological sorting over
@@ -69,7 +69,7 @@ def check_topological_sorting(submission: list[str], graph: nx.DiGraph) -> int:
 
 
 def check_grouping(
-    submission: list[str], group_belonging: Mapping[str, str | None]
+    submission: list[str | None], group_belonging: Mapping[str, str | None]
 ) -> int:
     """
     :param submission: candidate solution
@@ -149,7 +149,7 @@ def add_edges_for_groups(
 
 
 def grade_dag(
-    submission: list[str],
+    submission: list[str | None],
     depends_graph: Mapping[str, list[str]],
     group_belonging: Mapping[str, str | None],
 ) -> tuple[int, int]:
