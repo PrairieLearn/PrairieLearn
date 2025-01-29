@@ -206,7 +206,9 @@ def lcs_partial_credit(
     """
     graph = dag_to_nx(depends_graph, group_belonging)
     trans_clos = nx.transitive_closure(graph)
-    submission_no_distractors = [node for node in submission if node in depends_graph]
+    submission_no_distractors = [
+        node for node in submission if node in depends_graph and node is not None
+    ]
 
     # if node1 must occur before node2 in any correct solution, but node2 occurs before
     # node1 in the submission, add them both and an edge between them to the problematic subgraph
@@ -223,15 +225,12 @@ def lcs_partial_credit(
     for i in range(len(submission_no_distractors)):
         for j in range(i + 2, len(submission_no_distractors)):
             node1, node2 = submission_no_distractors[i], submission_no_distractors[j]
-            if (
-                node1 is None
-                or node2 is None
-                or group_belonging.get(node1) is None
-                or group_belonging.get(node1) != group_belonging.get(node2)
-            ):
+            if group_belonging.get(node1) is None or group_belonging.get(
+                node1
+            ) != group_belonging.get(node2):
                 continue
             if not all(
-                x is not None and group_belonging[x] == group_belonging[node1]
+                group_belonging[x] == group_belonging[node1]
                 for x in submission_no_distractors[i : j + 1]
             ):
                 problematic_subgraph.add_nodes_from(
@@ -253,9 +252,7 @@ def lcs_partial_credit(
                     x for x in submission_no_distractors if x not in subset
                 ]
                 edited_group_belonging = {
-                    key: group_belonging.get(key)
-                    for key in edited_submission
-                    if key is not None
+                    key: group_belonging.get(key) for key in edited_submission
                 }
                 if len(edited_submission) == check_grouping(
                     edited_submission, edited_group_belonging
