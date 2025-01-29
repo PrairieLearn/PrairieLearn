@@ -29,6 +29,8 @@ export function PageLayout({
     pageNote?: string;
     /** Enables an htmx extension for an element and all its children */
     hxExt?: string;
+    /** Sets the html and body tag heights to 100% */
+    fullHeight?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlValue;
@@ -43,7 +45,7 @@ export function PageLayout({
 
   return html`
     <!doctype html>
-    <html lang="en">
+    <html lang="en" ${options.fullHeight ? 'class="h-100"' : ''}>
       <head>
         ${HeadContents({
           resLocals,
@@ -52,7 +54,10 @@ export function PageLayout({
         })}
         ${headContent}
       </head>
-      <body ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}>
+      <body
+        ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
+        ${options.fullHeight ? 'class="d-flex flex-column h-100"' : ''}
+      >
         ${Navbar({
           resLocals,
           navPage: navContext.page,
