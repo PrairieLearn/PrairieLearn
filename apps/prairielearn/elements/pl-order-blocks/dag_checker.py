@@ -1,6 +1,6 @@
 import itertools
 from collections import Counter
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from copy import deepcopy
 
 import networkx as nx
@@ -54,7 +54,9 @@ def solve_dag(
     return sort
 
 
-def check_topological_sorting(submission: list[str | None], graph: nx.DiGraph) -> int:
+def check_topological_sorting(
+    submission: Sequence[str | None], graph: nx.DiGraph
+) -> int:
     """
     :param submission: candidate for topological sorting
     :param graph: graph to check topological sorting over
@@ -69,7 +71,7 @@ def check_topological_sorting(submission: list[str | None], graph: nx.DiGraph) -
 
 
 def check_grouping(
-    submission: list[str | None], group_belonging: Mapping[str, str | None]
+    submission: Sequence[str | None], group_belonging: Mapping[str, str | None]
 ) -> int:
     """
     :param submission: candidate solution
@@ -81,7 +83,7 @@ def check_grouping(
     cur_group = None
     cur_group_size = 0
     for i, node in enumerate(submission):
-        group_id = group_belonging.get(node)
+        group_id = None if node is None else group_belonging.get(node)
         if group_id is not None and cur_group is None:
             cur_group = group_id
         elif group_id is None and cur_group is not None:
@@ -149,7 +151,7 @@ def add_edges_for_groups(
 
 
 def grade_dag(
-    submission: list[str | None],
+    submission: Sequence[str | None],
     depends_graph: Mapping[str, list[str]],
     group_belonging: Mapping[str, str | None],
 ) -> tuple[int, int]:
@@ -179,7 +181,7 @@ def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
 
 
 def lcs_partial_credit(
-    submission: list[str],
+    submission: Sequence[str | None],
     depends_graph: Mapping[str, list[str]],
     group_belonging: Mapping[str, str | None],
 ) -> int:
@@ -221,12 +223,15 @@ def lcs_partial_credit(
     for i in range(len(submission_no_distractors)):
         for j in range(i + 2, len(submission_no_distractors)):
             node1, node2 = submission_no_distractors[i], submission_no_distractors[j]
-            if group_belonging.get(node1) is None or group_belonging.get(
-                node1
-            ) != group_belonging.get(node2):
+            if (
+                node1 is None
+                or node2 is None
+                or group_belonging.get(node1) is None
+                or group_belonging.get(node1) != group_belonging.get(node2)
+            ):
                 continue
             if not all(
-                group_belonging[x] == group_belonging[node1]
+                x is not None and group_belonging[x] == group_belonging[node1]
                 for x in submission_no_distractors[i : j + 1]
             ):
                 problematic_subgraph.add_nodes_from(
@@ -248,7 +253,9 @@ def lcs_partial_credit(
                     x for x in submission_no_distractors if x not in subset
                 ]
                 edited_group_belonging = {
-                    key: group_belonging.get(key) for key in edited_submission
+                    key: group_belonging.get(key)
+                    for key in edited_submission
+                    if key is not None
                 }
                 if len(edited_submission) == check_grouping(
                     edited_submission, edited_group_belonging
