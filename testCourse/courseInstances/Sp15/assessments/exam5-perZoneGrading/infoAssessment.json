@@ -4,7 +4,6 @@
   "title": "Exam to test per-zone grading",
   "set": "Exam",
   "number": "5",
-  "shareSourcePublicly": true,
   "allowAccess": [
     {
       "mode": "Exam",

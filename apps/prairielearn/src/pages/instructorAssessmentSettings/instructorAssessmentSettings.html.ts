@@ -191,6 +191,8 @@ export function InstructorAssessmentSettings({
                 The link that students will use to access this assessment.
               </small>
             </div>
+            <h2 class="h4">Sharing</h2>
+            ${AssessmentSharing({ assessment: resLocals.assessment, publicLink })}
             ${resLocals.authz_data.has_course_permission_view
               ? canEdit
                 ? html`
