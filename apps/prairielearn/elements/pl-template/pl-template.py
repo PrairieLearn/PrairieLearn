@@ -12,7 +12,6 @@ import prairielearn as pl
 LOG_VARIABLE_WARNINGS_DEFAULT = False
 TRIM_WHITESPACE_DEFAULT = True
 DIRECTORY_CHOICE_DEFAULT = "serverFilesCourse"
-
 LOG_TAG_WARNINGS_DEFAULT = True
 
 # These elements should be display only
