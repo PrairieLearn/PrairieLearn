@@ -36,8 +36,8 @@ export function InstructorAiGenerateDraftEditor({
 
           .app-grid {
             display: grid;
-            grid-template-rows: min-content 1fr;
             grid-template-areas: 'navbar' 'content';
+            grid-template-rows: min-content 1fr;
           }
 
           .app-navbar {
@@ -46,6 +46,33 @@ export function InstructorAiGenerateDraftEditor({
 
           .app-content {
             grid-area: content;
+
+            display: grid;
+            grid-template-areas: 'chat preview';
+            grid-template-columns: minmax(300px, 30%) 1fr;
+            min-height: 0;
+          }
+
+          .app-chat {
+            grid-area: chat;
+
+            display: grid;
+            grid-template-areas: 'back' 'history';
+            grid-template-rows: min-content 1fr;
+            min-height: 0;
+          }
+
+          .app-chat-back {
+            grid-area: back;
+          }
+
+          .app-chat-history {
+            grid-area: history;
+            overflow-y: scroll;
+          }
+
+          .app-preview {
+            grid-area: preview;
             overflow-y: auto;
           }
 
@@ -60,106 +87,49 @@ export function InstructorAiGenerateDraftEditor({
         <div class="app-container">
           <div class="app-grid">
             <div class="app-navbar">${Navbar({ navPage: 'course_admin', resLocals })}</div>
-            <main id="content" class="container mb-4 app-content">
-              <div class="mb-3">
-                <a
-                  href="${resLocals.urlPrefix}/ai_generate_question_drafts"
-                  class="btn btn-sm btn-primary"
-                >
-                  <i class="fa fa-arrow-left" aria-hidden="true"></i>
-                  Back to draft questions
-                </a>
-              </div>
-              <div class="card">
-                <div
-                  class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
-                >
-                  Generate question with AI
-
-                  <div>
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-light"
-                      data-toggle="modal"
-                      data-target="#finalizeModal"
-                    >
-                      <i class="fa fa-check" aria-hidden="true"></i>
-                      Finalize question
-                    </button>
-                  </div>
+            <main id="content" class="app-content">
+              <div class="app-chat p-2">
+                <div class="app-chat-back mb-2">
+                  <a
+                    href="${resLocals.urlPrefix}/ai_generate_question_drafts"
+                    class="btn btn-sm btn-primary"
+                  >
+                    <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                    Back to draft questions
+                  </a>
                 </div>
-                <div class="card-body">
-                  <div class="container">
-                    <div class="row">
-                      <div class="col-12 col-md-6">
-                        <div>
-                          ${PromptHistory({ prompts, urlPrefix: resLocals.urlPrefix })}
-                          <form
-                            hx-post="${variantId
-                              ? html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}?variant_id=${variantId}`
-                              : html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}`}"
-                            hx-swap="outerHTML"
-                            hx-disabled-elt="button"
-                          >
-                            <input
-                              type="hidden"
-                              name="__csrf_token"
-                              value="${resLocals.__csrf_token}"
-                            />
-                            <input type="hidden" name="__action" value="regenerate_question" />
-                            <div class="form-group">
-                              <label for="user-prompt-llm">What needs to be changed?</label>
-                              <textarea
-                                name="prompt"
-                                id="user-prompt-llm"
-                                class="form-control"
-                              ></textarea>
-                            </div>
-                            <button class="btn btn-primary">
-                              <span
-                                class="spinner-grow spinner-grow-sm d-none"
-                                role="status"
-                                aria-hidden="true"
-                                data-loading-class-remove="d-none"
-                              ></span>
-                              Adjust question
-                            </button>
-                          </form>
-                        </div>
-                      </div>
-                      <div class="col-12 col-md-6">
-                        <ul class="nav nav-pills mb-2">
-                          <li class="nav-item">
-                            <a
-                              class="nav-link active"
-                              data-toggle="tab"
-                              aria-current="page"
-                              href="#question-preview"
-                              >Question preview</a
-                            >
-                          </li>
-                          <li class="nav-item">
-                            <a a class="nav-link" data-toggle="tab" href="#question-code"
-                              >Question source</a
-                            >
-                          </li>
-                        </ul>
-                        <div class="tab-content">
-                          <div role="tabpanel" id="question-preview" class="tab-pane active">
-                            ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
-                          </div>
-                          <div role="tabpanel" id="question-code" class="tab-pane">
-                            ${QuestionCodePanel({
-                              htmlContents: prompts[prompts.length - 1].html,
-                              pythonContents: prompts[prompts.length - 1].python,
-                            })}
-                          </div>
-                        </div>
-                      </div>
+                <div class="app-chat-history">
+                  ${PromptHistory({ prompts, urlPrefix: resLocals.urlPrefix })}
+                </div>
+                <div class="app-chat-prompt">
+                  <form
+                    hx-post="${variantId
+                      ? html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}?variant_id=${variantId}`
+                      : html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}`}"
+                    hx-swap="outerHTML"
+                    hx-disabled-elt="button"
+                  >
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                    <input type="hidden" name="__action" value="regenerate_question" />
+                    <div class="form-group">
+                      <label for="user-prompt-llm">What needs to be changed?</label>
+                      <textarea name="prompt" id="user-prompt-llm" class="form-control"></textarea>
                     </div>
-                  </div>
-                  ${FinalizeModal({ csrfToken: resLocals.__csrf_token })}
+                    <button class="btn btn-primary">
+                      <span
+                        class="spinner-grow spinner-grow-sm d-none"
+                        role="status"
+                        aria-hidden="true"
+                        data-loading-class-remove="d-none"
+                      ></span>
+                      Adjust question
+                    </button>
+                  </form>
                 </div>
+              </div>
+
+              <div class="app-preview">
+                ${QuestionAndFilePreview({ resLocals, prompts })}
                 <div class="card-footer">
                   <a href="#" role="button" data-toggle="modal" data-target="#finalizeModal"
                     >Finalize this question</a
@@ -170,9 +140,52 @@ export function InstructorAiGenerateDraftEditor({
             </main>
           </div>
         </div>
+        ${FinalizeModal({ csrfToken: resLocals.__csrf_token })}
       </body>
     </html>
   `.toString();
+}
+
+function QuestionAndFilePreview({
+  prompts,
+  resLocals,
+}: {
+  prompts: AiQuestionGenerationPrompt[];
+  resLocals: Record<string, any>;
+}) {
+  return html`
+    <!-- TODO: find a better home for this button -->
+    <button
+      type="button"
+      class="btn btn-sm btn-light"
+      data-toggle="modal"
+      data-target="#finalizeModal"
+    >
+      <i class="fa fa-check" aria-hidden="true"></i>
+      Finalize question
+    </button>
+    <ul class="nav nav-pills mb-2">
+      <li class="nav-item">
+        <a class="nav-link active" data-toggle="tab" aria-current="page" href="#question-preview"
+          >Question preview</a
+        >
+      </li>
+      <li class="nav-item">
+        <a a class="nav-link" data-toggle="tab" href="#question-code">Question source</a>
+      </li>
+    </ul>
+    <div class="tab-content">
+      <div role="tabpanel" id="question-preview" class="tab-pane active">
+        ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+      </div>
+      <div role="tabpanel" id="question-code" class="tab-pane">
+        ${QuestionCodePanel({
+          htmlContents: prompts[prompts.length - 1].html,
+          pythonContents: prompts[prompts.length - 1].python,
+        })}
+      </div>
+    </div>
+  `;
 }
 
 function PromptHistory({
@@ -221,11 +234,7 @@ function QuestionCodePanel({
       <span class="card-title"> Generated HTML </span>
     </div>
     <div id="card-html">
-      <textarea
-        id="output-html"
-        class="bg-dark text-white rounded p-3"
-        style="width:100%; height:10em"
-      >
+      <textarea id="output-html" class="bg-dark text-white rounded p-3" style="width:100%;">
 ${htmlContents}</textarea
       >
     </div>
@@ -236,11 +245,7 @@ ${htmlContents}</textarea
             <span class="card-title"> Generated Python </span>
           </div>
           <div id="card-python">
-            <textarea
-              id="output-python"
-              class="bg-dark text-white rounded p-3"
-              style="width:100%; height:10em"
-            >
+            <textarea id="output-python" class="bg-dark text-white rounded p-3" style="width:100%;">
 ${pythonContents}</textarea
             >
           </div>
