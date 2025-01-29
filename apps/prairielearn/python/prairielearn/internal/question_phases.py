@@ -144,7 +144,7 @@ def process(
             temp_tail = element.tail
             element.tail = None
 
-            args = [lxml.html.tostring(element), data]
+            args: list[Any] = [lxml.html.tostring(element), data]
 
             # We need to support legacy element functions, which take three arguments.
             # The second argument is `element_index`; we'll pass `None`. This is

@@ -370,8 +370,8 @@ def to_json(
             "_value": str(v),
         }
 
-    if np.isscalar(v) and np.iscomplexobj(v):
-        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}  # type: ignore
+    if np.isscalar(v) and np.iscomplexobj(v):  # pyright:ignore[reportArgumentType]
+        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}  # pyright:ignore[reportAttributeAccessIssue]
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
             return {"_type": "ndarray", "_value": v.tolist(), "_dtype": str(v.dtype)}
@@ -449,17 +449,7 @@ def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
     )
 
 
-@overload
-def from_json(
-    v: _JSONSerializedType,
-) -> _JSONPythonType: ...
-
-
-@overload
-def from_json(v: Any) -> Any: ...
-
-
-def from_json(v: _JSONSerializedType | Any) -> _JSONPythonType | Any:
+def from_json(v: _JSONSerializedType | Any) -> Any:
     """from_json(v)
 
     If v has the format {'_type':..., '_value':...} as would have been created
@@ -521,17 +511,21 @@ def from_json(v: _JSONSerializedType | Any) -> _JSONPythonType | Any:
                 raise ValueError(
                     "variable of type complex_ndarray should have value with real and imaginary pair"
                 )
-        elif v["_type"] == "sympy":
+        elif v_json["_type"] == "sympy":
             if not is_sympy_json(v_json):
                 raise ValueError(
                     "variable claiming to be of type sympy doesn't pass typechecks"
                 )
-            return json_to_sympy(v)
-        elif v["_type"] == "sympy_matrix":
-            if ("_value" in v) and ("_variables" in v) and ("_shape" in v):
-                value = v["_value"]
-                variables = v["_variables"]
-                shape = v["_shape"]
+            return json_to_sympy(v_json)
+        elif v_json["_type"] == "sympy_matrix":
+            if (
+                ("_value" in v_json)
+                and ("_variables" in v_json)
+                and ("_shape" in v_json)
+            ):
+                value = v_json["_value"]
+                variables = v_json["_variables"]
+                shape = v_json["_shape"]
                 matrix = sympy.Matrix.zeros(shape[0], shape[1])
                 for i in range(shape[0]):
                     for j in range(shape[1]):

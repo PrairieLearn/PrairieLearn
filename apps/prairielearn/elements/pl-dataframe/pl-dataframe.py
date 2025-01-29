@@ -174,7 +174,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Might be worth moving everything out of the CSS file and handle it all with the builtin styler.
     frame_style.set_table_attributes("class=pl-dataframe-table")
 
-    html_params = {
+    html_params: dict[str, str | bool | int] = {
         "uuid": pl.get_uuid(),
         "frame_html": frame_style.to_html(),
         "code_string": pprint.pformat(
