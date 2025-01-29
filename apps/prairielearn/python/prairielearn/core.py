@@ -449,17 +449,7 @@ def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
     )
 
 
-@overload
-def from_json(
-    v: _JSONSerializedType,
-) -> _JSONPythonType: ...
-
-
-@overload
-def from_json(v: Any) -> Any: ...
-
-
-def from_json(v: _JSONSerializedType | Any) -> _JSONPythonType | Any:
+def from_json(v: _JSONSerializedType | Any) -> Any:
     """from_json(v)
 
     If v has the format {'_type':..., '_value':...} as would have been created
