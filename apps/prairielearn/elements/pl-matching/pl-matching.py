@@ -361,7 +361,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             option_html = {"key": option["key"], "html": option["html"].strip()}
             option_set.append(option_html)
 
-        html_params = {
+        html_params: dict[str, str | bool | float | list] = {
             "question": True,
             "name": name,
             "statements": statement_set,
