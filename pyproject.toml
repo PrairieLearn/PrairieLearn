@@ -128,8 +128,8 @@ reportUnnecessaryIsInstance = "none"
 reportUnknownLambdaType = "none"
 # These rules require improved upstream type annotations
 reportMissingTypeStubs = "none"
+reportMissingTypeArgument = "none"
 reportOperatorIssue = "information"
-reportMissingTypeArgument = "information"
 reportUnknownParameterType = "information"
 
 [tool.pytest.ini_options]
