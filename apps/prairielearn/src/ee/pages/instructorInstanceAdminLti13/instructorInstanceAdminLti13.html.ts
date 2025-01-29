@@ -65,7 +65,7 @@ export function InstructorInstanceAdminLti13({
                     class="custom-select mb-2"
                     id="selectLti13Instance"
                     data-url-prefix="/pl/course_instance/${resLocals.course_instance
-                      .id}/instructor/instance_admin/lti13_instance/"
+                      .id}/instructor/instance_admin/lti13_instance"
                   >
                     ${instances.map((i) => {
                       return html`
