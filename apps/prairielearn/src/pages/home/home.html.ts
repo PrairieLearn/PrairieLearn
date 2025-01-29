@@ -48,6 +48,9 @@ export function Home({
       type: 'plain',
       page: 'home',
     },
+    options: {
+      fullHeight: true,
+    },
     content: html`
       <h1 class="sr-only">PrairieLearn Homepage</h1>
       ${ActionsHeader()}
