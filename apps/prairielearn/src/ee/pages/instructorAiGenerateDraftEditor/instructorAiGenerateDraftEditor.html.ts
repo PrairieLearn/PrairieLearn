@@ -20,6 +20,9 @@ export function InstructorAiGenerateDraftEditor({
   question: Question;
   variantId?: string | undefined;
 }) {
+  // This page has a very custom layout, so we don't use the usual `PageLayout`
+  // component here. If we start building other similar pages, we might want to
+  // teach `PageLayout` how to render this kind of layout.
   return html`
     <!doctype html>
     <html lang="en">
@@ -67,8 +70,8 @@ export function InstructorAiGenerateDraftEditor({
             grid-area: chat;
 
             display: grid;
-            grid-template-areas: 'back' 'history';
-            grid-template-rows: min-content 1fr;
+            grid-template-areas: 'back' 'history' 'prompt';
+            grid-template-rows: min-content 1fr min-content;
             min-height: 0;
           }
 
@@ -80,6 +83,10 @@ export function InstructorAiGenerateDraftEditor({
             grid-area: history;
             overflow-y: auto;
             scrollbar-color: var(--bs-secondary) transparent;
+          }
+
+          .app-chat-prompt {
+            grid-area: prompt;
           }
 
           .app-preview {
@@ -98,14 +105,6 @@ export function InstructorAiGenerateDraftEditor({
           .app-preview-content {
             grid-area: content;
             min-height: 0;
-            overflow-y: auto;
-          }
-
-          .app-preview-content-question {
-            overflow-y: auto;
-          }
-
-          .app-preview-content-editor {
             overflow-y: auto;
           }
 
@@ -128,7 +127,7 @@ export function InstructorAiGenerateDraftEditor({
             grid-area: python;
           }
 
-          /* TODO: ensure that the whole UI is responsive */
+          /* Reflow to a vertical layout on narrow viewports */
           @media (max-width: 768px) {
             .app-grid {
               height: auto;
@@ -146,7 +145,7 @@ export function InstructorAiGenerateDraftEditor({
           }
 
           @media (max-width: 1400px) {
-            /* On narrower displays, tile the editors vertically */
+            /* On narrower viewports, tile the editors vertically */
             .editor-panes {
               grid-template-areas: 'html' 'python';
               grid-template-columns: 1fr;
@@ -302,15 +301,14 @@ function PromptHistory({
     .filter((prompt) => prompt.prompt_type !== 'auto_revision')
     .map((prompt) => {
       // TODO: Once we can upgrade to Bootstrap 5.3, we can use the official
-      // `bg-primary-subtle` and `bg-secondary-subtle` classes instead of the
-      // custom styles here.
+      // `bg-secondary-subtle` class instead of the custom styles here.
       return html`<div class="d-flex flex-row-reverse">
           <div class="p-3 mb-2 rounded" style="background: #e2e3e5; max-width: 90%">
             ${prompt.user_prompt}
           </div>
         </div>
         <div class="d-flex flex-row">
-          <div class="p-3 mb-2 rounded" style="background: #cfe2ff00; max-width: 90%">
+          <div class="p-3 mb-2 rounded" style="max-width: 90%">
             ${prompt.prompt_type === 'initial'
               ? 'We generated a potential question.'
               : 'We have made changes. Please check the preview and prompt for further revisions.'}
