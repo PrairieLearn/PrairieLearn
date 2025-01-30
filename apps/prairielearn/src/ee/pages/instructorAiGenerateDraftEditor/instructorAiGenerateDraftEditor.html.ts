@@ -69,6 +69,7 @@ export function InstructorAiGenerateDraftEditor({
           .app-chat-history {
             grid-area: history;
             overflow-y: scroll;
+            scrollbar-color: var(--bs-secondary) transparent;
           }
 
           .app-preview {
@@ -76,6 +77,11 @@ export function InstructorAiGenerateDraftEditor({
             overflow-y: auto;
           }
 
+          .question-wrapper {
+            max-width: 900px;
+          }
+
+          /* TODO: ensure that the whole UI is responsive */
           @media (min-width: 768px) {
             .app-grid {
               height: 100%;
@@ -86,9 +92,11 @@ export function InstructorAiGenerateDraftEditor({
       <body hx-ext="loading-states">
         <div class="app-container">
           <div class="app-grid">
-            <div class="app-navbar">${Navbar({ navPage: 'course_admin', resLocals })}</div>
+            <div class="app-navbar">
+              ${Navbar({ navPage: 'course_admin', resLocals, marginBottom: false })}
+            </div>
             <main id="content" class="app-content">
-              <div class="app-chat p-2">
+              <div class="app-chat p-3 bg-light border-end">
                 <div class="app-chat-back mb-2">
                   <a
                     href="${resLocals.urlPrefix}/ai_generate_question_drafts"
@@ -112,8 +120,13 @@ export function InstructorAiGenerateDraftEditor({
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <input type="hidden" name="__action" value="regenerate_question" />
                     <div class="form-group">
-                      <label for="user-prompt-llm">What needs to be changed?</label>
-                      <textarea name="prompt" id="user-prompt-llm" class="form-control"></textarea>
+                      <textarea
+                        name="prompt"
+                        id="user-prompt-llm"
+                        class="form-control"
+                        placeholder="What would you like to change?"
+                        aria-label="Modification instructions"
+                      ></textarea>
                     </div>
                     <button class="btn btn-primary">
                       <span
@@ -128,7 +141,7 @@ export function InstructorAiGenerateDraftEditor({
                 </div>
               </div>
 
-              <div class="app-preview">
+              <div class="app-preview p-3">
                 ${QuestionAndFilePreview({ resLocals, prompts })}
                 <div class="card-footer">
                   <a href="#" role="button" data-toggle="modal" data-target="#finalizeModal"
@@ -176,7 +189,9 @@ function QuestionAndFilePreview({
     </ul>
     <div class="tab-content">
       <div role="tabpanel" id="question-preview" class="tab-pane active">
-        ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+        <div class="question-wrapper mx-auto">
+          ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+        </div>
       </div>
       <div role="tabpanel" id="question-code" class="tab-pane">
         ${QuestionCodePanel({
@@ -198,11 +213,16 @@ function PromptHistory({
   return prompts
     .filter((prompt) => prompt.prompt_type !== 'auto_revision')
     .map((prompt) => {
+      // TODO: Once we can upgrade to Bootstrap 5.3, we can use the official
+      // `bg-primary-subtle` and `bg-secondary-subtle` classes instead of the
+      // custom styles here.
       return html`<div class="d-flex flex-row-reverse">
-          <div class="p-3 mb-2 bg-secondary text-white rounded">${prompt.user_prompt}</div>
+          <div class="p-3 mb-2 rounded" style="background: #cfe2ff; max-width: 90%">
+            ${prompt.user_prompt}
+          </div>
         </div>
         <div class="d-flex flex-row">
-          <div class="p-3 mb-2 bg-dark text-white rounded">
+          <div class="p-3 mb-2 rounded" style="background: #e2e3e500; max-width: 90%">
             ${prompt.prompt_type === 'initial'
               ? 'We generated a potential question.'
               : 'We have made changes. Please check the preview and prompt for further revisions.'}
@@ -213,7 +233,7 @@ function PromptHistory({
                 const jobLogsUrl = urlPrefix + '/jobSequence/' + prompt.job_sequence_id;
 
                 return html`
-                  <a class="link-light small" href="${jobLogsUrl}" target="_blank">View job logs</a>
+                  <a class="small" href="${jobLogsUrl}" target="_blank">View job logs</a>
                 `;
               })}
             </div>
