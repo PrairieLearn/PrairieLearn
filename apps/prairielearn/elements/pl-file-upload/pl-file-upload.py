@@ -127,7 +127,7 @@ def add_format_error(
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
 
-    # Either "file-names" or "optional-file-names" is required, which is checked separately
+    # At least one file-names/patterns attributed is required
     required_attribs = []
     optional_attribs = [
         "file-names",
