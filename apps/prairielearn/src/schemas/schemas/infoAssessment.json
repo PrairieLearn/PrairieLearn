@@ -345,6 +345,74 @@
         }
       }
     },
+    "QuestionAlternativeJsonSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "comment": {
+          "description": "Arbitrary comment for reference purposes.",
+          "$ref": "#/definitions/CommentJsonSchema"
+        },
+        "points": {
+          "$ref": "#/definitions/PointsJsonSchema"
+        },
+        "autoPoints": {
+          "$ref": "#/definitions/PointsJsonSchema"
+        },
+        "maxPoints": {
+          "description": "A single point value.",
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        "maxAutoPoints": {
+          "description": "A single point value.",
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        "manualPoints": {
+          "description": "A single point value.",
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        "id": {
+          "$ref": "#/definitions/QuestionIdJsonSchema"
+        },
+        "forceMaxPoints": {
+          "description": "Whether to force this question to be awarded maximum points on a regrade.",
+          "$ref": "#/definitions/ForceMaxPointsJsonSchema"
+        },
+        "triesPerVariant": {
+          "description": "The maximum number of graded submissions allowed for each question instance.",
+          "type": "number",
+          "default": 1
+        },
+        "advanceScorePerc": {
+          "description": "Minimum score percentage to unlock access to subsequent questions",
+          "$ref": "#/definitions/AdvanceScorePercJsonSchema"
+        },
+        "gradeRateMinutes": {
+          "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+          "type": "number",
+          "minimum": 0
+        },
+        "canSubmit": {
+          "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "canView": {
+          "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "default": []
+        }
+      }
+    },
     "PointsSingleJsonSchema": {
       "description": "A single point value.",
       "type": "number",
@@ -451,74 +519,6 @@
           "description": "Whether the student can create a new assessment instance and submit answers to questions. If set to false, the available credit must be 0.",
           "type": "boolean",
           "default": true
-        }
-      }
-    },
-    "QuestionAlternativeJsonSchema": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id"],
-      "properties": {
-        "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
-        },
-        "points": {
-          "$ref": "#/definitions/PointsJsonSchema"
-        },
-        "autoPoints": {
-          "$ref": "#/definitions/PointsJsonSchema"
-        },
-        "maxPoints": {
-          "description": "A single point value.",
-          "$ref": "#/definitions/PointsSingleJsonSchema"
-        },
-        "maxAutoPoints": {
-          "description": "A single point value.",
-          "$ref": "#/definitions/PointsSingleJsonSchema"
-        },
-        "manualPoints": {
-          "description": "A single point value.",
-          "$ref": "#/definitions/PointsSingleJsonSchema"
-        },
-        "id": {
-          "$ref": "#/definitions/QuestionIdJsonSchema"
-        },
-        "forceMaxPoints": {
-          "description": "Whether to force this question to be awarded maximum points on a regrade.",
-          "$ref": "#/definitions/ForceMaxPointsJsonSchema"
-        },
-        "triesPerVariant": {
-          "description": "The maximum number of graded submissions allowed for each question instance.",
-          "type": "number",
-          "default": 1
-        },
-        "advanceScorePerc": {
-          "description": "Minimum score percentage to unlock access to subsequent questions",
-          "$ref": "#/definitions/AdvanceScorePercJsonSchema"
-        },
-        "gradeRateMinutes": {
-          "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
-          "type": "number",
-          "minimum": 0
-        },
-        "canSubmit": {
-          "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
-        },
-        "canView": {
-          "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
         }
       }
     },
