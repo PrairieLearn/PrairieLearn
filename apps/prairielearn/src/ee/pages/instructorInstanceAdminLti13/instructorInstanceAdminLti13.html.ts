@@ -60,7 +60,7 @@ export function InstructorInstanceAdminLti13({
             <div class="card-body">
               <div class="row">
                 <div class="col-2">
-                  <div class="dropdown">
+                  <div class="dropdown mb-2">
                     <button
                       type="button"
                       class="btn dropdown-toggle border border-gray"
