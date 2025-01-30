@@ -18,6 +18,16 @@ const orderedStringify = (schema) => {
     'additionalProperties',
     'required',
     'comment',
+    // infoAssessment to improve diff
+    'GroupRoleJsonSchema',
+    'AccessRuleSchema',
+    'ZoneAssessmentJsonSchema',
+    'ZoneQuestionJsonSchema',
+    'PointsSingleJsonSchema',
+    'PointsListJsonSchema',
+    'QuestionIdJsonSchema',
+    'ForceMaxPointsJsonSchema',
+    'AdvanceScorePercJsonSchema',
   ];
 
   const tailKeys = ['definitions'];

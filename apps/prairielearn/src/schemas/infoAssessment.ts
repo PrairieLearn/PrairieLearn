@@ -361,13 +361,13 @@ export const AssessmentJsonSchema = z
       .optional(),
     canSubmit: uniqueArray(z.string())
       .describe(
-        'A list of group role names that can submit questions in this assessment. Only applicable for group assessments.',
+        'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
       )
       .optional()
       .default([]),
     canView: uniqueArray(z.string())
       .describe(
-        'A list of group role names that can view questions in this assessment. Only applicable for group assessments.',
+        'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
       )
       .optional()
       .default([]),

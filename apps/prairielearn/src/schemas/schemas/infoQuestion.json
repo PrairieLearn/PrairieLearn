@@ -42,8 +42,7 @@
       "items": {
         "description": "A single file accessible by the client.",
         "type": "string"
-      },
-      "default": ["client.js"]
+      }
     },
     "clientTemplates": {
       "description": "List of client-accessible templates to render server-side.",

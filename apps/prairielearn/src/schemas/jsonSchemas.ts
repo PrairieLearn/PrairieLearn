@@ -95,7 +95,7 @@ const prairielearnZodToJsonSchema = (
     }
 
     if (schema.properties) {
-      for (const [key, value] of Object.entries(schema.properties)) {
+      for (const value of Object.values(schema.properties)) {
         traverse(value);
       }
     }

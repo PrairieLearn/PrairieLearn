@@ -170,8 +170,7 @@ export const QuestionJsonSchema = z
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
       .describe('The list of question files accessible by the client (defaults to ["client.js"]).')
-      .optional()
-      .default(['client.js']),
+      .optional(),
     clientTemplates: z
       .array(z.string().describe('A single template file accessible by the client.'))
       .describe('List of client-accessible templates to render server-side.')

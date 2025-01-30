@@ -102,7 +102,7 @@ export const CourseOptionsJsonSchema = z
           .describe('Legacy format; use an object instead.'),
         z.record(z.string(), z.boolean()),
       ])
-      .describe('Feature flags to enable in development mode.')
+      .describe('Feature flags to enable/disable in development mode.')
       .optional(),
   })
   .strict()

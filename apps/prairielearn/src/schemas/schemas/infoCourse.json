@@ -48,7 +48,7 @@
           "default": false
         },
         "devModeFeatures": {
-          "description": "Feature flags to enable in development mode.",
+          "description": "Feature flags to enable/disable in development mode.",
           "anyOf": [
             {
               "description": "Legacy format; use an object instead.",
