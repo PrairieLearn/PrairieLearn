@@ -14,13 +14,20 @@
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
     },
-    "exampleCourse": { "description": "DEPRECATED -- do not use.", "type": "boolean" },
+    "exampleCourse": {
+      "description": "DEPRECATED -- do not use.",
+      "type": "boolean",
+      "deprecated": true
+    },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
-    "name": { "description": "The course name (e.g., 'TAM 212').", "type": "string" },
+    "name": {
+      "description": "The course name (e.g., 'TAM 212').",
+      "type": "string"
+    },
     "timezone": {
       "description": "The timezone for all date input and display (e.g., \"America/Chicago\", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).",
       "type": "string",
@@ -46,9 +53,17 @@
             {
               "description": "Legacy format; use an object instead.",
               "type": "array",
-              "items": { "description": "A single feature flag.", "type": "string" }
+              "items": {
+                "description": "A single feature flag.",
+                "type": "string"
+              }
             },
-            { "type": "object", "additionalProperties": { "type": "boolean" } }
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            }
           ]
         }
       }
@@ -78,7 +93,9 @@
             "description": "Plural heading for a group of assessments (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'.",
             "type": "string"
           },
-          "color": { "$ref": "#/definitions/ColorJsonSchema" }
+          "color": {
+            "$ref": "#/definitions/ColorJsonSchema"
+          }
         }
       }
     },
@@ -111,7 +128,10 @@
         "additionalProperties": false,
         "required": ["name", "color"],
         "properties": {
-          "description": { "description": "Description of the topic.", "type": "string" },
+          "description": {
+            "description": "Description of the topic.",
+            "type": "string"
+          },
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
             "$ref": "#/definitions/CommentJsonSchema"
@@ -124,7 +144,9 @@
             "description": "Long descriptive name (preferably less than 10 words).",
             "type": "string"
           },
-          "color": { "$ref": "#/definitions/ColorJsonSchema" }
+          "color": {
+            "$ref": "#/definitions/ColorJsonSchema"
+          }
         }
       }
     },
@@ -137,7 +159,10 @@
         "additionalProperties": false,
         "required": ["name", "color"],
         "properties": {
-          "description": { "description": "Description of the tag.", "type": "string" },
+          "description": {
+            "description": "Description of the tag.",
+            "type": "string"
+          },
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
             "$ref": "#/definitions/CommentJsonSchema"
@@ -150,7 +175,9 @@
             "description": "Long descriptive name (preferably less than 10 words).",
             "type": "string"
           },
-          "color": { "$ref": "#/definitions/ColorJsonSchema" }
+          "color": {
+            "$ref": "#/definitions/ColorJsonSchema"
+          }
         }
       }
     },
@@ -163,8 +190,14 @@
         "additionalProperties": false,
         "required": ["name"],
         "properties": {
-          "description": { "description": "Description of the sharing set.", "type": "string" },
-          "name": { "description": "Name of the sharing set.", "type": "string" }
+          "description": {
+            "description": "Description of the sharing set.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Name of the sharing set.",
+            "type": "string"
+          }
         }
       }
     }
@@ -209,9 +242,17 @@
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
-        { "type": "string" },
-        { "type": "array" },
-        { "type": "object", "additionalProperties": {}, "properties": {} }
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
       ]
     }
   }

@@ -82,10 +82,32 @@ const prairielearnZodToJsonSchema = (
   schema: ZodType<any>,
   options: Partial<Options<'jsonSchema7'>>,
 ) => {
-  return zodToJsonSchema(schema, {
+  const jsonSchema = zodToJsonSchema(schema, {
     ...options,
     override: rewriteGroupRoleAnnotation,
   });
+
+  // Traverse the schema: if `DEPRECATED` in the description, add a `deprecated`: true field.
+
+  const traverse = (schema: any) => {
+    if (schema.description?.toLowerCase().includes('deprecated')) {
+      schema.deprecated = true;
+    }
+
+    if (schema.properties) {
+      for (const [key, value] of Object.entries(schema.properties)) {
+        traverse(value);
+      }
+    }
+
+    if (schema.items) {
+      traverse(schema.items);
+    }
+  };
+
+  traverse(jsonSchema);
+
+  return jsonSchema;
 };
 
 export const infoNewsItem = prairielearnZodToJsonSchema(NewsItemJsonSchema, {

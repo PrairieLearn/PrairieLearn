@@ -19,7 +19,11 @@
       "description": "The long name of this course instance (e.g., 'Spring 2015').",
       "type": "string"
     },
-    "shortName": { "description": "DEPRECATED -- do not use.", "type": "string" },
+    "shortName": {
+      "description": "DEPRECATED -- do not use.",
+      "type": "string",
+      "deprecated": true
+    },
     "timezone": {
       "description": "The timezone for all date input and display (e.g., \"America/Chicago\", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).",
       "type": "string",
@@ -28,7 +32,8 @@
     "allowIssueReporting": {
       "description": "DEPRECATED -- do not use.",
       "type": "boolean",
-      "default": true
+      "default": true,
+      "deprecated": true
     },
     "hideInEnrollPage": {
       "description": "If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.",
@@ -39,7 +44,8 @@
       "description": "DEPRECATED -- do not use.",
       "type": "object",
       "additionalProperties": {},
-      "properties": {}
+      "properties": {},
+      "deprecated": true
     },
     "allowAccess": {
       "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied.",
@@ -56,12 +62,15 @@
           "role": {
             "description": "DEPRECATED -- do not use.",
             "type": "string",
-            "enum": ["Student", "TA", "Instructor", "Superuser"]
+            "enum": ["Student", "TA", "Instructor", "Superuser"],
+            "deprecated": true
           },
           "uids": {
             "description": "A list of UIDs, one of which is required for access",
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "startDate": {
             "description": "The earliest date on which access is permitted.",
@@ -89,9 +98,17 @@
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
-        { "type": "string" },
-        { "type": "array" },
-        { "type": "object", "additionalProperties": {}, "properties": {} }
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
       ]
     }
   }

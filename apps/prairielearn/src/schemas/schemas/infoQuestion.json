@@ -31,12 +31,18 @@
     "tags": {
       "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken').",
       "type": "array",
-      "items": { "description": "A tag associated with a question.", "type": "string" }
+      "items": {
+        "description": "A tag associated with a question.",
+        "type": "string"
+      }
     },
     "clientFiles": {
       "description": "The list of question files accessible by the client (defaults to [\"client.js\"]).",
       "type": "array",
-      "items": { "description": "A single file accessible by the client.", "type": "string" },
+      "items": {
+        "description": "A single file accessible by the client.",
+        "type": "string"
+      },
       "default": ["client.js"]
     },
     "clientTemplates": {
@@ -96,7 +102,17 @@
         },
         "entrypoint": {
           "description": "Program or command to run as the entrypoint to your grader.",
-          "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
         },
         "serverFilesCourse": {
           "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/",
@@ -138,32 +154,49 @@
           "items": {
             "description": "A .css file located in /public/stylesheets.",
             "type": "string"
-          }
+          },
+          "deprecated": true
         },
         "coreScripts": {
           "description": "[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.",
           "type": "array",
-          "items": { "description": "A .js file located in /public/javascripts.", "type": "string" }
+          "items": {
+            "description": "A .js file located in /public/javascripts.",
+            "type": "string"
+          },
+          "deprecated": true
         },
         "nodeModulesStyles": {
           "description": "The styles required by this question from /node_modules.",
           "type": "array",
-          "items": { "description": "A .css file located in /node_modules.", "type": "string" }
+          "items": {
+            "description": "A .css file located in /node_modules.",
+            "type": "string"
+          }
         },
         "nodeModulesScripts": {
           "description": "The scripts required by this question from /node_modules.",
           "type": "array",
-          "items": { "description": "A .js file located in /node_modules.", "type": "string" }
+          "items": {
+            "description": "A .js file located in /node_modules.",
+            "type": "string"
+          }
         },
         "clientFilesCourseStyles": {
           "description": "The styles required by this question from clientFilesCourse.",
           "type": "array",
-          "items": { "description": "A .css file located in clientFilesCourse.", "type": "string" }
+          "items": {
+            "description": "A .css file located in clientFilesCourse.",
+            "type": "string"
+          }
         },
         "clientFilesCourseScripts": {
           "description": "The styles required by this question from clientFilesCourse.",
           "type": "array",
-          "items": { "description": "A .js file located in clientFilesCourse.", "type": "string" }
+          "items": {
+            "description": "A .js file located in clientFilesCourse.",
+            "type": "string"
+          }
         },
         "clientFilesQuestionStyles": {
           "description": "The styles required by this question from clientFilesQuestion.",
@@ -197,14 +230,27 @@
           "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",
           "type": "string"
         },
-        "port": { "description": "The port number used in the Docker image.", "type": "integer" },
+        "port": {
+          "description": "The port number used in the Docker image.",
+          "type": "integer"
+        },
         "home": {
           "description": "The home directory of the workspace container.",
           "type": "string"
         },
         "args": {
           "description": "Command line arguments to pass to the Docker.",
-          "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
         },
         "rewriteUrl": {
           "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.",
@@ -235,14 +281,18 @@
           "items": {
             "description": "A single file or directory that will be excluded from sync.",
             "type": "string"
-          }
+          },
+          "deprecated": true
         }
       }
     },
     "sharingSets": {
       "description": "The list of sharing sets that this question belongs to.",
       "type": "array",
-      "items": { "description": "The name of a sharing set", "type": "string" }
+      "items": {
+        "description": "The name of a sharing set",
+        "type": "string"
+      }
     },
     "sharePublicly": {
       "description": "Whether this question is publicly shared.",
@@ -257,9 +307,17 @@
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
-        { "type": "string" },
-        { "type": "array" },
-        { "type": "object", "additionalProperties": {}, "properties": {} }
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
       ]
     }
   }

@@ -9,15 +9,26 @@
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
     },
-    "fileName": { "description": "Filename of the file to download", "type": "string" }
+    "fileName": {
+      "description": "Filename of the file to download",
+      "type": "string"
+    }
   },
   "definitions": {
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
-        { "type": "string" },
-        { "type": "array" },
-        { "type": "object", "additionalProperties": {}, "properties": {} }
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
       ]
     }
   }

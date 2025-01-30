@@ -50,9 +50,14 @@
     "allowAccess": {
       "description": "List of access rules for the assessment. Access is permitted if any access rule is satisfied.",
       "type": "array",
-      "items": { "$ref": "#/definitions/AssessmentAccessRuleJsonSchema" }
+      "items": {
+        "$ref": "#/definitions/AssessmentAccessRuleJsonSchema"
+      }
     },
-    "text": { "description": "HTML text shown on the assessment overview page.", "type": "string" },
+    "text": {
+      "description": "HTML text shown on the assessment overview page.",
+      "type": "string"
+    },
     "maxPoints": {
       "description": "The number of points that must be earned in this assessment to achieve a score of 100%.",
       "type": "number"
@@ -73,7 +78,9 @@
     "zones": {
       "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
       "type": "array",
-      "items": { "$ref": "#/definitions/ZoneAssessmentJsonSchema" }
+      "items": {
+        "$ref": "#/definitions/ZoneAssessmentJsonSchema"
+      }
     },
     "constantQuestionValue": {
       "description": "Whether to keep the value of a question constant after a student solves it correctly.",
@@ -95,24 +102,36 @@
       "type": "boolean",
       "default": false
     },
-    "groupMaxSize": { "description": "Maximum number of students in a group.", "type": "number" },
-    "groupMinSize": { "description": "Minimum number of students in a group.", "type": "number" },
+    "groupMaxSize": {
+      "description": "Maximum number of students in a group.",
+      "type": "number"
+    },
+    "groupMinSize": {
+      "description": "Minimum number of students in a group.",
+      "type": "number"
+    },
     "groupRoles": {
       "description": "Array of custom user roles in a group.",
       "type": "array",
-      "items": { "$ref": "#/definitions/GroupRoleJsonSchema" }
+      "items": {
+        "$ref": "#/definitions/GroupRoleJsonSchema"
+      }
     },
     "canSubmit": {
       "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "uniqueItems": true,
       "default": []
     },
     "canView": {
       "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "uniqueItems": true,
       "default": []
     },
@@ -148,14 +167,20 @@
   "definitions": {
     "PointsJsonSchema": {
       "anyOf": [
-        { "$ref": "#/definitions/PointsSingleJsonSchema" },
-        { "$ref": "#/definitions/PointsListJsonSchema" }
+        {
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        {
+          "$ref": "#/definitions/PointsListJsonSchema"
+        }
       ]
     },
     "PointsListJsonSchema": {
       "description": "An array of point values.",
       "type": "array",
-      "items": { "$ref": "#/definitions/PointsSingleJsonSchema" },
+      "items": {
+        "$ref": "#/definitions/PointsSingleJsonSchema"
+      },
       "minItems": 1
     },
     "PointsSingleJsonSchema": {
@@ -200,7 +225,9 @@
         "uids": {
           "description": "A list of UIDs (like 'username@example.com'), one of which is required for access",
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "credit": {
           "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
@@ -250,8 +277,12 @@
           "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
         },
-        "points": { "$ref": "#/definitions/PointsJsonSchema" },
-        "autoPoints": { "$ref": "#/definitions/PointsJsonSchema" },
+        "points": {
+          "$ref": "#/definitions/PointsJsonSchema"
+        },
+        "autoPoints": {
+          "$ref": "#/definitions/PointsJsonSchema"
+        },
         "maxPoints": {
           "description": "A single point value.",
           "$ref": "#/definitions/PointsSingleJsonSchema"
@@ -264,7 +295,9 @@
           "description": "A single point value.",
           "$ref": "#/definitions/PointsSingleJsonSchema"
         },
-        "id": { "$ref": "#/definitions/QuestionIdJsonSchema" },
+        "id": {
+          "$ref": "#/definitions/QuestionIdJsonSchema"
+        },
         "forceMaxPoints": {
           "description": "Whether to force this question to be awarded maximum points on a regrade.",
           "$ref": "#/definitions/ForceMaxPointsJsonSchema"
@@ -286,14 +319,18 @@
         "canSubmit": {
           "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true,
           "default": []
         },
         "canView": {
           "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true,
           "default": []
         }
@@ -333,7 +370,9 @@
         "questions": {
           "description": "Array of questions in the zone.",
           "type": "array",
-          "items": { "$ref": "#/definitions/ZoneQuestionJsonSchema" },
+          "items": {
+            "$ref": "#/definitions/ZoneQuestionJsonSchema"
+          },
           "minItems": 1
         },
         "advanceScorePerc": {
@@ -348,14 +387,18 @@
         "canSubmit": {
           "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true,
           "default": []
         },
         "canView": {
           "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true,
           "default": []
         }
@@ -369,8 +412,12 @@
           "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
         },
-        "points": { "$ref": "#/definitions/PointsJsonSchema" },
-        "autoPoints": { "$ref": "#/definitions/PointsJsonSchema" },
+        "points": {
+          "$ref": "#/definitions/PointsJsonSchema"
+        },
+        "autoPoints": {
+          "$ref": "#/definitions/PointsJsonSchema"
+        },
         "maxPoints": {
           "description": "A single point value.",
           "$ref": "#/definitions/PointsSingleJsonSchema"
@@ -394,7 +441,9 @@
         "alternatives": {
           "description": "Array of question alternatives to choose from.",
           "type": "array",
-          "items": { "$ref": "#/definitions/QuestionAlternativeJsonSchema" },
+          "items": {
+            "$ref": "#/definitions/QuestionAlternativeJsonSchema"
+          },
           "minItems": 1
         },
         "numberChoose": {
@@ -424,14 +473,18 @@
         "canSubmit": {
           "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true,
           "default": []
         },
         "canView": {
           "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true,
           "default": []
         }
@@ -472,9 +525,17 @@
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
-        { "type": "string" },
-        { "type": "array" },
-        { "type": "object", "additionalProperties": {}, "properties": {} }
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
       ]
     }
   }
