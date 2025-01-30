@@ -11,7 +11,7 @@ import prairielearn as pl
 from prairielearn.colors import PLColor
 
 
-def get_file_names_as_array(raw_file_names: str) -> list[str]:
+def get_file_names_as_array(raw_file_names: str | None) -> list[str]:
     """
     Converts a comma-separated list of file names into an array
     """
