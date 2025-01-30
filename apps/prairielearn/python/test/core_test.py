@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import prairielearn as pl
 import pytest
+from numpy.typing import ArrayLike
 
 
 def city_dataframe() -> pd.DataFrame:
@@ -243,7 +244,7 @@ def test_set_score_data(
         np.ones((2, 3, 4), dtype=np.int16),
     ],
 )
-def test_numpy_serialization(numpy_object: Any) -> None:
+def test_numpy_serialization(numpy_object: ArrayLike) -> None:
     """Test equality after conversion of various numpy objects."""
 
     json_object = json.dumps(
@@ -251,7 +252,11 @@ def test_numpy_serialization(numpy_object: Any) -> None:
     )
     decoded_json_object = pl.from_json(json.loads(json_object))
 
-    assert type(numpy_object) == type(decoded_json_object)  # noqa: E721
+    assert type(numpy_object) is type(decoded_json_object)
+
+    # This check is needed because pyright cannot infer the type of decoded_json_object
+    assert isinstance(decoded_json_object, type(numpy_object))
+
     np.testing.assert_array_equal(numpy_object, decoded_json_object, strict=True)
 
 

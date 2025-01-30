@@ -47,13 +47,13 @@ def get_counter(i: int, counter_type: str) -> str:
         )
 
 
-def legal_answer(answer: int, options: list) -> bool:
+def legal_answer(answer: int, options: list[Any]) -> bool:
     """Checks that the given answer is within the range of the given counter type."""
     return -1 <= answer < len(options)
 
 
 def get_select_options(
-    options_list: list, selected_value: int, blank_used: bool
+    options_list: list[Any], selected_value: int, blank_used: bool
 ) -> list[dict[str, Any]]:
     def transform(i: int, opt: Any):
         index = i - int(blank_used)
@@ -260,11 +260,16 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     for i in range(len(display_statements)):
         expected_html_name = get_form_name(name, i)
         try:
-            student_answer = int(submitted_answers.get(expected_html_name, None))
+            student_answer = int(submitted_answers[expected_html_name])
         except (ValueError, TypeError):
+            # This could happen if the not parsable.
             data["format_errors"][expected_html_name] = (
                 "The submitted answer is not a legal option."
             )
+            continue
+        except KeyError:
+            # This could happen if the input field is missing.
+            data["format_errors"][expected_html_name] = "No answer was submitted."
             continue
 
         # A blank is a valid submission from the HTML, but causes a format error.
@@ -272,8 +277,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             data["format_errors"][expected_html_name] = (
                 "The submitted answer was left blank."
             )
-        elif student_answer is None:
-            data["format_errors"][expected_html_name] = "No answer was submitted."
         elif not legal_answer(student_answer, display_options):
             data["format_errors"][expected_html_name] = (
                 "The submitted answer is invalid."
@@ -337,7 +340,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             option_html = {"key": option["key"], "html": option["html"].strip()}
             option_set.append(option_html)
 
-        html_params = {
+        html_params: dict[str, str | bool | float | list[Any]] = {
             "question": True,
             "name": name,
             "statements": statement_set,
