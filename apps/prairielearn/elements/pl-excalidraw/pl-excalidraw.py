@@ -162,7 +162,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
     ).encode()
 
-    errors: list = []
+    errors: list[str] = []
     if panel == "submission" and drawing_name and drawing_name in data["format_errors"]:
         errors = data["format_errors"][drawing_name]
 

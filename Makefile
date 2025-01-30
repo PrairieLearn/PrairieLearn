@@ -90,7 +90,7 @@ typecheck-tools:
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:
-	@yarn pyright --skipunannotated
+	@yarn pyright
 
 changeset:
 	@yarn changeset
