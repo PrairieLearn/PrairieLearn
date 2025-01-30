@@ -144,7 +144,7 @@ export function InstructorAiGenerateDraftEditor({
                     <!-- TODO: disable button if the input is empty -->
                     <button class="btn btn-dark w-100">
                       <span
-                        class="spinner-grow spinner-grow-sm d-none"
+                        class="spinner-grow spinner-grow-sm d-none mr-1"
                         role="status"
                         aria-hidden="true"
                         data-loading-class-remove="d-none"
@@ -156,8 +156,8 @@ export function InstructorAiGenerateDraftEditor({
               </div>
 
               <div class="app-preview">
-                <div class="d-flex flex-row align-items-center p-2 bg-light border-bottom">
-                  <ul class="nav nav-pills mr-auto">
+                <div class="d-flex flex-row align-items-stretch bg-light">
+                  <ul class="nav nav-tabs mr-auto pl-2 pt-2">
                     <li class="nav-item">
                       <a
                         class="nav-link active"
@@ -174,18 +174,21 @@ export function InstructorAiGenerateDraftEditor({
                       </a>
                     </li>
                   </ul>
-                  <span data-toggle="modal" data-target="#finalizeModal">
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-primary"
-                      data-toggle="tooltip"
-                      data-placement="bottom"
-                      title="Finalize a question to use it on assessments and make manual edits"
-                    >
-                      <i class="fa fa-check" aria-hidden="true"></i>
-                      Finalize question
-                    </button>
-                  </span>
+                  <div
+                    class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pr-2"
+                  >
+                    <span data-toggle="modal" data-target="#finalizeModal">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        data-toggle="tooltip"
+                        title="Finalize a question to use it on assessments and make manual edits"
+                      >
+                        <i class="fa fa-check" aria-hidden="true"></i>
+                        Finalize question
+                      </button>
+                    </span>
+                  </div>
                 </div>
                 <div class="p-3">${QuestionAndFilePreview({ resLocals, prompts })}</div>
               </div>
