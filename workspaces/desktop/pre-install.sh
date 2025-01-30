@@ -23,7 +23,7 @@ add-apt-repository -y ppa:mozillateam/ppa
 apt-get install firefox-esr -y
 
 # install vscode depending on what architecture we're building on
-arch=$(uname -m)
+arch="$(uname -m)"
 if [[ $arch == x86_64 ]]; then
     wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" -O /vscode.deb
 elif [[ $arch == arm* ]] || [[ $arch == aarch64 ]]; then
