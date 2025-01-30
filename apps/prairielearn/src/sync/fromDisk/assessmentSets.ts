@@ -18,9 +18,9 @@ export async function sync(courseId: string, courseData: CourseData) {
       JSON.stringify([t.name, t.abbreviation, t.heading, t.color]),
     );
 
-    // Make sure we have the "Unknown" assessment set, because
-    // we will use this as a last resort for assessments.
     if (!deleteUnused) {
+      // Make sure we have the "Unknown" assessment set, because
+      // we will use this as a last resort for assessments.
       const assessmentSetsContainsUnknown = (courseData.course.data?.assessmentSets ?? []).some(
         (t) => t.name === 'Unknown',
       );
