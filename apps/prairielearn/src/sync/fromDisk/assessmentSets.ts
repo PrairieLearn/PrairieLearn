@@ -17,14 +17,16 @@ export async function sync(courseId: string, courseData: CourseData) {
     courseAssessmentSets = (courseData.course.data?.assessmentSets ?? []).map((t) =>
       JSON.stringify([t.name, t.abbreviation, t.heading, t.color]),
     );
-    const assessmentSetsContainsUnknown = (courseData.course.data?.assessmentSets ?? []).some(
-      (t) => t.name === 'Unknown',
-    );
 
     // Make sure we have the "Unknown" assessment set, because
     // we will use this as a last resort for assessments.
-    if (deleteUnused && !assessmentSetsContainsUnknown) {
-      courseAssessmentSets.push(JSON.stringify(['Unknown', 'U', 'Unknown', 'red3']));
+    if (!deleteUnused) {
+      const assessmentSetsContainsUnknown = (courseData.course.data?.assessmentSets ?? []).some(
+        (t) => t.name === 'Unknown',
+      );
+      if (!assessmentSetsContainsUnknown) {
+        courseAssessmentSets.push(JSON.stringify(['Unknown', 'U', 'Unknown', 'red3']));
+      }
     }
   }
 
