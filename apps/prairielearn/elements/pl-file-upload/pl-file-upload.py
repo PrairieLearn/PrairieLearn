@@ -29,7 +29,7 @@ def get_file_names_as_array(raw_file_names: str) -> list[str]:
 
 
 def match_regex_with_files(
-    regex_patterns: list[str], files_names: list[str], limit_1: bool
+    regex_patterns: list[str], files_names: set[str], limit_1: bool
 ) -> tuple[list[str], list[str]]:
     """
     Takes a list of regexes and a list of file names and matches them 1:n or 1:1, depending on limit_1 parameter
@@ -200,16 +200,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # to avoid bloating the HTML. The client will fetch any submitted files
     # asynchronously once the page loads
     submitted_files = data["submitted_answers"].get("_files", [])
-    submitted_file_names = [x.get("name") for x in submitted_files]
+    submitted_file_names = {x.get("name") for x in submitted_files}
 
     # We find any files that match an accepted file name/pattern
-    required_files = set(submitted_file_names) & set(file_names)
-    remaining_files = [x for x in submitted_file_names if x not in file_names]
+    # Most of this can be done using sets, but file_regex/opt_file_regex
+    # must remain as lists because they can have duplicates!
+    required_files = submitted_file_names & set(file_names)
+    remaining_files = submitted_file_names - set(file_names)
     wildcard_files = set(
         match_regex_with_files(file_regex, remaining_files, limit_1=True)[0]
     )
-    remaining_files = [x for x in remaining_files if x not in wildcard_files]
-    optional_files = set(remaining_files) & set(opt_file_names)
+    remaining_files = remaining_files - wildcard_files
+    optional_files = remaining_files & set(opt_file_names)
     opt_wildcard_files = set(
         match_regex_with_files(opt_file_regex, submitted_file_names, limit_1=False)[0]
     )
