@@ -483,6 +483,16 @@
         }
       }
     },
+    "PointsJsonSchema": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        {
+          "$ref": "#/definitions/PointsListJsonSchema"
+        }
+      ]
+    },
     "PointsSingleJsonSchema": {
       "description": "A single point value.",
       "type": "number",
@@ -511,16 +521,6 @@
       "type": "number",
       "minimum": 0,
       "maximum": 100
-    },
-    "PointsJsonSchema": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/PointsSingleJsonSchema"
-        },
-        {
-          "$ref": "#/definitions/PointsListJsonSchema"
-        }
-      ]
     },
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",

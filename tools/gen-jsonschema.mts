@@ -24,6 +24,7 @@ const orderedStringify = (schema) => {
     'ZoneAssessmentJsonSchema',
     'ZoneQuestionJsonSchema',
     'QuestionAlternativeJsonSchema',
+    'PointsJsonSchema',
     'PointsSingleJsonSchema',
     'PointsListJsonSchema',
     'QuestionIdJsonSchema',
