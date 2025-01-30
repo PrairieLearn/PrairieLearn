@@ -21,10 +21,6 @@ class DraftFileEditor {
     } satisfies Partial<ace.Ace.EditorOptions>);
 
     this.setEditorContents(this.b64DecodeUnicode(el.dataset.contents ?? ''));
-
-    window.editor = this.editor;
-
-    this.editor.resize();
   }
 
   setEditorContents(contents: string) {
