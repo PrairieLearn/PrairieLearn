@@ -257,7 +257,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
         pattern_files, missing_regex = match_regex_with_files(
             files_regex,
-            remaining_files,
+            set(remaining_files),
             limit_1=True,
         )
         remaining_files = [x for x in remaining_files if x not in pattern_files]
@@ -289,7 +289,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         # We don't care which optional patterns are matched
         opt_pattern_files, _ = match_regex_with_files(
             opt_files_regex,
-            remaining_files,
+            set(remaining_files),
             limit_1=False,
         )
 
