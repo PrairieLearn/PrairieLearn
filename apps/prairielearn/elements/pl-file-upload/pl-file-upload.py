@@ -62,10 +62,10 @@ def glob_to_regex(glob_pattern: str) -> str:
 
 
 def get_answer_name(
-    file_names: str,
-    optional_file_names: str = "",
-    file_patterns: str = "",
-    optional_file_patterns: str = "",
+    file_names: str | None,
+    optional_file_names: str | None = None,
+    file_patterns: str | None = None,
+    optional_file_patterns: str | None = None,
 ) -> str:
     """
     Computes the unique identifer of a pl-file-upload element, which is the SHA1 hash of all its
@@ -73,7 +73,7 @@ def get_answer_name(
     """
     # Using / as separator as the only character guaranteed not to appear in file names
     combined_name = (
-        file_names
+        (file_names if file_names else "")
         + ("/" + optional_file_names if optional_file_names else "")
         + ("//" + file_patterns if file_patterns else "")
         + ("////" + optional_file_patterns if optional_file_patterns else "")
@@ -107,10 +107,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     if (
-        not pl.get_string_attrib(element, "file-names", "")
-        and not pl.get_string_attrib(element, "optional-file-names", "")
-        and not pl.get_string_attrib(element, "file-patterns", "")
-        and not pl.get_string_attrib(element, "optional-file-patterns", "")
+        not pl.get_string_attrib(element, "file-names", None)
+        and not pl.get_string_attrib(element, "optional-file-names", None)
+        and not pl.get_string_attrib(element, "file-patterns", None)
+        and not pl.get_string_attrib(element, "optional-file-patterns", None)
     ):
         raise ValueError(
             'At least one attribute of "file-names", "optional-file-names", "file-patterns", or "optional-file-patterns" must be provided.'
@@ -132,18 +132,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     uuid = pl.get_uuid()
 
-    raw_file_names = pl.get_string_attrib(element, "file-names", "")
+    raw_file_names = pl.get_string_attrib(element, "file-names", None)
     file_names = sorted(get_file_names_as_array(raw_file_names))
     file_names_json = json.dumps(file_names, allow_nan=False)
 
-    raw_opt_file_names = pl.get_string_attrib(element, "optional-file-names", "")
+    raw_opt_file_names = pl.get_string_attrib(element, "optional-file-names", None)
     opt_file_names = sorted(get_file_names_as_array(raw_opt_file_names))
     opt_file_names_json = json.dumps(opt_file_names, allow_nan=False)
 
-    raw_file_patterns = pl.get_string_attrib(element, "file-patterns", "")
+    raw_file_patterns = pl.get_string_attrib(element, "file-patterns", None)
     file_patterns = sorted(get_file_names_as_array(raw_file_patterns))
 
-    raw_opt_file_patterns = pl.get_string_attrib(element, "optional-file-patterns", "")
+    raw_opt_file_patterns = pl.get_string_attrib(
+        element, "optional-file-patterns", None
+    )
     opt_file_patterns = sorted(get_file_names_as_array(raw_opt_file_patterns))
 
     # Convert patterns into regular expressions
@@ -212,13 +214,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    raw_file_names = pl.get_string_attrib(element, "file-names", "")
+    raw_file_names = pl.get_string_attrib(element, "file-names", None)
     file_names = get_file_names_as_array(raw_file_names)
-    raw_opt_file_names = pl.get_string_attrib(element, "optional-file-names", "")
+    raw_opt_file_names = pl.get_string_attrib(element, "optional-file-names", None)
     opt_file_names = get_file_names_as_array(raw_opt_file_names)
-    raw_file_patterns = pl.get_string_attrib(element, "file-patterns", "")
+    raw_file_patterns = pl.get_string_attrib(element, "file-patterns", None)
     file_patterns = get_file_names_as_array(raw_file_patterns)
-    raw_opt_file_patterns = pl.get_string_attrib(element, "optional-file-patterns", "")
+    raw_opt_file_patterns = pl.get_string_attrib(
+        element, "optional-file-patterns", None
+    )
     opt_file_patterns = get_file_names_as_array(raw_opt_file_patterns)
 
     answer_name = get_answer_name(
