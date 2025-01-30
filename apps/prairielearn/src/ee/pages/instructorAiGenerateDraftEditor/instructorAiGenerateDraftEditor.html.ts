@@ -35,6 +35,7 @@ export function InstructorAiGenerateDraftEditor({
           }
 
           .app-grid {
+            height: 100%;
             display: grid;
             grid-template-areas: 'navbar' 'content';
             grid-template-rows: min-content 1fr;
@@ -82,9 +83,14 @@ export function InstructorAiGenerateDraftEditor({
           }
 
           /* TODO: ensure that the whole UI is responsive */
-          @media (min-width: 768px) {
+          @media (max-width: 768px) {
             .app-grid {
-              height: 100%;
+              height: auto;
+            }
+
+            .app-content {
+              grid-template-areas: 'chat' 'preview';
+              grid-template-columns: 1fr;
             }
           }
         </style>
@@ -188,6 +194,7 @@ export function InstructorAiGenerateDraftEditor({
         ${FinalizeModal({ csrfToken: resLocals.__csrf_token })}
       </body>
       <script>
+        // TODO: something different on narrow viewports?
         const chatHistory = document.querySelector('.app-chat-history');
         chatHistory.scrollTop = chatHistory.scrollHeight;
       </script>
