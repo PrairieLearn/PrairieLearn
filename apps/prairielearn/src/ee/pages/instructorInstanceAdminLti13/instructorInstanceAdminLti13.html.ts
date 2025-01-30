@@ -76,7 +76,10 @@ export function InstructorInstanceAdminLti13({
                       ${instances.map((i) => {
                         return html`
                           <a
-                            class="dropdown-item"
+                            class="dropdown-item ${instance.lti13_course_instance.id ===
+                            i.lti13_course_instance.id
+                              ? 'active'
+                              : ''}"
                             href="/pl/course_instance/${resLocals.course_instance
                               .id}/instructor/instance_admin/lti13_instance/${i
                               .lti13_course_instance.id}"
