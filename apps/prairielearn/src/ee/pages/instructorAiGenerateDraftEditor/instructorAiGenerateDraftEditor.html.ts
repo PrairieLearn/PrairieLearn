@@ -5,7 +5,11 @@ import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
-import { compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
+import {
+  compiledScriptTag,
+  compiledStylesheetTag,
+  nodeModulesAssetPath,
+} from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { type Question, type AiQuestionGenerationPrompt } from '../../../lib/db-types.js';
 
@@ -35,123 +39,9 @@ export function InstructorAiGenerateDraftEditor({
           HeadContents({ resLocals }),
           compiledScriptTag('question.ts'),
           compiledScriptTag('instructorAiGenerateDraftEditorClient.ts'),
+          compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
         ]}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
-        <style>
-          body,
-          .app-container {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            overscroll-behavior: none;
-          }
-
-          .app-grid {
-            height: 100%;
-            display: grid;
-            grid-template-areas: 'navbar' 'content';
-            grid-template-rows: min-content 1fr;
-          }
-
-          .app-navbar {
-            grid-area: navbar;
-          }
-
-          .app-content {
-            grid-area: content;
-
-            display: grid;
-            grid-template-areas: 'chat preview';
-            grid-template-columns: 400px 1fr;
-            min-height: 0;
-          }
-
-          .app-chat {
-            grid-area: chat;
-
-            display: grid;
-            grid-template-areas: 'back' 'history' 'prompt';
-            grid-template-rows: min-content 1fr min-content;
-            min-height: 0;
-          }
-
-          .app-chat-back {
-            grid-area: back;
-          }
-
-          .app-chat-history {
-            grid-area: history;
-            overflow-y: auto;
-            scrollbar-color: var(--bs-secondary) transparent;
-          }
-
-          .app-chat-prompt {
-            grid-area: prompt;
-          }
-
-          .app-preview {
-            grid-area: preview;
-
-            display: grid;
-            grid-template-areas: 'tabs' 'content';
-            grid-template-rows: min-content 1fr;
-            min-height: 0;
-          }
-
-          .app-preview-tabs {
-            grid-area: tabs;
-          }
-
-          .app-preview-content {
-            grid-area: content;
-            min-height: 0;
-            overflow-y: auto;
-          }
-
-          .question-wrapper {
-            max-width: 900px;
-          }
-
-          .editor-panes {
-            display: grid;
-            grid-template-areas: 'html python';
-            grid-template-columns: 1fr 1fr;
-            height: 100%;
-          }
-
-          .editor-pane-html {
-            grid-area: html;
-          }
-
-          .editor-pane-python {
-            grid-area: python;
-          }
-
-          /* Reflow to a vertical layout on narrow viewports */
-          @media (max-width: 768px) {
-            .app-grid {
-              height: auto;
-            }
-
-            .app-content {
-              grid-template-areas: 'chat' 'preview';
-              grid-template-columns: 1fr;
-            }
-
-            .editor-pane-html,
-            .editor-pane-python {
-              min-height: 300px;
-            }
-          }
-
-          @media (max-width: 1400px) {
-            /* On narrower viewports, tile the editors vertically */
-            .editor-panes {
-              grid-template-areas: 'html' 'python';
-              grid-template-columns: 1fr;
-            }
-          }
-        </style>
       </head>
       <body hx-ext="loading-states">
         <div class="app-container">
@@ -200,7 +90,6 @@ export function InstructorAiGenerateDraftEditor({
                       placeholder="What would you like to change?"
                       aria-label="Modification instructions"
                     ></textarea>
-                    <!-- TODO: disable button if the input is empty -->
                     <button type="submit" class="btn btn-dark w-100">
                       <span
                         class="spinner-grow spinner-grow-sm d-none mr-1"
@@ -265,30 +154,6 @@ export function InstructorAiGenerateDraftEditor({
   `.toString();
 }
 
-function QuestionAndFilePreview({
-  prompts,
-  resLocals,
-}: {
-  prompts: AiQuestionGenerationPrompt[];
-  resLocals: Record<string, any>;
-}) {
-  return html`
-    <div class="tab-content" style="height: 100%">
-      <div role="tabpanel" id="question-preview" class="tab-pane active" style="height: 100%">
-        <div class="question-wrapper mx-auto p-3">
-          ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
-        </div>
-      </div>
-      <div role="tabpanel" id="question-code" class="tab-pane" style="height: 100%">
-        ${QuestionCodePanel({
-          htmlContents: prompts[prompts.length - 1].html,
-          pythonContents: prompts[prompts.length - 1].python,
-        })}
-      </div>
-    </div>
-  `;
-}
-
 function PromptHistory({
   prompts,
   urlPrefix,
@@ -329,7 +194,31 @@ function PromptHistory({
     });
 }
 
-function QuestionCodePanel({
+function QuestionAndFilePreview({
+  prompts,
+  resLocals,
+}: {
+  prompts: AiQuestionGenerationPrompt[];
+  resLocals: Record<string, any>;
+}) {
+  return html`
+    <div class="tab-content" style="height: 100%">
+      <div role="tabpanel" id="question-preview" class="tab-pane active" style="height: 100%">
+        <div class="question-wrapper mx-auto p-3">
+          ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+        </div>
+      </div>
+      <div role="tabpanel" id="question-code" class="tab-pane" style="height: 100%">
+        ${QuestionCodeEditors({
+          htmlContents: prompts[prompts.length - 1].html,
+          pythonContents: prompts[prompts.length - 1].python,
+        })}
+      </div>
+    </div>
+  `;
+}
+
+function QuestionCodeEditors({
   htmlContents,
   pythonContents,
 }: {

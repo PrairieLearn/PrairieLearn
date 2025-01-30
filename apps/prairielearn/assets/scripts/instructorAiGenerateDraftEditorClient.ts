@@ -28,7 +28,6 @@ class DraftFileEditor {
   }
 
   setEditorContents(contents: string) {
-    console.log('setting contents', contents);
     // use session.setValue to reset the undo stack as well
     this.editor.getSession().setValue(contents);
     this.editor.gotoLine(1, 0, false);
