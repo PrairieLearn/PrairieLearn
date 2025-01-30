@@ -49,7 +49,7 @@ export function InstructorAiGenerateDraftEditor({
 
             display: grid;
             grid-template-areas: 'chat preview';
-            grid-template-columns: minmax(300px, 30%) 1fr;
+            grid-template-columns: 400px 1fr;
             min-height: 0;
           }
 
@@ -93,23 +93,32 @@ export function InstructorAiGenerateDraftEditor({
         <div class="app-container">
           <div class="app-grid">
             <div class="app-navbar">
-              ${Navbar({ navPage: 'course_admin', resLocals, marginBottom: false })}
+              ${Navbar({
+                navPage: 'course_admin',
+                navSubPage: 'questions',
+                resLocals,
+                marginBottom: false,
+              })}
             </div>
             <main id="content" class="app-content">
-              <div class="app-chat p-3 bg-light border-end">
+              <div class="app-chat p-2 bg-light border-end">
                 <div class="app-chat-back mb-2">
                   <a
                     href="${resLocals.urlPrefix}/ai_generate_question_drafts"
-                    class="btn btn-sm btn-primary"
+                    class="btn btn-sm btn-ghost"
                   >
                     <i class="fa fa-arrow-left" aria-hidden="true"></i>
                     Back to draft questions
                   </a>
                 </div>
                 <div class="app-chat-history">
-                  ${PromptHistory({ prompts, urlPrefix: resLocals.urlPrefix })}
+                  ${PromptHistory({
+                    prompts,
+                    urlPrefix: resLocals.urlPrefix,
+                    showJobLogs: resLocals.is_administrator,
+                  })}
                 </div>
-                <div class="app-chat-prompt">
+                <div class="app-chat-prompt mt-2">
                   <form
                     hx-post="${variantId
                       ? html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}?variant_id=${variantId}`
@@ -119,16 +128,14 @@ export function InstructorAiGenerateDraftEditor({
                   >
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <input type="hidden" name="__action" value="regenerate_question" />
-                    <div class="form-group">
-                      <textarea
-                        name="prompt"
-                        id="user-prompt-llm"
-                        class="form-control"
-                        placeholder="What would you like to change?"
-                        aria-label="Modification instructions"
-                      ></textarea>
-                    </div>
-                    <button class="btn btn-primary">
+                    <textarea
+                      name="prompt"
+                      id="user-prompt-llm"
+                      class="form-control mb-2"
+                      placeholder="What would you like to change?"
+                      aria-label="Modification instructions"
+                    ></textarea>
+                    <button class="btn btn-dark w-100">
                       <span
                         class="spinner-grow spinner-grow-sm d-none"
                         role="status"
@@ -141,20 +148,49 @@ export function InstructorAiGenerateDraftEditor({
                 </div>
               </div>
 
-              <div class="app-preview p-3">
-                ${QuestionAndFilePreview({ resLocals, prompts })}
-                <div class="card-footer">
-                  <a href="#" role="button" data-toggle="modal" data-target="#finalizeModal"
-                    >Finalize this question</a
-                  >
-                  to use it on assessments and make manual edits.
+              <div class="app-preview">
+                <div class="d-flex flex-row align-items-center p-2 bg-light border-bottom">
+                  <ul class="nav nav-pills mr-auto">
+                    <li class="nav-item">
+                      <a
+                        class="nav-link active"
+                        data-toggle="tab"
+                        aria-current="page"
+                        href="#question-preview"
+                      >
+                        Question preview
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a a class="nav-link" data-toggle="tab" href="#question-code">
+                        Question source
+                      </a>
+                    </li>
+                  </ul>
+                  <span data-toggle="modal" data-target="#finalizeModal">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-primary"
+                      data-toggle="tooltip"
+                      data-placement="bottom"
+                      title="Finalize a question to use it on assessments and make manual edits"
+                    >
+                      <i class="fa fa-check" aria-hidden="true"></i>
+                      Finalize question
+                    </button>
+                  </span>
                 </div>
+                <div class="p-3">${QuestionAndFilePreview({ resLocals, prompts })}</div>
               </div>
             </main>
           </div>
         </div>
         ${FinalizeModal({ csrfToken: resLocals.__csrf_token })}
       </body>
+      <script>
+        const chatHistory = document.querySelector('.app-chat-history');
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+      </script>
     </html>
   `.toString();
 }
@@ -167,26 +203,6 @@ function QuestionAndFilePreview({
   resLocals: Record<string, any>;
 }) {
   return html`
-    <!-- TODO: find a better home for this button -->
-    <button
-      type="button"
-      class="btn btn-sm btn-light"
-      data-toggle="modal"
-      data-target="#finalizeModal"
-    >
-      <i class="fa fa-check" aria-hidden="true"></i>
-      Finalize question
-    </button>
-    <ul class="nav nav-pills mb-2">
-      <li class="nav-item">
-        <a class="nav-link active" data-toggle="tab" aria-current="page" href="#question-preview"
-          >Question preview</a
-        >
-      </li>
-      <li class="nav-item">
-        <a a class="nav-link" data-toggle="tab" href="#question-code">Question source</a>
-      </li>
-    </ul>
     <div class="tab-content">
       <div role="tabpanel" id="question-preview" class="tab-pane active">
         <div class="question-wrapper mx-auto">
@@ -206,9 +222,11 @@ function QuestionAndFilePreview({
 function PromptHistory({
   prompts,
   urlPrefix,
+  showJobLogs,
 }: {
   prompts: AiQuestionGenerationPrompt[];
   urlPrefix: string;
+  showJobLogs: boolean;
 }) {
   return prompts
     .filter((prompt) => prompt.prompt_type !== 'auto_revision')
@@ -217,18 +235,18 @@ function PromptHistory({
       // `bg-primary-subtle` and `bg-secondary-subtle` classes instead of the
       // custom styles here.
       return html`<div class="d-flex flex-row-reverse">
-          <div class="p-3 mb-2 rounded" style="background: #cfe2ff; max-width: 90%">
+          <div class="p-3 mb-2 rounded" style="background: #e2e3e5; max-width: 90%">
             ${prompt.user_prompt}
           </div>
         </div>
         <div class="d-flex flex-row">
-          <div class="p-3 mb-2 rounded" style="background: #e2e3e500; max-width: 90%">
+          <div class="p-3 mb-2 rounded" style="background: #cfe2ff00; max-width: 90%">
             ${prompt.prompt_type === 'initial'
               ? 'We generated a potential question.'
               : 'We have made changes. Please check the preview and prompt for further revisions.'}
             <div>
               ${run(() => {
-                if (!prompt.job_sequence_id) return '';
+                if (!showJobLogs || !prompt.job_sequence_id) return '';
 
                 const jobLogsUrl = urlPrefix + '/jobSequence/' + prompt.job_sequence_id;
 
