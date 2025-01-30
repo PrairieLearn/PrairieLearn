@@ -184,6 +184,7 @@ export function InstructorAiGenerateDraftEditor({
                 </div>
                 <div class="app-chat-prompt mt-2">
                   <form
+                    class="js-adjustment-form"
                     hx-post="${variantId
                       ? html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}?variant_id=${variantId}`
                       : html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}`}"
@@ -200,7 +201,7 @@ export function InstructorAiGenerateDraftEditor({
                       aria-label="Modification instructions"
                     ></textarea>
                     <!-- TODO: disable button if the input is empty -->
-                    <button class="btn btn-dark w-100">
+                    <button type="submit" class="btn btn-dark w-100">
                       <span
                         class="spinner-grow spinner-grow-sm d-none mr-1"
                         role="status"

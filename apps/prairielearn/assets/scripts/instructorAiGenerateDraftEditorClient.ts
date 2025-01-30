@@ -3,6 +3,9 @@ import { observe } from 'selector-observer';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import { configureAceBasePaths } from './lib/ace.js';
+import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
+
 class DraftFileEditor {
   private editor: ace.Ace.Editor;
 
@@ -65,16 +68,14 @@ class DraftFileEditor {
 }
 
 onDocumentReady(() => {
-  // ace loads modes/themes dynamically as needed, but its unable to identify
-  // the base path implicitly when using compiled assets. We explicitly set the
-  // base path for modes/themes here based on the meta tag set in the document,
-  // which is computed server-side based on the asset path for the ace-builds
-  // module.
-  const aceBasePath =
-    document.querySelector('meta[name="ace-base-path"]')?.getAttribute('content') ?? null;
-  ace.config.set('modePath', aceBasePath);
-  ace.config.set('workerPath', aceBasePath);
-  ace.config.set('themePath', aceBasePath);
+  configureAceBasePaths();
+
+  // Disable the "Adjust question" button until the form is changed.
+  const adjustmentForm = document.querySelector<HTMLFormElement>('.js-adjustment-form');
+  const submitButton = adjustmentForm?.querySelector<HTMLButtonElement>('button[type="submit"]');
+  if (adjustmentForm && submitButton) {
+    saveButtonEnabling(adjustmentForm, submitButton);
+  }
 
   observe('.js-file-editor', {
     constructor: HTMLDivElement,
