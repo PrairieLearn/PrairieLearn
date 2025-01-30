@@ -6,7 +6,6 @@ import { html, type HtmlSafeString } from '@prairielearn/html';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
-import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Lti13CourseInstance,
   type Lti13Instance,
@@ -49,7 +48,7 @@ export function InstructorInstanceAdminLti13({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorInstanceAdminLti13Client.ts')}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         ${Navbar({ resLocals, navSubPage: 'lti13' })}
@@ -61,25 +60,33 @@ export function InstructorInstanceAdminLti13({
             <div class="card-body">
               <div class="row">
                 <div class="col-2">
-                  <select
-                    class="custom-select mb-2"
-                    id="selectLti13Instance"
-                    data-url-prefix="/pl/course_instance/${resLocals.course_instance
-                      .id}/instructor/instance_admin/lti13_instance"
-                  >
-                    ${instances.map((i) => {
-                      return html`
-                        <option
-                          value="${i.lti13_course_instance.id}"
-                          ${instance.lti13_course_instance.id === i.lti13_course_instance.id
-                            ? 'selected'
-                            : ''}
-                        >
-                          ${i.lti13_instance.name}: ${i.lti13_course_instance.context_label}
-                        </option>
-                      `;
-                    })}
-                  </select>
+                  <div class="dropdown">
+                    <button
+                      type="button"
+                      class="btn dropdown-toggle border border-gray"
+                      data-toggle="dropdown"
+                      aria-haspopup="true"
+                      aria-expanded="false"
+                      data-boundary="window"
+                    >
+                      ${instance.lti13_instance.name}:
+                      ${instance.lti13_course_instance.context_label}
+                    </button>
+                    <div class="dropdown-menu">
+                      ${instances.map((i) => {
+                        return html`
+                          <a
+                            class="dropdown-item"
+                            href="/pl/course_instance/${resLocals.course_instance
+                              .id}/instructor/instance_admin/lti13_instance/${i
+                              .lti13_course_instance.id}"
+                          >
+                            ${i.lti13_instance.name}: ${i.lti13_course_instance.context_label}
+                          </a>
+                        `;
+                      })}
+                    </div>
+                  </div>
                   Quick links:
                   <ul>
                     <li><a href="#assessments">Linked Assessments</a></li>
