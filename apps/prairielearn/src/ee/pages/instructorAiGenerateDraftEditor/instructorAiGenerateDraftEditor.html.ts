@@ -141,6 +141,7 @@ export function InstructorAiGenerateDraftEditor({
                       placeholder="What would you like to change?"
                       aria-label="Modification instructions"
                     ></textarea>
+                    <!-- TODO: disable button if the input is empty -->
                     <button class="btn btn-dark w-100">
                       <span
                         class="spinner-grow spinner-grow-sm d-none"
