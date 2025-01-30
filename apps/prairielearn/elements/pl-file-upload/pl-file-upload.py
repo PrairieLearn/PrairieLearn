@@ -1,4 +1,5 @@
 import csv
+import fnmatch
 import hashlib
 import json
 import re
@@ -51,44 +52,13 @@ def match_regex_with_files(
 def glob_to_regex(glob_pattern: str) -> str:
     """
     Translates a glob pattern into a regex that can be handled consistently across Python and JS
-    Returns the regex as string, or raises a ValueError if there are no wildcards to be translated
+    Returns the regex as string, or raises a ValueError if the glob is invalid
     """
-    result = ["^"]
-    has_wildcard = False
-    escape = False
-    in_range = False
-    for c in glob_pattern:
-        if escape:
-            result.append(re.escape(c))
-            escape = False
-        elif in_range and c != "]":
-            result.append(c)
-        elif c == "\\":
-            escape = True
-        elif c == "?":
-            has_wildcard = True
-            result.append(".")
-        elif c == "*":
-            has_wildcard = True
-            result.append(".*")
-        elif c == "[":
-            has_wildcard = True
-            in_range = True
-            result.append(c)
-        elif c == "]":
-            in_range = False
-            result.append(c)
-        else:
-            result.append(re.escape(c))
-
-    # If there are no wildcards, raise an error as this is likely a mistake, and patterns without wildcards might confuse students
-    if not has_wildcard:
+    if "/" in glob_pattern:
         raise ValueError(
-            f"The file name pattern {glob_pattern} does not contain any wildcards. It should be listed as a regular file name."
+            f"The file name pattern {glob_pattern} contains a '/' character, which is not allowed in file names."
         )
-
-    result.append("$")
-    return "".join(result)
+    return fnmatch.translate(glob_pattern).replace(r"(?s:", "(").rstrip(r"\Z")
 
 
 def get_answer_name(
