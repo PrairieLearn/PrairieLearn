@@ -233,7 +233,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
 
     # Get submitted answer or return format error if it does not exist
-    files = data["submitted_answers"].get(answer_name)
+    files = data["submitted_answers"].get(answer_name, None)
+    if not files:
+        add_format_error(answer_name, data, "No submitted answer for file upload.")
+        return
 
     # We will store the files in the submitted_answer["_files"] key,
     # so delete the original submitted answer format to avoid duplication
