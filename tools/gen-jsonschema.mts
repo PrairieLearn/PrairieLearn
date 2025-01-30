@@ -20,7 +20,7 @@ const orderedStringify = (schema) => {
     'comment',
     // infoAssessment to improve diff
     'GroupRoleJsonSchema',
-    'AccessRuleJsonSchema',
+    'AssessmentAccessRuleJsonSchema',
     'ZoneAssessmentJsonSchema',
     'ZoneQuestionJsonSchema',
     'QuestionAlternativeJsonSchema',
