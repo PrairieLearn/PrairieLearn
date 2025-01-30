@@ -48,13 +48,13 @@ def get_counter(i: int, counter_type: str) -> str:
         )
 
 
-def legal_answer(answer: int, options: list) -> bool:
+def legal_answer(answer: int, options: list[Any]) -> bool:
     """Checks that the given answer is within the range of the given counter type."""
     return -1 <= answer < len(options)
 
 
 def get_select_options(
-    options_list: list, selected_value: int, blank_used: bool
+    options_list: list[Any], selected_value: int, blank_used: bool
 ) -> list[dict[str, Any]]:
     def transform(i: int, opt: Any):
         index = i - int(blank_used)
@@ -361,7 +361,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             option_html = {"key": option["key"], "html": option["html"].strip()}
             option_set.append(option_html)
 
-        html_params = {
+        html_params: dict[str, str | bool | float | list[Any]] = {
             "question": True,
             "name": name,
             "statements": statement_set,
