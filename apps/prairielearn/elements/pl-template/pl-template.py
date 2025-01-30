@@ -2,7 +2,7 @@ import copy
 import os
 import warnings
 from itertools import chain
-from typing import Any, cast
+from typing import Any
 
 import chevron
 import lxml.etree
@@ -32,15 +32,17 @@ DATA_ENTRIES_TO_COPY = ("params",)
 
 
 def check_tags(element_html: str) -> None:
-    element_list = cast(
-        list[lxml.html.HtmlElement], lxml.html.fragments_fromstring(element_html)
-    )
+    element_list = lxml.html.fragments_fromstring(element_html)
 
     # First element can be a string, remove since there's nothing to check.
     if isinstance(element_list[0], str):
         element_list.pop(0)
 
-    for e in chain.from_iterable(element.iter() for element in element_list):
+    for e in chain.from_iterable(
+        element.iter()
+        for element in element_list
+        if isinstance(element, lxml.html.HtmlElement)
+    ):
         if isinstance(e, lxml.etree._Comment):
             continue
 
