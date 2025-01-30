@@ -122,14 +122,15 @@ reportUnnecessaryTypeIgnoreComment = "error"
 reportUnknownMemberType = "none"
 reportUnknownArgumentType = "none"
 reportUnknownVariableType = "none"
-reportUnknownParameterType = "none"
-reportMissingTypeStubs = "none"
 # These rules don't provide much value
 reportPrivateUsage = "none"
 reportUnnecessaryIsInstance = "none"
 reportUnknownLambdaType = "none"
-# These rules should be progressively enabled 
-reportMissingTypeArgument = "information"
+# These rules require improved upstream type annotations
+reportMissingTypeStubs = "none"
+reportMissingTypeArgument = "none"
+reportOperatorIssue = "information"
+reportUnknownParameterType = "information"
 
 [tool.pytest.ini_options]
 pythonpath = [

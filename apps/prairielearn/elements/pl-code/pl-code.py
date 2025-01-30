@@ -91,7 +91,7 @@ class NoHighlightingLexer(pygments.lexer.Lexer):
         return iter([(0, Token.Text, text)])
 
 
-class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
+class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter[str]):
     """
     Subclass of the default HTML formatter to provide more flexibility
     with highlighted lines.
