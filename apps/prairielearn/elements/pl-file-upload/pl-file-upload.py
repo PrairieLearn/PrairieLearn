@@ -104,9 +104,12 @@ def get_answer_name(
     # Using / as separator as the only character guaranteed not to appear in file names
     combined_name = (
         file_names
-        + ("/" + optional_file_names if optional_file_names else "")
-        + ("//" + file_patterns if file_patterns else "")
-        + ("////" + optional_file_patterns if optional_file_patterns else "")
+        + "/"
+        + optional_file_names
+        + "//"
+        + file_patterns
+        + "////"
+        + optional_file_patterns
     )
 
     return "_file_upload_" + hashlib.sha1(combined_name.encode("utf-8")).hexdigest()
