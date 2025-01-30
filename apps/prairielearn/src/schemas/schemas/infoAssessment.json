@@ -191,6 +191,76 @@
         }
       }
     },
+    "AssessmentAccessRuleJsonSchema": {
+      "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "description": "Arbitrary comment for reference purposes.",
+          "$ref": "#/definitions/CommentJsonSchema"
+        },
+        "mode": {
+          "description": "The server mode required for access.",
+          "type": "string",
+          "enum": ["Public", "Exam"]
+        },
+        "examUuid": {
+          "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "role": {
+          "description": "DEPRECATED -- do not use.",
+          "type": "string",
+          "enum": ["Student", "TA", "Instructor"]
+        },
+        "uids": {
+          "description": "A list of UIDs (like 'username@example.com'), one of which is required for access",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "credit": {
+          "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "startDate": {
+          "description": "The earliest date on which access is permitted.",
+          "type": "string"
+        },
+        "endDate": {
+          "description": "The latest date on which access is permitted.",
+          "type": "string"
+        },
+        "timeLimitMin": {
+          "description": "The time limit to complete the assessment, in minutes (only for Exams).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "password": {
+          "description": "Password to begin the assessment (only for Exams).",
+          "type": "string"
+        },
+        "showClosedAssessment": {
+          "description": "Whether the student can view the assessment after it has been closed",
+          "type": "boolean",
+          "default": true
+        },
+        "showClosedAssessmentScore": {
+          "description": "Whether the student can view the assessment grade after it has been closed. Only works if showClosedAssessment is also set to false",
+          "type": "boolean",
+          "default": true
+        },
+        "active": {
+          "description": "Whether the student can create a new assessment instance and submit answers to questions. If set to false, the available credit must be 0.",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
     "ZoneAssessmentJsonSchema": {
       "type": "object",
       "additionalProperties": false,
@@ -451,76 +521,6 @@
           "$ref": "#/definitions/PointsListJsonSchema"
         }
       ]
-    },
-    "AssessmentAccessRuleJsonSchema": {
-      "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
-        },
-        "mode": {
-          "description": "The server mode required for access.",
-          "type": "string",
-          "enum": ["Public", "Exam"]
-        },
-        "examUuid": {
-          "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.",
-          "type": "string",
-          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-        },
-        "role": {
-          "description": "DEPRECATED -- do not use.",
-          "type": "string",
-          "enum": ["Student", "TA", "Instructor"]
-        },
-        "uids": {
-          "description": "A list of UIDs (like 'username@example.com'), one of which is required for access",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "credit": {
-          "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
-          "type": "integer",
-          "minimum": 0
-        },
-        "startDate": {
-          "description": "The earliest date on which access is permitted.",
-          "type": "string"
-        },
-        "endDate": {
-          "description": "The latest date on which access is permitted.",
-          "type": "string"
-        },
-        "timeLimitMin": {
-          "description": "The time limit to complete the assessment, in minutes (only for Exams).",
-          "type": "integer",
-          "minimum": 0
-        },
-        "password": {
-          "description": "Password to begin the assessment (only for Exams).",
-          "type": "string"
-        },
-        "showClosedAssessment": {
-          "description": "Whether the student can view the assessment after it has been closed",
-          "type": "boolean",
-          "default": true
-        },
-        "showClosedAssessmentScore": {
-          "description": "Whether the student can view the assessment grade after it has been closed. Only works if showClosedAssessment is also set to false",
-          "type": "boolean",
-          "default": true
-        },
-        "active": {
-          "description": "Whether the student can create a new assessment instance and submit answers to questions. If set to false, the available credit must be 0.",
-          "type": "boolean",
-          "default": true
-        }
-      }
     },
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
