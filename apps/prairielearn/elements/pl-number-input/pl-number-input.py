@@ -498,7 +498,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             # Get max error according to numpy.allclose()
-            eps = np.absolute(correct_answer) * rtol + atol
+            eps = np.absolute(correct_answer_converted) * rtol + atol
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])
         elif comparison is ComparisonType.SIGFIG:
@@ -507,7 +507,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             if correct_answer == 0:
                 n = digits - 1
             else:
-                n = -int(np.floor(np.log10(np.abs(correct_answer)))) + (digits - 1)
+                n = -int(np.floor(np.log10(np.abs(correct_answer_converted)))) + (
+                    digits - 1
+                )
             eps = 0.51 * (10**-n)
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])

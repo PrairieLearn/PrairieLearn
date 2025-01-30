@@ -98,7 +98,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
 
-        html_params = {
+        html_params: dict[str, bool | str | float | None] = {
             "question": True,
             "name": name,
             "label": label,
