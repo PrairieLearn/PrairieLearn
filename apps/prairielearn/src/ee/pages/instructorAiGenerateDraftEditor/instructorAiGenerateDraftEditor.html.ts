@@ -6,6 +6,7 @@ import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
+import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { type Question, type AiQuestionGenerationPrompt } from '../../../lib/db-types.js';
 
 export function InstructorAiGenerateDraftEditor({
@@ -23,7 +24,15 @@ export function InstructorAiGenerateDraftEditor({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })} ${compiledScriptTag('question.ts')}
+        <meta
+          name="ace-base-path"
+          content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
+        />
+        ${[
+          HeadContents({ resLocals }),
+          compiledScriptTag('question.ts'),
+          compiledScriptTag('instructorAiGenerateDraftEditorClient.ts'),
+        ]}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
         <style>
           body,
@@ -69,17 +78,54 @@ export function InstructorAiGenerateDraftEditor({
 
           .app-chat-history {
             grid-area: history;
-            overflow-y: scroll;
+            overflow-y: auto;
             scrollbar-color: var(--bs-secondary) transparent;
           }
 
           .app-preview {
             grid-area: preview;
+
+            display: grid;
+            grid-template-areas: 'tabs' 'content';
+            grid-template-rows: min-content 1fr;
+            min-height: 0;
+          }
+
+          .app-preview-tabs {
+            grid-area: tabs;
+          }
+
+          .app-preview-content {
+            grid-area: content;
+            min-height: 0;
+            overflow-y: auto;
+          }
+
+          .app-preview-content-question {
+            overflow-y: auto;
+          }
+
+          .app-preview-content-editor {
             overflow-y: auto;
           }
 
           .question-wrapper {
             max-width: 900px;
+          }
+
+          .editor-panes {
+            display: grid;
+            grid-template-areas: 'html python';
+            grid-template-columns: 1fr 1fr;
+            height: 100%;
+          }
+
+          .editor-pane-html {
+            grid-area: html;
+          }
+
+          .editor-pane-python {
+            grid-area: python;
           }
 
           /* TODO: ensure that the whole UI is responsive */
@@ -90,6 +136,19 @@ export function InstructorAiGenerateDraftEditor({
 
             .app-content {
               grid-template-areas: 'chat' 'preview';
+              grid-template-columns: 1fr;
+            }
+
+            .editor-pane-html,
+            .editor-pane-python {
+              min-height: 300px;
+            }
+          }
+
+          @media (max-width: 1400px) {
+            /* On narrower displays, tile the editors vertically */
+            .editor-panes {
+              grid-template-areas: 'html' 'python';
               grid-template-columns: 1fr;
             }
           }
@@ -156,7 +215,7 @@ export function InstructorAiGenerateDraftEditor({
               </div>
 
               <div class="app-preview">
-                <div class="d-flex flex-row align-items-stretch bg-light">
+                <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs">
                   <ul class="nav nav-tabs mr-auto pl-2 pt-2">
                     <li class="nav-item">
                       <a
@@ -165,13 +224,11 @@ export function InstructorAiGenerateDraftEditor({
                         aria-current="page"
                         href="#question-preview"
                       >
-                        Question preview
+                        Preview
                       </a>
                     </li>
                     <li class="nav-item">
-                      <a a class="nav-link" data-toggle="tab" href="#question-code">
-                        Question source
-                      </a>
+                      <a a class="nav-link" data-toggle="tab" href="#question-code">Files</a>
                     </li>
                   </ul>
                   <div
@@ -190,7 +247,9 @@ export function InstructorAiGenerateDraftEditor({
                     </span>
                   </div>
                 </div>
-                <div class="p-3">${QuestionAndFilePreview({ resLocals, prompts })}</div>
+                <div class="app-preview-content">
+                  ${QuestionAndFilePreview({ resLocals, prompts })}
+                </div>
               </div>
             </main>
           </div>
@@ -214,13 +273,13 @@ function QuestionAndFilePreview({
   resLocals: Record<string, any>;
 }) {
   return html`
-    <div class="tab-content">
-      <div role="tabpanel" id="question-preview" class="tab-pane active">
-        <div class="question-wrapper mx-auto">
+    <div class="tab-content" style="height: 100%">
+      <div role="tabpanel" id="question-preview" class="tab-pane active" style="height: 100%">
+        <div class="question-wrapper mx-auto p-3">
           ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
         </div>
       </div>
-      <div role="tabpanel" id="question-code" class="tab-pane">
+      <div role="tabpanel" id="question-code" class="tab-pane" style="height: 100%">
         ${QuestionCodePanel({
           htmlContents: prompts[prompts.length - 1].html,
           pythonContents: prompts[prompts.length - 1].python,
@@ -279,26 +338,24 @@ function QuestionCodePanel({
   pythonContents: string | null;
 }) {
   return html`
-    <div class="mr-auto">
-      <span class="card-title"> Generated HTML </span>
+    <div class="editor-panes p-2 gap-2">
+      <div class="editor-pane-html d-flex flex-column border rounded" style="overflow: hidden">
+        <div class="py-2 px-3 text-monospace bg-light">question.html</div>
+        <div
+          class="js-file-editor flex-grow-1"
+          data-ace-mode="ace/mode/html"
+          data-contents="${b64EncodeUnicode(htmlContents ?? '')}"
+        ></div>
+      </div>
+      <div class="editor-pane-python d-flex flex-column border rounded" style="overflow: hidden">
+        <div class="py-2 px-3 text-monospace bg-light">server.py</div>
+        <div
+          class="js-file-editor flex-grow-1"
+          data-ace-mode="ace/mode/python"
+          data-contents="${b64EncodeUnicode(pythonContents ?? '')}"
+        ></div>
+      </div>
     </div>
-    <div id="card-html">
-      <textarea id="output-html" class="bg-dark text-white rounded p-3" style="width:100%;">
-${htmlContents}</textarea
-      >
-    </div>
-    ${pythonContents == null
-      ? ''
-      : html`
-          <div class="mr-auto">
-            <span class="card-title"> Generated Python </span>
-          </div>
-          <div id="card-python">
-            <textarea id="output-python" class="bg-dark text-white rounded p-3" style="width:100%;">
-${pythonContents}</textarea
-            >
-          </div>
-        `}
   `;
 }
 

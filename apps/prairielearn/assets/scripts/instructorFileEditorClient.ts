@@ -44,7 +44,7 @@ class InstructorFileEditor {
     element,
     saveElement,
     aceMode,
-    readOnly,
+    readOnly = false,
     contents,
     diskContents,
   }: {
@@ -69,11 +69,11 @@ class InstructorFileEditor {
       autoScrollEditorIntoView: true,
       wrap: true,
       showPrintMargin: false,
-      mode: aceMode || undefined,
+      mode: aceMode ?? 'ace/mode/text',
       readOnly,
       enableKeyboardAccessibility: true,
       theme: 'ace/theme/chrome',
-    });
+    } satisfies Partial<ace.Ace.EditorOptions>);
 
     this.setEditorContents(contents ? this.b64DecodeUnicode(contents) : '');
     this.diskContents = diskContents ? this.b64DecodeUnicode(diskContents) : '';
