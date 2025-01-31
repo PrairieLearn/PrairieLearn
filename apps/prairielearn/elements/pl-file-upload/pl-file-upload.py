@@ -58,7 +58,7 @@ def glob_to_regex(glob_pattern: str) -> str:
         raise ValueError(
             f"The file name pattern {glob_pattern} contains a '/' character, which is not allowed in file names."
         )
-    return fnmatch.translate(glob_pattern).replace(r"(?s:", "(").rstrip(r"\Z")
+    return fnmatch.translate(glob_pattern).replace("(?s:", "^").replace(r")\Z", "$")
 
 
 def get_answer_name(
