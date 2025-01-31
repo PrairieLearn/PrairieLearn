@@ -95,10 +95,8 @@ def test_glob_to_regex_fn(glob_pattern: str, expected_output: str) -> None:
 @pytest.mark.parametrize(
     "glob_pattern",
     [
-        (""),
-        ("test"),
-        # All wildcard characters are escaped
-        ("\\[a-z0-9]\\[abc]\\?test\\*"),
+        ("a/b.txt"),
+        ("**/**"),
     ],
 )
 def test_glob_to_regex_errors(glob_pattern: str) -> None:
