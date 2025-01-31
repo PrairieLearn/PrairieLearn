@@ -122,6 +122,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
  */
 export async function close() {
   esbuildContext?.dispose();
+  splitEsbuildContext?.dispose();
 }
 
 export function assertConfigured(): void {
