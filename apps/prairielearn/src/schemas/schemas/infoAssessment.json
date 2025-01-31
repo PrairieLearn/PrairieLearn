@@ -213,7 +213,8 @@
         "role": {
           "description": "DEPRECATED -- do not use.",
           "type": "string",
-          "enum": ["Student", "TA", "Instructor"]
+          "enum": ["Student", "TA", "Instructor"],
+          "deprecated": true
         },
         "uids": {
           "description": "A list of UIDs (like 'username@example.com'), one of which is required for access",
@@ -276,7 +277,8 @@
         },
         "comments": {
           "description": "DEPRECATED -- do not use.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "$ref": "#/definitions/CommentJsonSchema",
+          "deprecated": true
         },
         "maxPoints": {
           "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points.",

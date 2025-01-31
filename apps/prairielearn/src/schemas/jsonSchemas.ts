@@ -89,22 +89,19 @@ const prairielearnZodToJsonSchema = (
 
   // Traverse the schema: if `DEPRECATED` in the description, add a `deprecated`: true field.
 
-  const traverse = (schema: any) => {
-    if (schema.description?.toLowerCase().includes('deprecated')) {
-      schema.deprecated = true;
+  const traverse = (input: any) => {
+    if (
+      typeof input?.description === 'string' &&
+      input?.description.toLowerCase().includes('deprecated')
+    ) {
+      input.deprecated = true;
     }
-
-    if (schema.properties) {
-      for (const value of Object.values(schema.properties)) {
+    for (const value of Object.values(input)) {
+      if (typeof value === 'object' && value !== null) {
         traverse(value);
       }
     }
-
-    if (schema.items) {
-      traverse(schema.items);
-    }
   };
-
   traverse(jsonSchema);
 
   return jsonSchema;
