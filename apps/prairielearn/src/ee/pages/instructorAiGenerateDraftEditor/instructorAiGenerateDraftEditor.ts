@@ -17,7 +17,7 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
 import { regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
-import { GenerationFailure } from '../instructorAiGenerateQuestion/instructorAiGenerateQuestion.html.js';
+import { GenerationFailure } from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 

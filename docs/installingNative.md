@@ -17,29 +17,17 @@ Most of these prerequisites can be installed using the package manager of your O
 
 === "Ubuntu (WSL2)"
 
-    On Ubuntu, these can be installed with `apt`:
+    On Ubuntu, use `apt` for the main prerequisites:
 
     ```sh
-    sudo apt install git gcc libc6-dev graphviz graphviz-dev redis6 postgresql15 postgresql15-server postgresql15-contrib
+    sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql postgresql-contrib
     ```
 
-=== "macOS"
-
-    On macOS, these can be installed with [Homebrew](http://brew.sh/). You should also ensure you have installed the XCode command line tools:
+    Make sure you start Postgres:
 
     ```sh
-    xcode-select --install
+    sudo systemctl start postgresql.service
     ```
-
-    ```sh
-    brew install git graphviz postgresql@15 redis@6.2
-    ```
-
----
-
-Now you can install the other dependencies.
-
-=== "Ubuntu (WSL2)"
 
     Python 3.10 is not available in the default Ubuntu repositories -- you can install it through the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
 
@@ -47,6 +35,12 @@ Now you can install the other dependencies.
     sudo add-apt-repository ppa:deadsnakes/ppa
     sudo apt update
     sudo apt install python3.10 python3.10-dev
+    ```
+
+    Install `uv`:
+
+    ```sh
+    pip install uv
     ```
 
     Node.js 20 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
@@ -57,10 +51,10 @@ Now you can install the other dependencies.
     nvm install 20
     ```
 
-    You can then install yarn through npm:
+    Enable `corepack` to make `yarn` available:
 
     ```sh
-    npm install -g yarn
+    corepack enable
     ```
 
     d2 can be installed through the install script:
@@ -71,27 +65,31 @@ Now you can install the other dependencies.
 
 === "macOS"
 
-    Brew can install the rest of the dependencies.
+    On macOS, ensure you have installed the XCode command line tools:
 
     ```sh
-    brew install node@20 python@3.10
+    xcode-select --install
     ```
 
-    You can install yarn through npm:
+    The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    npm install -g yarn
+    brew install git graphviz postgresql redis uv d2 node npm
     ```
 
-    d2 can be installed through the install script:
+    Enable `corepack` to make `yarn` available:
 
     ```sh
-    curl -fsSL https://d2lang.com/install.sh | sh -s --
+    corepack enable
     ```
 
 === "mise + uv"
 
     [Mise](https://mise.jdx.dev/) is a cross-platform package manager that supports per-directory tool versioning.
+
+    First install git, graphviz, redis, and postgresql for Ubuntu or MacOS.
+
+    Next install mise:
 
     ```sh
     curl https://mise.run | sh
@@ -121,8 +119,6 @@ Now you can install the other dependencies.
     !!! note
         `uv` does not override the system Python, it is only active inside a `venv`.
 
----
-
 - Clone the latest code:
 
   ```sh
@@ -130,41 +126,47 @@ Now you can install the other dependencies.
   cd PrairieLearn
   ```
 
-!!! note "Setup a venv"
+- Set up a Python virtual environment:
 
-    It is recommended to use a virtual environment for Python dependencies. You can create a virtual environment within PrairieLearn:
-
-    === "Native"
+  === "uv"
 
         ```sh
-        python3.10 -m venv venv
-        source venv/bin/activate
+        uv venv --python 3.10 --seed
+        source .venv/bin/activate
         ```
 
-    === "uv"
+  === "Native"
 
         ```sh
-        uv venv --python 3.10
-        source venv/bin/activate
+        python3.10 -m venv .venv
+        source .venv/bin/activate
         ```
+
+  You can run `deactivate` to exit the virtual environment, and `source .venv/bin/activate` to re-enter it.
+
+- On macOS, set the following environment variables so that `pygraphviz` can [find the necessary headers](https://github.com/pygraphviz/pygraphviz/blob/main/INSTALL.txt):
+
+  ```sh
+  cat <<EOF >> .venv/bin/activate
+  export CFLAGS="-I$(brew --prefix graphviz)/include"
+  export LDFLAGS="-L$(brew --prefix graphviz)/lib"
+  EOF
+
+  source .venv/bin/activate
+  ```
 
 - Install all dependencies and transpile local packages:
 
   ```sh
-  # This one command will do everything!
   make deps
+  ```
 
-  # Alternatively, you can run each step individually:
+  The above command installs everything. Alternatively, you can run each step individually:
+
+  ```
   yarn
   make build
   make python-deps
-  ```
-
-  On macOS, you may need to first set the following environment variables so that `pygraphviz` can find the necessary headers:
-
-  ```sh
-  export CFLAGS="-I$(brew --prefix graphviz)/include"
-  export LDFLAGS="-L$(brew --prefix graphviz)/lib"
   ```
 
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):

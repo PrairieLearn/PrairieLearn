@@ -103,7 +103,7 @@ def categorize_options(
             else:
                 incorrect_answers.append(answer_tuple)
 
-        elif child.tag is lxml.etree.Comment:
+        elif isinstance(child, lxml.etree._Comment):
             continue
 
         else:
