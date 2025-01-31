@@ -64,5 +64,8 @@
     "include": [
       "src/**"
     ]
+  },
+  "nodemonConfig": {
+    "ext": "js,jsx,ts,tsx,json,sql"
   }
 }
