@@ -150,6 +150,18 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
+  canSubmit: uniqueArray(z.string())
+    .describe(
+      'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
+    )
+    .optional()
+    .default([]),
+  canView: uniqueArray(z.string())
+    .describe(
+      'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
+    )
+    .optional()
+    .default([]),
 });
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
@@ -179,12 +191,6 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .optional()
     .default(1),
   advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
-  singleVariant: z
-    .boolean()
-    .describe(
-      'Whether the question is not randomized and only generates a single variant (defaults to "false").',
-    )
-    .optional(),
   gradeRateMinutes: z
     .number()
     .gte(0)
