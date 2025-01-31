@@ -113,7 +113,6 @@ export type CourseOptionsJson = z.infer<typeof CourseOptionsJsonSchema>;
 export const CourseJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    exampleCourse: z.boolean().describe('DEPRECATED -- do not use.').optional(),
     uuid: z
       .string()
       .regex(

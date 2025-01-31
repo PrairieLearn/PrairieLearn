@@ -585,11 +585,6 @@ export async function loadCourseInfo(
     }
   }
 
-  const exampleCourse =
-    info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
-    info.title === 'Example Course' &&
-    info.name === 'XC 101';
-
   const course = {
     uuid: info.uuid.toLowerCase(),
     path: coursePath,
@@ -601,7 +596,6 @@ export async function loadCourseInfo(
     tags,
     topics,
     sharingSets,
-    exampleCourse,
     options: {
       useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
