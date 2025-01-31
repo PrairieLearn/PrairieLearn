@@ -14,11 +14,6 @@
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
     },
-    "exampleCourse": {
-      "description": "DEPRECATED -- do not use.",
-      "type": "boolean",
-      "deprecated": true
-    },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
       "type": "string",
