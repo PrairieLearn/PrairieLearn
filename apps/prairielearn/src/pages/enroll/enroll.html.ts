@@ -6,6 +6,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),
@@ -23,80 +24,77 @@ export function Enroll({
   courseInstances: CourseInstance[];
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${[
-          HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' }),
-          compiledScriptTag('enrollClient.ts'),
-        ]}
-      </head>
-      <body>
-        ${Navbar({ resLocals, navPage: 'enroll' })}
-        ${AddCourseModal({ csrfToken: resLocals.__csrf_token })}
-        ${RemoveCourseModal({ csrfToken: resLocals.__csrf_token })}
-        <main id="content" class="container">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <h1>Courses</h1>
-            </div>
-            <table class="table table-sm table-hover table-striped" aria-label="Courses">
-              <tbody>
-                ${courseInstances.map((course_instance) => {
-                  return html`
-                    <tr>
-                      <td class="align-middle">${course_instance.label}</td>
-                      ${course_instance.instructor_access
-                        ? html`
-                            <td class="align-middle text-center" colspan="2">
-                              <span class="badge badge-info">instructor access</span>
-                            </td>
-                          `
-                        : html`
-                            <td>
-                              ${!course_instance.enrolled
-                                ? html`
-                                    <button
-                                      type="button"
-                                      class="btn btn-sm btn-info"
-                                      data-toggle="modal"
-                                      data-target="#add-course-modal"
-                                      data-course-instance-id="${course_instance.course_instance_id}"
-                                      data-course-instance-short-label="${course_instance.short_label}"
-                                    >
-                                      Add course
-                                    </button>
-                                  `
-                                : ''}
-                            </td>
-                            <td>
-                              ${course_instance.enrolled
-                                ? html`
-                                    <button
-                                      type="button"
-                                      class="btn btn-sm btn-danger"
-                                      data-toggle="modal"
-                                      data-target="#remove-course-modal"
-                                      data-course-instance-id="${course_instance.course_instance_id}"
-                                      data-course-instance-short-label="${course_instance.short_label}"
-                                    >
-                                      Remove course
-                                    </button>
-                                  `
-                                : ''}
-                            </td>
-                          `}
-                    </tr>
-                  `;
-                })}
-              </tbody>
-            </table>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Enrollment - Courses',
+    navContext: {
+      type: 'plain',
+      page: 'enroll',
+    },
+    headContent: [compiledScriptTag('enrollClient.ts')],
+    preContent: html`
+      ${AddCourseModal({ csrfToken: resLocals.__csrf_token })}
+      ${RemoveCourseModal({ csrfToken: resLocals.__csrf_token })}
+    `,
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h1>Courses</h1>
+        </div>
+        <table class="table table-sm table-hover table-striped" aria-label="Courses">
+          <tbody>
+            ${courseInstances.map((course_instance) => {
+              return html`
+                <tr>
+                  <td class="align-middle">${course_instance.label}</td>
+                  ${course_instance.instructor_access
+                    ? html`
+                        <td class="align-middle text-center" colspan="2">
+                          <span class="badge badge-info">instructor access</span>
+                        </td>
+                      `
+                    : html`
+                        <td>
+                          ${!course_instance.enrolled
+                            ? html`
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-info"
+                                  data-toggle="modal"
+                                  data-target="#add-course-modal"
+                                  data-course-instance-id="${course_instance.course_instance_id}"
+                                  data-course-instance-short-label="${course_instance.short_label}"
+                                >
+                                  Add course
+                                </button>
+                              `
+                            : ''}
+                        </td>
+                        <td>
+                          ${course_instance.enrolled
+                            ? html`
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-danger"
+                                  data-toggle="modal"
+                                  data-target="#remove-course-modal"
+                                  data-course-instance-id="${course_instance.course_instance_id}"
+                                  data-course-instance-short-label="${course_instance.short_label}"
+                                >
+                                  Remove course
+                                </button>
+                              `
+                            : ''}
+                        </td>
+                      `}
+                </tr>
+              `;
+            })}
+          </tbody>
+        </table>
+      </div>
+    `,
+  });
 }
 
 export function EnrollLtiMessage({
@@ -147,26 +145,23 @@ export function EnrollLtiMessage({
 }
 
 export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Record<string, any> }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
-      </head>
-      <body>
-        ${Navbar({ resLocals, navPage: 'enroll' })}
-        <main id="content" class="container">
-          <div class="card mb-4">
-            <div class="card-header bg-danger text-white">Enrollment limit exceeded</div>
-            <div class="card-body">
-              This course has reached its enrollment limit. Please contact the course staff for more
-              information.
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Enrollment - Courses',
+    navContext: {
+      type: 'plain',
+      page: 'enroll',
+    },
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-danger text-white">Enrollment limit exceeded</div>
+        <div class="card-body">
+          This course has reached its enrollment limit. Please contact the course staff for more
+          information.
+        </div>
+      </div>
+    `,
+  });
 }
 
 function AddCourseModal({ csrfToken }: { csrfToken: string }) {
