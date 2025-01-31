@@ -63,7 +63,11 @@ const rewriteGroupRoleAnnotation = (
   const segment = refs.currentPath[refs.currentPath.length - 1];
   if (['canView', 'canSubmit'].includes(segment)) {
     const action = segment === 'canView' ? 'view' : 'submit';
-    const annotation = `A list of group role names that can ${action} questions in this assessment. Only applicable for group assessments.`;
+    const inZone = refs.currentPath.includes('ZoneAssessmentJsonSchema');
+    let annotation = `A list of group role names matching those in groupRoles that can ${action} the question. Only applicable for group assessments.`;
+    if (inZone) {
+      annotation = `A list of group role names that can ${action} questions in this zone. Only applicable for group assessments.`;
+    }
     return {
       description: annotation,
       type: 'array',

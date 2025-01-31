@@ -6,15 +6,6 @@
   "additionalProperties": false,
   "required": ["uuid", "type", "title", "topic"],
   "properties": {
-    "title": {
-      "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
-      "type": "string"
-    },
-    "type": {
-      "description": "Type of the question.",
-      "type": "string",
-      "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"]
-    },
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
@@ -23,6 +14,15 @@
       "description": "Unique identifier (UUID v4).",
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "type": {
+      "description": "Type of the question.",
+      "type": "string",
+      "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"]
+    },
+    "title": {
+      "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
+      "type": "string"
     },
     "topic": {
       "description": "The category of question (e.g., 'Vectors', 'Energy').",

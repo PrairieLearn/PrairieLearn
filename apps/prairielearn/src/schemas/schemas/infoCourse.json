@@ -6,10 +6,6 @@
   "additionalProperties": false,
   "required": ["uuid", "name", "title", "topics"],
   "properties": {
-    "title": {
-      "description": "The course title (e.g., 'Introductory Dynamics').",
-      "type": "string"
-    },
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
@@ -21,6 +17,10 @@
     },
     "name": {
       "description": "The course name (e.g., 'TAM 212').",
+      "type": "string"
+    },
+    "title": {
+      "description": "The course title (e.g., 'Introductory Dynamics').",
       "type": "string"
     },
     "timezone": {
@@ -123,10 +123,6 @@
         "additionalProperties": false,
         "required": ["name", "color"],
         "properties": {
-          "description": {
-            "description": "Description of the topic.",
-            "type": "string"
-          },
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
             "$ref": "#/definitions/CommentJsonSchema"
@@ -141,6 +137,10 @@
           },
           "color": {
             "$ref": "#/definitions/ColorJsonSchema"
+          },
+          "description": {
+            "description": "Description of the topic.",
+            "type": "string"
           }
         }
       }
@@ -154,10 +154,6 @@
         "additionalProperties": false,
         "required": ["name", "color"],
         "properties": {
-          "description": {
-            "description": "Description of the tag.",
-            "type": "string"
-          },
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
             "$ref": "#/definitions/CommentJsonSchema"
@@ -172,6 +168,10 @@
           },
           "color": {
             "$ref": "#/definitions/ColorJsonSchema"
+          },
+          "description": {
+            "description": "Description of the tag.",
+            "type": "string"
           }
         }
       }
@@ -185,12 +185,12 @@
         "additionalProperties": false,
         "required": ["name"],
         "properties": {
-          "description": {
-            "description": "Description of the sharing set.",
-            "type": "string"
-          },
           "name": {
             "description": "Name of the sharing set.",
+            "type": "string"
+          },
+          "description": {
+            "description": "Description of the sharing set.",
             "type": "string"
           }
         }

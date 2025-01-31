@@ -6,10 +6,6 @@
   "additionalProperties": false,
   "required": ["uuid", "title", "visible_to_students"],
   "properties": {
-    "title": {
-      "description": "The title of the news item.",
-      "type": "string"
-    },
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
@@ -18,6 +14,10 @@
       "description": "Unique identifier (UUID v4).",
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "title": {
+      "description": "The title of the news item.",
+      "type": "string"
     },
     "author": {
       "description": "The author of the news item.",

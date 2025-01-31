@@ -37,19 +37,25 @@ const orderedStringify = (schema) => {
   return JSON.stringify(
     schema,
     (key, value) => {
+      let localHeadKeys = headKeys;
+      if (key === 'properties') {
+        // remove from headKeys
+        localHeadKeys = headKeys.filter((k) => !['title', 'type', 'description'].includes(k));
+      }
+
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         return Object.keys(value)
           .sort((a, b) => {
-            if (headKeys.includes(a) && headKeys.includes(b)) {
-              return headKeys.indexOf(a) - headKeys.indexOf(b);
+            if (localHeadKeys.includes(a) && localHeadKeys.includes(b)) {
+              return localHeadKeys.indexOf(a) - localHeadKeys.indexOf(b);
             }
             if (tailKeys.includes(a) && tailKeys.includes(b)) {
               return tailKeys.indexOf(a) - tailKeys.indexOf(b);
             }
-            if (headKeys.includes(a)) {
+            if (localHeadKeys.includes(a)) {
               return -1;
             }
-            if (headKeys.includes(b)) {
+            if (localHeadKeys.includes(b)) {
               return 1;
             }
             if (tailKeys.includes(a)) {

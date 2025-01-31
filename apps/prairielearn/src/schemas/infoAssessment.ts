@@ -150,14 +150,6 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canSubmit: uniqueArray(z.string())
-    .describe('The names of roles that can submit this question.')
-    .optional()
-    .default([]),
-  canView: uniqueArray(z.string())
-    .describe('The names of roles that can view this question.')
-    .optional()
-    .default([]),
 });
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({

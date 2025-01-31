@@ -6,15 +6,6 @@
   "additionalProperties": false,
   "required": ["uuid", "type", "title", "set", "number"],
   "properties": {
-    "title": {
-      "description": "The title of the assessment (e.g., 'Derivatives and anti-derivatives').",
-      "type": "string"
-    },
-    "type": {
-      "description": "Type of the assessment.",
-      "type": "string",
-      "enum": ["Homework", "Exam"]
-    },
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
@@ -23,6 +14,15 @@
       "description": "Unique identifier (UUID v4).",
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "type": {
+      "description": "Type of the assessment.",
+      "type": "string",
+      "enum": ["Homework", "Exam"]
+    },
+    "title": {
+      "description": "The title of the assessment (e.g., 'Derivatives and anti-derivatives').",
+      "type": "string"
     },
     "set": {
       "description": "Which assessmentSet this one belongs to (e.g., 'Homework', 'Practice Quiz').",
@@ -118,7 +118,7 @@
       }
     },
     "canSubmit": {
-      "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
+      "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
       "type": "array",
       "items": {
         "type": "string"
@@ -127,7 +127,7 @@
       "default": []
     },
     "canView": {
-      "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
+      "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
       "type": "array",
       "items": {
         "type": "string"
@@ -267,13 +267,13 @@
       "additionalProperties": false,
       "required": ["questions"],
       "properties": {
-        "title": {
-          "description": "Zone title, displayed to the students at the top of the question list for the zone.",
-          "type": "string"
-        },
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
+        },
+        "title": {
+          "description": "Zone title, displayed to the students at the top of the question list for the zone.",
+          "type": "string"
         },
         "comments": {
           "description": "DEPRECATED -- do not use.",
@@ -312,7 +312,7 @@
           "minimum": 0
         },
         "canSubmit": {
-          "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
+          "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -321,7 +321,7 @@
           "default": []
         },
         "canView": {
-          "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
+          "description": "A list of group role names that can view questions in this zone. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -398,7 +398,7 @@
           "minimum": 0
         },
         "canSubmit": {
-          "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
+          "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -407,7 +407,7 @@
           "default": []
         },
         "canView": {
-          "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
+          "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -464,24 +464,6 @@
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
           "minimum": 0
-        },
-        "canSubmit": {
-          "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
-        },
-        "canView": {
-          "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
         }
       }
     },
