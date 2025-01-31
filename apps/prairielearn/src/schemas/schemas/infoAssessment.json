@@ -388,10 +388,6 @@
           "description": "Minimum score percentage to unlock access to subsequent questions",
           "$ref": "#/definitions/AdvanceScorePercJsonSchema"
         },
-        "singleVariant": {
-          "description": "Whether the question is not randomized and only generates a single variant (defaults to \"false\").",
-          "type": "boolean"
-        },
         "gradeRateMinutes": {
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
@@ -464,6 +460,24 @@
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
           "minimum": 0
+        },
+        "canSubmit": {
+          "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "canView": {
+          "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "default": []
         }
       }
     },
