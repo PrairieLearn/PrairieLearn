@@ -12,6 +12,7 @@ This page describes the procedure to install and run PrairieLearn without any us
   - [Redis 6](https://redis.io)
   - [Graphviz](https://graphviz.org)
   - [d2](https://d2lang.com)
+  - [pgvector](https://github.com/pgvector/pgvector)
 
 Most of these prerequisites can be installed using the package manager of your OS:
 
