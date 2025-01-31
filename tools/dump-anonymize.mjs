@@ -2,9 +2,10 @@
 // $ node dump-anonymize.mjs <data-dump-folder> <anonymous-output-folder>
 
 import fs from 'node:fs';
+import path from 'node:path';
+
 import async from 'async';
 import { v4 as uuidv4 } from 'uuid';
-import path from 'node:path';
 
 const infolder = process.argv[2];
 const outfolder = process.argv[3];

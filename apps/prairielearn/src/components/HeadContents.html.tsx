@@ -1,4 +1,4 @@
-import { Fragment, h } from 'preact';
+import { Fragment } from 'preact';
 import { render } from 'preact-render-to-string/jsx';
 
 import { unsafeHtml } from '@prairielearn/html';

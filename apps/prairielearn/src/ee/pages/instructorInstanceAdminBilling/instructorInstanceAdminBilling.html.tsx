@@ -1,5 +1,3 @@
-import { h } from 'preact';
-
 import { PreactHeadContents } from '../../../components/HeadContents.html.js';
 import { PreactNavbar } from '../../../components/Navbar.html.js';
 import { renderHtmlDocument, renderForClientHydration } from '../../../lib/preact.js';

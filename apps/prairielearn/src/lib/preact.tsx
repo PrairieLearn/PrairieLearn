@@ -1,5 +1,4 @@
 import { type ComponentType, type Attributes, type VNode, Fragment } from 'preact';
-import { h } from 'preact';
 import { render } from 'preact-render-to-string/jsx';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
@@ -33,9 +32,10 @@ export function renderForClientHydration<T>(
     <Fragment>
       <script type="module" src={compiledScriptPath(scriptPath)} />
       {scriptPreloads.map((preloadPath) => (
-        <link rel="modulepreload" href={preloadPath} />
+        <link key={preloadPath} rel="modulepreload" href={preloadPath} />
       ))}
       <div id={id} class="js-react-fragment">
+        {/* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */}
         <script
           type="application/json"
           id={`${id}-props`}

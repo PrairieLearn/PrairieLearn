@@ -1,5 +1,3 @@
-import { h } from 'preact';
-
 import { flash, type FlashMessageType } from '@prairielearn/flash';
 import { html, type HtmlValue, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
@@ -17,6 +15,7 @@ export function PreactNavbar(props: {
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
 }) {
+  // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
   return <div dangerouslySetInnerHTML={{ __html: Navbar(props).toString() }}></div>;
 }
 

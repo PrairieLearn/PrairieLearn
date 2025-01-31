@@ -1,4 +1,3 @@
-import { h } from 'preact';
 import { useState } from 'preact/hooks';
 
 import { type PlanName, planGrantsMatchPlanFeatures } from '../plans-types.js';
