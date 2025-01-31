@@ -2,8 +2,7 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { config } from '../../lib/config.js';
 import { CourseInstanceSchema, CourseSchema, type Institution } from '../../lib/db-types.js';
 
@@ -41,45 +40,45 @@ export function Home({
   adminInstitutions: Institution[];
 }) {
   const { authn_provider_name } = resLocals;
-  return html`
-    <!doctype html>
-    <html lang="en" class="h-100">
-      <head>
-        ${HeadContents({ resLocals })}
-      </head>
 
-      <body class="d-flex flex-column h-100">
-        <header>${Navbar({ resLocals, navPage: 'home' })}</header>
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Home',
+    navContext: {
+      type: 'plain',
+      page: 'home',
+    },
+    options: {
+      fullHeight: true,
+    },
+    content: html`
+      <h1 class="sr-only">PrairieLearn Homepage</h1>
+      ${ActionsHeader()}
 
-        <main id="content" class="flex-grow-1">
-          <h1 class="sr-only">PrairieLearn Homepage</h1>
-          ${ActionsHeader()}
-
-          <div id="content" class="container py-5">
-            ${DevModeCard()} ${AdminInstitutionsCard({ adminInstitutions })}
-            ${InstructorCoursesCard({ instructorCourses })}
-            ${StudentCoursesCard({
-              studentCourses,
-              hasInstructorCourses: instructorCourses.length > 0,
-              canAddCourses: authn_provider_name !== 'LTI',
-            })}
-          </div>
-        </main>
-
-        ${config.homepageFooterText && config.homepageFooterTextHref
-          ? html`
-              <footer class="footer font-weight-light text-light text-center small">
-                <div class="bg-secondary p-1">
-                  <a class="text-light" href="${config.homepageFooterTextHref}">
-                    ${config.homepageFooterText}
-                  </a>
-                </div>
-              </footer>
-            `
-          : ''}
-      </body>
-    </html>
-  `.toString();
+      <div id="content" class="container py-5">
+        ${DevModeCard()} ${AdminInstitutionsCard({ adminInstitutions })}
+        ${InstructorCoursesCard({ instructorCourses })}
+        ${StudentCoursesCard({
+          studentCourses,
+          hasInstructorCourses: instructorCourses.length > 0,
+          canAddCourses: authn_provider_name !== 'LTI',
+        })}
+      </div>
+    `,
+    postContent: html`
+      ${config.homepageFooterText && config.homepageFooterTextHref
+        ? html`
+            <footer class="footer font-weight-light text-light text-center small">
+              <div class="bg-secondary p-1">
+                <a class="text-light" href="${config.homepageFooterTextHref}">
+                  ${config.homepageFooterText}
+                </a>
+              </div>
+            </footer>
+          `
+        : ''}
+    `,
+  });
 }
 
 function ActionsHeader() {
@@ -97,7 +96,7 @@ function ActionsHeader() {
                 Students
               </h2>
               <a href="${config.urlPrefix}/enroll" class="btn btn-xs btn-outline-primary">
-                Enroll course
+                Add or remove courses
               </a>
             </div>
           </div>
@@ -182,6 +181,7 @@ function AdminInstitutionsCard({ adminInstitutions }: { adminInstitutions: Insti
 
 function InstructorCoursesCard({ instructorCourses }: { instructorCourses: InstructorCourse[] }) {
   if (instructorCourses.length === 0) return '';
+
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">

@@ -1,4 +1,3 @@
-import math
 import random
 
 import chevron
@@ -99,7 +98,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
 
-        html_params = {
+        html_params: dict[str, bool | str | float | None] = {
             "question": True,
             "name": name,
             "label": label,
@@ -115,16 +114,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception as exc:
-                raise ValueError("invalid score" + str(score)) from exc
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
@@ -171,16 +162,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception as exc:
-                raise ValueError("invalid score" + str(score)) from exc
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
