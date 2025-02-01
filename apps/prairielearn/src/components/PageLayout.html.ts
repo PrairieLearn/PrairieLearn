@@ -4,6 +4,7 @@ import { html, type HtmlValue } from '@prairielearn/html';
 import { HeadContents } from './HeadContents.html.js';
 import { Navbar } from './Navbar.html.js';
 import type { NavContext } from './Navbar.types.js';
+import { ContextNavigation } from './NavbarContext.html.js';
 import { SideNav } from './SideNav.html.js';
 
 export function PageLayout({
@@ -70,9 +71,22 @@ export function PageLayout({
               navbarType: navContext.type,
             })}
           </div>
-          <div class="app-side-nav">${SideNav()}</div>
+          <div class="app-side-nav">
+            ${resLocals.course &&
+            SideNav({
+              course: resLocals.course,
+              courseInstance: resLocals.course_instance,
+              page: navContext.page,
+              subPage: navContext.subPage,
+            })}
+          </div>
           <div class="app-main">
             <div class="app-main-container">
+              ${ContextNavigation({
+                resLocals,
+                navPage: navContext.page,
+                navSubPage: navContext.subPage,
+              })}
               ${preContent}
               <main
                 id="content"

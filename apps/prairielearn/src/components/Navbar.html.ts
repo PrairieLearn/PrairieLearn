@@ -6,7 +6,6 @@ import { config } from '../lib/config.js';
 
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
-import { ContextNavigation } from './NavbarContext.html.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
 export function Navbar({
@@ -20,25 +19,42 @@ export function Navbar({
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
 }) {
-  const { __csrf_token, course, urlPrefix } = resLocals;
+  const { __csrf_token, course, institution, urlPrefix } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
 
+  let linkData = [{ text: 'Home', href: '/' }];
+
+  if (institution) {
+    linkData = [
+      ...linkData,
+      { text: 'Global Admin', href: '/' },
+      { text: 'Institutions', href: '/' },
+      { text: institution.short_name, href: '/' },
+    ];
+  }
+
+  if (course) {
+    linkData = [
+      ...linkData, // TODO: populate this witht he actual institution name -- in the future, this should only appear if the uesr has global admin privileges?
+      { text: 'Courses', href: '/' },
+      { text: course.short_name, href: '/' },
+    ];
+  }
+
   return html`
-    ${
-      config.devMode && __csrf_token
-        ? // Unit tests often need access to the CSRF token even when the page contains
-          // no form - for example, to confirm that a POST with a prohibited
-          // action is denied. For convenience, we include the CSRF token here, on
-          // all pages. We do this only in devMode and only for the purpose of
-          // testing.
-          html`
-            <!-- DO NOT RELY ON OR USE THIS CSRF TOKEN FOR ANYTHING OTHER THAN UNIT TESTS! -->
-            <span id="test_csrf_token" hidden>${__csrf_token}</span>
-          `
-        : ''
-    }
+    ${config.devMode && __csrf_token
+      ? // Unit tests often need access to the CSRF token even when the page contains
+        // no form - for example, to confirm that a POST with a prohibited
+        // action is denied. For convenience, we include the CSRF token here, on
+        // all pages. We do this only in devMode and only for the purpose of
+        // testing.
+        html`
+          <!-- DO NOT RELY ON OR USE THIS CSRF TOKEN FOR ANYTHING OTHER THAN UNIT TESTS! -->
+          <span id="test_csrf_token" hidden>${__csrf_token}</span>
+        `
+      : ''}
 
     <div class="container-fluid bg-primary">
       <a href="#content" class="sr-only sr-only-focusable d-inline-flex p-2 m-2 text-white">
@@ -46,18 +62,15 @@ export function Navbar({
       </a>
     </div>
 
-    ${
-      config.announcementHtml
-        ? html`
-            <div
-              class="alert alert-${config.announcementColor ??
-              'primary'} mb-0 rounded-0 text-center"
-            >
-              ${unsafeHtml(config.announcementHtml)}
-            </div>
-          `
-        : ''
-    }
+    ${config.announcementHtml
+      ? html`
+          <div
+            class="alert alert-${config.announcementColor ?? 'primary'} mb-0 rounded-0 text-center"
+          >
+            ${unsafeHtml(config.announcementHtml)}
+          </div>
+        `
+      : ''}
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid">
@@ -69,49 +82,14 @@ export function Navbar({
         </a>
 
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item">
-            <a class="nav-link" href="#">Home</a>
-          </li>
-          <li class="nav-item d-none d-lg-block" aria-hidden="true">
-            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
-              &rarr;
-            </span>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">Global Admin</a>
-          </li>
-          <li class="nav-item d-none d-lg-block" aria-hidden="true">
-            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
-              &rarr;
-            </span>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">Institutions</a>
-          </li>
-          <li class="nav-item d-none d-lg-block" aria-hidden="true">
-            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
-              &rarr;
-            </span>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">UIUC</a>
-          </li>
-          <li class="nav-item d-none d-lg-block" aria-hidden="true">
-            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
-              &rarr;
-            </span>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">Courses</a>
-          </li>
-          <li class="nav-item d-none d-lg-block" aria-hidden="true">
-            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
-              &rarr;
-            </span>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link active" href="#">TAM 212</i></a>
-          </li>
+          ${linkData.map((link, index) =>
+            NavbarButton({
+              text: link.text,
+              href: link.href,
+              showArrow: index < linkData.length - 1,
+              active: index === linkData.length - 1,
+            }),
+          )}
         </ul>
 
         <button
@@ -130,17 +108,38 @@ export function Navbar({
       </div>
     </nav>
 
-    ${
-      navbarType === 'instructor' && course && course.announcement_html && course.announcement_color
-        ? html`
-            <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
-              ${unsafeHtml(course.announcement_html)}
-            </div>
-          `
-        : ''
-    }
+    ${navbarType === 'instructor' && course && course.announcement_html && course.announcement_color
+      ? html`
+          <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
+            ${unsafeHtml(course.announcement_html)}
+          </div>
+        `
+      : ''}
+    ${FlashMessages()}
   `;
 }
+
+const NavbarButton = ({
+  text,
+  href,
+  active = false,
+  showArrow = true,
+}: {
+  text: string;
+  href: string;
+  active?: boolean;
+  showArrow?: boolean;
+}) => {
+  return html`
+    <li class="nav-item">
+      <a class="nav-link ${active ? 'active' : ''}" href="${href}">${text}</a>
+    </li>
+    ${showArrow &&
+    html`<li class="nav-item d-none d-lg-block" aria-hidden="true">
+      <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);"> &rarr; </span>
+    </li>`}
+  `;
+};
 
 function NavbarByType({
   resLocals,
@@ -312,6 +311,10 @@ function FlashMessages() {
       return [];
     }
   });
+
+  if (flashMessages.length === 0) {
+    return '';
+  }
 
   return html`
     <div class="mb-3">
