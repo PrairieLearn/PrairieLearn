@@ -156,7 +156,9 @@ def check_prop(
         raise ValueError(f'data["{prop}"] has been illegally modified')
 
 
-def check_data(old_data: dict, new_data: dict, phase: Phase) -> None:
+def check_data(
+    old_data: dict[Any, Any], new_data: dict[Any, Any], phase: Phase
+) -> None:
     # First, check for extra keys on `new_data`.
     extra_keys = set(new_data.keys()) - set(PROPS.keys())
     if extra_keys:

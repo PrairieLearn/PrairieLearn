@@ -462,7 +462,7 @@ class CGrader:
         elif must_match_all_outputs is False:
             must_match_all_outputs = "any"
 
-        def compile_re(t: str | re.Pattern | Any) -> tuple[str, re.Pattern]:
+        def compile_re(t: str | re.Pattern[str] | Any) -> tuple[str, re.Pattern[str]]:
             if isinstance(t, re.Pattern):
                 return (t.pattern, t)
             # If t is not a string, convert it to its string representation
