@@ -15,7 +15,7 @@ psutil==6.1.1
 PuLP==2.9.0
 pycryptodome==3.21.0
 Pygments==2.18.0
-pyarrow==18.1.0
+pyarrow==19.0.0
 pygments-ansi-color==0.3.0
 pygraphviz==1.14
 pyquaternion==0.9.9
