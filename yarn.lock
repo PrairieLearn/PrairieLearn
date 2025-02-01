@@ -3913,7 +3913,6 @@ __metadata:
     pg: "npm:^8.13.1"
     plist: "npm:^3.1.0"
     popper.js: "npm:^1.16.1"
-    postgres-interval: "npm:^4.0.2"
     preact: "npm:^10.25.4"
     prettier: "npm:3.4.2"
     qrcode-svg: "npm:^1.1.0"
@@ -4136,6 +4135,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^20.17.11"
+    postgres-interval: "npm:^4.0.2"
     typescript: "npm:^5.7.2"
     zod: "npm:^3.24.1"
   languageName: unknown
