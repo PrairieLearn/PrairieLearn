@@ -3279,7 +3279,7 @@ __metadata:
     "@types/node": "npm:^20.17.11"
     c8: "npm:^10.1.3"
     chai: "npm:^5.1.2"
-    commander: "npm:^12.1.0"
+    commander: "npm:^13.1.0"
     esbuild: "npm:^0.23.1"
     express: "npm:^4.21.2"
     express-static-gzip: "npm:^2.2.0"
@@ -7580,6 +7580,13 @@ __metadata:
   version: 12.1.0
   resolution: "commander@npm:12.1.0"
   checksum: 10c0/6e1996680c083b3b897bfc1cfe1c58dfbcd9842fd43e1aaf8a795fbc237f65efcc860a3ef457b318e73f29a4f4a28f6403c3d653d021d960e4632dd45bde54a9
+  languageName: node
+  linkType: hard
+
+"commander@npm:^13.1.0":
+  version: 13.1.0
+  resolution: "commander@npm:13.1.0"
+  checksum: 10c0/7b8c5544bba704fbe84b7cab2e043df8586d5c114a4c5b607f83ae5060708940ed0b5bd5838cf8ce27539cde265c1cbd59ce3c8c6b017ed3eec8943e3a415164
   languageName: node
   linkType: hard
 
