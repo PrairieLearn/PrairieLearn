@@ -1,8 +1,10 @@
+import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 
 import { HeadContents } from './HeadContents.html.js';
 import { Navbar } from './Navbar.html.js';
 import type { NavContext } from './Navbar.types.js';
+import { SideNav } from './SideNav.html.js';
 
 export function PageLayout({
   resLocals,
@@ -43,39 +45,49 @@ export function PageLayout({
 }) {
   const marginBottom = options.marginBottom ?? true;
 
+  // TODO: Check that all props are actually used
   return html`
     <!doctype html>
-    <html lang="en" class="${options.fullHeight ? 'h-100' : ''}">
+    <html lang="en">
       <head>
         ${HeadContents({
           resLocals,
           pageTitle,
           pageNote: options.pageNote,
         })}
-        ${headContent}
+        ${compiledStylesheetTag('pageLayout.css')} ${headContent}
       </head>
       <body
         ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
         class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
       >
-        ${Navbar({
-          resLocals,
-          navPage: navContext.page,
-          navSubPage: navContext.subPage,
-          navbarType: navContext.type,
-        })}
-        ${preContent}
-        <main
-          id="content"
-          class="
-            ${options.fullWidth ? 'container-fluid' : 'container'} 
-            ${marginBottom ? 'mb-4' : ''}
-            ${options.fullHeight ? 'flex-grow-1' : ''}
-          "
-        >
-          ${content}
-        </main>
-        ${postContent}
+        <div class="app-container">
+          <div class="app-top-nav">
+            ${Navbar({
+              resLocals,
+              navPage: navContext.page,
+              navSubPage: navContext.subPage,
+              navbarType: navContext.type,
+            })}
+          </div>
+          <div class="app-side-nav">${SideNav()}</div>
+          <div class="app-main">
+            <div class="app-main-container">
+              ${preContent}
+              <main
+                id="content"
+                class="
+                ${options.fullWidth ? 'container-fluid' : 'container'} 
+                ${marginBottom ? 'mb-4' : ''}
+                ${options.fullHeight ? 'flex-grow-1' : ''}
+              "
+              >
+                ${content}
+              </main>
+              ${postContent}
+            </div>
+          </div>
+        </div>
       </body>
     </html>
   `.toString();
