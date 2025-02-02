@@ -6,12 +6,16 @@ import type { NavPage, NavSubPage } from './Navbar.types.js';
 
 export function SideNav({
   course,
+  courses,
   courseInstance,
+  courseInstances,
   page,
   subPage,
 }: {
   course: Course;
+  courses: Course[];
   courseInstance?: CourseInstance;
+  courseInstances?: CourseInstance[];
   page: NavPage;
   subPage: NavSubPage;
 }) {
@@ -19,12 +23,14 @@ export function SideNav({
     <div class="side-nav">
       ${CourseNav({
         course,
+        courses,
         page,
         subPage,
       })}
-      ${courseInstance
+      ${courseInstance && courseInstances
         ? CourseInstanceNav({
             courseInstance,
+            courseInstances,
             page,
             subPage,
           })
@@ -35,22 +41,47 @@ export function SideNav({
 
 function CourseNav({
   course,
+  courses,
   page,
   subPage,
 }: {
   course: Course;
+  courses: Course[];
   page: NavPage;
   subPage: NavSubPage;
 }) {
   const courseAdminUrl = `/pl/course/${course.id}/course_admin`;
+
+  console.log('courses', courses);
+  console.log('course', course);
+
+  // TODO: better way to do `${course.id}` === `${c.id}`?
   return html`
     <div class="side-nav-section-header">Course</div>
     <div class="side-nav-group mb-3">
-      <div>
-        <select id="course-picker" class="form-select" aria-label="Course">
-          <option selected>TAM 212</option>
-          <option>Other course</option>
-        </select>
+      <div class="dropdown">
+        <button
+          type="button"
+          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center"
+          data-toggle="dropdown"
+          aria-haspopup="true"
+          aria-expanded="false"
+          data-boundary="window"
+        >
+          <span> ${course.short_name} </span>
+        </button>
+        <div class="dropdown-menu">
+          ${courses.map((c) => {
+            return html`
+              <a
+                class="dropdown-item ${`${course.id}` === `${c.id}` ? 'active' : ''}"
+                href="/pl/course/${c.id}/course_admin"
+              >
+                ${c.short_name}
+              </a>
+            `;
+          })}
+        </div>
       </div>
       ${SideNavLink({
         text: 'Course instances',
@@ -112,10 +143,12 @@ function CourseNav({
 
 function CourseInstanceNav({
   courseInstance,
+  courseInstances,
   page,
   subPage,
 }: {
   courseInstance: CourseInstance;
+  courseInstances: CourseInstance[];
   page: NavPage;
   subPage: NavSubPage;
 }) {
@@ -125,10 +158,30 @@ function CourseInstanceNav({
     <div class="side-nav-section-header">Course instance</div>
     <div class="side-nav-group mb-3">
       <div>
-        <select id="course-instance-picker" class="form-select" aria-label="Course instance">
-          <option selected>Fall 2024</option>
-          <option>Spring 2024</option>
-        </select>
+        <div class="dropdown">
+          <button
+            type="button"
+            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center"
+            data-toggle="dropdown"
+            aria-haspopup="true"
+            aria-expanded="false"
+            data-boundary="window"
+          >
+            <span> ${courseInstance.short_name} </span>
+          </button>
+          <div class="dropdown-menu">
+            ${courseInstances.map((ci) => {
+              return html`
+                <a
+                  class="dropdown-item ${`${courseInstance.id}` === `${ci.id}` ? 'active' : ''}"
+                  href="/pl/course_instance/${ci.id}/instructor/instance_admin"
+                >
+                  ${ci.short_name}
+                </a>
+              `;
+            })}
+          </div>
+        </div>
         ${SideNavLink({
           text: 'Assessments',
           href: `${courseInstanceUrl}/assessments`,

@@ -7,12 +7,12 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  AssessmentInstanceSchema,
+  ClientFingerprintSchema,
   CourseSchema,
   IdSchema,
   QuestionSchema,
   VariantSchema,
-  ClientFingerprintSchema,
-  AssessmentInstanceSchema,
   type AssessmentInstance,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';

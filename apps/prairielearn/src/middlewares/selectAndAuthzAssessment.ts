@@ -19,5 +19,6 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
   _.assign(res.locals, result.rows[0]);
+
   next();
 });

@@ -17,6 +17,10 @@ body:has(div.app-container) {
     'side-nav content' 1fr / 300px 1fr;
 }
 
+.app-container.no-sidebar {
+  display: block;
+}
+
 .app-top-nav {
   grid-area: top-nav;
 }

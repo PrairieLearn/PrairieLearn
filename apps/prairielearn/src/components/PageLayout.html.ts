@@ -1,6 +1,7 @@
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 
+import { AssessmentNavigation } from './AssessmentNavigation.html.js';
 import { HeadContents } from './HeadContents.html.js';
 import { Navbar } from './Navbar.html.js';
 import type { NavContext } from './Navbar.types.js';
@@ -47,6 +48,7 @@ export function PageLayout({
   const marginBottom = options.marginBottom ?? true;
 
   // TODO: Check that all props are actually used
+  // TODO: more efficient way to load courses? effective use of caching?
   return html`
     <!doctype html>
     <html lang="en">
@@ -62,7 +64,7 @@ export function PageLayout({
         ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
         class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
       >
-        <div class="app-container">
+        <div class="app-container ${!resLocals.course ? 'no-sidebar' : ''}">
           <div class="app-top-nav">
             ${Navbar({
               resLocals,
@@ -71,17 +73,28 @@ export function PageLayout({
               navbarType: navContext.type,
             })}
           </div>
-          <div class="app-side-nav">
-            ${resLocals.course &&
-            SideNav({
-              course: resLocals.course,
-              courseInstance: resLocals.course_instance,
-              page: navContext.page,
-              subPage: navContext.subPage,
-            })}
-          </div>
+          ${resLocals.course &&
+          html`
+            <div class="app-side-nav">
+              ${SideNav({
+                course: resLocals.course,
+                courses: resLocals.courses,
+                courseInstance: resLocals.course_instance,
+                courseInstances: resLocals.course_instances,
+                page: navContext.page,
+                subPage: navContext.subPage,
+              })}
+            </div>
+          `}
           <div class="app-main">
             <div class="app-main-container">
+              ${resLocals.assessment &&
+              resLocals.assessments &&
+              AssessmentNavigation({
+                courseInstance: resLocals.course_instance,
+                assessment: resLocals.assessment,
+                assessments: resLocals.assessments,
+              })}
               ${ContextNavigation({
                 resLocals,
                 navPage: navContext.page,
