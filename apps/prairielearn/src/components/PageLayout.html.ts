@@ -49,6 +49,13 @@ export function PageLayout({
 
   // TODO: Check that all props are actually used
   // TODO: more efficient way to load courses? effective use of caching?
+
+  // The left navbar is used for course and course instance navigation instead
+  // of context navigation.
+  const showContextNavigation = !(
+    navContext.page && ['course_admin', 'instance_admin'].includes(navContext.page)
+  );
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -77,10 +84,7 @@ export function PageLayout({
           html`
             <div class="app-side-nav">
               ${SideNav({
-                course: resLocals.course,
-                courses: resLocals.courses,
-                courseInstance: resLocals.course_instance,
-                courseInstances: resLocals.course_instances,
+                resLocals,
                 page: navContext.page,
                 subPage: navContext.subPage,
               })}
@@ -95,11 +99,13 @@ export function PageLayout({
                 assessment: resLocals.assessment,
                 assessments: resLocals.assessments,
               })}
-              ${ContextNavigation({
-                resLocals,
-                navPage: navContext.page,
-                navSubPage: navContext.subPage,
-              })}
+              ${showContextNavigation
+                ? ContextNavigation({
+                    resLocals,
+                    navPage: navContext.page,
+                    navSubPage: navContext.subPage,
+                  })
+                : ''}
               ${preContent}
               <main
                 id="content"

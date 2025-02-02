@@ -1,36 +1,213 @@
-import { html } from '@prairielearn/html';
-
-import type { Course, CourseInstance } from '../lib/db-types.js';
+import { html, type HtmlValue } from '@prairielearn/html';
 
 import type { NavPage, NavSubPage } from './Navbar.types.js';
+import { ProgressCircle } from './ProgressCircle.html.js';
+
+// TODO: merge this with the other TabInfo
+interface TabInfo {
+  activePage: NavPage | NavPage[];
+  activeSubPage: NavSubPage | NavSubPage[];
+  subPageRequiredFor?: NavPage[];
+  urlSuffix: string | ((resLocals: Record<string, any>) => string);
+  iconClasses: string;
+  tabLabel: string;
+  htmlSuffix?: (resLocals: Record<string, any>) => HtmlValue;
+  renderCondition?: (resLocals: Record<string, any>) => boolean;
+}
+
+const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
+  instance_admin: [
+    {
+      activePage: 'instance_admin',
+      activeSubPage: 'access',
+      urlSuffix: '/instance_admin/access',
+      iconClasses: 'far fa-calendar-alt',
+      tabLabel: 'Access',
+    },
+    {
+      activePage: ['instance_admin', 'assessments', 'assessment', 'assessment_instance'],
+      activeSubPage: 'assessments',
+      subPageRequiredFor: ['instance_admin'],
+      urlSuffix: '/instance_admin/assessments',
+      iconClasses: 'fa fa-list',
+      tabLabel: 'Assessments',
+    },
+    {
+      activePage: 'instance_admin',
+      activeSubPage: ['file_view', 'file_edit'],
+      urlSuffix: '/instance_admin/file_view',
+      iconClasses: 'fa fa-edit',
+      tabLabel: 'Files',
+    },
+    {
+      activePage: 'gradebook',
+      activeSubPage: 'gradebook',
+      urlSuffix: '/instance_admin/gradebook',
+      iconClasses: 'fas fa-balance-scale',
+      tabLabel: 'Gradebook',
+      renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
+    },
+    {
+      activePage: 'instance_admin',
+      activeSubPage: 'lti',
+      urlSuffix: '/instance_admin/lti',
+      iconClasses: 'fas fa-graduation-cap',
+      tabLabel: 'LTI',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
+    },
+    {
+      activePage: 'instance_admin',
+      activeSubPage: 'lti13',
+      urlSuffix: '/instance_admin/lti13_instance',
+      iconClasses: 'fas fa-school-flag',
+      tabLabel: 'LTI 1.3',
+      renderCondition: (resLocals) => resLocals.lti13_enabled,
+    },
+    {
+      activePage: 'instance_admin',
+      activeSubPage: 'billing',
+      urlSuffix: '/instance_admin/billing',
+      iconClasses: 'fas fa-credit-card',
+      tabLabel: 'Billing',
+      renderCondition: (resLocals) => resLocals.billing_enabled,
+    },
+    {
+      activePage: 'instance_admin',
+      activeSubPage: 'settings',
+      urlSuffix: '/instance_admin/settings',
+      iconClasses: 'fas fa-cog',
+      tabLabel: 'Settings',
+    },
+  ],
+  course_admin: [
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'getting_started',
+      urlSuffix: '/course_admin/getting_started',
+      iconClasses: 'fa fa-tasks',
+      tabLabel: 'Getting Started',
+      htmlSuffix: ({
+        navbarCompleteGettingStartedTasksCount,
+        navbarTotalGettingStartedTasksCount,
+      }) =>
+        ProgressCircle({
+          value: navbarCompleteGettingStartedTasksCount,
+          maxValue: navbarTotalGettingStartedTasksCount,
+        }),
+      renderCondition: ({ authz_data, course }) =>
+        authz_data.has_course_permission_edit && course.show_getting_started,
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'sets',
+      urlSuffix: '/course_admin/sets',
+      iconClasses: 'fa fa-list',
+      tabLabel: 'Assessment Sets',
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'instances',
+      urlSuffix: '/course_admin/instances',
+      iconClasses: 'fas fa-chalkboard-teacher',
+      tabLabel: 'Course Instances',
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: ['file_view', 'file_edit'],
+      urlSuffix: '/course_admin/file_view',
+      iconClasses: 'fa fa-edit',
+      tabLabel: 'Files',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_view,
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'issues',
+      urlSuffix: '/course_admin/issues',
+      iconClasses: 'fas fa-bug',
+      tabLabel: 'Issues',
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'modules',
+      urlSuffix: '/course_admin/modules',
+      iconClasses: 'fa fa-layer-group',
+      tabLabel: 'Modules',
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'questions',
+      urlSuffix: '/course_admin/questions',
+      iconClasses: 'fa fa-question',
+      tabLabel: 'Questions',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'settings',
+      urlSuffix: '/course_admin/settings',
+      iconClasses: 'fas fa-cog',
+      tabLabel: 'Settings',
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'sharing',
+      urlSuffix: '/course_admin/sharing',
+      iconClasses: 'fas fa-share-nodes',
+      tabLabel: 'Sharing',
+      renderCondition: (resLocals) => resLocals.question_sharing_enabled,
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'staff',
+      urlSuffix: '/course_admin/staff',
+      iconClasses: 'fas fa-users',
+      tabLabel: 'Staff',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_own,
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'syncs',
+      urlSuffix: '/course_admin/syncs',
+      iconClasses: 'fas fa-sync-alt',
+      tabLabel: 'Sync',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'tags',
+      urlSuffix: '/course_admin/tags',
+      iconClasses: 'fas fa-hashtag',
+      tabLabel: 'Tags',
+    },
+    {
+      activePage: 'course_admin',
+      activeSubPage: 'topics',
+      urlSuffix: '/course_admin/topics',
+      iconClasses: 'fas fa-quote-right',
+      tabLabel: 'Topics',
+    },
+  ],
+};
 
 export function SideNav({
-  course,
-  courses,
-  courseInstance,
-  courseInstances,
+  resLocals,
   page,
   subPage,
 }: {
-  course: Course;
-  courses: Course[];
-  courseInstance?: CourseInstance;
-  courseInstances?: CourseInstance[];
+  resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
 }) {
   return html`
     <div class="side-nav">
       ${CourseNav({
-        course,
-        courses,
+        resLocals,
         page,
         subPage,
       })}
-      ${courseInstance && courseInstances
+      ${resLocals.course_instance && resLocals.course_instances
         ? CourseInstanceNav({
-            courseInstance,
-            courseInstances,
+            resLocals,
             page,
             subPage,
           })
@@ -40,20 +217,16 @@ export function SideNav({
 }
 
 function CourseNav({
-  course,
-  courses,
+  resLocals,
   page,
   subPage,
 }: {
-  course: Course;
-  courses: Course[];
+  resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
 }) {
-  const courseAdminUrl = `/pl/course/${course.id}/course_admin`;
-
-  console.log('courses', courses);
-  console.log('course', course);
+  const courseSideNavPageTabs = sideNavPagesTabs.course_admin;
+  if (!courseSideNavPageTabs) return '';
 
   // TODO: better way to do `${course.id}` === `${c.id}`?
   return html`
@@ -68,13 +241,13 @@ function CourseNav({
           aria-expanded="false"
           data-boundary="window"
         >
-          <span> ${course.short_name} </span>
+          <span> ${resLocals.course.short_name} </span>
         </button>
         <div class="dropdown-menu">
-          ${courses.map((c) => {
+          ${resLocals.courses.map((c) => {
             return html`
               <a
-                class="dropdown-item ${`${course.id}` === `${c.id}` ? 'active' : ''}"
+                class="dropdown-item ${`${resLocals.course.id}` === `${c.id}` ? 'active' : ''}"
                 href="/pl/course/${c.id}/course_admin"
               >
                 ${c.short_name}
@@ -83,76 +256,29 @@ function CourseNav({
           })}
         </div>
       </div>
-      ${SideNavLink({
-        text: 'Course instances',
-        href: `${courseAdminUrl}/instances`,
-        icon: 'fa-chalkboard-user',
-        navPage: 'course_admin',
-        activePage: page,
-        navSubPage: 'instances',
-        activeSubPage: subPage,
-      })}
-      ${SideNavLink({
-        text: 'Questions',
-        href: `${courseAdminUrl}/questions`,
-        icon: 'fa-question',
-        navPage: 'course_admin',
-        activePage: page,
-        navSubPage: 'questions',
-        activeSubPage: subPage,
-      })}
-      ${SideNavLink({
-        text: 'Issues',
-        href: `${courseAdminUrl}/issues`,
-        icon: 'fa-bug',
-        navPage: 'course_admin',
-        activePage: page,
-        navSubPage: 'issues',
-        activeSubPage: subPage,
-      })}
-      ${SideNavLink({
-        text: 'Sync',
-        href: `${courseAdminUrl}/syncs`,
-        icon: 'fa-sync',
-        navPage: 'course_admin',
-        activePage: page,
-        navSubPage: 'syncs',
-        activeSubPage: subPage,
-      })}
-      ${SideNavLink({
-        text: 'Files',
-        href: `${courseAdminUrl}/file_view`,
-        icon: 'fa-edit',
-        navPage: 'course_admin',
-        activePage: page,
-        navSubPage: 'file_view',
-        activeSubPage: subPage,
-      })}
-      ${SideNavLink({
-        text: 'Settings',
-        href: `${courseAdminUrl}/settings`,
-        icon: 'fa-gear',
-        navPage: 'course_admin',
-        activePage: page,
-        navSubPage: 'settings',
-        activeSubPage: subPage,
-      })}
+      ${courseSideNavPageTabs.map((tabInfo) =>
+        SideNavLink({
+          resLocals,
+          navPage: page,
+          navSubPage: subPage,
+          tabInfo,
+        }),
+      )}
     </div>
   `;
 }
 
 function CourseInstanceNav({
-  courseInstance,
-  courseInstances,
+  resLocals,
   page,
   subPage,
 }: {
-  courseInstance: CourseInstance;
-  courseInstances: CourseInstance[];
+  resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
 }) {
-  const courseInstanceUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin`;
+  const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
+  if (!courseInstanceSideNavPageTabs) return '';
 
   return html`
     <div class="side-nav-section-header">Course instance</div>
@@ -167,13 +293,15 @@ function CourseInstanceNav({
             aria-expanded="false"
             data-boundary="window"
           >
-            <span> ${courseInstance.short_name} </span>
+            <span> ${resLocals.course_instance.short_name} </span>
           </button>
           <div class="dropdown-menu">
-            ${courseInstances.map((ci) => {
+            ${resLocals.course_instances.map((ci) => {
               return html`
                 <a
-                  class="dropdown-item ${`${courseInstance.id}` === `${ci.id}` ? 'active' : ''}"
+                  class="dropdown-item ${`${resLocals.course_instance.id}` === `${ci.id}`
+                    ? 'active'
+                    : ''}"
                   href="/pl/course_instance/${ci.id}/instructor/instance_admin"
                 >
                   ${ci.short_name}
@@ -181,69 +309,114 @@ function CourseInstanceNav({
               `;
             })}
           </div>
+          ${courseInstanceSideNavPageTabs.map((tabInfo) =>
+            SideNavLink({
+              resLocals,
+              navPage: page,
+              navSubPage: subPage,
+              tabInfo,
+            }),
+          )}
         </div>
-        ${SideNavLink({
-          text: 'Assessments',
-          href: `${courseInstanceUrl}/assessments`,
-          icon: 'fa-list',
-          navPage: 'instance_admin',
-          activePage: page,
-          navSubPage: 'assessments', // TODO: Lots of repeat code, can this be cleaned up?
-          activeSubPage: subPage,
-        })}
-        ${SideNavLink({
-          text: 'Gradebook',
-          href: `${courseInstanceUrl}/gradebook`,
-          icon: 'fa-scale-balanced',
-          navPage: 'gradebook',
-          activePage: page,
-          navSubPage: 'gradebook',
-          activeSubPage: subPage,
-        })}
-        ${SideNavLink({
-          text: 'Files',
-          href: `${courseInstanceUrl}/file_view`,
-          icon: 'fa-edit',
-          navPage: 'instance_admin',
-          activePage: page,
-          navSubPage: 'file_view',
-          activeSubPage: subPage,
-        })}
-        ${SideNavLink({
-          text: 'Settings',
-          href: `${courseInstanceUrl}/settings`,
-          icon: 'fa-gear',
-          navPage: 'instance_admin',
-          activePage: page,
-          navSubPage: 'settings',
-          activeSubPage: subPage,
-        })}
       </div>
     </div>
   `;
+  // ${SideNavLink({
+  //   text: 'Assessments',
+  //   href: `${courseInstanceUrl}/assessments`,
+  //   icon: 'fa-list',
+  //   navPage: ['instance_admin', 'assessment', 'assessment_instance', 'assessments'], // TODO: is this comprehensive?
+  //   activePage: page,
+  //   navSubPage: 'assessments', // TODO: Lots of repeat code, can this be cleaned up?
+  //   activeSubPage: subPage,
+  // })}
+  // ${SideNavLink({
+  //   text: 'Gradebook',
+  //   href: `${courseInstanceUrl}/gradebook`,
+  //   icon: 'fa-scale-balanced',
+  //   navPage: 'gradebook',
+  //   activePage: page,
+  //   navSubPage: 'gradebook',
+  //   activeSubPage: subPage,
+  // })}
+  // ${SideNavLink({
+  //   text: 'Files',
+  //   href: `${courseInstanceUrl}/file_view`,
+  //   icon: 'fa-edit',
+  //   navPage: 'instance_admin',
+  //   activePage: page,
+  //   navSubPage: 'file_view',
+  //   activeSubPage: subPage,
+  // })}
+  // ${SideNavLink({
+  //   text: 'Settings',
+  //   href: `${courseInstanceUrl}/settings`,
+  //   icon: 'fa-gear',
+  //   navPage: 'instance_admin',
+  //   activePage: page,
+  //   navSubPage: 'settings',
+  //   activeSubPage: subPage,
+  // })}
 }
 
 function SideNavLink({
-  text,
-  href,
-  icon,
+  resLocals,
   navPage,
-  activePage,
   navSubPage,
-  activeSubPage,
+  tabInfo,
 }: {
-  text: string; // TODO: Document
-  href: string;
-  icon: string;
+  resLocals: Record<string, any>;
   navPage: NavPage;
-  activePage: NavPage;
-  navSubPage?: NavSubPage;
-  activeSubPage?: NavSubPage;
+  navSubPage: NavSubPage;
+  tabInfo: TabInfo;
 }) {
-  const active = navPage === activePage && navSubPage === activeSubPage;
+  const { urlPrefix } = resLocals;
+  const {
+    activePage,
+    activeSubPage,
+    subPageRequiredFor,
+    iconClasses,
+    tabLabel,
+    htmlSuffix,
+    renderCondition,
+  } = tabInfo;
+
+  if (renderCondition != null && !renderCondition(resLocals)) return '';
+
+  const urlSuffix =
+    typeof tabInfo.urlSuffix === 'function' ? tabInfo.urlSuffix(resLocals) : tabInfo.urlSuffix;
+
+  // TODO: Clean this up
+  let isActive =
+    navPage === activePage ||
+    (Array.isArray(activePage) && navPage != null && activePage.includes(navPage));
+
+  if (!subPageRequiredFor || subPageRequiredFor.includes(navPage)) {
+    isActive =
+      isActive &&
+      (navSubPage === activeSubPage ||
+        (Array.isArray(activeSubPage) && navSubPage != null && activeSubPage.includes(navSubPage)));
+  }
+
+  // const active = false; // TODO: implement
+  // if (!Array.isArray(navPage)) {
+  //   active = navPage === activePage && navSubPage === activeSubPage;
+  // } else {
+  //   active = navPage.includes(activePage);
+  // }
   return html`
-    <a href="${href}" class="side-nav-link ${active ? 'side-nav-link-active' : ''}"
-      ><i class="fa fa-fw ${icon}"></i> ${text}</a
+    <a
+      href="${urlPrefix}${urlSuffix}"
+      class="side-nav-link ${isActive ? 'side-nav-link-active' : ''}"
     >
+      <i class="${iconClasses}"></i>
+      ${tabLabel} ${htmlSuffix?.(resLocals) || ''}
+    </a>
   `;
 }
+
+// return html`
+// <a href="${href}" class="side-nav-link ${active ? 'side-nav-link-active' : ''}"
+//   ><i class="fa fa-fw ${iconClasses}"></i> ${text}</a
+// >
+// `;

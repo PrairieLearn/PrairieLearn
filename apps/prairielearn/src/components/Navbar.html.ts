@@ -19,7 +19,7 @@ export function Navbar({
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
 }) {
-  const { __csrf_token, course, institution, urlPrefix } = resLocals;
+  const { __csrf_token, course, institution } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
@@ -316,8 +316,9 @@ function FlashMessages() {
     return '';
   }
 
+  // TODO: Move this into main?
   return html`
-    <div class="mb-3">
+    <div>
       ${flashMessages.map(
         ({ type, message }) => html`
           <div
