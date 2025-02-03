@@ -174,7 +174,11 @@ def worker_loop() -> None:
             # wait for a single line of input
             json_inp = sys.stdin.readline()
             # unpack the input line as JSON
-            inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
+            try:
+                inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
+            except json.JSONDecodeError:
+                print(json_inp, file=sys.stderr)
+                raise
 
             # get the contents of the JSON input
             file = inp.get("file", None)
