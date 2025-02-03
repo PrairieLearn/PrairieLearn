@@ -176,9 +176,9 @@ def worker_loop() -> None:
             # unpack the input line as JSON
             try:
                 inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as exc:
                 print(json_inp, file=sys.stderr)
-                raise
+                raise ValueError(f"Error decoding JSON input: {json_inp}") from exc
 
             # get the contents of the JSON input
             file = inp.get("file", None)
