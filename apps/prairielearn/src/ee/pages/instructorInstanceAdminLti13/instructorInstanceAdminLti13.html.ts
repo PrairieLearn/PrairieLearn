@@ -83,6 +83,10 @@ export function InstructorInstanceAdminLti13({
                             href="/pl/course_instance/${resLocals.course_instance
                               .id}/instructor/instance_admin/lti13_instance/${i
                               .lti13_course_instance.id}"
+                            aria-current="${instance.lti13_course_instance.id ===
+                            i.lti13_course_instance.id
+                              ? 'true'
+                              : ''}"
                           >
                             ${i.lti13_instance.name}: ${i.lti13_course_instance.context_label}
                           </a>
