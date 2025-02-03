@@ -1,7 +1,6 @@
 {
   "name": "@prairielearn/zod",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "repository": {
