@@ -152,8 +152,7 @@ ON CONFLICT (
   coalesce(question_id, -1),
   coalesce(course_instance_id, -1),
   coalesce(assessment_id, -1)
-) DO
-UPDATE
+) DO UPDATE
 SET
   type = EXCLUDED.type,
   question_id = EXCLUDED.question_id,
