@@ -28,7 +28,6 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
-import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
@@ -295,14 +294,17 @@ router.get(
       user_id: res.locals.user.user_id,
       is_administrator: res.locals.is_administrator,
     });
-    const infoPath = encodePath(path.join('questions', res.locals.question.qid, 'info.json'));
-
-    const fullInfoPath = path.join(res.locals.course.path, infoPath);
-    const questionInfoExists = await fs.pathExists(fullInfoPath);
+    const infoPath = path.join(
+      res.locals.course.path,
+      'questions',
+      res.locals.question.qid,
+      'info.json',
+    );
+    const questionInfoExists = await fs.pathExists(infoPath);
 
     let origHash = '';
     if (questionInfoExists) {
-      origHash = sha256(b64EncodeUnicode(await fs.readFile(fullInfoPath, 'utf8'))).toString();
+      origHash = sha256(b64EncodeUnicode(await fs.readFile(infoPath, 'utf8'))).toString();
     }
 
     const canEdit =

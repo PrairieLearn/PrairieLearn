@@ -68,6 +68,9 @@ export async function sync(
   courseData: CourseData,
 ): Promise<Record<string, string>> {
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
+    if (qid.includes(' ')) {
+      throw new Error(`Question ID contains a space: ${qid}`);
+    }
     return JSON.stringify([
       qid,
       question.uuid,
