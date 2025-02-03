@@ -26,12 +26,13 @@ export function Navbar({
 
   let linkData = [{ text: 'Home', href: '/' }];
 
+
   if (institution) {
     linkData = [
       ...linkData,
-      { text: 'Global Admin', href: '/' },
-      { text: 'Institutions', href: '/' },
-      { text: institution.short_name, href: '/' },
+      { text: 'Global Admin', href: '/pl/administrator/admins' },
+      { text: 'Institutions', href: '/pl/administrator/institutions' },
+      { text: institution.short_name, href: '/pl/administrator/institutions' },
     ];
   }
 
@@ -39,7 +40,7 @@ export function Navbar({
     linkData = [
       ...linkData, // TODO: populate this witht he actual institution name -- in the future, this should only appear if the uesr has global admin privileges?
       { text: 'Courses', href: '/' },
-      { text: course.short_name, href: '/' },
+      { text: course.short_name, href: `/pl/course/${course.id}/course_admin/instances` },
     ];
   }
 
