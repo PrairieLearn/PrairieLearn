@@ -8,7 +8,7 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "text": {
       "description": "Text to precede the set of statements being given.",
@@ -27,6 +27,24 @@
       "items": {
         "type": "string"
       }
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     }
   }
 }

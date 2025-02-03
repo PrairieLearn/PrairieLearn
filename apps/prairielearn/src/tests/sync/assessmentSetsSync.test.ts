@@ -1,5 +1,6 @@
 import { assert } from 'chai';
 
+import type { AssessmentSetJson } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -22,13 +23,13 @@ function checkAssessmentSet(syncedAssessmentSet: any, assessmentSet: any) {
 /**
  * Makes a new assessment.
  */
-function makeAssessmentSet(): util.AssessmentSet {
+function makeAssessmentSet() {
   return {
     name: 'new assessment set',
     abbreviation: 'new',
     heading: 'a new assessment set to sync',
     color: 'red1',
-  };
+  } satisfies AssessmentSetJson;
 }
 
 describe('Assessment set syncing', () => {
@@ -87,13 +88,13 @@ describe('Assessment set syncing', () => {
       abbreviation: 'new1',
       heading: 'a new assessment set 1 to sync',
       color: 'red1',
-    };
+    } satisfies AssessmentSetJson;
     const newAssessmentSet2 = {
       name: 'new assessment set',
       abbreviation: 'new2',
       heading: 'a new assessment set 2 to sync',
       color: 'red2',
-    };
+    } satisfies AssessmentSetJson;
     courseData.course.assessmentSets.push(newAssessmentSet1);
     courseData.course.assessmentSets.push(newAssessmentSet2);
     await util.writeAndSyncCourseData(courseData);
