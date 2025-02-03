@@ -171,16 +171,21 @@ def worker_loop() -> None:
         # return the results. The caller should terminate us with a
         # SIGTERM.
         while True:
-            # wait for a single line of input
+            # Wait for a single line of input
             json_inp = sys.stdin.readline()
-            # unpack the input line as JSON
+
+            # Sometimes we seem to get an empty line, so we'll just ignore it.
+            if not json_inp.strip():
+                continue
+
+            # Unpack the input line as JSON
             try:
                 inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
             except json.JSONDecodeError as exc:
                 print(json_inp, file=sys.stderr)
                 raise ValueError(f"Error decoding JSON input: {json_inp}") from exc
 
-            # get the contents of the JSON input
+            # Get the contents of the JSON input
             file = inp.get("file", None)
             fcn = inp.get("fcn", None)
             args = inp.get("args", None)
