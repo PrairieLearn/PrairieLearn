@@ -506,7 +506,13 @@ This can be used like so:
 
 ```python
 from prairielearn import set_weighted_score_data
-# ...
+
+def grade(data):
+    # update partial_scores as necessary
+    # ...
+
+    # compute total question score
+    set_weighted_score_data(data)
 ```
 
 More detailed information can be found in the docstrings for these functions. If you would prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.

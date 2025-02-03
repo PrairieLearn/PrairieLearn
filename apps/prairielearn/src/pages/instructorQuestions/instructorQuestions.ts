@@ -10,6 +10,7 @@ import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
+import { isEnterprise } from '../../lib/license.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
@@ -100,6 +101,7 @@ router.get(
         showAiGenerateQuestionButton:
           res.locals.authz_data.has_course_permission_edit &&
           !res.locals.course.example_course &&
+          isEnterprise() &&
           (await features.enabledFromLocals('ai-question-generation', res.locals)),
         resLocals: res.locals,
       }),

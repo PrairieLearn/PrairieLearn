@@ -1,6 +1,5 @@
 import pprint
 from enum import Enum
-from typing import cast
 
 import chevron
 import lxml.html
@@ -128,8 +127,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if not isinstance(frame, pd.DataFrame):
         raise TypeError(f'Parameter name "{varname}" does not encode a dataframe.')
 
-    frame = cast(pd.DataFrame, frame)
-
     frame_style = frame.style
 
     # Format integers using commas every 3 digits
@@ -177,7 +174,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Might be worth moving everything out of the CSS file and handle it all with the builtin styler.
     frame_style.set_table_attributes("class=pl-dataframe-table")
 
-    html_params = {
+    html_params: dict[str, str | bool | int] = {
         "uuid": pl.get_uuid(),
         "frame_html": frame_style.to_html(),
         "code_string": pprint.pformat(
