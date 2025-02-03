@@ -294,17 +294,13 @@ router.get(
       user_id: res.locals.user.user_id,
       is_administrator: res.locals.is_administrator,
     });
-    const infoPath = path.join(
-      res.locals.course.path,
-      'questions',
-      res.locals.question.qid,
-      'info.json',
-    );
-    const questionInfoExists = await fs.pathExists(infoPath);
+    const infoPath = path.join('questions', res.locals.question.qid, 'info.json');
+    const fullInfoPath = path.join(res.locals.course.path, infoPath);
+    const questionInfoExists = await fs.pathExists(fullInfoPath);
 
     let origHash = '';
     if (questionInfoExists) {
-      origHash = sha256(b64EncodeUnicode(await fs.readFile(infoPath, 'utf8'))).toString();
+      origHash = sha256(b64EncodeUnicode(await fs.readFile(fullInfoPath, 'utf8'))).toString();
     }
 
     const canEdit =
