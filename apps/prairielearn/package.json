@@ -149,7 +149,6 @@
     "pg": "^8.13.1",
     "plist": "^3.1.0",
     "popper.js": "^1.16.1",
-    "postgres-interval": "^4.0.2",
     "preact": "^10.25.4",
     "prettier": "3.4.2",
     "qrcode-svg": "^1.1.0",
