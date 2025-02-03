@@ -152,7 +152,9 @@ export function Lti13CourseNavigationNotReady({
                       this.
                     </p>
                     <p>Here are your roles that we received from your LMS:</p>
-                    <pre>${ltiRoles.join('\n')}</pre>
+                    <ul class="mb-0">
+                      ${ltiRoles.map((role) => html`<li><code>${role}</code></li>`)}
+                    </ul>
                   </div>
                 </div>
               `}

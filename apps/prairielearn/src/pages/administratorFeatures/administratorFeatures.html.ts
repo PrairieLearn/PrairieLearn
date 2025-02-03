@@ -3,9 +3,8 @@ import { z } from 'zod';
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { type Course, type CourseInstance, type Institution } from '../../lib/db-types.js';
 
 export const FeatureGrantRowSchema = z.object({
@@ -34,42 +33,40 @@ export function AdministratorFeatures({
   features: string[];
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Features' })}
-      </head>
-      <body>
-        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'features' })}
-        <main id="content" class="container">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <h1>Features</h1>
-            </div>
-            ${features.length > 0
-              ? html`
-                  <div class="list-group list-group-flush">
-                    ${features.map((feature) => {
-                      return html`
-                        <div class="list-group-item d-flex align-items-center">
-                          <a
-                            href="${resLocals.urlPrefix}/administrator/features/${feature}"
-                            class="mr-auto text-monospace"
-                          >
-                            ${feature}
-                          </a>
-                        </div>
-                      `;
-                    })}
-                  </div>
-                `
-              : html`<div class="card-body text-center text-secondary">No features</div>`}
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Features',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'features',
+    },
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h1>Features</h1>
+        </div>
+        ${features.length > 0
+          ? html`
+              <div class="list-group list-group-flush">
+                ${features.map((feature) => {
+                  return html`
+                    <div class="list-group-item d-flex align-items-center">
+                      <a
+                        href="${resLocals.urlPrefix}/administrator/features/${feature}"
+                        class="mr-auto text-monospace"
+                      >
+                        ${feature}
+                      </a>
+                    </div>
+                  `;
+                })}
+              </div>
+            `
+          : html`<div class="card-body text-center text-secondary">No features</div>`}
+      </div>
+    `,
+  });
 }
 
 export function AdministratorFeature({
@@ -85,78 +82,79 @@ export function AdministratorFeature({
   featureInConfig: boolean | null;
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Features' })}
-        ${compiledScriptTag('administratorFeaturesClient.ts')}
-        <style>
-          .list-inline-item:not(:first-child):before {
-            margin-right: 0.5rem;
-            content: '/';
-          }
-          [data-loading] {
-            display: none;
-          }
-        </style>
-      </head>
-      <body>
-        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'features' })}
-        ${AddFeatureGrantModal({
-          feature,
-          // Default to enabled for new grants.
-          enabled: true,
-          institutions,
-          csrfToken: resLocals.__csrf_token,
-        })}
-        <main id="content" class="container">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span class="text-monospace">${feature}</span>
-              <button
-                class="btn btn-light ml-auto"
-                data-toggle="modal"
-                data-target="#add-feature-grant-modal"
-              >
-                Grant feature
-              </button>
-            </div>
-            ${featureGrants.length > 0 || featureInConfig != null
-              ? html`
-                  <div class="list-group list-group-flush">
-                    ${featureInConfig != null
-                      ? html`
-                          <div class="list-group-item">
-                            <i
-                              class="fa-solid mr-1 ${featureInConfig
-                                ? 'fa-check text-success'
-                                : 'fa-times text-danger'}"
-                            ></i>
-                            Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration
-                            file
-                          </div>
-                        `
-                      : ''}
-                    ${featureGrants.map((featureGrant) =>
-                      FeatureGrant({
-                        featureGrant,
-                        overridden: featureInConfig != null,
-                        csrfToken: resLocals.__csrf_token,
-                      }),
-                    )}
-                  </div>
-                `
-              : html`
-                  <div class="card-body text-center text-secondary">
-                    There are no grants for this feature
-                  </div>
-                `}
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Features',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'features',
+    },
+    headContent: html`
+      ${compiledScriptTag('administratorFeaturesClient.ts')}
+      <style>
+        .list-inline-item:not(:first-child):before {
+          margin-right: 0.5rem;
+          content: '/';
+        }
+        [data-loading] {
+          display: none;
+        }
+      </style>
+    `,
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <span class="text-monospace">${feature}</span>
+          <button
+            class="btn btn-light ml-auto"
+            data-toggle="modal"
+            data-target="#add-feature-grant-modal"
+          >
+            Grant feature
+          </button>
+        </div>
+        ${featureGrants.length > 0 || featureInConfig != null
+          ? html`
+              <div class="list-group list-group-flush">
+                ${featureInConfig != null
+                  ? html`
+                      <div class="list-group-item">
+                        <i
+                          class="fa-solid mr-1 ${featureInConfig
+                            ? 'fa-check text-success'
+                            : 'fa-times text-danger'}"
+                        ></i>
+                        Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration file
+                      </div>
+                    `
+                  : ''}
+                ${featureGrants.map((featureGrant) =>
+                  FeatureGrant({
+                    featureGrant,
+                    overridden: featureInConfig != null,
+                    csrfToken: resLocals.__csrf_token,
+                  }),
+                )}
+              </div>
+            `
+          : html`
+              <div class="card-body text-center text-secondary">
+                There are no grants for this feature
+              </div>
+            `}
+      </div>
+    `,
+    postContent: html`
+      ${AddFeatureGrantModal({
+        feature,
+        // Default to enabled for new grants.
+        enabled: true,
+        institutions,
+        csrfToken: resLocals.__csrf_token,
+      })}
+    `,
+  });
 }
 
 function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantRow }) {

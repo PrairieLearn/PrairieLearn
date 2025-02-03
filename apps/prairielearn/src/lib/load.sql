@@ -15,8 +15,7 @@ VALUES
     $average_jobs,
     $max_jobs
   )
-ON CONFLICT (instance_id, job_type) DO
-UPDATE
+ON CONFLICT (instance_id, job_type) DO UPDATE
 SET
   date = now(),
   group_name = EXCLUDED.group_name,
