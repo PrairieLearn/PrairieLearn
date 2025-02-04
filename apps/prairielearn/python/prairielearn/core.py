@@ -844,12 +844,11 @@ def get_color_attrib(
         raise ValueError(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
 
 
-# This internal represents most the types that would pass a np.isscalar check
-_NumPyScalarType = bool | int | float | complex | str | bytes | np.generic
+_NumericScalarType = numbers.Number | complex | np.generic
 
 
 def numpy_to_matlab(
-    np_object: npt.NDArray[Any] | _NumPyScalarType,
+    np_object: _NumericScalarType | npt.NDArray[Any],
     ndigits: int = 2,
     wtype: str = "f",
 ) -> str:
@@ -907,7 +906,7 @@ _FormatLanguage = Literal["python", "matlab", "mathematica", "r", "sympy"]
 
 
 def string_from_numpy(
-    A: numbers.Number | _NumPyScalarType | npt.NDArray[Any],
+    A: _NumericScalarType | npt.NDArray[Any],
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
@@ -1048,9 +1047,7 @@ def string_from_2darray(
     return result
 
 
-def string_from_number_sigfig(
-    a: numbers.Number | _NumPyScalarType, digits: int = 2
-) -> str:
+def string_from_number_sigfig(a: _NumericScalarType, digits: int = 2) -> str:
     """string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is of type float or complex. It returns "a"
@@ -1060,7 +1057,7 @@ def string_from_number_sigfig(
 
     # `np.iscomplexobj` isn't a proper type guard, so we need to use
     # casting to call this function.
-    if np.iscomplexobj(cast(Any, a)):
+    if not isinstance(a, numbers.Number) and np.iscomplexobj(a):
         return _string_from_complex_sigfig(cast(complex, a), digits=digits)
     else:
         return to_precision(a, digits)
@@ -1082,7 +1079,9 @@ def _string_from_complex_sigfig(
         return f"{re}-{im}j"
 
 
-def numpy_to_matlab_sf(A: _NumPyScalarType | npt.NDArray[Any], ndigits: int = 2) -> str:
+def numpy_to_matlab_sf(
+    A: _NumericScalarType | npt.NDArray[Any], ndigits: int = 2
+) -> str:
     """numpy_to_matlab(A, ndigits=2)
 
     This function assumes that A is one of these things:
@@ -1644,7 +1643,7 @@ def string_to_2darray(
 
 
 def latex_from_2darray(
-    A: numbers.Number | _NumPyScalarType | npt.NDArray[Any],
+    A: _NumericScalarType | npt.NDArray[Any],
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
