@@ -77,7 +77,6 @@ async function checkRender(
   const question = await selectQuestionById(questionId);
   const course = await selectCourseById(courseId);
   const user = await selectUserById(userId);
-  const authnUser = user; //user id == authn user id in this case
 
   const locals = {
     // The URL prefix doesn't matter here since we won't ever show the result to the user.
@@ -85,7 +84,7 @@ async function checkRender(
     question,
     course,
     user,
-    authn_user: authnUser,
+    authn_user: user, // We don't have a separate authn user in this case.
   };
   await getAndRenderVariant(null, null, locals);
 
