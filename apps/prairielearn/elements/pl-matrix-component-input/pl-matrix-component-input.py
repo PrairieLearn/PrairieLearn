@@ -159,7 +159,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
 
-        html_params = {
+        html_params: dict[str, bool | str | float | None] = {
             "question": True,
             "name": name,
             "label": label,
@@ -635,7 +635,7 @@ def create_table_for_html_display(
             + str(m)
             + '"></td>'
         )
-        if score_message is not None:
+        if score_message:
             display_array += '<td rowspan="0">&nbsp;' + score_message + "</td>"
         display_array += "</tr>"
         # Add the other rows
