@@ -100,6 +100,9 @@ export function InstructorAiGenerateDraftEditor({
                       ></span>
                       Revise question
                     </button>
+                    <div class="text-muted small text-center mt-1">
+                      AI can make mistakes. Review the generated question.
+                    </div>
                   </form>
                 </div>
               </div>
