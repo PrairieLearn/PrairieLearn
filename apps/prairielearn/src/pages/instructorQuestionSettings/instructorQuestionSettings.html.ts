@@ -79,7 +79,6 @@ export function InstructorQuestionSettings({
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
-  console.log(resLocals.question);
 
   return PageLayout({
     resLocals,

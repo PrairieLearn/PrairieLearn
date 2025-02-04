@@ -103,7 +103,6 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied');
     }
     if (req.body.__action === 'update_question') {
-      console.log(req.body);
       const infoPath = path.join(
         res.locals.course.path,
         'questions',
