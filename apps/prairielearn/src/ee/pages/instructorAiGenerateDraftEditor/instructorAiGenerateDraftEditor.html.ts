@@ -74,7 +74,7 @@ export function InstructorAiGenerateDraftEditor({
                 </div>
                 <div class="app-chat-prompt mt-2">
                   <form
-                    class="js-adjustment-form"
+                    class="js-revision-form"
                     hx-post="${variantId
                       ? html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}?variant_id=${variantId}`
                       : html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}`}"
@@ -87,8 +87,9 @@ export function InstructorAiGenerateDraftEditor({
                       name="prompt"
                       id="user-prompt-llm"
                       class="form-control mb-2"
-                      placeholder="What would you like to change?"
+                      placeholder="What would you like to revise?"
                       aria-label="Modification instructions"
+                      required
                     ></textarea>
                     <button type="submit" class="btn btn-dark w-100">
                       <span
@@ -97,7 +98,7 @@ export function InstructorAiGenerateDraftEditor({
                         aria-hidden="true"
                         data-loading-class-remove="d-none"
                       ></span>
-                      Adjust question
+                      Revise question
                     </button>
                   </form>
                 </div>
@@ -172,8 +173,8 @@ function PromptHistory({
         <div class="d-flex flex-row">
           <div class="p-3 mb-2 rounded" style="max-width: 90%">
             ${prompt.prompt_type === 'initial'
-              ? 'We generated a potential question.'
-              : 'We have made changes. Please check the preview and prompt for further revisions.'}
+              ? "A new question has been generated. Review the preview and prompt for any necessary revisions. Once you're happy with the question, finalize it to use it on an assessment."
+              : 'The question has been revised. Make further revisions or finalize the question.'}
             <div>
               ${run(() => {
                 if (!showJobLogs || !prompt.job_sequence_id) return '';

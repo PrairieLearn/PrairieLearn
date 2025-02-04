@@ -65,11 +65,11 @@ class DraftFileEditor {
 onDocumentReady(() => {
   configureAceBasePaths();
 
-  // Disable the "Adjust question" button until the form is changed.
-  const adjustmentForm = document.querySelector<HTMLFormElement>('.js-adjustment-form');
-  const submitButton = adjustmentForm?.querySelector<HTMLButtonElement>('button[type="submit"]');
-  if (adjustmentForm && submitButton) {
-    saveButtonEnabling(adjustmentForm, submitButton);
+  // Disable the "Revise question" button until the form is changed.
+  const revisionForm = document.querySelector<HTMLFormElement>('.js-revision-form');
+  const submitButton = revisionForm?.querySelector<HTMLButtonElement>('button[type="submit"]');
+  if (revisionForm && submitButton) {
+    saveButtonEnabling(revisionForm, submitButton);
   }
 
   observe('.js-file-editor', {
