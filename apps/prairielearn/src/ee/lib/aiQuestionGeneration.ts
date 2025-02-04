@@ -77,7 +77,7 @@ async function checkRender(
   const question = await selectQuestionById(questionId);
   const course = await selectCourseById(courseId);
   const user = await selectUserById(userId);
-  const authnUser = await selectUserById(userId); //user id == authn user id in this case
+  const authnUser = user; //user id == authn user id in this case
 
   const locals = {
     // The URL prefix doesn't matter here since we won't ever show the result to the user.
@@ -95,7 +95,7 @@ async function checkRender(
     .map((issue) => issue.system_data?.courseErrData?.outputBoth as string)
     .filter((output) => output !== undefined)
     .map((output) => {
-      return `When trying to render, your code created an error with the following stack trace: ${output}\n\nPlease fix it.`;
+      return `When trying to render, your code created an error with the following output: \`\`\`${output}\`\`\`\n\nPlease fix it.`;
     });
 }
 
