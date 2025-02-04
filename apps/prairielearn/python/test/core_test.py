@@ -445,3 +445,63 @@ def test_iter_keys(length: int, expected_output: list[str]) -> None:
 )
 def test_index2key(idx: int, expected_output: str) -> None:
     assert pl.index2key(idx) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("value", "args", "expected_output"),
+    [
+        (0, {}, "0.00"),
+        (0, {"digits": 1}, "0.0"),
+        (0, {"digits": 0}, "0"),
+        (0.0, {}, "0.00"),
+        (0.0, {"digits": 1}, "0.0"),
+        (0.0, {"digits": 0}, "0"),
+        (np.float64(0.0), {}, "0.00"),
+        (np.float64(0.0), {"digits": 1}, "0.0"),
+        (np.float64(0.0), {"presentation_type": "sigfig"}, "0.0"),
+        (np.zeros(2), {}, "[0.00, 0.00]"),
+        (np.zeros(2), {"digits": 1}, "[0.0, 0.0]"),
+        (np.zeros(2), {"digits": 0}, "[0, 0]"),
+        (np.zeros(2), {"language": "matlab"}, "[0.00, 0.00]"),
+        (np.zeros(2), {"language": "mathematica"}, "{0.00, 0.00}"),
+        (np.zeros(2), {"language": "r"}, "c(0.00, 0.00)"),
+        (np.zeros(2), {"language": "sympy"}, "Matrix([0.00, 0.00])"),
+        (np.zeros((2, 2)), {}, "[[0.00, 0.00], [0.00, 0.00]]"),
+        (np.zeros((2, 2)), {"digits": 1}, "[[0.0, 0.0], [0.0, 0.0]]"),
+        (np.zeros((2, 2)), {"digits": 0}, "[[0, 0], [0, 0]]"),
+        (np.zeros((2, 2)), {"language": "matlab"}, "[0.00 0.00; 0.00 0.00]"),
+        (np.zeros((2, 2)), {"language": "mathematica"}, "{{0.00, 0.00}, {0.00, 0.00}}"),
+        (
+            np.zeros((2, 2)),
+            {"language": "r"},
+            "matrix(c(0.00, 0.00, 0.00, 0.00), nrow = 2, ncol = 2, byrow = TRUE)",
+        ),
+        (
+            np.zeros((2, 2)),
+            {"language": "sympy"},
+            "Matrix([[0.00, 0.00], [0.00, 0.00]])",
+        ),
+    ],
+)
+def test_string_from_numpy(value: int, args: dict, expected_output: str) -> None:
+    assert pl.string_from_numpy(value, **args) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("value", "args", "expected_output"),
+    [
+        (0, {}, "0.0"),
+        (0, {"digits": 1}, "0."),
+        (0, {"digits": 0}, "0"),
+        (0.0, {}, "0.0"),
+        (0.0, {"digits": 1}, "0."),
+        (0.0, {"digits": 0}, "0"),
+        (complex(1, 2), {}, "1.0+2.0j"),
+        (complex(0, 2), {}, "0.0+2.0j"),
+        (complex(1, 0), {}, "1.0+0.0j"),
+    ],
+)
+def test_string_from_number_sigfig(
+    value: complex, args: dict, expected_output: str
+) -> None:
+    assert pl.string_from_number_sigfig(value, **args) == expected_output

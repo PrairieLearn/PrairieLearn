@@ -983,9 +983,7 @@ def string_from_numpy(
     if np.isscalar(A):
         assert not isinstance(A, memoryview)
         if presentation_type == "sigfig":
-            if not isinstance(A, np.complexfloating) and isinstance(
-                A, np.generic | bytes | str
-            ):
+            if not isinstance(A, np.complexfloating) and isinstance(A, bytes | str):
                 raise TypeError(f"A must be a number, is {type(A)}")
             return string_from_number_sigfig(A, digits=digits)
         else:
@@ -1063,7 +1061,8 @@ def string_from_2darray(
 
 
 def string_from_number_sigfig(
-    a: complex | np.complex64 | np.complex128 | numbers.Number, digits: int = 2
+    a: numbers.Number | complex | np.generic | np.complex64 | np.complex128,
+    digits: int = 2,
 ) -> str:
     """string_from_complex_sigfig(a, digits=2)
 
@@ -1071,8 +1070,11 @@ def string_from_number_sigfig(
     as a string in which the number, or both the real and imaginary parts of the
     number, have digits significant digits.
     """
-    if not isinstance(a, numbers.Number) and np.iscomplexobj(a):
-        return _string_from_complex_sigfig(a, digits=digits)
+
+    # `np.iscomplexobj` isn't a proper type guard, nor does it work for non-numpy types.
+    # We use casting to work around this.
+    if isinstance(a, complex) or np.iscomplexobj(cast(np.generic, a)):
+        return _string_from_complex_sigfig(cast(complex, a), digits=digits)
     else:
         return to_precision(a, digits)
 
