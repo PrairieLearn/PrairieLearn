@@ -168,7 +168,7 @@ function PromptHistory({
 }) {
   return prompts
     .filter((prompt) => prompt.prompt_type !== 'auto_revision')
-    .map((prompt) => {
+    .map((prompt, index, filteredPrompts) => {
       // TODO: Once we can upgrade to Bootstrap 5.3, we can use the official
       // `bg-secondary-subtle` class instead of the custom styles here.
       return html`<div class="d-flex flex-row-reverse">
@@ -191,12 +191,18 @@ function PromptHistory({
                   View job logs
                 </a>`;
               })}
-              <form method="post">
-                <input type="hidden" name="__action" value="revert_edit_version" />
-                <input type="hidden" name="unsafe_prompt_id" value="${prompt.id}" />
-                <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                <button class="btn btn-sm btn-link">Revert to this version</button>
-              </form>
+              ${run(() => {
+                // There's no point showing an option to revert to the most recent prompt.
+                if (index === filteredPrompts.length - 1) return '';
+                return html`
+                  <form method="post">
+                    <input type="hidden" name="__action" value="revert_edit_version" />
+                    <input type="hidden" name="unsafe_prompt_id" value="${prompt.id}" />
+                    <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                    <button class="btn btn-sm btn-link">Revert to this version</button>
+                  </form>
+                `;
+              })}
             </div>
           </div>
         </div>`;

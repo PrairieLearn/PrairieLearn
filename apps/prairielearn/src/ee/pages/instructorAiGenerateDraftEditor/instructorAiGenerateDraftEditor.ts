@@ -255,6 +255,7 @@ router.post(
         files,
       });
 
+      // TODO: handle error case.
       if (result.status === 'success') {
         const response = `\`\`\`html\n${req.body.html}\`\`\`\n\`\`\`python\n${req.body.python}\`\`\``;
 
@@ -307,6 +308,7 @@ router.post(
         files,
       });
 
+      // TODO: handle error case.
       if (result.status === 'success') {
         const response = `\`\`\`html\n${req.body.html}\`\`\`\n\`\`\`python\n${req.body.python}\`\`\``;
 
