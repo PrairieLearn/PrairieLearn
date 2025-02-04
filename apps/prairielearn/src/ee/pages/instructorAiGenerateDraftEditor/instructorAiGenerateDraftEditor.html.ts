@@ -55,16 +55,16 @@ export function InstructorAiGenerateDraftEditor({
               })}
             </div>
             <main id="content" class="app-content">
+              <div class="d-flex flex-row align-items-center pl-2 bg-light border-bottom app-back">
+                <a
+                  href="${resLocals.urlPrefix}/ai_generate_question_drafts"
+                  class="btn btn-sm btn-ghost"
+                >
+                  <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                  Back to AI questions
+                </a>
+              </div>
               <div class="app-chat p-2 bg-light border-end">
-                <div class="app-chat-back mb-2">
-                  <a
-                    href="${resLocals.urlPrefix}/ai_generate_question_drafts"
-                    class="btn btn-sm btn-ghost"
-                  >
-                    <i class="fa fa-arrow-left" aria-hidden="true"></i>
-                    Back to draft questions
-                  </a>
-                </div>
                 <div class="app-chat-history">
                   ${PromptHistory({
                     prompts,
@@ -103,43 +103,39 @@ export function InstructorAiGenerateDraftEditor({
                 </div>
               </div>
 
-              <div class="app-preview">
-                <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs">
-                  <ul class="nav nav-tabs mr-auto pl-2 pt-2">
-                    <li class="nav-item">
-                      <a
-                        class="nav-link active"
-                        data-toggle="tab"
-                        aria-current="page"
-                        href="#question-preview"
-                      >
-                        Preview
-                      </a>
-                    </li>
-                    <li class="nav-item">
-                      <a a class="nav-link" data-toggle="tab" href="#question-code">Files</a>
-                    </li>
-                  </ul>
-                  <div
-                    class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pr-2"
-                  >
-                    <span data-toggle="modal" data-target="#finalizeModal">
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-primary"
-                        data-toggle="tooltip"
-                        title="Finalize a question to use it on assessments and make manual edits"
-                      >
-                        <i class="fa fa-check" aria-hidden="true"></i>
-                        Finalize question
-                      </button>
-                    </span>
-                  </div>
-                </div>
-                <div class="app-preview-content">
-                  ${QuestionAndFilePreview({ resLocals, prompts })}
+              <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs">
+                <ul class="nav nav-tabs mr-auto pl-2 pt-2">
+                  <li class="nav-item">
+                    <a
+                      class="nav-link active"
+                      data-toggle="tab"
+                      aria-current="page"
+                      href="#question-preview"
+                    >
+                      Preview
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a a class="nav-link" data-toggle="tab" href="#question-code">Files</a>
+                  </li>
+                </ul>
+                <div
+                  class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pr-2"
+                >
+                  <span data-toggle="modal" data-target="#finalizeModal">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-primary"
+                      data-toggle="tooltip"
+                      title="Finalize a question to use it on assessments and make manual edits"
+                    >
+                      <i class="fa fa-check" aria-hidden="true"></i>
+                      Finalize question
+                    </button>
+                  </span>
                 </div>
               </div>
+              <div class="app-preview">${QuestionAndFilePreview({ resLocals, prompts })}</div>
             </main>
           </div>
         </div>

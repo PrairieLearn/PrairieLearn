@@ -21,7 +21,8 @@ body,
   grid-area: content;
 
   display: grid;
-  grid-template-areas: 'chat preview';
+  grid-template-areas: 'back preview-tabs' 'chat preview';
+  grid-template-rows: min-content 1fr;
   grid-template-columns: 400px 1fr;
   min-height: 0;
 }
@@ -30,12 +31,12 @@ body,
   grid-area: chat;
 
   display: grid;
-  grid-template-areas: 'back' 'history' 'prompt';
-  grid-template-rows: min-content 1fr min-content;
+  grid-template-areas: 'history' 'prompt';
+  grid-template-rows: 1fr min-content;
   min-height: 0;
 }
 
-.app-chat-back {
+.app-back {
   grid-area: back;
 }
 
@@ -49,21 +50,12 @@ body,
   grid-area: prompt;
 }
 
+.app-preview-tabs {
+  grid-area: preview-tabs;
+}
+
 .app-preview {
   grid-area: preview;
-
-  display: grid;
-  grid-template-areas: 'tabs' 'content';
-  grid-template-rows: min-content 1fr;
-  min-height: 0;
-}
-
-.app-preview-tabs {
-  grid-area: tabs;
-}
-
-.app-preview-content {
-  grid-area: content;
   min-height: 0;
   overflow-y: auto;
 }
