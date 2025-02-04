@@ -260,7 +260,7 @@ export function InstructorQuestionSettings({
                 The grading method used for this question.
               </small>
             </div>
-            <div class="form-group">
+            <div class="form-group form-check">
               <input
                 class="form-check-input"
                 type="checkbox"
@@ -270,11 +270,11 @@ export function InstructorQuestionSettings({
                 ${resLocals.question.single_variant ? 'checked' : ''}
               />
               <label class="form-check-label" for="single_variant">Single Variant</label>
-              <small class="form-text text-muted">
+              <div class="form-text small text-muted">
                 If checked, the question is not randomized and only generates a single variant.
-              </small>
+              </div>
             </div>
-            <div class="form-group">
+            <div class="form-group form-check">
               <input
                 class="form-check-input"
                 type="checkbox"
@@ -284,9 +284,9 @@ export function InstructorQuestionSettings({
                 ${resLocals.question.show_correct_answer ? 'checked' : ''}
               />
               <label class="form-check-label" for="show_correct_answer">Show Correct Answer</label>
-              <small class="form-text text-muted">
+              <div class="form-text small text-muted">
                 If checked, shows the correct answer panel after submission.
-              </small>
+              </div>
             </div>
             ${canEdit
               ? html`
