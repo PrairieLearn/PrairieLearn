@@ -1,5 +1,8 @@
+import importlib
+
 import pytest
-from code_utils import parse_highlight_lines
+
+code = importlib.import_module("pl-code")
 
 
 @pytest.mark.parametrize(
@@ -15,4 +18,4 @@ from code_utils import parse_highlight_lines
 def test_parse_highlight_lines(
     input_str: str, expected_output: list[int] | None
 ) -> None:
-    assert parse_highlight_lines(input_str) == expected_output
+    assert code.parse_highlight_lines(input_str) == expected_output

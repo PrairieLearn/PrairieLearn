@@ -22,11 +22,11 @@ THE SOFTWARE.
 
 
 from collections.abc import Callable
-from typing import Any, Literal, NoReturn
+from typing import Any, Literal, NoReturn, TypeVar
 
 import numpy as np
 from matplotlib.axes import Axes
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame
 
 
@@ -42,6 +42,9 @@ class GradingTestFailedError(Exception):
     A general exception to mark that some failure of the current
     test case has occurred. Future test cases will still be executed.
     """
+
+
+T = TypeVar("T")
 
 
 class Feedback:
@@ -196,7 +199,7 @@ class Feedback:
     def check_numpy_array_features(
         cls,
         name: str,
-        ref: np.ndarray,
+        ref: NDArray[Any],
         data: None | ArrayLike,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
@@ -255,7 +258,7 @@ class Feedback:
     def check_numpy_array_allclose(
         cls,
         name: str,
-        ref: np.ndarray,
+        ref: NDArray[Any],
         data: ArrayLike,
         accuracy_critical: bool = False,  # noqa: FBT001
         rtol: float = 1e-05,
@@ -304,8 +307,8 @@ class Feedback:
     def check_list(
         cls,
         name: str,
-        ref: list,
-        data: list | None,
+        ref: list[Any],
+        data: list[Any] | None,
         entry_type: Any | None = None,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
@@ -356,8 +359,8 @@ class Feedback:
     def check_tuple(
         cls,
         name: str,
-        ref: tuple,
-        data: tuple | None,
+        ref: tuple[Any],
+        data: tuple[Any] | None,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
         report_success: bool = True,  # noqa: FBT001
@@ -418,8 +421,8 @@ class Feedback:
     def check_scalar(
         cls,
         name: str,
-        ref: complex | np.number,
-        data: complex | np.number | None | Any,
+        ref: complex | np.number[Any],
+        data: complex | np.number[Any] | None,
         accuracy_critical: bool = False,  # noqa: FBT001
         rtol: float = 1e-5,
         atol: float = 1e-8,
@@ -490,7 +493,7 @@ class Feedback:
     @classmethod
     def call_user(
         cls,
-        f: Callable,
+        f: Callable[..., T],
         *args: Any,
         stop_on_exception: bool = True,
         **kwargs: Any,

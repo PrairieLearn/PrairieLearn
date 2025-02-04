@@ -93,7 +93,7 @@ def traverse_and_replace(
                 new_elements = []
             elif isinstance(new_elements, str):
                 fragments = lxml.html.fragments_fromstring(new_elements)
-                new_elements = fragments if fragments is not None else []
+                new_elements = fragments
 
             if isinstance(new_elements, list):
                 # Modify count stack for new elements and decrement for element that was replaced
@@ -154,7 +154,7 @@ def traverse_and_replace(
             count_stack.pop()
             tail_tag, tail_text = tail_stack.pop()
 
-            if tail_tag not in VOID_ELEMENTS and tail_tag is not None:
+            if tail_tag not in VOID_ELEMENTS:
                 result.append(f"</{tail_tag}>")
             if tail_text is not None:
                 result.append(tail_text)
