@@ -529,3 +529,16 @@ def test_string_from_number_sigfig(
 )
 def test_numpy_to_matlab_sf(value: Any, args: dict, expected_output: str) -> None:
     assert pl.numpy_to_matlab_sf(value, **args) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("value", "expected_output"),
+    [
+        (0, "0.00"),
+        (0.0, "0.00"),
+        (complex(1, 2), "1.00+2.00j"),
+        (np.array([[1, 2], [3, 4]]), r"\begin{bmatrix}  1 & 2\\  3 & 4\\\end{bmatrix}"),
+    ],
+)
+def test_latex_from_2darray(value: Any, expected_output: str) -> None:
+    assert pl.latex_from_2darray(value) == expected_output

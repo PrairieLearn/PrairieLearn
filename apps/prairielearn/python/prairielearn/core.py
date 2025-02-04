@@ -907,7 +907,7 @@ _FormatLanguage = Literal["python", "matlab", "mathematica", "r", "sympy"]
 
 
 def string_from_numpy(
-    A: npt.NDArray[Any] | _NumPyScalarType,
+    A: numbers.Number | _NumPyScalarType | npt.NDArray[Any],
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
@@ -971,7 +971,7 @@ def string_from_numpy(
 
     # if A is a scalar
     if np.isscalar(A):
-        assert not isinstance(A, memoryview)
+        assert not isinstance(A, memoryview | str | bytes)
         if presentation_type == "sigfig":
             return string_from_number_sigfig(A, digits=digits)
         else:
@@ -1048,7 +1048,9 @@ def string_from_2darray(
     return result
 
 
-def string_from_number_sigfig(a: _NumPyScalarType, digits: int = 2) -> str:
+def string_from_number_sigfig(
+    a: numbers.Number | _NumPyScalarType, digits: int = 2
+) -> str:
     """string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is of type float or complex. It returns "a"
@@ -1058,7 +1060,7 @@ def string_from_number_sigfig(a: _NumPyScalarType, digits: int = 2) -> str:
 
     # `np.iscomplexobj` isn't a proper type guard, so we need to use
     # casting to call this function.
-    if np.iscomplexobj(a):
+    if np.iscomplexobj(cast(Any, a)):
         return _string_from_complex_sigfig(cast(complex, a), digits=digits)
     else:
         return to_precision(a, digits)
@@ -1092,7 +1094,7 @@ def numpy_to_matlab_sf(A: _NumPyScalarType | npt.NDArray[Any], ndigits: int = 2)
     ndigits significant digits.
     """
     if np.isscalar(A):
-        assert not isinstance(A, memoryview)
+        assert not isinstance(A, memoryview | str | bytes)
         if np.iscomplexobj(A):
             # `np.iscomplexobj` isn't a proper type guard, so we need to use
             # casting to call this function
@@ -1642,7 +1644,7 @@ def string_to_2darray(
 
 
 def latex_from_2darray(
-    A: numbers.Number | npt.NDArray[Any],
+    A: numbers.Number | _NumPyScalarType | npt.NDArray[Any],
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
@@ -1662,13 +1664,18 @@ def latex_from_2darray(
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
     """
     # if A is a scalar
-    if isinstance(A, numbers.Number):
+    if np.isscalar(A):
+        assert not isinstance(A, memoryview | str | bytes)
         if presentation_type == "sigfig":
             return string_from_number_sigfig(A, digits=digits)
         else:
             return "{:.{digits}{presentation_type}}".format(
                 A, digits=digits, presentation_type=presentation_type
             )
+
+    if not isinstance(A, np.ndarray):
+        raise TypeError("A must be a numpy array or scalar")
+
     # Using Any annotation here because of weird Pyright-isms.
     if presentation_type == "sigfig":
         formatter: Any = {
