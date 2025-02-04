@@ -1057,7 +1057,7 @@ def string_from_number_sigfig(a: _NumericScalarType, digits: int = 2) -> str:
 
     # `np.iscomplexobj` isn't a proper type guard, so we need to use
     # casting to call this function.
-    if not isinstance(a, numbers.Number) and np.iscomplexobj(a):
+    if np.iscomplexobj(a):
         return _string_from_complex_sigfig(cast(complex, a), digits=digits)
     else:
         return to_precision(a, digits)
