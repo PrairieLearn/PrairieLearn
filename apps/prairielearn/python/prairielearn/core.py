@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, cast, overlo
 import lxml.html
 import networkx as nx
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import sympy
 from numpy.typing import ArrayLike
@@ -289,9 +290,10 @@ _JSONSerializedType = (
 
 # This represents the object formats that will be serialized by the to_json function
 _JSONPythonType = (
-    np.complexfloating
-    | np.number
-    | np.ndarray
+    np.complex64
+    | np.complex128
+    | np.number[Any]
+    | npt.NDArray[Any]
     | sympy.Expr
     | sympy.Matrix
     | sympy.ImmutableMatrix
@@ -844,12 +846,20 @@ def get_color_attrib(
 
 # This internal represents most the types that would pass a np.isscalar check
 _NumPyScalarType = (
-    np.complexfloating | bool | int | float | complex | str | bytes | np.generic
+    np.complex64
+    | np.complex128
+    | bool
+    | int
+    | float
+    | complex
+    | str
+    | bytes
+    | np.generic
 )
 
 
 def numpy_to_matlab(
-    np_object: np.ndarray | _NumPyScalarType,
+    np_object: npt.NDArray[Any] | _NumPyScalarType,
     ndigits: int = 2,
     wtype: str = "f",
 ) -> str:
@@ -907,7 +917,7 @@ _FormatLanguage = Literal["python", "matlab", "mathematica", "r", "sympy"]
 
 
 def string_from_numpy(
-    A: np.ndarray | _NumPyScalarType,
+    A: npt.NDArray[Any] | _NumPyScalarType,
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
@@ -1043,7 +1053,7 @@ def string_from_numpy(
 
 # Deprecated version, keeping for backwards compatibility
 def string_from_2darray(
-    A: np.ndarray,
+    A: npt.NDArray[Any],
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
@@ -1053,7 +1063,7 @@ def string_from_2darray(
 
 
 def string_from_number_sigfig(
-    a: complex | np.complexfloating | numbers.Number, digits: int = 2
+    a: complex | np.complex64 | np.complex128 | numbers.Number, digits: int = 2
 ) -> str:
     """string_from_complex_sigfig(a, digits=2)
 
@@ -1068,7 +1078,7 @@ def string_from_number_sigfig(
 
 
 def _string_from_complex_sigfig(
-    a: complex | np.complexfloating, digits: int = 2
+    a: complex | np.complex64 | np.complex128, digits: int = 2
 ) -> str:
     """_string_from_complex_sigfig(a, digits=2)
 
@@ -1083,7 +1093,7 @@ def _string_from_complex_sigfig(
         return f"{re}-{im}j"
 
 
-def numpy_to_matlab_sf(A: _NumPyScalarType | np.ndarray, ndigits: int = 2) -> str:
+def numpy_to_matlab_sf(A: _NumPyScalarType | npt.NDArray[Any], ndigits: int = 2) -> str:
     """numpy_to_matlab(A, ndigits=2)
 
     This function assumes that A is one of these things:
@@ -1331,7 +1341,7 @@ def string_fraction_to_number(
 
 def string_to_2darray(
     s: str, *, allow_complex: bool = True
-) -> tuple[None | np.ndarray, dict[str, str]]:
+) -> tuple[None | npt.NDArray[Any], dict[str, str]]:
     """string_to_2darray(s)
 
     Parses a string that is either a scalar or a 2D array in matlab or python
@@ -1647,7 +1657,7 @@ def string_to_2darray(
 
 
 def latex_from_2darray(
-    A: numbers.Number | np.ndarray,
+    A: numbers.Number | npt.NDArray[Any],
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
@@ -1720,7 +1730,7 @@ def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
 
 
 def is_correct_ndarray2d_dd(
-    a_sub: np.ndarray, a_tru: np.ndarray, digits: int = 2
+    a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
     # Check if each element is correct
     m = a_sub.shape[0]
@@ -1735,7 +1745,7 @@ def is_correct_ndarray2d_dd(
 
 
 def is_correct_ndarray2d_sf(
-    a_sub: np.ndarray, a_tru: np.ndarray, digits: int = 2
+    a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
     # Check if each element is correct
     m = a_sub.shape[0]
@@ -1750,7 +1760,10 @@ def is_correct_ndarray2d_sf(
 
 
 def is_correct_ndarray2d_ra(
-    a_sub: np.ndarray, a_tru: np.ndarray, rtol: float = 1e-5, atol: float = 1e-8
+    a_sub: npt.NDArray[Any],
+    a_tru: npt.NDArray[Any],
+    rtol: float = 1e-5,
+    atol: float = 1e-8,
 ) -> bool:
     # Check if each element is correct
     return np.allclose(a_sub, a_tru, rtol, atol)
@@ -1883,13 +1896,15 @@ def load_extension(data: QuestionData, extension_name: str) -> Any:
         # Nothing to load, just return an empty dict
         return {}
 
+    T = TypeVar("T")
+
     # wrap extension functions so that they execute in their own directory
-    def wrap(f: Callable | Any) -> Callable:
+    def wrap(f: Callable[..., T]) -> Callable[..., T]:
         # If not a function, just return
         if not callable(f):
             return f
 
-        def wrapped_function(*args: Any, **kwargs: Any) -> Any:
+        def wrapped_function(*args: Any, **kwargs: Any) -> T:
             old_wd = os.getcwd()
             os.chdir(ext_info["directory"])
             ret_val = f(*args, **kwargs)
