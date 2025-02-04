@@ -78,4 +78,14 @@ onDocumentReady(() => {
       new DraftFileEditor(el);
     },
   });
+
+  // Submit the form when Enter is pressed. Shift+Enter will insert a newline.
+  document.querySelector<HTMLElement>('#user-prompt-llm')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (e.currentTarget instanceof HTMLElement) {
+        e.currentTarget.closest('form')?.requestSubmit();
+      }
+    }
+  });
 });
