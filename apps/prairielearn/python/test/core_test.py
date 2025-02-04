@@ -483,7 +483,7 @@ def test_index2key(idx: int, expected_output: str) -> None:
         ),
     ],
 )
-def test_string_from_numpy(value: int, args: dict, expected_output: str) -> None:
+def test_string_from_numpy(value: Any, args: dict, expected_output: str) -> None:
     assert pl.string_from_numpy(value, **args) == expected_output
 
 
@@ -499,9 +499,33 @@ def test_string_from_numpy(value: int, args: dict, expected_output: str) -> None
         (complex(1, 2), {}, "1.0+2.0j"),
         (complex(0, 2), {}, "0.0+2.0j"),
         (complex(1, 0), {}, "1.0+0.0j"),
+        (np.complex64(complex(1, 2)), {}, "1.0+2.0j"),
+        (np.complex64(complex(0, 2)), {}, "0.0+2.0j"),
+        (np.complex64(complex(1, 0)), {}, "1.0+0.0j"),
     ],
 )
 def test_string_from_number_sigfig(
-    value: complex, args: dict, expected_output: str
+    value: Any, args: dict, expected_output: str
 ) -> None:
     assert pl.string_from_number_sigfig(value, **args) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("value", "args", "expected_output"),
+    [
+        (0, {}, "0.0"),
+        (0, {"ndigits": 1}, "0."),
+        (0, {"ndigits": 0}, "0"),
+        (0.0, {}, "0.0"),
+        (0.0, {"ndigits": 1}, "0."),
+        (0.0, {"ndigits": 0}, "0"),
+        (complex(1, 2), {}, "1.0+2.0j"),
+        (complex(0, 2), {}, "0.0+2.0j"),
+        (complex(1, 0), {}, "1.0+0.0j"),
+        (np.complex64(complex(1, 2)), {}, "1.0+2.0j"),
+        (np.complex64(complex(0, 2)), {}, "0.0+2.0j"),
+        (np.complex64(complex(1, 0)), {}, "1.0+0.0j"),
+    ],
+)
+def test_numpy_to_matlab_sf(value: Any, args: dict, expected_output: str) -> None:
+    assert pl.numpy_to_matlab_sf(value, **args) == expected_output

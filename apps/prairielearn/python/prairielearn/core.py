@@ -845,17 +845,7 @@ def get_color_attrib(
 
 
 # This internal represents most the types that would pass a np.isscalar check
-_NumPyScalarType = (
-    np.complex64
-    | np.complex128
-    | bool
-    | int
-    | float
-    | complex
-    | str
-    | bytes
-    | np.generic
-)
+_NumPyScalarType = bool | int | float | complex | str | bytes | np.generic
 
 
 def numpy_to_matlab(
@@ -983,8 +973,6 @@ def string_from_numpy(
     if np.isscalar(A):
         assert not isinstance(A, memoryview)
         if presentation_type == "sigfig":
-            if not isinstance(A, np.complexfloating) and isinstance(A, bytes | str):
-                raise TypeError(f"A must be a number, is {type(A)}")
             return string_from_number_sigfig(A, digits=digits)
         else:
             return "{:.{digits}{presentation_type}}".format(
@@ -1060,10 +1048,7 @@ def string_from_2darray(
     return result
 
 
-def string_from_number_sigfig(
-    a: numbers.Number | complex | np.generic | np.complex64 | np.complex128,
-    digits: int = 2,
-) -> str:
+def string_from_number_sigfig(a: _NumPyScalarType, digits: int = 2) -> str:
     """string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is of type float or complex. It returns "a"
@@ -1071,9 +1056,9 @@ def string_from_number_sigfig(
     number, have digits significant digits.
     """
 
-    # `np.iscomplexobj` isn't a proper type guard, nor does it work for non-numpy types.
-    # We use casting to work around this.
-    if isinstance(a, complex) or np.iscomplexobj(cast(np.generic, a)):
+    # `np.iscomplexobj` isn't a proper type guard, so we need to use
+    # casting to call this function.
+    if np.iscomplexobj(a):
         return _string_from_complex_sigfig(cast(complex, a), digits=digits)
     else:
         return to_precision(a, digits)
@@ -1109,11 +1094,9 @@ def numpy_to_matlab_sf(A: _NumPyScalarType | npt.NDArray[Any], ndigits: int = 2)
     if np.isscalar(A):
         assert not isinstance(A, memoryview)
         if np.iscomplexobj(A):
-            if not isinstance(A, np.complexfloating) and isinstance(
-                A, np.generic | bytes | str
-            ):
-                raise TypeError(f"A must be a number, is {type(A)}")
-            scalar_str = _string_from_complex_sigfig(A, ndigits)
+            # `np.iscomplexobj` isn't a proper type guard, so we need to use
+            # casting to call this function
+            scalar_str = _string_from_complex_sigfig(cast(complex, A), ndigits)
         else:
             scalar_str = to_precision(A, ndigits)
         return scalar_str
