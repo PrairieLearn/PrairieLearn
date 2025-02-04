@@ -134,4 +134,35 @@ describe('Tag/topic syncing', () => {
   it('records a warning if two topics have the same name', async () => {
     await testDuplicate('topics');
   });
+
+  it('adds corresponding default tags if used by questions but not specified in courseData', async () => {
+    const courseData = util.getCourseData();
+
+    // The symbolic tag is in DEFAULT_TAGS but not in courseData
+    courseData.questions[util.QUESTION_ID]?.tags?.push('symbolic');
+
+    // Similarly, the drawing tag is in DEFAULT_TAGS but not in courseData
+    courseData.questions[util.QUESTION_ID]?.tags?.push('drawing');
+
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedTags = await util.dumpTable('tags');
+
+    // Ensure that the symbolic tag was added and matches the corresponding tag in DEFAULT_TAGS
+    const syncedSymbolicTag = syncedTags.find((t) => t.name === 'symbolic');
+    checkEntity(syncedSymbolicTag, {
+      name: 'symbolic',
+      color: 'blue1',
+      description: 'The answer format is a symbolic expression.',
+    });
+
+    // Similarly, ensure that the drawing tag was added and matches the corresponding tag in DEFAULT_TAGS
+    const syncedDrawingTag = syncedTags.find((t) => t.name === 'drawing');
+    checkEntity(syncedDrawingTag, {
+      name: 'drawing',
+      color: 'yellow1',
+      description:
+        'The answer format requires drawing on a canvas to input a graphical representation of an answer.',
+    });
+  });
 });

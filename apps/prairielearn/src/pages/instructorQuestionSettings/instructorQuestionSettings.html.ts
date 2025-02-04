@@ -19,6 +19,7 @@ import {
   type Topic,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
@@ -286,7 +287,7 @@ export function InstructorQuestionSettings({
                   <a
                     data-testid="edit-question-configuration-link"
                     href="${resLocals.urlPrefix}/question/${resLocals.question
-                      .id}/file_edit/${infoPath}"
+                      .id}/file_edit/${encodePath(infoPath)}"
                   >
                     Edit question configuration
                   </a>
@@ -296,7 +297,7 @@ export function InstructorQuestionSettings({
                   <hr />
                   <a
                     href="${resLocals.urlPrefix}/question/${resLocals.question
-                      .id}/file_view/${infoPath}"
+                      .id}/file_view/${encodePath(infoPath)}"
                   >
                     View question configuration
                   </a>
