@@ -492,7 +492,7 @@ class Feedback:
         cls,
         f: Callable,
         *args: Any,
-        stop_on_exception: bool = False,
+        stop_on_exception: bool = True,
         **kwargs: Any,
     ) -> Any:
         """
