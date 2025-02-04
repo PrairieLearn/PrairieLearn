@@ -2,7 +2,7 @@ beautifulsoup4==4.12.3
 bokeh==3.6.2
 colormath==3.0.0
 defusedxml==0.7.1
-Faker==33.1.0
+Faker==35.2.0
 folium==0.19.4
 ipython==8.32.0
 jupyter-collaboration==3.1.0
@@ -17,7 +17,7 @@ pandas==2.2.3
 Pillow==11.1.0
 PuLP==2.9.0
 Pygments==2.19.1
-pyarrow==18.1.0
+pyarrow==19.0.0
 pygraphviz==1.14
 requests==2.32.3
 scikit-image==0.25.1
