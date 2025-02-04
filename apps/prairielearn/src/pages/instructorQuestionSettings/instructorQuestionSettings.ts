@@ -103,6 +103,7 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied');
     }
     if (req.body.__action === 'update_question') {
+      console.log(req.body);
       const infoPath = path.join(
         res.locals.course.path,
         'questions',
@@ -138,6 +139,9 @@ router.post(
         if (Array.isArray(req.body.tags)) return req.body.tags;
         return [req.body.tags];
       });
+      questionInfo.gradingMethod = req.body.grading_method;
+      questionInfo.singleVariant = req.body.single_variant === 'on';
+      questionInfo.showCorrectAnswer = req.body.show_correct_answer === 'on';
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
