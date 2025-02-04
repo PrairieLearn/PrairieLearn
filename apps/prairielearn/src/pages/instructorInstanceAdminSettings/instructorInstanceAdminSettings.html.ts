@@ -173,7 +173,10 @@ function EditConfiguration({
   } else {
     return html`
       <p class="mb-0">
-        <a href="${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}">
+        <a
+          data-testid="edit-course-instance-configuration-link"
+          href="${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}"
+        >
           Edit course instance configuration
         </a>
         in <code>infoCourseInstance.json</code>
