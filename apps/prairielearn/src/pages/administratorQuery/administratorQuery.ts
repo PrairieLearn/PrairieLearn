@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import express from 'express';
 import asyncHandler from 'express-async-handler';
@@ -11,6 +12,7 @@ import type { AdministratorQueryResult } from '../../admin_queries/util.js';
 import { IdSchema, type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 import * as jsonLoad from '../../lib/json-load.js';
 
+
 import {
   AdministratorQuery,
   AdministratorQuerySchema,
@@ -20,7 +22,7 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const queriesDir = path.resolve(import.meta.dirname, '..', '..', 'admin_queries');
+const queriesDir = path.resolve(fileURLToPath(import.meta.url), '..', '..', '..', 'admin_queries');
 
 router.get(
   '/:query',
@@ -96,7 +98,7 @@ router.post(
     let error: string | null = null;
     let result: AdministratorQueryResult | null = null;
     try {
-      const module = await import(path.join(queriesDir, queryFilename));
+      const module = await import(/* @vite-ignore */ path.join(queriesDir, queryFilename));
       result = (await module.default(queryParams)) as AdministratorQueryResult;
     } catch (err) {
       logger.error(err);

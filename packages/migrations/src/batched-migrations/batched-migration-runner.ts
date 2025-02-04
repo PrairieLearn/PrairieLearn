@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'url';
+
 import { serializeError } from 'serialize-error';
 import { z } from 'zod';
 
@@ -17,7 +19,7 @@ import {
   type BatchedMigrationImplementation,
 } from './batched-migration.js';
 
-const sql = loadSqlEquiv(import.meta.filename);
+const sql = loadSqlEquiv(fileURLToPath(import.meta.url));
 
 interface BatchedMigrationRunnerOptions {
   logProgress?: boolean;

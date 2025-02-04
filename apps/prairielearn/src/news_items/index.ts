@@ -1,4 +1,5 @@
 import * as fs from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import * as path from 'path';
 
 import _ from 'lodash';
@@ -10,20 +11,21 @@ import * as Sentry from '@prairielearn/sentry';
 
 import { type NewsItem } from '../lib/db-types.js';
 import * as jsonLoad from '../lib/json-load.js';
+;
 import * as schemas from '../schemas/index.js';
 
 const DIRECTORY_REGEX = /^([0-9]+)_.+$/;
 
 async function loadNewsItems() {
   const news_items: NewsItem[] = [];
-  const dirs = await fs.readdir(import.meta.dirname);
+  const dirs = await fs.readdir(path.resolve(fileURLToPath(import.meta.url), '..'));
   for (const dir of dirs) {
     // Skip anything that doesn't match the expected directory name format.
     const match = DIRECTORY_REGEX.exec(dir);
     if (!match) continue;
 
     const info = await jsonLoad.readInfoJSON(
-      path.join(import.meta.dirname, dir, 'info.json'),
+      path.join(fileURLToPath(import.meta.url), '..', dir, 'info.json'),
       schemas.infoNewsItem,
     );
 

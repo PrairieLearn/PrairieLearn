@@ -1,5 +1,6 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { fileURLToPath } from 'url';
 
 import { eachSeries } from 'async';
 
@@ -93,7 +94,7 @@ export async function init() {
     async (filename) => {
       logger.verbose('Loading ' + filename);
       try {
-        const sql = await readFile(join(import.meta.dirname, filename), 'utf8');
+        const sql = await readFile(join(fileURLToPath(import.meta.url), '..', filename), 'utf8');
         await queryAsync(sql, []);
       } catch (err) {
         throw error.addData(err, { sqlFile: filename });
