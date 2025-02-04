@@ -3222,7 +3222,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@smithy/property-provider": "npm:^3.1.11"
-    "@smithy/types": "npm:^3.7.1"
+    "@smithy/types": "npm:^4.1.0"
     "@types/node": "npm:^20.17.16"
     typescript: "npm:^5.7.3"
   languageName: unknown
@@ -3758,7 +3758,7 @@ __metadata:
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.3"
     "@sa11y/format": "npm:^6.13.0"
-    "@smithy/types": "npm:^3.7.2"
+    "@smithy/types": "npm:^4.1.0"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@trpc/client": "npm:^10.45.2"
     "@trpc/server": "npm:^10.45.2"
@@ -4825,7 +4825,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/types@npm:^3.7.1, @smithy/types@npm:^3.7.2":
+"@smithy/types@npm:^3.7.2":
   version: 3.7.2
   resolution: "@smithy/types@npm:3.7.2"
   dependencies:
