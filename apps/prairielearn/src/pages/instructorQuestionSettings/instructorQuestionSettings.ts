@@ -44,6 +44,20 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+  if (existingValue === undefined) {
+    if (newValue !== defaultValue) {
+      return newValue;
+    }
+  } else {
+    if (existingValue !== defaultValue && newValue === defaultValue) {
+      return undefined;
+    } else {
+      return newValue;
+    }
+  }
+}
+
 router.post(
   '/test',
   asyncHandler(async (req, res) => {
@@ -139,46 +153,23 @@ router.post(
         return [req.body.tags];
       });
 
-      // For grading method, single variant, and show correct answer, we want to handle if the
-      // json is not explicit with the property and the incoming value is the default, we do
-      // not want to add the property to the json. If the json is explicit with the default
-      // property and the incoming value is the also the default, we want to keep the property
-      // in the json.
-      if (!questionInfo.gradingMethod) {
-        if (req.body.grading_method !== 'Internal') {
-          questionInfo.gradingMethod = req.body.grading_method;
-        }
-      } else {
-        if (questionInfo.gradingMethod !== 'Internal' && req.body.grading_method === 'Internal') {
-          delete questionInfo.gradingMethod;
-        } else {
-          questionInfo.gradingMethod = req.body.grading_method;
-        }
-      }
+      questionInfo.gradingMethod = propertyValueWithDefault(
+        questionInfo.gradingMethod,
+        req.body.grading_method,
+        'Internal',
+      );
 
-      if (!questionInfo.singleVariant) {
-        if (req.body.single_variant) {
-          questionInfo.singleVariant = req.body.single_variant === 'on';
-        }
-      } else {
-        if (questionInfo.singleVariant && !req.body.single_variant) {
-          delete questionInfo.singleVariant;
-        } else {
-          questionInfo.singleVariant = req.body.single_variant === 'on';
-        }
-      }
+      questionInfo.singleVariant = propertyValueWithDefault(
+        questionInfo.singleVariant,
+        req.body.single_variant === 'on',
+        false,
+      );
 
-      if (typeof questionInfo.showCorrectAnswer !== 'boolean') {
-        if (!req.body.show_correct_answer) {
-          questionInfo.showCorrectAnswer = req.body.show_correct_answer === 'on';
-        }
-      } else {
-        if (!questionInfo.showCorrectAnswer && req.body.show_correct_answer === 'on') {
-          delete questionInfo.showCorrectAnswer;
-        } else {
-          questionInfo.showCorrectAnswer = req.body.show_correct_answer === 'on';
-        }
-      }
+      questionInfo.showCorrectAnswer = propertyValueWithDefault(
+        questionInfo.showCorrectAnswer,
+        req.body.show_correct_answer === 'on',
+        true,
+      );
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
