@@ -171,13 +171,16 @@ function PromptHistory({
     .map((prompt, index, filteredPrompts) => {
       // TODO: Once we can upgrade to Bootstrap 5.3, we can use the official
       // `bg-secondary-subtle` class instead of the custom styles here.
-      return html`<div class="d-flex flex-row-reverse">
+      return html`
+        <div class="d-flex flex-row-reverse">
           <div class="p-3 mb-2 rounded" style="background: #e2e3e5; max-width: 90%">
             ${prompt.user_prompt}
           </div>
         </div>
-        <div class="d-flex flex-row">
-          <div class="p-3 mb-2 rounded" style="max-width: 90%">
+        <div
+          class="d-flex flex-row justify-content-start align-items-start py-3 pl-3 mb-2 prompt-response"
+        >
+          <div>
             ${prompt.prompt_type === 'initial'
               ? "A new question has been generated. Review the preview and prompt for any necessary revisions. Once you're happy with the question, finalize it to use it on an assessment."
               : 'The question has been revised. Make further revisions or finalize the question.'}
@@ -191,21 +194,31 @@ function PromptHistory({
                   View job logs
                 </a>`;
               })}
-              ${run(() => {
-                // There's no point showing an option to revert to the most recent prompt.
-                if (index === filteredPrompts.length - 1) return '';
-                return html`
-                  <form method="post">
-                    <input type="hidden" name="__action" value="revert_edit_version" />
-                    <input type="hidden" name="unsafe_prompt_id" value="${prompt.id}" />
-                    <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                    <button class="btn btn-sm btn-link">Revert to this version</button>
-                  </form>
-                `;
-              })}
             </div>
           </div>
-        </div>`;
+          ${run(() => {
+            // There's no point showing an option to revert to the most recent prompt.
+            if (index === filteredPrompts.length - 1) return '';
+
+            return html`
+              <form method="post">
+                <input type="hidden" name="__action" value="revert_edit_version" />
+                <input type="hidden" name="unsafe_prompt_id" value="${prompt.id}" />
+                <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                <button
+                  type="submit"
+                  class="btn btn-sm btn-ghost revert-to-revision-button"
+                  aria-label="Revert to this revision"
+                  data-toggle="tooltip"
+                  title="Revert to this revision"
+                >
+                  <i class="fa fa-undo" aria-hidden="true"></i>
+                </button>
+              </form>
+            `;
+          })}
+        </div>
+      `;
     });
 }
 

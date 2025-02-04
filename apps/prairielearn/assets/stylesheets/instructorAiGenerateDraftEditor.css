@@ -79,6 +79,30 @@ body,
   grid-area: python;
 }
 
+.revert-to-revision-button {
+  /**
+   * We hide the button by setting its opacity instead of controlling its
+   * visibility with `display: none` or `visibility: hidden` because we need
+   * the button to be focusable for keyboard navigation.
+   */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.prompt-response:hover .revert-to-revision-button,
+.prompt-response:focus-within .revert-to-revision-button {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .revert-to-revision-button {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 /* Reflow to a vertical layout on narrow viewports */
 @media (max-width: 768px) {
   .app-grid {
