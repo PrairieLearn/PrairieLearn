@@ -255,23 +255,24 @@ router.post(
         files,
       });
 
-      // TODO: handle error case.
-      if (result.status === 'success') {
-        const response = `\`\`\`html\n${req.body.html}\`\`\`\n\`\`\`python\n${req.body.python}\`\`\``;
-
-        await queryAsync(sql.insert_ai_question_generation_prompt, {
-          question_id: req.params.question_id,
-          prompting_user_id: res.locals.authn_user.user_id,
-          prompt_type: 'manual_change',
-          user_prompt: 'Manually update question',
-          system_prompt: 'Manually update question',
-          response,
-          html: req.body.html,
-          python: req.body.python,
-          errors: [],
-          completion: [response],
-        });
+      if (result.status === 'error') {
+        throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
       }
+
+      const response = `\`\`\`html\n${req.body.html}\`\`\`\n\`\`\`python\n${req.body.python}\`\`\``;
+
+      await queryAsync(sql.insert_ai_question_generation_prompt, {
+        question_id: req.params.question_id,
+        prompting_user_id: res.locals.authn_user.user_id,
+        prompt_type: 'manual_change',
+        user_prompt: 'Manually update question',
+        system_prompt: 'Manually update question',
+        response,
+        html: req.body.html,
+        python: req.body.python,
+        errors: [],
+        completion: [response],
+      });
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
     } else if (req.body.__action === 'revert_edit_version') {
@@ -308,23 +309,24 @@ router.post(
         files,
       });
 
-      // TODO: handle error case.
-      if (result.status === 'success') {
-        const response = `\`\`\`html\n${req.body.html}\`\`\`\n\`\`\`python\n${req.body.python}\`\`\``;
-
-        await queryAsync(sql.insert_ai_question_generation_prompt, {
-          question_id: req.params.question_id,
-          prompting_user_id: res.locals.authn_user.user_id,
-          prompt_type: 'manual_change',
-          user_prompt: `Manually revert question to v${req.body.unsafe_prompt_id}`,
-          system_prompt: `Manually revert question to v${req.body.unsafe_prompt_id}`,
-          response,
-          html: prompts[0].html,
-          python: prompts[0].python,
-          errors: [],
-          completion: [response],
-        });
+      if (result.status === 'error') {
+        throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
       }
+
+      const response = `\`\`\`html\n${req.body.html}\`\`\`\n\`\`\`python\n${req.body.python}\`\`\``;
+
+      await queryAsync(sql.insert_ai_question_generation_prompt, {
+        question_id: req.params.question_id,
+        prompting_user_id: res.locals.authn_user.user_id,
+        prompt_type: 'manual_change',
+        user_prompt: `Manually revert question to v${req.body.unsafe_prompt_id}`,
+        system_prompt: `Manually revert question to v${req.body.unsafe_prompt_id}`,
+        response,
+        html: prompts[0].html,
+        python: prompts[0].python,
+        errors: [],
+        completion: [response],
+      });
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
     } else {
