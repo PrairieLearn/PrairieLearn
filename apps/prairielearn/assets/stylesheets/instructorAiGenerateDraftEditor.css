@@ -86,7 +86,7 @@ body,
   }
 
   .app-content {
-    grid-template-areas: 'chat' 'preview';
+    grid-template-areas: 'back' 'chat' 'preview-tabs' 'preview';
     grid-template-columns: 1fr;
   }
 

@@ -55,7 +55,7 @@ export function InstructorAiGenerateDraftEditor({
               })}
             </div>
             <main id="content" class="app-content">
-              <div class="d-flex flex-row align-items-center pl-2 bg-light border-bottom app-back">
+              <div class="d-flex flex-row align-items-center p-2 bg-light border-bottom app-back">
                 <a
                   href="${resLocals.urlPrefix}/ai_generate_question_drafts"
                   class="btn btn-sm btn-ghost"
