@@ -11,7 +11,8 @@ CREATE TABLE course_instance_usages (
   id BIGSERIAL PRIMARY KEY,
   type enum_course_instance_usages_type NOT NULL,
   institution_id BIGINT NOT NULL REFERENCES institutions (id),
-  course_instance_id BIGINT NOT NULL REFERENCES course_instances (id),
+  course_id BIGINT NOT NULL REFERENCES courses (id),
+  course_instance_id BIGINT REFERENCES course_instances (id),
   date TIMESTAMPTZ NOT NULL,
   user_id BIGINT NOT NULL REFERENCES users (user_id),
   include_in_statistics BOOLEAN NOT NULL,
@@ -22,3 +23,7 @@ CREATE TABLE course_instance_usages (
 CREATE INDEX course_instance_usages_date_idx ON course_instance_usage (date);
 
 CREATE INDEX course_instance_usages_type_institution_id_date_idx ON course_instance_usage (type, institution_id, date);
+
+CREATE INDEX course_instance_usages_type_course_id_date_idx ON course_instance_usage (type, course_id, date)
+WHERE
+  NOT include_in_statistics;
