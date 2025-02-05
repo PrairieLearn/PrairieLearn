@@ -77,6 +77,7 @@ async function saveRevisedQuestion({
   html,
   python,
   prompt,
+  promptType,
 }: {
   course: Course;
   question: Question;
@@ -89,6 +90,7 @@ async function saveRevisedQuestion({
   html: string;
   python?: string;
   prompt: string;
+  promptType: 'manual_change' | 'manual_revert';
 }) {
   const client = getCourseFilesClient();
 
@@ -123,7 +125,7 @@ async function saveRevisedQuestion({
   await queryAsync(sql.insert_ai_question_generation_prompt, {
     question_id: question.id,
     prompting_user_id: authn_user.user_id,
-    prompt_type: 'manual_change',
+    prompt_type: promptType,
     user_prompt: prompt,
     system_prompt: prompt,
     response,
@@ -309,6 +311,7 @@ router.post(
         html: b64Util.b64DecodeUnicode(req.body.html),
         python: b64Util.b64DecodeUnicode(req.body.python),
         prompt: 'Manually update question.',
+        promptType: 'manual_change',
       });
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
@@ -329,6 +332,7 @@ router.post(
         html: prompt.html ?? '',
         python: prompt.python ?? undefined,
         prompt: 'Manually revert question to earlier revision.',
+        promptType: 'manual_revert',
       });
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);

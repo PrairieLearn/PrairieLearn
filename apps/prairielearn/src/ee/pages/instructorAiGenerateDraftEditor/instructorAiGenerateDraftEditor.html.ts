@@ -179,9 +179,21 @@ function PromptHistory({
         class="d-flex flex-row justify-content-start align-items-start py-3 pl-3 mb-2 prompt-response"
       >
         <div>
-          ${prompt.prompt_type === 'initial'
-            ? "A new question has been generated. Review the preview and prompt for any necessary revisions. Once you're happy with the question, finalize it to use it on an assessment."
-            : 'The question has been revised. Make further revisions or finalize the question.'}
+          ${run(() => {
+            if (prompt.prompt_type === 'initial') {
+              return "A new question has been generated. Review the preview and prompt for any necessary revisions. Once you're happy with the question, finalize it to use it on an assessment.";
+            }
+
+            if (prompt.prompt_type === 'manual_revert') {
+              return 'The question has been reverted to an earlier revision. Make further revisions or finalize the question.';
+            }
+
+            if (prompt.prompt_type === 'manual_change') {
+              return 'Your manual edits have been applied. Make further revisions or finalize the question.';
+            }
+
+            return 'The question has been revised. Make further revisions or finalize the question.';
+          })}
           <div>
             ${run(() => {
               if (!showJobLogs || !prompt.job_sequence_id) return '';
