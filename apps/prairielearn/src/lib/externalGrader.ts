@@ -8,6 +8,8 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
+import { updateCourseInstanceUsagesForGradingJob } from '../models/course_instance_usages.js';
+
 import { config } from './config.js';
 import {
   IdSchema,
@@ -232,6 +234,11 @@ export async function processGradingResult(content: any): Promise<void> {
       content.grading.score,
       null, // `v2_score`: gross legacy, this can safely be null
     ]);
+
+    await updateCourseInstanceUsagesForGradingJob({
+      grading_job_id: content.gradingId,
+    });
+
     const assessment_instance_id = await sqldb.queryOptionalRow(
       sql.select_assessment_for_grading_job,
       { grading_job_id: content.gradingId },

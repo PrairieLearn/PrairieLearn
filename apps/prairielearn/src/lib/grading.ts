@@ -151,7 +151,7 @@ export async function insertSubmission({
     );
 
     if (auth_user_id) {
-      await updateCourseInstanceUsagesForSubmission({ submission_id, user_id: auth_user_id });
+      await updateCourseInstanceUsagesForSubmission({ submission_id });
     }
 
     if (variant.assessment_instance_id != null) {
