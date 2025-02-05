@@ -95,10 +95,6 @@ export function InstructorQuestionSettings({
     headContent: html`
       ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
       <style>
-        .popover {
-          max-width: 50%;
-        }
-
         .ts-wrapper.multi .ts-control > span {
           cursor: pointer;
         }
