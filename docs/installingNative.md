@@ -143,7 +143,7 @@ Most of these prerequisites can be installed using the package manager of your O
   cd PrairieLearn
   ```
 
-- Set up a Python virtual environment:
+- Set up a Python virtual environment in the root of the cloned repository:
 
   === "uv"
 
