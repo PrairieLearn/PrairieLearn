@@ -55,8 +55,7 @@ ON CONFLICT (
   course_id,
   course_instance_id,
   user_id
-) DO
-UPDATE
+) DO UPDATE
 SET
   enabled = EXCLUDED.enabled;
 

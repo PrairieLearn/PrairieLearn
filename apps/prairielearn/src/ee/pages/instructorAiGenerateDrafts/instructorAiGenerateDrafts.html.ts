@@ -195,7 +195,7 @@ export function InstructorAIGenerateDrafts({
                       : ''
                   }
 
-                  <button class="btn btn-primary">
+                  <button type="submit" class="btn btn-primary w-100">
                     <span
                       class="spinner-grow spinner-grow-sm d-none"
                       role="status"
@@ -205,6 +205,10 @@ export function InstructorAIGenerateDrafts({
                     </span>
                     Create question
                   </button>
+
+                  <div class="text-muted small text-center mt-2">
+                    AI can make mistakes. Review the generated question.
+                  </div>
 
                   <div id="generation-results"></div>
                 </div>

@@ -1,4 +1,4 @@
-import * as sqldb from '@prairielearn/postgres';
+import { callOneRowAsync } from '@prairielearn/postgres';
 
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
@@ -19,6 +19,17 @@ export async function sync(courseId: string, courseData: CourseData) {
     );
   }
 
+  if (!deleteUnused) {
+    // Make sure we have the "Unknown" assessment set, because
+    // we will use this as a last resort for assessments.
+    const assessmentSetsContainsUnknown = (courseData.course.data?.assessmentSets ?? []).some(
+      (t) => t.name === 'Unknown',
+    );
+    if (!assessmentSetsContainsUnknown) {
+      courseAssessmentSets.push(JSON.stringify(['Unknown', 'U', 'Unknown', 'red3']));
+    }
+  }
+
   const knownAssessmentSetNames = new Set<string>();
   Object.values(courseData.courseInstances).forEach((ci) => {
     Object.values(ci.assessments).forEach((a) => {
@@ -27,9 +38,10 @@ export async function sync(courseId: string, courseData: CourseData) {
       }
     });
   });
+
   const assessmentSetNames = [...knownAssessmentSetNames];
 
-  await sqldb.callOneRowAsync('sync_assessment_sets', [
+  await callOneRowAsync('sync_assessment_sets', [
     isInfoCourseValid,
     deleteUnused,
     courseAssessmentSets,
