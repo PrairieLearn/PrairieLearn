@@ -272,6 +272,17 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     outbase: sourceDirectory,
     outdir: buildDirectory,
     metafile: true,
+    plugins: [
+      {
+        name: 'nathan-resolve',
+        setup(build) {
+          build.onResolve({ filter: /.*/ }, (args) => {
+            console.log('resolve', args);
+            return undefined;
+          });
+        },
+      },
+    ],
   });
 
   const scriptBundleFiles = await globby(
@@ -289,6 +300,18 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     outbase: sourceDirectory,
     outdir: buildDirectory,
     metafile: true,
+    // TODO: for debugging, remove this.
+    plugins: [
+      {
+        name: 'nathan-resolve',
+        setup(build) {
+          build.onResolve({ filter: /.*/ }, (args) => {
+            console.log('resolve', args);
+            return undefined;
+          });
+        },
+      },
+    ],
   });
 
   // Merge the resulting metafiles.

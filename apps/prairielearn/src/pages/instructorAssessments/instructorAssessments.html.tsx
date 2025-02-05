@@ -1,5 +1,4 @@
 import { Fragment } from 'preact';
-import { z } from 'zod';
 
 import { EncodedData } from '@prairielearn/browser-utils';
 import { compiledScriptPath } from '@prairielearn/compiled-assets';
@@ -15,30 +14,15 @@ import { Scorebar } from '../../components/Scorebar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import { renderHtmlDocument, renderHtmlForClientHydration } from '../../lib/preact.js';
+
+import { InstructorAssessmentsTable } from './InstructorAssessmentsTable.js';
 import {
-  type AssessmentModule,
-  AssessmentSchema,
-  type AssessmentSet,
-  AssessmentSetSchema,
-} from '../../lib/db-types.js';
-import { renderHtmlDocument } from '../../lib/preact.js';
-
-import { type StatsUpdateData } from './instructorAssessments.types.js';
-
-export const AssessmentStatsRowSchema = AssessmentSchema.extend({
-  needs_statistics_update: z.boolean().optional(),
-});
-type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
-
-export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
-  start_new_assessment_group: z.boolean(),
-  assessment_group_heading: AssessmentSetSchema.shape.heading,
-  label: z.string(),
-  open_issue_count: z.coerce.number(),
-});
-type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
+  type AssessmentRow,
+  type AssessmentStatsRow,
+  type StatsUpdateData,
+} from './instructorAssessments.types.js';
 
 export function InstructorAssessments({
   resLocals,
@@ -103,72 +87,15 @@ export function InstructorAssessments({
                 : ''}
             </div>
             ${rows.length > 0
-              ? html`
-                  <div class="table-responsive">
-                    <table class="table table-sm table-hover" aria-label="Assessments">
-                      <thead>
-                        <tr>
-                          <th style="width: 1%"><span class="sr-only">Label</span></th>
-                          <th><span class="sr-only">Title</span></th>
-                          <th>AID</th>
-                          <th class="text-center">Students</th>
-                          <th class="text-center">Scores</th>
-                          <th class="text-center">Mean Score</th>
-                          <th class="text-center">Mean Duration</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${rows.map(
-                          (row) => html`
-                            ${row.start_new_assessment_group
-                              ? html`
-                                  <tr>
-                                    <th colspan="7" scope="row">${row.assessment_group_heading}</th>
-                                  </tr>
-                                `
-                              : ''}
-                            <tr id="row-${row.id}">
-                              <td class="align-middle" style="width: 1%">
-                                <span class="badge color-${row.color}">${row.label}</span>
-                              </td>
-                              <td class="align-middle">
-                                ${row.sync_errors
-                                  ? SyncProblemButton({
-                                      type: 'error',
-                                      output: row.sync_errors,
-                                    })
-                                  : row.sync_warnings
-                                    ? SyncProblemButton({
-                                        type: 'warning',
-                                        output: row.sync_warnings,
-                                      })
-                                    : ''}
-                                <a href="${urlPrefix}/assessment/${row.id}/">
-                                  ${row.title}
-                                  ${row.group_work
-                                    ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                                    : ''}
-                                </a>
-                                ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
-                              </td>
-
-                              <td class="align-middle">${row.tid}</td>
-
-                              ${AssessmentStats({ row })}
-                            </tr>
-                          `,
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div class="card-footer">
-                    Download
-                    <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}">
-                      ${csvFilename}
-                    </a>
-                    (includes more statistics columns than displayed above)
-                  </div>
-                `
+              ? renderHtmlForClientHydration(
+                  'InstructorAssessmentsTable',
+                  InstructorAssessmentsTable,
+                  {
+                    rows,
+                    urlPrefix,
+                    csvFilename,
+                  },
+                )
               : html`
                   <div class="my-4 card-body text-center" style="text-wrap: balance;">
                     <p class="font-weight-bold">No assessments found.</p>
@@ -284,7 +211,7 @@ export function PreactInstructorAssessments({
       <head>
         <PreactHeadContents resLocals={resLocals} />
         <script src={compiledScriptPath('instructorAssessmentsClient.ts')}></script>
-        {/* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */}
+        {}
         <div
           dangerouslySetInnerHTML={{
             __html: EncodedData<StatsUpdateData>(
@@ -296,7 +223,7 @@ export function PreactInstructorAssessments({
       </head>
       <body>
         <PreactNavbar resLocals={resLocals} />
-        {/* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */}
+        {}
         <div
           dangerouslySetInnerHTML={{
             __html: CreateAssessmentModal({
@@ -309,7 +236,7 @@ export function PreactInstructorAssessments({
           }}
         />
         <main id="content" class="container-fluid">
-          {/* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */}
+          {}
           <div
             dangerouslySetInnerHTML={{
               __html: CourseInstanceSyncErrorsAndWarnings({
@@ -387,7 +314,7 @@ export function PreactInstructorAssessments({
                               {row.title}
                               {row.group_work && <i class="fas fa-users" aria-hidden="true"></i>}
                             </a>
-                            {/* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */}
+                            {}
                             <span
                               dangerouslySetInnerHTML={{
                                 __html: IssueBadge({

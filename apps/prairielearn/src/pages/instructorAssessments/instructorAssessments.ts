@@ -29,11 +29,11 @@ import { AssessmentAddEditor } from '../../lib/editors.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {
-  AssessmentRowSchema,
   AssessmentStats,
   InstructorAssessments,
   PreactInstructorAssessments,
 } from './instructorAssessments.html.js';
+import { AssessmentRowSchema } from './instructorAssessments.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);

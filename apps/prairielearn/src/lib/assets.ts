@@ -136,9 +136,7 @@ export async function init() {
   assetsPrefix = config.assetsPrefix;
 
   await compiledAssets.init({
-    // dev: config.devMode,
-    // TODO: for testing, undo.
-    dev: false,
+    dev: config.devMode,
     sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
     buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
     publicPath: `${assetsPrefix}/build`,
