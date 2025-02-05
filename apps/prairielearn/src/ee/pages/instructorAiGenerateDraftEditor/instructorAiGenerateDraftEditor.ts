@@ -225,7 +225,24 @@ router.post(
         req.body.qid,
       );
 
-      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/settings');
+      const client = getCourseFilesClient();
+
+      const result = await client.batchDeleteQuestions.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        question_ids: [question.id],
+      });
+
+      if (result.status === 'error') {
+        throw new error.HttpStatusError(
+          500,
+          'Draft deletion failed, but question creation succeeded.',
+        );
+      }
+
+      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/preview');
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       res.locals.question = question;
       const variantId = await processSubmission(req, res);
