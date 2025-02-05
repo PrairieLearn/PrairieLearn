@@ -80,6 +80,7 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   submission_user: UserSchema.shape.uid.nullable(),
   assigned_grader: UserSchema.shape.uid.nullable(),
   last_grader: UserSchema.shape.uid.nullable(),
+  zone_number: z.number(),
 });
 type AssessmentInstanceSubmissionRow = z.infer<typeof AssessmentInstanceSubmissionRowSchema>;
 
@@ -383,6 +384,7 @@ router.get(
       const columns = identityColumn.concat([
         ['Assessment', 'assessment_label'],
         ['Assessment instance', 'assessment_instance_number'],
+        ['Zone', 'zone_number'],
         ['Question', 'qid'],
         ['Question instance', 'instance_question_number'],
         ['Question points', 'points'],
@@ -414,6 +416,7 @@ router.get(
         (pair) => [pair[1], pair[1]],
       );
       const columns = identityColumn.concat([
+        ['Zone', 'zone_number'],
         ['qid', 'qid'],
         ['old_score_perc', 'old_score_perc'],
         ['old_feedback', 'old_feedback'],
@@ -467,6 +470,7 @@ router.get(
       const columns = submissionColumn.concat([
         ['Assessment', 'assessment_label'],
         ['Assessment instance', 'assessment_instance_number'],
+        ['Zone', 'zone_number'],
         ['Question', 'qid'],
         ['Question instance', 'instance_question_number'],
         ['Variant', 'variant_number'],
