@@ -239,11 +239,13 @@ router.post(
       const files: Record<string, string> = {};
 
       if ('html' in req.body && req.body.html) {
-        files['question.html'] = b64Util.b64EncodeUnicode(req.body.html);
+        // The HTML code is base64-encoded in the form submission.
+        files['question.html'] = req.body.html;
       }
 
       if ('python' in req.body && req.body.python) {
-        files['server.py'] = b64Util.b64EncodeUnicode(req.body.python);
+        // The Python code is base64-encoded in the form submission.
+        files['server.py'] = req.body.python;
       }
 
       const result = await client.updateQuestionFiles.mutate({
@@ -268,8 +270,8 @@ router.post(
         user_prompt: 'Manually update question',
         system_prompt: 'Manually update question',
         response,
-        html: req.body.html,
-        python: req.body.python,
+        html: b64Util.b64DecodeUnicode(req.body.html),
+        python: b64Util.b64DecodeUnicode(req.body.python),
         errors: [],
         completion: [response],
       });
@@ -319,8 +321,8 @@ router.post(
         question_id: req.params.question_id,
         prompting_user_id: res.locals.authn_user.user_id,
         prompt_type: 'manual_change',
-        user_prompt: `Manually revert question to v${req.body.unsafe_prompt_id}`,
-        system_prompt: `Manually revert question to v${req.body.unsafe_prompt_id}`,
+        user_prompt: 'Manually revert question to earlier revision',
+        system_prompt: 'Manually revert question to earlier revision',
         response,
         html: prompts[0].html,
         python: prompts[0].python,

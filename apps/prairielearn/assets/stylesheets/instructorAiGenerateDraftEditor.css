@@ -66,9 +66,14 @@ body,
 
 .editor-panes {
   display: grid;
-  grid-template-areas: 'html python';
+  grid-template-areas: 'status status' 'html python';
+  grid-template-rows: min-content 1fr;
   grid-template-columns: 1fr 1fr;
   height: 100%;
+}
+
+.editor-pane-status {
+  grid-area: status;
 }
 
 .editor-pane-html {
@@ -123,7 +128,8 @@ body,
 @media (max-width: 1400px) {
   /* On narrower viewports, tile the editors vertically */
   .editor-panes {
-    grid-template-areas: 'html' 'python';
+    grid-template-areas: 'status' 'html' 'python';
+    grid-template-rows: min-content 1fr 1fr;
     grid-template-columns: 1fr;
   }
 }
