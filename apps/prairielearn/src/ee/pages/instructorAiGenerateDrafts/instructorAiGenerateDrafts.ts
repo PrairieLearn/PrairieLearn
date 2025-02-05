@@ -98,9 +98,7 @@ router.post(
       }
 
       res.redirect(req.originalUrl);
-    }
-
-    if (req.body.__action === 'generate_question') {
+    } else if (req.body.__action === 'generate_question') {
       const result = await generateQuestion({
         client,
         courseId: res.locals.course.id,
