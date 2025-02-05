@@ -1372,11 +1372,11 @@ export class QuestionAddEditor extends Editor {
 export class QuestionModifyEditor extends Editor {
   private question: Question;
   private origHash: string;
-  private files: Record<string, string>;
+  private files: Record<string, string | null>;
 
   constructor(
     params: BaseEditorOptions<{ question: Question }> & {
-      files: Record<string, string>;
+      files: Record<string, string | null>;
     },
   ) {
     const {
@@ -1413,7 +1413,11 @@ export class QuestionModifyEditor extends Editor {
     // and provide them in the `files` object.
     for (const [filePath, contents] of Object.entries(this.files)) {
       const resolvedPath = path.join(questionPath, filePath);
-      await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+      if (contents === null) {
+        await fs.remove(resolvedPath);
+      } else {
+        await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+      }
     }
 
     return {

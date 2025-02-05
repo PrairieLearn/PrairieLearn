@@ -254,7 +254,6 @@ function QuestionCodeEditors({
   pythonContents: string | null;
   csrfToken: string;
 }) {
-  console.log('rendering editors', htmlContents, pythonContents);
   return html`
     <div class="editor-panes p-2 gap-2">
       <!-- TODO: Move this to a more sensible location -->

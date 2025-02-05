@@ -37,8 +37,8 @@ VALUES
     $response,
     $html,
     $python,
-    NULL,
-    NULL,
+    '[]'::jsonb,
+    '{}'::jsonb,
     NULL
   );
 
