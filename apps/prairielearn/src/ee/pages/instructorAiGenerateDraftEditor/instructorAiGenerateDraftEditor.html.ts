@@ -172,7 +172,21 @@ function PromptHistory({
     return html`
       <div class="d-flex flex-row-reverse">
         <div class="p-3 mb-2 rounded" style="background: #e2e3e5; max-width: 90%">
-          ${prompt.user_prompt}
+          ${run(() => {
+            // We'll special-case these two "prompts" and show a custom italic
+            // message
+            // Differentiate between actual text typed by the user and the
+            // system-generated prompts.
+            if (prompt.prompt_type === 'manual_revert') {
+              return html`<i>Revert to an earlier revision.</i>`;
+            }
+
+            if (prompt.prompt_type === 'manual_change') {
+              return html`<i>Edit the question files.</i>`;
+            }
+
+            return prompt.user_prompt;
+          })}
         </div>
       </div>
       <div
