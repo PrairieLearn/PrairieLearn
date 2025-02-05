@@ -37,9 +37,9 @@ VALUES
     $response,
     $html,
     $python,
-    to_jsonb($errors::text[]),
-    to_jsonb($completion),
-    null
+    NULL,
+    NULL,
+    NULL
   );
 
 -- BLOCK select_ai_question_generation_prompt_by_id_and_question

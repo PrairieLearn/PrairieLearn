@@ -272,8 +272,6 @@ router.post(
         response,
         html: b64Util.b64DecodeUnicode(req.body.html),
         python: b64Util.b64DecodeUnicode(req.body.python),
-        errors: [],
-        completion: [response],
       });
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
@@ -326,8 +324,6 @@ router.post(
         response,
         html: prompts[0].html,
         python: prompts[0].python,
-        errors: [],
-        completion: [response],
       });
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
