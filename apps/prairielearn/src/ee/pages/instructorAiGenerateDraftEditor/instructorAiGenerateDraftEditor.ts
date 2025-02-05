@@ -317,7 +317,7 @@ router.post(
         );
       }
 
-      flash('success', 'Your question is finalized and ready for use.');
+      flash('success', `Your question is finalized and ready for use as QID ${req.body.qid}.`);
 
       res.redirect(res.locals.urlPrefix + '/question/' + qid + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
