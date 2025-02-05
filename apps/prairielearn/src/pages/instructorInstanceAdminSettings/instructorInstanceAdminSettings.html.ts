@@ -176,9 +176,7 @@ function EditConfiguration({
         <a
           data-testid="edit-course-instance-configuration-link"
           href="${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}"
-        >
-          Edit course instance configuration
-        </a>
+        >Edit course instance configuration</a>
         in <code>infoCourseInstance.json</code>
       </p>
     `;
