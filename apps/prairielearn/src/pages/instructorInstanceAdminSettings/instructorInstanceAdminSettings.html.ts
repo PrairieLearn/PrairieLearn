@@ -24,11 +24,6 @@ export function InstructorInstanceAdminSettings({
       <head>
         ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorInstanceAdminSettingsClient.ts')}
-        <style>
-          .popover {
-            max-width: 50%;
-          }
-        </style>
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -176,7 +171,8 @@ function EditConfiguration({
         <a
           data-testid="edit-course-instance-configuration-link"
           href="${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}"
-        >Edit course instance configuration</a>
+          >Edit course instance configuration</a
+        >
         in <code>infoCourseInstance.json</code>
       </p>
     `;
