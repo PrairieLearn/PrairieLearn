@@ -76,29 +76,7 @@ router.post(
       organization: config.openAiOrganization,
     });
 
-    if (req.body.__action === 'delete_drafts') {
-      const questions = await queryRows(
-        sql.select_draft_questions_by_course_id,
-        { course_id: res.locals.course.id.toString() },
-        IdSchema,
-      );
-
-      const client = getCourseFilesClient();
-
-      const result = await client.batchDeleteQuestions.mutate({
-        course_id: res.locals.course.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
-        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        question_ids: questions,
-      });
-
-      if (result.status === 'error') {
-        throw new error.HttpStatusError(500, 'Failed to delete all draft questions.');
-      }
-
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'generate_question') {
+    if (req.body.__action === 'generate_question') {
       const result = await generateQuestion({
         client,
         courseId: res.locals.course.id,
@@ -123,6 +101,28 @@ router.post(
           }),
         );
       }
+    } else if (req.body.__action === 'delete_drafts') {
+      const questions = await queryRows(
+        sql.select_draft_questions_by_course_id,
+        { course_id: res.locals.course.id.toString() },
+        IdSchema,
+      );
+
+      const client = getCourseFilesClient();
+
+      const result = await client.batchDeleteQuestions.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        question_ids: questions,
+      });
+
+      if (result.status === 'error') {
+        throw new error.HttpStatusError(500, 'Failed to delete all draft questions.');
+      }
+
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
