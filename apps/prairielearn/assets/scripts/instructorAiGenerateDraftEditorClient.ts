@@ -6,21 +6,44 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 import { configureAceBasePaths } from './lib/ace.js';
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
-class DraftFileEditor {
+class DraftFileEditor extends EventTarget {
   private editor: ace.Ace.Editor;
+  private initialContents: string;
+  private inputContentsElement?: HTMLInputElement;
 
   constructor(el: HTMLElement) {
-    const mode = el.dataset.aceMode;
+    super();
+
+    const inputContentsName = el.dataset.inputContentsName;
+    if (!inputContentsName) {
+      throw new Error('Missing data-input-contents-name attribute');
+    }
+
+    const selector = `input[name="${inputContentsName}"]`;
+    const inputContentsElement = document.querySelector<HTMLInputElement>(selector);
+    if (!inputContentsElement) {
+      throw new Error(`Missing input element with name ${inputContentsName}`);
+    }
+
+    this.inputContentsElement = inputContentsElement;
 
     this.editor = ace.edit(el, {
-      mode: mode ?? 'ace/mode/text',
+      mode: el.dataset.aceMode ?? 'ace/mode/text',
       enableKeyboardAccessibility: true,
       theme: 'ace/theme/chrome',
-      // TODO: make this editable once we have a way to save the contents.
-      readOnly: true,
     } satisfies Partial<ace.Ace.EditorOptions>);
 
-    this.setEditorContents(this.b64DecodeUnicode(el.dataset.contents ?? ''));
+    this.initialContents = this.b64DecodeUnicode(this.inputContentsElement.value);
+    this.setEditorContents(this.initialContents);
+
+    this.editor.getSession().on('change', () => {
+      this.syncFileToHiddenInput();
+      this.dispatchEvent(new Event('change'));
+    });
+
+    if (this.editor.getOption('mode') === 'ace/mode/html') {
+      this.editor.getSession().setTabSize(2);
+    }
   }
 
   setEditorContents(contents: string) {
@@ -32,10 +55,9 @@ class DraftFileEditor {
   }
 
   syncFileToHiddenInput() {
-    // TODO: enable once we have a way to save the contents.
-    // if (this.inputContentsElement) {
-    //   this.inputContentsElement.value = this.b64EncodeUnicode(this.editor.getValue());
-    // }
+    if (this.inputContentsElement) {
+      this.inputContentsElement.value = this.b64EncodeUnicode(this.editor.getValue());
+    }
   }
 
   b64DecodeUnicode(str: string) {
@@ -60,10 +82,47 @@ class DraftFileEditor {
       }),
     );
   }
+
+  didContentsChange(): boolean {
+    return this.editor.getValue() !== this.initialContents;
+  }
 }
 
 onDocumentReady(() => {
   configureAceBasePaths();
+
+  const editorForm = document.querySelector<HTMLFormElement>('.js-editor-form');
+  const editorStatus = document.querySelector<HTMLElement>('.js-editor-status');
+  const editorSubmitButton = editorForm?.querySelector<HTMLButtonElement>('button[type="submit"]');
+  const editors = new Map<HTMLElement, DraftFileEditor>();
+
+  function handleEditorChange() {
+    const hasChanges = Array.from(editors.values()).some((e) => e.didContentsChange());
+    if (hasChanges) {
+      // Enable the save button.
+      if (editorStatus) editorStatus.textContent = 'Unsaved changes.';
+      editorSubmitButton?.removeAttribute('disabled');
+    } else {
+      // Disable the save button.
+      if (editorStatus) editorStatus.textContent = 'No unsaved changes.';
+      editorSubmitButton?.setAttribute('disabled', 'true');
+    }
+  }
+
+  // Wire up the editors.
+  observe('.js-file-editor', {
+    constructor: HTMLDivElement,
+    add(el) {
+      const editor = new DraftFileEditor(el);
+      editor.addEventListener('change', handleEditorChange);
+
+      editors.set(el, editor);
+      handleEditorChange();
+    },
+    remove(el) {
+      editors.delete(el);
+    },
+  });
 
   // Disable the "Revise question" button until the form is changed.
   const revisionForm = document.querySelector<HTMLFormElement>('.js-revision-form');
@@ -71,13 +130,6 @@ onDocumentReady(() => {
   if (revisionForm && submitButton) {
     saveButtonEnabling(revisionForm, submitButton);
   }
-
-  observe('.js-file-editor', {
-    constructor: HTMLDivElement,
-    add(el) {
-      new DraftFileEditor(el);
-    },
-  });
 
   // Submit the form when Enter is pressed. Shift+Enter will insert a newline.
   document.querySelector<HTMLElement>('#user-prompt-llm')?.addEventListener('keypress', (e) => {
