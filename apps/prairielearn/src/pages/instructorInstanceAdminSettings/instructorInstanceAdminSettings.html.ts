@@ -60,8 +60,8 @@ export function InstructorInstanceAdminSettings({
                 </small>
               </div>
               <div class="form-group">
-                <label for="CIID"
-                  >CIID
+                <label for="CIID">
+                  CIID
                   ${resLocals.authz_data.has_course_permission_edit &&
                   !resLocals.course.example_course
                     ? ChangeIdButton({
@@ -73,8 +73,8 @@ export function InstructorInstanceAdminSettings({
                           <code>Fa19honors</code>.`,
                         csrfToken: resLocals.__csrf_token,
                       })
-                    : ''}</label
-                >
+                    : ''}
+                </label>
                 <input
                   type="text"
                   class="form-control"
