@@ -317,7 +317,7 @@ router.post(
         );
       }
 
-      flash('success', 'Succesfully finalized question.');
+      flash('success', 'Your question is finalized and ready for use.');
 
       res.redirect(res.locals.urlPrefix + '/question/' + qid + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
