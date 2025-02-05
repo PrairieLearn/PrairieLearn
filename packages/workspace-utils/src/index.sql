@@ -159,7 +159,6 @@ FROM
   LEFT JOIN course_instances AS ci ON (ci.course_id = c.id)
 WHERE
   w.id = $workspace_id
-ON CONFLICT (type, course_instance_id, date, user_id) DO
-UPDATE
+ON CONFLICT (type, course_instance_id, date, user_id) DO UPDATE
 SET
   duration = course_instance_usages.duration + EXCLUDED.duration;

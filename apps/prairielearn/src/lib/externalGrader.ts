@@ -8,7 +8,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { updateCourseInstanceUsagesForGradingJob } from '../models/course_instance_usages.js';
+import { updateCourseInstanceUsagesForGradingJob } from '../models/course-instance-usages.js';
 
 import { config } from './config.js';
 import {
