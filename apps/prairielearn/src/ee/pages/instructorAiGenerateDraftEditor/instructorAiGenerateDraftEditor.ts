@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, queryAsync, queryRow } from '@prairielearn/postgres';
 
 import * as b64Util from '../../../lib/base64-util.js';
@@ -315,6 +316,8 @@ router.post(
           'Draft deletion failed, but question creation succeeded.',
         );
       }
+
+      flash('success', 'Succesfully finalized question.');
 
       res.redirect(res.locals.urlPrefix + '/question/' + qid + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
