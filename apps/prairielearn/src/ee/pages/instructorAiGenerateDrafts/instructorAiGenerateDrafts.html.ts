@@ -5,6 +5,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
 
@@ -270,9 +271,22 @@ export function InstructorAIGenerateDrafts({
                       </tbody>
                     </table>
                   </div>
+                  ${drafts.length > 0
+                    ? html`
+                        <button
+                          class="btn btn-sm btn-light mr-2"
+                          data-toggle="modal"
+                          data-target="#deleteModal"
+                        >
+                          <i class="fa fa-trash" aria-hidden="true"></i>
+                          <span class="d-none d-sm-inline">Delete all drafts</span>
+                        </button>
+                      `
+                    : ''}
                 </div>
               `
             : ''}
+          ${DeleteQuestionsModal(resLocals.__csrf_token)}
         </main>
       </body>
     </html>
@@ -294,4 +308,22 @@ export function GenerationFailure({
       <a href="${urlPrefix + '/jobSequence/' + jobSequenceId}">See job logs</a>
     </div>
   `.toString();
+}
+
+function DeleteQuestionsModal(CsrfToken) {
+  return Modal({
+    id: 'deleteModal',
+    title: 'Delete all draft questions',
+    body: 'This will permanently and unrecoverably delete all draft questions.',
+    footer: html`
+      <form method="POST" class="mr-2">
+        <input type="hidden" name="__csrf_token" value="${CsrfToken}" />
+        <button class="btn btn-danger" name="__action" value="delete_drafts">
+          <i class="fa fa-trash" aria-hidden="true"></i>
+          <span class="d-none d-sm-inline">Delete all drafts</span>
+        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </form>
+    `,
+  });
 }
