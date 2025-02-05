@@ -1427,7 +1427,7 @@ export class QuestionDeleteEditor extends Editor {
   private questions: Question[];
 
   constructor(params: BaseEditorOptions & { questions: Question | Question[] }) {
-    let questions;
+    let questions: Question[];
 
     if (Array.isArray(params.questions)) {
       questions = params.questions;
@@ -1450,7 +1450,7 @@ export class QuestionDeleteEditor extends Editor {
     debug('QuestionDeleteEditor: write()');
 
     for (const question of this.questions) {
-      //never will be false, but this is to placate typechecks
+      // This shouldn't happen in practice; this is just to satisfy TypeScript.
       assert(question.qid, 'question.qid is required');
 
       await fs.remove(path.join(this.course.path, 'questions', question.qid));

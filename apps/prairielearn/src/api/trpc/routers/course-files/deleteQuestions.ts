@@ -17,6 +17,8 @@ export const batchDeleteQuestions = privateProcedure
       user_id: IdSchema,
       authn_user_id: IdSchema,
       has_course_permission_edit: z.boolean(),
+
+      // Question data.
       question_ids: z.array(IdSchema),
     }),
   )
