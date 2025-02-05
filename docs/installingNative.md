@@ -91,7 +91,7 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql redis uv d2 node npm
+    brew install git graphviz postgresql redis uv d2 node npm pgvector
     ```
 
     Enable `corepack` to make `yarn` available:
