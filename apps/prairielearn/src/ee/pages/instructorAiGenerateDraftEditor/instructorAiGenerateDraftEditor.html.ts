@@ -69,6 +69,7 @@ export function InstructorAiGenerateDraftEditor({
                   ${PromptHistory({
                     prompts,
                     urlPrefix: resLocals.urlPrefix,
+                    csrfToken: resLocals.__csrf_token,
                     showJobLogs: resLocals.is_administrator,
                   })}
                 </div>
@@ -157,41 +158,92 @@ export function InstructorAiGenerateDraftEditor({
 function PromptHistory({
   prompts,
   urlPrefix,
+  csrfToken,
   showJobLogs,
 }: {
   prompts: AiQuestionGenerationPrompt[];
   urlPrefix: string;
+  csrfToken: string;
   showJobLogs: boolean;
 }) {
-  return prompts
-    .filter((prompt) => prompt.prompt_type !== 'auto_revision')
-    .map((prompt) => {
-      // TODO: Once we can upgrade to Bootstrap 5.3, we can use the official
-      // `bg-secondary-subtle` class instead of the custom styles here.
-      return html`<div class="d-flex flex-row-reverse">
-          <div class="p-3 mb-2 rounded" style="background: #e2e3e5; max-width: 90%">
-            ${prompt.user_prompt}
+  return prompts.map((prompt, index, filteredPrompts) => {
+    // TODO: Once we can upgrade to Bootstrap 5.3, we can use the official
+    // `bg-secondary-subtle` class instead of the custom styles here.
+    return html`
+      <div class="d-flex flex-row-reverse">
+        <div class="p-3 mb-2 rounded" style="background: #e2e3e5; max-width: 90%">
+          ${run(() => {
+            // We'll special-case these two "prompts" and show a custom italic
+            // message
+            // Differentiate between actual text typed by the user and the
+            // system-generated prompts.
+            if (prompt.prompt_type === 'manual_revert') {
+              return html`<i>Revert to an earlier revision.</i>`;
+            }
+
+            if (prompt.prompt_type === 'manual_change') {
+              return html`<i>Edit the question files.</i>`;
+            }
+
+            return prompt.user_prompt;
+          })}
+        </div>
+      </div>
+      <div
+        class="d-flex flex-row justify-content-start align-items-start py-3 pl-3 mb-2 prompt-response"
+      >
+        <div>
+          ${run(() => {
+            if (prompt.prompt_type === 'initial') {
+              return "A new question has been generated. Review the preview and prompt for any necessary revisions. Once you're happy with the question, finalize it to use it on an assessment.";
+            }
+
+            if (prompt.prompt_type === 'manual_revert') {
+              return 'The question has been reverted to an earlier revision. Make further revisions or finalize the question.';
+            }
+
+            if (prompt.prompt_type === 'manual_change') {
+              return 'Your manual edits have been applied. Make further revisions or finalize the question.';
+            }
+
+            return 'The question has been revised. Make further revisions or finalize the question.';
+          })}
+          <div>
+            ${run(() => {
+              if (!showJobLogs || !prompt.job_sequence_id) return '';
+
+              const jobLogsUrl = urlPrefix + '/jobSequence/' + prompt.job_sequence_id;
+
+              return html`<a class="small" href="${jobLogsUrl}" target="_blank">
+                View job logs
+              </a>`;
+            })}
           </div>
         </div>
-        <div class="d-flex flex-row">
-          <div class="p-3 mb-2 rounded" style="max-width: 90%">
-            ${prompt.prompt_type === 'initial'
-              ? "A new question has been generated. Review the preview and prompt for any necessary revisions. Once you're happy with the question, finalize it to use it on an assessment."
-              : 'The question has been revised. Make further revisions or finalize the question.'}
-            <div>
-              ${run(() => {
-                if (!showJobLogs || !prompt.job_sequence_id) return '';
+        ${run(() => {
+          // There's no point showing an option to revert to the most recent prompt.
+          if (index === filteredPrompts.length - 1) return '';
 
-                const jobLogsUrl = urlPrefix + '/jobSequence/' + prompt.job_sequence_id;
-
-                return html`
-                  <a class="small" href="${jobLogsUrl}" target="_blank">View job logs</a>
-                `;
-              })}
-            </div>
-          </div>
-        </div>`;
-    });
+          return html`
+            <form method="post">
+              <input type="hidden" name="__action" value="revert_edit_version" />
+              <input type="hidden" name="unsafe_prompt_id" value="${prompt.id}" />
+              <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+              <button
+                type="submit"
+                class="btn btn-sm btn-ghost revert-to-revision-button"
+                aria-label="Revert to this revision"
+                data-toggle="tooltip"
+                title="Revert to this revision"
+              >
+                <i class="fa fa-undo" aria-hidden="true"></i>
+              </button>
+            </form>
+          `;
+        })}
+      </div>
+    `;
+  });
 }
 
 function QuestionAndFilePreview({
@@ -212,6 +264,7 @@ function QuestionAndFilePreview({
         ${QuestionCodeEditors({
           htmlContents: prompts[prompts.length - 1].html,
           pythonContents: prompts[prompts.length - 1].python,
+          csrfToken: resLocals.__csrf_token,
         })}
       </div>
     </div>
@@ -221,18 +274,43 @@ function QuestionAndFilePreview({
 function QuestionCodeEditors({
   htmlContents,
   pythonContents,
+  csrfToken,
 }: {
   htmlContents: string | null;
   pythonContents: string | null;
+  csrfToken: string;
 }) {
   return html`
     <div class="editor-panes p-2 gap-2">
+      <!-- TODO: Move this to a more sensible location -->
+      <div class="editor-pane-status">
+        <div class="d-flex flex-row align-items-center justify-content-between pl-2">
+          <span class="js-editor-status">No unsaved changes.</span>
+          <form method="post" class="js-editor-form">
+            <input type="hidden" name="__action" value="submit_manual_revision" />
+            <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+            <button type="submit" class="btn btn-sm btn-primary">Save edits</button>
+            <input
+              type="hidden"
+              class="js-file-editor-contents"
+              name="html"
+              value="${b64EncodeUnicode(htmlContents ?? '')}"
+            />
+            <input
+              type="hidden"
+              class="js-file-editor-contents"
+              name="python"
+              value="${b64EncodeUnicode(pythonContents ?? '')}"
+            />
+          </form>
+        </div>
+      </div>
       <div class="editor-pane-html d-flex flex-column border rounded" style="overflow: hidden">
         <div class="py-2 px-3 text-monospace bg-light">question.html</div>
         <div
           class="js-file-editor flex-grow-1"
           data-ace-mode="ace/mode/html"
-          data-contents="${b64EncodeUnicode(htmlContents ?? '')}"
+          data-input-contents-name="html"
         ></div>
       </div>
       <div class="editor-pane-python d-flex flex-column border rounded" style="overflow: hidden">
@@ -240,7 +318,7 @@ function QuestionCodeEditors({
         <div
           class="js-file-editor flex-grow-1"
           data-ace-mode="ace/mode/python"
-          data-contents="${b64EncodeUnicode(pythonContents ?? '')}"
+          data-input-contents-name="python"
         ></div>
       </div>
     </div>
