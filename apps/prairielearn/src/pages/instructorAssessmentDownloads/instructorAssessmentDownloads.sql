@@ -129,8 +129,8 @@ FROM
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
   LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
   LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
-  LEFT JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
-  LEFT JOIN zones AS z ON (z.id = ag.zone_id)
+  JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+  JOIN zones AS z ON (z.id = ag.zone_id)
 WHERE
   a.id = $assessment_id
 ORDER BY
@@ -194,8 +194,8 @@ WITH
       LEFT JOIN users AS u ON (u.user_id = ai.user_id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN questions AS q ON (q.id = aq.question_id)
-      LEFT JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
-      LEFT JOIN zones AS z ON (z.id = ag.zone_id)
+      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+      JOIN zones AS z ON (z.id = ag.zone_id)
     ORDER BY
       ai.id,
       q.qid,
@@ -330,8 +330,8 @@ WITH
       LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
       LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
       LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)
-      LEFT JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
-      LEFT JOIN zones AS z ON (z.id = ag.zone_id)
+      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+      JOIN zones AS z ON (z.id = ag.zone_id)
     WHERE
       a.id = $assessment_id
   )
