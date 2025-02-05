@@ -367,9 +367,7 @@ WHERE
   FROM
     ROWS
   FROM
-    (jsonb_to_recordset($data) AS (a INTEGER, b TEXT))
-  WITH
-    ORDINALITY AS data (a, b, order_by);
+    (jsonb_to_recordset($data) AS (a INTEGER, b TEXT)) WITH ORDINALITY AS data (a, b, order_by);
   ```
 
 ## Asynchronous control flow in JavaScript

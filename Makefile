@@ -20,6 +20,8 @@ refresh-workspace-hosts-dev:
 
 dev: start-support
 	@yarn dev
+dev-bun:
+	@yarn dev-bun
 dev-workspace-host: start-support
 	@yarn dev-workspace-host
 dev-all: start-support
@@ -90,7 +92,7 @@ typecheck-tools:
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:
-	@yarn pyright --skipunannotated
+	@yarn pyright
 
 changeset:
 	@yarn changeset

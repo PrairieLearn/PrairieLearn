@@ -65,7 +65,7 @@ could also mean that scanf does not support the input provided
 
 
 class UngradableError(Exception):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
 
@@ -408,7 +408,7 @@ class CGrader:
         if change_parent and parent and not os.path.samefile(file, parent):
             self.change_mode(parent, "a+x")
 
-    def test_send_in_check_out(self, *args, **kwargs) -> TestResult:
+    def test_send_in_check_out(self, *args: Any, **kwargs: Any) -> TestResult:
         """Old deprecated function name,
         retained for compatibility reasons."""
         return self.test_run(*args, **kwargs)
@@ -462,7 +462,7 @@ class CGrader:
         elif must_match_all_outputs is False:
             must_match_all_outputs = "any"
 
-        def compile_re(t: str | re.Pattern | Any) -> tuple[str, re.Pattern]:
+        def compile_re(t: str | re.Pattern[str] | Any) -> tuple[str, re.Pattern[str]]:
             if isinstance(t, re.Pattern):
                 return (t.pattern, t)
             # If t is not a string, convert it to its string representation

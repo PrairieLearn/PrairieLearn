@@ -60,7 +60,7 @@ router.post(
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'copy_course_instance') {
       const editor = new CourseInstanceCopyEditor({
-        locals: res.locals,
+        locals: res.locals as any,
       });
 
       const serverJob = await editor.prepareServerJob();
@@ -89,7 +89,7 @@ router.post(
       );
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
-        locals: res.locals,
+        locals: res.locals as any,
       });
 
       const serverJob = await editor.prepareServerJob();
@@ -124,7 +124,7 @@ router.post(
         res.redirect(req.originalUrl);
       } else {
         const editor = new CourseInstanceRenameEditor({
-          locals: res.locals,
+          locals: res.locals as any,
           ciid_new,
         });
 
