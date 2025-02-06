@@ -55,19 +55,7 @@ BEGIN
         FROM assessment_sets
         WHERE course_id = syncing_course_id;
     END IF;
-
-    -- Make sure we have the "Unknown" assessment set under all
-    -- conditions, because we will use this as a last resort for
-    -- assessments.
-    INSERT INTO assessment_sets (
-              name,      abbreviation, heading,   color,  number, course_id
-    ) VALUES ('Unknown', 'U',          'Unknown', 'red3', 1,      syncing_course_id)
-    ON CONFLICT (name, course_id) DO NOTHING;
-
-    IF ('Unknown' != ALL (used_assessment_set_names)) THEN
-        used_assessment_set_names := used_assessment_set_names || 'Unknown';
-    END IF;
-
+    
     -- Make sure we have an assessment set for every assessment that
     -- we have data for. We auto-create assessment sets where needed.
     WITH new_assessment_sets AS (

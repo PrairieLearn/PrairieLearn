@@ -106,4 +106,46 @@ describe('Assessment set syncing', () => {
     const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
     assert.match(syncedCourse?.sync_warnings, /Found duplicates in 'assessmentSets'/);
   });
+
+  it('adds default assessment sets if used by assessments but not specified in courseData', async () => {
+    const courseData = util.getCourseData();
+
+    // The Machine Problem set is in DEFAULT_ASSESSMENT_SETS but not in courseData
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID]['set'] =
+      'Machine Problem';
+
+    const newAssessment: util.Assessment = {
+      uuid: '03f3b4d2-0264-48b7-bf42-107732142c01',
+      title: 'Test assessment 2',
+      type: 'Exam',
+      set: 'Worksheet', // The Worksheet set is in DEFAULT_ASSESSMENT_SETS but not in courseData
+      number: '101',
+    };
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['test1'] = newAssessment;
+
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    const syncedWorksheetSet = syncedAssessmentSets.find((as) => as.name === 'Worksheet');
+
+    // Ensure that the Worksheet set was added and matches the corresponding set in DEFAULT_ASSESSMENT_SETS
+    checkAssessmentSet(syncedWorksheetSet, {
+      abbreviation: 'WS',
+      name: 'Worksheet',
+      heading: 'Worksheets',
+      color: 'purple1',
+    });
+
+    const syncedMachineProblemSet = syncedAssessmentSets.find(
+      (as) => as.name === 'Machine Problem',
+    );
+
+    // Ensure that the Machine Problem set was added and matches the corresponding set in DEFAULT_ASSESSMENT_SETS
+    checkAssessmentSet(syncedMachineProblemSet, {
+      abbreviation: 'MP',
+      name: 'Machine Problem',
+      heading: 'Machine Problems',
+      color: 'turquoise1',
+    });
+  });
 });

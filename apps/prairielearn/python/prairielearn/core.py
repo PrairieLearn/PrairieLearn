@@ -844,22 +844,11 @@ def get_color_attrib(
         raise ValueError(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
 
 
-# This internal represents most the types that would pass a np.isscalar check
-_NumPyScalarType = (
-    np.complex64
-    | np.complex128
-    | bool
-    | int
-    | float
-    | complex
-    | str
-    | bytes
-    | np.generic
-)
+_NumericScalarType = numbers.Number | complex | np.generic
 
 
 def numpy_to_matlab(
-    np_object: npt.NDArray[Any] | _NumPyScalarType,
+    np_object: _NumericScalarType | npt.NDArray[Any],
     ndigits: int = 2,
     wtype: str = "f",
 ) -> str:
@@ -917,7 +906,7 @@ _FormatLanguage = Literal["python", "matlab", "mathematica", "r", "sympy"]
 
 
 def string_from_numpy(
-    A: npt.NDArray[Any] | _NumPyScalarType,
+    A: _NumericScalarType | npt.NDArray[Any],
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
@@ -981,12 +970,8 @@ def string_from_numpy(
 
     # if A is a scalar
     if np.isscalar(A):
-        assert not isinstance(A, memoryview)
+        assert not isinstance(A, memoryview | str | bytes)
         if presentation_type == "sigfig":
-            if not isinstance(A, np.complexfloating) and isinstance(
-                A, np.generic | bytes | str
-            ):
-                raise TypeError(f"A must be a number, is {type(A)}")
             return string_from_number_sigfig(A, digits=digits)
         else:
             return "{:.{digits}{presentation_type}}".format(
@@ -1062,17 +1047,21 @@ def string_from_2darray(
     return result
 
 
-def string_from_number_sigfig(
-    a: complex | np.complex64 | np.complex128 | numbers.Number, digits: int = 2
-) -> str:
+def string_from_number_sigfig(a: _NumericScalarType, digits: int = 2) -> str:
     """string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is of type float or complex. It returns "a"
     as a string in which the number, or both the real and imaginary parts of the
     number, have digits significant digits.
     """
-    if not isinstance(a, numbers.Number) and np.iscomplexobj(a):
-        return _string_from_complex_sigfig(a, digits=digits)
+
+    assert np.isscalar(a)
+    assert not isinstance(a, memoryview | str | bytes)
+
+    if np.iscomplexobj(a):
+        # `np.iscomplexobj` isn't a proper type guard, so we need to use
+        # casting to call this function.
+        return _string_from_complex_sigfig(cast(complex, a), digits=digits)
     else:
         return to_precision(a, digits)
 
@@ -1093,7 +1082,9 @@ def _string_from_complex_sigfig(
         return f"{re}-{im}j"
 
 
-def numpy_to_matlab_sf(A: _NumPyScalarType | npt.NDArray[Any], ndigits: int = 2) -> str:
+def numpy_to_matlab_sf(
+    A: _NumericScalarType | npt.NDArray[Any], ndigits: int = 2
+) -> str:
     """numpy_to_matlab(A, ndigits=2)
 
     This function assumes that A is one of these things:
@@ -1105,13 +1096,11 @@ def numpy_to_matlab_sf(A: _NumPyScalarType | npt.NDArray[Any], ndigits: int = 2)
     ndigits significant digits.
     """
     if np.isscalar(A):
-        assert not isinstance(A, memoryview)
+        assert not isinstance(A, memoryview | str | bytes)
         if np.iscomplexobj(A):
-            if not isinstance(A, np.complexfloating) and isinstance(
-                A, np.generic | bytes | str
-            ):
-                raise TypeError(f"A must be a number, is {type(A)}")
-            scalar_str = _string_from_complex_sigfig(A, ndigits)
+            # `np.iscomplexobj` isn't a proper type guard, so we need to use
+            # casting to call this function
+            scalar_str = _string_from_complex_sigfig(cast(complex, A), ndigits)
         else:
             scalar_str = to_precision(A, ndigits)
         return scalar_str
@@ -1657,7 +1646,7 @@ def string_to_2darray(
 
 
 def latex_from_2darray(
-    A: numbers.Number | npt.NDArray[Any],
+    A: _NumericScalarType | npt.NDArray[Any],
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
@@ -1677,13 +1666,18 @@ def latex_from_2darray(
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
     """
     # if A is a scalar
-    if isinstance(A, numbers.Number):
+    if np.isscalar(A):
+        assert not isinstance(A, memoryview | str | bytes)
         if presentation_type == "sigfig":
             return string_from_number_sigfig(A, digits=digits)
         else:
             return "{:.{digits}{presentation_type}}".format(
                 A, digits=digits, presentation_type=presentation_type
             )
+
+    if not isinstance(A, np.ndarray):
+        raise TypeError("A must be a numpy array or scalar")
+
     # Using Any annotation here because of weird Pyright-isms.
     if presentation_type == "sigfig":
         formatter: Any = {

@@ -1,6 +1,7 @@
 from collections import deque
 from collections.abc import Callable
 from html import escape as html_escape
+from html import unescape as html_unescape
 from itertools import chain
 
 import lxml.html
@@ -138,7 +139,17 @@ def traverse_and_replace(
                     if new_elements.tag in UNESCAPED_ELEMENTS:
                         result.append(new_elements.text)
                     else:
-                        result.append(html_escape(new_elements.text))
+                        # `lxml` uses `libxml2` under the hood, which does not support
+                        # the full set of HTML5 named entities:
+                        # https://gitlab.gnome.org/GNOME/libxml2/-/issues/857
+                        # This means that with a naive approach, we'd end up double
+                        # escaping entities like `&langle;` into `&amp;langle;`. To work
+                        # around this (at least until `libxml2` hopefully adds support for
+                        # HTML5 named entities), we first unescape the text to get the
+                        # actual Unicode characters, and then escape them again. Escaping
+                        # will only escape `&`, `<`, and `>`; it won't escape everything
+                        # that could possibly be represented by a named entity.
+                        result.append(html_escape(html_unescape(new_elements.text)))
 
                 # Add all children to the work stack
                 children = list(new_elements)
