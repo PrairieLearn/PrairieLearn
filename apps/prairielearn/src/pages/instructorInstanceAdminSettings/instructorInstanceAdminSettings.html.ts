@@ -5,6 +5,7 @@ import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { encodePath } from '../../lib/uri-util.js';
 
 export function InstructorInstanceAdminSettings({
   resLocals,
@@ -95,8 +96,8 @@ export function InstructorInstanceAdminSettings({
                     <input
                       type="text"
                       class="form-control"
-                      id="studentLink"
-                      name="studentLink"
+                      id="student_link"
+                      name="student_link"
                       value="${studentLink}"
                       disabled
                     />
@@ -198,7 +199,7 @@ function EditConfiguration({
       <p class="mb-0">
         <a
           data-testid="edit-course-instance-configuration-link"
-          href="${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}"
+          href="${encodePath(`${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}`)}"
           >Edit course instance configuration</a
         >
         in <code>infoCourseInstance.json</code>
