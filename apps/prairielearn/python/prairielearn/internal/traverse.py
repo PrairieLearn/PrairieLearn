@@ -1,10 +1,10 @@
 from collections import deque
 from collections.abc import Callable
 from html import escape as html_escape
-from html import unescape as html_unescape
 from itertools import chain
 
 import lxml.html
+from lxml.html import html5parser
 
 ElementReplacement = str | lxml.html.HtmlElement | list[lxml.html.HtmlElement] | None
 
@@ -33,7 +33,7 @@ UNESCAPED_ELEMENTS = frozenset({"script", "style"})
 def traverse_and_execute(
     html: str, fn: Callable[[lxml.html.HtmlElement], None]
 ) -> None:
-    elements = lxml.html.fragments_fromstring(html)
+    elements = html5parser.fragments_fromstring(html)
 
     for e in chain.from_iterable(
         element.iter()
@@ -74,7 +74,7 @@ def traverse_and_replace(
     # Initialize result and work data structures
     result: deque[str] = deque()
 
-    initial_list = lxml.html.fragments_fromstring(html)
+    initial_list = html5parser.fragments_fromstring(html)
     count_stack: deque[int] = deque([len(initial_list)])
     work_stack: deque[str | lxml.html.HtmlElement] = deque(reversed(initial_list))
     tail_stack: deque[tuple[str, str | None]] = deque()
@@ -93,7 +93,7 @@ def traverse_and_replace(
             if new_elements is None:
                 new_elements = []
             elif isinstance(new_elements, str):
-                fragments = lxml.html.fragments_fromstring(new_elements)
+                fragments = html5parser.fragments_fromstring(new_elements)
                 new_elements = fragments
 
             if isinstance(new_elements, list):
@@ -139,17 +139,7 @@ def traverse_and_replace(
                     if new_elements.tag in UNESCAPED_ELEMENTS:
                         result.append(new_elements.text)
                     else:
-                        # `lxml` uses `libxml2` under the hood, which does not support
-                        # the full set of HTML5 named entities:
-                        # https://gitlab.gnome.org/GNOME/libxml2/-/issues/857
-                        # This means that with a naive approach, we'd end up double
-                        # escaping entities like `&langle;` into `&amp;langle;`. To work
-                        # around this (at least until `libxml2` hopefully adds support for
-                        # HTML5 named entities), we first unescape the text to get the
-                        # actual Unicode characters, and then escape them again. Escaping
-                        # will only escape `&`, `<`, and `>`; it won't escape everything
-                        # that could possibly be represented by a named entity.
-                        result.append(html_escape(html_unescape(new_elements.text)))
+                        result.append(html_escape(new_elements.text))
 
                 # Add all children to the work stack
                 children = list(new_elements)
