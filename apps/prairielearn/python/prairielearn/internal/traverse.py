@@ -3,6 +3,7 @@ from collections.abc import Callable
 from html import escape as html_escape
 from itertools import chain
 
+import lxml.etree
 import lxml.html
 from lxml.html import html5parser
 
@@ -34,14 +35,15 @@ def traverse_and_execute(
     html: str, fn: Callable[[lxml.html.HtmlElement], None]
 ) -> None:
     elements = html5parser.fragments_fromstring(html)
-
+    # print(type(elements[0]))
     for e in chain.from_iterable(
         element.iter()
         for element in elements
         # If there's leading text, the first element of the array will be a string.
         # We can just discard that.
-        if isinstance(element, lxml.html.HtmlElement)
+        if isinstance(element, lxml.etree._Element)
     ):
+        print(e)
         fn(e)
 
 
@@ -75,6 +77,7 @@ def traverse_and_replace(
     result: deque[str] = deque()
 
     initial_list = html5parser.fragments_fromstring(html)
+    print(initial_list)
     count_stack: deque[int] = deque([len(initial_list)])
     work_stack: deque[str | lxml.html.HtmlElement] = deque(reversed(initial_list))
     tail_stack: deque[tuple[str, str | None]] = deque()
