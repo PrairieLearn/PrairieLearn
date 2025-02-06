@@ -17,13 +17,13 @@ CREATE TABLE course_instance_usages (
   user_id BIGINT NOT NULL REFERENCES users (user_id),
   include_in_statistics BOOLEAN NOT NULL,
   duration INTERVAL NOT NULL DEFAULT '0',
-  UNIQUE (
+  UNIQUE NULLS NOT DISTINCT (
     type,
     course_id,
     course_instance_id,
     date,
     user_id
-  ) NULLS NOT DISTINCT
+  )
 );
 
 CREATE INDEX course_instance_usages_date_idx ON course_instance_usages (date);
