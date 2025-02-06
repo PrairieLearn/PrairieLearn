@@ -1,5 +1,3 @@
-import { Fragment } from 'preact';
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
@@ -16,7 +14,7 @@ import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import { renderForClientHydration, renderHtmlDocument } from '../../lib/preact.js';
 
-import { InstructorAssessmentsTable } from './InstructorAssessmentsTable.js';
+import { InstructorAssessmentsCard } from './InstructorAssessmentsCard.js';
 import {
   type AssessmentRow,
   type AssessmentStatsRow,
@@ -126,12 +124,12 @@ export function InstructorAssessments({
                                         output: row.sync_warnings,
                                       })
                                     : ''}
-                                <a href="${urlPrefix}/assessment/${row.id}/">
-                                  ${row.title}
-                                  ${row.group_work
-                                    ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                                    : ''}
-                                </a>
+                                <a href="${urlPrefix}/assessment/${row.id}/">${row.title}</a>
+                                ${row.group_work
+                                  ? html`
+                                      <i class="fas fa-users text-primary" aria-hidden="true"></i>
+                                    `
+                                  : ''}
                                 ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
                               </td>
 
@@ -146,9 +144,9 @@ export function InstructorAssessments({
                   </div>
                   <div class="card-footer">
                     Download
-                    <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}">
-                      {csvFilename}
-                    </a>
+                    <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}"
+                      >${csvFilename}</a
+                    >
                     (includes more statistics columns than displayed above)
                   </div>
                 `
@@ -293,74 +291,15 @@ export function PreactInstructorAssessments({
               }).toString(),
             }}
           />
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h1>Assessments</h1>
-              {authz_data.has_course_permission_edit && !course.example_course && (
-                <form class="ml-auto" name="add-assessment-form" method="POST">
-                  <input type="hidden" name="__csrf_token" value={__csrf_token} />
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-light"
-                    data-toggle="modal"
-                    data-target="#createAssessmentModal"
-                  >
-                    <i class="fa fa-plus" aria-hidden="true"></i>
-                    <span class="d-none d-sm-inline">Add assessment</span>
-                  </button>
-                </form>
-              )}
-            </div>
-
-            {rows.length > 0 ? (
-              renderForClientHydration('InstructorAssessmentsTable', InstructorAssessmentsTable, {
-                rows,
-                assessmentIdsNeedingStatsUpdate,
-                urlPrefix,
-                csvFilename,
-              })
-            ) : (
-              <Fragment>
-                <div class="my-4 card-body text-center" style="text-wrap: balance;">
-                  <p class="font-weight-bold">No assessments found.</p>
-                  <p class="mb-0">
-                    An assessment is a collection of questions to build or assess a student's
-                    knowledge.
-                  </p>
-                  <p>
-                    Learn more in the
-                    <a
-                      href="https://prairielearn.readthedocs.io/en/latest/assessment/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      assessments documentation
-                    </a>
-                    .
-                  </p>
-                  {run(() => {
-                    if (course.example_course) {
-                      return <p>You can't add assessments to the example course.</p>;
-                    }
-                    if (!authz_data.has_course_permission_edit) {
-                      return <p>Course Editors can create new assessments.</p>;
-                    }
-                    return (
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-primary"
-                        data-toggle="modal"
-                        data-target="#createAssessmentModal"
-                      >
-                        <i class="fa fa-plus" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Add assessment</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </Fragment>
-            )}
-          </div>
+          {renderForClientHydration('InstructorAssessmentsCard', InstructorAssessmentsCard, {
+            rows,
+            assessmentIdsNeedingStatsUpdate,
+            csvFilename,
+            hasCoursePermissionEdit: authz_data.has_course_permission_edit,
+            isExampleCourse: course.example_course,
+            urlPrefix,
+            csrfToken: __csrf_token,
+          })}
           <div
             // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
             dangerouslySetInnerHTML={{

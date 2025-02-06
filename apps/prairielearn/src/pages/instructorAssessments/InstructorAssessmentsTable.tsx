@@ -143,7 +143,7 @@ export function InstructorAssessmentsTable({
       </div>
       <div class="card-footer">
         Download{' '}
-        <a href={`${urlPrefix}/instance_admin/assessments/file/${csvFilename}`}>${csvFilename}</a>{' '}
+        <a href={`${urlPrefix}/instance_admin/assessments/file/${csvFilename}`}>{csvFilename}</a>{' '}
         (includes more statistics columns than displayed above)
       </div>
     </Fragment>
