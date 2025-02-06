@@ -299,18 +299,6 @@ export function PreactInstructorAssessments({
             isExampleCourse: course.example_course,
             urlPrefix,
           })}
-          <div
-            // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-            dangerouslySetInnerHTML={{
-              __html: CreateAssessmentModal({
-                csrfToken: __csrf_token,
-                urlPrefix,
-                assessmentSets,
-                assessmentModules,
-                assessmentsGroupBy,
-              }).toString(),
-            }}
-          />
         </main>
       </body>
     </html>,
