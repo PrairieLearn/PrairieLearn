@@ -11,8 +11,7 @@
       "questions": [
         { "id": "internalGrade/addingNumbers", "points": 2, "maxPoints": 6 },
         { "id": "manualGrade/codeUpload", "points": 2, "maxPoints": 6 },
-        { "id": "externalGrade/alpine", "points": 2, "maxPoints": 6 },
-        { "id": "externalGrade/entrypointArgs", "points": 2, "maxPoints": 6 }
+        { "id": "externalGrade/alpine", "points": 2, "maxPoints": 6 }
       ]
     },
     {

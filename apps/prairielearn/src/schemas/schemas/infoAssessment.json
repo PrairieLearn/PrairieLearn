@@ -74,11 +74,6 @@
       "type": "boolean",
       "default": true
     },
-    "questionParams": {
-      "description": "Parameters to pass down to questions in this assessment.",
-      "type": "object",
-      "default": {}
-    },
     "zones": {
       "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
       "type": "array",
@@ -93,7 +88,7 @@
             "type": "object",
             "properties": {
               "param1": {
-                "type": "string"
+                "type": "number"
               },
               "param2": {
                 "type": "number"
@@ -316,14 +311,14 @@
                 "type": "string"
               },
               "points": {
-                "type": "number"
+                "$ref": "#/definitions/points"
               },
               "questionParams": {
                 "description": "Parameters specific to this question.",
                 "type": "object",
                 "properties": {
                   "param1": {
-                    "type": "string"
+                    "type": "number"
                   },
                   "param2": {
                     "type": "number"
@@ -331,8 +326,7 @@
                 },
                 "additionalProperties": false
               }
-            },
-            "required": ["id", "points"]
+            }
           }
         },
         "advanceScorePerc": {
@@ -535,19 +529,6 @@
       "type": "number",
       "minimum": 0,
       "maximum": 100
-    },
-    "questionParams": {
-      "description": "Parameters to pass down to questions in this assessment.",
-      "type": "object",
-      "properties": {
-        "param1": {
-          "type": "string"
-        },
-        "param2": {
-          "type": "number"
-        }
-      },
-      "additionalProperties": false
     }
   }
 }
