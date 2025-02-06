@@ -14,7 +14,7 @@ SELECT
   i.id,
   c.id,
   ci.id,
-  date_trunc('day', s.date AT TIME ZONE 'UTC'),
+  date_trunc('day', s.date, 'UTC'),
   s.auth_user_id,
   coalesce(ai.include_in_statistics, false)
 FROM
@@ -48,7 +48,7 @@ SELECT
   i.id,
   c.id,
   ci.id,
-  date_trunc('day', gj.grading_finished_at AT TIME ZONE 'UTC'),
+  date_trunc('day', gj.grading_finished_at, 'UTC'),
   s.auth_user_id,
   coalesce(ai.include_in_statistics, false),
   gj.grading_finished_at - gj.grading_received_at

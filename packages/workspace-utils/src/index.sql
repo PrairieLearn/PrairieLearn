@@ -143,7 +143,7 @@ SELECT
   i.id,
   c.id,
   ci.id,
-  date_trunc('day', w.state_updated_at AT TIME ZONE 'UTC'),
+  date_trunc('day', w.state_updated_at, 'UTC'),
   v.authn_user_id,
   coalesce(ai.include_in_statistics, false),
   $duration
