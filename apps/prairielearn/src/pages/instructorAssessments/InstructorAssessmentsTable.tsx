@@ -6,8 +6,8 @@ import { formatInterval } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 
 import { HistminiPreact } from '../../components/HistminiPreact.js';
-import { IssueBadgePreact } from '../../components/IssueBadgePreact.js';
-import { ScorebarPreact } from '../../components/ScorebarPreact.js';
+import { IssueBadgePreact } from '../../components/IssueBadge.html.js';
+import { ScorebarPreact } from '../../components/Scorebar.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 
 import type { AssessmentRow, AssessmentStatsRow } from './instructorAssessments.types.js';

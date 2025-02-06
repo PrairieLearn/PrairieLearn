@@ -1,3 +1,5 @@
+import { renderHtml } from '../lib/preact-html.js';
+
 export function IssueBadgePreact({
   count,
   suppressLink,
@@ -37,4 +39,8 @@ export function IssueBadgePreact({
       {count}
     </a>
   );
+}
+
+export function IssueBadge(props: Parameters<typeof IssueBadgePreact>[0]) {
+  return renderHtml(<IssueBadgePreact {...props} />);
 }

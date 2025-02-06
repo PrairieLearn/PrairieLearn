@@ -1,3 +1,5 @@
+import { renderHtml } from '../lib/preact-html.js';
+
 export function ScorebarPreact({
   score,
   minWidth = '5em',
@@ -26,4 +28,11 @@ export function ScorebarPreact({
       </div>
     </div>
   );
+}
+
+export function Scorebar(
+  score: number | null,
+  props?: Omit<Parameters<typeof ScorebarPreact>[0], 'score'>,
+) {
+  return renderHtml(<ScorebarPreact score={score} {...props} />);
 }

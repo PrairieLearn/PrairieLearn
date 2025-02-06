@@ -2,7 +2,9 @@ import { type ComponentType, type Attributes, type VNode, Fragment } from 'preac
 import { render } from 'preact-render-to-string/jsx';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
-import { unsafeHtml, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString } from '@prairielearn/html';
+
+import { renderHtml } from './preact-html.js';
 
 // Based on https://pkg.go.dev/encoding/json#HTMLEscape
 const ENCODE_HTML_RULES: Record<string, string> = {
@@ -16,10 +18,6 @@ const MATCH_HTML = /[&><\u2028\u2029]/g;
 
 function escapeJsonForHtml(value: any): string {
   return JSON.stringify(value).replace(MATCH_HTML, (c) => ENCODE_HTML_RULES[c] || c);
-}
-
-export function renderHtml(vnode: VNode): HtmlSafeString {
-  return unsafeHtml(render(vnode, {}, { pretty: true, jsx: false }));
 }
 
 export function renderHtmlDocument(content: VNode) {

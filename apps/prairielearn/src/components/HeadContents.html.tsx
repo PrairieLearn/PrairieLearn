@@ -8,7 +8,7 @@ import {
   type Course,
   type CourseInstance,
 } from '../lib/db-types.js';
-import { renderHtml } from '../lib/preact.js';
+import { renderHtml } from '../lib/preact-html.js';
 
 interface TitleOptions {
   resLocals: {
