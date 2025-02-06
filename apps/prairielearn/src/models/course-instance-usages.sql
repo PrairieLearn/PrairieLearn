@@ -29,7 +29,13 @@ FROM
   LEFT JOIN course_instances AS ci ON (ci.course_id = a.course_instance_id)
 WHERE
   s.id = $submission_id
-ON CONFLICT (type, course_instance_id, date, user_id) DO NOTHING;
+ON CONFLICT (
+  type,
+  course_id,
+  course_instance_id,
+  date,
+  user_id
+) DO NOTHING;
 
 -- BLOCK update_course_instance_usages_for_external_grading
 INSERT INTO
@@ -65,6 +71,12 @@ FROM
   LEFT JOIN course_instances AS ci ON (ci.course_id = a.course_instance_id)
 WHERE
   gj.id = $grading_job_id
-ON CONFLICT (type, course_instance_id, date, user_id) DO UPDATE
+ON CONFLICT (
+  type,
+  course_id,
+  course_instance_id,
+  date,
+  user_id
+) DO UPDATE
 SET
   duration = course_instance_usages.duration + EXCLUDED.duration;
