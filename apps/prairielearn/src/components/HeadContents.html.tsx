@@ -1,7 +1,4 @@
 import { Fragment } from 'preact';
-import { render } from 'preact-render-to-string/jsx';
-
-import { unsafeHtml } from '@prairielearn/html';
 
 import { nodeModulesAssetPath, assetPath, compiledScriptPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
@@ -11,6 +8,7 @@ import {
   type Course,
   type CourseInstance,
 } from '../lib/db-types.js';
+import { renderHtml } from '../lib/preact.js';
 
 interface TitleOptions {
   resLocals: {
@@ -52,9 +50,7 @@ export function PreactHeadContents(props: TitleOptions) {
 }
 
 export function HeadContents(titleOptions: TitleOptions) {
-  return unsafeHtml(
-    render(<PreactHeadContents {...titleOptions} />, {}, { pretty: true, jsx: false }),
-  );
+  return renderHtml(<PreactHeadContents {...titleOptions} />);
 }
 
 // e.g. "hello_world" => "Hello World"
