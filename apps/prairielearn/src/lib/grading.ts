@@ -150,9 +150,7 @@ export async function insertSubmission({
       IdSchema,
     );
 
-    if (auth_user_id) {
-      await updateCourseInstanceUsagesForSubmission({ submission_id });
-    }
+    await updateCourseInstanceUsagesForSubmission({ submission_id });
 
     if (variant.assessment_instance_id != null) {
       await sqldb.queryAsync(sql.update_instance_question_post_submission, {
