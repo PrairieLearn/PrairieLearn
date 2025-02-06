@@ -1047,7 +1047,7 @@ def string_from_2darray(
     return result
 
 
-def string_from_number_sigfig(a: _NumericScalarType, digits: int = 2) -> str:
+def string_from_number_sigfig(a: _NumericScalarType | str, digits: int = 2) -> str:
     """string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is of type float or complex. It returns "a"
@@ -1056,7 +1056,7 @@ def string_from_number_sigfig(a: _NumericScalarType, digits: int = 2) -> str:
     """
 
     assert np.isscalar(a)
-    assert not isinstance(a, memoryview | str | bytes)
+    assert not isinstance(a, memoryview | bytes)
 
     if np.iscomplexobj(a):
         # `np.iscomplexobj` isn't a proper type guard, so we need to use
