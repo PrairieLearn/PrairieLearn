@@ -9,6 +9,7 @@ import { TopicBadge } from '../../src/components/TopicBadge.html.js';
 import { type Topic, type Tag } from '../../src/lib/db-types.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
+import { validateId } from './lib/validateId.js';
 
 onDocumentReady(() => {
   const qidField = document.querySelector('input[name="qid"]') as HTMLInputElement;
@@ -62,20 +63,8 @@ onDocumentReady(() => {
     },
   });
 
-  function validateId() {
-    const newValue = qidField.value;
-
-    if (otherQids.includes(newValue) && newValue !== qidField.defaultValue) {
-      qidField.setCustomValidity('This ID is already in use');
-    } else {
-      qidField.setCustomValidity('');
-    }
-
-    qidField.reportValidity();
-  }
-
-  qidField.addEventListener('input', validateId);
-  qidField.addEventListener('change', validateId);
+  qidField.addEventListener('input', () => validateId({ idField: qidField, otherIds: otherQids }));
+  qidField.addEventListener('change', () => validateId({ idField: qidField, otherIds: otherQids }));
 
   if (!questionSettingsForm || !saveButton) return;
   saveButtonEnabling(questionSettingsForm, saveButton);
