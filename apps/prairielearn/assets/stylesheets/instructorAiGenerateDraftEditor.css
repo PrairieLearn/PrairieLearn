@@ -66,9 +66,14 @@ body,
 
 .editor-panes {
   display: grid;
-  grid-template-areas: 'html python';
+  grid-template-areas: 'status status' 'html python';
+  grid-template-rows: min-content 1fr;
   grid-template-columns: 1fr 1fr;
   height: 100%;
+}
+
+.editor-pane-status {
+  grid-area: status;
 }
 
 .editor-pane-html {
@@ -77,6 +82,30 @@ body,
 
 .editor-pane-python {
   grid-area: python;
+}
+
+.revert-to-revision-button {
+  /**
+   * We hide the button by setting its opacity instead of controlling its
+   * visibility with `display: none` or `visibility: hidden` because we need
+   * the button to be focusable for keyboard navigation.
+   */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.prompt-response:hover .revert-to-revision-button,
+.prompt-response:focus-within .revert-to-revision-button {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .revert-to-revision-button {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 /* Reflow to a vertical layout on narrow viewports */
@@ -99,7 +128,8 @@ body,
 @media (max-width: 1400px) {
   /* On narrower viewports, tile the editors vertically */
   .editor-panes {
-    grid-template-areas: 'html' 'python';
+    grid-template-areas: 'status' 'html' 'python';
+    grid-template-rows: min-content 1fr 1fr;
     grid-template-columns: 1fr;
   }
 }

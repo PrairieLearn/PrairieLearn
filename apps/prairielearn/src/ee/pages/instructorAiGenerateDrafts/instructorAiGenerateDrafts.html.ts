@@ -5,6 +5,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
 
@@ -227,7 +228,17 @@ export function InstructorAIGenerateDrafts({
           </div>
           ${hasDrafts
             ? html`
-                <h1 class="h5">Continue working on a draft question</h1>
+                <div class="d-flex flex-row align-items-center justify-content-between mb-2">
+                  <h1 class="h5 mb-0">Continue working on a draft question</h1>
+                  <button
+                    class="btn btn-sm btn-outline-danger ml-2"
+                    data-toggle="modal"
+                    data-target="#deleteModal"
+                  >
+                    <i class="fa fa-trash" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Delete all drafts</span>
+                  </button>
+                </div>
                 <div class="card">
                   <div class="table-responsive">
                     <table
@@ -273,6 +284,7 @@ export function InstructorAIGenerateDrafts({
                 </div>
               `
             : ''}
+          ${DeleteQuestionsModal({ csrfToken: resLocals.__csrf_token })}
         </main>
       </body>
     </html>
@@ -294,4 +306,22 @@ export function GenerationFailure({
       <a href="${urlPrefix + '/jobSequence/' + jobSequenceId}">See job logs</a>
     </div>
   `.toString();
+}
+
+function DeleteQuestionsModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'deleteModal',
+    title: 'Delete all draft questions',
+    body: 'Are you sure you want to permanently delete all draft questions?',
+    footer: html`
+      <form method="POST" class="mr-2">
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+        <button class="btn btn-danger" name="__action" value="delete_drafts">
+          <i class="fa fa-trash" aria-hidden="true"></i>
+          Delete all drafts
+        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </form>
+    `,
+  });
 }
