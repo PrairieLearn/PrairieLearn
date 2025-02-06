@@ -1,5 +1,5 @@
 {
-  "description": "Course instance usage data.",
+  "description": "Course instances usage data.",
   "params": [
     {
       "name": "institution_short_name",

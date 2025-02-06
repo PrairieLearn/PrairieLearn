@@ -1,77 +1,81 @@
 WITH
-  course_instances_student_usage AS (
+  selected_course_instance_usages AS (
     SELECT
-      ci.id AS course_instance_id,
+      ciu.*
+    FROM
+      institutions AS i
+      JOIN course_instance_usages AS ciu ON (ciu.institution_id = ci.id)
+    WHERE
+      (
+        i.short_name = $institution_short_name::text
+        OR $institution_short_name IS NULL
+      )
+      AND ciud.date BETWEEN $start_date AND $end_date
+  ),
+  course_instances_data AS (
+    SELECT
+      ciu.course_instance_id,
       count(DISTINCT u.user_id) AS total_students,
       count(
         DISTINCT u.user_id
         WHERE
           u.institution_id != i.id
-      ) AS outside_students
-    FROM
-      institutions AS i
-      JOIN pl_courses AS c ON (c.institution_id = i.id)
-      JOIN course_instances AS ci ON (ci.course_id = c.id)
-      JOIN course_instance_usage_data AS ciud ON (ciud.course_instance_id = ci.id)
-      JOIN users AS u ON (u.user_id = ciud.user_id)
-    WHERE
-      (
-        i.short_name = $institution_short_name::text
-        OR $institution_short_name IS NULL
-      )
-      AND ciud.type = 'Submisson'
-      AND ciud.date BETWEEN $start_date AND $end_date
-      AND ciud.include_in_statistics
-    GROUP BY
-      ci.id
-  ),
-  course_instances_external_grading_usage AS (
-    SELECT
-      ci.id AS course_instance_id,
+      ) AS outside_students,
       EXTRACT(
         EPOCH
         FROM
-          sum(ciud.duration)
-      ) / 3600 AS duration_hours
-    FROM
-      institutions AS i
-      JOIN pl_courses AS c ON (c.institution_id = i.id)
-      JOIN course_instances AS ci ON (ci.course_id = c.id)
-      JOIN course_instance_usage_data AS ciud ON (ciud.course_instance_id = ci.id)
-    WHERE
-      (
-        i.short_name = $institution_short_name::text
-        OR $institution_short_name IS NULL
-      )
-      AND ciud.type = 'External grading'
-      AND ciud.date BETWEEN $start_date AND $end_date
-      AND ciud.include_in_statistics
-    GROUP BY
-      ci.id
-  ),
-  course_instances_workspace_usage AS (
-    SELECT
-      ci.id AS course_instance_id,
+          sum(
+            ciu.duration
+            WHERE
+              ciu.type = 'External grading'
+          )
+      ) / 3600 AS external_grading_hours,
       EXTRACT(
         EPOCH
         FROM
-          sum(ciud.duration)
-      ) / 3600 AS duration_hours
+          sum(
+            ciu.duration
+            WHERE
+              ciu.type = 'Workspace'
+          )
+      ) / 3600 AS workspace_hours
     FROM
-      institutions AS i
-      JOIN pl_courses AS c ON (c.institution_id = i.id)
-      JOIN course_instances AS ci ON (ci.course_id = c.id)
-      JOIN course_instance_usage_data AS ciud ON (ciud.course_instance_id = ci.id)
+      selected_course_instance_usages AS ciu
+      JOIN users AS u ON (u.user_id = ciu.user_id)
     WHERE
-      (
-        i.short_name = $institution_short_name::text
-        OR $institution_short_name IS NULL
-      )
-      AND ciud.type = 'Workspace'
-      AND ciud.date BETWEEN $start_date AND $end_date
-      AND ciud.include_in_statistics
+      ciu.include_in_statistics
     GROUP BY
-      ci.id
+      ciu.course_instance_id
+  ),
+  courses_usage_data AS (
+    SELECT
+      ciu.course_id,
+      count(DISTINCT ciu.user_id) AS total_staff,
+      EXTRACT(
+        EPOCH
+        FROM
+          sum(
+            ciu.duration
+            WHERE
+              ciu.type = 'External grading'
+          )
+      ) / 3600 AS external_grading_hours,
+      EXTRACT(
+        EPOCH
+        FROM
+          sum(
+            ciu.duration
+            WHERE
+              ciu.type = 'Workspace'
+          )
+      ) / 3600 AS workspace_hours
+    FROM
+      selected_course_instance_usages AS ciu
+    WHERE
+      ciu.type = 'Submission'
+      AND NOT ciu.include_in_statistics
+    GROUP BY
+      ciu.course_id
   )
 SELECT
   i.short_name AS institution,
@@ -79,32 +83,40 @@ SELECT
   c.id AS course_id,
   ci.short_name AS course_instance,
   ci.id AS course_instance_id,
+  -- number of staff in the course
+  coalesce(cud.total_staff, 0) AS total_staff,
   -- number of students in the course instance
-  coalesce(cisu.total_students, 0) AS total_students,
+  coalesce(ciud.total_students, 0) AS total_students,
   -- number of students in the course instance who are from a different institution
-  coalesce(cisu.outside_students, 0) AS outside_students,
+  coalesce(ciud.outside_students, 0) AS outside_students,
   -- running duration of external grading jobs (in hours)
-  coalesce(ciegu.duration_hours, 0) AS external_grading_hours,
+  coalesce(
+    ciud.external_grading_hours,
+    cud.external_grading_hours,
+    0
+  ) AS external_grading_hours,
   -- running duration of workspaces (in hours)
-  coalesce(ciwu.duration_hours, 0) AS workspace_hours,
+  coalesce(ciud.workspace_hours, cud.workspace_hours, 0) AS workspace_hours,
   -- total compute time for both workspaces and external grading jobs (in hours)
-  coalesce(ciegu.duration_hours, 0) + coalesce(ciwu.duration_hours, 0) AS total_compute_hours
+  coalesce(
+    ciud.external_grading_hours,
+    cud.external_grading_hours,
+    0
+  ) + coalesce(ciud.workspace_hours, cud.workspace_hours, 0) AS total_compute_hours
 FROM
   institutions AS i
   JOIN pl_courses AS c ON (c.institution_id = i.id)
   JOIN course_instances AS ci ON (ci.course_id = c.id)
-  LEFT JOIN course_instances_student_usage AS cisu ON (cisu.course_instance_id = ci.id)
-  LEFT JOIN course_instances_external_grading_usage AS ciegu ON (ciegu.course_instance_id = ci.id)
-  LEFT JOIN course_instances_workspace_usage AS ciwu ON (ciwu.course_instance_id = ci.id)
+  LEFT JOIN course_instances_usage_data AS ciud ON (ciud.course_instance_id = ci.id)
+  LEFT JOIN courses_usage_data AS cud ON (cud.course_id = c.id)
 WHERE
   (
     i.short_name = $institution_short_name::text
     OR $institution_short_name IS NULL
   )
   AND (
-    cisu.course_instance_id IS NOT NULL
-    OR ciegu.course_instance_id IS NOT NULL
-    OR ciwu.course_instance_id IS NOT NULL
+    ciud.course_instance_id IS NOT NULL
+    OR cud.course_id IS NOT NULL
   )
 ORDER BY
   i.short_name,
