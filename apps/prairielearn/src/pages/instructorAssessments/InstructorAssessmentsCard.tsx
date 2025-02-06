@@ -3,6 +3,7 @@ import { Fragment } from 'preact';
 import { run } from '@prairielearn/run';
 
 import { InstructorAssessmentsTable } from './InstructorAssessmentsTable.js';
+import type { AssessmentRow } from './instructorAssessments.types.js';
 
 export function InstructorAssessmentsCard({
   rows,
@@ -11,7 +12,13 @@ export function InstructorAssessmentsCard({
   hasCoursePermissionEdit,
   isExampleCourse,
   urlPrefix,
-  csrfToken,
+}: {
+  rows: AssessmentRow[];
+  assessmentIdsNeedingStatsUpdate: string[];
+  csvFilename: string;
+  hasCoursePermissionEdit: boolean;
+  isExampleCourse: boolean;
+  urlPrefix: string;
 }) {
   return (
     <div class="card mb-4">

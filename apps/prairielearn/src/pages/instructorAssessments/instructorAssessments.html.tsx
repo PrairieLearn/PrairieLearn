@@ -78,7 +78,7 @@ export function InstructorAssessments({
                       data-target="#createAssessmentModal"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>
-                      <span class="d-none d-sm-inline">Add assessment</span>
+                      <span class="d-none d-sm-inline ml-1">Add assessment</span>
                     </button>
                   `
                 : ''}
@@ -298,7 +298,6 @@ export function PreactInstructorAssessments({
             hasCoursePermissionEdit: authz_data.has_course_permission_edit,
             isExampleCourse: course.example_course,
             urlPrefix,
-            csrfToken: __csrf_token,
           })}
           <div
             // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
