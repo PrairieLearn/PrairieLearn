@@ -1,22 +1,77 @@
+import * as async from 'async';
 import { Fragment } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
 
 import { formatInterval } from '@prairielearn/formatter';
+import { run } from '@prairielearn/run';
 
+import { HistminiPreact } from '../../components/HistminiPreact.js';
 import { IssueBadgePreact } from '../../components/IssueBadgePreact.js';
 import { ScorebarPreact } from '../../components/ScorebarPreact.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 
 import type { AssessmentRow, AssessmentStatsRow } from './instructorAssessments.types.js';
 
+type StatsOverride =
+  | {
+      status: 'success';
+      data: AssessmentStatsRow;
+    }
+  | {
+      status: 'error';
+    };
+
 export function InstructorAssessmentsTable({
   rows,
+  assessmentIdsNeedingStatsUpdate,
   urlPrefix,
   csvFilename,
 }: {
   rows: AssessmentRow[];
+  assessmentIdsNeedingStatsUpdate: string[];
   urlPrefix: string;
   csvFilename: string;
 }) {
+  // TODO: error handling? Store either data or an error state.
+  const [statsOverrides, setStatsOverrides] = useState<Record<string, StatsOverride>>({});
+
+  // Fetch new statistics in parallel, but with a limit to avoid saturating the server.
+  useEffect(() => {
+    async.eachLimit(assessmentIdsNeedingStatsUpdate, 3, async (assessment_id) => {
+      try {
+        const response = await fetch(
+          `${urlPrefix}/instance_admin/assessments/stats/${assessment_id}`,
+          {
+            headers: {
+              Accept: 'application/json',
+            },
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`ERROR ${response.status} (${response.statusText}}`);
+        }
+
+        const stats = await response.json();
+
+        setStatsOverrides((prev) => ({
+          ...prev,
+          [assessment_id]: {
+            status: 'success',
+            data: stats,
+          },
+        }));
+      } catch (err) {
+        console.error(`Error fetching statistics for assessment_id=${assessment_id}`, err);
+        setStatsOverrides((prev) => ({
+          ...prev,
+          [assessment_id]: {
+            status: 'error',
+          },
+        }));
+      }
+    });
+  }, [assessmentIdsNeedingStatsUpdate]);
+
   return (
     <Fragment>
       <div class="table-responsive">
@@ -52,6 +107,7 @@ export function InstructorAssessmentsTable({
                       <span class={`badge color-${row.color}`}>{row.label}</span>
                     </td>
                     <td class="align-middle">
+                      {/** TODO: make these into components */}
                       {row.sync_errors
                         ? SyncProblemButton({
                             type: 'error',
@@ -63,14 +119,21 @@ export function InstructorAssessmentsTable({
                               output: row.sync_warnings,
                             })
                           : ''}
-                      <a href={`${urlPrefix}/assessment/${row.id}/`}>
-                        {row.title}
-                        {row.group_work ? <i class="fas fa-users" aria-hidden="true"></i> : null}
-                      </a>{' '}
+                      <a href={`${urlPrefix}/assessment/${row.id}/`}>{row.title}</a>{' '}
+                      {row.group_work && (
+                        <i class="fas fa-users text-primary" aria-hidden="true"></i>
+                      )}{' '}
                       <IssueBadgePreact count={row.open_issue_count} urlPrefix={urlPrefix} />
                     </td>
                     <td class="align-middle">{row.tid}</td>
-                    <AssessmentStats row={row} />
+                    {run(() => {
+                      const override = statsOverrides[row.id];
+                      if (override) {
+                        return <AssessmentStats data={override} />;
+                      } else {
+                        return <AssessmentStats data={{ status: 'success', data: row }} />;
+                      }
+                    })}
                   </tr>
                 </Fragment>
               );
@@ -79,46 +142,53 @@ export function InstructorAssessmentsTable({
         </table>
       </div>
       <div class="card-footer">
-        Download
-        <a href={`${urlPrefix}/instance_admin/assessments/file/${csvFilename}`}>${csvFilename}</a>
+        Download{' '}
+        <a href={`${urlPrefix}/instance_admin/assessments/file/${csvFilename}`}>${csvFilename}</a>{' '}
         (includes more statistics columns than displayed above)
       </div>
     </Fragment>
   );
 }
 
-export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
+export function AssessmentStats({ data }: { data: StatsOverride }) {
   const spinner = (
     <div class="spinner-border spinner-border-sm" role="status">
       <span class="sr-only">Loading...</span>
     </div>
   );
+
+  const error = <i class="bi bi-x-circle-fill text-danger"></i>;
+
   return (
     <Fragment>
       <td class="text-center align-middle score-stat-number" style="white-space: nowrap;">
-        {row.needs_statistics_update ? spinner : row.score_stat_number}
+        {data.status === 'error'
+          ? error
+          : data.data.needs_statistics_update
+            ? spinner
+            : data.data.score_stat_number}
       </td>
 
       <td class="text-center align-middle score-stat-score-hist" style="white-space: nowrap;">
-        {row.needs_statistics_update ? (
+        {data.status === 'error' ? (
+          error
+        ) : data.data.needs_statistics_update ? (
           spinner
-        ) : row.score_stat_number > 0 ? (
-          <div
-            class="js-histmini d-inline-block"
-            data-data="${JSON.stringify(row.score_stat_hist)}"
-            data-options="${JSON.stringify({ width: 60, height: 20 })}"
-          ></div>
+        ) : data.data.score_stat_number > 0 ? (
+          <HistminiPreact data={data.data.score_stat_hist} options={{ width: 60, height: 20 }} />
         ) : (
           <Fragment>&mdash;</Fragment>
         )}
       </td>
 
       <td class="text-center align-middle score-stat-mean" style="white-space: nowrap;">
-        {row.needs_statistics_update ? (
+        {data.status === 'error' ? (
+          error
+        ) : data.data.needs_statistics_update ? (
           spinner
-        ) : row.score_stat_number > 0 ? (
+        ) : data.data.score_stat_number > 0 ? (
           <div class="d-inline-block align-middle" style="min-width: 8em; max-width: 20em;">
-            <ScorebarPreact score={Math.round(row.score_stat_mean)} />
+            <ScorebarPreact score={Math.round(data.data.score_stat_mean)} />
           </div>
         ) : (
           <Fragment>&mdash;</Fragment>
@@ -126,10 +196,12 @@ export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
       </td>
 
       <td class="text-center align-middle duration-stat-mean" style="white-space: nowrap;">
-        {row.needs_statistics_update ? (
+        {data.status === 'error' ? (
+          error
+        ) : data.data.needs_statistics_update ? (
           spinner
-        ) : row.score_stat_number > 0 ? (
-          formatInterval(row.duration_stat_mean)
+        ) : data.data.score_stat_number > 0 ? (
+          formatInterval(data.data.duration_stat_mean)
         ) : (
           <Fragment>&mdash;</Fragment>
         )}

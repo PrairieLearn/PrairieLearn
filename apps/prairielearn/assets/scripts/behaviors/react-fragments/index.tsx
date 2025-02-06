@@ -17,6 +17,7 @@ onDocumentReady(() => {
       const id = el.id;
       if (!id) throw new Error('js-react-fragment element must have an id');
 
+      // TODO: use a separate `data-component` attribute instead of the id?
       const Component = await registry.getReactFragment(id);
 
       const dataElement = el.querySelector(`script#${id}-props`);

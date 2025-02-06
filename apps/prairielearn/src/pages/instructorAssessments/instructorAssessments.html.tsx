@@ -1,7 +1,6 @@
 import { Fragment } from 'preact';
 
 import { EncodedData } from '@prairielearn/browser-utils';
-import { compiledScriptPath } from '@prairielearn/compiled-assets';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
@@ -15,7 +14,7 @@ import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrors
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
-import { renderHtmlDocument, renderHtmlForClientHydration } from '../../lib/preact.js';
+import { renderForClientHydration, renderHtmlDocument } from '../../lib/preact.js';
 
 import { InstructorAssessmentsTable } from './InstructorAssessmentsTable.js';
 import {
@@ -87,15 +86,72 @@ export function InstructorAssessments({
                 : ''}
             </div>
             ${rows.length > 0
-              ? renderHtmlForClientHydration(
-                  'InstructorAssessmentsTable',
-                  InstructorAssessmentsTable,
-                  {
-                    rows,
-                    urlPrefix,
-                    csvFilename,
-                  },
-                )
+              ? html`
+                  <div class="table-responsive">
+                    <table class="table table-sm table-hover" aria-label="Assessments">
+                      <thead>
+                        <tr>
+                          <th style="width: 1%"><span class="sr-only">Label</span></th>
+                          <th><span class="sr-only">Title</span></th>
+                          <th>AID</th>
+                          <th class="text-center">Students</th>
+                          <th class="text-center">Scores</th>
+                          <th class="text-center">Mean Score</th>
+                          <th class="text-center">Mean Duration</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${rows.map(
+                          (row) => html`
+                            ${row.start_new_assessment_group
+                              ? html`
+                                  <tr>
+                                    <th colspan="7" scope="row">${row.assessment_group_heading}</th>
+                                  </tr>
+                                `
+                              : ''}
+                            <tr id="row-${row.id}">
+                              <td class="align-middle" style="width: 1%">
+                                <span class="badge color-${row.color}">${row.label}</span>
+                              </td>
+                              <td class="align-middle">
+                                ${row.sync_errors
+                                  ? SyncProblemButton({
+                                      type: 'error',
+                                      output: row.sync_errors,
+                                    })
+                                  : row.sync_warnings
+                                    ? SyncProblemButton({
+                                        type: 'warning',
+                                        output: row.sync_warnings,
+                                      })
+                                    : ''}
+                                <a href="${urlPrefix}/assessment/${row.id}/">
+                                  ${row.title}
+                                  ${row.group_work
+                                    ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                                    : ''}
+                                </a>
+                                ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
+                              </td>
+
+                              <td class="align-middle">${row.tid}</td>
+
+                              ${AssessmentStats({ row })}
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="card-footer">
+                    Download
+                    <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}">
+                      {csvFilename}
+                    </a>
+                    (includes more statistics columns than displayed above)
+                  </div>
+                `
               : html`
                   <div class="my-4 card-body text-center" style="text-wrap: balance;">
                     <p class="font-weight-bold">No assessments found.</p>
@@ -210,21 +266,11 @@ export function PreactInstructorAssessments({
     <html lang="en">
       <head>
         <PreactHeadContents resLocals={resLocals} />
-        <script src={compiledScriptPath('instructorAssessmentsClient.ts')}></script>
-        {}
-        <div
-          dangerouslySetInnerHTML={{
-            __html: EncodedData<StatsUpdateData>(
-              { assessmentIdsNeedingStatsUpdate, urlPrefix },
-              'stats-update-data',
-            ).toString(),
-          }}
-        />
       </head>
       <body>
         <PreactNavbar resLocals={resLocals} />
-        {}
         <div
+          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{
             __html: CreateAssessmentModal({
               csrfToken: __csrf_token,
@@ -236,8 +282,8 @@ export function PreactInstructorAssessments({
           }}
         />
         <main id="content" class="container-fluid">
-          {}
           <div
+            // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
             dangerouslySetInnerHTML={{
               __html: CourseInstanceSyncErrorsAndWarnings({
                 authz_data,
@@ -266,178 +312,58 @@ export function PreactInstructorAssessments({
               )}
             </div>
 
-            <div class="table-responsive">
-              <table class="table table-sm table-hover" aria-label="Assessments">
-                <thead>
-                  <tr>
-                    <th style="width: 1%">
-                      <span class="sr-only">Label</span>
-                    </th>
-                    <th>
-                      <span class="sr-only">Title</span>
-                    </th>
-                    <th>AID</th>
-                    <th class="text-center">Students</th>
-                    <th class="text-center">Scores</th>
-                    <th class="text-center">Mean Score</th>
-                    <th class="text-center">Mean Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.length > 0 ? (
-                    rows.map((row) => (
-                      <Fragment key={row.id}>
-                        {row.start_new_assessment_group && (
-                          <tr>
-                            <th colspan={7} scope="row">
-                              {row.assessment_group_heading}
-                            </th>
-                          </tr>
-                        )}
-                        <tr id={`row-${row.id}`}>
-                          <td class="align-middle" style="width: 1%">
-                            <span class={`badge color-${row.color}`}>{row.label}</span>
-                          </td>
-                          <td class="align-middle">
-                            {row.sync_errors
-                              ? SyncProblemButton({
-                                  type: 'error',
-                                  output: row.sync_errors,
-                                })
-                              : row.sync_warnings
-                                ? SyncProblemButton({
-                                    type: 'warning',
-                                    output: row.sync_warnings,
-                                  })
-                                : ''}
-                            <a href={`${urlPrefix}/assessment/${row.id}/`}>
-                              {row.title}
-                              {row.group_work && <i class="fas fa-users" aria-hidden="true"></i>}
-                            </a>
-                            {}
-                            <span
-                              dangerouslySetInnerHTML={{
-                                __html: IssueBadge({
-                                  count: row.open_issue_count,
-                                  urlPrefix,
-                                }).toString(),
-                              }}
-                            />
-                          </td>
-                          <td class="align-middle">{row.tid}</td>
-                          {PreactAssessmentStats({ row })}
-                        </tr>
-                      </Fragment>
-                    ))
-                  ) : (
-                    <Fragment>
-                      <div class="my-4 card-body text-center" style="text-wrap: balance;">
-                        <p class="font-weight-bold">No assessments found.</p>
-                        <p class="mb-0">
-                          An assessment is a collection of questions to build or assess a student's
-                          knowledge.
-                        </p>
-                        <p>
-                          Learn more in the
-                          <a
-                            href="https://prairielearn.readthedocs.io/en/latest/assessment/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            assessments documentation
-                          </a>
-                          .
-                        </p>
-                        {run(() => {
-                          if (course.example_course) {
-                            return <p>You can't add assessments to the example course.</p>;
-                          }
-                          if (!authz_data.has_course_permission_edit) {
-                            return <p>Course Editors can create new assessments.</p>;
-                          }
-                          return (
-                            <button
-                              type="button"
-                              class="btn btn-sm btn-primary"
-                              data-toggle="modal"
-                              data-target="#createAssessmentModal"
-                            >
-                              <i class="fa fa-plus" aria-hidden="true"></i>
-                              <span class="d-none d-sm-inline">Add assessment</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </Fragment>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div class="card-footer">
-              Download
-              <a href={`${urlPrefix}/instance_admin/assessments/file/${csvFilename}`}>
-                {csvFilename}
-              </a>
-              (includes more statistics columns than displayed above)
-            </div>
+            {rows.length > 0 ? (
+              renderForClientHydration('InstructorAssessmentsTable', InstructorAssessmentsTable, {
+                rows,
+                assessmentIdsNeedingStatsUpdate,
+                urlPrefix,
+                csvFilename,
+              })
+            ) : (
+              <Fragment>
+                <div class="my-4 card-body text-center" style="text-wrap: balance;">
+                  <p class="font-weight-bold">No assessments found.</p>
+                  <p class="mb-0">
+                    An assessment is a collection of questions to build or assess a student's
+                    knowledge.
+                  </p>
+                  <p>
+                    Learn more in the
+                    <a
+                      href="https://prairielearn.readthedocs.io/en/latest/assessment/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      assessments documentation
+                    </a>
+                    .
+                  </p>
+                  {run(() => {
+                    if (course.example_course) {
+                      return <p>You can't add assessments to the example course.</p>;
+                    }
+                    if (!authz_data.has_course_permission_edit) {
+                      return <p>Course Editors can create new assessments.</p>;
+                    }
+                    return (
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        data-toggle="modal"
+                        data-target="#createAssessmentModal"
+                      >
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Add assessment</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Fragment>
+            )}
           </div>
         </main>
       </body>
     </html>,
-  );
-}
-
-function PreactAssessmentStats({ row }: { row: AssessmentStatsRow }) {
-  const spinner = (
-    <div class="spinner-border spinner-border-sm" role="status">
-      <span class="sr-only">Loading...</span>
-    </div>
-  );
-
-  return (
-    <Fragment>
-      <td class="text-center align-middle score-stat-number" style="white-space: nowrap;">
-        {row.needs_statistics_update ? spinner : row.score_stat_number}
-      </td>
-
-      <td class="text-center align-middle score-stat-score-hist" style="white-space: nowrap;">
-        {row.needs_statistics_update ? (
-          spinner
-        ) : row.score_stat_number > 0 ? (
-          <div
-            class="js-histmini d-inline-block"
-            data-data={JSON.stringify(row.score_stat_hist)}
-            data-options={JSON.stringify({ width: 60, height: 20 })}
-          />
-        ) : (
-          <Fragment>&mdash;</Fragment>
-        )}
-      </td>
-
-      <td class="text-center align-middle score-stat-mean" style="white-space: nowrap;">
-        {row.needs_statistics_update ? (
-          spinner
-        ) : row.score_stat_number > 0 ? (
-          <div class="d-inline-block align-middle" style="min-width: 8em; max-width: 20em;">
-            {/* TODO: This needs to be a Preact component */}
-            {Scorebar(Math.round(row.score_stat_mean))}
-          </div>
-        ) : (
-          <Fragment>&mdash;</Fragment>
-        )}
-      </td>
-
-      <td class="text-center align-middle duration-stat-mean" style="white-space: nowrap;">
-        {row.needs_statistics_update ? (
-          spinner
-        ) : row.score_stat_number > 0 ? (
-          formatInterval(row.duration_stat_mean)
-        ) : (
-          <Fragment>&mdash;</Fragment>
-        )}
-      </td>
-    </Fragment>
   );
 }
 

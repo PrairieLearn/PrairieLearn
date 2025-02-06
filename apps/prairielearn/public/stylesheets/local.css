@@ -157,10 +157,10 @@ mjx-container {
 /**
  * Remove the bottom border from the final row of the last table in a card.
  */
-.card > table.table:last-of-type tbody tr:last-child th,
-.card > table.table:last-of-type tbody tr:last-child td,
-.card > .table-responsive > table.table:last-of-type tbody tr:last-child th,
-.card > .table-responsive > table.table:last-of-type tbody tr:last-child td {
+.card table.table:last-of-type tbody tr:last-child th,
+.card table.table:last-of-type tbody tr:last-child td,
+.card .table-responsive > table.table:last-of-type tbody tr:last-child th,
+.card .table-responsive > table.table:last-of-type tbody tr:last-child td {
   border-bottom: 0;
 }
 

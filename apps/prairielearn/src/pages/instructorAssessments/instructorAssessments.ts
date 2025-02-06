@@ -58,9 +58,11 @@ router.get(
       AssessmentRowSchema,
     );
 
+    // TODO: just for testing.
     const assessmentIdsNeedingStatsUpdate = rows
       .filter((row) => row.needs_statistics_update)
       .map((row) => row.id);
+    // const assessmentIdsNeedingStatsUpdate = rows.map((row) => row.id);
 
     const assessmentSets = await queryRows(
       sql.select_assessment_sets,
@@ -149,7 +151,12 @@ router.get(
       throw new HttpStatusError(404, `Assessment not found: ${req.params.assessment_id}`);
     }
 
-    res.send(AssessmentStats({ row }).toString());
+    if (req.headers.accept === 'application/json') {
+      // TODO: is this sending too much data to the client? Consider overriding this.
+      res.json(row);
+    } else {
+      res.send(AssessmentStats({ row }).toString());
+    }
   }),
 );
 
