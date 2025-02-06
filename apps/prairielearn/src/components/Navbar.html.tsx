@@ -9,12 +9,7 @@ import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
-export function PreactNavbar(props: {
-  resLocals: Record<string, any>;
-  navPage?: NavPage;
-  navSubPage?: NavSubPage;
-  navbarType?: NavbarType;
-}) {
+export function PreactNavbar(props: Parameters<typeof Navbar>[0]) {
   // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
   return <div dangerouslySetInnerHTML={{ __html: Navbar(props).toString() }}></div>;
 }
