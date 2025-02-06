@@ -301,9 +301,9 @@ export function PreactInstructorAssessments({
                   <input type="hidden" name="__csrf_token" value={__csrf_token} />
                   <button
                     type="button"
-                    name="__action"
-                    value="add_assessment"
                     class="btn btn-sm btn-light"
+                    data-toggle="modal"
+                    data-target="#createAssessmentModal"
                   >
                     <i class="fa fa-plus" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Add assessment</span>
@@ -361,6 +361,18 @@ export function PreactInstructorAssessments({
               </Fragment>
             )}
           </div>
+          <div
+            // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+            dangerouslySetInnerHTML={{
+              __html: CreateAssessmentModal({
+                csrfToken: __csrf_token,
+                urlPrefix,
+                assessmentSets,
+                assessmentModules,
+                assessmentsGroupBy,
+              }).toString(),
+            }}
+          />
         </main>
       </body>
     </html>,
