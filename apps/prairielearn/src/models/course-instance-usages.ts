@@ -29,7 +29,7 @@ export async function updateCourseInstanceUsagesForGradingJob({
 }: {
   grading_job_id: string;
 }) {
-  await queryAsync(sql.update_course_instance_usages_for_grading_job, {
+  await queryAsync(sql.update_course_instance_usages_for_external_grading, {
     grading_job_id,
   });
 }
