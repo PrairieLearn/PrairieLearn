@@ -15,7 +15,7 @@ SELECT
   c.id,
   ci.id,
   date_trunc('day', s.date, 'UTC'),
-  s.auth_user_id,
+  v.authn_user_id,
   coalesce(ai.include_in_statistics, false)
 FROM
   submissions AS s
@@ -49,7 +49,7 @@ SELECT
   c.id,
   ci.id,
   date_trunc('day', gj.grading_finished_at, 'UTC'),
-  s.auth_user_id,
+  v.authn_user_id,
   coalesce(ai.include_in_statistics, false),
   gj.grading_finished_at - gj.grading_received_at
 FROM
