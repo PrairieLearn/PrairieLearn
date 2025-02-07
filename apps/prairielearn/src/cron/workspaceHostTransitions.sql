@@ -24,8 +24,7 @@ SELECT
   'terminating',
   NOW(),
   UNNEST($instances)
-ON CONFLICT (instance_id) DO
-UPDATE
+ON CONFLICT (instance_id) DO UPDATE
 SET
   state = EXCLUDED.state,
   state_changed_at = EXCLUDED.state_changed_at;
