@@ -1002,7 +1002,7 @@ export const UserSessionSchema = z.object({
 export type UserSession = z.infer<typeof UserSessionSchema>;
 
 export const VariantSchema = z.object({
-  authn_user_id: IdSchema.nullable(),
+  authn_user_id: IdSchema,
   broken: z.boolean().nullable(),
   broken_at: DateFromISOString.nullable(),
   broken_by: IdSchema.nullable(),
