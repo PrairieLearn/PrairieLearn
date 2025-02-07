@@ -292,12 +292,17 @@ export function PreactInstructorAssessments({
             }}
           />
           {renderForClientHydration('InstructorAssessmentsCard', InstructorAssessmentsCard, {
+            // TODO: reorder for consistency.
             rows,
             assessmentIdsNeedingStatsUpdate,
             csvFilename,
             hasCoursePermissionEdit: authz_data.has_course_permission_edit,
             isExampleCourse: course.example_course,
             urlPrefix,
+            csrfToken: __csrf_token,
+            assessmentSets,
+            assessmentModules,
+            assessmentsGroupBy,
           })}
         </main>
       </body>
