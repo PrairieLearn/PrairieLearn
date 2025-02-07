@@ -1,6 +1,6 @@
-import { html } from '@prairielearn/html';
+import { Fragment } from 'preact';
 
-import { compiledScriptTag, nodeModulesAssetPath, assetPath } from '../lib/assets.js';
+import { nodeModulesAssetPath, assetPath, compiledScriptPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
 import {
   type Assessment,
@@ -8,6 +8,7 @@ import {
   type Course,
   type CourseInstance,
 } from '../lib/db-types.js';
+import { renderHtml } from '../lib/preact-html.js';
 
 interface TitleOptions {
   resLocals: {
@@ -24,27 +25,32 @@ interface TitleOptions {
   pageNote?: string;
 }
 
+export function PreactHeadContents(props: TitleOptions) {
+  return (
+    <Fragment>
+      <meta charset="utf-8" />
+      <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      {config.cookieDomain && <meta name="cookie-domain" content={config.cookieDomain} />}
+      <title>{getTitle(props)}</title>
+      <link href={nodeModulesAssetPath('bootstrap/dist/css/bootstrap.min.css')} rel="stylesheet" />
+      <link
+        href={nodeModulesAssetPath('bootstrap-icons/font/bootstrap-icons.css')}
+        rel="stylesheet"
+      />
+      <link href={assetPath('stylesheets/colors.css')} rel="stylesheet" />
+      <link href={assetPath('stylesheets/local.css')} rel="stylesheet" />
+      <script src={nodeModulesAssetPath('jquery/dist/jquery.min.js')}></script>
+      <script src={nodeModulesAssetPath('bootstrap/dist/js/bootstrap.bundle.min.js')}></script>
+      <script src={nodeModulesAssetPath('@fortawesome/fontawesome-free/js/all.min.js')}></script>
+      <script src={compiledScriptPath('application.ts')}></script>
+      <script src={compiledScriptPath('navbarClient.ts')}></script>
+    </Fragment>
+  );
+}
+
 export function HeadContents(titleOptions: TitleOptions) {
-  return html`
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    ${config.cookieDomain
-      ? html`<meta name="cookie-domain" content="${config.cookieDomain}" />`
-      : ''}
-    <title>${getTitle(titleOptions)}</title>
-    <link href="${nodeModulesAssetPath('bootstrap/dist/css/bootstrap.min.css')}" rel="stylesheet" />
-    <link
-      href="${nodeModulesAssetPath('bootstrap-icons/font/bootstrap-icons.css')}"
-      rel="stylesheet"
-    />
-    <link href="${assetPath('stylesheets/colors.css')}" rel="stylesheet" />
-    <link href="${assetPath('stylesheets/local.css')}" rel="stylesheet" />
-    <script src="${nodeModulesAssetPath('jquery/dist/jquery.min.js')}"></script>
-    <script src="${nodeModulesAssetPath('bootstrap/dist/js/bootstrap.bundle.min.js')}"></script>
-    <script src="${nodeModulesAssetPath('@fortawesome/fontawesome-free/js/all.min.js')}"></script>
-    ${compiledScriptTag('application.ts')} ${compiledScriptTag('navbarClient.ts')}
-  `;
+  return renderHtml(<PreactHeadContents {...titleOptions} />);
 }
 
 // e.g. "hello_world" => "Hello World"
