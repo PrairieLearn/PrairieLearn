@@ -118,5 +118,23 @@ export async function loadUser(
   res.locals.is_administrator =
     res.locals.authn_is_administrator && res.locals.access_as_administrator;
 
+  let is_institution_administrator = false;
+
+  if (res.locals.authn_is_administrator) {
+    is_institution_administrator = true;
+  } else {
+    is_institution_administrator =
+      (await sqldb.queryOptionalRow(
+        sql.select_is_institution_admin,
+        {
+          institution_id: res.locals.authn_institution.id,
+          user_id: res.locals.authn_user.user_id,
+        },
+        z.boolean(),
+      )) ?? false; // TODO: handle case it's null?
+  }
+
+  res.locals.is_institution_administrator = is_institution_administrator;
+
   res.locals.news_item_notification_count = selectedUser.news_item_notification_count;
 }

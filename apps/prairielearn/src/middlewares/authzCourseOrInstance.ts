@@ -1,4 +1,4 @@
-import { parseISO, isValid } from 'date-fns';
+import { isValid, parseISO } from 'date-fns';
 import debugfn from 'debug';
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -78,6 +78,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.course = result.rows[0].course;
   res.locals.courses = courses;
   res.locals.institution = result.rows[0].institution;
+
   const permissions_course = result.rows[0].permissions_course;
   res.locals.authz_data = {
     authn_user: _.cloneDeep(res.locals.authn_user),

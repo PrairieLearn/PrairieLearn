@@ -278,8 +278,10 @@ function FlashMessages() {
     }
   });
 
+  const newUI = true; // TODO: Connect to feature flag
+
   return html`
-    <div class="mb-3">
+    <div class=${newUI ? ' ' : 'mb-3'}>
       ${flashMessages.map(
         ({ type, message }) => html`
           <div
@@ -577,6 +579,8 @@ function NavbarPlain({
   navPage: NavPage;
   newNavEnabled?: boolean;
 }) {
+  console.log(resLocals);
+
   if (!resLocals.is_administrator) return '';
 
   if (!newNavEnabled) {
@@ -603,10 +607,10 @@ function NavbarPlain({
       })}
     `;
   } else {
-    return NavbarButtons([
-      { text: 'Home', href: '/' },
-      { text: 'Global Admin', href: '/pl/administrator/admins' },
-    ]);
+    return NavbarButtons({
+      resLocals,
+      navbarButtons: [],
+    });
   }
 }
 
@@ -635,19 +639,70 @@ function NavbarButton({
   `;
 }
 
-function NavbarButtons(
+function NavbarButtons({
+  resLocals,
+  navbarButtons,
+  options = {},
+}: {
+  resLocals: Record<string, any>;
   navbarButtons: {
     text: string;
     href: string;
-  }[],
-) {
+  }[];
+  options?: {
+    includeGlobalAdminButtons?: boolean;
+    includeInstitutionButtons?: boolean;
+  };
+}) {
+  const includeGlobalAdminButtons = options.includeGlobalAdminButtons ?? true;
+  const includeInstitutionButtons = options.includeInstitutionButtons ?? false;
+
+  const allNavbarButtons: {
+    text: string;
+    href: string;
+  }[] = [];
+
+  if (includeGlobalAdminButtons && resLocals.is_administrator) {
+    allNavbarButtons.push(
+      { text: 'Home', href: '/' },
+      { text: 'Global Admin', href: '/pl/administrator/admins' },
+    );
+  }
+
+  console.log('is_institution_administrator', resLocals.is_institution_administrator);
+
+  if (includeInstitutionButtons && resLocals.is_institution_administrator) {
+    allNavbarButtons.push(
+      { text: 'Institutions', href: '/pl/administrator/institutions' },
+      {
+        text: resLocals.institution.short_name,
+        href: `/pl/administrator/institution/${resLocals.institution.id}`,
+      },
+    );
+  }
+
+  // if (includeInstitutionButtons && !resLocals.is_administrator) {
+  //   // TODO: more effiicent way to do this?
+  //   allNavbarButtons.push({ text: 'Institutions', href: '/pl/administrator/institutions' });
+  // }
+
+  // TODO: Handle case where user is just an institution administrator
+
+  // if (includeInstitutionButtons && resLocals.is_institu) {
+  //   allNavbarButtons.push({ text: 'Institutions', href: '/pl/administrator/institutions' });
+  // }
+
+  for (const navbarButton of navbarButtons) {
+    allNavbarButtons.push(navbarButton);
+  }
+
   return html`
-    ${navbarButtons.map((navbarButton, index) =>
+    ${allNavbarButtons.map((navbarButton, index) =>
       NavbarButton({
         text: navbarButton.text,
         href: navbarButton.href,
-        showArrow: index < navbarButtons.length - 1,
-        active: index === navbarButtons.length - 1,
+        showArrow: index < allNavbarButtons.length - 1,
+        active: index === allNavbarButtons.length - 1,
       }),
     )}
   `;
@@ -941,14 +996,17 @@ function NavbarInstructor({
 
   const { institution, course } = resLocals;
 
-  return NavbarButtons([
-    { text: 'Home', href: '/' },
-    { text: 'Global Admin', href: '/pl/administrator/admins' },
-    { text: 'Institutions', href: '/pl/administrator/institutions' },
-    { text: institution.short_name, href: `/pl/administrator/institution/${institution.id}` },
-    { text: 'Courses', href: `/pl/administrator/institution/${institution.id}/courses` },
-    { text: course.short_name, href: `/pl/course/${course.id}/course_admin/instances` },
-  ]);
+  return NavbarButtons({
+    resLocals,
+    navbarButtons: [
+      { text: 'Courses', href: `/pl/administrator/institution/${institution.id}/courses` },
+      { text: course.short_name, href: `/pl/course/${course.id}/course_admin/instances` },
+    ],
+    options: {
+      includeGlobalAdminButtons: true,
+      includeInstitutionButtons: true,
+    },
+  });
 }
 
 function NavbarPublic({ resLocals }: { resLocals: Record<string, any> }) {
@@ -985,12 +1043,14 @@ function NavbarInstitution({
     `;
   }
 
-  return NavbarButtons([
-    { text: 'Home', href: '/' },
-    { text: 'Global Admin', href: '/pl/administrator/admins' },
-    { text: 'Institutions', href: '/pl/administrator/institutions' },
-    { text: institution.short_name, href: `/pl/administrator/institution/${institution.id}` },
-  ]);
+  return NavbarButtons({
+    resLocals,
+    navbarButtons: [],
+    options: {
+      includeGlobalAdminButtons: true,
+      includeInstitutionButtons: true,
+    },
+  });
 }
 
 function NavbarAdministratorInstitution({
@@ -1016,10 +1076,12 @@ function NavbarAdministratorInstitution({
     `;
   }
 
-  return NavbarButtons([
-    { text: 'Home', href: '/' },
-    { text: 'Global Admin', href: '/pl/administrator/admins' },
-    { text: 'Institutions', href: '/pl/administrator/institutions' },
-    { text: institution.short_name, href: `/pl/administrator/institution/${institution.id}` },
-  ]);
+  return NavbarButtons({
+    resLocals,
+    navbarButtons: [],
+    options: {
+      includeGlobalAdminButtons: true,
+      includeInstitutionButtons: true,
+    },
+  });
 }

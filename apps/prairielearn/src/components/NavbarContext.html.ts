@@ -260,6 +260,46 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       tabLabel: 'Courses',
     },
   ],
+  course_admin: [
+    // TODO: This applies to the entire course_admin page. Any way to improve this?
+    {
+      activeSubPage: 'settings',
+      urlSuffix: '/course_admin/settings',
+      iconClasses: 'fas fa-cog',
+      tabLabel: 'Settings',
+    },
+    {
+      activeSubPage: 'sets',
+      urlSuffix: '/course_admin/sets',
+      iconClasses: 'fa fa-list',
+      tabLabel: 'Assessment Sets',
+    },
+    {
+      activeSubPage: 'modules',
+      urlSuffix: '/course_admin/modules',
+      iconClasses: 'fa fa-layer-group',
+      tabLabel: 'Modules',
+    },
+    {
+      activeSubPage: 'tags',
+      urlSuffix: '/course_admin/tags',
+      iconClasses: 'fas fa-hashtag',
+      tabLabel: 'Tags',
+    },
+    {
+      activeSubPage: 'topics',
+      urlSuffix: '/course_admin/topics',
+      iconClasses: 'fas fa-quote-right',
+      tabLabel: 'Topics',
+    },
+    {
+      activeSubPage: 'staff',
+      urlSuffix: '/course_admin/staff',
+      iconClasses: 'fas fa-users',
+      tabLabel: 'Staff',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_own,
+    },
+  ],
 };
 
 export function ContextNavigation({

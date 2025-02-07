@@ -52,9 +52,26 @@ export function PageLayout({
 
   // The left navbar is used for course and course instance navigation instead
   // of context navigation.
-  const showContextNavigation = !(
-    navContext.page && ['course_admin', 'instance_admin'].includes(navContext.page)
-  );
+
+  // TODO: Improve this conditional logic?
+  let showContextNavigation = true;
+
+  if (navContext.page === 'course_admin') {
+    if (
+      navContext.subPage &&
+      ['settings', 'sets', 'modules', 'tags', 'topics', 'staff'].includes(navContext.subPage)
+    ) {
+      showContextNavigation = true;
+    } else {
+      showContextNavigation = false;
+    }
+  } else if (navContext.page === 'instance_admin') {
+    showContextNavigation = false;
+  }
+
+  console.log('page', navContext.page);
+  console.log('subPage', navContext.subPage);
+  console.log('showContextNavigation', showContextNavigation);
 
   return html`
     <!doctype html>
