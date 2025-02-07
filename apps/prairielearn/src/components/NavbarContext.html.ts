@@ -266,19 +266,23 @@ export function ContextNavigation({
   resLocals,
   navPage,
   navSubPage,
+  newNavEnabled = false,
+  fullWidth = false,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage: NavSubPage;
+  newNavEnabled?: boolean;
+  fullWidth?: boolean;
 }) {
   if (!navPage) return '';
   const navPageTabs = navPagesTabs[navPage];
   if (!navPageTabs) return '';
 
   return html`
-    <nav>
+    <nav class="${newNavEnabled && !fullWidth ? 'container' : ''}">
       <ul class="nav nav-tabs pl-nav-tabs-bar mt-2 mb-4">
-        ${navPageTabs.map((tabInfo) => NavbarTab({ navSubPage, resLocals, tabInfo }))}
+        ${navPageTabs.map((tabInfo) => NavbarTab({ navPage, navSubPage, resLocals, tabInfo }))}
       </ul>
     </nav>
   `;

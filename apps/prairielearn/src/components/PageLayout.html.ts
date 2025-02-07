@@ -104,6 +104,8 @@ export function PageLayout({
                     resLocals,
                     navPage: navContext.page,
                     navSubPage: navContext.subPage,
+                    newNavEnabled: true,
+                    fullWidth: options.fullWidth,
                   })
                 : ''}
               ${preContent}
