@@ -24,6 +24,11 @@ export function InstructorInstanceAdminSettings({
       <head>
         ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorInstanceAdminSettingsClient.ts')}
+        <style>
+          .popover {
+            max-width: 50%;
+          }
+        </style>
       </head>
       <body>
         ${Navbar({ resLocals })}
