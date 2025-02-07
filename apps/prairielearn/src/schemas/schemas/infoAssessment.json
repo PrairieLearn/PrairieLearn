@@ -311,7 +311,27 @@
                 "type": "string"
               },
               "points": {
-                "$ref": "#/definitions/points"
+                "oneOf": [
+                  {
+                    "description": "A single point value.",
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 0
+                  },
+                  {
+                    "description": "An array of point values.",
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+
+                        "description": "A single point value.",
+                        "type": "number",
+                        "minimum": 0,
+                        "default": 0
+
+                    }
+                  }
+                ]
               },
               "questionParams": {
                 "description": "Parameters specific to this question.",
