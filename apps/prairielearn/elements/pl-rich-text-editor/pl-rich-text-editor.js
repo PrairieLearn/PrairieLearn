@@ -43,6 +43,21 @@
     }
   }
 
+  const Clipboard = Quill.import('modules/clipboard');
+  class PotentiallyDisabledClipboard extends Clipboard {
+    onCaptureCopy(e, isCut = false) {
+      if (this.options.enabled) return super.onCaptureCopy(e, isCut);
+      if (!e.defaultPrevented) e.preventDefault();
+    }
+
+    onCapturePaste(e) {
+      if (this.options.enabled) return super.onCapturePaste(e);
+      if (!e.defaultPrevented) e.preventDefault();
+    }
+  }
+
+  Quill.register('modules/clipboard', PotentiallyDisabledClipboard, true);
+
   window.PLRTE = function (uuid, options) {
     if (!options.modules) options.modules = {};
     if (options.readOnly) {
