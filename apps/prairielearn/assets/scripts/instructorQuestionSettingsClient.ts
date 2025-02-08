@@ -63,8 +63,8 @@ onDocumentReady(() => {
     },
   });
 
-  qidField.addEventListener('input', () => validateId({ idField: qidField, otherIds: otherQids }));
-  qidField.addEventListener('change', () => validateId({ idField: qidField, otherIds: otherQids }));
+  qidField.addEventListener('input', () => validateId({ input: qidField, otherIds: otherQids }));
+  qidField.addEventListener('change', () => validateId({ input: qidField, otherIds: otherQids }));
 
   if (!questionSettingsForm || !saveButton) return;
   saveButtonEnabling(questionSettingsForm, saveButton);

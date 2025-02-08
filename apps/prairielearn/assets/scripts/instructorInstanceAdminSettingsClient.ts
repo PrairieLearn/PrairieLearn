@@ -14,10 +14,10 @@ onDocumentReady(() => {
   const saveButton = document.querySelector<HTMLButtonElement>('#save-button');
 
   ciidField.addEventListener('input', () => {
-    validateId({ idField: ciidField, otherIds: shortNames });
+    validateId({ input: ciidField, otherIds: shortNames });
   });
   ciidField.addEventListener('change', () => {
-    validateId({ idField: ciidField, otherIds: shortNames });
+    validateId({ input: ciidField, otherIds: shortNames });
   });
   if (!instanceSettingsForm || !saveButton) return;
   saveButtonEnabling(instanceSettingsForm, saveButton);
