@@ -84,7 +84,7 @@ def name(name: str) -> Callable[..., Callable[..., None]]:
 
     def decorator(f: Callable[..., T]) -> Callable[..., None]:
         @wraps(f)
-        def wrapped(test_instance: Any):
+        def wrapped(test_instance: Any) -> None:
             Feedback.set_name(f.__name__)
             if test_instance.total_iters > 1 and getattr(
                 test_instance, "print_iteration_prefix", True

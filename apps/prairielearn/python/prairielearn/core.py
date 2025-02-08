@@ -898,7 +898,7 @@ def string_from_numpy(
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
-):
+) -> str:
     """
     Return A as a string.
 
@@ -1029,7 +1029,7 @@ def string_from_2darray(
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
-):
+) -> str:
     result = string_from_numpy(A, language, presentation_type, digits)
     return result
 
