@@ -47,30 +47,28 @@ export function PageLayout({
 }) {
   const marginBottom = options.marginBottom ?? true;
 
-  // TODO: Check that all props are actually used
-  // TODO: more efficient way to load courses? effective use of caching?
+  if (resLocals.has_enhanced_navigation) {
+    // The left navbar is only shown if the user is in a
+    // course or course instance page.
+    const showSideNavbar = resLocals.course !== undefined;
+    let showContextNavigation = true;
 
-  // The left navbar is used for course and course instance navigation instead
-  // of context navigation.
-
-  // TODO: Improve this conditional logic?
-  let showContextNavigation = true;
-
-  if (navContext.page === 'course_admin') {
-    if (
-      navContext.subPage &&
-      ['settings', 'sets', 'modules', 'tags', 'topics', 'staff'].includes(navContext.subPage)
-    ) {
-      showContextNavigation = true;
-    } else {
+    // ContextNavigation is shown if no left navbar is shown or
+    // additional navigation capabilities are needed alongside the
+    // left navbar
+    if (navContext.page === 'course_admin') {
+      if (
+        navContext.subPage &&
+        ['settings', 'sets', 'modules', 'tags', 'topics', 'staff'].includes(navContext.subPage)
+      ) {
+        showContextNavigation = true;
+      } else {
+        showContextNavigation = false;
+      }
+    } else if (navContext.page === 'instance_admin') {
       showContextNavigation = false;
     }
-  } else if (navContext.page === 'instance_admin') {
-    showContextNavigation = false;
-  }
 
-  if (resLocals.has_enhanced_navigation) {
-    const showSideNavbar = resLocals.course !== undefined;
     return html`
       <!doctype html>
       <html lang="en">

@@ -131,7 +131,7 @@ export async function loadUser(
           user_id: res.locals.authn_user.user_id,
         },
         z.boolean(),
-      )) ?? false; // TODO: handle case it's null?
+      )) ?? false;
   }
 
   res.locals.is_institution_administrator = is_institution_administrator;

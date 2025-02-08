@@ -2,6 +2,7 @@ import { html, type HtmlValue } from '@prairielearn/html';
 
 import { IssueBadge } from './IssueBadge.html.js';
 import { type NavPage, type NavSubPage } from './Navbar.types.js';
+import { ProgressCircle } from './ProgressCircle.html.js';
 
 // todo: is there a better place for this code?
 interface TabInfo {

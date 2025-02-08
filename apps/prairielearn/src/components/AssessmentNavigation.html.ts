@@ -11,9 +11,6 @@ export function AssessmentNavigation({
   assessment: Assessment;
   assessments: Assessment[];
 }) {
-  console.log('assessment:', assessment);
-  console.log('assessments:', assessments);
-
   return html`
     <div class="dropdown">
       <button
