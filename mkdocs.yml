@@ -95,6 +95,8 @@ plugins:
             - url: https://numpy.org/doc/stable/objects.inv
             - url: https://pandas.pydata.org/pandas-docs/stable/objects.inv
             - url: https://matplotlib.org/objects.inv
+            - url: https://networkx.org/documentation/latest/objects.inv
+            # - url: https://docs.sympy.org/latest/objects.inv # Doesn't seem to support ARM yet.
             - url: https://docs.python.org/3/objects.inv
               domains: [py, std, typing]
             - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv

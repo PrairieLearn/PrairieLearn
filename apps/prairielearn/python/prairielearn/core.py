@@ -287,7 +287,6 @@ _JSONSerializedType = (
     | _JSONSerializedSympyMatrix
 )
 
-# This represents the object formats that will be serialized by the to_json function
 _JSONPythonType = (
     np.complexfloating
     | np.number
@@ -301,6 +300,10 @@ _JSONPythonType = (
     | nx.MultiGraph
     | nx.MultiDiGraph
 )
+"""
+This represents additional object formats (i.e. non-standard Python types)
+that can be serialized / deserialized.
+"""
 
 
 @overload
@@ -327,28 +330,27 @@ def to_json(
     df_encoding_version: Literal[1, 2] = 1,
     np_encoding_version: Literal[1, 2] = 1,
 ) -> Any | _JSONSerializedType:
-    """to_json(v)
-
+    """
     If v has a standard type that cannot be json serialized, it is replaced with
     a {'_type':..., '_value':...} pair that can be json serialized:
 
     If np_encoding_version is set to 2, will serialize numpy scalars as follows:
 
-        numpy scalar -> '_type': 'np_scalar'
+    - numpy scalar -> `'_type': 'np_scalar'`
 
     If df_encoding_version is set to 2, will serialize pandas DataFrames as follows:
 
-        pandas.DataFrame -> '_type': 'dataframe_v2'
+    - `pandas.DataFrame` -> `'_type': 'dataframe_v2'`
 
     Otherwise, the following mappings are used:
 
-        any complex scalar (including numpy) -> '_type': 'complex'
-        non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
-        complex ndarray -> '_type': 'complex_ndarray'
-        sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
-        sympy.Matrix -> '_type': 'sympy_matrix'
-        pandas.DataFrame -> '_type': 'dataframe'
-        any networkx graph type -> '_type': 'networkx_graph'
+    - any complex scalar (including numpy) -> `'_type': 'complex'`
+    - non-complex `ndarray` (assumes each element can be json serialized) -> `'_type': 'ndarray'`
+    - complex `ndarray` -> `'_type': 'complex_ndarray'`
+    - `sympy.Expr` (i.e., any scalar sympy expression) -> `'_type': 'sympy'`
+    - `sympy.Matrix` -> `'_type': 'sympy_matrix'`
+    - `pandas.DataFrame` -> `'_type': 'dataframe'`
+    - any networkx graph type -> `'_type': 'networkx_graph'`
 
     !!! note
         The 'dataframe_v2' encoding allows for missing and date time values whereas
@@ -461,20 +463,19 @@ def from_json(v: Any) -> Any: ...
 
 
 def from_json(v: _JSONSerializedType | Any) -> _JSONPythonType | Any:
-    """from_json(v)
-
-    If v has the format {'_type':..., '_value':...} as would have been created
+    """
+    If v has the format `{'_type': ..., '_value': ...}` as would have been created
     using to_json(...), then it is replaced:
 
-        '_type': 'complex' -> complex
-        '_type': 'np_scalar' -> numpy scalar defined by '_concrete_type'
-        '_type': 'ndarray' -> non-complex ndarray
-        '_type': 'complex_ndarray' -> complex ndarray
-        '_type': 'sympy' -> sympy.Expr
-        '_type': 'sympy_matrix' -> sympy.Matrix
-        '_type': 'dataframe' -> pandas.DataFrame
-        '_type': 'dataframe_v2' -> pandas.DataFrame
-        '_type': 'networkx_graph' -> corresponding networkx graph
+    - '_type': 'complex' -> `complex`
+    - '_type': 'np_scalar' -> numpy scalar defined by '_concrete_type'
+    - '_type': 'ndarray' -> non-complex `ndarray`
+    - '_type': 'complex_ndarray' -> complex `ndarray`
+    - '_type': 'sympy' -> `sympy.Expr`
+    - '_type': 'sympy_matrix' -> `sympy.Matrix`
+    - '_type': 'dataframe' -> `pandas.DataFrame`
+    - '_type': 'dataframe_v2' -> `pandas.DataFrame`
+    - '_type': 'networkx_graph' -> corresponding networkx graph
 
     If v encodes an ndarray and has the field '_dtype', this function recovers
     its dtype.
