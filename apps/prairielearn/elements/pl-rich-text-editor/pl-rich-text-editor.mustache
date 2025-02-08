@@ -6,7 +6,7 @@ $(function() {
         format: '{{format}}',
         markdownShortcuts: {{markdown_shortcuts}},
         counter: '{{counter}}',
-        modules: { clipboard: { enabled: {{clipboard_enabled}} } },
+        modules: { clipboard: { {{^clipboard_enabled}}enabled: false{{/clipboard_enabled}} } },
         {{#quill_theme}}
         theme: '{{.}}',
         {{/quill_theme}}

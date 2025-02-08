@@ -46,12 +46,12 @@
   const Clipboard = Quill.import('modules/clipboard');
   class PotentiallyDisabledClipboard extends Clipboard {
     onCaptureCopy(e, isCut = false) {
-      if (this.options.enabled) return super.onCaptureCopy(e, isCut);
+      if (this.options.enabled ?? true) return super.onCaptureCopy(e, isCut);
       if (!e.defaultPrevented) e.preventDefault();
     }
 
     onCapturePaste(e) {
-      if (this.options.enabled) return super.onCapturePaste(e);
+      if (this.options.enabled ?? true) return super.onCapturePaste(e);
       if (!e.defaultPrevented) e.preventDefault();
     }
   }

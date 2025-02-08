@@ -120,7 +120,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "markdown_shortcuts": "true" if markdown_shortcuts else "false",
             "counter": counter.value,
             "counter_enabled": counter != Counter.NONE,
-            "clipboard_enabled": "true" if clipboard_enabled else "false",
+            "clipboard_enabled": clipboard_enabled,
         }
 
         if source_file_name is not None:
