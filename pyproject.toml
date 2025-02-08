@@ -25,7 +25,6 @@ ignore = [
     "BLE", # flake8-blind-except
     "COM", # flake8-commas
     "C901", # mccabe (complexity checks)
-    "D", # pydocstyle
     "ERA", # eradicate (code in comments)
     "EM", # flake8-errmsg
     "EXE", # flake8-executable
@@ -57,6 +56,9 @@ ignore = [
     "TRY300", # try-consider-else (returns in try blocks)
     "TRY301", # raise-within-try
     "TRY003", # raise-vanilla-args (long messages in raise statements)
+
+    # These rules need to be enabled
+    "D212", "D103", "D100", "D102", "D107", "D101", "D202", "D205", "D104", "D400", "D415"
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
@@ -89,8 +91,18 @@ ignore = [
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
-# Boolean default positional argument
-"graders/**/*.py" = ["FBT002"]
+# FBT002 - Boolean default positional argument
+# D - We don't care about docstrings for any of these files
+"graders/**/*.py" = ["FBT002", "D"]
+"tools/**/*.py" = ["D"]
+"testCourse/**/*.py" = ["D"]
+"exampleCourse/**/*.py" = ["D"]
+"workspaces/**/*.py" = ["D"]
+"docs/hooks/*.py" = ["D"]
+"apps/prairielearn/src/tests/**/*.py" = ["D"]
+"apps/prairielearn/python/test/**/*.py" = ["D"]
+"apps/prairielearn/python/zygote.py" = ["D"]
+"apps/prairielearn/python/prairielearn/to_precision.py" = ["D"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
