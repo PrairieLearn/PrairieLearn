@@ -397,9 +397,6 @@ function testEdit(params) {
         assert.isString(locals.__csrf_token);
       } else {
         const elemList = locals.$(`${params.formSelector} input[name="__csrf_token"]`);
-        if (elemList.length === 0) {
-          console.log(params);
-        }
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;

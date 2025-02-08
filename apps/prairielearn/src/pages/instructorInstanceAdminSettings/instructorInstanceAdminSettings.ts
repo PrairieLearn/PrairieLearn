@@ -150,42 +150,29 @@ router.post(
           `Invalid CIID (could not be normalized): ${req.body.ciid}`,
         );
       }
-      let editor;
-      if (res.locals.course_instance.short_name !== ciid_new) {
-        editor = new MultiEditor(
-          {
-            locals: res.locals as any,
-            description: `Update course instance: ${res.locals.course_instance.short_name}`,
-          },
-          [
-            new FileModifyEditor({
-              locals: res.locals as any,
-              container: {
-                rootPath: paths.rootPath,
-                invalidRootPaths: paths.invalidRootPaths,
-              },
-              filePath: infoCourseInstancePath,
-              editContents: b64EncodeUnicode(formattedJson),
-              origHash: req.body.orig_hash,
-            }),
-            new CourseInstanceRenameEditor({
-              locals: res.locals as any,
-              ciid_new,
-            }),
-          ],
-        );
-      } else {
-        editor = new FileModifyEditor({
+      const editor = new MultiEditor(
+        {
           locals: res.locals as any,
-          container: {
-            rootPath: paths.rootPath,
-            invalidRootPaths: paths.invalidRootPaths,
-          },
-          filePath: infoCourseInstancePath,
-          editContents: b64EncodeUnicode(formattedJson),
-          origHash: req.body.orig_hash,
-        });
-      }
+          description: `Update course instance: ${res.locals.course_instance.short_name}`,
+        },
+        [
+          new FileModifyEditor({
+            locals: res.locals as any,
+            container: {
+              rootPath: paths.rootPath,
+              invalidRootPaths: paths.invalidRootPaths,
+            },
+            filePath: infoCourseInstancePath,
+            editContents: b64EncodeUnicode(formattedJson),
+            origHash: req.body.orig_hash,
+          }),
+          new CourseInstanceRenameEditor({
+            locals: res.locals as any,
+            ciid_new,
+          }),
+        ],
+      );
+
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
