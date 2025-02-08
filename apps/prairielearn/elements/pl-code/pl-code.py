@@ -51,7 +51,7 @@ ANSI_COLORS = {
 
 def parse_highlight_lines(highlight_lines: str) -> list[int] | None:
     """
-    Parses a string like "1", "1-4", "1-3,5,7-8" into a list of lines like
+    Parse a string like "1", "1-4", "1-3,5,7-8" into a list of lines like
     [1], [1,2,3,4], and [1,2,3,5,7,8]
     """
     lines = []
@@ -134,7 +134,8 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter[str]):
 @cache
 def get_lexer_by_name(name: str) -> pygments.lexer.Lexer | None:
     """
-    Tries to find a lexer by both its proper name and any aliases it has.
+    Find a lexer by both its proper name and any aliases it has.
+    Returns None if no lexer is found.
     """
 
     # Search by proper class/language names

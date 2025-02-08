@@ -41,6 +41,7 @@ ignore = [
     "PTH", # flake8-use-pathlib
 
     # These rules were discussed and disabled
+    "D203", # incorrect-blank-line-before-class
     "ISC003", # explicit-string-concatenation
     "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
     "PD901", # pandas-df-variable-name (we use `df` in many places)

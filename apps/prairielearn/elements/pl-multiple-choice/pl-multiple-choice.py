@@ -177,7 +177,7 @@ def get_nota_aota_attrib(
 
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
-    """Gets order type in a backwards-compatible way. New display overwrites old."""
+    """Get order type in a backwards-compatible way. New display overwrites old."""
 
     if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
         raise ValueError(
@@ -191,7 +191,7 @@ def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
 
 
 def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
-    """Gets display type in a backwards-compatible way. New display overwrites old."""
+    """Get display type in a backwards-compatible way. New display overwrites old."""
 
     if pl.has_attrib(element, "inline") and pl.has_attrib(element, "display"):
         raise ValueError(

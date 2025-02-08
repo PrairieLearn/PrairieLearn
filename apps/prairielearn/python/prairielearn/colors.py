@@ -142,7 +142,7 @@ PLColor.register(PrairieLearnColor(), overwrite=True)
 
 def get_css_color(name: str) -> str | None:
     """
-    Tries to look up a hex code value from a named css color, otherwise will
+    Try to look up a hex code value from a named css color, otherwise
     return None if not a valid color.
     """
     name = name.lower()
