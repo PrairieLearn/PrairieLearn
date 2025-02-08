@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, cast, overlo
 import lxml.html
 import networkx as nx
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import sympy
 from numpy.typing import ArrayLike
@@ -288,9 +289,10 @@ _JSONSerializedType = (
 )
 
 _JSONPythonType = (
-    np.complexfloating
-    | np.number
-    | np.ndarray
+    np.complex64
+    | np.complex128
+    | np.number[Any]
+    | npt.NDArray[Any]
     | sympy.Expr
     | sympy.Matrix
     | sympy.ImmutableMatrix
@@ -373,8 +375,8 @@ def to_json(
             "_value": str(v),
         }
 
-    if np.isscalar(v) and np.iscomplexobj(v):
-        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}  # type: ignore
+    if np.isscalar(v) and np.iscomplexobj(v):  # pyright:ignore[reportArgumentType]
+        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}  # pyright:ignore[reportAttributeAccessIssue]
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
             return {"_type": "ndarray", "_value": v.tolist(), "_dtype": str(v.dtype)}
@@ -452,19 +454,10 @@ def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
     )
 
 
-@overload
-def from_json(
-    v: _JSONSerializedType,
-) -> _JSONPythonType: ...
+def from_json(v: _JSONSerializedType | Any) -> Any:
+    """from_json(v)
 
-
-@overload
-def from_json(v: Any) -> Any: ...
-
-
-def from_json(v: _JSONSerializedType | Any) -> _JSONPythonType | Any:
-    """
-    If v has the format `{'_type': ..., '_value': ...}` as would have been created
+    If v has the format {'_type':..., '_value':...} as would have been created
     using to_json(...), then it is replaced:
 
     - '_type': 'complex' -> `complex`
@@ -523,17 +516,21 @@ def from_json(v: _JSONSerializedType | Any) -> _JSONPythonType | Any:
                 raise ValueError(
                     "variable of type complex_ndarray should have value with real and imaginary pair"
                 )
-        elif v["_type"] == "sympy":
+        elif v_json["_type"] == "sympy":
             if not is_sympy_json(v_json):
                 raise ValueError(
                     "variable claiming to be of type sympy doesn't pass typechecks"
                 )
-            return json_to_sympy(v)
-        elif v["_type"] == "sympy_matrix":
-            if ("_value" in v) and ("_variables" in v) and ("_shape" in v):
-                value = v["_value"]
-                variables = v["_variables"]
-                shape = v["_shape"]
+            return json_to_sympy(v_json)
+        elif v_json["_type"] == "sympy_matrix":
+            if (
+                ("_value" in v_json)
+                and ("_variables" in v_json)
+                and ("_shape" in v_json)
+            ):
+                value = v_json["_value"]
+                variables = v_json["_variables"]
+                shape = v_json["_shape"]
                 matrix = sympy.Matrix.zeros(shape[0], shape[1])
                 for i in range(shape[0]):
                     for j in range(shape[1]):
@@ -850,14 +847,11 @@ def get_color_attrib(
         raise ValueError(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
 
 
-# This internal represents most the types that would pass a np.isscalar check
-_NumPyScalarType = (
-    np.complexfloating | bool | int | float | complex | str | bytes | np.generic
-)
+_NumericScalarType = numbers.Number | complex | np.generic
 
 
 def numpy_to_matlab(
-    np_object: np.ndarray | _NumPyScalarType,
+    np_object: _NumericScalarType | npt.NDArray[Any],
     ndigits: int = 2,
     wtype: str = "f",
 ) -> str:
@@ -915,7 +909,7 @@ _FormatLanguage = Literal["python", "matlab", "mathematica", "r", "sympy"]
 
 
 def string_from_numpy(
-    A: np.ndarray | _NumPyScalarType,
+    A: _NumericScalarType | npt.NDArray[Any],
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
@@ -979,12 +973,8 @@ def string_from_numpy(
 
     # if A is a scalar
     if np.isscalar(A):
-        assert not isinstance(A, memoryview)
+        assert not isinstance(A, memoryview | str | bytes)
         if presentation_type == "sigfig":
-            if not isinstance(A, np.complexfloating) and isinstance(
-                A, np.generic | bytes | str
-            ):
-                raise TypeError(f"A must be a number, is {type(A)}")
             return string_from_number_sigfig(A, digits=digits)
         else:
             return "{:.{digits}{presentation_type}}".format(
@@ -1051,7 +1041,7 @@ def string_from_numpy(
 
 # Deprecated version, keeping for backwards compatibility
 def string_from_2darray(
-    A: np.ndarray,
+    A: npt.NDArray[Any],
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
@@ -1060,23 +1050,27 @@ def string_from_2darray(
     return result
 
 
-def string_from_number_sigfig(
-    a: complex | np.complexfloating | numbers.Number, digits: int = 2
-) -> str:
+def string_from_number_sigfig(a: _NumericScalarType | str, digits: int = 2) -> str:
     """string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is of type float or complex. It returns "a"
     as a string in which the number, or both the real and imaginary parts of the
     number, have digits significant digits.
     """
-    if not isinstance(a, numbers.Number) and np.iscomplexobj(a):
-        return _string_from_complex_sigfig(a, digits=digits)
+
+    assert np.isscalar(a)
+    assert not isinstance(a, memoryview | bytes)
+
+    if np.iscomplexobj(a):
+        # `np.iscomplexobj` isn't a proper type guard, so we need to use
+        # casting to call this function.
+        return _string_from_complex_sigfig(cast(complex, a), digits=digits)
     else:
         return to_precision(a, digits)
 
 
 def _string_from_complex_sigfig(
-    a: complex | np.complexfloating, digits: int = 2
+    a: complex | np.complex64 | np.complex128, digits: int = 2
 ) -> str:
     """_string_from_complex_sigfig(a, digits=2)
 
@@ -1091,7 +1085,9 @@ def _string_from_complex_sigfig(
         return f"{re}-{im}j"
 
 
-def numpy_to_matlab_sf(A: _NumPyScalarType | np.ndarray, ndigits: int = 2) -> str:
+def numpy_to_matlab_sf(
+    A: _NumericScalarType | npt.NDArray[Any], ndigits: int = 2
+) -> str:
     """numpy_to_matlab(A, ndigits=2)
 
     This function assumes that A is one of these things:
@@ -1103,13 +1099,11 @@ def numpy_to_matlab_sf(A: _NumPyScalarType | np.ndarray, ndigits: int = 2) -> st
     ndigits significant digits.
     """
     if np.isscalar(A):
-        assert not isinstance(A, memoryview)
+        assert not isinstance(A, memoryview | str | bytes)
         if np.iscomplexobj(A):
-            if not isinstance(A, np.complexfloating) and isinstance(
-                A, np.generic | bytes | str
-            ):
-                raise TypeError(f"A must be a number, is {type(A)}")
-            scalar_str = _string_from_complex_sigfig(A, ndigits)
+            # `np.iscomplexobj` isn't a proper type guard, so we need to use
+            # casting to call this function
+            scalar_str = _string_from_complex_sigfig(cast(complex, A), ndigits)
         else:
             scalar_str = to_precision(A, ndigits)
         return scalar_str
@@ -1177,7 +1171,7 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
 
     Returns a number with type int, or None on parse error.
     """
-    if s is None:
+    if not isinstance(s, str):
         return None
 
     # Do unidecode before parsing
@@ -1339,7 +1333,7 @@ def string_fraction_to_number(
 
 def string_to_2darray(
     s: str, *, allow_complex: bool = True
-) -> tuple[None | np.ndarray, dict[str, str]]:
+) -> tuple[None | npt.NDArray[Any], dict[str, str]]:
     """string_to_2darray(s)
 
     Parses a string that is either a scalar or a 2D array in matlab or python
@@ -1655,7 +1649,7 @@ def string_to_2darray(
 
 
 def latex_from_2darray(
-    A: numbers.Number | np.ndarray,
+    A: _NumericScalarType | npt.NDArray[Any],
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
@@ -1675,13 +1669,18 @@ def latex_from_2darray(
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
     """
     # if A is a scalar
-    if isinstance(A, numbers.Number):
+    if np.isscalar(A):
+        assert not isinstance(A, memoryview | str | bytes)
         if presentation_type == "sigfig":
             return string_from_number_sigfig(A, digits=digits)
         else:
             return "{:.{digits}{presentation_type}}".format(
                 A, digits=digits, presentation_type=presentation_type
             )
+
+    if not isinstance(A, np.ndarray):
+        raise TypeError("A must be a numpy array or scalar")
+
     # Using Any annotation here because of weird Pyright-isms.
     if presentation_type == "sigfig":
         formatter: Any = {
@@ -1728,7 +1727,7 @@ def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
 
 
 def is_correct_ndarray2d_dd(
-    a_sub: np.ndarray, a_tru: np.ndarray, digits: int = 2
+    a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
     # Check if each element is correct
     m = a_sub.shape[0]
@@ -1743,7 +1742,7 @@ def is_correct_ndarray2d_dd(
 
 
 def is_correct_ndarray2d_sf(
-    a_sub: np.ndarray, a_tru: np.ndarray, digits: int = 2
+    a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
     # Check if each element is correct
     m = a_sub.shape[0]
@@ -1758,7 +1757,10 @@ def is_correct_ndarray2d_sf(
 
 
 def is_correct_ndarray2d_ra(
-    a_sub: np.ndarray, a_tru: np.ndarray, rtol: float = 1e-5, atol: float = 1e-8
+    a_sub: npt.NDArray[Any],
+    a_tru: npt.NDArray[Any],
+    rtol: float = 1e-5,
+    atol: float = 1e-8,
 ) -> bool:
     # Check if each element is correct
     return np.allclose(a_sub, a_tru, rtol, atol)
@@ -1891,13 +1893,15 @@ def load_extension(data: QuestionData, extension_name: str) -> Any:
         # Nothing to load, just return an empty dict
         return {}
 
+    T = TypeVar("T")
+
     # wrap extension functions so that they execute in their own directory
-    def wrap(f: Callable | Any) -> Callable:
+    def wrap(f: Callable[..., T]) -> Callable[..., T]:
         # If not a function, just return
         if not callable(f):
             return f
 
-        def wrapped_function(*args: Any, **kwargs: Any) -> Any:
+        def wrapped_function(*args: Any, **kwargs: Any) -> T:
             old_wd = os.getcwd()
             os.chdir(ext_info["directory"])
             ret_val = f(*args, **kwargs)

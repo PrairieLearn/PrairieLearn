@@ -1,8 +1,7 @@
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
 
@@ -15,54 +14,53 @@ export function InstructorInstanceAdminAccess({
 }) {
   const { authz_data, course_instance } = resLocals;
 
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
-          ${CourseInstanceSyncErrorsAndWarnings({
-            authz_data,
-            courseInstance: course_instance,
-            course: resLocals.course,
-            urlPrefix: resLocals.urlPrefix,
-          })}
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Access',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'access',
+    },
+    options: {
+      fullWidth: true,
+    },
+    content: html`
+      ${CourseInstanceSyncErrorsAndWarnings({
+        authz_data,
+        courseInstance: course_instance,
+        course: resLocals.course,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h1>${course_instance.long_name} course instance access rules</h1>
+        </div>
 
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h1>${course_instance.long_name} course instance access rules</h1>
-            </div>
-
-            <div class="table-responsive">
-              <table class="table table-sm table-hover" aria-label="Access rules">
-                <thead>
-                  <tr>
-                    <th>UIDs</th>
-                    <th>Start date</th>
-                    <th>End date</th>
-                    <th>Institution</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${accessRules.map((accessRule) =>
-                    AccessRuleRow({
-                      accessRule,
-                      timeZone: course_instance.display_timezone,
-                      hasCourseInstancePermissionView:
-                        authz_data.has_course_instance_permission_view,
-                    }),
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+        <div class="table-responsive">
+          <table class="table table-sm table-hover" aria-label="Access rules">
+            <thead>
+              <tr>
+                <th>UIDs</th>
+                <th>Start date</th>
+                <th>End date</th>
+                <th>Institution</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${accessRules.map((accessRule) =>
+                AccessRuleRow({
+                  accessRule,
+                  timeZone: course_instance.display_timezone,
+                  hasCourseInstancePermissionView: authz_data.has_course_instance_permission_view,
+                }),
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `,
+  });
 }
 
 function AccessRuleRow({

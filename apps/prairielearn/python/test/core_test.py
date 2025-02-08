@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import prairielearn as pl
 import pytest
+from numpy.typing import ArrayLike
 
 
 def city_dataframe() -> pd.DataFrame:
@@ -243,7 +244,7 @@ def test_set_score_data(
         np.ones((2, 3, 4), dtype=np.int16),
     ],
 )
-def test_numpy_serialization(numpy_object: Any) -> None:
+def test_numpy_serialization(numpy_object: ArrayLike) -> None:
     """Test equality after conversion of various numpy objects."""
 
     json_object = json.dumps(
@@ -251,7 +252,11 @@ def test_numpy_serialization(numpy_object: Any) -> None:
     )
     decoded_json_object = pl.from_json(json.loads(json_object))
 
-    assert type(numpy_object) == type(decoded_json_object)  # noqa: E721
+    assert type(numpy_object) is type(decoded_json_object)
+
+    # This check is needed because pyright cannot infer the type of decoded_json_object
+    assert isinstance(decoded_json_object, type(numpy_object))
+
     np.testing.assert_array_equal(numpy_object, decoded_json_object, strict=True)
 
 
@@ -440,3 +445,104 @@ def test_iter_keys(length: int, expected_output: list[str]) -> None:
 )
 def test_index2key(idx: int, expected_output: str) -> None:
     assert pl.index2key(idx) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("value", "args", "expected_output"),
+    [
+        (0, {}, "0.00"),
+        (0, {"digits": 1}, "0.0"),
+        (0, {"digits": 0}, "0"),
+        (0.0, {}, "0.00"),
+        (0.0, {"digits": 1}, "0.0"),
+        (0.0, {"digits": 0}, "0"),
+        (np.float64(0.0), {}, "0.00"),
+        (np.float64(0.0), {"digits": 1}, "0.0"),
+        (np.float64(0.0), {"presentation_type": "sigfig"}, "0.0"),
+        (np.zeros(2), {}, "[0.00, 0.00]"),
+        (np.zeros(2), {"digits": 1}, "[0.0, 0.0]"),
+        (np.zeros(2), {"digits": 0}, "[0, 0]"),
+        (np.zeros(2), {"language": "matlab"}, "[0.00, 0.00]"),
+        (np.zeros(2), {"language": "mathematica"}, "{0.00, 0.00}"),
+        (np.zeros(2), {"language": "r"}, "c(0.00, 0.00)"),
+        (np.zeros(2), {"language": "sympy"}, "Matrix([0.00, 0.00])"),
+        (np.zeros((2, 2)), {}, "[[0.00, 0.00], [0.00, 0.00]]"),
+        (np.zeros((2, 2)), {"digits": 1}, "[[0.0, 0.0], [0.0, 0.0]]"),
+        (np.zeros((2, 2)), {"digits": 0}, "[[0, 0], [0, 0]]"),
+        (np.zeros((2, 2)), {"language": "matlab"}, "[0.00 0.00; 0.00 0.00]"),
+        (np.zeros((2, 2)), {"language": "mathematica"}, "{{0.00, 0.00}, {0.00, 0.00}}"),
+        (
+            np.zeros((2, 2)),
+            {"language": "r"},
+            "matrix(c(0.00, 0.00, 0.00, 0.00), nrow = 2, ncol = 2, byrow = TRUE)",
+        ),
+        (
+            np.zeros((2, 2)),
+            {"language": "sympy"},
+            "Matrix([[0.00, 0.00], [0.00, 0.00]])",
+        ),
+    ],
+)
+def test_string_from_numpy(value: Any, args: dict, expected_output: str) -> None:
+    assert pl.string_from_numpy(value, **args) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("value", "args", "expected_output"),
+    [
+        (0, {}, "0.0"),
+        (0, {"digits": 1}, "0."),
+        (0, {"digits": 0}, "0"),
+        (0.0, {}, "0.0"),
+        (0.0, {"digits": 1}, "0."),
+        (0.0, {"digits": 0}, "0"),
+        (complex(1, 2), {}, "1.0+2.0j"),
+        (complex(0, 2), {}, "0.0+2.0j"),
+        (complex(1, 0), {}, "1.0+0.0j"),
+        (np.complex64(complex(1, 2)), {}, "1.0+2.0j"),
+        (np.complex64(complex(0, 2)), {}, "0.0+2.0j"),
+        (np.complex64(complex(1, 0)), {}, "1.0+0.0j"),
+        # For legacy reasons, we must also support strings.
+        ("0", {}, "0.0"),
+        ("0", {"digits": 1}, "0."),
+        ("0", {"digits": 0}, "0"),
+    ],
+)
+def test_string_from_number_sigfig(
+    value: Any, args: dict, expected_output: str
+) -> None:
+    assert pl.string_from_number_sigfig(value, **args) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("value", "args", "expected_output"),
+    [
+        (0, {}, "0.0"),
+        (0, {"ndigits": 1}, "0."),
+        (0, {"ndigits": 0}, "0"),
+        (0.0, {}, "0.0"),
+        (0.0, {"ndigits": 1}, "0."),
+        (0.0, {"ndigits": 0}, "0"),
+        (complex(1, 2), {}, "1.0+2.0j"),
+        (complex(0, 2), {}, "0.0+2.0j"),
+        (complex(1, 0), {}, "1.0+0.0j"),
+        (np.complex64(complex(1, 2)), {}, "1.0+2.0j"),
+        (np.complex64(complex(0, 2)), {}, "0.0+2.0j"),
+        (np.complex64(complex(1, 0)), {}, "1.0+0.0j"),
+    ],
+)
+def test_numpy_to_matlab_sf(value: Any, args: dict, expected_output: str) -> None:
+    assert pl.numpy_to_matlab_sf(value, **args) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("value", "expected_output"),
+    [
+        (0, "0.00"),
+        (0.0, "0.00"),
+        (complex(1, 2), "1.00+2.00j"),
+        (np.array([[1, 2], [3, 4]]), r"\begin{bmatrix}  1 & 2\\  3 & 4\\\end{bmatrix}"),
+    ],
+)
+def test_latex_from_2darray(value: Any, expected_output: str) -> None:
+    assert pl.latex_from_2darray(value) == expected_output

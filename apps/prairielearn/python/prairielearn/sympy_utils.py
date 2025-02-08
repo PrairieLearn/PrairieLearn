@@ -20,7 +20,7 @@ from prairielearn.unicode_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
-SympyMapT = dict[str, Callable | sympy.Basic]
+SympyMapT = dict[str, Callable[..., Any] | sympy.Basic]
 ASTWhiteListT = tuple[type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
 
