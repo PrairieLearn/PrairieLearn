@@ -31,11 +31,18 @@ VOID_ELEMENTS = frozenset(
 UNESCAPED_ELEMENTS = frozenset({"script", "style"})
 
 
+def remove_weird_prefix(tag_str: str) -> str:
+    """Removes w3 standard from tag name."""
+    # print(tag_str)
+    # {http://www.w3.org/1999/xhtml}
+    return tag_str.replace("""{http://www.w3.org/1999/xhtml}""", "")
+
+
 def traverse_and_execute(
     html: str, fn: Callable[[lxml.html.HtmlElement], None]
 ) -> None:
     elements = html5parser.fragments_fromstring(html)
-    # print(type(elements[0]))
+
     for e in chain.from_iterable(
         element.iter()
         for element in elements
@@ -43,7 +50,6 @@ def traverse_and_execute(
         # We can just discard that.
         if isinstance(element, lxml.etree._Element)
     ):
-        print(e)
         fn(e)
 
 
@@ -59,7 +65,7 @@ def get_source_definition(element: lxml.html.HtmlElement) -> str:
     attributes = (
         f'''{k}="{format_attrib_value(v)}"''' for k, v in element.attrib.items()
     )
-    return f"<{' '.join((element.tag, *attributes))}>"
+    return f"<{' '.join((remove_weird_prefix(str(element.tag)), *attributes))}>"
 
 
 def traverse_and_replace(
@@ -114,7 +120,7 @@ def traverse_and_replace(
 
                 continue
 
-            if isinstance(new_elements, lxml.html.HtmlComment):
+            if isinstance(new_elements, lxml.etree._Comment):
                 result.append(lxml.html.tostring(new_elements, encoding="unicode"))
             elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):
                 # Handling processing instructions is necessary for elements like `<pl-graph>`
@@ -151,7 +157,7 @@ def traverse_and_replace(
                     work_stack.extend(reversed(children))
 
                 count_stack.append(len(children))
-                tail_stack.append((new_elements.tag, element.tail))
+                tail_stack.append((str(new_elements.tag), element.tail))
 
         # Close all closable tags
         while count_stack[-1] == 0:
@@ -159,7 +165,7 @@ def traverse_and_replace(
             tail_tag, tail_text = tail_stack.pop()
 
             if tail_tag not in VOID_ELEMENTS:
-                result.append(f"</{tail_tag}>")
+                result.append(f"</{remove_weird_prefix(tail_tag)}>")
             if tail_text is not None:
                 result.append(tail_text)
 
