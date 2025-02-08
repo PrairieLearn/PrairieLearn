@@ -105,7 +105,7 @@ class PrairieLearnColor(sRGB):
         alpha: bool | None = None,
         fit: bool | str | dict[str, Any] = True,
         names: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
         """Convert to string."""
 

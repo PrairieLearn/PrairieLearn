@@ -51,7 +51,7 @@ router.get(
     const questions_dir_idx = question_exploded.findIndex((x) => x === 'questions');
     const qid = question_exploded.slice(questions_dir_idx + 1).join(path.sep);
     const editor = new QuestionTransferEditor({
-      locals: res.locals,
+      locals: res.locals as any,
       from_qid: qid,
       from_course_short_name: from_course.short_name,
       from_path: path.join(config.filesRoot, file_transfer.storage_filename),
