@@ -9,7 +9,7 @@ const featureNames = [
   'ai-grading',
   'disable-public-workspaces',
   'ai-question-generation',
-  'enhanced-navigation', // TODO: name?
+  'enhanced-navigation',
   // Should only be applied to institutions.
   'lti13',
 ] as const;

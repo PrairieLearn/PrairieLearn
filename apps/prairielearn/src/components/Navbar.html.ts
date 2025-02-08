@@ -6,6 +6,7 @@ import { config } from '../lib/config.js';
 
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
+import { ContextNavigation } from './NavbarContext.html.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
 export function Navbar({
@@ -73,7 +74,13 @@ export function Navbar({
         </button>
         <div id="course-nav" class="collapse navbar-collapse">
           <ul class="nav navbar-nav mr-auto" id="main-nav">
-            ${NavbarByType({ resLocals, navPage, navSubPage, navbarType, newNavEnabled: true })}
+            ${NavbarByType({
+              resLocals,
+              navPage,
+              navSubPage,
+              navbarType,
+              enhancedNavigationEnabled: resLocals.has_enhanced_navigation,
+            })}
           </ul>
 
           ${config.devMode
@@ -99,10 +106,14 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${FlashMessages()}
+    ${resLocals.has_enhanced_navigation
+      ? FlashMessages()
+      : html`
+          <div class="mb-3">
+            ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
+          </div>
+        `}
   `;
-
-  // ${ContextNavigation({ resLocals, navPage, navSubPage })}
 }
 
 function NavbarByType({
@@ -110,24 +121,24 @@ function NavbarByType({
   navPage,
   navSubPage,
   navbarType,
-  newNavEnabled = false,
+  enhancedNavigationEnabled = false,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage: NavSubPage;
   navbarType: NavbarType;
-  newNavEnabled?: boolean;
+  enhancedNavigationEnabled?: boolean;
 }) {
   if (navbarType == null || navbarType === 'plain') {
-    return NavbarPlain({ resLocals, navPage, newNavEnabled }); // TODO: Modify with feature flag
+    return NavbarPlain({ resLocals, navPage, enhancedNavigationEnabled }); // TODO: Modify with feature flag
   } else if (navbarType === 'student') {
     return NavbarStudent({ resLocals, navPage });
   } else if (navbarType === 'instructor') {
-    return NavbarInstructor({ resLocals, navPage, navSubPage, newNavEnabled }); // TODO: Modify with feature flag
+    return NavbarInstructor({ resLocals, navPage, navSubPage, enhancedNavigationEnabled }); // TODO: Modify with feature flag
   } else if (navbarType === 'administrator_institution') {
-    return NavbarAdministratorInstitution({ resLocals, newNavEnabled });
+    return NavbarAdministratorInstitution({ resLocals, enhancedNavigationEnabled });
   } else if (navbarType === 'institution') {
-    return NavbarInstitution({ resLocals, newNavEnabled }); // TODO: Modify with feature flag, maybe?
+    return NavbarInstitution({ resLocals, enhancedNavigationEnabled }); // TODO: Modify with feature flag, maybe?
   } else if (navbarType === 'public') {
     return NavbarPublic({ resLocals });
   } else {
@@ -573,17 +584,17 @@ function AuthnOverrides({
 function NavbarPlain({
   resLocals,
   navPage,
-  newNavEnabled = false,
+  enhancedNavigationEnabled = false,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
-  newNavEnabled?: boolean;
+  enhancedNavigationEnabled?: boolean;
 }) {
   console.log(resLocals);
 
   if (!resLocals.is_administrator) return '';
 
-  if (!newNavEnabled) {
+  if (!enhancedNavigationEnabled) {
     return html`
       <li class="nav-item ${navPage === 'admin' ? 'active' : ''}">
         <a class="nav-link" href="${config.urlPrefix}/administrator/admins">Admin</a>
@@ -746,14 +757,14 @@ function NavbarInstructor({
   resLocals,
   navPage,
   navSubPage,
-  newNavEnabled = false,
+  enhancedNavigationEnabled = false,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage?: NavSubPage;
-  newNavEnabled?: boolean;
+  enhancedNavigationEnabled?: boolean;
 }) {
-  if (!newNavEnabled) {
+  if (!enhancedNavigationEnabled) {
     const {
       course,
       course_instance,
@@ -1026,14 +1037,14 @@ function NavbarPublic({ resLocals }: { resLocals: Record<string, any> }) {
 
 function NavbarInstitution({
   resLocals,
-  newNavEnabled = false,
+  enhancedNavigationEnabled = false,
 }: {
   resLocals: Record<string, any>;
-  newNavEnabled?: boolean;
+  enhancedNavigationEnabled?: boolean;
 }) {
   const { institution } = resLocals;
 
-  if (!newNavEnabled) {
+  if (!enhancedNavigationEnabled) {
     return html`
       <li class="nav-item">
         <a class="nav-link" href="/pl/institution/${institution.id}/admin/courses">
@@ -1055,14 +1066,14 @@ function NavbarInstitution({
 
 function NavbarAdministratorInstitution({
   resLocals,
-  newNavEnabled,
+  enhancedNavigationEnabled,
 }: {
   resLocals: Record<string, any>;
-  newNavEnabled?: boolean;
+  enhancedNavigationEnabled?: boolean;
 }) {
   const { institution } = resLocals;
 
-  if (!newNavEnabled) {
+  if (!enhancedNavigationEnabled) {
     return html`
       <li class="nav-item">
         <a class="nav-link" href="/pl/administrator/institutions">Admin</a>

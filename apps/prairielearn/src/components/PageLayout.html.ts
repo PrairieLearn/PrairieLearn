@@ -69,78 +69,115 @@ export function PageLayout({
     showContextNavigation = false;
   }
 
-  console.log('page', navContext.page);
-  console.log('subPage', navContext.subPage);
-  console.log('showContextNavigation', showContextNavigation);
-
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({
-          resLocals,
-          pageTitle,
-          pageNote: options.pageNote,
-        })}
-        ${compiledStylesheetTag('pageLayout.css')} ${headContent}
-      </head>
-      <body
-        ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
-        class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
-      >
-        <div class="app-container ${!resLocals.course ? 'no-sidebar' : ''}">
-          <div class="app-top-nav">
-            ${Navbar({
-              resLocals,
-              navPage: navContext.page,
-              navSubPage: navContext.subPage,
-              navbarType: navContext.type,
-            })}
-          </div>
-          ${resLocals.course &&
-          html`
-            <div class="app-side-nav">
-              ${SideNav({
+  if (resLocals.has_enhanced_navigation) {
+    const showSideNavbar = resLocals.course !== undefined;
+    return html`
+      <!doctype html>
+      <html lang="en">
+        <head>
+          ${HeadContents({
+            resLocals,
+            pageTitle,
+            pageNote: options.pageNote,
+          })}
+          ${compiledStylesheetTag('pageLayout.css')} ${headContent}
+        </head>
+        <body
+          ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
+          class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
+        >
+          <div class="app-container ${!showSideNavbar ? 'no-sidebar' : ''}">
+            <div class="app-top-nav">
+              ${Navbar({
                 resLocals,
-                page: navContext.page,
-                subPage: navContext.subPage,
+                navPage: navContext.page,
+                navSubPage: navContext.subPage,
+                navbarType: navContext.type,
               })}
             </div>
-          `}
-          <div class="app-main">
-            <div class="app-main-container">
-              ${resLocals.assessment &&
-              resLocals.assessments &&
-              AssessmentNavigation({
-                courseInstance: resLocals.course_instance,
-                assessment: resLocals.assessment,
-                assessments: resLocals.assessments,
-              })}
-              ${showContextNavigation
-                ? ContextNavigation({
-                    resLocals,
-                    navPage: navContext.page,
-                    navSubPage: navContext.subPage,
-                    newNavEnabled: true,
-                    fullWidth: options.fullWidth,
-                  })
-                : ''}
-              ${preContent}
-              <main
-                id="content"
-                class="
+            ${showSideNavbar
+              ? html`
+                  <div class="app-side-nav">
+                    ${SideNav({
+                      resLocals,
+                      page: navContext.page,
+                      subPage: navContext.subPage,
+                    })}
+                  </div>
+                `
+              : ''}
+            <div class="${showSideNavbar ? 'app-main' : ''}">
+              <div class="${showSideNavbar ? 'app-main-container' : ''}">
+                ${resLocals.assessment &&
+                resLocals.assessments &&
+                AssessmentNavigation({
+                  courseInstance: resLocals.course_instance,
+                  assessment: resLocals.assessment,
+                  assessments: resLocals.assessments,
+                })}
+                ${showContextNavigation
+                  ? ContextNavigation({
+                      resLocals,
+                      navPage: navContext.page,
+                      navSubPage: navContext.subPage,
+                      newNavEnabled: true,
+                      fullWidth: options.fullWidth,
+                    })
+                  : ''}
+                ${preContent}
+                <main
+                  id="content"
+                  class="
                 ${options.fullWidth ? 'container-fluid' : 'container'} 
                 ${marginBottom ? 'mb-4' : ''}
                 ${options.fullHeight ? 'flex-grow-1' : ''}
               "
-              >
-                ${content}
-              </main>
-              ${postContent}
+                >
+                  ${content}
+                </main>
+                ${postContent}
+              </div>
             </div>
           </div>
-        </div>
-      </body>
-    </html>
-  `.toString();
+        </body>
+      </html>
+    `.toString();
+  } else {
+    return html`
+      <!doctype html>
+      <html lang="en" class="${options.fullHeight ? 'h-100' : ''}">
+        <head>
+          ${HeadContents({
+            resLocals,
+            pageTitle,
+            pageNote: options.pageNote,
+          })}
+          ${headContent}
+        </head>
+        <body
+          ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
+          class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
+        >
+          ${Navbar({
+            resLocals,
+            navPage: navContext.page,
+            navSubPage: navContext.subPage,
+            navbarType: navContext.type,
+          })}
+          ${preContent}
+          <main
+            id="content"
+            class="
+            ${options.fullWidth ? 'container-fluid' : 'container'} 
+            ${marginBottom ? 'mb-4' : ''}
+            ${options.fullHeight ? 'flex-grow-1' : ''}
+          "
+          >
+            ${content}
+          </main>
+          ${postContent}
+        </body>
+      </html>
+    `.toString();
+  }
 }
