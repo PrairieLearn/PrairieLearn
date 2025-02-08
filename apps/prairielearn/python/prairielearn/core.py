@@ -910,7 +910,7 @@ def string_from_numpy(
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
-):
+) -> str:
     """string_from_numpy(A)
 
     This function assumes that A is one of these things:
@@ -1042,7 +1042,7 @@ def string_from_2darray(
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
-):
+) -> str:
     result = string_from_numpy(A, language, presentation_type, digits)
     return result
 

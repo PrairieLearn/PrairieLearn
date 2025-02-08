@@ -21,7 +21,6 @@ select = [
 
 ignore = [
     # These rules provide little value to us
-    "ANN", # flake8-annotations
     "BLE", # flake8-blind-except
     "COM", # flake8-commas
     "C901", # mccabe (complexity checks)
@@ -42,6 +41,7 @@ ignore = [
     "PTH", # flake8-use-pathlib
 
     # These rules were discussed and disabled
+    "ANN401", # any-type
     "ISC003", # explicit-string-concatenation
     "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
     "PD901", # pandas-df-variable-name (we use `df` in many places)
@@ -91,6 +91,16 @@ ignore = [
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
 # Boolean default positional argument
 "graders/**/*.py" = ["FBT002"]
+
+# Directories we don't want strict annotation linting on
+"tools/**/*.py" = ["ANN"]
+"testCourse/**/*.py" = ["ANN"]
+"exampleCourse/**/*.py" = ["ANN"]
+"apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
+"apps/prairielearn/elements/pl-threejs/**/*.py" = ["ANN"]
+"apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
+"apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
+"apps/prairielearn/src/tests/testFileEditor/courseTemplate/questions/test/**/*.py" = ["ANN"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
