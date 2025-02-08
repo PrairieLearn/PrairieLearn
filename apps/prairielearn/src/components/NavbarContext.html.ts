@@ -463,48 +463,41 @@ export function ContextNavigation({
   resLocals,
   navPage,
   navSubPage,
-  newNavEnabled = false,
+  hasEnhancedNavigation = false,
   fullWidth = false,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage: NavSubPage;
-  newNavEnabled?: boolean;
+  hasEnhancedNavigation?: boolean;
   fullWidth?: boolean;
 }) {
   if (!navPage) return '';
 
-  const navPagesTabs = getNavPageTabs(newNavEnabled);
+  const navPagesTabs = getNavPageTabs(hasEnhancedNavigation);
   const navPageTabs = navPagesTabs[navPage];
-  const leftNavShown = resLocals.course !== undefined;
+  const showLeftNavbar = resLocals.course !== undefined;
 
   if (!navPageTabs) return '';
 
   return html`
-    <nav
-      class="${newNavEnabled && !fullWidth && leftNavShown ? 'container' : ''} ${newNavEnabled &&
-      !leftNavShown
-        ? 'mb-3'
-        : ''}"
-    >
+    <nav class="${hasEnhancedNavigation && showLeftNavbar && !fullWidth ? 'container' : ''}">
       <ul
-        class="nav nav-tabs pl-nav-tabs-bar ${newNavEnabled && leftNavShown
+        class="nav nav-tabs pl-nav-tabs-bar ${hasEnhancedNavigation && showLeftNavbar
           ? 'mt-2 mb-4'
           : 'pt-2 px-3 bg-light'}"
       >
-        ${navPageTabs.map((tabInfo) => NavbarTab({ navPage, navSubPage, resLocals, tabInfo }))}
+        ${navPageTabs.map((tabInfo) => NavbarTab({ navSubPage, resLocals, tabInfo }))}
       </ul>
     </nav>
   `;
 }
 
 function NavbarTab({
-  navPage,
   navSubPage,
   resLocals,
   tabInfo,
 }: {
-  navPage: NavPage;
   navSubPage: NavSubPage;
   resLocals: Record<string, any>;
   tabInfo: TabInfo;

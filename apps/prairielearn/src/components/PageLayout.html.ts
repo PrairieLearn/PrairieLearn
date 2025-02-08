@@ -50,7 +50,7 @@ export function PageLayout({
   if (resLocals.has_enhanced_navigation) {
     // The left navbar is only shown if the user is in a
     // course or course instance page.
-    const showSideNavbar = resLocals.course !== undefined;
+    const showLeftNavbar = resLocals.course !== undefined;
     let showContextNavigation = true;
 
     // ContextNavigation is shown if no left navbar is shown or
@@ -84,7 +84,7 @@ export function PageLayout({
           ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
         >
-          <div class="app-container ${!showSideNavbar ? 'no-sidebar' : ''}">
+          <div class="app-container ${!showLeftNavbar ? 'no-sidebar' : ''}">
             <div class="app-top-nav">
               ${Navbar({
                 resLocals,
@@ -93,7 +93,7 @@ export function PageLayout({
                 navbarType: navContext.type,
               })}
             </div>
-            ${showSideNavbar
+            ${showLeftNavbar
               ? html`
                   <div class="app-side-nav">
                     ${SideNav({
@@ -104,8 +104,8 @@ export function PageLayout({
                   </div>
                 `
               : ''}
-            <div class="${showSideNavbar ? 'app-main' : ''}">
-              <div class="${showSideNavbar ? 'app-main-container' : ''}">
+            <div class="${showLeftNavbar ? 'app-main' : ''}">
+              <div class="${showLeftNavbar ? 'app-main-container' : ''}">
                 ${resLocals.assessment &&
                 resLocals.assessments &&
                 AssessmentNavigation({
@@ -113,15 +113,17 @@ export function PageLayout({
                   assessment: resLocals.assessment,
                   assessments: resLocals.assessments,
                 })}
-                ${showContextNavigation
-                  ? ContextNavigation({
-                      resLocals,
-                      navPage: navContext.page,
-                      navSubPage: navContext.subPage,
-                      newNavEnabled: true,
-                      fullWidth: options.fullWidth,
-                    })
-                  : ''}
+                <div class="${showLeftNavbar ? '' : 'mb-3'}">
+                  ${showContextNavigation
+                    ? ContextNavigation({
+                        resLocals,
+                        navPage: navContext.page,
+                        navSubPage: navContext.subPage,
+                        hasEnhancedNavigation: resLocals.has_enhanced_navigation,
+                        fullWidth: options.fullWidth,
+                      })
+                    : ''}
+                </div>
                 ${preContent}
                 <main
                   id="content"
