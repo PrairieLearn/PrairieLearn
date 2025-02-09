@@ -3,8 +3,6 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import {
   CourseInstancePermissionSchema,
