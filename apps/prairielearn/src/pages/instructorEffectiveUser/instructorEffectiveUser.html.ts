@@ -56,7 +56,7 @@ export function InstructorEffectiveUser({
     pageTitle: 'Change Effective User',
     resLocals,
     navContext: {
-      type: resLocals.type,
+      type: resLocals.navbarType,
       page: 'effective',
     },
     options: {
