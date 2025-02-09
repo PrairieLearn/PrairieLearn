@@ -53,12 +53,10 @@ export function PageLayout({
     // The left navbar is only shown if the user is in a
     // page within a course or course instance.
     const showSideNav =
-      navContext.type !== 'student' &&
-      navContext.type !== 'public' &&
-      resLocals.course;
+      navContext.type !== 'student' && navContext.type !== 'public' && resLocals.course;
     let showContextNavigation = true;
 
-    // ContextNavigation is shown if:
+    // ContextNavigation is shown if either:
     // The side nav is not shown.
     // The side nav is shown and additional navigation capabilities are needed. E.g. The course admin settings pages.
     if (navContext.page === 'course_admin') {
@@ -118,7 +116,7 @@ export function PageLayout({
                 ${resLocals.assessment &&
                 resLocals.assessments &&
                 AssessmentNavigation({
-                  courseInstance: resLocals.course_instance
+                  courseInstance: resLocals.course_instance,
                   assessment: resLocals.assessment,
                   assessments: resLocals.assessments,
                 })}
