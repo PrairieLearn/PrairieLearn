@@ -20,9 +20,6 @@ export function AdministratorInstitutionCourses({
       page: 'administrator_institution',
       subPage: 'courses',
     },
-    options: {
-      marginBottom: true,
-    },
     content: html`
       <div class="table-responsive">
         <table class="table table-hover table-striped table-bordered table" aria-label="Courses">

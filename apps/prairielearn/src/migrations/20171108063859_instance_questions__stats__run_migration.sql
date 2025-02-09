@@ -1,5 +1,4 @@
-CREATE
-OR REPLACE FUNCTION migration_097_array_product (
+CREATE OR REPLACE FUNCTION migration_097_array_product (
   IN x DOUBLE PRECISION[],
   IN y DOUBLE PRECISION[],
   OUT product DOUBLE PRECISION[]
@@ -11,8 +10,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
-CREATE
-OR REPLACE FUNCTION migration_097_array_increments_above_max (
+CREATE OR REPLACE FUNCTION migration_097_array_increments_above_max (
   IN data double precision[],
   OUT increments double precision[]
 ) AS $$
@@ -29,8 +27,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
-CREATE
-OR REPLACE FUNCTION migration_097_instance_questions_calculate_stats (instance_question_id_param bigint) RETURNS VOID AS $$
+CREATE OR REPLACE FUNCTION migration_097_instance_questions_calculate_stats (instance_question_id_param bigint) RETURNS VOID AS $$
 WITH first_calculation AS (
     SELECT
         count(s.id) > 0                        AS some_submission_var,

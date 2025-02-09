@@ -105,13 +105,7 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${resLocals.has_enhanced_navigation
-      ? FlashMessages() // If enhanced navigation is enabled, ContextNavigation is rendered in the PageLayout component
-      : html`
-          <div class="mb-3">
-            ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
-          </div>
-        `}
+    ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
   `;
 }
 
@@ -299,7 +293,7 @@ function FlashMessages() {
   });
 
   return html`
-    <div>
+    <div class="mb-3">
       ${flashMessages.map(
         ({ type, message }) => html`
           <div

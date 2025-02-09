@@ -5,6 +5,8 @@ import { html, type HtmlValue } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.html.js';
 import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
+import { PageLayout } from '../../../components/PageLayout.html.js';
+import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
 import { formatTimezone, type Timezone } from '../../../lib/timezones.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
 
@@ -29,12 +31,10 @@ export function AdministratorInstitutionGeneral({
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
-    resLocals: { ...resLocals, institution },
     pageTitle: 'Institution Administration',
-    navContext: {
-      type: 'administrator_institution',
-      page: 'administrator_institution',
-      subPage: 'general',
+    resLocals: {
+      ...resLocals,
+      institution,
     },
     headContent: html`
       ${compiledScriptTag('administratorInstitutionGeneralClient.ts')}
@@ -52,6 +52,11 @@ export function AdministratorInstitutionGeneral({
         }
       </style>
     `,
+    navContext: {
+      type: 'administrator_institution',
+      page: 'administrator_institution',
+      subPage: 'general',
+    },
     content: html`
       <h2 class="h4">Statistics</h2>
       <div class="card-grid mb-3">

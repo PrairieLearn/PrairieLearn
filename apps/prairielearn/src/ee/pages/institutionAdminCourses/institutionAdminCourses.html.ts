@@ -13,7 +13,10 @@ export function InstitutionAdminCourses({
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
-    resLocals: { ...resLocals, institution },
+    resLocals: {
+      ...resLocals,
+      institution,
+    },
     pageTitle: `Courses — ${institution.short_name}`,
     navContext: {
       type: 'institution',

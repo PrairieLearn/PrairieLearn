@@ -56,7 +56,7 @@ def legal_answer(answer: int, options: list[Any]) -> bool:
 def get_select_options(
     options_list: list[Any], selected_value: int, blank_used: bool
 ) -> list[dict[str, Any]]:
-    def transform(i: int, opt: Any):
+    def transform(i: int, opt: Any) -> dict[str, Any]:
         index = i - int(blank_used)
         return {
             "index": index,
