@@ -1,6 +1,8 @@
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 
+import { getNavPageTabs } from '../lib/navPageTabs.js';
+
 import { AssessmentNavigation } from './AssessmentNavigation.html.js';
 import { HeadContents } from './HeadContents.html.js';
 import { Navbar } from './Navbar.html.js';
@@ -42,7 +44,7 @@ export function PageLayout({
   preContent?: HtmlValue;
   /** The main content of the page within the main container. */
   content: HtmlValue;
-  /** The content of the page in the body after the main container. */
+  /** The content of the page in the body after the min container. */
   postContent?: HtmlValue;
 }) {
   const marginBottom = options.marginBottom ?? true;
@@ -50,17 +52,26 @@ export function PageLayout({
   if (resLocals.has_enhanced_navigation) {
     // The left navbar is only shown if the user is in a
     // page within a course or course instance.
-    const showSideNav = resLocals.course !== undefined;
+    const showSideNav =
+      navContext.type !== 'student' &&
+      navContext.type !== 'public' &&
+      resLocals.course !== undefined;
     let showContextNavigation = true;
 
     // ContextNavigation is shown if no left navbar is shown or
     // additional navigation capabilities are needed alongside the
     // left navbar
     if (navContext.page === 'course_admin') {
-      if (
-        navContext.subPage &&
-        ['settings', 'sets', 'modules', 'tags', 'topics', 'staff'].includes(navContext.subPage)
-      ) {
+      const navPageTabs = getNavPageTabs(true);
+      // On the course admin page, these are the sub pages that
+      // the ContextNavigation will be shown on. These sub pages not
+      // shown on the side nav.
+      const courseAdminNavSubPages = navPageTabs.course_admin
+        ?.map((tab) => tab.activeSubPage)
+        .flat();
+
+      // If the user is on one of the sub pages, show the ContextNavigation.
+      if (navContext.subPage && courseAdminNavSubPages?.includes(navContext.subPage)) {
         showContextNavigation = true;
       } else {
         showContextNavigation = false;

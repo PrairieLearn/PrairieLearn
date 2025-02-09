@@ -43,8 +43,6 @@ body:has(div.app-container) {
   height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-
-  /* TODO: should be customizable on per-page basis? */
   padding: 1rem;
 }
 

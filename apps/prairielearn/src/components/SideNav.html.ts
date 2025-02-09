@@ -5,7 +5,7 @@ import type { Course } from '../lib/db-types.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
-interface TabInfo {
+interface SideNavTabInfo {
   /** We must be on activePage for the tab to be active.  */
   activePage: NavPage[];
   /**
@@ -22,7 +22,7 @@ interface TabInfo {
   renderCondition?: (resLocals: Record<string, any>) => boolean;
 }
 
-const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
+const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabInfo[]>> = {
   instance_admin: [
     {
       activePage: ['instance_admin'],
@@ -303,7 +303,7 @@ function SideNavLink({
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage: NavSubPage;
-  tabInfo: TabInfo;
+  tabInfo: SideNavTabInfo;
 }) {
   const { urlPrefix } = resLocals;
   const {
