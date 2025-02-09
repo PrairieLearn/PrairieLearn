@@ -7,13 +7,14 @@ import { ProgressCircle } from './ProgressCircle.html.js';
 
 interface TabInfo {
   /** We must be on activePage for the tab to be active.  */
-  activePage: NavPage[]; // TODO: make these all lists. it's confusing having this structure.
-  /** We also must be on activeSubPage for the tab to be active.  */
-  activeSubPage: NavSubPage[];
+  activePage: NavPage[];
   /**
-   * TODO: complete this comment
+   * activeSubPage will only be checked for these pages.
+   * If unspecified, activeSubPage will be checked on all pages.
    **/
   checkActiveSubPageForPages?: NavPage[];
+  /** We also must be on activeSubPage for the tab to be active.  */
+  activeSubPage: NavSubPage[];
   urlSuffix: string | ((resLocals: Record<string, any>) => string);
   iconClasses: string;
   tabLabel: string;
@@ -32,8 +33,8 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> 
     },
     {
       activePage: ['instance_admin', 'assessments', 'assessment', 'assessment_instance'],
-      activeSubPage: ['assessments'],
       checkActiveSubPageForPages: ['instance_admin'],
+      activeSubPage: ['assessments'],
       urlSuffix: '/instance_admin/assessments',
       iconClasses: 'fa fa-list',
       tabLabel: 'Assessments',
@@ -307,8 +308,8 @@ function SideNavLink({
   const { urlPrefix } = resLocals;
   const {
     activePage,
-    activeSubPage,
     checkActiveSubPageForPages,
+    activeSubPage,
     iconClasses,
     tabLabel,
     htmlSuffix,
@@ -320,9 +321,9 @@ function SideNavLink({
   const urlSuffix =
     typeof tabInfo.urlSuffix === 'function' ? tabInfo.urlSuffix(resLocals) : tabInfo.urlSuffix;
 
-  let isActive = navPage !== null && activePage.includes(navPage);
+  let isActive = activePage.includes(navPage);
   if (isActive && (!checkActiveSubPageForPages || checkActiveSubPageForPages.includes(navPage))) {
-    isActive = navSubPage != null && activeSubPage.includes(navSubPage);
+    isActive = activeSubPage.includes(navSubPage);
   }
 
   return html`
@@ -335,9 +336,3 @@ function SideNavLink({
     </a>
   `;
 }
-
-// return html`
-// <a href="${href}" class="side-nav-link ${active ? 'side-nav-link-active' : ''}"
-//   ><i class="fa fa-fw ${iconClasses}"></i> ${text}</a
-// >
-// `;

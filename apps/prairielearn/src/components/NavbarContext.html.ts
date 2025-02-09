@@ -463,27 +463,27 @@ export function ContextNavigation({
   resLocals,
   navPage,
   navSubPage,
-  hasEnhancedNavigation = false,
   fullWidth = false,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage: NavSubPage;
-  hasEnhancedNavigation?: boolean;
   fullWidth?: boolean;
 }) {
   if (!navPage) return '';
 
-  const navPagesTabs = getNavPageTabs(hasEnhancedNavigation);
+  const navPagesTabs = getNavPageTabs(resLocals.has_enhanced_navigation);
   const navPageTabs = navPagesTabs[navPage];
-  const showLeftNavbar = resLocals.course !== undefined;
+  const showSideNav = resLocals.course !== undefined;
 
   if (!navPageTabs) return '';
 
   return html`
-    <nav class="${hasEnhancedNavigation && showLeftNavbar && !fullWidth ? 'container' : ''}">
+    <nav
+      class="${resLocals.has_enhanced_navigation && showSideNav && !fullWidth ? 'container' : ''}"
+    >
       <ul
-        class="nav nav-tabs pl-nav-tabs-bar ${hasEnhancedNavigation && showLeftNavbar
+        class="nav nav-tabs pl-nav-tabs-bar ${resLocals.has_enhanced_navigation && showSideNav
           ? 'mt-2 mb-4'
           : 'pt-2 px-3 bg-light'}"
       >

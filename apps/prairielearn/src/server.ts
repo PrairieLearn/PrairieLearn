@@ -527,7 +527,7 @@ export async function initExpress(): Promise<Express> {
   ]);
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
-  app.use((await import('./middlewares/hasEnhancedNavigation.js')).default); // set res.locals.hasEnhancedNavigation if enhanced navigation is enabled.
+  app.use((await import('./middlewares/hasEnhancedNavigation.js')).default); // set res.locals.has_enhanced_navigation if enhanced navigation is enabled.
 
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.

@@ -49,8 +49,8 @@ export function PageLayout({
 
   if (resLocals.has_enhanced_navigation) {
     // The left navbar is only shown if the user is in a
-    // course or course instance page.
-    const showLeftNavbar = resLocals.course !== undefined;
+    // page within a course or course instance.
+    const showSideNav = resLocals.course !== undefined;
     let showContextNavigation = true;
 
     // ContextNavigation is shown if no left navbar is shown or
@@ -84,7 +84,7 @@ export function PageLayout({
           ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
         >
-          <div class="app-container ${!showLeftNavbar ? 'no-sidebar' : ''}">
+          <div class="app-container ${!showSideNav ? 'no-sidebar' : ''}">
             <div class="app-top-nav">
               ${Navbar({
                 resLocals,
@@ -93,7 +93,7 @@ export function PageLayout({
                 navbarType: navContext.type,
               })}
             </div>
-            ${showLeftNavbar
+            ${showSideNav
               ? html`
                   <div class="app-side-nav">
                     ${SideNav({
@@ -104,8 +104,8 @@ export function PageLayout({
                   </div>
                 `
               : ''}
-            <div class="${showLeftNavbar ? 'app-main' : ''}">
-              <div class="${showLeftNavbar ? 'app-main-container' : ''}">
+            <div class="${showSideNav ? 'app-main' : ''}">
+              <div class="${showSideNav ? 'app-main-container' : ''}">
                 ${resLocals.assessment &&
                 resLocals.assessments &&
                 AssessmentNavigation({
@@ -113,13 +113,12 @@ export function PageLayout({
                   assessment: resLocals.assessment,
                   assessments: resLocals.assessments,
                 })}
-                <div class="${showLeftNavbar ? '' : 'mb-3'}">
+                <div class="${showSideNav ? '' : 'mb-3'}">
                   ${showContextNavigation
                     ? ContextNavigation({
                         resLocals,
                         navPage: navContext.page,
                         navSubPage: navContext.subPage,
-                        hasEnhancedNavigation: resLocals.has_enhanced_navigation,
                         fullWidth: options.fullWidth,
                       })
                     : ''}
@@ -128,10 +127,10 @@ export function PageLayout({
                 <main
                   id="content"
                   class="
-                ${options.fullWidth ? 'container-fluid' : 'container'} 
-                ${marginBottom ? 'mb-4' : ''}
-                ${options.fullHeight ? 'flex-grow-1' : ''}
-              "
+                    ${options.fullWidth ? 'container-fluid' : 'container'} 
+                    ${marginBottom ? 'mb-4' : ''}
+                    ${options.fullHeight ? 'flex-grow-1' : ''}
+                  "
                 >
                   ${content}
                 </main>

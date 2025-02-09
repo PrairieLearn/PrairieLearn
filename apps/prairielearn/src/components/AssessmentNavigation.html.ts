@@ -15,8 +15,7 @@ export function AssessmentNavigation({
     <div class="dropdown">
       <button
         type="button"
-        class="btn btn-lg dropdown-toggle dropdown-menu-right border border-gray bg-white d-flex justify-content-between align-items-center"
-        style="width:20em"
+        class="btn btn-lg w-25 dropdown-toggle dropdown-menu-right border border-gray bg-white d-flex justify-content-between align-items-center"
         data-toggle="dropdown"
         aria-haspopup="true"
         aria-expanded="false"
