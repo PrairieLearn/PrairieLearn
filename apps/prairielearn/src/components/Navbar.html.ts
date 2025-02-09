@@ -105,7 +105,13 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
+    ${resLocals.has_enhanced_navigation
+      ? FlashMessages()
+      : html`
+          <div class="mb-3">
+            ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
+          </div>
+        `}
   `;
 }
 
@@ -292,25 +298,21 @@ function FlashMessages() {
     }
   });
 
-  return html`
-    <div class="mb-3">
-      ${flashMessages.map(
-        ({ type, message }) => html`
-          <div
-            class="alert alert-${globalFlashColors[
-              type
-            ]} border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
-            role="alert"
-          >
-            ${unsafeHtml(message)}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-        `,
-      )}
-    </div>
-  `;
+  return flashMessages.map(
+    ({ type, message }) => html`
+      <div
+        class="alert alert-${globalFlashColors[
+          type
+        ]} border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
+        role="alert"
+      >
+        ${unsafeHtml(message)}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    `,
+  );
 }
 
 function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
@@ -641,7 +643,7 @@ function NavbarButtons({
       ${resLocals.is_administrator
         ? NavbarButton({
             text: 'Global Admin',
-            href: '/',
+            href: '/pl/administrator/admins',
             showArrow: false,
           })
         : ''}

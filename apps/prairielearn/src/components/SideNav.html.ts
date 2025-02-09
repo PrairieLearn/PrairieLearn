@@ -153,7 +153,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
     },
     {
       activePage: ['course_admin'],
-      activeSubPage: ['settings'],
+      activeSubPage: ['settings', 'sets', 'modules', 'tags', 'topics', 'staff'],
       urlSuffix: '/course_admin/settings',
       iconClasses: 'fas fa-cog',
       tabLabel: 'Settings',
