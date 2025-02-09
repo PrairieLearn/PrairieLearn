@@ -126,6 +126,8 @@ function NavbarByType({
   navSubPage: NavSubPage;
   navbarType: NavbarType;
 }) {
+  // Student and public navbars remain unchanged
+  // when enhanced navigation is enabled.
   if (navbarType === 'student') {
     return NavbarStudent({ resLocals, navPage });
   } else if (navbarType === 'public') {
@@ -146,8 +148,6 @@ function NavbarByType({
         return NavbarAdministratorInstitution({ resLocals });
       } else if (navbarType === 'institution') {
         return NavbarInstitution({ resLocals });
-      } else if (navbarType === 'public') {
-        return NavbarPublic({ resLocals });
       } else {
         throw new Error(`Unknown navbarType: ${navbarType}`);
       }
@@ -628,6 +628,7 @@ function NavbarButtons({
   navPage: NavPage;
   navbarType: NavbarType;
 }) {
+  // When no institution or course is set, show links to the home page and the global admin page.
   if (
     !resLocals.institution &&
     !resLocals.course &&

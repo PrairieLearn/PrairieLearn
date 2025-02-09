@@ -2,6 +2,10 @@ import { html } from '@prairielearn/html';
 
 import type { Assessment, CourseInstance } from '../lib/db-types.js';
 
+/**
+ * Dropdown that lets users navigate between assessments in a
+ * course instance.
+ */
 export function AssessmentNavigation({
   courseInstance,
   assessment,

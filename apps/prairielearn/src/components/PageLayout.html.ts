@@ -44,7 +44,7 @@ export function PageLayout({
   preContent?: HtmlValue;
   /** The main content of the page within the main container. */
   content: HtmlValue;
-  /** The content of the page in the body after the min container. */
+  /** The content of the page in the body after the main container. */
   postContent?: HtmlValue;
 }) {
   const marginBottom = options.marginBottom ?? true;
@@ -55,23 +55,21 @@ export function PageLayout({
     const showSideNav =
       navContext.type !== 'student' &&
       navContext.type !== 'public' &&
-      resLocals.course !== undefined;
+      resLocals.course;
     let showContextNavigation = true;
 
-    // ContextNavigation is shown if no left navbar is shown or
-    // additional navigation capabilities are needed alongside the
-    // left navbar
+    // ContextNavigation is shown if:
+    // The side nav is not shown.
+    // The side nav is shown and additional navigation capabilities are needed. E.g. The course admin settings pages.
     if (navContext.page === 'course_admin') {
       const navPageTabs = getNavPageTabs(true);
-      // On the course admin page, these are the sub pages that
-      // the ContextNavigation will be shown on. These sub pages not
-      // shown on the side nav.
-      const courseAdminNavSubPages = navPageTabs.course_admin
+
+      const courseAdminSettingsNavSubPages = navPageTabs.course_admin
         ?.map((tab) => tab.activeSubPage)
         .flat();
 
-      // If the user is on one of the sub pages, show the ContextNavigation.
-      if (navContext.subPage && courseAdminNavSubPages?.includes(navContext.subPage)) {
+      // If the user is on a course admin settings subpage, show the ContextNavigation
+      if (navContext.subPage && courseAdminSettingsNavSubPages?.includes(navContext.subPage)) {
         showContextNavigation = true;
       } else {
         showContextNavigation = false;
@@ -120,7 +118,7 @@ export function PageLayout({
                 ${resLocals.assessment &&
                 resLocals.assessments &&
                 AssessmentNavigation({
-                  courseInstance: resLocals.course_instance,
+                  courseInstance: resLocals.course_instance
                   assessment: resLocals.assessment,
                   assessments: resLocals.assessments,
                 })}

@@ -6,15 +6,17 @@ import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
 interface SideNavTabInfo {
-  /** We must be on activePage for the tab to be active.  */
-  activePage: NavPage[];
+  /** For the side nav tab to be active, the navPage must be in activePages. */
+  activePages: NavPage[];
   /**
-   * activeSubPage will only be checked for these pages.
-   * If unspecified, activeSubPage will be checked on all pages.
+   * activeSubPages will be checked only for checkActiveSubPageForPages navPages.
+   * For all other navPages, for the side nav tab to be active, only the navPage must be in activePages.
+   * 
+   * If not specified, activeSubPages will be checked on all pages.
    **/
   checkActiveSubPageForPages?: NavPage[];
-  /** We also must be on activeSubPage for the tab to be active.  */
-  activeSubPage: NavSubPage[];
+  /** For the side nav tab to be active, the navSubPage must be in activeSubPages. */
+  activeSubPages: NavSubPage[];
   urlSuffix: string | ((resLocals: Record<string, any>) => string);
   iconClasses: string;
   tabLabel: string;
@@ -25,62 +27,62 @@ interface SideNavTabInfo {
 const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabInfo[]>> = {
   instance_admin: [
     {
-      activePage: ['instance_admin'],
-      activeSubPage: ['access'],
+      activePages: ['instance_admin'],
+      activeSubPages: ['access'],
       urlSuffix: '/instance_admin/access',
       iconClasses: 'far fa-calendar-alt',
       tabLabel: 'Access',
     },
     {
-      activePage: ['instance_admin', 'assessments', 'assessment', 'assessment_instance'],
+      activePages: ['instance_admin', 'assessments', 'assessment', 'assessment_instance'],
       checkActiveSubPageForPages: ['instance_admin'],
-      activeSubPage: ['assessments'],
+      activeSubPages: ['assessments'],
       urlSuffix: '/instance_admin/assessments',
       iconClasses: 'fa fa-list',
       tabLabel: 'Assessments',
     },
     {
-      activePage: ['instance_admin'],
-      activeSubPage: ['file_view', 'file_edit'],
+      activePages: ['instance_admin'],
+      activeSubPages: ['file_view', 'file_edit'],
       urlSuffix: '/instance_admin/file_view',
       iconClasses: 'fa fa-edit',
       tabLabel: 'Files',
     },
     {
-      activePage: ['gradebook'],
-      activeSubPage: ['gradebook'],
+      activePages: ['gradebook'],
+      activeSubPages: ['gradebook'],
       urlSuffix: '/instance_admin/gradebook',
       iconClasses: 'fas fa-balance-scale',
       tabLabel: 'Gradebook',
       renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
     },
     {
-      activePage: ['instance_admin'],
-      activeSubPage: ['lti'],
+      activePages: ['instance_admin'],
+      activeSubPages: ['lti'],
       urlSuffix: '/instance_admin/lti',
       iconClasses: 'fas fa-graduation-cap',
       tabLabel: 'LTI',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
     },
     {
-      activePage: ['instance_admin'],
-      activeSubPage: ['lti13'],
+      activePages: ['instance_admin'],
+      activeSubPages: ['lti13'],
       urlSuffix: '/instance_admin/lti13_instance',
       iconClasses: 'fas fa-school-flag',
       tabLabel: 'LTI 1.3',
       renderCondition: (resLocals) => resLocals.lti13_enabled,
     },
     {
-      activePage: ['instance_admin'],
-      activeSubPage: ['billing'],
+      activePages: ['instance_admin'],
+      activeSubPages: ['billing'],
       urlSuffix: '/instance_admin/billing',
       iconClasses: 'fas fa-credit-card',
       tabLabel: 'Billing',
       renderCondition: (resLocals) => resLocals.billing_enabled,
     },
     {
-      activePage: ['instance_admin'],
-      activeSubPage: ['settings'],
+      activePages: ['instance_admin'],
+      activeSubPages: ['settings'],
       urlSuffix: '/instance_admin/settings',
       iconClasses: 'fas fa-cog',
       tabLabel: 'Settings',
@@ -88,8 +90,8 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
   ],
   course_admin: [
     {
-      activePage: ['course_admin'],
-      activeSubPage: ['getting_started'],
+      activePages: ['course_admin'],
+      activeSubPages: ['getting_started'],
       urlSuffix: '/course_admin/getting_started',
       iconClasses: 'fa fa-tasks',
       tabLabel: 'Getting Started',
@@ -105,38 +107,38 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
         authz_data.has_course_permission_edit && course.show_getting_started,
     },
     {
-      activePage: ['course_admin'],
-      activeSubPage: ['instances'],
+      activePages: ['course_admin'],
+      activeSubPages: ['instances'],
       urlSuffix: '/course_admin/instances',
       iconClasses: 'fas fa-chalkboard-teacher',
       tabLabel: 'Course Instances',
     },
     {
-      activePage: ['course_admin'],
-      activeSubPage: ['questions'],
+      activePages: ['course_admin'],
+      activeSubPages: ['questions'],
       urlSuffix: '/course_admin/questions',
       iconClasses: 'fa fa-question',
       tabLabel: 'Questions',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
     },
     {
-      activePage: ['course_admin'],
-      activeSubPage: ['issues'],
+      activePages: ['course_admin'],
+      activeSubPages: ['issues'],
       urlSuffix: '/course_admin/issues',
       iconClasses: 'fas fa-bug',
       tabLabel: 'Issues',
     },
     {
-      activePage: ['course_admin'],
-      activeSubPage: ['sharing'],
+      activePages: ['course_admin'],
+      activeSubPages: ['sharing'],
       urlSuffix: '/course_admin/sharing',
       iconClasses: 'fas fa-share-nodes',
       tabLabel: 'Sharing',
       renderCondition: (resLocals) => resLocals.question_sharing_enabled,
     },
     {
-      activePage: ['course_admin'],
-      activeSubPage: ['syncs'],
+      activePages: ['course_admin'],
+      activeSubPages: ['syncs'],
       urlSuffix: '/course_admin/syncs',
       iconClasses: 'fas fa-sync-alt',
       tabLabel: 'Sync',
@@ -144,16 +146,16 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
     },
 
     {
-      activePage: ['course_admin'],
-      activeSubPage: ['file_view', 'file_edit'],
+      activePages: ['course_admin'],
+      activeSubPages: ['file_view', 'file_edit'],
       urlSuffix: '/course_admin/file_view',
       iconClasses: 'fa fa-edit',
       tabLabel: 'Files',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_view,
     },
     {
-      activePage: ['course_admin'],
-      activeSubPage: ['settings', 'sets', 'modules', 'tags', 'topics', 'staff'],
+      activePages: ['course_admin'],
+      activeSubPages: ['settings', 'sets', 'modules', 'tags', 'topics', 'staff'],
       urlSuffix: '/course_admin/settings',
       iconClasses: 'fas fa-cog',
       tabLabel: 'Settings',
@@ -307,9 +309,9 @@ function SideNavLink({
 }) {
   const { urlPrefix } = resLocals;
   const {
-    activePage,
+    activePages,
     checkActiveSubPageForPages,
-    activeSubPage,
+    activeSubPages,
     iconClasses,
     tabLabel,
     htmlSuffix,
@@ -321,9 +323,9 @@ function SideNavLink({
   const urlSuffix =
     typeof tabInfo.urlSuffix === 'function' ? tabInfo.urlSuffix(resLocals) : tabInfo.urlSuffix;
 
-  let isActive = activePage.includes(navPage);
+  let isActive = activePages.includes(navPage);
   if (isActive && (!checkActiveSubPageForPages || checkActiveSubPageForPages.includes(navPage))) {
-    isActive = activeSubPage.includes(navSubPage);
+    isActive = activeSubPages.includes(navSubPage);
   }
 
   return html`
