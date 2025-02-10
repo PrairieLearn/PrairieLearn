@@ -1,3 +1,5 @@
+SH_FILES := $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
+
 build:
 	@yarn turbo run build
 build-sequential:
@@ -73,7 +75,8 @@ lint-links:
 	@node tools/validate-links.mjs
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
-
+lint-shell:
+	@shellcheck -S error $(SH_FILES)
 format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,ts}"

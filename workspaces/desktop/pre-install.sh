@@ -1,3 +1,4 @@
+#!/bin/bash
 set -ex
 
 # update base system

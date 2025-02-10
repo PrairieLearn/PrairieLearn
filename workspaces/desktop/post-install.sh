@@ -1,3 +1,4 @@
+#!/bin/bash
 set -ex
 
 cp /root/.profile /opt/defaults/.profile
