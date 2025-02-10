@@ -158,7 +158,7 @@ def process(
             # Restore the tail text.
             element.tail = temp_tail
 
-            if phase not in {"render", "file"}:
+            if phase not in ("render", "file"):
                 # For legacy reasons, we don't validate `data` during the,
                 # `render` or `file` phases, since the old question processor
                 # didn't either. These phases will never produce new data

@@ -39,7 +39,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             'Only one of the attributes "source-file-name", "submitted-file-name" and "contents" can be used.'
         )
 
-    if language not in {"html", "markdown"}:
+    if language not in ["html", "markdown"]:
         raise ValueError('Attribute "language" must be either "html" or "markdown".')
 
 

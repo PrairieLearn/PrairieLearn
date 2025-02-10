@@ -35,13 +35,13 @@ def to_precision(
         else:
             converter = sci_notation
 
-    elif notation in {"sci", "scientific"}:
+    elif notation in ("sci", "scientific"):
         converter = sci_notation
 
-    elif notation in {"eng", "engineering"}:
+    elif notation in ("eng", "engineering"):
         converter = eng_notation
 
-    elif notation in {"std", "standard"}:
+    elif notation in ("std", "standard"):
         converter = std_notation
 
     else:

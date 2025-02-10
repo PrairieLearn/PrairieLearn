@@ -223,7 +223,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             pl.check_attribs(
                 html_tags, required_attribs=[], optional_attribs=["correct"]
             )
-        elif grading_method in {GradingMethodType.UNORDERED, GradingMethodType.ORDERED}:
+        elif grading_method in [GradingMethodType.UNORDERED, GradingMethodType.ORDERED]:
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
@@ -611,7 +611,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if grading_method is GradingMethodType.UNORDERED:
             ordering_message = "in any order"
-        elif grading_method in {GradingMethodType.DAG, GradingMethodType.RANKING}:
+        elif grading_method in [GradingMethodType.DAG, GradingMethodType.RANKING]:
             ordering_message = "there may be other correct orders"
         else:
             ordering_message = "in the specified order"
@@ -825,7 +825,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         depends_graph = {}
         group_belonging = {}
 
-        if grading_method in {GradingMethodType.RANKING, GradingMethodType.ORDERED}:
+        if grading_method in [GradingMethodType.RANKING, GradingMethodType.ORDERED]:
             if grading_method is GradingMethodType.ORDERED:
                 for index, answer in enumerate(true_answer_list):
                     answer["ranking"] = index
@@ -979,10 +979,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
 
-        if grading_method in {
+        if grading_method in [
             GradingMethodType.DAG,
             GradingMethodType.RANKING,
-        }:
+        ]:
             first_wrong = 0
             group_belonging = {
                 ans["tag"]: ans["group_info"]["tag"]

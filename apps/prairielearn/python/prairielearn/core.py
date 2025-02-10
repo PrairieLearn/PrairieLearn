@@ -408,7 +408,7 @@ def to_json(
             # only numeric values (c.f. pandas-dev/pandas#46392)
             df_modified_names = v.copy()
 
-            if df_modified_names.columns.dtype in {np.float64, np.int64}:  # type: ignore
+            if df_modified_names.columns.dtype in (np.float64, np.int64):  # type: ignore
                 df_modified_names.columns = df_modified_names.columns.astype("string")
 
             # For version 2 storing a data frame, we use the table orientation alongside of
@@ -1803,7 +1803,7 @@ def escape_unicode_string(string: str) -> str:
 
     def escape_unprintable(x: str) -> str:
         category = unicodedata.category(x)
-        if category in {"Cc", "Cf"}:
+        if category in ("Cc", "Cf"):
             return f"<U+{ord(x):x}>"
         else:
             return x

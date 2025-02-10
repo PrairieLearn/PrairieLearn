@@ -30,10 +30,12 @@ def get_options(
         if child.tag == "pl-answer":
             pl.check_attribs(child, required_attribs=[], optional_attribs=["correct"])
             child_html = pl.inner_html(child).strip()
-            options.append({
-                "value": child_html,
-                "selected": (child_html == submitted_answer),
-            })
+            options.append(
+                {
+                    "value": child_html,
+                    "selected": (child_html == submitted_answer),
+                }
+            )
     return options
 
 
