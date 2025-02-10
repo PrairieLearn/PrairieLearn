@@ -10,7 +10,7 @@ def to_precision(
     value: Any,
     precision: int,
     notation: Literal[
-        "auto", "sci", "std", "standard", "engineering", "scientific"
+        "auto", "sci", "std", "standard", "eng", "engineering", "scientific"
     ] = "auto",
     filler: str = "e",
 ) -> str:
