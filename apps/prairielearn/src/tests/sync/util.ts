@@ -156,6 +156,7 @@ export interface Assessment {
   hasRoles?: boolean;
   canSubmit?: string[];
   canView?: string[];
+  shareSourcePublicly?: boolean;
 }
 
 interface QuestionExternalGradingOptions {
