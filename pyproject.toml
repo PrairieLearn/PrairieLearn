@@ -41,6 +41,9 @@ ignore = [
 
     # These rules were discussed and disabled
     "D203", # incorrect-blank-line-before-class
+    "D212", # multi-line-summary-first-line
+    "D400", # missing-trailing-period
+    "D415", # missing-terminal-punctuation
     "ANN401", # any-type
     "ISC003", # explicit-string-concatenation
     "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
@@ -59,7 +62,14 @@ ignore = [
     "TRY003", # raise-vanilla-args (long messages in raise statements)
 
     # These rules need to be enabled
-    "D212", "D103", "D100", "D102", "D107", "D101", "D202", "D205", "D104", "D400", "D415"
+    "D100", # undocumented-public-module
+    "D101", # undocumented-public-class
+    "D102", # undocumented-public-method
+    "D103", # undocumented-public-function
+    "D104", # undocumented-public-package
+    "D107", # undocumented-public-init
+    "D202", # blank-line-after-function
+    "D205", # missing-blank-line-after-summary
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
