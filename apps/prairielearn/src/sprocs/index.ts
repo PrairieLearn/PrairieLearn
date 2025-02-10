@@ -83,7 +83,6 @@ export async function init() {
       'sync_news_items.sql',
       'sync_course_tags.sql',
       'sync_question_tags.sql',
-      'sync_assessment_sets.sql',
       'sync_assessments.sql',
       'group_info.sql',
       'groups_uid_list.sql',

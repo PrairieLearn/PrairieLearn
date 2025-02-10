@@ -9,7 +9,6 @@ describe('determineOperationsForEntities', () => {
       existingEntities: [],
       knownNames: new Set(),
       makeImplicitEntity: (name: string) => ({ name, implicit: true }),
-      makeDefaultEntity: () => null,
       isInfoCourseValid: true,
       deleteUnused: true,
     });
@@ -46,7 +45,6 @@ describe('determineOperationsForEntities', () => {
       existingEntities: [],
       knownNames: new Set(),
       makeImplicitEntity: (name: string) => ({ name, implicit: true }),
-      makeDefaultEntity: () => null,
       isInfoCourseValid: true,
       deleteUnused: true,
     });
@@ -100,7 +98,28 @@ describe('determineOperationsForEntities', () => {
       existingEntities: [],
       knownNames: new Set(['A', 'B']),
       makeImplicitEntity: (name: string) => ({ name, implicit: true }),
-      makeDefaultEntity: () => null,
+      isInfoCourseValid: true,
+      deleteUnused: true,
+    });
+
+    assert.lengthOf(result.entitiesToCreate, 2);
+    assert.deepEqual(result.entitiesToCreate[0], { name: 'A', implicit: true, number: 1 });
+    assert.deepEqual(result.entitiesToCreate[1], { name: 'B', implicit: true, number: 2 });
+
+    assert.lengthOf(result.entitiesToUpdate, 0);
+    assert.lengthOf(result.entitiesToDelete, 0);
+  });
+
+  it('handles adding extra entities', () => {
+    const result = determineOperationsForEntities({
+      courseEntities: [],
+      extraEntities: [
+        { name: 'A', implicit: true },
+        { name: 'B', implicit: true },
+      ],
+      existingEntities: [],
+      knownNames: new Set(),
+      makeImplicitEntity: (name: string) => ({ name, implicit: true }),
       isInfoCourseValid: true,
       deleteUnused: true,
     });
@@ -122,7 +141,6 @@ describe('determineOperationsForEntities', () => {
       existingEntities: [],
       knownNames: new Set(['A', 'B', 'D', 'C']),
       makeImplicitEntity: (name: string) => ({ name, implicit: true }),
-      makeDefaultEntity: () => null,
       isInfoCourseValid: true,
       deleteUnused: true,
     });
@@ -192,7 +210,6 @@ describe('determineOperationsForEntities', () => {
       ],
       knownNames: new Set(),
       makeImplicitEntity: (name: string) => ({ name, heading: name, implicit: true }),
-      makeDefaultEntity: () => null,
       isInfoCourseValid: true,
       deleteUnused: true,
     });
@@ -232,7 +249,6 @@ describe('determineOperationsForEntities', () => {
       ],
       knownNames: new Set(),
       makeImplicitEntity: (name: string) => ({ name, heading: name, implicit: true }),
-      makeDefaultEntity: () => null,
       isInfoCourseValid: true,
       deleteUnused: true,
     });
@@ -273,7 +289,6 @@ describe('determineOperationsForEntities', () => {
         heading: `${name} (implicit)`,
         implicit: true,
       }),
-      makeDefaultEntity: () => null,
       isInfoCourseValid: true,
       deleteUnused: true,
     });
@@ -310,7 +325,6 @@ describe('determineOperationsForEntities', () => {
       ],
       knownNames: new Set(),
       makeImplicitEntity: (name: string) => ({ name, heading: name, implicit: true }),
-      makeDefaultEntity: () => null,
       isInfoCourseValid: true,
       deleteUnused: true,
     });
@@ -335,7 +349,6 @@ describe('determineOperationsForEntities', () => {
       ],
       knownNames: new Set(),
       makeImplicitEntity: (name: string) => ({ name, heading: name, implicit: true }),
-      makeDefaultEntity: () => null,
       isInfoCourseValid: true,
       deleteUnused: true,
     });
@@ -360,7 +373,6 @@ describe('determineOperationsForEntities', () => {
       ],
       knownNames: new Set(),
       makeImplicitEntity: (name: string) => ({ name, heading: name, implicit: true }),
-      makeDefaultEntity: () => null,
       isInfoCourseValid: true,
       deleteUnused: false,
     });
@@ -383,7 +395,6 @@ describe('determineOperationsForEntities', () => {
       ],
       knownNames: new Set(),
       makeImplicitEntity: (name: string) => ({ name, heading: name, implicit: true }),
-      makeDefaultEntity: () => null,
       isInfoCourseValid: false,
       deleteUnused: true,
     });

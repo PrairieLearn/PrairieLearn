@@ -8,10 +8,15 @@ type ExistingEntity<Entity> = Entity & {
   implicit: boolean;
 };
 
+type ExtraEntity<Entity> = Entity & {
+  implicit: boolean;
+};
+
 type DesiredEntity<Entity> = Entity & { number: number; implicit: boolean };
 
 export function determineOperationsForEntities<Entity extends NamedEntity>({
   courseEntities,
+  extraEntities,
   existingEntities,
   knownNames,
   makeImplicitEntity,
@@ -20,10 +25,11 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
   deleteUnused,
 }: {
   courseEntities: Entity[];
+  extraEntities?: ExtraEntity<Entity>[];
   existingEntities: ExistingEntity<Entity>[];
   knownNames: Set<string>;
   makeImplicitEntity: (name: string) => Entity;
-  makeDefaultEntity: () => Entity | null;
+  makeDefaultEntity?: () => Entity | null;
   isInfoCourseValid: boolean;
   deleteUnused: boolean;
 }): {
@@ -37,23 +43,23 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
   // If `infoCourse.json` is invalid, keep all existing assessment sets in place.
   // Otherwise, sync whatever is in the JSON file.
   if (isInfoCourseValid) {
-    for (const module of courseEntities) {
-      desiredEntities.set(module.name, {
-        ...module,
+    for (const entity of courseEntities) {
+      desiredEntities.set(entity.name, {
+        ...entity,
         implicit: false,
         number: desiredEntities.size + 1,
       });
     }
   } else {
-    for (const module of existingEntities) {
-      desiredEntities.set(module.name, {
-        ...module,
+    for (const entity of existingEntities) {
+      desiredEntities.set(entity.name, {
+        ...entity,
         number: desiredEntities.size + 1,
       });
     }
   }
 
-  // Consider each module name that's actually used. If it doesn't already exist,
+  // Consider each entity name that's actually used. If it doesn't already exist,
   // add an implicit version. Sort for consistent ordering.
   for (const name of Array.from(knownNames).sort()) {
     // Skip `Default`, we want this to be last to we'll handle it separately.
@@ -68,13 +74,26 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
     });
   }
 
-  // Add a 'Default' module if one doesn't already exist.
+  // Add a 'Default' entity if one doesn't already exist.
   if (!desiredEntities.has('Default')) {
-    const defaultEntity = makeDefaultEntity();
+    const defaultEntity = makeDefaultEntity?.();
     if (defaultEntity) {
       desiredEntities.set('Default', {
         ...defaultEntity,
         implicit: false,
+        number: desiredEntities.size + 1,
+      });
+    }
+  }
+
+  // Add any extra entities at the end.
+  if (extraEntities?.length) {
+    for (const entity of extraEntities) {
+      // Give precedence to user-provided entities if they have the same name.
+      if (desiredEntities.has(entity.name)) continue;
+
+      desiredEntities.set(entity.name, {
+        ...entity,
         number: desiredEntities.size + 1,
       });
     }
