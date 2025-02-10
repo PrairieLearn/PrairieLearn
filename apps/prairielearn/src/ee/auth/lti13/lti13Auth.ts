@@ -17,7 +17,7 @@ import { getCanonicalHost } from '../../../lib/url.js';
 import { Lti13ClaimSchema, Lti13Claim } from '../../lib/lti13.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
-import { Lti13Test } from './lti13Auth.html.js';
+import { Lti13Iframe, Lti13Test } from './lti13Auth.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -34,6 +34,10 @@ router.post('/login', asyncHandler(launchFlow));
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
+    // Allow in an iframe
+    res.removeHeader('content-security-policy');
+    res.removeHeader('x-frame-options');
+
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
     const lti13_claims = await authenticate(req, res);
@@ -139,6 +143,18 @@ router.post(
       lti13_instance_id: lti13_instance.id,
       sub: ltiClaim.get('sub'),
     });
+
+    // If we're running in an iframe, don't redirect but display a page
+    // with links that open in a new window
+    if (res.locals.is_iframe) {
+      res.end(
+        Lti13Iframe({
+          resLocals: res.locals,
+          targetUrl: ltiClaim.target_link_uri ?? '/pl',
+        }),
+      );
+      return;
+    }
 
     // Get the target_link out of the LTI request and redirect
     res.redirect(ltiClaim.target_link_uri ?? '/pl');
