@@ -148,12 +148,14 @@ describe('Assessment modules syncing', () => {
     // Sync again.
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
-    // Assert that there are no assessment sets in the database.
+    // Note that unlike assessment sets, we unconditionally sync a "Default" assessment
+    // module, so we expect to have that single assessment modules in the database.
     const remainingAssessmentModules = await util.dumpTableWithSchema(
       'assessment_modules',
       AssessmentModuleSchema,
     );
-    assert.isEmpty(remainingAssessmentModules);
+    assert.lengthOf(remainingAssessmentModules, 1);
+    assert.equal(remainingAssessmentModules[0].name, 'Default');
   });
 
   it('handles course with only a single implicit assessment module', async () => {
