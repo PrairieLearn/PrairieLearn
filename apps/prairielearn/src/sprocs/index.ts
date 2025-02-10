@@ -88,7 +88,6 @@ export async function init() {
       'group_info.sql',
       'groups_uid_list.sql',
       'workspace_loads_current.sql',
-      'sync_assessment_modules.sql',
     ],
     async (filename) => {
       logger.verbose('Loading ' + filename);
