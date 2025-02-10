@@ -18,24 +18,6 @@ describe('determineOperationsForEntities', () => {
     assert.lengthOf(result.entitiesToDelete, 0);
   });
 
-  it('handles empty lists with default', () => {
-    const result = determineOperationsForEntities({
-      courseEntities: [],
-      existingEntities: [],
-      knownNames: new Set(),
-      makeImplicitEntity: (name: string) => ({ name, implicit: true }),
-      makeDefaultEntity: () => ({ name: 'Default', implicit: false }),
-      isInfoCourseValid: true,
-      deleteUnused: true,
-    });
-
-    assert.lengthOf(result.entitiesToCreate, 1);
-    assert.deepEqual(result.entitiesToCreate[0], { name: 'Default', implicit: false, number: 1 });
-
-    assert.lengthOf(result.entitiesToUpdate, 0);
-    assert.lengthOf(result.entitiesToDelete, 0);
-  });
-
   it('handles adding explicit entities', () => {
     const result = determineOperationsForEntities({
       courseEntities: [
@@ -54,41 +36,6 @@ describe('determineOperationsForEntities', () => {
     assert.deepEqual(result.entitiesToCreate[1], { name: 'B', implicit: false, number: 2 });
 
     assert.lengthOf(result.entitiesToUpdate, 0);
-    assert.lengthOf(result.entitiesToDelete, 0);
-  });
-
-  it('handles adding entities with explicit default', () => {
-    const result = determineOperationsForEntities({
-      courseEntities: [
-        { name: 'A', heading: 'A', implicit: false },
-        { name: 'Default', heading: 'Custom default', implicit: false },
-      ],
-      existingEntities: [],
-      knownNames: new Set(),
-      makeImplicitEntity: (name: string) => ({
-        name,
-        heading: `${name} (implicit)`,
-        implicit: true,
-      }),
-      makeDefaultEntity: () => ({ name: 'Default', heading: 'Default entity', implicit: false }),
-      isInfoCourseValid: true,
-      deleteUnused: true,
-    });
-
-    assert.lengthOf(result.entitiesToCreate, 2);
-    assert.deepEqual(result.entitiesToCreate[0], {
-      name: 'A',
-      heading: 'A',
-      implicit: false,
-      number: 1,
-    });
-    assert.deepEqual(result.entitiesToCreate[1], {
-      name: 'Default',
-      heading: 'Custom default',
-      implicit: false,
-      number: 2,
-    });
-
     assert.lengthOf(result.entitiesToDelete, 0);
   });
 
@@ -132,6 +79,47 @@ describe('determineOperationsForEntities', () => {
     assert.lengthOf(result.entitiesToDelete, 0);
   });
 
+  it('handles adding extra entities with explicit overrides', () => {
+    const result = determineOperationsForEntities({
+      courseEntities: [
+        { name: 'A', heading: 'A', implicit: false },
+        { name: 'Default', heading: 'Custom default', implicit: false },
+      ],
+      extraEntities: [
+        {
+          name: 'Default',
+          heading: 'Default entity',
+          implicit: true,
+        },
+      ],
+      existingEntities: [],
+      knownNames: new Set(),
+      makeImplicitEntity: (name: string) => ({
+        name,
+        heading: `${name} (implicit)`,
+        implicit: true,
+      }),
+      isInfoCourseValid: true,
+      deleteUnused: true,
+    });
+
+    assert.lengthOf(result.entitiesToCreate, 2);
+    assert.deepEqual(result.entitiesToCreate[0], {
+      name: 'A',
+      heading: 'A',
+      implicit: false,
+      number: 1,
+    });
+    assert.deepEqual(result.entitiesToCreate[1], {
+      name: 'Default',
+      heading: 'Custom default',
+      implicit: false,
+      number: 2,
+    });
+
+    assert.lengthOf(result.entitiesToDelete, 0);
+  });
+
   it('handles adding explicit and implicit entities', () => {
     const result = determineOperationsForEntities({
       courseEntities: [
@@ -152,45 +140,6 @@ describe('determineOperationsForEntities', () => {
     assert.deepEqual(result.entitiesToCreate[3], { name: 'D', implicit: true, number: 4 });
 
     assert.lengthOf(result.entitiesToUpdate, 0);
-    assert.lengthOf(result.entitiesToDelete, 0);
-  });
-
-  it('handles adding entities with explicit default', () => {
-    const result = determineOperationsForEntities({
-      courseEntities: [
-        { name: 'A', heading: 'A', implicit: false },
-        { name: 'Default', heading: 'Custom default', implicit: false },
-      ],
-      existingEntities: [],
-      knownNames: new Set(['Default']),
-      makeImplicitEntity: (name: string) => ({
-        name,
-        heading: `${name} (implicit)`,
-        implicit: true,
-      }),
-      makeDefaultEntity: () => ({
-        name: 'Default',
-        heading: 'Default entity',
-        implicit: false,
-      }),
-      isInfoCourseValid: true,
-      deleteUnused: true,
-    });
-
-    assert.lengthOf(result.entitiesToCreate, 2);
-    assert.deepEqual(result.entitiesToCreate[0], {
-      name: 'A',
-      heading: 'A',
-      implicit: false,
-      number: 1,
-    });
-    assert.deepEqual(result.entitiesToCreate[1], {
-      name: 'Default',
-      heading: 'Custom default',
-      implicit: false,
-      number: 2,
-    });
-
     assert.lengthOf(result.entitiesToDelete, 0);
   });
 

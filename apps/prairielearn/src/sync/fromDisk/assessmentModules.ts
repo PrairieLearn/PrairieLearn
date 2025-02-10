@@ -46,17 +46,19 @@ export async function sync(courseId: string, courseData: CourseData) {
     entitiesToDelete: assessmentModulesToDelete,
   } = determineOperationsForEntities<DesiredAssessmentModule>({
     courseEntities: courseData.course.data?.assessmentModules ?? [],
+    extraEntities: [
+      {
+        name: 'Default',
+        heading: 'Default module',
+        implicit: true,
+      },
+    ],
     existingEntities: existingAssessmentModules,
     knownNames: knownAssessmentModuleNames,
     makeImplicitEntity: (name) => ({
       name,
       heading: `${name} (Auto-generated from use in an assessment; add this assessment module to your infoCourse.json file to customize)`,
       implicit: true,
-    }),
-    makeDefaultEntity: () => ({
-      name: 'Default',
-      heading: 'Default module',
-      implicit: false,
     }),
     isInfoCourseValid,
     deleteUnused,

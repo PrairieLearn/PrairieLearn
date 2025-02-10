@@ -20,7 +20,6 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
   existingEntities,
   knownNames,
   makeImplicitEntity,
-  makeDefaultEntity,
   isInfoCourseValid,
   deleteUnused,
 }: {
@@ -29,7 +28,6 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
   existingEntities: ExistingEntity<Entity>[];
   knownNames: Set<string>;
   makeImplicitEntity: (name: string) => Entity;
-  makeDefaultEntity?: () => Entity | null;
   isInfoCourseValid: boolean;
   deleteUnused: boolean;
 }): {
@@ -74,18 +72,6 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
     });
   }
 
-  // Add a 'Default' entity if one doesn't already exist.
-  if (!desiredEntities.has('Default')) {
-    const defaultEntity = makeDefaultEntity?.();
-    if (defaultEntity) {
-      desiredEntities.set('Default', {
-        ...defaultEntity,
-        implicit: false,
-        number: desiredEntities.size + 1,
-      });
-    }
-  }
-
   // Add any extra entities at the end.
   if (extraEntities?.length) {
     for (const entity of extraEntities) {
@@ -99,18 +85,18 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
     }
   }
 
-  // Based on the set of desired assessment modules, determine which ones must be
+  // Based on the set of desired assessment entities, determine which ones must be
   // added, updated, or deleted.
   const entitiesToAdd = new Map<string, DesiredEntity<Entity>>();
   const entitiesToUpdate = new Map<string, DesiredEntity<Entity>>();
   const entitiesToDelete = new Set<string>();
 
-  for (const [name, module] of desiredEntities) {
+  for (const [name, entity] of desiredEntities) {
     if (existingEntityNames.has(name)) {
       // TODO: check for equality, skip update if not needed.
-      entitiesToUpdate.set(name, module);
+      entitiesToUpdate.set(name, entity);
     } else {
-      entitiesToAdd.set(name, module);
+      entitiesToAdd.set(name, entity);
     }
   }
 
