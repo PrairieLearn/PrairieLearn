@@ -5,28 +5,28 @@ import sys
 import uuid
 import xml.etree.ElementTree as ET
 
-## # Top-level elements
-## root.findall(".")
-##
-## # All 'neighbor' grand-children of 'country' children of the top-level
-## # elements
-## root.findall("./country/neighbor")
-##
-## # Nodes with name='Singapore' that have a 'year' child
-## root.findall(".//year/..[@name='Singapore']")
-##
-## # 'year' nodes that are children of nodes with name='Singapore'
-## root.findall(".//*[@name='Singapore']/year")
-##
-## # All 'neighbor' nodes that are the second child of their parent
-## root.findall(".//neighbor[2]")
+# # Top-level elements
+# root.findall(".")
+#
+# # All 'neighbor' grand-children of 'country' children of the top-level
+# # elements
+# root.findall("./country/neighbor")
+#
+# # Nodes with name='Singapore' that have a 'year' child
+# root.findall(".//year/..[@name='Singapore']")
+#
+# # 'year' nodes that are children of nodes with name='Singapore'
+# root.findall(".//*[@name='Singapore']/year")
+#
+# # All 'neighbor' nodes that are the second child of their parent
+# root.findall(".//neighbor[2]")
 
-## really annoying namespace attached to every xml type; using 'nm' as a shorthand
+# really annoying namespace attached to every xml type; using 'nm' as a shorthand
 nm = "{http://www.imsglobal.org/xsd/imscp_v1p1}"
 client_file_path = "clientFilesQuestion"
 
 
-## use the questions directory in the current directory or recursively search parent directories
+# use the questions directory in the current directory or recursively search parent directories
 def find_questions():
     questions = "questions"
     while not os.path.isdir(questions):
@@ -257,7 +257,7 @@ def remove_unmatched_item_close_tags(xml_filename):
         out_file.write(new_lines)
 
 
-## the manifest tells us about the questions
+# the manifest tells us about the questions
 def read_manifest(file, questions):
     remove_unmatched_item_close_tags(file)
 

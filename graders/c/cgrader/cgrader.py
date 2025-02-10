@@ -595,7 +595,7 @@ class CGrader:
             "points": points,
             "max_points": max_points,
             "output": output,
-            "message": msg if msg else "",
+            "message": msg or "",
         }
         if images and isinstance(images, str | dict):
             test["images"] = [images]

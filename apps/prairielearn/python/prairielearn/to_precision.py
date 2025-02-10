@@ -10,7 +10,7 @@ def to_precision(
     value: Any,
     precision: int,
     notation: Literal[
-        "auto", "sci", "std", "standard", "engineering", "scientific"
+        "auto", "sci", "std", "standard", "eng", "engineering", "scientific"
     ] = "auto",
     filler: str = "e",
 ) -> str:
@@ -210,6 +210,6 @@ def _number_profile(value: float, precision: int) -> tuple[str, int, bool]:
             is_neg = False
 
         power = -1 * math.floor(math.log10(value)) + precision - 1
-        sig_digits = str(int(round(abs(value) * 10.0**power)))
+        sig_digits = str(round(abs(value) * 10.0**power))
 
     return sig_digits, int(-power), is_neg

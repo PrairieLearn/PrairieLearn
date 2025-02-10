@@ -76,11 +76,7 @@ os.makedirs(quiz_name)
 
 pl_quiz = {
     "uuid": str(uuid.uuid4()),
-    "type": args.assessment_type
-    if args.assessment_type
-    else "Exam"
-    if quiz["time_limit"]
-    else "Homework",
+    "type": args.assessment_type or ("Exam" if quiz["time_limit"] else "Homework"),
     "title": quiz["title"],
     "text": quiz["description"],
     "set": args.assessment_set,
@@ -263,10 +259,10 @@ for question in questions.values():
                 template.write(
                     f'  <pl-statement match="m{answer["match_id"]}">{answer["text"]}</pl-statement>\n'
                 )
-            for match in question["matches"]:
-                template.write(
-                    f'  <pl-option name="m{match["match_id"]}">{match["text"]}</pl-option>\n'
-                )
+            template.writelines(
+                f'  <pl-option name="m{match["match_id"]}">{match["text"]}</pl-option>\n'
+                for match in question["matches"]
+            )
             template.write("</pl-matching>\n")
 
         elif question["question_type"] == "multiple_dropdowns_question":
@@ -317,8 +313,9 @@ for question in questions.values():
                     script.write(
                         f"    {variable['name']} = random.randint({int(variable['min'] * multip)}, {int(variable['max'] * multip)}) / {multip}\n"
                     )
-            for formula in question["formulas"]:
-                script.write(f"    {formula['formula']}\n")
+            script.writelines(
+                f"    {formula['formula']}\n" for formula in question["formulas"]
+            )
             for variable in question["variables"]:
                 script.write(
                     f'    data["params"]["{variable["name"]}"] = {variable["name"]}\n'
