@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 
 class PartialScore(TypedDict):
-    "A class with type signatures for the partial scores dict"
+    """A class with type signatures for the partial scores dict"""
 
     score: float | None
     weight: NotRequired[int]
@@ -59,7 +59,7 @@ class PartialScore(TypedDict):
 # for their answer data, feedback data, etc., but TypedDicts with Generics are
 # not yet supported: https://bugs.python.org/issue44863
 class QuestionData(TypedDict):
-    "A class with type signatures for the data dictionary"
+    """A class with type signatures for the data dictionary"""
 
     params: dict[str, Any]
     correct_answers: dict[str, Any]
@@ -84,7 +84,7 @@ class ElementTestData(QuestionData):
 
 
 def check_answers_names(data: QuestionData, name: str) -> None:
-    """Checks that answers names are distinct using property in data dict."""
+    """Check that answers names are distinct using property in data dict."""
     if name in data["answers_names"]:
         raise KeyError(f'Duplicate "answers-name" attribute: "{name}"')
     data["answers_names"][name] = True
@@ -92,7 +92,6 @@ def check_answers_names(data: QuestionData, name: str) -> None:
 
 def get_unit_registry() -> UnitRegistry:
     """Get a unit registry using cache folder valid on production machines."""
-
     pid = os.getpid()
     cache_dir = f"/tmp/pint_{pid}"
     return UnitRegistry(cache_folder=cache_dir)
@@ -114,7 +113,6 @@ def grade_answer_parameterized(
             - a string containing feedback
             - None, if there is no feedback (usually this should only occur if the answer is correct)
     """
-
     # Create the data dictionary at first
     data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
 
@@ -153,7 +151,6 @@ def determine_score_params(
     conventions, the return value can be used as a key/value pair in the
     dictionary passed to an element's Mustache template to display a score badge.
     """
-
     if score >= 1:
         return ("correct", True)
     elif score > 0:
@@ -172,15 +169,14 @@ def get_enum_attrib(
     default: EnumT | None = None,
 ) -> EnumT:
     """
-    Returns the named attribute for the element parsed as an enum,
+    Return the named attribute for the element parsed as an enum,
     or the (optional) default value. If the default value is not provided
     and the attribute is missing then an exception is thrown. An exception
     is also thrown if the value for the enum provided is invalid.
-    Also, alters the enum names to comply with PL naming convention automatically
-    (replacing underscores with dashes and uppercasing). If default value is
-    provided, must be a member of the given enum.
+    Also, alter the enum names to comply with PL naming convention automatically
+    (replacing underscores with dashes and uppercasing). If a default value is
+    provided, it must be a member of the given enum.
     """
-
     enum_val, is_default = (
         _get_attrib(element, name)
         if default is None
@@ -209,10 +205,9 @@ def get_enum_attrib(
 
 def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None:
     """
-    Sets overall question score to be weighted average of all partial scores. Uses
+    Set overall question score to be weighted average of all partial scores. Use
     weight_default to fill in a default weight for a score if one is missing.
     """
-
     weight_total = 0
     score_total = 0.0
     for part in data["partial_scores"].values():
@@ -229,8 +224,7 @@ def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None
 
 
 def set_all_or_nothing_score_data(data: QuestionData) -> None:
-    """Gives points to main question score if all partial scores are correct."""
-
+    """Give points to main question score if all partial scores are correct."""
     data["score"] = 1.0 if all_partial_scores_correct(data) else 0.0
 
 
@@ -329,8 +323,7 @@ def to_json(
     df_encoding_version: Literal[1, 2] = 1,
     np_encoding_version: Literal[1, 2] = 1,
 ) -> Any | _JSONSerializedType:
-    """to_json(v)
-
+    """
     If v has a standard type that cannot be json serialized, it is replaced with
     a {'_type':..., '_value':...} pair that can be json serialized:
 
@@ -441,9 +434,7 @@ def to_json(
 
 
 def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
-    """
-    Helper to check for the presence of all fields in the '_value' dictionary
-    """
+    """Return True if all fields in the '_value' dictionary are present."""
     return (
         "_value" in v
         and isinstance(v["_value"], dict)
@@ -452,8 +443,7 @@ def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
 
 
 def from_json(v: _JSONSerializedType | Any) -> Any:
-    """from_json(v)
-
+    """
     If v has the format {'_type':..., '_value':...} as would have been created
     using to_json(...), then it is replaced:
 
@@ -597,16 +587,15 @@ def check_attribs(
 def _get_attrib(
     element: lxml.html.HtmlElement, name: str, *args: Any
 ) -> tuple[Any, bool]:
-    """(value, is_default) = _get_attrib(element, name, default)
-
-    Internal function, do not all. Use one of the typed variants
-    instead (e.g., get_string_attrib()).
-
-    Returns the named attribute for the element, or the default value
+    """
+    Return the named attribute for the element, or the default value
     if the attribute is missing.  The default value is optional. If no
     default value is provided and the attribute is missing then an
     exception is thrown. The second return value indicates whether the
     default value was returned.
+
+    Internal function, do not all. Use one of the typed variants
+    instead (e.g., get_string_attrib()).
     """
     # It seems like we could use keyword arguments with a default
     # value to handle the "default" argument, but we want to be able
@@ -631,9 +620,8 @@ def _get_attrib(
 
 
 def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
-    """value = has_attrib(element, name)
-
-    Returns true if the element has an attribute of that name,
+    """
+    Return true if the element has an attribute of that name,
     false otherwise.
     """
     old_name = name.replace("-", "_")
@@ -658,9 +646,8 @@ def get_string_attrib(
 def get_string_attrib(
     element: lxml.html.HtmlElement, name: str, *args: str | None
 ) -> str | None:
-    """value = get_string_attrib(element, name, default)
-
-    Returns the named attribute for the element, or the (optional)
+    """
+    Return the named attribute for the element, or the (optional)
     default value. If the default value is not provided and the
     attribute is missing then an exception is thrown.
     """
@@ -688,9 +675,8 @@ def get_boolean_attrib(
 def get_boolean_attrib(
     element: lxml.html.HtmlElement, name: str, *args: bool | None
 ) -> bool | None:
-    """value = get_boolean_attrib(element, name, default)
-
-    Returns the named attribute for the element, or the (optional)
+    """
+    Return the named attribute for the element, or the (optional)
     default value. If the default value is not provided and the
     attribute is missing then an exception is thrown. If the attribute
     is not a valid boolean then an exception is thrown.
@@ -742,9 +728,8 @@ def get_integer_attrib(
 def get_integer_attrib(
     element: lxml.html.HtmlElement, name: str, *args: int | None
 ) -> int | None:
-    """value = get_integer_attrib(element, name, default)
-
-    Returns the named attribute for the element, or the (optional)
+    """
+    Return the named attribute for the element, or the (optional)
     default value. If the default value is not provided and the
     attribute is missing then an exception is thrown. If the attribute
     is not a valid integer then an exception is thrown.
@@ -782,9 +767,8 @@ def get_float_attrib(
 def get_float_attrib(
     element: lxml.html.HtmlElement, name: str, *args: float | None
 ) -> float | None:
-    """value = get_float_attrib(element, name, default)
-
-    Returns the named attribute for the element, or the (optional)
+    """
+    Return the named attribute for the element, or the (optional)
     default value. If the default value is not provided and the
     attribute is missing then an exception is thrown. If the attribute
     is not a valid floating-point number then an exception is thrown.
@@ -816,9 +800,8 @@ def get_color_attrib(
 def get_color_attrib(
     element: lxml.html.HtmlElement, name: str, *args: str | None
 ) -> str | None:
-    """value = get_color_attrib(element, name, default)
-
-    Returns a 3-digit or 6-digit hex RGB string in CSS format (e.g., '#123'
+    """
+    Return a 3-digit or 6-digit hex RGB string in CSS format (e.g., '#123'
     or '#1a2b3c'), or the (optional) default value. If the default value is
     not provided and the attribute is missing then an exception is thrown. If
     the attribute is not a valid RGB string then it will be checked against various
@@ -852,15 +835,14 @@ def numpy_to_matlab(
     ndigits: int = 2,
     wtype: str = "f",
 ) -> str:
-    """numpy_to_matlab(np_object, ndigits=2, wtype='f')
+    """
+    Return np_object as a MATLAB-formatted string in which each number has "ndigits"
+    digits after the decimal and is formatted as "wtype" (e.g., 'f', 'g', etc.).
 
     This function assumes that np_object is one of these things:
 
         - a number (float or complex)
         - a 2D ndarray (float or complex)
-
-    It returns np_object as a MATLAB-formatted string in which each number has "ndigits"
-    digits after the decimal and is formatted as "wtype" (e.g., 'f', 'g', etc.).
     """
     if np.isscalar(np_object):
         scalar_str = "{:.{indigits}{iwtype}}".format(
@@ -911,15 +893,14 @@ def string_from_numpy(
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
-    """string_from_numpy(A)
+    """
+    Return A as a string.
 
     This function assumes that A is one of these things:
 
         - a number (float or complex)
         - a 1D ndarray (float or complex)
         - a 2D ndarray (float or complex)
-
-    It returns A as a string.
 
     If language is 'python' and A is a 2D ndarray, the string looks like this:
 
@@ -967,7 +948,6 @@ def string_from_numpy(
 
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
     """
-
     # if A is a scalar
     if np.isscalar(A):
         assert not isinstance(A, memoryview | str | bytes)
@@ -1048,13 +1028,10 @@ def string_from_2darray(
 
 
 def string_from_number_sigfig(a: _NumericScalarType | str, digits: int = 2) -> str:
-    """string_from_complex_sigfig(a, digits=2)
-
-    This function assumes that "a" is of type float or complex. It returns "a"
-    as a string in which the number, or both the real and imaginary parts of the
-    number, have digits significant digits.
     """
-
+    Return "a" as a string in which the number, or both the real and imaginary parts of the
+    number, have digits significant digits. This function assumes that "a" is of type float or complex.
+    """
     assert np.isscalar(a)
     assert not isinstance(a, memoryview | bytes)
 
@@ -1069,10 +1046,9 @@ def string_from_number_sigfig(a: _NumericScalarType | str, digits: int = 2) -> s
 def _string_from_complex_sigfig(
     a: complex | np.complex64 | np.complex128, digits: int = 2
 ) -> str:
-    """_string_from_complex_sigfig(a, digits=2)
-
-    This function assumes that "a" is a complex number. It returns "a" as a string
-    in which the real and imaginary parts have digits significant digits.
+    """
+    Return "a" as a string in which the real and imaginary parts have digits significant digits.
+    This function assumes that "a" is a complex number.
     """
     re = to_precision(a.real, digits)
     im = to_precision(np.abs(a.imag), digits)
@@ -1085,15 +1061,14 @@ def _string_from_complex_sigfig(
 def numpy_to_matlab_sf(
     A: _NumericScalarType | npt.NDArray[Any], ndigits: int = 2
 ) -> str:
-    """numpy_to_matlab(A, ndigits=2)
+    """
+    Return A as a MATLAB-formatted string in which each number has
+    ndigits significant digits.
 
     This function assumes that A is one of these things:
 
         - a number (float or complex)
         - a 2D ndarray (float or complex)
-
-    It returns A as a MATLAB-formatted string in which each number has
-    ndigits significant digits.
     """
     if np.isscalar(A):
         assert not isinstance(A, memoryview | str | bytes)
@@ -1162,12 +1137,7 @@ def string_partition_outer_interval(
 
 
 def string_to_integer(s: str, base: int = 10) -> int | None:
-    """string_to_integer(s, base=10)
-
-    Parses a string that is an integer.
-
-    Returns a number with type int, or None on parse error.
-    """
+    """Parse a string that is an integer, and return a number with type int, or None on parse error."""
     if not isinstance(s, str):
         return None
 
@@ -1186,11 +1156,9 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
 def string_to_number(
     s: str, *, allow_complex: bool = True
 ) -> None | np.float64 | np.complex128:
-    """string_to_number(s, allow_complex=True)
-
-    Parses a string that can be interpreted either as float or (optionally) complex.
-
-    Returns a number with type np.float64 or np.complex128, or None on parse error.
+    """
+    Parse a string that can be interpreted either as float or (optionally) complex,
+    and return a number with type np.float64 or np.complex128, or None on parse error.
     """
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace("\u2212", "-")
@@ -1236,9 +1204,8 @@ def string_fraction_to_number(
     tuple[None, _PartialDataFormatErrors]
     | tuple[np.float64 | np.complex128, _PartialDataSubmittedAnswers]
 ):
-    """string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True)
-
-    Parses a string containing a decimal number with support for answers expressing
+    """
+    Parse a string containing a decimal number with support for answers expressing
     as a fraction.
 
     Returns a tuple with the parsed value in the first entry and a dictionary with
@@ -1331,9 +1298,8 @@ def string_fraction_to_number(
 def string_to_2darray(
     s: str, *, allow_complex: bool = True
 ) -> tuple[None | npt.NDArray[Any], dict[str, str]]:
-    """string_to_2darray(s)
-
-    Parses a string that is either a scalar or a 2D array in matlab or python
+    """
+    Parse a string that is either a scalar or a 2D array in matlab or python
     format. Each number must be interpretable as type float or complex.
     """
     # Replace unicode minus with hyphen minus wherever it occurs
@@ -1650,7 +1616,8 @@ def latex_from_2darray(
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
-    r"""latex_from_2darray
+    r"""
+    latex_from_2darray
     This function assumes that A is one of these things:
             - a number (float or complex)
             - a 2D ndarray (float or complex)
@@ -1772,7 +1739,6 @@ def is_correct_scalar_ra(
 
 def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
     """Compare a_sub and a_tru using digits many digits after the decimal place."""
-
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
         real_comp = is_correct_scalar_dd(a_sub.real, a_tru.real, digits=digits)  # type: ignore
@@ -1790,7 +1756,6 @@ def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
 
 def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
     """Compare a_sub and a_tru using digits many significant figures."""
-
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
         real_comp = is_correct_scalar_sf(a_sub.real, a_tru.real, digits=digits)  # type: ignore
@@ -1812,14 +1777,13 @@ def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
 
 def get_uuid() -> str:
     """
-    Returns the string representation of a new random UUID.
+    Return the string representation of a new random UUID.
     First character of this uuid is guaranteed to be an alpha
     (at the expense of a slight loss in randomness).
 
     This is done because certain web components need identifiers to
     start with letters and not numbers.
     """
-
     uuid_string = str(uuid.uuid4())
     random_char = random.choice("abcdef")
 
@@ -1828,9 +1792,7 @@ def get_uuid() -> str:
 
 def escape_unicode_string(string: str) -> str:
     """
-    escape_unicode_string(string)
-
-    Combs through any string and replaces invisible/unprintable characters with a
+    Replace invisible/unprintable characters with a
     text representation of their hex id: <U+xxxx>
 
     A character is considered invisible if its category is "control" or "format", as
@@ -1851,21 +1813,12 @@ def escape_unicode_string(string: str) -> str:
 
 
 def escape_invalid_string(string: str) -> str:
-    """
-    escape_invalid_string(string)
-
-    Wraps and escapes string in <code> tags.
-    """
+    """Wrap and escape string in <code> tags."""
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
 
 
 def clean_identifier_name(name: str) -> str:
-    """
-    clean_identifier_name(string)
-
-    Escapes a string so that it becomes a valid Python identifier.
-    """
-
+    """Escapes a string so that it becomes a valid Python identifier."""
     # Strip invalid characters and weird leading characters so we have
     # a decent python identifier
     name = re.sub("[^a-zA-Z0-9_]", "_", name)
@@ -1875,9 +1828,7 @@ def clean_identifier_name(name: str) -> str:
 
 def load_extension(data: QuestionData, extension_name: str) -> Any:
     """
-    load_extension(data, extension_name)
-
-    Loads a single specific extension by name for an element.
+    Load a single specific extension by name for an element.
     Returns a dictionary of defined variables and functions.
     """
     if "extensions" not in data:
@@ -1928,12 +1879,9 @@ def load_extension(data: QuestionData, extension_name: str) -> Any:
 
 def load_all_extensions(data: QuestionData) -> dict[str, Any]:
     """
-    load_all_extensions(data)
-
-    Loads all available extensions for a given element.
+    Load all available extensions for a given element.
     Returns an ordered dictionary mapping the extension name to its defined variables and functions
     """
-
     if "extensions" not in data:
         raise ValueError("load_all_extensions() must be called from an element!")
     if len(data["extensions"]) == 0:
@@ -1947,12 +1895,7 @@ def load_all_extensions(data: QuestionData) -> dict[str, Any]:
 
 
 def load_host_script(script_name: str) -> ModuleType:
-    """
-    load_host_script(script_name)
-
-    Small convenience function to load a host element script from an extension.
-    """
-
+    """Small convenience function to load a host element script from an extension."""
     # Chop off the file extension because it's unnecessary here
     script_name = script_name.removesuffix(".py")
     return __import__(script_name)
@@ -1972,9 +1915,7 @@ def iter_keys() -> Generator[str, None, None]:
 
 def index2key(i: int) -> str:
     """
-    index2key(i)
-
-    Used when generating ordered lists of the form ['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]
+    Use when generating ordered lists of the form ['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]
 
     Returns alphabetic key in the form [a-z]* from a given integer (i = 0, 1, 2, ...).
     """
@@ -1986,8 +1927,7 @@ def is_int_json_serializable(n: int) -> bool:
 
 
 def add_files_format_error(data: QuestionData, error: str) -> None:
-    """Adds a format error to the data dictionary."""
-
+    """Add a format error to the data dictionary."""
     if data["format_errors"].get("_files") is None:
         data["format_errors"]["_files"] = []
     if isinstance(data["format_errors"]["_files"], list):
@@ -2004,17 +1944,14 @@ def add_submitted_file(
     file_name: str,
     base64_contents: str,
 ) -> None:
-    """Adds a submitted file to the data dictionary."""
-
+    """Add a submitted file to the data dictionary."""
     if data["submitted_answers"].get("_files") is None:
         data["submitted_answers"]["_files"] = []
     if isinstance(data["submitted_answers"]["_files"], list):
-        data["submitted_answers"]["_files"].append(
-            {
-                "name": file_name,
-                "contents": base64_contents,
-            }
-        )
+        data["submitted_answers"]["_files"].append({
+            "name": file_name,
+            "contents": base64_contents,
+        })
     else:
         add_files_format_error(
             data, '"_files" is present in "submitted_answers" but is not an array'

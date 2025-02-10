@@ -375,13 +375,11 @@ class Quiz(CourseSubObject):
         """docstring"""
         submissions = {}
         quiz_submissions = []
-        include = "".join(
-            [
-                "include[]=user&" if include_user else "",
-                "include[]=submission&" if include_submission else "",
-                "include[]=submission_history&" if include_history else "",
-            ]
-        )
+        include = "".join([
+            "include[]=user&" if include_user else "",
+            "include[]=submission&" if include_submission else "",
+            "include[]=submission_history&" if include_history else "",
+        ])
         for response in self.request(f"{self.url_prefix}/submissions?{include}"):
             quiz_submissions += [
                 qs

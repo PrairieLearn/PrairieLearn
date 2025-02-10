@@ -9,23 +9,21 @@ import lxml.html
 ElementReplacement = str | lxml.html.HtmlElement | list[lxml.html.HtmlElement] | None
 
 # https://developer.mozilla.org/en-US/docs/Glossary/Void_element
-VOID_ELEMENTS = frozenset(
-    {
-        "area",
-        "base",
-        "br",
-        "col",
-        "embed",
-        "hr",
-        "img",
-        "input",
-        "link",
-        "meta",
-        "source",
-        "track",
-        "wbr",
-    }
-)
+VOID_ELEMENTS = frozenset({
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "source",
+    "track",
+    "wbr",
+})
 
 UNESCAPED_ELEMENTS = frozenset({"script", "style"})
 
@@ -70,7 +68,6 @@ def traverse_and_replace(
     The top entry in count_stack is decremented every time something is moved onto result,
     and when an entry hits zero, the corresponding tag from tail_stack is moved onto result as well.
     """
-
     # Initialize result and work data structures
     result: deque[str] = deque()
 
