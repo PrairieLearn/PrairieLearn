@@ -6,6 +6,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import * as questionServers from '../question-servers/index.js';
 
 import {
@@ -148,6 +149,8 @@ export async function insertSubmission({
       },
       IdSchema,
     );
+
+    await updateCourseInstanceUsagesForSubmission({ submission_id });
 
     if (variant.assessment_instance_id != null) {
       await sqldb.queryAsync(sql.update_instance_question_post_submission, {
