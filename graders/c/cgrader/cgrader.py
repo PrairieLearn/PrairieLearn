@@ -418,7 +418,7 @@ class CGrader:
         command: str | Iterable[str],
         input: str | None = None,  # noqa: A002
         exp_output: str | Iterable[str] | None = None,
-        must_match_all_outputs: OutputMatchingOption | bool = "any",
+        must_match_all_outputs: OutputMatchingOption | bool = "any",  # noqa: FBT001
         reject_output: str | Iterable[str] | None = None,
         field: str | None = None,
         ignore_case: bool = True,  # noqa: FBT001
@@ -581,7 +581,7 @@ class CGrader:
         self,
         name: str,
         description: str = "",
-        points: bool | float = True,
+        points: bool | float = True,  # noqa: FBT001
         msg: str | None = "",
         output: str = "",
         max_points: float = 1,

@@ -13,7 +13,7 @@ exclude = [
     "exampleCourse/questions/**/tests/trailing_code.py",
 ]
 target-version = "py310"
-
+preview = true
 [tool.ruff.lint]
 select = [
     "ALL"
@@ -23,6 +23,7 @@ ignore = [
     # These rules provide little value to us
     "BLE", # flake8-blind-except
     "COM", # flake8-commas
+    "CPY001", # missing-copyright-notice 
     "C901", # mccabe (complexity checks)
     "ERA", # eradicate (code in comments)
     "EM", # flake8-errmsg
@@ -49,10 +50,14 @@ ignore = [
     "ISC003", # explicit-string-concatenation
     "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
     "PD901", # pandas-df-variable-name (we use `df` in many places)
+    "PLR1702", # too-many-nested-blocks
     "PLR0911", # too-many-return-statements
     "PLR0912", # too-many-branches
     "PLR0913", # too-many-arguments
+    "PLR0914", # too-many-locals
     "PLR0915", # too-many-statements
+    "PLR0916", # too-many-boolean-expressions
+    "PLR0917", # too-many-positional-arguments
     "PLR2004", # magic-value-comparison
     "RET503", # implicit-return
     "RET504", # unnecessary-assign
@@ -69,6 +74,36 @@ ignore = [
     "D103", # undocumented-public-function
     "D104", # undocumented-public-package
     "D107", # undocumented-public-init
+    "FURB101", # read-whole-file
+    "FURB103", # write-whole-file
+    "PLW1514", # unspecified-encoding
+    "DOC201",
+    "E266",
+    "PLR6104",
+    "PLW1508",
+    "PLC1901",
+    "PLR6201",
+    "FURB122",
+    "RUF051",
+    "FURB110",
+    "RUF027",
+    "RUF039",
+    "FURB118",
+    "C419",
+    "DOC501",
+    "RUF036",
+    "PLC0415",
+    "PYI061",
+    "F841",
+    "FURB140",
+    "FURB152",
+    "FURB171",
+    "PLR6301",
+    "TC006",
+    "PLC2701",
+    "RUF046",
+    "FURB113",
+    "DOC402"
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
