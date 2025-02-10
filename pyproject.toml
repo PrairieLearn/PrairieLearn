@@ -95,7 +95,9 @@ ignore = [
     # Allow boolean trap pattern in method signatures
     "FBT001", "FBT002", "FBT003",
     # ignore unused parameters in functions
-    "ARG"
+    "ARG",
+    # ignore docstring linting on functions (has no public API)
+    "D103"
 ]
 "apps/prairielearn/python/**/*.py" = ["N803"]
 # Do not require self in method params
@@ -106,9 +108,11 @@ ignore = [
     "FBT002", # FBT002 - Boolean default positional argument
     "D",
 ]
+# Directoes we don't want strict docstring linting on (has no public API)
+"apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D"]
+"apps/prairielearn/python/zygote.py" = ["D"]
 # Directories we don't want strict annotation linting or docstring linting on
 "apps/prairielearn/src/tests/**/*.py" = ["D", "ANN"]
-"apps/prairielearn/python/zygote.py" = ["D"]
 "apps/prairielearn/python/prairielearn/to_precision.py" = ["D"]
 "tools/**/*.py" = ["ANN", "D"]
 "testCourse/**/*.py" = ["ANN", "D"]
