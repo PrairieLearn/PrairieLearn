@@ -562,8 +562,7 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
 def compat_array(arr: list[str]) -> list[str]:
     new_arr = []
     for i in arr:
-        new_arr.append(i)
-        new_arr.append(i.replace("-", "_"))
+        new_arr.extend((i, i.replace("-", "_")))
     return new_arr
 
 

@@ -94,7 +94,6 @@ ignore = [
     "FURB152",
     "FURB171",
     "PLR6301",
-    "FURB113",
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
