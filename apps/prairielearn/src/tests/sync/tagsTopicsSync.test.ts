@@ -40,7 +40,7 @@ function checkEntityOrder(entityName, syncedEntities, courseData) {
   });
 }
 
-async function testAdd(entityName) {
+async function testAdd(entityName: 'tags' | 'topics') {
   const { courseData, courseDir } = await util.createAndSyncCourseData();
   const newEntity = makeEntity();
   courseData.course[entityName].push(newEntity);
@@ -51,7 +51,7 @@ async function testAdd(entityName) {
   checkEntityOrder(entityName, syncedEntities, courseData);
 }
 
-async function testRemove(entityName) {
+async function testRemove(entityName: 'tags' | 'topics') {
   const courseData = util.getCourseData();
   const oldEntity = makeEntity();
   courseData.course[entityName].unshift(oldEntity);
@@ -64,7 +64,7 @@ async function testRemove(entityName) {
   checkEntityOrder(entityName, syncedEntities, courseData);
 }
 
-async function testRename(entityName) {
+async function testRename(entityName: 'tags' | 'topics') {
   const courseData = util.getCourseData();
   const oldEntity = makeEntity();
   courseData.course[entityName].unshift(oldEntity);
@@ -80,7 +80,7 @@ async function testRename(entityName) {
   checkEntityOrder(entityName, syncedEntities, courseData);
 }
 
-async function testDuplicate(entityName) {
+async function testDuplicate(entityName: 'tags' | 'topics') {
   const courseData = util.getCourseData();
   const newEntity1 = makeEntity();
   const newEntity2 = makeEntity();
@@ -164,5 +164,68 @@ describe('Tag/topic syncing', () => {
       description:
         'The answer format requires drawing on a canvas to input a graphical representation of an answer.',
     });
+  });
+
+  /**
+   * This tests a specific case that at one point we didn't handle correctly: a
+   * course without any explicit topics and with a question that uses a
+   * topic that isn't in the list of defaults.
+   */
+  it('handles course with only a single implicit topic', async () => {
+    const courseData = util.getCourseData();
+
+    // Remove all course topics.
+    courseData.course.topics = [];
+
+    // Remove all course instances.
+    courseData.courseInstances = {};
+
+    // Save a reference to the test question.
+    const testQuestion = courseData.questions[util.QUESTION_ID];
+
+    // Remove all questions.
+    courseData.questions = {};
+
+    // Add a single question that uses a topic that isn't in the list of defaults.
+    courseData.questions[util.QUESTION_ID] = testQuestion;
+    testQuestion.topic = 'X';
+
+    // Sync the course.
+    await util.writeAndSyncCourseData(courseData);
+
+    // Assert that the expected topic is present and that it has the correct number.
+    const syncedTopics = await util.dumpTable('topics');
+    assert.lengthOf(syncedTopics, 1);
+    assert.equal(syncedTopics[0].name, 'X');
+    assert.equal(syncedTopics[0].number, 1);
+  });
+
+  it('handles course with only a single implicit tag', async () => {
+    const courseData = util.getCourseData();
+
+    // Remove all course tags.
+    courseData.course.tags = [];
+
+    // Remove all course instances.
+    courseData.courseInstances = {};
+
+    // Save a reference to the test question.
+    const testQuestion = courseData.questions[util.QUESTION_ID];
+
+    // Remove all questions.
+    courseData.questions = {};
+
+    // Add a single question that uses a tag that isn't in the list of defaults.
+    courseData.questions[util.QUESTION_ID] = testQuestion;
+    testQuestion.tags = ['X'];
+
+    // Sync the course.
+    await util.writeAndSyncCourseData(courseData);
+
+    // Assert that the expected tag is present and that it has the correct number.
+    const syncedTags = await util.dumpTable('tags');
+    assert.lengthOf(syncedTags, 1);
+    assert.equal(syncedTags[0].name, 'X');
+    assert.equal(syncedTags[0].number, 1);
   });
 });

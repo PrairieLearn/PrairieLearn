@@ -149,7 +149,7 @@ describe('Assessment set syncing', () => {
     });
   });
 
-  it('deletes assessment sets when none are used', async () => {
+  it('deletes all assessment sets when none are used', async () => {
     const courseData = util.getCourseData();
 
     // Perform an initial sync with the course's assessment sets.
@@ -163,7 +163,7 @@ describe('Assessment set syncing', () => {
     courseData.course.assessmentSets = [];
 
     // Remove all course instances, thus removing all assessments that would
-    // have specifies an assessment set.
+    // have specified an assessment set.
     courseData.courseInstances = {};
 
     // Sync again.
