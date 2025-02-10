@@ -102,4 +102,29 @@ describe('Assessment modules syncing', () => {
     assert.isOk(syncedAssessment);
     assert.equal(syncedAssessment?.assessment_module_id, syncedAssessmentModule?.id);
   });
+
+  it('deletes all assessment modules when none are used', async () => {
+    const courseData = util.getCourseData();
+
+    // Perform an initial sync with the course's assessment modules.
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
+
+    // Assert there are some assessment modules in the database.
+    const syncedAssessmentModules = await util.dumpTable('assessment_modules');
+    assert.isAtLeast(syncedAssessmentModules.length, 1);
+
+    // Remove all course-level assessment modules.
+    courseData.course.assessmentModules = [];
+
+    // Remove all course instances, thus removing all assessments that would
+    // have specified an assessment module.
+    courseData.courseInstances = {};
+
+    // Sync again.
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    // Assert that there are no assessment sets in the database.
+    const remainingAssessmentModules = await util.dumpTable('assessment_modules');
+    assert.isEmpty(remainingAssessmentModules);
+  });
 });

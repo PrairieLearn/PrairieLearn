@@ -148,4 +148,29 @@ describe('Assessment set syncing', () => {
       color: 'turquoise1',
     });
   });
+
+  it('deletes assessment sets when none are used', async () => {
+    const courseData = util.getCourseData();
+
+    // Perform an initial sync with the course's assessment sets.
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
+
+    // Assert there are some assessment sets in the database.
+    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    assert.isAtLeast(syncedAssessmentSets.length, 1);
+
+    // Remove all course-level assessment sets.
+    courseData.course.assessmentSets = [];
+
+    // Remove all course instances, thus removing all assessments that would
+    // have specifies an assessment set.
+    courseData.courseInstances = {};
+
+    // Sync again.
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    // Assert that there are no assessment sets in the database.
+    const remainingAssessmentSets = await util.dumpTable('assessment_sets');
+    assert.isEmpty(remainingAssessmentSets);
+  });
 });
