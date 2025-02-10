@@ -86,7 +86,7 @@ def log_array(arr, arr_name, dim_names):
         "{} array: ({})".format(
             arr_name,
             ", ".join(
-                [f"{dim_names[i]} = {arr.shape[i]}" for i in range(len(arr.shape))]
+                f"{dim_names[i]} = {arr.shape[i]}" for i in range(len(arr.shape))
             ),
         )
     )
@@ -535,7 +535,7 @@ def check_library(library):
                     )
                 if len(variant.answers) > 0:
                     answer_letters = "".join(
-                        [ind2chr(i) for i in correct_answer_indexes]
+                        ind2chr(i) for i in correct_answer_indexes
                     )
                 else:
                     answer_letters = "*"
