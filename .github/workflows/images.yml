@@ -6,6 +6,11 @@ on:
       - 'master'
 
 jobs:
+  build-grader-images:
+    uses: ./.github/workflows/grader-images.yml
+    secrets: inherit
+    with:
+      tag_latest: true
   docker:
     runs-on: ubuntu-latest
     steps:
@@ -54,62 +59,6 @@ jobs:
           push: true
           no-cache: true
           tags: prairielearn/prairielearn:latest,prairielearn/prairielearn:${{ github.sha }}
-
-      ######################################################################################################
-      # grader-c
-      - name: Check whether graders/c was modified
-        run: tools/check_path_modified.sh graders/c graders_c_modified
-      - name: Build and push prairielearn/grader-c
-        if: ${{ env.graders_c_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: graders/c
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/grader-c:latest,prairielearn/grader-c:${{ github.sha }}
-
-      ######################################################################################################
-      # grader-java
-      - name: Check whether graders/java was modified
-        run: tools/check_path_modified.sh graders/java graders_java_modified
-      - name: Build and push prairielearn/grader-java
-        if: ${{ env.graders_java_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: graders/java
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/grader-java:latest,prairielearn/grader-java:${{ github.sha }}
-
-      ######################################################################################################
-      # grader-python
-      - name: Check whether graders/python was modified
-        run: tools/check_path_modified.sh graders/python graders_python_modified
-      - name: Build and push prairielearn/grader-python
-        if: ${{ env.graders_python_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: graders/python
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/grader-python:latest,prairielearn/grader-python:${{ github.sha }}
-
-      ######################################################################################################
-      # grader-r
-      - name: Check whether graders/r was modified
-        run: tools/check_path_modified.sh graders/r graders_r_modified
-      - name: Build and push prairielearn/grader-r
-        if: ${{ env.graders_r_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: graders/r
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/grader-r:latest,prairielearn/grader-r:${{ github.sha }}
 
       ######################################################################################################
       # workspace-desktop
