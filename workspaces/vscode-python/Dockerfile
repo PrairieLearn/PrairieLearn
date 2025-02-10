@@ -8,25 +8,26 @@ FROM codercom/code-server:4.96.4-noble
 # images have a default "ubuntu" user 1000:1000, and in that case, the
 # "coder" user may already be configured as 1001:1001.
 USER root
-RUN OLD_UID=$(id -u coder) && \
-    OLD_GID=$(id -g coder) && \
+RUN OLD_UID="$(id -u coder)" && \
+    OLD_GID="$(id -g coder)" && \
     NEW_UID=1001 && \
     NEW_GID=1001 && \
-    groupmod -g $NEW_GID coder && \
-    usermod -u $NEW_UID -g $NEW_GID coder && \
-    find /home -user $OLD_UID -execdir chown -h $NEW_UID {} + && \
-    find /home -group $OLD_GID -execdir chgrp -h $NEW_GID {} +
+    groupmod -g "$NEW_GID" coder && \
+    usermod -u "$NEW_UID" -g "$NEW_GID" coder && \
+    find /home -user "$OLD_UID" -execdir chown -h "$NEW_UID" {} + && \
+    find /home -group "$OLD_GID" -execdir chgrp -h "$NEW_GID" {} +
 
 # Remove sudo permissions for default user, then test
 USER root
+# hadolint ignore=DL3004
 RUN find /etc/sudoers.d -type f -not -name README -delete && \
     sudo -u coder bash -c 'if sudo echo "Test failed: User can sudo" ; then false ; fi'
-
 # Apt installs: Enable manpages with "unminimize", and then install common utilities.
 USER root
+
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-    apt-get install -y man-db unminimize && \
+    apt-get install -y --no-install-recommends man-db unminimize && \
     yes | unminimize && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
@@ -46,25 +47,26 @@ SHELL ["/bin/bash", "-c"]
 # This is a prerequisite for the VS Code extensions in the following steps.
 USER coder
 COPY requirements.txt /
-RUN export arch=`uname -m` \
- && curl -sfLO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
- && chmod +x "Miniforge3-Linux-${arch}.sh" \
- && ./"Miniforge3-Linux-${arch}.sh" -b -p /home/coder/conda \
- # Install conda and mamba hooks for future interactive bash sessions:
- && /home/coder/conda/bin/mamba init bash \
- # Activate hooks in the current noninteractive session:
- && . "/home/coder/conda/etc/profile.d/conda.sh" \
- && . "/home/coder/conda/etc/profile.d/mamba.sh" \
- && mamba activate \
- # Installing `pygraphviz` with pip would require `build-essentials`, `graphviz`,
- # and `graphviz-dev` to be installed at the OS level, which would increase the
- # image size. Instead, we install it from Conda, which prebuilds it and also
- # automatically installs a Conda-specific `graphviz` dependency.
- && mamba install --yes $(grep pygraphviz /requirements.txt | head -n 1) \
- && pip install -r /requirements.txt \
- && rm "Miniforge3-Linux-${arch}.sh" \
- && mamba clean --all --yes --quiet \
- && pip cache purge
+# hadolint ignore=SC1091
+RUN arch="$(uname -m)" \
+    && curl -sfLO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
+    && chmod +x "Miniforge3-Linux-${arch}.sh" \
+    && ./"Miniforge3-Linux-${arch}.sh" -b -p /home/coder/conda \
+    # Install conda and mamba hooks for future interactive bash sessions:
+    && /home/coder/conda/bin/mamba init bash \
+    # Activate hooks in the current noninteractive session:
+    && . "/home/coder/conda/etc/profile.d/conda.sh" \
+    && . "/home/coder/conda/etc/profile.d/mamba.sh" \
+    && mamba activate \
+    # Installing `pygraphviz` with pip would require `build-essentials`, `graphviz`,
+    # and `graphviz-dev` to be installed at the OS level, which would increase the
+    # image size. Instead, we install it from Conda, which prebuilds it and also
+    # automatically installs a Conda-specific `graphviz` dependency.
+    && mamba install --yes "$(grep pygraphviz /requirements.txt | head -n 1)" \
+    && pip install --no-cache-dir -r /requirements.txt \
+    && rm "Miniforge3-Linux-${arch}.sh" \
+    && mamba clean --all --yes --quiet \
+    && pip cache purge
 
 # Install VS Code extensions and clear the extension cache to reduce image size.
 # We have first installed Python in the previous step, as specified in the
