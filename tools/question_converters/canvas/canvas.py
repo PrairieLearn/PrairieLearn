@@ -209,7 +209,7 @@ class Course(Canvas):
         students = {}
         for result in self.request(f"{self.url_prefix}/users?enrollment_type=student"):
             for student in result:
-                sis_user_id = student["sis_user_id"] if student["sis_user_id"] else "0"
+                sis_user_id = student["sis_user_id"] or "0"
                 students[sis_user_id] = student
         return students
 

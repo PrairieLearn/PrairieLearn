@@ -76,11 +76,9 @@ os.makedirs(quiz_name)
 
 pl_quiz = {
     "uuid": str(uuid.uuid4()),
-    "type": args.assessment_type
-    if args.assessment_type
-    else "Exam"
+    "type": args.assessment_type or ("Exam"
     if quiz["time_limit"]
-    else "Homework",
+    else "Homework"),
     "title": quiz["title"],
     "text": quiz["description"],
     "set": args.assessment_set,
