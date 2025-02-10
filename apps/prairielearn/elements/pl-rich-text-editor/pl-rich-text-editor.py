@@ -34,9 +34,9 @@ def get_answer_name(file_name: str) -> str:
 
 
 def element_inner_html(element: lxml.html.HtmlElement) -> str:
-    return (element.text or "") + "".join(
-        [str(lxml.html.tostring(c), "utf-8") for c in element.iterchildren()]
-    )
+    return (element.text or "") + "".join([
+        str(lxml.html.tostring(c), "utf-8") for c in element.iterchildren()
+    ])
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:

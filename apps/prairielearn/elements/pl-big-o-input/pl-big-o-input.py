@@ -309,17 +309,15 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             }
 
     elif result == "invalid":
-        invalid_answer = random.choice(
-            [
-                "n + 1.234",
-                "1 and 0",
-                "tan(n)",
-                "n + m",
-                "n +* 1",
-                "n + 1\\n",
-                "n # some text",
-            ]
-        )
+        invalid_answer = random.choice([
+            "n + 1.234",
+            "1 and 0",
+            "tan(n)",
+            "n + m",
+            "n +* 1",
+            "n + 1\\n",
+            "n # some text",
+        ])
 
         # TODO add detailed format errors if this gets checked in the future
         data["raw_submitted_answers"][name] = invalid_answer

@@ -9,23 +9,21 @@ import lxml.html
 ElementReplacement = str | lxml.html.HtmlElement | list[lxml.html.HtmlElement] | None
 
 # https://developer.mozilla.org/en-US/docs/Glossary/Void_element
-VOID_ELEMENTS = frozenset(
-    {
-        "area",
-        "base",
-        "br",
-        "col",
-        "embed",
-        "hr",
-        "img",
-        "input",
-        "link",
-        "meta",
-        "source",
-        "track",
-        "wbr",
-    }
-)
+VOID_ELEMENTS = frozenset({
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "source",
+    "track",
+    "wbr",
+})
 
 UNESCAPED_ELEMENTS = frozenset({"script", "style"})
 
