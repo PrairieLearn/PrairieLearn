@@ -372,6 +372,8 @@ jobs:
         timeout-minutes: 5
       - name: Run the Dockerfile linter
         run: make lint-docker
+      - name: Check for markdown linting errors
+        run: make lint-markdown
       - name: Check for warnings in documentation
         run: make build-docs
       - name: Check dependency structure
