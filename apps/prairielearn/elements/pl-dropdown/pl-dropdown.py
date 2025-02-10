@@ -27,7 +27,7 @@ def get_options(
     submitted_answer = data.get("submitted_answers", {}).get(answers_name, None)
     options = []
     for child in element:
-        if child.tag in {"pl-answer"}:
+        if child.tag == "pl-answer":
             pl.check_attribs(child, required_attribs=[], optional_attribs=["correct"])
             child_html = pl.inner_html(child).strip()
             options.append({
@@ -40,7 +40,7 @@ def get_options(
 def get_solution(element: lxml.html.HtmlElement, data: pl.QuestionData) -> str:
     solution = []
     for child in element:
-        if child.tag in {"pl-answer"}:
+        if child.tag == "pl-answer":
             pl.check_attribs(child, required_attribs=[], optional_attribs=["correct"])
             is_correct = pl.get_boolean_attrib(child, "correct", False)
             child_html = pl.inner_html(child).strip()
@@ -158,7 +158,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     valid_options = [BLANK_ANSWER]
 
     for child in element:
-        if child.tag in {"pl-answer"}:
+        if child.tag == "pl-answer":
             pl.check_attribs(child, required_attribs=[], optional_attribs=["correct"])
             child_html = pl.inner_html(child).strip()
             valid_options.append(child_html)
