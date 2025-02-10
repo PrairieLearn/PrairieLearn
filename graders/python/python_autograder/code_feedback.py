@@ -511,7 +511,7 @@ class Feedback:
         name: str,
         ref: Axes,
         plot: Axes,
-        check_axes_scale: Literal["x", "y", "xy"] | None = None,
+        check_axes_scale: Literal[None, "x", "y", "xy"] = None,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
         report_success: bool = True,  # noqa: FBT001

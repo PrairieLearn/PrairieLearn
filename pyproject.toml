@@ -130,7 +130,9 @@ ignore = [
 "graders/**/*.py" = [
     # Boolean default positional argument
     "FBT002",
-    "D"
+    "D",
+    # Avoid future changes to graders
+    "C419", "PYI061"
 ]
 
 # Directories we don't want strict annotation linting or docstring linting on
