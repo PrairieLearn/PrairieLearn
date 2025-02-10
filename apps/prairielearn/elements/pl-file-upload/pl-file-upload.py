@@ -10,11 +10,14 @@ import lxml.html
 import prairielearn as pl
 from prairielearn.colors import PLColor
 
+FILE_NAMES_DEFAULT = None
+OPTIONAL_FILE_NAMES_DEFAULT = None
+FILE_PATTERNS_DEFAULT = None
+OPTIONAL_FILE_PATTERNS_DEFAULT = None
+
 
 def get_file_names_as_array(raw_file_names: str | None) -> list[str]:
-    """
-    Converts a comma-separated list of file names into an array
-    """
+    """Convert a comma-separated list of file names into an array"""
     if not raw_file_names:
         return []
 
@@ -33,7 +36,7 @@ def match_regex_with_files(
     regex_patterns: list[str], files_names: set[str], limit_1: bool
 ) -> tuple[list[str], list[str]]:
     """
-    Takes a list of regexes and a list of file names and matches them 1:n or 1:1, depending on limit_1 parameter
+    Take a list of regexes and a list of file names and matches them 1:n or 1:1, depending on limit_1 parameter
     Returns a tuple of matched file names and unmatched patterns
     """
     unmatched_patterns = regex_patterns.copy()
@@ -51,7 +54,7 @@ def match_regex_with_files(
 
 def glob_to_regex(glob_pattern: str) -> str:
     """
-    Translates a glob pattern into a regex that can be handled consistently across Python and JS
+    Translate a glob pattern into a regex that can be handled consistently across Python and JS
     Returns the regex as string, or raises a ValueError if the glob is invalid
     """
     if "/" in glob_pattern:
@@ -68,7 +71,7 @@ def get_answer_name(
     optional_file_patterns: str | None = None,
 ) -> str:
     """
-    Computes the unique identifer of a pl-file-upload element, which is the SHA1 hash of all its
+    Compute the unique identifer of a pl-file-upload element, which is the SHA1 hash of all its
     file name attributes
     """
     # Using / as separator as the only character guaranteed not to appear in file names
@@ -107,10 +110,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     if (
-        not pl.get_string_attrib(element, "file-names", None)
-        and not pl.get_string_attrib(element, "optional-file-names", None)
-        and not pl.get_string_attrib(element, "file-patterns", None)
-        and not pl.get_string_attrib(element, "optional-file-patterns", None)
+        not pl.get_string_attrib(element, "file-names", FILE_NAMES_DEFAULT)
+        and not pl.get_string_attrib(
+            element, "optional-file-names", OPTIONAL_FILE_NAMES_DEFAULT
+        )
+        and not pl.get_string_attrib(element, "file-patterns", FILE_PATTERNS_DEFAULT)
+        and not pl.get_string_attrib(
+            element, "optional-file-patterns", OPTIONAL_FILE_PATTERNS_DEFAULT
+        )
     ):
         raise ValueError(
             'At least one attribute of "file-names", "optional-file-names", "file-patterns", or "optional-file-patterns" must be provided.'
@@ -132,19 +139,23 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     uuid = pl.get_uuid()
 
-    raw_file_names = pl.get_string_attrib(element, "file-names", None)
+    raw_file_names = pl.get_string_attrib(element, "file-names", FILE_NAMES_DEFAULT)
     file_names = sorted(get_file_names_as_array(raw_file_names))
     file_names_json = json.dumps(file_names, allow_nan=False)
 
-    raw_opt_file_names = pl.get_string_attrib(element, "optional-file-names", None)
+    raw_opt_file_names = pl.get_string_attrib(
+        element, "optional-file-names", OPTIONAL_FILE_NAMES_DEFAULT
+    )
     opt_file_names = sorted(get_file_names_as_array(raw_opt_file_names))
     opt_file_names_json = json.dumps(opt_file_names, allow_nan=False)
 
-    raw_file_patterns = pl.get_string_attrib(element, "file-patterns", None)
+    raw_file_patterns = pl.get_string_attrib(
+        element, "file-patterns", FILE_PATTERNS_DEFAULT
+    )
     file_patterns = sorted(get_file_names_as_array(raw_file_patterns))
 
     raw_opt_file_patterns = pl.get_string_attrib(
-        element, "optional-file-patterns", None
+        element, "optional-file-patterns", OPTIONAL_FILE_PATTERNS_DEFAULT
     )
     opt_file_patterns = sorted(get_file_names_as_array(raw_opt_file_patterns))
 
@@ -214,14 +225,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    raw_file_names = pl.get_string_attrib(element, "file-names", None)
+    raw_file_names = pl.get_string_attrib(element, "file-names", FILE_NAMES_DEFAULT)
     file_names = get_file_names_as_array(raw_file_names)
-    raw_opt_file_names = pl.get_string_attrib(element, "optional-file-names", None)
+    raw_opt_file_names = pl.get_string_attrib(
+        element, "optional-file-names", OPTIONAL_FILE_NAMES_DEFAULT
+    )
     opt_file_names = get_file_names_as_array(raw_opt_file_names)
-    raw_file_patterns = pl.get_string_attrib(element, "file-patterns", None)
+    raw_file_patterns = pl.get_string_attrib(
+        element, "file-patterns", FILE_PATTERNS_DEFAULT
+    )
     file_patterns = get_file_names_as_array(raw_file_patterns)
     raw_opt_file_patterns = pl.get_string_attrib(
-        element, "optional-file-patterns", None
+        element, "optional-file-patterns", OPTIONAL_FILE_PATTERNS_DEFAULT
     )
     opt_file_patterns = get_file_names_as_array(raw_opt_file_patterns)
 
