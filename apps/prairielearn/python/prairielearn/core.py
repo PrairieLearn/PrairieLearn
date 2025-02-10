@@ -1964,10 +1964,7 @@ ListItem = TypeVar("ListItem")
 def partition(
     data: Iterable[ListItem], pred: Callable[[ListItem], bool]
 ) -> tuple[list[ListItem], list[ListItem]]:
-    """
-    Implements a partition function, splitting the data into two lists based on the predicate.
-    """
-
+    """Implement a partition function, splitting the data into two lists based on the predicate."""
     yes, no = [], []
     for d in data:
         if pred(d):
