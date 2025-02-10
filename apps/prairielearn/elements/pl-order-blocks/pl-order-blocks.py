@@ -209,7 +209,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         html_tags: lxml.html.HtmlElement,
         index: int,
         group_info: GroupInfo,
-    ):
+    ) -> None:
         if html_tags.tag != "pl-answer":
             raise ValueError(
                 "Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
