@@ -51,9 +51,5 @@
       "fileMatch": ["{exampleCourse,testCourse,templateCourse}/questions/**/info.json"],
       "url": "/apps/prairielearn/src/schemas/schemas/infoQuestion.json"
     },
-    {
-      "fileMatch": [".coderabbit.yaml"],
-      "url": "https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json"
-    }
   ]
 }

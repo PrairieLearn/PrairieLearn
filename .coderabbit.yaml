@@ -1,6 +1,7 @@
-language: asdfasdf
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+language: en
 reviews:
-  type: chill
+  profile: chill
   request_changes_workflow: false # Do not approve after comments resolved
   high_level_summary: true
   review_status: false
