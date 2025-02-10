@@ -95,7 +95,6 @@ ignore = [
     "RUF039",
     "RUF036",
     "PYI061",
-    "F841",
     "FURB140",
     "FURB152",
     "FURB171",
