@@ -73,38 +73,42 @@ For example, suppose Fall 2017 is the completed semester and it is now Spring 20
 
 First, edit `pl-exp101/courseInstance/Fa17/infoCourseInstance.json` to add a section for `student@example.com`:
 
-```
-    "allowAccess": [
-        {
-            "startDate": "2017-08-19T00:00:01",
-            "endDate": "2017-12-31T23:59:59"
-        },
-        {
-            "uids": ["student@example.com"],
-            "startDate": "2018-02-01T00:00:01",
-            "endDate": "2018-02-28T23:59:59"
-        }
-    ]
+```json title="infoCourseInstance.json"
+{
+  "allowAccess": [
+    {
+      "startDate": "2017-08-19T00:00:01",
+      "endDate": "2017-12-31T23:59:59"
+    },
+    {
+      "uids": ["student@example.com"],
+      "startDate": "2018-02-01T00:00:01",
+      "endDate": "2018-02-28T23:59:59"
+    }
+  ]
+}
 ```
 
 Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoAssessment.json` to add a section for `student@example.com`:
 
-```
-    "allowAccess": [
-        {
-            "mode": "Exam",
-            "credit": 100,
-            "startDate": "2017-12-14T00:00:01",
-            "endDate": "2017-12-22T22:10:59"
-        },
-        {
-            "uids": ["student@example.com"],
-            "mode": "Exam",
-            "credit": 100,
-            "startDate": "2018-02-01T00:00:01",
-            "endDate": "2018-02-28T23:59:59"
-        }
-    ]
+```json title="infoAssessment.json"
+{
+  "allowAccess": [
+    {
+      "mode": "Exam",
+      "credit": 100,
+      "startDate": "2017-12-14T00:00:01",
+      "endDate": "2017-12-22T22:10:59"
+    },
+    {
+      "uids": ["student@example.com"],
+      "mode": "Exam",
+      "credit": 100,
+      "startDate": "2018-02-01T00:00:01",
+      "endDate": "2018-02-28T23:59:59"
+    }
+  ]
+}
 ```
 
 See [Access control](accessControl/index.md) for more details.
@@ -125,8 +129,10 @@ unable to provide new submissions. This is regardless of whether the end date
 specified in an access control is reached. If the examination is a take-home exam,
 then the feature can be disabled by specifying in the `infoAssessment.json`:
 
-```
-"autoClose": false
+```json title="infoAssessment.json"
+{
+  "autoClose": false
+}
 ```
 
 See [Auto-closing Exam assessments](assessment/index.md#auto-closing-exam-assessments)
@@ -169,7 +175,7 @@ To learn more about where files are stored, please see [clientFiles and serverFi
 To reference a question in the `clientFilesQuestion` folder from `server.py`,
 use the relative path from the base of the question.
 
-```
+```text
 ./clientFilesQuestion/<your_file_here>
 ```
 

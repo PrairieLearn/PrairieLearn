@@ -180,7 +180,7 @@ Most of these prerequisites can be installed using the package manager of your O
 
   The above command installs everything. Alternatively, you can run each step individually:
 
-  ```
+  ```sh
   yarn
   make build
   make python-deps
