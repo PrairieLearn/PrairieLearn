@@ -463,9 +463,9 @@ def convert_string_to_sympy(
     assumptions: None | AssumptionsDictT = None,
 ) -> sympy.Expr:
     """
-    Converts a string to a sympy expression, with optional restrictions on
+    Convert a string to a sympy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
-    an exception is raised with a message that can be displayed to the user.
+    raise an exception with a message that can be displayed to the user.
 
     Parameters:
         expr: The string to convert to a sympy expression.
