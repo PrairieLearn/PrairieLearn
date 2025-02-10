@@ -419,3 +419,19 @@ You are highly encouraged to avoid changes such as the ones above to questions w
 Neither of these options will affect the score a student may already have obtained in any previous variants. However, any work a student may have started on an open variant but not yet submitted will be lost.
 
 For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](regrading.md).
+
+## When I open some of the CSV downloads, some of the data is in the wrong columns
+
+When loading some assessment download files, such as `*_all_submissions.csv`, in Excel, you may see that some data appears to be in the wrong column and some lines wrap incorrectly. This is caused by the fact that these files contain JSON data in the `Params` that requires complex escaping to be written to a CSV file, and Excel does not correctly support this. To read these files you can use Pandas in Python. You can then save it to a new CSV without the `Params` JSON data for processing in Excel, save it in JSON format, or process it directly in Python. For example:
+
+```python
+import pandas as pd
+df = pd.read_csv(r'PREFIX_all_submissions.csv')
+
+# Strip the JSON Params data and save to a new CSV
+df2 = df.drop(columns=['Params'])
+df2.to_csv(r'PREFIX_all_submissions_no_params.csv', index=False)
+
+# Write all the data (including Params) to a JSON file
+df.to_json(r'PREFIX_all_submissions.json', orient='records')
+```
