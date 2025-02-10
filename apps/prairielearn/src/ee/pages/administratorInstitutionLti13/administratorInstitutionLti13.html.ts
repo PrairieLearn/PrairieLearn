@@ -1,8 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
-import { Navbar } from '../../../components/Navbar.html.js';
+import { PageLayout } from '../../../components/PageLayout.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
 
@@ -23,62 +22,56 @@ export function AdministratorInstitutionLti13({
   platform_defaults: LTI13InstancePlatforms;
   canonicalHost: string;
 }): string {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Institution Admin' })}
-        ${compiledScriptTag('administratorInstitutionLti13Client.ts')}
-      </head>
-      <body>
-        ${Navbar({
-          resLocals: { ...resLocals, institution },
-          navbarType: 'administrator_institution',
-          navPage: 'administrator_institution',
-          navSubPage: 'lti13',
-        })}
-        <main id="content" class="container mb-4">
-          <h2 class="h4">LTI 1.3 / Learning Tools Interoperability</h2>
-          <p>
-            ${lti13Instances.length} instance${lti13Instances.length === 1 ? '' : 's'} configured.
-          </p>
-          <hr />
+  return PageLayout({
+    resLocals: {
+      ...resLocals,
+      institution,
+    },
+    pageTitle: 'LTI 1.3 - Institution Admin',
+    headContent: [compiledScriptTag('administratorInstitutionLti13Client.ts')],
+    navContext: {
+      type: 'administrator_institution',
+      page: 'administrator_institution',
+      subPage: 'lti13',
+    },
+    content: html`
+      <h2 class="h4">LTI 1.3 / Learning Tools Interoperability</h2>
+      <p>${lti13Instances.length} instance${lti13Instances.length === 1 ? '' : 's'} configured.</p>
+      <hr />
 
-          <div class="row">
-            <div class="col-3">
-              ${lti13Instances.length > 0 ? 'Please select an instance:' : ''}
+      <div class="row">
+        <div class="col-3">
+          ${lti13Instances.length > 0 ? 'Please select an instance:' : ''}
 
-              <nav class="nav nav-pills flex-column">
-                ${lti13Instances.map((i) => {
-                  return html`
-                    <a class="nav-link ${i.id === instance?.id ? 'active' : ''}" href="${i.id}">
-                      <span style="white-space: nowrap"> ${i.name ? i.name : `#${i.id}`} </span>
-                      <span style="white-space: nowrap">(${i.platform})</span>
-                    </a>
-                  `;
-                })}
-              </nav>
-              <form method="POST">
-                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                <button
-                  class="btn btn-outline-success btn-block my-4"
-                  type="submit"
-                  name="__action"
-                  value="add_instance"
-                >
-                  Add a new LTI 1.3 instance
-                </button>
-              </form>
-            </div>
+          <nav class="nav nav-pills flex-column">
+            ${lti13Instances.map((i) => {
+              return html`
+                <a class="nav-link ${i.id === instance?.id ? 'active' : ''}" href="${i.id}">
+                  <span style="white-space: nowrap"> ${i.name ? i.name : `#${i.id}`} </span>
+                  <span style="white-space: nowrap">(${i.platform})</span>
+                </a>
+              `;
+            })}
+          </nav>
+          <form method="POST">
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <button
+              class="btn btn-outline-success btn-block my-4"
+              type="submit"
+              name="__action"
+              value="add_instance"
+            >
+              Add a new LTI 1.3 instance
+            </button>
+          </form>
+        </div>
 
-            <div class="col-9">
-              ${LTI13Instance(instance, resLocals, platform_defaults, canonicalHost)}
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+        <div class="col-9">
+          ${LTI13Instance(instance, resLocals, platform_defaults, canonicalHost)}
+        </div>
+      </div>
+    `,
+  });
 }
 
 function LTI13Instance(

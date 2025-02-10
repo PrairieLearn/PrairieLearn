@@ -20,7 +20,7 @@ WITH
           js.id,
           'number',
           js.number
-        )
+        
       ) AS jobs
     FROM
       course_requests AS cr

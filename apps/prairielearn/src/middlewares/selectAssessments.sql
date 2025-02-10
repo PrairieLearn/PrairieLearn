@@ -1,7 +1,8 @@
 -- BLOCK select_assessments
 SELECT
   (aset.abbreviation || a.number) AS assessment_label,
-  a.id
+  a.id,
+  a.title
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
