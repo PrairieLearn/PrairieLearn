@@ -317,8 +317,7 @@ class Quiz(CourseSubObject):
                     i += 1
                 if not qfilter or qfilter(question["id"]):
                     questions[question["id"]] = question
-        if None in groups:
-            del groups[None]
+        groups.pop(None, None)
         for grp in groups.values():
             for question in [
                 q

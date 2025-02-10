@@ -87,9 +87,7 @@ ignore = [
     "D107", # undocumented-public-init
     "PLW1508",
     "FURB122",
-    "RUF051",
     "FURB110",
-    "RUF027",
     "RUF039",
     "RUF036",
     "PYI061",
