@@ -534,9 +534,7 @@ def check_library(library):
                         f"question {question_i + 1}, variant {i_variant + 1} (line {variant.line_number}): more than one correct answer"
                     )
                 if len(variant.answers) > 0:
-                    answer_letters = "".join(
-                        ind2chr(i) for i in correct_answer_indexes
-                    )
+                    answer_letters = "".join(ind2chr(i) for i in correct_answer_indexes)
                 else:
                     answer_letters = "*"
                 variant_infos.append(

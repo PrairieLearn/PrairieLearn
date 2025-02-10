@@ -102,12 +102,16 @@ class PLTestCase(unittest.TestCase):
         if cls.total_iters == 1:
             total = sum(m.__dict__["points"] for m in methods)
         else:
-            once = sum(m.__dict__["points"]
+            once = sum(
+                m.__dict__["points"]
                 for m in methods
-                if not m.__dict__.get("__repeated__", True))
-            several = sum(m.__dict__["points"]
+                if not m.__dict__.get("__repeated__", True)
+            )
+            several = sum(
+                m.__dict__["points"]
                 for m in methods
-                if m.__dict__.get("__repeated__", True))
+                if m.__dict__.get("__repeated__", True)
+            )
             total = cls.total_iters * several + once
         return total
 
