@@ -42,6 +42,7 @@ ignore = [
     # These rules were discussed and disabled
     "D203", # incorrect-blank-line-before-class
     "D212", # multi-line-summary-first-line
+    "D205", # missing-blank-line-after-summary (we use a multi-line description instead of summaries sometimes)
     "D400", # missing-trailing-period
     "D415", # missing-terminal-punctuation
     "ANN401", # any-type
@@ -68,7 +69,6 @@ ignore = [
     "D103", # undocumented-public-function
     "D104", # undocumented-public-package
     "D107", # undocumented-public-init
-    "D205", # missing-blank-line-after-summary
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
@@ -105,13 +105,16 @@ ignore = [
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
 
 "graders/**/*.py" = [
-    "FBT002", # FBT002 - Boolean default positional argument
-    "D",
+    # Boolean default positional argument
+    "FBT002",
+    "D"
 ]
-# Directoes we don't want strict docstring linting on (has no public API)
+
+# Directories we don't want strict annotation linting or docstring linting on
+# For example, code with no public API, elements with known issues, or course content.
 "apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D"]
 "apps/prairielearn/python/zygote.py" = ["D"]
-# Directories we don't want strict annotation linting or docstring linting on
+"docs/hooks/*.py" = ["D"]
 "apps/prairielearn/src/tests/**/*.py" = ["D", "ANN"]
 "apps/prairielearn/python/prairielearn/to_precision.py" = ["D"]
 "tools/**/*.py" = ["ANN", "D"]
@@ -122,7 +125,6 @@ ignore = [
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
 "apps/prairielearn/python/test/**/*.py" = ["D", "ANN"]
-"docs/hooks/*.py" = ["D"]
 
 [tool.ruff.format]
 exclude = [
