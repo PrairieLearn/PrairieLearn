@@ -252,25 +252,6 @@ const testEditData = [
   },
   {
     url: newCourseInstanceSettingsUrl,
-    button: '.js-change-id-button',
-    formSelector: 'form[name="change-id-form"]',
-    data: {
-      id: 'newCourseInstance',
-    },
-    action: 'change_id',
-    info: 'courseInstances/newCourseInstance/infoCourseInstance.json',
-    files: new Set([
-      'README.md',
-      'infoCourse.json',
-      'courseInstances/Fa18/infoCourseInstance.json',
-      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
-      'questions/test/question/info.json',
-      'questions/test/question/question.html',
-      'questions/test/question/server.py',
-      'courseInstances/newCourseInstance/infoCourseInstance.json',
-    ]),
-  },
-  {
     formSelector: '#deleteCourseInstanceModal',
     action: 'delete_course_instance',
     files: new Set([

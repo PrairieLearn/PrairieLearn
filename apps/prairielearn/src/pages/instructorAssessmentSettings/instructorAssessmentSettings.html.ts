@@ -33,7 +33,14 @@ export function InstructorAssessmentSettings({
       page: 'assessment',
       subPage: 'settings',
     },
-    headContent: html` ${compiledScriptTag('instructorAssessmentSettingsClient.ts')} `,
+    headContent: html`
+      ${compiledScriptTag('instructorAssessmentSettingsClient.ts')}
+      <style>
+        .popover {
+          max-width: 50%;
+        }
+      </style>
+    `,
     content: html`
       ${AssessmentSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,
