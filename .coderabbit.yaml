@@ -1,0 +1,39 @@
+language: asdfasdf
+reviews:
+  type: chill
+  request_changes_workflow: false # Do not approve after comments resolved
+  high_level_summary: true
+  review_status: false
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  auto_apply_labels: false
+  suggested_reviewers: true
+  poem: true
+  labeling_instructions: []
+  path_filters: []
+  path_instructions: []
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    ignore_title_keywords: []
+    drafts: true
+    base_branches:
+      - master
+  finishing_touches:
+    docstrings:
+      enabled: true
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: global # Organization-wide learnings
+  issues:
+    scope: local # Repository-specific issues
+  pull_requests:
+    scope: local # Repository-specific pull requests
