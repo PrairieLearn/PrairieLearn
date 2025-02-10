@@ -4,7 +4,7 @@ reviews:
   profile: chill
   request_changes_workflow: false # Do not approve after comments resolved
   high_level_summary: true
-  review_status: false
+  review_status: true
   collapse_walkthrough: true
   changed_files_summary: true
   sequence_diagrams: true
