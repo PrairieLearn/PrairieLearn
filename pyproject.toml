@@ -24,7 +24,6 @@ ignore = [
     "BLE", # flake8-blind-except
     "COM", # flake8-commas
     "C901", # mccabe (complexity checks)
-    "D", # pydocstyle
     "ERA", # eradicate (code in comments)
     "EM", # flake8-errmsg
     "EXE", # flake8-executable
@@ -41,6 +40,11 @@ ignore = [
     "PTH", # flake8-use-pathlib
 
     # These rules were discussed and disabled
+    "D203", # incorrect-blank-line-before-class
+    "D212", # multi-line-summary-first-line
+    "D205", # missing-blank-line-after-summary (we use a multi-line description instead of summaries sometimes)
+    "D400", # missing-trailing-period
+    "D415", # missing-terminal-punctuation
     "ANN401", # any-type
     "ISC003", # explicit-string-concatenation
     "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
@@ -57,6 +61,14 @@ ignore = [
     "TRY300", # try-consider-else (returns in try blocks)
     "TRY301", # raise-within-try
     "TRY003", # raise-vanilla-args (long messages in raise statements)
+
+    # These rules need to be enabled
+    "D100", # undocumented-public-module
+    "D101", # undocumented-public-class
+    "D102", # undocumented-public-method
+    "D103", # undocumented-public-function
+    "D104", # undocumented-public-package
+    "D107", # undocumented-public-init
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
@@ -83,24 +95,37 @@ ignore = [
     # Allow boolean trap pattern in method signatures
     "FBT001", "FBT002", "FBT003",
     # ignore unused parameters in functions
-    "ARG"
+    "ARG",
+    # ignore docstring linting on functions (has no public API)
+    "D103"
 ]
 "apps/prairielearn/python/**/*.py" = ["N803"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
-# Boolean default positional argument
-"graders/**/*.py" = ["FBT002"]
 
-# Directories we don't want strict annotation linting on
-"tools/**/*.py" = ["ANN"]
-"testCourse/**/*.py" = ["ANN"]
-"exampleCourse/**/*.py" = ["ANN"]
+"graders/**/*.py" = [
+    # Boolean default positional argument
+    "FBT002",
+    "D"
+]
+
+# Directories we don't want strict annotation linting or docstring linting on
+# For example, code with no public API, elements with known issues, or course content.
+"apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D"]
+"apps/prairielearn/python/zygote.py" = ["D"]
+"docs/hooks/*.py" = ["D"]
+"apps/prairielearn/src/tests/**/*.py" = ["D", "ANN"]
+"apps/prairielearn/python/prairielearn/to_precision.py" = ["D"]
+"tools/**/*.py" = ["ANN", "D"]
+"testCourse/**/*.py" = ["ANN", "D"]
+"exampleCourse/**/*.py" = ["ANN", "D"]
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-threejs/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
-"apps/prairielearn/src/tests/testFileEditor/courseTemplate/questions/test/**/*.py" = ["ANN"]
+"apps/prairielearn/python/test/**/*.py" = ["D", "ANN"]
+
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
