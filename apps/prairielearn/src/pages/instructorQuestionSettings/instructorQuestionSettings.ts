@@ -43,6 +43,20 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+  if (existingValue === undefined) {
+    if (newValue !== defaultValue) {
+      return newValue;
+    }
+  } else {
+    if (existingValue !== defaultValue && newValue === defaultValue) {
+      return undefined;
+    } else {
+      return newValue;
+    }
+  }
+}
+
 router.post(
   '/test',
   asyncHandler(async (req, res) => {
@@ -137,6 +151,24 @@ router.post(
         if (Array.isArray(req.body.tags)) return req.body.tags;
         return [req.body.tags];
       });
+
+      questionInfo.gradingMethod = propertyValueWithDefault(
+        questionInfo.gradingMethod,
+        req.body.grading_method,
+        'Internal',
+      );
+
+      questionInfo.singleVariant = propertyValueWithDefault(
+        questionInfo.singleVariant,
+        req.body.single_variant === 'on',
+        false,
+      );
+
+      questionInfo.showCorrectAnswer = propertyValueWithDefault(
+        questionInfo.showCorrectAnswer,
+        req.body.show_correct_answer === 'on',
+        true,
+      );
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
