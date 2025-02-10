@@ -67,6 +67,7 @@ ignore = [
     "PLR0915", # too-many-statements
     "PLR0916", # too-many-boolean-expressions
     "PLR0917", # too-many-positional-arguments
+    "PLR6201", # literal-membership (pyright doesn't understand assert_never with sets)
     "PLR2004", # magic-value-comparison
     "PLW1514", # unspecified-encoding
     "RET503", # implicit-return
@@ -86,7 +87,6 @@ ignore = [
     "D104", # undocumented-public-package
     "D107", # undocumented-public-init
     "PLW1508",
-    "PLR6201",
     "FURB122",
     "FURB110",
     "RUF039",
