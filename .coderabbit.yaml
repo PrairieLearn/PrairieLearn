@@ -13,7 +13,7 @@ reviews:
   suggested_labels: true
   auto_apply_labels: false
   suggested_reviewers: true
-  poem: true
+  poem: false
   labeling_instructions: []
   path_filters: []
   path_instructions: []
