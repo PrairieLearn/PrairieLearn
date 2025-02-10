@@ -50,6 +50,6 @@
     {
       "fileMatch": ["{exampleCourse,testCourse,templateCourse}/questions/**/info.json"],
       "url": "/apps/prairielearn/src/schemas/schemas/infoQuestion.json"
-    },
+    }
   ]
 }
