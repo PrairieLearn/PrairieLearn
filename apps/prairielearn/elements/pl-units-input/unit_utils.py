@@ -29,7 +29,7 @@ class ComparisonType(Enum):
 def get_only_units_grading_fn(
     *, ureg: UnitRegistry, correct_ans: str
 ) -> Callable[[str], tuple[bool, str | None]]:
-    """Returns the grading function used for units only grading mode."""
+    """Return the grading function used for units only grading mode."""
     parsed_correct_ans = ureg.Quantity(correct_ans)
 
     def grade_only_units(submitted_ans: str) -> tuple[bool, str | None]:

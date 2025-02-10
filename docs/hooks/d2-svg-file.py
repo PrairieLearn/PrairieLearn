@@ -20,7 +20,7 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     original_render = plugin.renderer
     plugin.keys = set()
 
-    def new_render(source, opts, alt):
+    def new_render(source, opts, alt):  # noqa: ANN001, ANN202
         """
         Hook into the renderer to provide a link to the rendered SVG.
         This only hooks into the renderer for superfences, not for images.
@@ -48,7 +48,7 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     return config
 
 
-def on_page_content(html: str, page: Page, config, files):  # noqa: ARG001
+def on_page_content(html: str, page: Page, config, files) -> str:  # noqa: ANN001, ARG001
     relative_route = page.url.count("/") * "../" + "assets/svg/"
     # Replace data-svg-file with a href to the svg file.
     # This has to be done after we check for missing file references
@@ -59,7 +59,7 @@ def on_page_content(html: str, page: Page, config, files):  # noqa: ARG001
     )
 
 
-def on_post_build(config: MkDocsConfig):
+def on_post_build(config: MkDocsConfig) -> None:
     with dbm.open(
         Path(config["plugins"]["d2"].config.cache_dir, "db").as_posix(), "c"
     ) as cache:
