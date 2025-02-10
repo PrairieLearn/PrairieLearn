@@ -64,6 +64,24 @@ async function testRemove(entityName: 'tags' | 'topics') {
   checkEntityOrder(entityName, syncedEntities, courseData);
 }
 
+async function testRemoveAll(entityName: 'tags' | 'topics') {
+  const courseData = util.getCourseData();
+  const { courseDir } = await util.writeAndSyncCourseData(courseData);
+
+  // Remove all questions that could reference the entity.
+  courseData.questions = {};
+
+  // Remove all entities.
+  courseData.course[entityName] = [];
+
+  // Sync the course.
+  await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+  // Ensure that the entity table is empty.
+  const syncedEntities = await util.dumpTable(entityName);
+  assert.isEmpty(syncedEntities);
+}
+
 async function testRename(entityName: 'tags' | 'topics') {
   const courseData = util.getCourseData();
   const oldEntity = makeEntity();
@@ -117,6 +135,14 @@ describe('Tag/topic syncing', () => {
 
   it('removes a topic', async () => {
     await testRemove('topics');
+  });
+
+  it('removes all tags', async () => {
+    await testRemoveAll('tags');
+  });
+
+  it('removes all topics', async () => {
+    await testRemoveAll('topics');
   });
 
   it('renames a tag', async () => {
