@@ -59,8 +59,8 @@ def get_objects(element, data):
     obj_list = []
 
     for child in element:
-        is_stl = child.tag in ["pl-threejs-stl", "pl_threejs_stl"]
-        is_txt = child.tag in ["pl-threejs-txt", "pl_threejs_txt"]
+        is_stl = child.tag in {"pl-threejs-stl", "pl_threejs_stl"}
+        is_txt = child.tag in {"pl-threejs-txt", "pl_threejs_txt"}
         if not (is_stl or is_txt):
             continue
 
@@ -114,7 +114,7 @@ def get_objects(element, data):
         # Common
         # - frame
         frame = pl.get_string_attrib(child, "frame", "body")
-        if frame not in ["body", "space"]:
+        if frame not in {"body", "space"}:
             raise ValueError(f'"frame" must be either "body" or "space": {frame}')
         if frame == "body":
             default_color = "#e84a27"
@@ -188,7 +188,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     text_pose_format = pl.get_string_attrib(
         element, "text-pose-format", TEXT_POSE_FORMAT_DEFAULT
     )
-    if text_pose_format not in ["matrix", "quaternion", "homogeneous"]:
+    if text_pose_format not in {"matrix", "quaternion", "homogeneous"}:
         raise ValueError(
             'attribute "text-pose-format" must be either "matrix", "quaternion", or homogeneous'
         )

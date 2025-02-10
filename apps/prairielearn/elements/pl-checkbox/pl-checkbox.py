@@ -62,7 +62,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     incorrect_answers = []
     index = 0
     for child in element:
-        if child.tag in ["pl-answer", "pl_answer"]:
+        if child.tag in {"pl-answer", "pl_answer"}:
             pl.check_attribs(
                 child, required_attribs=[], optional_attribs=["correct", "feedback"]
             )

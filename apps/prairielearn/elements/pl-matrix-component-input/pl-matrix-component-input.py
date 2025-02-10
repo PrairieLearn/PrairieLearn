@@ -385,7 +385,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if comparison is ComparisonMode.RELABS:
         rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
         atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
-    elif comparison in (ComparisonMode.SIGFIG, ComparisonMode.DECDIG):
+    elif comparison in {ComparisonMode.SIGFIG, ComparisonMode.DECDIG}:
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
     else:
         assert_never(comparison)

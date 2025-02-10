@@ -105,10 +105,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                         for buttons in groups:
                             if buttons.tag == "pl-drawing-button":
                                 type_name = buttons.attrib.get("type", None)
-                                if type_name in (
+                                if type_name in {
                                     "pl-arc-vector-CCW",
                                     "pl-arc-vector-CW",
-                                ):
+                                }:
                                     type_name = "pl-arc-vector"
                                 type_attribs = elements.get_attributes(type_name)
                                 if elements.should_validate_attributes(type_name):

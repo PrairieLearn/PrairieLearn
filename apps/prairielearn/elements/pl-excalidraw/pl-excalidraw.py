@@ -40,7 +40,7 @@ def is_widget_editable(panel: str, gradable: bool, editable: bool) -> bool:
 def is_source_file_name_required(panel: str, gradable: bool, fresh: bool) -> bool:
     """All cases where `NoSource: Raise an error`"""
     return not gradable and (
-        (panel == "question" and fresh) or panel in ("answer", "submission")
+        (panel == "question" and fresh) or panel in {"answer", "submission"}
     )
 
 

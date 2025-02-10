@@ -349,7 +349,7 @@ def worker_loop() -> None:
 
                 # Any function that is not 'file' or 'render' will modify 'data' and
                 # should not be returning anything (because 'data' is mutable).
-                if fcn not in ("file", "render"):
+                if fcn not in {"file", "render"}:
                     if val is None or val is args[-1]:
                         json_outp = try_dumps(
                             {"present": True, "val": args[-1]}, allow_nan=False

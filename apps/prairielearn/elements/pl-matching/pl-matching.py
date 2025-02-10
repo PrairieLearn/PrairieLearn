@@ -105,7 +105,7 @@ def categorize_matches(
         return option
 
     for child in children:
-        if child.tag in ["pl-option", "pl_option"]:
+        if child.tag in {"pl-option", "pl_option"}:
             pl.check_attribs(child, required_attribs=[], optional_attribs=["name"])
             child_html = pl.inner_html(child)
             option_name = pl.get_string_attrib(child, "name", child_html)
@@ -115,7 +115,7 @@ def categorize_matches(
             option = make_option(option_name, child_html)
             options[option_name] = option
 
-        elif child.tag in ["pl-statement", "pl_statement"]:
+        elif child.tag in {"pl-statement", "pl_statement"}:
             pl.check_attribs(child, required_attribs=["match"], optional_attribs=[])
             child_html = pl.inner_html(child)
             match_name = pl.get_string_attrib(child, "match")
