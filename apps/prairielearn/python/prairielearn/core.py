@@ -1948,12 +1948,10 @@ def add_submitted_file(
     if data["submitted_answers"].get("_files") is None:
         data["submitted_answers"]["_files"] = []
     if isinstance(data["submitted_answers"]["_files"], list):
-        data["submitted_answers"]["_files"].append(
-            {
-                "name": file_name,
-                "contents": base64_contents,
-            }
-        )
+        data["submitted_answers"]["_files"].append({
+            "name": file_name,
+            "contents": base64_contents,
+        })
     else:
         add_files_format_error(
             data, '"_files" is present in "submitted_answers" but is not an array'

@@ -82,9 +82,12 @@ class PLTestResult(unittest.TestResult):
                 self.format_errors.append("Your code has a syntax error.")
                 Feedback.set_main_output()
             else:
-                self.results.append(
-                    {"name": name, "filename": "error", "max_points": 1, "points": 0}
-                )
+                self.results.append({
+                    "name": name,
+                    "filename": "error",
+                    "max_points": 1,
+                    "points": 0,
+                })
                 Feedback.set_name("error")
             Feedback.add_feedback("".join(tr_list))
             Feedback.add_feedback("\n\nYour code:\n\n")

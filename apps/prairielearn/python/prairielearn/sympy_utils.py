@@ -589,9 +589,9 @@ def sympy_to_json(
     # Apply substitutions for hidden variables
     a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
     if allow_complex:
-        a_sub = a_sub.subs(
-            [(val, key) for key, val in const.hidden_complex_variables.items()]
-        )
+        a_sub = a_sub.subs([
+            (val, key) for key, val in const.hidden_complex_variables.items()
+        ])
 
     assumptions_dict = {
         str(variable): variable.assumptions0 for variable in a.free_symbols

@@ -69,12 +69,15 @@ class OrderBlocksAnswerData(TypedDict):
     uuid: str
 
 
-FIRST_WRONG_TYPES = frozenset(
-    [FeedbackType.FIRST_WRONG, FeedbackType.FIRST_WRONG_VERBOSE]
-)
-LCS_GRADABLE_TYPES = frozenset(
-    [GradingMethodType.RANKING, GradingMethodType.DAG, GradingMethodType.ORDERED]
-)
+FIRST_WRONG_TYPES = frozenset([
+    FeedbackType.FIRST_WRONG,
+    FeedbackType.FIRST_WRONG_VERBOSE,
+])
+LCS_GRADABLE_TYPES = frozenset([
+    GradingMethodType.RANKING,
+    GradingMethodType.DAG,
+    GradingMethodType.ORDERED,
+])
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
 FEEDBACK_DEFAULT = FeedbackType.NONE
