@@ -211,6 +211,8 @@ Most of these prerequisites can be installed using the package manager of your O
   host    all             all             ::1/128                 trust
   ```
 
+  You may need to restart the PostgreSQL server after changing the file above.
+
 - Run the test suite:
 
   ```sh
