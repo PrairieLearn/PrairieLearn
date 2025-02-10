@@ -328,7 +328,7 @@ jobs:
         run: |-
           sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
           sudo chmod +x /bin/hadolint && sudo curl -fsSL https://d2lang.com/install.sh | sh -s -- && \
-          sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash |  bash -s -- latest /bin
+          sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
