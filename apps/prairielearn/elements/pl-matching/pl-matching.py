@@ -77,7 +77,6 @@ def partition(
     Split the data into two lists based on the predicate.
     TODO move this into prairielearn.py once it's used in another element.
     """
-
     yes, no = [], []
     for d in data:
         if pred(d):

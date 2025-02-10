@@ -647,7 +647,6 @@ def validate_string_as_sympy(
     imaginary_unit: None | str = None,
 ) -> None | str:
     """Try to parse expr as a sympy expression. If it fails, return a string with an appropriate error message for display on the frontend."""
-
     try:
         expr_parsed = convert_string_to_sympy(
             expr,

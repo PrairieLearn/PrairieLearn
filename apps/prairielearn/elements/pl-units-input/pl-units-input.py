@@ -46,7 +46,6 @@ def get_with_units_atol(
     element: lxml.html.HtmlElement, data: pl.QuestionData, ureg: UnitRegistry
 ) -> str:
     """Return the atol string for use in the "with-units" grading mode."""
-
     if pl.has_attrib(element, "atol"):
         return pl.get_string_attrib(element, "atol")
 

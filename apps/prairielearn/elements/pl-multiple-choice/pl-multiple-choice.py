@@ -166,7 +166,6 @@ def get_nota_aota_attrib(
     interpretations. If the value cannot be interpreted as boolean,
     the string representation is used.
     """
-
     try:
         boolean_value = pl.get_boolean_attrib(
             element, name, default != AotaNotaType.FALSE
@@ -178,7 +177,6 @@ def get_nota_aota_attrib(
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
     """Get order type in a backwards-compatible way. New display overwrites old."""
-
     if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
         raise ValueError(
             'Setting answer choice order should be done with the "order" attribute.'
@@ -192,7 +190,6 @@ def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
 
 def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
     """Get display type in a backwards-compatible way. New display overwrites old."""
-
     if pl.has_attrib(element, "inline") and pl.has_attrib(element, "display"):
         raise ValueError(
             'Setting answer choice display should be done with the "display" attribute.'

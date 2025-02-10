@@ -137,7 +137,6 @@ def get_lexer_by_name(name: str) -> pygments.lexer.Lexer | None:
     Find a lexer by both its proper name and any aliases it has.
     Returns None if no lexer is found.
     """
-
     # Search by proper class/language names
     # This returns None if not found, and a class if found.
     lexer_class = pygments.lexers.find_lexer_class(name)

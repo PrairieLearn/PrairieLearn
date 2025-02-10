@@ -92,7 +92,6 @@ def check_answers_names(data: QuestionData, name: str) -> None:
 
 def get_unit_registry() -> UnitRegistry:
     """Get a unit registry using cache folder valid on production machines."""
-
     pid = os.getpid()
     cache_dir = f"/tmp/pint_{pid}"
     return UnitRegistry(cache_folder=cache_dir)
@@ -114,7 +113,6 @@ def grade_answer_parameterized(
             - a string containing feedback
             - None, if there is no feedback (usually this should only occur if the answer is correct)
     """
-
     # Create the data dictionary at first
     data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
 
@@ -153,7 +151,6 @@ def determine_score_params(
     conventions, the return value can be used as a key/value pair in the
     dictionary passed to an element's Mustache template to display a score badge.
     """
-
     if score >= 1:
         return ("correct", True)
     elif score > 0:
@@ -180,7 +177,6 @@ def get_enum_attrib(
     (replacing underscores with dashes and uppercasing). If a default value is
     provided, it must be a member of the given enum.
     """
-
     enum_val, is_default = (
         _get_attrib(element, name)
         if default is None
@@ -212,7 +208,6 @@ def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None
     Set overall question score to be weighted average of all partial scores. Use
     weight_default to fill in a default weight for a score if one is missing.
     """
-
     weight_total = 0
     score_total = 0.0
     for part in data["partial_scores"].values():
@@ -230,7 +225,6 @@ def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None
 
 def set_all_or_nothing_score_data(data: QuestionData) -> None:
     """Give points to main question score if all partial scores are correct."""
-
     data["score"] = 1.0 if all_partial_scores_correct(data) else 0.0
 
 
@@ -954,7 +948,6 @@ def string_from_numpy(
 
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
     """
-
     # if A is a scalar
     if np.isscalar(A):
         assert not isinstance(A, memoryview | str | bytes)
@@ -1039,7 +1032,6 @@ def string_from_number_sigfig(a: _NumericScalarType | str, digits: int = 2) -> s
     Return "a" as a string in which the number, or both the real and imaginary parts of the
     number, have digits significant digits. This function assumes that "a" is of type float or complex.
     """
-
     assert np.isscalar(a)
     assert not isinstance(a, memoryview | bytes)
 
@@ -1747,7 +1739,6 @@ def is_correct_scalar_ra(
 
 def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
     """Compare a_sub and a_tru using digits many digits after the decimal place."""
-
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
         real_comp = is_correct_scalar_dd(a_sub.real, a_tru.real, digits=digits)  # type: ignore
@@ -1765,7 +1756,6 @@ def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
 
 def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
     """Compare a_sub and a_tru using digits many significant figures."""
-
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
         real_comp = is_correct_scalar_sf(a_sub.real, a_tru.real, digits=digits)  # type: ignore
@@ -1794,7 +1784,6 @@ def get_uuid() -> str:
     This is done because certain web components need identifiers to
     start with letters and not numbers.
     """
-
     uuid_string = str(uuid.uuid4())
     random_char = random.choice("abcdef")
 
@@ -1830,7 +1819,6 @@ def escape_invalid_string(string: str) -> str:
 
 def clean_identifier_name(name: str) -> str:
     """Escapes a string so that it becomes a valid Python identifier."""
-
     # Strip invalid characters and weird leading characters so we have
     # a decent python identifier
     name = re.sub("[^a-zA-Z0-9_]", "_", name)
@@ -1894,7 +1882,6 @@ def load_all_extensions(data: QuestionData) -> dict[str, Any]:
     Load all available extensions for a given element.
     Returns an ordered dictionary mapping the extension name to its defined variables and functions
     """
-
     if "extensions" not in data:
         raise ValueError("load_all_extensions() must be called from an element!")
     if len(data["extensions"]) == 0:
@@ -1909,7 +1896,6 @@ def load_all_extensions(data: QuestionData) -> dict[str, Any]:
 
 def load_host_script(script_name: str) -> ModuleType:
     """Small convenience function to load a host element script from an extension."""
-
     # Chop off the file extension because it's unnecessary here
     script_name = script_name.removesuffix(".py")
     return __import__(script_name)
@@ -1942,7 +1928,6 @@ def is_int_json_serializable(n: int) -> bool:
 
 def add_files_format_error(data: QuestionData, error: str) -> None:
     """Add a format error to the data dictionary."""
-
     if data["format_errors"].get("_files") is None:
         data["format_errors"]["_files"] = []
     if isinstance(data["format_errors"]["_files"], list):
@@ -1960,7 +1945,6 @@ def add_submitted_file(
     base64_contents: str,
 ) -> None:
     """Add a submitted file to the data dictionary."""
-
     if data["submitted_answers"].get("_files") is None:
         data["submitted_answers"]["_files"] = []
     if isinstance(data["submitted_answers"]["_files"], list):

@@ -108,7 +108,6 @@ class PrairieLearnColor(sRGB):
         **kwargs: Any,
     ) -> str:
         """Convert to string."""
-
         if names:
             # Get alpha and coordinates resolving undefined values as required
             alpha_float = serialize.get_alpha(parent, alpha, none=False, legacy=False)

@@ -70,7 +70,6 @@ def traverse_and_replace(
     The top entry in count_stack is decremented every time something is moved onto result,
     and when an entry hits zero, the corresponding tag from tail_stack is moved onto result as well.
     """
-
     # Initialize result and work data structures
     result: deque[str] = deque()
 
