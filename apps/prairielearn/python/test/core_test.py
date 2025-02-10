@@ -502,6 +502,10 @@ def test_string_from_numpy(value: Any, args: dict, expected_output: str) -> None
         (np.complex64(complex(1, 2)), {}, "1.0+2.0j"),
         (np.complex64(complex(0, 2)), {}, "0.0+2.0j"),
         (np.complex64(complex(1, 0)), {}, "1.0+0.0j"),
+        # For legacy reasons, we must also support strings.
+        ("0", {}, "0.0"),
+        ("0", {"digits": 1}, "0."),
+        ("0", {"digits": 0}, "0"),
     ],
 )
 def test_string_from_number_sigfig(

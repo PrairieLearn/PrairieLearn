@@ -52,9 +52,7 @@ class BaseElement:
         return True
 
     def get_attributes():
-        """
-        Returns a list of attributes that the element may contain.
-        """
+        """Return a list of attributes that the element may contain."""
         return []
 
 
