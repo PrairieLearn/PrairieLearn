@@ -45,6 +45,7 @@ Note that your score will _never_ go down. For example, if you achieve 90% by 10
 I hope this will all make sense once you've actually tried the homework, but please let me know if you have any questions.
 
 If you believe there is a typo or an error in a question, or if you believe your answer was graded incorrectly, please take a screenshot and let me know with a private piazza post. I have access to all of your submissions and can easily check to see what, if anything, went wrong.
+
 One last note - you'll get more homework on Wednesday, so I suggest you start HW1.1 now.
 
 Good luck!
