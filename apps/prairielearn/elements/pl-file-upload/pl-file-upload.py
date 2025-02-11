@@ -76,7 +76,7 @@ def get_answer_name(
     """
     # Using / as separator as the only character guaranteed not to appear in file names
     combined_name = (
-        (file_names if file_names else "")
+        (file_names or "")
         + ("/" + optional_file_names if optional_file_names else "")
         + ("//" + file_patterns if file_patterns else "")
         + ("////" + optional_file_patterns if optional_file_patterns else "")
@@ -193,7 +193,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     wildcard_files = set(
         match_regex_with_files(file_regex, remaining_files, limit_1=True)[0]
     )
-    remaining_files = remaining_files - wildcard_files
+    remaining_files -= wildcard_files
     optional_files = remaining_files & set(opt_file_names)
     opt_wildcard_files = set(
         match_regex_with_files(opt_file_regex, submitted_file_names, limit_1=False)[0]
