@@ -7,7 +7,7 @@ reviews:
   review_status: true
   collapse_walkthrough: true
   changed_files_summary: true
-  sequence_diagrams: true
+  sequence_diagrams: false
   related_issues: true
   related_prs: true
   suggested_labels: true
@@ -33,7 +33,7 @@ chat:
 
 knowledge_base:
   learnings:
-    scope: global # Organization-wide learnings
+    scope: local # Repository-specific learnings
   issues:
     scope: local # Repository-specific issues
   pull_requests:
