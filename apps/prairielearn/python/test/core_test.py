@@ -79,25 +79,27 @@ def breast_cancer_dataframe() -> pd.DataFrame:
 
 
 def r_types_dataframe() -> pd.DataFrame:
-    return pd.DataFrame({
-        # Scalars
-        "integer": 1,
-        "numeric": 3.15,
-        "logical": False,
-        "character": "foo",
-        # TODO adding in complex numbers won't deserialize correctly, fix this (somehow?)
-        # "complex": complex(1, 2),
-        # Series
-        "numeric-list": pd.Series([1.0] * 3, dtype="float64"),
-        "integer-list": pd.Series([1] * 3, dtype="int64"),
-        # "complex-list": pd.Series(np.array([1, 2, 3]) + np.array([4, 5, 6]) *1j).astype("complex128"),
-        "character-list": pd.Series(["hello", "world", "stat"]),
-        "logical-list": pd.Series([True, False, True]),
-        "character-string-list": pd.Series(["a", "b", "c"]),
-        # Time Dependency: https://pandas.pydata.org/docs/user_guide/timeseries.html
-        "POSIXct-POSIXt-timestamp": pd.Timestamp("2023-01-02T00:00:00.0000000"),
-        "POSIXct-POSIXt-date_range": pd.date_range("2023", freq="D", periods=3),
-    })
+    return pd.DataFrame(
+        {
+            # Scalars
+            "integer": 1,
+            "numeric": 3.15,
+            "logical": False,
+            "character": "foo",
+            # TODO adding in complex numbers won't deserialize correctly, fix this (somehow?)
+            # "complex": complex(1, 2),
+            # Series
+            "numeric-list": pd.Series([1.0] * 3, dtype="float64"),
+            "integer-list": pd.Series([1] * 3, dtype="int64"),
+            # "complex-list": pd.Series(np.array([1, 2, 3]) + np.array([4, 5, 6]) *1j).astype("complex128"),
+            "character-list": pd.Series(["hello", "world", "stat"]),
+            "logical-list": pd.Series([True, False, True]),
+            "character-string-list": pd.Series(["a", "b", "c"]),
+            # Time Dependency: https://pandas.pydata.org/docs/user_guide/timeseries.html
+            "POSIXct-POSIXt-timestamp": pd.Timestamp("2023-01-02T00:00:00.0000000"),
+            "POSIXct-POSIXt-date_range": pd.date_range("2023", freq="D", periods=3),
+        }
+    )
 
 
 @pytest.mark.parametrize(
@@ -693,3 +695,41 @@ def test_string_to_number(
         assert result is not None
         assert type(result) is type(expected_result)
         assert np.allclose(result, expected_result)
+
+
+@pytest.mark.parametrize(
+    ("input_name", "expected_output"),
+    [
+        # Basic alphanumeric cases
+        ("abc", "abc"),
+        ("ABC", "ABC"),
+        ("abc123", "abc123"),
+        ("123abc", "abc"),
+        # Special characters
+        ("hello#world", "hello_world"),
+        ("hello.$world", "hello__world"),
+        ("hello##`'\"world", "hello_____world"),
+        ("hello  world 123", "hello__world_123"),
+        # Leading special characters
+        ("_hello", "hello"),
+        ("123hello", "hello"),
+        # Mixed cases
+        ("HelloWorld!", "HelloWorld_"),
+        ("hello_World_123", "hello_World_123"),
+        ("123_hello_world", "hello_world"),
+        ("___hello___", "hello___"),
+        # Edge cases
+        ("", ""),
+        ("___", ""),
+        ("123", ""),
+        ("123_456", ""),
+        ("!@#$%", ""),
+        # Unicode characters
+        ("hello™world", "hello_world"),
+        ("hello→world", "hello_world"),
+        ("hello\u2122world", "hello_world"),
+    ],
+)
+def test_clean_identifier_name(*, input_name: str, expected_output: str) -> None:
+    """Test clean_identifier_name with various input strings."""
+    assert pl.clean_identifier_name(input_name) == expected_output
