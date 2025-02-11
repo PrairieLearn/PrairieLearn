@@ -17,8 +17,7 @@ SELECT
   description
 FROM
   jsonb_to_recordset($new_course_sharing_sets::JSONB) AS (name text, description text)
-ON CONFLICT (course_id, name) DO
-UPDATE
+ON CONFLICT (course_id, name) DO UPDATE
 SET
   description = EXCLUDED.description;
 

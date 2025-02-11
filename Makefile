@@ -20,6 +20,8 @@ refresh-workspace-hosts-dev:
 
 dev: start-support
 	@yarn dev
+dev-bun:
+	@yarn dev-bun
 dev-workspace-host: start-support
 	@yarn dev-workspace-host
 dev-all: start-support
@@ -67,11 +69,14 @@ lint-python:
 	@python3 -m ruff format --check ./
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+lint-markdown:
+	@yarn markdownlint "docs/**/*.md"
 lint-links:
 	@node tools/validate-links.mjs
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
-
+lint-actions:
+	@actionlint
 format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,ts}"
@@ -90,7 +95,7 @@ typecheck-tools:
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:
-	@yarn pyright --skipunannotated
+	@yarn pyright
 
 changeset:
 	@yarn changeset

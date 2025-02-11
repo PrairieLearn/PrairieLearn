@@ -5,15 +5,23 @@ import { loadSqlEquiv, queryRows, queryRow, queryAsync } from '@prairielearn/pos
 
 import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import { QuestionGenerationContextEmbeddingSchema, QuestionSchema } from '../../lib/db-types.js';
+import {
+  type Issue,
+  QuestionGenerationContextEmbeddingSchema,
+  QuestionSchema,
+} from '../../lib/db-types.js';
+import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
+import { selectCourseById } from '../../models/course.js';
+import { selectQuestionById } from '../../models/question.js';
+import { selectUserById } from '../../models/user.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
 import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-3.5-turbo';
+const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-4o';
 
 /**
  * Generates the common preamble with general PrairieLearn information for the LLM
@@ -56,6 +64,40 @@ ${context}
 `;
 }
 
+async function checkRender(
+  status: 'success' | 'error',
+  errors: string[],
+  courseId: string,
+  userId: string,
+  questionId: string,
+) {
+  // If there was any issue generating the question, we won't yet check rendering.
+  if (status === 'error' || errors.length > 0) return [];
+
+  const question = await selectQuestionById(questionId);
+  const course = await selectCourseById(courseId);
+  const user = await selectUserById(userId);
+
+  const locals = {
+    // The URL prefix doesn't matter here since we won't ever show the result to the user.
+    urlPrefix: '',
+    question,
+    course,
+    user,
+    authn_user: user, // We don't have a separate authn user in this case.
+  };
+  await getAndRenderVariant(null, null, locals);
+
+  // Errors should generally have stack traces. If they don't, we'll filter
+  // them out, but they may not help us much.
+  return ((locals as any).issues as Issue[])
+    .map((issue) => issue.system_data?.courseErrData?.outputBoth as string)
+    .filter((output) => output !== undefined)
+    .map((output) => {
+      return `When trying to render, your code created an error with the following output: \`\`\`${output}\`\`\`\n\nPlease fix it.`;
+    });
+}
+
 /**
  * Builds the context string, consisting of relevant documents.
  *
@@ -66,7 +108,7 @@ ${context}
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
  */
-async function makeContext(
+export async function makeContext(
   client: OpenAI,
   prompt: string,
   promptUserInput: string | undefined,
@@ -199,6 +241,11 @@ export async function generateQuestion({
   questionId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
+  /**
+   * The context about our elements and example questions that was provided
+   * to the LLM.
+   */
+  context: string | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -297,6 +344,11 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     job.data.html = html;
     job.data.python = results?.python;
+    job.data.context = context;
+
+    errors.push(
+      ...(await checkRender(saveResults.status, errors, courseId, userId, saveResults.question_id)),
+    );
 
     if (
       saveResults.status === 'success' &&
@@ -328,6 +380,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     questionId: jobData.data.questionId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
+    context: jobData.data.context,
   };
 }
 
@@ -503,6 +556,8 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   job.data.html = html;
   job.data.python = python;
+
+  errors.push(...(await checkRender(result.status, errors, courseId, userId, questionId)));
 
   if (errors.length > 0 && remainingAttempts > 0) {
     const auto_revisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;

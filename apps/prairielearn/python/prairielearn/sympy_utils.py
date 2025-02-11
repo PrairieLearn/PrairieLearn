@@ -5,7 +5,7 @@ from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from tokenize import TokenError
-from typing import Any, Literal, TypedDict, cast
+from typing import Any, Literal, TypedDict, TypeGuard, cast
 
 import sympy
 from sympy.parsing.sympy_parser import (
@@ -20,7 +20,7 @@ from prairielearn.unicode_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
-SympyMapT = dict[str, Callable | sympy.Basic]
+SympyMapT = dict[str, Callable[..., Any] | sympy.Basic]
 ASTWhiteListT = tuple[type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
 
@@ -33,6 +33,17 @@ class SympyJson(TypedDict):
     _variables: list[str]
     _assumptions: NotRequired[AssumptionsDictT]
     _custom_functions: NotRequired[list[str]]
+
+
+def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
+    return (
+        isinstance(json, dict)
+        and json.get("_type") == "sympy"
+        and isinstance(json.get("_value"), str)
+        and isinstance(json.get("_variables"), list)
+        and isinstance(json.get("_assumptions", {}), dict)
+        and isinstance(json.get("_custom_functions", []), list)
+    )
 
 
 class LocalsForEval(TypedDict):
@@ -377,13 +388,13 @@ def sympy_check(
 
 
 def evaluate(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_complex=False
+    expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> sympy.Expr:
     return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
 
 
 def evaluate_with_source(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_complex=False
+    expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> tuple[sympy.Expr, str]:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
@@ -578,9 +589,9 @@ def sympy_to_json(
     # Apply substitutions for hidden variables
     a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
     if allow_complex:
-        a_sub = a_sub.subs(
-            [(val, key) for key, val in const.hidden_complex_variables.items()]
-        )
+        a_sub = a_sub.subs([
+            (val, key) for key, val in const.hidden_complex_variables.items()
+        ])
 
     assumptions_dict = {
         str(variable): variable.assumptions0 for variable in a.free_symbols
@@ -635,8 +646,7 @@ def validate_string_as_sympy(
     custom_functions: None | list[str] = None,
     imaginary_unit: None | str = None,
 ) -> None | str:
-    """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
-
+    """Try to parse expr as a sympy expression. If it fails, return a string with an appropriate error message for display on the frontend."""
     try:
         expr_parsed = convert_string_to_sympy(
             expr,

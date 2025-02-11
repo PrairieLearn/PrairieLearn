@@ -86,7 +86,7 @@ def log_array(arr, arr_name, dim_names):
         "{} array: ({})".format(
             arr_name,
             ", ".join(
-                [f"{dim_names[i]} = {arr.shape[i]}" for i in range(len(arr.shape))]
+                f"{dim_names[i]} = {arr.shape[i]}" for i in range(len(arr.shape))
             ),
         )
     )
@@ -534,9 +534,7 @@ def check_library(library):
                         f"question {question_i + 1}, variant {i_variant + 1} (line {variant.line_number}): more than one correct answer"
                     )
                 if len(variant.answers) > 0:
-                    answer_letters = "".join(
-                        [ind2chr(i) for i in correct_answer_indexes]
-                    )
+                    answer_letters = "".join(ind2chr(i) for i in correct_answer_indexes)
                 else:
                     answer_letters = "*"
                 variant_infos.append(
@@ -638,7 +636,7 @@ def export_one_question(
             latex_f.write("\n")
             latex_f.write("\\endpgfgraphicnamed\n")
             latex_f.write("\\end{document}\n")
-        nofig = nofig - 1
+        nofig -= 1
         log_and_print(f"generating figure for question {question_name}")
         os.system(
             "pdflatex -jobname="
@@ -732,7 +730,7 @@ def export_library(output_directory, library, topic, tags):
                 )
 
             total_points += question.points
-            qi = qi + 1
+            qi += 1
 
     write_qids(output_directory, topic, qids)
     log_and_print(f"Total points: {total_points:g}")

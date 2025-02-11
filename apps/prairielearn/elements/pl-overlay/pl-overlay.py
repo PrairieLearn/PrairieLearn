@@ -110,13 +110,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # so we don't have to worry about all the alignment possibilities
         if left is not None:
             x = left
-        else:
+        elif right is not None and width is not None:
             x = width - right
+        else:
+            raise ValueError("Either left or width+right must be specified")
 
         if top is not None:
             y = top
-        else:
+        elif bottom is not None and height is not None:
             y = height - bottom
+        else:
+            raise ValueError("Either top or height+bottom must be specified")
 
         hoff = ALIGNMENT_TO_PERC[halign]
         voff = ALIGNMENT_TO_PERC[valign]
@@ -126,12 +130,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             f"top: {y}px; left: {x}px; transform: {transform}; z-index: {next(z_index)}"
         )
 
-        locations.append(
-            {
-                "html": pl.inner_html(child),
-                "outer_style": style,
-            }
-        )
+        locations.append({
+            "html": pl.inner_html(child),
+            "outer_style": style,
+        })
 
     html_params = {
         "width": width,

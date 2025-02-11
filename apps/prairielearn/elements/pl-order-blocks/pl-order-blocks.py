@@ -11,7 +11,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
-from lxml.etree import Comment
+from lxml.etree import _Comment
 from typing_extensions import NotRequired, assert_never
 
 
@@ -69,12 +69,15 @@ class OrderBlocksAnswerData(TypedDict):
     uuid: str
 
 
-FIRST_WRONG_TYPES = frozenset(
-    [FeedbackType.FIRST_WRONG, FeedbackType.FIRST_WRONG_VERBOSE]
-)
-LCS_GRADABLE_TYPES = frozenset(
-    [GradingMethodType.RANKING, GradingMethodType.DAG, GradingMethodType.ORDERED]
-)
+FIRST_WRONG_TYPES = frozenset([
+    FeedbackType.FIRST_WRONG,
+    FeedbackType.FIRST_WRONG_VERBOSE,
+])
+LCS_GRADABLE_TYPES = frozenset([
+    GradingMethodType.RANKING,
+    GradingMethodType.DAG,
+    GradingMethodType.ORDERED,
+])
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -209,7 +212,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         html_tags: lxml.html.HtmlElement,
         index: int,
         group_info: GroupInfo,
-    ):
+    ) -> None:
         if html_tags.tag != "pl-answer":
             raise ValueError(
                 "Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
@@ -311,7 +314,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     index = 0
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
-        if html_tags.tag is Comment:
+        if isinstance(html_tags, _Comment):
             continue
         if html_tags.tag == "pl-block-group":
             if grading_method is not GradingMethodType.DAG:
@@ -327,7 +330,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             used_tags.add(group_tag)
 
             for grouped_tag in html_tags:
-                if html_tags.tag is Comment:
+                if isinstance(grouped_tag, _Comment):
                     continue
                 prepare_tag(
                     grouped_tag, index, {"tag": group_tag, "depends": group_depends}
@@ -382,7 +385,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         assert_never(source_blocks_order)
 
     # prep for visual pairing
-    correct_tags = {block["tag"] for block in all_blocks if block["tag"] is not None}
+    correct_tags = {block["tag"] for block in all_blocks}
     incorrect_tags = {
         block["distractor_for"] for block in all_blocks if block["distractor_for"]
     }
@@ -400,7 +403,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             block2
             for block2 in all_blocks
             if (block["tag"] == block2.get("distractor_for"))
-            and (block["tag"] is not None)
         ]
 
         if len(distractors) == 0:

@@ -29,7 +29,7 @@ BEGIN
                 syncing_course_id,
                 topic->>0,
                 number,
-                topic->>1,
+                COALESCE(topic->>1, ''),
                 topic->>2,
                 FALSE
             FROM UNNEST(course_info_topics) WITH ORDINALITY AS t(topic, number)

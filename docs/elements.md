@@ -638,13 +638,13 @@ The following are valid input format options:
 
 **MATLAB format:**
 
-```
+```m
 [1.23; 4.56]
 ```
 
 **Python format:**
 
-```
+```python
 [[1.23], [4.56]]
 ```
 
@@ -931,6 +931,7 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 | `markdown-shortcuts` | boolean                             | true                 | Whether or not the editor accepts shortcuts based on markdown format (e.g., typing `_word_` causes the word to become italic).                                                                                                                                                                                                                                                                                                                            |
 | `counter`            | `"word"`, `"character"` or `"none"` | `"none"`             | Whether a word or character count should be displayed at the bottom of the editor.                                                                                                                                                                                                                                                                                                                                                                        |
 | `allow-blank`        | boolean                             | false                | Whether or not an empty input box is allowed. By default, empty submissions will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                          |
+| `clipboard-enabled`  | boolean                             | true                 | Whether or not the element supports cutting, copying and pasting the contents of the editor from the user interface. Note that the editor content is still available in the browser's developer tools, which would allow students to copy the content anyway. Also note that preventing operations like copying or pasting text may be detrimental to the student's experience, and as such should be avoided unless absolutely necessary.                |
 
 #### Example implementations
 
@@ -1193,7 +1194,7 @@ def square(x):
 | `style`                 | string  | `"friendly"`    | The pygments style to use. A sample of valid styles can be found [here](https://pygments.org/styles/).                                                                                                                                                                                                                                                                                                                                                    |
 | `source-file-name`      | text    | —               | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                                      |
 | `directory`             | string  | See description | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `"clientFilesCourse"` or `"serverFilesCourse"`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
-| `prevent-select`        | boolean | false           | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.                                                                                                                                                                                                                                  |
+| `prevent-select`        | boolean | false           | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students. Also note that preventing operations like selecting or copying text may be detrimental to the student's experience, and as such should be avoided unless absolutely necessary.                                                   |
 | `highlight-lines`       | text    | —               | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.                                                                                                                                                                                                                                                                                                                                 |
 | `highlight-lines-color` | text    | `"#b3d7ff"`     | Specifies the color of highlighted lines of code.                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `copy-code-button`      | boolean | false           | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -1593,14 +1594,14 @@ Custom values for `params-type` can be added with [element extensions](elementEx
 
 A minimal type function can look something like:
 
-```
+```python
 def custom_type(element, data):
     return "graph { a -- b; }"
 ```
 
 In order to register these custom types, your extension should define the global `backends` dictionary. This will map a value of `params-type` to your function above:
 
-```
+```python
 backends = {
     'my-custom-type': custom_type
 }
@@ -1673,7 +1674,7 @@ Sample LaTeX formatting:
 
 As an example, consider the need to display the following matrix operations:
 
-```
+```text
 x = [A][b] + [c]
 ```
 
