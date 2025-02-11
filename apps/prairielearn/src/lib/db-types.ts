@@ -160,7 +160,7 @@ export const AssessmentModuleSchema = z.object({
   id: IdSchema,
   course_id: IdSchema,
   name: z.string(),
-  heading: z.string().nullable(),
+  heading: z.string(),
   number: z.number().nullable(),
   implicit: z.boolean(),
 });
@@ -953,23 +953,23 @@ export const SubmissionSchema = z.object({
 export type Submission = z.infer<typeof SubmissionSchema>;
 
 export const TagSchema = z.object({
-  color: z.string().nullable(),
+  color: z.string(),
   course_id: IdSchema,
-  description: z.string().nullable(),
+  description: z.string(),
   id: IdSchema,
   implicit: z.boolean(),
-  name: z.string().nullable(),
+  name: z.string(),
   number: z.number().nullable(),
 });
 export type Tag = z.infer<typeof TagSchema>;
 
 export const TopicSchema = z.object({
-  color: z.string().nullable(),
+  color: z.string(),
   course_id: IdSchema,
-  description: z.string().nullable(),
+  description: z.string(),
   id: IdSchema,
   implicit: z.boolean(),
-  name: z.string().nullable(),
+  name: z.string(),
   number: z.number().nullable(),
 });
 export type Topic = z.infer<typeof TopicSchema>;
