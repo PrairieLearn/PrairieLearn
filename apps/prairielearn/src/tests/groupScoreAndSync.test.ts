@@ -154,13 +154,12 @@ describe('assessment instance group synchronization test', function () {
     });
   });
   describe('5. question submission', function () {
-    it('should be able to enter question page', async (done) => {
+    it('should be able to enter question page', async () => {
       const questionUrl = locals.$('a:contains("HW6.2")').attr('href');
       locals.questionUrl = `${locals.siteUrl}${questionUrl}`;
       const res = await fetch(locals.questionUrl);
       assert.equal(res.status, 200);
       page = await res.text();
-      done();
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
