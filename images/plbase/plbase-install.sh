@@ -82,6 +82,7 @@ export UV_PYTHON_INSTALL_DIR=/usr/share/uv/python
 export UV_PYTHON_BIN_DIR=/usr/local/bin
 export UV_PYTHON_DOWNLOADS=manual
 export UV_PYTHON_PREFERENCE=only-managed
+export UV_COMPILE_BYTECODE=1
 
 if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]] ; then
     # v2 seems safe but 4 may be too incompatible with some x86_64 machines still in common use.
@@ -90,7 +91,7 @@ if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]] ; then
     # v2: 64-bit Intel/AMD CPUs approximately newer than Nehalem (released in 2008).
     # v3: 64-bit Intel/AMD CPUs approximately newer than Haswell (released in 2013) and Excavator (released in 2015)
     UV_ARCH="linux-x86_64_v3-gnu"
-    UV_MANUAL_INSTALL=1
+    UV_MANUAL_INSTALL=0
 elif [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "aarch64" ]] ; then
     UV_ARCH="linux-aarch64-gnu"
 elif [[ "$(uname)" = "Darwin" ]] && [[ "$(uname -m)" = "arm64" ]] ; then
