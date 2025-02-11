@@ -638,13 +638,13 @@ The following are valid input format options:
 
 **MATLAB format:**
 
-```
+```m
 [1.23; 4.56]
 ```
 
 **Python format:**
 
-```
+```python
 [[1.23], [4.56]]
 ```
 
@@ -1594,14 +1594,14 @@ Custom values for `params-type` can be added with [element extensions](elementEx
 
 A minimal type function can look something like:
 
-```
+```python
 def custom_type(element, data):
     return "graph { a -- b; }"
 ```
 
 In order to register these custom types, your extension should define the global `backends` dictionary. This will map a value of `params-type` to your function above:
 
-```
+```python
 backends = {
     'my-custom-type': custom_type
 }
@@ -1674,7 +1674,7 @@ Sample LaTeX formatting:
 
 As an example, consider the need to display the following matrix operations:
 
-```
+```text
 x = [A][b] + [c]
 ```
 

@@ -376,6 +376,8 @@ jobs:
         run: make lint-docker
       - name: Run the Shellcheck linter
         run: make lint-shell
+      - name: Check for markdown linting errors
+        run: make lint-markdown
       - name: Run the GitHub Actions linter
         run: make lint-actions
       - name: Check for warnings in documentation
