@@ -8,7 +8,7 @@ import {
   compiledScriptTag,
   compiledStylesheetTag,
   nodeModulesAssetPath,
-} from '../../lib/assets.js'
+} from '../../lib/assets.js';
 import { type User } from '../../lib/db-types.js';
 
 import {
