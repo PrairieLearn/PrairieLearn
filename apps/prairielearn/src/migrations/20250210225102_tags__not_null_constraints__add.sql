@@ -6,10 +6,6 @@ ALTER TABLE tags
 ALTER COLUMN color
 SET NOT NULL;
 
-ALTER TABLE tags
-ALTER COLUMN description
-SET DEFAULT '';
-
 UPDATE tags
 SET
   description = ''

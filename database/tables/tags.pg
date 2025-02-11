@@ -1,7 +1,7 @@
 columns
     color: text not null
     course_id: bigint not null
-    description: text not null default ''::text
+    description: text not null
     id: bigint not null default nextval('tags_id_seq'::regclass)
     implicit: boolean not null default false
     name: text not null

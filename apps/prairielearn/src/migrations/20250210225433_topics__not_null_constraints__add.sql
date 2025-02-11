@@ -6,10 +6,6 @@ ALTER TABLE topics
 ALTER COLUMN color
 SET NOT NULL;
 
-ALTER TABLE topics
-ALTER COLUMN description
-SET DEFAULT '';
-
 UPDATE topics
 SET
   description = ''
