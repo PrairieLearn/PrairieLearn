@@ -3,7 +3,7 @@ language: en
 reviews:
   profile: chill
   request_changes_workflow: false # Do not approve after comments resolved
-  high_level_summary: true
+  high_level_summary: false
   review_status: true
   collapse_walkthrough: true
   changed_files_summary: true
