@@ -62,7 +62,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="ciid"> CIID </label>
+              <label for="ciid">CIID</label>
               <input
                 type="text"
                 class="form-control"
