@@ -33,11 +33,7 @@ dnf -y install \
     texlive \
     texlive-dvipng \
     texlive-type1cm \
-    tmux \
-    rsync \
-    wget \
-    zstd \
-    clang
+    tmux
 
 # Redis 7 isn't available on Amazon Linux 2023. Symlink the versioned
 # executables to make them work with scripts that expect unversioned ones.
@@ -91,7 +87,6 @@ if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]] ; then
     # v2: 64-bit Intel/AMD CPUs approximately newer than Nehalem (released in 2008).
     # v3: 64-bit Intel/AMD CPUs approximately newer than Haswell (released in 2013) and Excavator (released in 2015)
     UV_ARCH="linux-x86_64_v3-gnu"
-    UV_MANUAL_INSTALL=0
 elif [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "aarch64" ]] ; then
     UV_ARCH="linux-aarch64-gnu"
 elif [[ "$(uname)" = "Darwin" ]] && [[ "$(uname -m)" = "arm64" ]] ; then
@@ -103,19 +98,6 @@ fi
 
 # Installing to a different directory is a preview feature
 uv python install --default --preview "cpython-3.10-${UV_ARCH}"
-if [[ "${UV_MANUAL_INSTALL:-0}" = "1" ]] ; then
-    # Patch the install with a manual download of the "full" optimized build
-    rm -rf /tmp/python-build-standalone
-    mkdir -p /tmp/python-build-standalone
-    pushd /tmp/python-build-standalone
-    wget https://github.com/astral-sh/python-build-standalone/releases/download/20250205/cpython-3.10.16+20250205-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst
-    wget https://github.com/astral-sh/python-build-standalone/releases/download/20250205/cpython-3.10.16+20250205-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst.sha256
-    echo "$(cat *.tar.zst.sha256)" *.tar.zst | sha256sum -c || { echo "python download checksum failed" ; exit 1 ; }
-    tar -xf *.tar.zst
-    rsync -av python/install/. "$UV_PYTHON_INSTALL_DIR"/cpython-*
-    popd
-    rm -rf /tmp/python-build-standalone
-fi
 uv venv
 uv pip install --force-reinstall --no-cache-dir --upgrade pip setuptools
 uv pip install --force-reinstall --no-cache-dir -r /python-requirements.txt
