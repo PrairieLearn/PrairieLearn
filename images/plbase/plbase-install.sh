@@ -81,10 +81,7 @@ export UV_PYTHON_PREFERENCE=only-managed
 export UV_COMPILE_BYTECODE=1
 
 if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]] ; then
-    # v2 seems safe but 4 may be too incompatible with some x86_64 machines still in common use.
-    # Refer to:
     # https://gregoryszorc.com/docs/python-build-standalone/main/running.html
-    # v2: 64-bit Intel/AMD CPUs approximately newer than Nehalem (released in 2008).
     # v3: 64-bit Intel/AMD CPUs approximately newer than Haswell (released in 2013) and Excavator (released in 2015)
     UV_ARCH="linux-x86_64_v3-gnu"
 elif [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "aarch64" ]] ; then
@@ -98,8 +95,7 @@ fi
 
 # Installing to a different directory is a preview feature
 uv python install --default --preview "cpython-3.10-${UV_ARCH}"
-uv venv
-uv pip install --force-reinstall --no-cache-dir --upgrade pip setuptools
+uv venv --seed
 uv pip install --force-reinstall --no-cache-dir -r /python-requirements.txt
 
 # Clear various caches to minimize the final image size.
