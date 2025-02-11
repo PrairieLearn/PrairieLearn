@@ -60,9 +60,6 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
   // Consider each entity name that's actually used. If it doesn't already exist,
   // add an implicit version. Sort for consistent ordering.
   for (const name of Array.from(knownNames).sort()) {
-    // Skip `Default`, we want this to be last to we'll handle it separately.
-    if (name === 'Default') continue;
-
     if (desiredEntities.has(name)) continue;
 
     desiredEntities.set(name, {
