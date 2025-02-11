@@ -70,6 +70,8 @@ lint-python:
 	@python3 -m ruff format --check ./
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+lint-markdown:
+	@yarn markdownlint "docs/**/*.md"
 lint-links:
 	@node tools/validate-links.mjs
 lint-docker:
