@@ -194,6 +194,25 @@ Most of these prerequisites can be installed using the package manager of your O
   sudo -u postgres createdb postgres
   ```
 
+- Ensure that your local `postgres` installation allows for local connections to bypass password authentication. First find the authentication configuration file with the command:
+
+  ```sh
+  sudo -u postgres psql -c "SHOW hba_file;"
+  ```
+
+  The command above will list the path to a file named `pg_hba.conf` or something equivalent. As either root or the `postgres` user, edit the file listed by the command above, such that lines that correspond to localhost connections are set up with the `trust` method (do not change the other lines). This will typically be shown as:
+
+  ```text
+  # TYPE  DATABASE        USER            ADDRESS                 METHOD
+  ...
+  # IPv4 local connections:
+  host    all             all             127.0.0.1/32            trust
+  # IPv6 local connections:
+  host    all             all             ::1/128                 trust
+  ```
+
+  You may need to restart the PostgreSQL server after changing the file above.
+
 - Run the test suite:
 
   ```sh
