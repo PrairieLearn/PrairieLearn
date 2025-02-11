@@ -18,12 +18,9 @@ import { determineOperationsForEntities } from './entity-list.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 interface DesiredTag {
-  // TODO: this must be non-null in the database schema.
-  name: string | null;
-  // TODO: make these all non-nullable once we make them non-null in the database schema.
-  color: string | null;
-  description: string | null;
-  number: number | null;
+  name: string;
+  color: string;
+  description?: string | null;
 }
 
 export async function sync(
@@ -45,7 +42,6 @@ export async function sync(
       (q.data?.tags ?? []).forEach((t) => knownQuestionTagsNames.add(t));
     }
   });
-  const questionTagNames = [...knownQuestionTagsNames];
 
   const existingTags = await queryRows(sql.select_tags, { course_id: courseId }, TagSchema);
 
