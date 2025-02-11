@@ -62,7 +62,9 @@ test-prairielearn: start-support
 check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
-lint-all: lint-docs lint-docker lint-actions
+# Runs additional third-party linters
+lint-all: lint lint-docker lint-actions lint-shell
+
 lint: lint-js lint-python lint-html lint-docs
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
