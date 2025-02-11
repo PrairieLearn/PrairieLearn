@@ -34,7 +34,7 @@ export function InstructorGradebook({
     pageTitle: 'Gradebook',
     navContext: {
       type: 'instructor',
-      page: 'gradebook',
+      page: 'instance_admin',
       subPage: 'gradebook',
     },
     options: {

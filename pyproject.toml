@@ -67,6 +67,7 @@ ignore = [
     "PLR0915", # too-many-statements
     "PLR0916", # too-many-boolean-expressions
     "PLR0917", # too-many-positional-arguments
+    "PLR6201", # literal-membership (pyright doesn't understand assert_never with sets)
     "PLR2004", # magic-value-comparison
     "PLW1514", # unspecified-encoding
     "RET503", # implicit-return
@@ -85,25 +86,12 @@ ignore = [
     "D103", # undocumented-public-function
     "D104", # undocumented-public-package
     "D107", # undocumented-public-init
-    "E266",
-    "PLR6104",
     "PLW1508",
-    "PLR6201",
-    "FURB122",
-    "RUF051",
-    "FURB110",
-    "RUF027",
     "RUF039",
-    "C419",
     "RUF036",
-    "PYI061",
-    "F841",
     "FURB140",
     "FURB152",
-    "FURB171",
     "PLR6301",
-    "RUF046",
-    "FURB113",
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
@@ -142,7 +130,9 @@ ignore = [
 "graders/**/*.py" = [
     # Boolean default positional argument
     "FBT002",
-    "D"
+    "D",
+    # Avoid future changes to graders
+    "C419", "PYI061"
 ]
 
 # Directories we don't want strict annotation linting or docstring linting on
