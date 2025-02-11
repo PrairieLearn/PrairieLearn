@@ -180,7 +180,7 @@ router.post(
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
       flash('success', 'Course instance configuration updated successfully');
-      return res.redirect(req.originalUrl);
+     res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
