@@ -351,7 +351,13 @@ Example:
 
 ## How can I make a block that can be re-used in many questions?
 
-If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can do the following.
+If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can use the [`<pl-template>` element](./elements.md#pl-template-element). This element allows you to define a template in one place and then use it in many questions.
+
+!!! danger
+
+    Elements that accept and/or grade student input used within this element will not work correctly with `<pl-template>`. Templates should only contain other decorative elements.
+
+If you require templating elements that accept/grade student input you can:
 
 1. Put a file called `local_template.py` into `serverFilesCourse` that contains:
 
