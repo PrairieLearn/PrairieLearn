@@ -74,7 +74,7 @@ lint-links:
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 
-format: format-js format-python
+format: format-js format-python format-d2
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,ts}"
 	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
@@ -98,10 +98,19 @@ changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
 
-build-docs:
+build-docs: lint-d2 lint-links
 	@python3 -m venv /tmp/pldocs/venv
-	@d2 --version >/dev/null
 	@/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt
 	@/tmp/pldocs/venv/bin/python3 -m mkdocs build --strict
+
+preview-docs:
+	@mkdocs serve
+
+format-d2:
+	@d2 fmt docs/**/*.d2
+
+lint-d2:
+	@d2 fmt --check docs/**/*.d2
+
 
 ci: lint typecheck check-dependencies test
