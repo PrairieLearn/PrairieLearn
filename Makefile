@@ -60,7 +60,8 @@ test-prairielearn: start-support
 check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
-lint: lint-js lint-python lint-html lint-links lint-docker
+lint-all: lint-docs lint-docker lint-actions
+lint: lint-js lint-python lint-html lint-docs
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
 	@yarn prettier --check "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
@@ -100,7 +101,9 @@ changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
 
-build-docs: lint-d2 lint-links
+lint-docs: lint-d2 lint-links
+
+build-docs:
 	@python3 -m venv /tmp/pldocs/venv
 	@/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt
 	@/tmp/pldocs/venv/bin/python3 -m mkdocs build --strict
