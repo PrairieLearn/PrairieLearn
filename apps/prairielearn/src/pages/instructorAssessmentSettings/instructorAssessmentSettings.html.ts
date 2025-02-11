@@ -25,6 +25,7 @@ export function InstructorAssessmentSettings({
   assessmentModules: AssessmentModule[];
   canEdit: boolean;
 }) {
+  console.log(resLocals.assessment);
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
@@ -148,6 +149,132 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             <div class="form-group">
+              <label for="text">Text</label>
+              <textarea class="form-control" id="text" name="text" ${canEdit ? '' : 'disabled'}>
+${resLocals.assessment.text}</textarea
+              >
+              <small class="form-text text-muted">
+                HTML text shown on the assessment overview page.
+              </small>
+            </div>
+            <div class="form-group">
+              <div class="form-group form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="allow_issue_reporting"
+                  name="allow_issue_reporting"
+                  ${canEdit ? '' : 'disabled'}
+                  ${resLocals.assessment.allow_issue_reporting ? 'checked' : ''}
+                />
+                <label class="form-check-label" for="allow_issue_reporting"
+                  >Allow issue reporting</label
+                >
+                <div class="form-text small text-muted">
+                  Whether to allow students to report issues for assessment questions.
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="form-group form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="multiple_instance"
+                  name="multiple_instance"
+                  ${canEdit ? '' : 'disabled'}
+                  ${resLocals.assessment.multiple_instance ? 'checked' : ''}
+                />
+                <label class="form-check-label" for="multiple_instance">Multiple Instances</label>
+                <div class="form-text small text-muted">
+                  Whether to allow students to create additional instances of the assessment.
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="form-group form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="allow_personal_notes"
+                  name="allow_personal_notes"
+                  ${canEdit ? '' : 'disabled'}
+                  ${resLocals.assessment.allow_personal_notes ? 'checked' : ''}
+                />
+                <label class="form-check-label" for="allow_personal_notes"
+                  >Allow personal notes</label
+                >
+                <div class="form-text small text-muted">
+                  Whether students are allowed to upload personal notes for this assessment.
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="form-group form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="auto_close"
+                  name="auto_close"
+                  ${canEdit ? '' : 'disabled'}
+                  ${resLocals.assessment.auto_close ? 'checked' : ''}
+                />
+                <label class="form-check-label" for="auto_close">Auto close</label>
+                <div class="form-text small text-muted">
+                  Whether to automatically close the assessment after a period of inactivity.
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="form-group form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="allow_real_time_grading"
+                  name="allow_real_time_grading"
+                  ${canEdit ? '' : 'disabled'}
+                  ${resLocals.assessment.allow_real_time_grading ? 'checked' : ''}
+                />
+                <label class="form-check-label" for="allow_real_time_grading"
+                  >Allow real time grading</label
+                >
+                <div class="form-text small text-muted">
+                  If unchecked, the student "Grade" buttons are removed to prevent real-time grading
+                  while the assessment is being taken.
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="grade_rate_minutes">Grade rate minutes</label>
+              <input
+                type="number"
+                class="form-control"
+                id="grade_rate_minutes"
+                name="grade_rate_minutes"
+                value="${resLocals.assessment.grade_rate_minutes}"
+                ${canEdit ? '' : 'disabled'}
+              />
+              <small class="form-text text-muted">
+                Minimum amount of time (in minutes) between graded submissions to the same question.
+              </small>
+            </div>
+            <div class="form-group">
+              <div class="form-group form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="require_honor_code"
+                  name="require_honor_code"
+                  ${canEdit ? '' : 'disabled'}
+                  ${resLocals.assessment.require_honor_code ? 'checked' : ''}
+                />
+                <label class="form-check-label" for="require_honor_code">Require honor code</label>
+                <div class="form-text small text-muted">
+                  Requires the student to accept an honor code before starting exam assessments.
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
               <label for="studentLink">Student Link</label>
               <span class="input-group">
                 <input
@@ -207,9 +334,8 @@ export function InstructorAssessmentSettings({
                       data-testid="edit-assessment-configuration-link"
                       href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
                         .id}/file_edit/${infoAssessmentPath}"
+                      >Edit assessment configuration</a
                     >
-                      Edit assessment configuration
-                    </a>
                     in <code>infoAssessment.json</code>
                   `
                 : html`
