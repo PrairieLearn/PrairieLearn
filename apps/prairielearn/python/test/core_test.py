@@ -725,9 +725,7 @@ def test_string_to_number(
         ("123_456", ""),
         ("!@#$%", ""),
         # Unicode characters
-        ("hello™world", "hello_world"),
-        ("hello→world", "hello_world"),
-        ("hello\u2122world", "hello_world"),
+        ("hello™world→", "hello_world_"),
     ],
 )
 def test_clean_identifier_name(*, input_name: str, expected_output: str) -> None:
