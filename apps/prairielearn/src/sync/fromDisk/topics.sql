@@ -21,7 +21,7 @@ INSERT INTO
 SELECT
   $course_id,
   (t ->> 0)::text,
-  (t ->> 1)::text,
+  COALESCE((t ->> 1)::text, ''),
   (t ->> 2)::text,
   (t ->> 3)::integer,
   (t ->> 4)::boolean
@@ -42,7 +42,7 @@ WITH
   )
 UPDATE topics AS t
 SET
-  description = updates.description,
+  description = COALESCE(updates.description, ''),
   color = updates.color,
   number = updates.number,
   implicit = updates.implicit

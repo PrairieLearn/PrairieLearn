@@ -12,7 +12,7 @@ import * as util from './util.js';
 /**
  * Makes a new tag/topic to test with.
  */
-function makeEntity() {
+function makeEntity(): util.Tag | util.Topic {
   return {
     name: 'a new entity',
     color: 'green1',
@@ -48,6 +48,18 @@ async function testAdd(entityName: 'tags' | 'topics') {
   const syncedEntities = await util.dumpTable(entityName);
   const syncedEntity = syncedEntities.find((e) => e.name === newEntity.name);
   checkEntity(syncedEntity, newEntity);
+  checkEntityOrder(entityName, syncedEntities, courseData);
+}
+
+async function testAddMissingDescription(entityName: 'tags' | 'topics') {
+  const { courseData, courseDir } = await util.createAndSyncCourseData();
+  const newEntity = makeEntity();
+  delete newEntity.description;
+  courseData.course[entityName].push(newEntity);
+  await util.overwriteAndSyncCourseData(courseData, courseDir);
+  const syncedEntities = await util.dumpTable(entityName);
+  const syncedEntity = syncedEntities.find((e) => e.name === newEntity.name);
+  checkEntity(syncedEntity, { ...newEntity, description: '' });
   checkEntityOrder(entityName, syncedEntities, courseData);
 }
 
@@ -115,6 +127,28 @@ async function testDuplicate(entityName: 'tags' | 'topics') {
   assert.match(syncedCourse?.sync_warnings, new RegExp(`Found duplicates in '${entityName}'`));
 }
 
+async function testImplicit(entityName: 'tags' | 'topics') {
+  const courseData = util.getCourseData();
+  const question = courseData.questions[util.QUESTION_ID];
+  if (entityName === 'tags') {
+    question.tags = ['implicit'];
+  } else {
+    question.topic = 'implicit';
+  }
+  await util.writeAndSyncCourseData(courseData);
+  const syncedEntities = await util.dumpTable(entityName);
+  const syncedEntity = syncedEntities.find((as) => as.name === 'implicit');
+  const singularEntityName = entityName.slice(0, -1);
+  checkEntity(syncedEntity, {
+    name: 'implicit',
+    color: 'gray1',
+    description: `Auto-generated from use in a question; add this ${singularEntityName} to your infoCourse.json file to customize`,
+    implicit: true,
+    // Implicit entities should come last.
+    number: syncedEntities.length,
+  });
+}
+
 describe('Tag/topic syncing', () => {
   before('set up testing database', helperDb.before);
   after('tear down testing database', helperDb.after);
@@ -127,6 +161,14 @@ describe('Tag/topic syncing', () => {
 
   it('adds a new topic', async () => {
     await testAdd('topics');
+  });
+
+  it('adds a new tag with missing description', async () => {
+    await testAddMissingDescription('tags');
+  });
+
+  it('adds a new topic with missing description', async () => {
+    await testAddMissingDescription('topics');
   });
 
   it('removes a tag', async () => {
@@ -159,6 +201,14 @@ describe('Tag/topic syncing', () => {
 
   it('records a warning if two topics have the same name', async () => {
     await testDuplicate('topics');
+  });
+
+  it('syncs an implicit tag', async () => {
+    await testImplicit('tags');
+  });
+
+  it('syncs an implicit topic', async () => {
+    await testImplicit('topics');
   });
 
   it('adds corresponding default tags if used by questions but not specified in courseData', async () => {
