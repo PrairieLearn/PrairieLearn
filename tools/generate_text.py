@@ -26,10 +26,10 @@ if platform.system() == "Windows":
 # find strings that look like "TEX:abc" or 'TEX:abc' (note different quote types
 # use <quote> to store the type of quote
 # use the negative-lookahead regex ((?!(?P=quote)).) to match non-quote characters
-TEXT_RE = re.compile("(?P<quote>['\"])TEX:(((?!(?P=quote)).)+)(?P=quote)")
+TEXT_RE = re.compile(r"(?P<quote>['\"])TEX:(((?!(?P=quote)).)+)(?P=quote)")
 
 # filename regexp for generated files
-FILENAME_RE = re.compile("[0-9a-fA-F]{40}\\..{3}")
+FILENAME_RE = re.compile(r"[0-9a-fA-F]{40}\..{3}")
 
 if len(sys.argv) >= 2 and sys.argv[1] == "--outdir":
     MODE = "textdir"
