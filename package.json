@@ -35,6 +35,7 @@
     "eslint-plugin-no-only-tests": "^3.3.0",
     "globby": "^14.0.2",
     "htmlhint": "^1.1.4",
+    "markdownlint-cli": "^0.44.0",
     "prettier": "3.4.2",
     "pyright": "^1.1.393",
     "s3rver": "^3.7.1",
