@@ -113,7 +113,15 @@ export async function sync(
     if (infofile.hasErrors(question)) return;
     const dedupedQuestionTagNames = new Set<string>();
     (question.data?.tags ?? []).forEach((t) => dedupedQuestionTagNames.add(t));
-    const questionTagIds = [...dedupedQuestionTagNames].map((t) => tagIdsByName.get(t)?.id);
+    const questionTagIds = [...dedupedQuestionTagNames].map((t) => {
+      const tag = tagIdsByName.get(t);
+
+      // This should never happen in practice, but this keeps the type checker
+      // happy, and if it does happen, we want it to fail obviously and loudly.
+      if (!tag) throw new Error(`Tag ${t} not found`);
+
+      return tag.id;
+    });
     questionTagsParam.push(JSON.stringify([questionIds[qid], questionTagIds]));
   });
 
