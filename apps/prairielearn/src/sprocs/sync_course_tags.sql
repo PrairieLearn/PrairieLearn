@@ -30,7 +30,7 @@ BEGIN
                 syncing_course_id,
                 tag->>0,
                 number,
-                tag->>1,
+                COALESCE(tag->>1, ''),
                 tag->>2,
                 FALSE
             FROM UNNEST(course_info_tags) WITH ORDINALITY AS t(tag, number)

@@ -73,6 +73,8 @@ lint-links:
 	@node tools/validate-links.mjs
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
+lint-actions:
+	@actionlint
 
 format: format-js format-python format-d2
 format-js:
