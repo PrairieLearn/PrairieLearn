@@ -454,13 +454,13 @@ def evaluate_with_source(
 
 def convert_string_to_sympy(
     expr: str,
-    variables: None | Iterable[str] = None,
+    variables: Iterable[str] | None = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | Iterable[str] = None,
-    assumptions: None | AssumptionsDictT = None,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
 ) -> sympy.Expr:
     return convert_string_to_sympy_with_source(
         expr,
@@ -475,13 +475,13 @@ def convert_string_to_sympy(
 
 def convert_string_to_sympy_with_source(
     expr: str,
-    variables: None | Iterable[str] = None,
+    variables: Iterable[str] | None = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | Iterable[str] = None,
-    assumptions: None | AssumptionsDictT = None,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
 ) -> tuple[sympy.Expr, str]:
     const = _Constants()
 
@@ -638,14 +638,14 @@ def json_to_sympy(
 
 def validate_string_as_sympy(
     expr: str,
-    variables: None | Iterable[str],
+    variables: Iterable[str] | None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | list[str] = None,
-    imaginary_unit: None | str = None,
-) -> None | str:
+    custom_functions: list[str] | None = None,
+    imaginary_unit: str | None = None,
+) -> str | None:
     """Try to parse expr as a sympy expression. If it fails, return a string with an appropriate error message for display on the frontend."""
     try:
         expr_parsed = convert_string_to_sympy(
@@ -741,7 +741,7 @@ def validate_string_as_sympy(
     return None
 
 
-def get_items_list(items_string: None | str) -> list[str]:
+def get_items_list(items_string: str | None) -> list[str]:
     if items_string is None:
         return []
 

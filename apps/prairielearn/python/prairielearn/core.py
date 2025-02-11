@@ -1154,7 +1154,7 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
 
 def string_to_number(
     s: str, *, allow_complex: bool = True
-) -> None | np.float64 | np.complex128:
+) -> np.float64 | np.complex128 | None:
     """
     Parse a string that can be interpreted either as float or (optionally) complex,
     and return a number with type np.float64 or np.complex128, or None on parse error.
@@ -1296,7 +1296,7 @@ def string_fraction_to_number(
 
 def string_to_2darray(
     s: str, *, allow_complex: bool = True
-) -> tuple[None | npt.NDArray[Any], dict[str, str]]:
+) -> tuple[npt.NDArray[Any] | None, dict[str, str]]:
     """
     Parse a string that is either a scalar or a 2D array in matlab or python
     format. Each number must be interpretable as type float or complex.
