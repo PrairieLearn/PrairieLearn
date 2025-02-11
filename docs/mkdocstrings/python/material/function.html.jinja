@@ -16,7 +16,7 @@ This block renders the heading for the function.
 {% endif %}
     {#- https://mkdocstrings.github.io/griffe/reference/api/models/function -#}
     {% if config.show_source and function.source %}
-        <a title="View Source" href="{{ config.repo_url }}/blob/master/{{ function.relative_filepath }}#L{{ function.lineno }}-L{{ function.endlineno }}" class="md-content__button md-icon">
+        <a title="View Source" href="https://github.com/PrairieLearn/PrairieLearn/blob/master/{{ function.relative_filepath }}#L{{ function.lineno }}-L{{ function.endlineno }}" class="md-content__button md-icon">
             <svg viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6z"></path></svg>
         </a>
     {% endif %}
