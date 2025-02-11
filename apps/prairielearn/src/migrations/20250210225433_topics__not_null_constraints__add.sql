@@ -16,7 +16,10 @@ SET
 WHERE
   description IS NULL;
 
--- TODO: before deploying this, ensure all writes use a non-null description.
 ALTER TABLE topics
 ALTER COLUMN description
 SET NOT NULL;
+
+-- At this point, `number` is still nullable, as we have NULL values in production.
+-- We'll add a `NOT NULL` constraint once we've stopped writing NULL values and
+-- backfilled all existing NULL values.
