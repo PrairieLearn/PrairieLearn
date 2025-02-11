@@ -95,8 +95,8 @@ for root, dirs, files in os.walk(args.directory):
             num_files += 1
             num_changed += add_uuid_to_file(filename)
 
-print("Processed {num_files} files")
-print("Generated UUID in {num_changed} files")
+print(f"Processed {num_files} files")
+print(f"Generated UUID in {num_changed} files")
 
 if error_list:
     print()
