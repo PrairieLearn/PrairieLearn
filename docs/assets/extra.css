@@ -116,3 +116,9 @@ foreignObject .md pre {
   margin-top: 0;
   margin-bottom: 0;
 }
+
+.flex-row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
