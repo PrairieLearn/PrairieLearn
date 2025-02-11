@@ -91,7 +91,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - click `Save and sync`.
 
-**Change the content of the question**
+#### Change the content of the question
 
 To provide a simple example, here we first create a question without any randomization, by modifying the file [question.html](question.md#question-questionhtml).
 
@@ -141,7 +141,7 @@ Note that this question does not use any server side code, and for that reason, 
 
 - click `Save and sync`.
 
-**Change the content of the question**
+#### Change the content of the question
 
 We will add randomization to the previous question, using the file [server.py](question.md#question-serverpy)
 

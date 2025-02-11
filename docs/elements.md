@@ -693,7 +693,7 @@ The attributes `none-of-the-above` and `all-of-the-above` can be set to one of t
 - `"correct"`: the corresponding choice will always be shown and will always be the correct answer.
 - `"incorrect"`: the corresponding choice will always be shown and will always be an incorrect answer (i.e., a distractor).
 
-**Notes**
+##### :pencil: Notes
 
 - "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `fixed-order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
 - Defining answer choices with external JSON files via the `external-json` attribute is now deprecated.
@@ -1711,8 +1711,6 @@ Floating child elements are wrapped with a `<pl-location>` tag that specifies th
 Displays the value of a Python variable. Uses options similar to the [pprint](https://docs.python.org/3/library/pprint.html) module to format output data, and can recursively print nested data structures. As such, some of the customization text is taken directly from this documentation.
 
 #### Sample elements
-
-**Display Python variable value**
 
 ![](elements/pl-python-variable.png)
 
