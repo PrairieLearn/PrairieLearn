@@ -327,7 +327,7 @@ To address this, there are a variety of different ways. In particular, we have:
 - Restart docker
   - Click the Whale icon in the taskbar and select "Restart".
 - Restart your computer.
-- Stop the process in terminal with <kbd>CNTRL</kbd> + <kbd>C</kbd> and, then,
+- Stop the process in terminal with ++ctrl+c++ and, then,
   close the terminal application.
 
 ## Why do special characters like (<=) break my question display?

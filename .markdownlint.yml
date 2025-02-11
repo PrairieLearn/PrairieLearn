@@ -2,6 +2,9 @@ MD013: false # Line length
 MD024: false # Multiple headings with the same content
 MD046: false # indented / fenced code blocks (false positives)
 # These rules should be enabled/disabled eventually
-MD033: false
+MD033:
+  allowed_elements:
+    - div
+    - img
 MD034: false
 MD045: false

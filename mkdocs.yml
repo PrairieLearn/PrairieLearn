@@ -131,10 +131,13 @@ markdown_extensions:
       custom_checkbox: true
   # https://squidfunk.github.io/mkdocs-material/reference/admonitions/
   - admonition
+  # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/#keys
+  - pymdownx.keys
   # https://squidfunk.github.io/mkdocs-material/reference/icons-emojis
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
   - md_in_html
 
 extra_javascript:

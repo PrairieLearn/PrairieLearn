@@ -47,11 +47,9 @@ $$\sigma_x = \frac{M_{max} \,c}{I_x} = 0.042 \times 10^5 \rm\ lb/in^2 = 4.2 \rm\
 
 You can download the figure files and the table:
 
-<a href="../figs/cross-section.png" target="_blank">Download cross-section figure</a>
-
-<a href="../figs/properties.png" target="_blank">Download table figure</a>
-
-<a href="../figs/properties.csv" target="_blank">Download table with properties</a>
+- [Cross-section figure](../figs/cross-section.png)
+- [Table figure](../figs/properties.png)
+- [Table with properties](../figs/properties.csv)
 
 **PrairieLearn implementation:**
 
@@ -83,7 +81,7 @@ For given values of X, Y and Z, determine F.
 
 You can use `pl-overlay` to add the input boxes on top of the image.
 
-<a href="../figs/logic-diagram.png" target="_blank">Download image</a>
+- [Download image](../figs/logic-diagram.png)
 
 **PrairieLearn implementation:**
 
