@@ -580,6 +580,7 @@ def test_latex_from_2darray(value: Any, expected_output: str) -> None:
     ],
 )
 def test_string_to_2darray_valid(
+    *,
     text: str,
     allow_complex: bool,
     expected_matrix: np.ndarray[Any, Any],
@@ -626,7 +627,7 @@ def test_string_to_2darray_valid(
     ],
 )
 def test_string_to_2darray_invalid(
-    text: str, allow_complex: bool, expected_error: str
+    *, text: str, allow_complex: bool, expected_error: str
 ) -> None:
     matrix, format_data = pl.string_to_2darray(text, allow_complex=allow_complex)
     assert matrix is None
@@ -678,7 +679,10 @@ def test_string_to_2darray_invalid(
     ],
 )
 def test_string_to_number(
-    text: str, allow_complex: bool, expected_result: np.float64 | np.complex128 | None
+    *,
+    text: str,
+    allow_complex: bool,
+    expected_result: np.float64 | np.complex128 | None,
 ) -> None:
     """Test the string_to_number function with various inputs."""
     result = pl.string_to_number(text, allow_complex=allow_complex)
