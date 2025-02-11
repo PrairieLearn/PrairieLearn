@@ -1,3 +1,5 @@
+SH_FILES := $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
+
 build:
 	@yarn turbo run build
 build-sequential:
@@ -69,10 +71,14 @@ lint-python:
 	@python3 -m ruff format --check ./
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+lint-markdown:
+	@yarn markdownlint "docs/**/*.md"
 lint-links:
 	@node tools/validate-links.mjs
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
+lint-shell:
+	@shellcheck -S error $(SH_FILES)
 lint-actions:
 	@actionlint
 format: format-js format-python
