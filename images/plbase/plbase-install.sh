@@ -36,7 +36,8 @@ dnf -y install \
     tmux \
     rsync \
     wget \
-    zstd
+    zstd \
+    clang
 
 # Redis 7 isn't available on Amazon Linux 2023. Symlink the versioned
 # executables to make them work with scripts that expect unversioned ones.
@@ -115,8 +116,8 @@ if [[ "${UV_MANUAL_INSTALL:-0}" = "1" ]] ; then
     rm -rf /tmp/python-build-standalone
 fi
 uv venv
-uv pip install --no-cache-dir --upgrade pip setuptools
-uv pip install --no-cache-dir -r /python-requirements.txt
+uv pip install --force-reinstall --no-cache-dir --upgrade pip setuptools
+uv pip install --force-reinstall --no-cache-dir -r /python-requirements.txt
 
 # Clear various caches to minimize the final image size.
 uv cache clean
