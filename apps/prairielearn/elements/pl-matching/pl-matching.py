@@ -208,9 +208,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         else:
             # Add a sample of the distractors.
             distractor_sample = random.sample(distractors, more_needed)
-            needed_options_keys = needed_options_keys.union(
-                {o["name"] for o in distractor_sample}
-            )
+            needed_options_keys = needed_options_keys.union({
+                o["name"] for o in distractor_sample
+            })
             needed_options = [o for o in options if o["name"] in needed_options_keys]
         options = needed_options
         if not fixed_options_order:
@@ -234,9 +234,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             random.shuffle(options)
 
     if nota:
-        options.append(
-            {"index": len(options), "name": "__nota__", "html": "None of the above"}
-        )
+        options.append({
+            "index": len(options),
+            "name": "__nota__",
+            "html": "None of the above",
+        })
 
     # Build the options to display to the student.
     chosen_option_names = []
