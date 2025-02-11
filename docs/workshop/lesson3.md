@@ -4,7 +4,7 @@
 
 Convert these questions from the "paper-pencil" format to PrairieLearn.
 
-## Example 1:
+## Example 1
 
 Given a matrix $A$ and a vector $b$, compute the matrix-vector multiplication $y = Ab$
 
@@ -22,7 +22,7 @@ Given a matrix $A$ and a vector $b$, compute the matrix-vector multiplication $y
 
 - [workshop/Lesson3_example1_v3](https://us.prairielearn.com/pl/course/108/question/8211626/preview)
 
-## Example 2:
+## Example 2
 
 Consider the Standard I-beam cross-section:
 
@@ -61,7 +61,7 @@ You can download the figure files and the table:
 
 - [workshop/Lesson3_example2_v3](https://us.prairielearn.com/pl/course/108/question/8211630/preview)
 
-## Example 3:
+## Example 3
 
 Convert an integer number $x$ from decimal representation (base 10) to binary representation (base 2).
 
@@ -73,7 +73,7 @@ You can use `pl-multiple-choice` for this question. If you want to have the stud
 
 - [workshop/Lesson3_example3](https://us.prairielearn.com/pl/course/108/question/8211631/preview)
 
-## Example 4:
+## Example 4
 
 For given values of X, Y and Z, determine F.
 

@@ -1664,7 +1664,7 @@ The example [demo/drawing/customizedButtons] illustrates how custom objects can 
 
 ### `pl-drawing-buttons` element
 
-#### To insert a point:
+#### Insert a point
 
 ```html
 <pl-drawing-button type="pl-point"></pl-drawing-button>
@@ -1674,7 +1674,7 @@ This button adds a point to the canvas. The grading algorithm will check if the 
 
 <img src="pl-point-error-box.png" width=30%>
 
-#### To insert a vector:
+#### Insert a vector
 
 ```html
 <pl-drawing-button type="pl-vector"></pl-drawing-button>
@@ -1690,7 +1690,7 @@ If the orientation of the vector is not important, so that vectors `p` and `-p` 
 
 If a vector is expected as a correct answer, but the author does not want to assign a grade to it, the attribute `optional-grading` can be set to `true`. In this case, the grading algorithm will not assign points to the vector, but will not penalize students either by considering it as extra objects.
 
-#### To insert an arc vector:
+#### Insert an arc vector
 
 ```html
 <pl-drawing-button type="pl-arc-vector-CCW"></pl-drawing-button>
@@ -1703,7 +1703,7 @@ By default, the error box for `pl-arc-vector` is a square centered at the anchor
 
 If the orientation of the arc vector is not important (both clockwise and counter-clockwise orientations are accepted), the attribute `disregard-sense` should be set to `true`.
 
-#### To insert a distributed load:
+#### Insert a distributed load
 
 ```html
 <pl-drawing-button type="pl-distributed-load" w1="20" anchor_is_tail="true"></pl-drawing-button>
@@ -1715,7 +1715,7 @@ This button adds a distributed load to the canvas. A distributed load is marked 
 
 The error box for `pl-distributed-load` is defined in the same way as `pl-vector` but considering the anchor point as the center of the baseline. If the orientation of the distributed load is not important, the attribute `disregard-sense` should be set to `true`.
 
-#### To insert a "help" line:
+#### Insert a "help" line
 
 ```html
 <pl-drawing-button type="help-line"></pl-drawing-button>
@@ -1723,7 +1723,7 @@ The error box for `pl-distributed-load` is defined in the same way as `pl-vector
 
 This button will add a line to the canvas that is not graded, but can be used by students to facilitate the placement of other objects.
 
-#### To delete any object previously placed in the canvas:
+#### Delete any object previously placed in the canvas
 
 ```html
 <pl-drawing-button type="delete"></pl-drawing-button>
