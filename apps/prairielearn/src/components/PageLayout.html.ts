@@ -58,7 +58,7 @@ export function PageLayout({
 
     // ContextNavigation is shown if either:
     // The side nav is not shown.
-    // The side nav is shown and additional navigation capabilities are needed. E.g. The course admin settings pages.
+    // The side nav is shown and additional navigation capabilities are needed, such as on the course admin settings pages.
     if (navContext.page === 'course_admin') {
       const navPageTabs = getNavPageTabs(true);
 
