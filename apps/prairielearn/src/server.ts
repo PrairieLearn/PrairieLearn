@@ -527,7 +527,6 @@ export async function initExpress(): Promise<Express> {
   ]);
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
-  app.use((await import('./middlewares/hasEnhancedNavigation.js')).default); // set res.locals.has_enhanced_navigation if enhanced navigation is enabled.
 
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.
@@ -1869,6 +1868,16 @@ export async function initExpress(): Promise<Express> {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
+
+  app.use(
+    '/pl/administrator',
+    asyncHandler(async (req, res, next) => {
+      const hasEnhancedNavigation = await features.enabled('enhanced-navigation');
+      res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+      next();
+    }),
+  );
+
   app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
