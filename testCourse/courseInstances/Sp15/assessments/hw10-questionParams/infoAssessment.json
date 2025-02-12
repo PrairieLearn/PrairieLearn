@@ -25,11 +25,17 @@
     },
     {
       "title": "Parameters inherited from zone",
-      "questionParams": {
-        "param1": 0,
-        "param2": 10
-      },
-      "questions": [{ "id": "addNumbersParameterized/2", "points": 1 }]
+
+      "questions": [
+        {
+          "id": "addNumbersParameterized/2",
+          "points": 1,
+          "params": {
+            "lower_bound": 5,
+            "upper_bound": 15
+          }
+        }
+      ]
     }
   ],
   "text": "For this homework you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."

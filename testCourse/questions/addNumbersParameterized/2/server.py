@@ -2,9 +2,14 @@ import random
 
 
 def generate(data):
+    print("Full data received:", data)
+    print("Params specifically:", data.get("params", "No params found"))
+
+    # print("if zones in data: ", data["zones"])
+    # print(data["params"])
     # Read the lower and upper bounds on the random range from the question parameters.
-    lower_bound = data["params"].get("lower_bound", 5)
-    upper_bound = data["params"].get("upper_bound", 10)
+    lower_bound = data["params"].get("lower_bound", 50)
+    upper_bound = data["params"].get("upper_bound", 60)
 
     # Sample two random integers between 5 and 10 (inclusive)
     a = random.randint(lower_bound, upper_bound)
