@@ -144,6 +144,9 @@ SELECT
   c.id,
   ci.id,
   date_trunc('day', w.state_updated_at, 'UTC'),
+  -- Use v.authn_user_id because we don't care about really tracking the
+  -- effective user, we are only using this to avoid contention when there are
+  -- many users updating simultaneously.
   v.authn_user_id,
   coalesce(ai.include_in_statistics, false),
   $duration

@@ -55,6 +55,9 @@ SELECT
   c.id,
   ci.id,
   date_trunc('day', gj.grading_finished_at, 'UTC'),
+  -- Use v.authn_user_id because we don't care about really tracking the
+  -- effective user, we are only using this to avoid contention when there are
+  -- many users updating simultaneously.
   v.authn_user_id,
   coalesce(ai.include_in_statistics, false),
   gj.grading_finished_at - gj.grading_received_at
