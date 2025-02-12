@@ -5,10 +5,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export default makeBatchedMigration({
   async getParameters() {
-    const results = await queryAsync(
-      'SELECT MIN(id) AS min, MAX(id) AS max FROM variants WHERE authn_user_id IS NULL;',
-      {},
-    );
+    const results = await queryAsync(sql.select_bounds, {});
     return {
       min: results.rows[0].min,
       max: results.rows[0].max,
