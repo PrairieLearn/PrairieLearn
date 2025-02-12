@@ -3,4 +3,6 @@ UPDATE variants
 SET
   authn_user_id = user_id
 WHERE
-  authn_user_id IS NULL;
+  authn_user_id IS NULL
+  AND id >= $start
+  AND id <= $end;
