@@ -7,7 +7,7 @@ import re
 import shlex
 import subprocess
 import tempfile
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import Any, Literal, TypedDict, TypeGuard
 
@@ -632,6 +632,10 @@ class CGrader:
         self,
         exec_file: str,
         args: Iterable[str] = [],
+        name_formatter: Callable[[_Catch2TestCase, _Catch2TestGroup], str]
+        | None = None,
+        description_formatter: Callable[[_Catch2TestCase, _Catch2TestGroup], str]
+        | None = None,
     ) -> None:
         """
         Runs a file compiled with catch2 and parses the results.
@@ -647,9 +651,29 @@ class CGrader:
         Parameters:
             exec_file: The path to the test suite executable, compiled with catch2.
             args: Additional arguments to pass to the test suite executable.
+            name_formatter: A function that takes a test case and a test group and returns the name of the test case.
+            description_formatter: A function that takes a test case and a test group and returns the description of the test case.
         """
         out = self.run_command([exec_file, "-r", "xml", *args], sandboxed=True)
         tree = et.fromstring(out.encode("utf-8"), parser=et.XMLParser())
+
+        def default_name_formatter(
+            test_case: _Catch2TestCase, _: _Catch2TestGroup
+        ) -> str:
+            return test_case.name
+
+        def default_description_formatter(
+            test_case: _Catch2TestCase, test_group: _Catch2TestGroup
+        ) -> str:
+            if not test_case.tags:
+                return f"Group {test_group.name}"
+            return f"Group {test_group.name} ({', '.join(test_case.tags)})"
+
+        if name_formatter is None:
+            name_formatter = default_name_formatter
+
+        if description_formatter is None:
+            description_formatter = default_description_formatter
 
         test_groups = []
         for group in tree.findall(".//Group"):
@@ -686,8 +710,8 @@ class CGrader:
         for test_group in test_groups:
             for test_case in test_group.test_cases:
                 self.add_test_result(
-                    name=test_case.name,
-                    description=f"Group {test_group.name} ({', '.join(test_case.tags)})",
+                    name=name_formatter(test_case, test_group),
+                    description=description_formatter(test_case, test_group),
                     points=test_case.points if test_case.success else 0,
                     max_points=test_case.points,
                     output=test_case.stdout,
