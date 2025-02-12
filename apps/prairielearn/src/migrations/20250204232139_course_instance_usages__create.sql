@@ -10,13 +10,13 @@ CREATE TYPE enum_course_instance_usages_type AS ENUM(
 CREATE TABLE course_instance_usages (
   id BIGSERIAL PRIMARY KEY,
   type enum_course_instance_usages_type NOT NULL,
-  institution_id BIGINT NOT NULL REFERENCES institutions (id),
-  course_id BIGINT NOT NULL REFERENCES pl_courses (id),
+  institution_id BIGINT NOT NULL REFERENCES institutions (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  course_id BIGINT NOT NULL REFERENCES pl_courses (id) ON DELETE CASCADE ON UPDATE CASCADE,
   -- Note that `course_instance_id` can be NULL for course staff working outside
   -- of a course instance.
-  course_instance_id BIGINT REFERENCES course_instances (id),
+  course_instance_id BIGINT REFERENCES course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE,
   date TIMESTAMPTZ NOT NULL,
-  user_id BIGINT NOT NULL REFERENCES users (user_id),
+  user_id BIGINT NOT NULL REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE,
   include_in_statistics BOOLEAN NOT NULL,
   duration INTERVAL NOT NULL DEFAULT '0',
   -- NULLS NOT DISTINCT is because we want a NULL `course_instance_id` to be a
