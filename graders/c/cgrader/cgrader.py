@@ -8,6 +8,7 @@ import shlex
 import subprocess
 import tempfile
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Any, Literal, TypedDict, TypeGuard
 
 import lxml.etree as et
@@ -72,6 +73,21 @@ class UngradableError(Exception):
 UngradableException = UngradableError
 
 
+@dataclass
+class _Catch2TestCase:
+    name: str
+    points: float
+    success: bool
+    stdout: str
+    tags: list[str]
+
+
+@dataclass
+class _Catch2TestGroup:
+    name: str
+    test_cases: list[_Catch2TestCase]
+
+
 def is_str_list(val: list[float | str | int]) -> TypeGuard[list[str]]:
     """Determines whether all objects in the list are strings"""
     return all(isinstance(x, str) for x in val)
@@ -104,23 +120,16 @@ class CGrader:
     ) -> str:
         if isinstance(command, str):
             command = shlex.split(command)
-        if sandboxed:
-            command = [
-                "su",
-                SB_USER,
-                "-s",
-                "/bin/bash",
-                "-c",
-                shlex.join(["PATH=" + self.path, *command]),
-            ]
-
         try:
+            if env is None:
+                env = {}
             proc = subprocess.Popen(
                 command,
-                env=env,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
+                env={**os.environ, **({"PATH": self.path} if sandboxed else {}), **env},
+                user=SB_USER if sandboxed else None,
             )
         except Exception:
             return ""
@@ -618,6 +627,71 @@ class CGrader:
                 self.result["partial_scores"][field]["points"] += points
                 self.result["partial_scores"][field]["max_points"] += max_points
         return test
+
+    def run_catch2_suite(
+        self,
+        exec_file: str,
+        args: Iterable[str] = [],
+    ) -> None:
+        """
+        Runs a file compiled with catch2 and parses the results.
+
+        Uses the catch2 XML output format to parse the results. Points can be specified using a numeric tag: for example,
+
+        ```
+        TEST_CASE("My Test case", "[1.5]") {
+            ...
+        }
+        ```
+
+        Parameters:
+            exec_file: The path to the test suite executable, compiled with catch2.
+            args: Additional arguments to pass to the test suite executable.
+        """
+        out = self.run_command([exec_file, "-r", "xml", *args], sandboxed=True)
+        tree = et.fromstring(out.encode("utf-8"), parser=et.XMLParser())
+
+        test_groups = []
+        for group in tree.findall(".//Group"):
+            name = group.get("name")
+            test_cases = []
+            for test in group.findall(".//TestCase"):
+                name = test.attrib.get("name", "")
+                raw_tags = test.attrib.get("tags", "")
+                tags = re.findall(r"\[(.*?)\]", raw_tags)
+                points = 1
+                str_tags = []
+                for tag in tags:
+                    try:
+                        points = float(tag)
+                        if points <= 0:
+                            raise ValueError
+                    except ValueError:  # noqa: PERF203
+                        str_tags.append(tag)
+                result = test.find(".//OverallResult")
+                if result is None:
+                    raise UngradableError(
+                        "Missing 'OverallResult' element in test case"
+                    )
+
+                success = result.attrib.get("success") == "true"
+
+                stdout_elem = result.find(".//StdOut")
+                stdout = stdout_elem.text if stdout_elem is not None else ""
+                test_cases.append(
+                    _Catch2TestCase(name, points, success, stdout, str_tags)
+                )
+            test_groups.append(_Catch2TestGroup(name, test_cases))
+
+        for test_group in test_groups:
+            for test_case in test_group.test_cases:
+                self.add_test_result(
+                    name=test_case.name,
+                    description=f"Group {test_group.name} ({', '.join(test_case.tags)})",
+                    points=test_case.points if test_case.success else 0,
+                    max_points=test_case.points,
+                    output=test_case.stdout,
+                )
 
     def run_check_suite(
         self,
