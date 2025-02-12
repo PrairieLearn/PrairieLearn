@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 interface NamedEntity {
   name: string;
 }
@@ -14,28 +16,54 @@ type ExtraEntity<Entity> = Entity & {
 
 type DesiredEntity<Entity> = Entity & { number: number; implicit: boolean };
 
+/**
+ * This function is used to determine which entities need to be created, updated, or deleted.
+ * An "entity" is a named object that exists in a course (a tag, a topic, an assessment
+ * set, or an assessment module). Entities may be listed explicitly (e.g. in `infoCourse.json`)
+ * or implicitly, e.g. by use in questions or assessments.
+ *
+ * This function takes in a variety of information, including the actual state of the
+ * course the current list of entities from the database. In produces arrays of entities to
+ * create and update, and entity names to delete.
+ */
 export function determineOperationsForEntities<Entity extends NamedEntity>({
   courseEntities,
   extraEntities,
   existingEntities,
   knownNames,
   makeImplicitEntity,
+  comparisonProperties,
   isInfoCourseValid,
   deleteUnused,
 }: {
+  /** The entities that are listed explicitly in the course. */
   courseEntities: Entity[];
+  /** Any extra entities that should always exist. */
   extraEntities?: ExtraEntity<Entity>[];
+  /** The entities that already exist in the database. */
   existingEntities: ExistingEntity<Entity>[];
+  /** The names of all known entities as used in questions or assessments. */
   knownNames: Set<string>;
+  /** A function to produce an "implicit" entity for a given name. */
   makeImplicitEntity: (name: string) => Entity;
+  /**
+   * A list of properties to use when comparing entities for equality.
+   * Need not include `name`, `number`, or `implicit`, these will always
+   * be used for comparisons.
+   */
+  comparisonProperties: Exclude<keyof ExistingEntity<Entity>, 'name' | 'number' | 'implicit'>[];
+  /** Whether or not the `infoCourse.json` file is valid. */
   isInfoCourseValid: boolean;
+  /** Whether or not unused entities should be deleted. */
   deleteUnused: boolean;
 }): {
   entitiesToCreate: DesiredEntity<Entity>[];
   entitiesToUpdate: DesiredEntity<Entity>[];
   entitiesToDelete: string[];
 } {
-  const existingEntityNames = new Set(existingEntities.map((entity) => entity.name));
+  const fullComparisonProperties = ['name', 'number', 'implicit', ...comparisonProperties];
+
+  const existingEntitiesMap = new Map(existingEntities.map((entity) => [entity.name, entity]));
   const desiredEntities = new Map<string, DesiredEntity<Entity>>();
 
   // If `infoCourse.json` is invalid, keep all existing assessment sets in place.
@@ -66,7 +94,7 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
       ...makeImplicitEntity(name),
       implicit: true,
       number: desiredEntities.size + 1,
-    });
+    } satisfies DesiredEntity<Entity>);
   }
 
   // Add any extra entities at the end.
@@ -89,16 +117,23 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
   const entitiesToDelete = new Set<string>();
 
   for (const [name, entity] of desiredEntities) {
-    if (existingEntityNames.has(name)) {
-      // TODO: check for equality, skip update if not needed.
-      entitiesToUpdate.set(name, entity);
-    } else {
+    const existingEntity = existingEntitiesMap.get(name);
+
+    if (!existingEntity) {
       entitiesToAdd.set(name, entity);
+    } else if (
+      !_.isEqual(
+        _.pick(existingEntity, fullComparisonProperties),
+        _.pick(entity, fullComparisonProperties),
+      )
+    ) {
+      // We'll only update the entity if it has changed.
+      entitiesToUpdate.set(name, entity);
     }
   }
 
   if (deleteUnused) {
-    for (const name of existingEntityNames) {
+    for (const name of existingEntitiesMap.keys()) {
       if (!desiredEntities.has(name)) {
         entitiesToDelete.add(name);
       }

@@ -72,34 +72,55 @@ export async function sync(courseId: string, courseData: CourseData) {
       color: 'gray1',
       implicit: true,
     }),
+    comparisonProperties: ['abbreviation', 'heading', 'color'],
     isInfoCourseValid,
     deleteUnused,
   });
 
-  await runInTransactionAsync(async () => {
-    if (assessmentSetsToCreate.length) {
-      await queryAsync(sql.insert_assessment_sets, {
-        course_id: courseId,
-        sets: assessmentSetsToCreate.map((as) =>
-          JSON.stringify([as.name, as.abbreviation, as.heading, as.color, as.number, as.implicit]),
-        ),
-      });
-    }
+  if (
+    assessmentSetsToCreate.length ||
+    assessmentSetsToUpdate.length ||
+    assessmentSetsToDelete.length
+  ) {
+    await runInTransactionAsync(async () => {
+      if (assessmentSetsToCreate.length) {
+        await queryAsync(sql.insert_assessment_sets, {
+          course_id: courseId,
+          sets: assessmentSetsToCreate.map((as) =>
+            JSON.stringify([
+              as.name,
+              as.abbreviation,
+              as.heading,
+              as.color,
+              as.number,
+              as.implicit,
+            ]),
+          ),
+        });
+      }
 
-    if (assessmentSetsToUpdate.length) {
-      await queryAsync(sql.update_assessment_sets, {
-        course_id: courseId,
-        sets: assessmentSetsToUpdate.map((as) =>
-          JSON.stringify([as.name, as.abbreviation, as.heading, as.color, as.number, as.implicit]),
-        ),
-      });
-    }
+      if (assessmentSetsToUpdate.length) {
+        await queryAsync(sql.update_assessment_sets, {
+          course_id: courseId,
+          sets: assessmentSetsToUpdate.map((as) =>
+            JSON.stringify([
+              as.name,
+              as.abbreviation,
+              as.heading,
+              as.color,
+              as.number,
+              as.implicit,
+            ]),
+          ),
+        });
+      }
 
-    if (assessmentSetsToDelete.length) {
-      await queryAsync(sql.delete_assessment_sets, {
-        course_id: courseId,
-        sets: assessmentSetsToDelete,
-      });
-    }
-  });
+      if (assessmentSetsToDelete.length) {
+        await queryAsync(sql.delete_assessment_sets, {
+          course_id: courseId,
+          sets: assessmentSetsToDelete,
+        });
+      }
+    });
+  }
 }

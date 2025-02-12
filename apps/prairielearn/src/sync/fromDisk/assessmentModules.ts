@@ -60,34 +60,41 @@ export async function sync(courseId: string, courseData: CourseData) {
       heading: `${name} (Auto-generated from use in an assessment; add this assessment module to your infoCourse.json file to customize)`,
       implicit: true,
     }),
+    comparisonProperties: ['heading'],
     isInfoCourseValid,
     deleteUnused,
   });
 
-  await runInTransactionAsync(async () => {
-    if (assessmentModulesToCreate.length) {
-      await queryAsync(sql.insert_assessment_modules, {
-        course_id: courseId,
-        modules: assessmentModulesToCreate.map((am) =>
-          JSON.stringify([am.name, am.heading, am.number, am.implicit]),
-        ),
-      });
-    }
+  if (
+    assessmentModulesToCreate.length ||
+    assessmentModulesToUpdate.length ||
+    assessmentModulesToDelete.length
+  ) {
+    await runInTransactionAsync(async () => {
+      if (assessmentModulesToCreate.length) {
+        await queryAsync(sql.insert_assessment_modules, {
+          course_id: courseId,
+          modules: assessmentModulesToCreate.map((am) =>
+            JSON.stringify([am.name, am.heading, am.number, am.implicit]),
+          ),
+        });
+      }
 
-    if (assessmentModulesToUpdate.length) {
-      await queryAsync(sql.update_assessment_modules, {
-        course_id: courseId,
-        modules: assessmentModulesToUpdate.map((am) =>
-          JSON.stringify([am.name, am.heading, am.number, am.implicit]),
-        ),
-      });
-    }
+      if (assessmentModulesToUpdate.length) {
+        await queryAsync(sql.update_assessment_modules, {
+          course_id: courseId,
+          modules: assessmentModulesToUpdate.map((am) =>
+            JSON.stringify([am.name, am.heading, am.number, am.implicit]),
+          ),
+        });
+      }
 
-    if (assessmentModulesToDelete.length) {
-      await queryAsync(sql.delete_assessment_modules, {
-        course_id: courseId,
-        modules: assessmentModulesToDelete,
-      });
-    }
-  });
+      if (assessmentModulesToDelete.length) {
+        await queryAsync(sql.delete_assessment_modules, {
+          course_id: courseId,
+          modules: assessmentModulesToDelete,
+        });
+      }
+    });
+  }
 }

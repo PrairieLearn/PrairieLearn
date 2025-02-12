@@ -59,43 +59,48 @@ export async function sync(
       description:
         'Auto-generated from use in a question; add this tag to your infoCourse.json file to customize',
     }),
+    comparisonProperties: ['color', 'description'],
     isInfoCourseValid,
     deleteUnused,
   });
 
-  const newTags = await runInTransactionAsync(async () => {
-    const insertedTags = await run(async () => {
-      if (tagsToCreate.length === 0) return [];
+  const newTags = await run(async () => {
+    if (!tagsToCreate.length && !tagsToUpdate.length && !tagsToDelete.length) return [];
 
-      return queryRows(
-        sql.insert_tags,
-        {
+    return await runInTransactionAsync(async () => {
+      const insertedTags = await run(async () => {
+        if (tagsToCreate.length === 0) return [];
+
+        return queryRows(
+          sql.insert_tags,
+          {
+            course_id: courseId,
+            tags: tagsToCreate.map((t) =>
+              JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+            ),
+          },
+          TagSchema,
+        );
+      });
+
+      if (tagsToUpdate.length > 0) {
+        await queryAsync(sql.update_tags, {
           course_id: courseId,
-          tags: tagsToCreate.map((t) =>
+          tags: tagsToUpdate.map((t) =>
             JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
           ),
-        },
-        TagSchema,
-      );
+        });
+      }
+
+      if (tagsToDelete.length > 0) {
+        await queryAsync(sql.delete_tags, {
+          course_id: courseId,
+          tags: tagsToDelete,
+        });
+      }
+
+      return insertedTags;
     });
-
-    if (tagsToUpdate.length > 0) {
-      await queryAsync(sql.update_tags, {
-        course_id: courseId,
-        tags: tagsToUpdate.map((t) =>
-          JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
-        ),
-      });
-    }
-
-    if (tagsToDelete.length > 0) {
-      await queryAsync(sql.delete_tags, {
-        course_id: courseId,
-        tags: tagsToDelete,
-      });
-    }
-
-    return insertedTags;
   });
 
   const tagIdsByName = new Map<string, Tag>();

@@ -53,31 +53,34 @@ export async function sync(courseId: string, courseData: CourseData) {
       description:
         'Auto-generated from use in a question; add this topic to your infoCourse.json file to customize',
     }),
+    comparisonProperties: ['color', 'description'],
     isInfoCourseValid,
     deleteUnused,
   });
 
-  await runInTransactionAsync(async () => {
-    if (topicsToCreate.length > 0) {
-      await queryAsync(sql.insert_topics, {
-        course_id: courseId,
-        topics: topicsToCreate.map((t) =>
-          JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
-        ),
-      });
-    }
+  if (topicsToCreate.length || topicsToUpdate.length || topicsToDelete.length) {
+    await runInTransactionAsync(async () => {
+      if (topicsToCreate.length > 0) {
+        await queryAsync(sql.insert_topics, {
+          course_id: courseId,
+          topics: topicsToCreate.map((t) =>
+            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+          ),
+        });
+      }
 
-    if (topicsToUpdate.length > 0) {
-      await queryAsync(sql.update_topics, {
-        course_id: courseId,
-        topics: topicsToUpdate.map((t) =>
-          JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
-        ),
-      });
-    }
+      if (topicsToUpdate.length > 0) {
+        await queryAsync(sql.update_topics, {
+          course_id: courseId,
+          topics: topicsToUpdate.map((t) =>
+            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+          ),
+        });
+      }
 
-    if (topicsToDelete.length > 0) {
-      await queryAsync(sql.delete_topics, { course_id: courseId, topics: topicsToDelete });
-    }
-  });
+      if (topicsToDelete.length > 0) {
+        await queryAsync(sql.delete_topics, { course_id: courseId, topics: topicsToDelete });
+      }
+    });
+  }
 }
