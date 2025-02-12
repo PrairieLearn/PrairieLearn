@@ -85,7 +85,7 @@ describe('Assessment set syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const dbAssessmentSets = await util.dumpTableWithSchema('assessment_sets', AssessmentSetSchema);
     assert.isUndefined(dbAssessmentSets.find((as) => as.name === oldName));
-    const dbAssessmentSet = dbAssessmentSets.find((as) => (as.name = newName));
+    const dbAssessmentSet = dbAssessmentSets.find((as) => as.name === newName);
     checkAssessmentSet(dbAssessmentSet, courseData.course.assessmentSets[0]);
   });
 
