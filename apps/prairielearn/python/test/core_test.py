@@ -79,27 +79,25 @@ def breast_cancer_dataframe() -> pd.DataFrame:
 
 
 def r_types_dataframe() -> pd.DataFrame:
-    return pd.DataFrame(
-        {
-            # Scalars
-            "integer": 1,
-            "numeric": 3.14,
-            "logical": False,
-            "character": "foo",
-            # TODO adding in complex numbers won't deserialize correctly, fix this (somehow?)
-            # "complex": complex(1, 2),
-            # Series
-            "numeric-list": pd.Series([1.0] * 3, dtype="float64"),
-            "integer-list": pd.Series([1] * 3, dtype="int64"),
-            # "complex-list": pd.Series(np.array([1, 2, 3]) + np.array([4, 5, 6]) *1j).astype("complex128"),
-            "character-list": pd.Series(["hello", "world", "stat"]),
-            "logical-list": pd.Series([True, False, True]),
-            "character-string-list": pd.Series(["a", "b", "c"]),
-            # Time Dependency: https://pandas.pydata.org/docs/user_guide/timeseries.html
-            "POSIXct-POSIXt-timestamp": pd.Timestamp("2023-01-02T00:00:00.0000000"),
-            "POSIXct-POSIXt-date_range": pd.date_range("2023", freq="D", periods=3),
-        }
-    )
+    return pd.DataFrame({
+        # Scalars
+        "integer": 1,
+        "numeric": 3.14,
+        "logical": False,
+        "character": "foo",
+        # TODO adding in complex numbers won't deserialize correctly, fix this (somehow?)
+        # "complex": complex(1, 2),
+        # Series
+        "numeric-list": pd.Series([1.0] * 3, dtype="float64"),
+        "integer-list": pd.Series([1] * 3, dtype="int64"),
+        # "complex-list": pd.Series(np.array([1, 2, 3]) + np.array([4, 5, 6]) *1j).astype("complex128"),
+        "character-list": pd.Series(["hello", "world", "stat"]),
+        "logical-list": pd.Series([True, False, True]),
+        "character-string-list": pd.Series(["a", "b", "c"]),
+        # Time Dependency: https://pandas.pydata.org/docs/user_guide/timeseries.html
+        "POSIXct-POSIXt-timestamp": pd.Timestamp("2023-01-02T00:00:00.0000000"),
+        "POSIXct-POSIXt-date_range": pd.date_range("2023", freq="D", periods=3),
+    })
 
 
 @pytest.mark.parametrize(
@@ -502,6 +500,10 @@ def test_string_from_numpy(value: Any, args: dict, expected_output: str) -> None
         (np.complex64(complex(1, 2)), {}, "1.0+2.0j"),
         (np.complex64(complex(0, 2)), {}, "0.0+2.0j"),
         (np.complex64(complex(1, 0)), {}, "1.0+0.0j"),
+        # For legacy reasons, we must also support strings.
+        ("0", {}, "0.0"),
+        ("0", {"digits": 1}, "0."),
+        ("0", {"digits": 0}, "0"),
     ],
 )
 def test_string_from_number_sigfig(

@@ -589,9 +589,9 @@ def sympy_to_json(
     # Apply substitutions for hidden variables
     a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
     if allow_complex:
-        a_sub = a_sub.subs(
-            [(val, key) for key, val in const.hidden_complex_variables.items()]
-        )
+        a_sub = a_sub.subs([
+            (val, key) for key, val in const.hidden_complex_variables.items()
+        ])
 
     assumptions_dict = {
         str(variable): variable.assumptions0 for variable in a.free_symbols
@@ -646,8 +646,7 @@ def validate_string_as_sympy(
     custom_functions: None | list[str] = None,
     imaginary_unit: None | str = None,
 ) -> None | str:
-    """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
-
+    """Try to parse expr as a sympy expression. If it fails, return a string with an appropriate error message for display on the frontend."""
     try:
         expr_parsed = convert_string_to_sympy(
             expr,
