@@ -11,8 +11,7 @@ columns
 
 indexes
     course_instance_usages_pkey: PRIMARY KEY (id) USING btree (id)
-    course_instance_usages_type_course_id_course_instance_id_da_key: UNIQUE NULLS NOT DISTINCT (type, course_id, course_instance_id, date, user_id) USING btree (type, course_id, course_instance_id, date, user_id) NULLS NOT DISTINCT
-    course_instance_usages_date_idx: USING btree (date)
+    course_instance_usages_date_type_course_id_course_instance__key: UNIQUE NULLS NOT DISTINCT (date, type, course_id, course_instance_id, user_id) USING btree (date, type, course_id, course_instance_id, user_id) NULLS NOT DISTINCT
     course_instance_usages_institution_id_date_idx: USING btree (institution_id, date)
 
 foreign-key constraints

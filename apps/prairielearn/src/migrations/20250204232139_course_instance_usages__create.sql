@@ -26,15 +26,16 @@ CREATE TABLE course_instance_usages (
   -- `course_instance_id` and one without, but this is ok because all of our
   -- billing queries will either count distinct `user_id`s or sum the `duration`
   -- for compute usage.
+  --
+  -- We order the columns in the UNIQUE constraint to have `date` first so that
+  -- we can do efficient queries on date ranges.
   UNIQUE NULLS NOT DISTINCT (
+    date,
     type,
     course_id,
     course_instance_id,
-    date,
     user_id
   )
 );
-
-CREATE INDEX course_instance_usages_date_idx ON course_instance_usages (date);
 
 CREATE INDEX course_instance_usages_institution_id_date_idx ON course_instance_usages (institution_id, date);
