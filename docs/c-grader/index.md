@@ -298,6 +298,64 @@ self.test_run("diff -q output.txt expected.txt", reject_output=["differ"],
               msg="Output file should match expected file.")
 ```
 
+### Running a Catch2 framework test suite
+
+For tests that involve more complex scenarios, particularly related to individual function calls and unit tests, the C autograder allows integration with the [Catch2 framework](https://github.com/catchorg/Catch2). This framework provides functionality to run multiple test groups and test cases with individual unit tests.
+
+To run a Catch2 suite, create a main C++ file containing the tests following the [Catch2 test case structure](https://github.com/catchorg/Catch2/blob/devel/docs/tutorial.md). The example course includes a basic test suite that can be used as an example.
+
+A typical `test.py` file for a Catch2-based suite will look something like this, assuming `student_code.cpp` contains the student code and `/grade/tests/tests.cpp` contains the Catch2 tests:
+
+```python title="test.py"
+import cgrader
+
+class DemoGrader(cgrader.CPPGrader):
+    def tests(self):
+        self.compile_file(
+            "tests.cpp",
+            exec_file="tests"
+        )
+        self.run_catch2_suite("./tests")
+
+if __name__ == "__main__":
+    g = DemoGrader()
+    g.start()
+```
+
+Points for individual test cases can be specified using tags in the test case definition. For example:
+
+```cpp title="tests.cpp"
+TEST_CASE("Addition test", "[1.5]") {  // This test is worth 1.5 points
+    REQUIRE(add(2, 2) == 4);
+}
+```
+
+The `self.run_catch2_suite()` method will call the executable containing the Catch2 test suites and create one autograder test for each test case. By default, the name of each test will be taken from the test case name. You can customize how test names are formatted by providing a name formatter function:
+
+```python title="test.py"
+def custom_name_formatter(test_case, test_group):
+    return f"{test_group.name} - {test_case.name}"
+
+self.run_catch2_suite("./main", name_formatter=custom_name_formatter)
+```
+
+You can also provide a custom description formatter to modify how the test descriptions are generated:
+
+```python title="test.py"
+def custom_description_formatter(test_case, test_group):
+    return f"Group: {test_group.name} (Tags: {', '.join(test_case.tags)})"
+
+self.run_catch2_suite("./main", description_formatter=custom_description_formatter)
+```
+
+Any output produced by the test case using `INFO()` or `CAPTURE()` macros will be included in the test output visible to students.
+
+Additional command-line arguments can be passed to the Catch2 executable using the `args` parameter:
+
+```python title="test.py"
+self.run_catch2_suite("./main", args=["--order", "rand"])
+```
+
 ### Running a Check framework test suite
 
 For tests that involve more complex scenarios, particularly related to individual function calls and unit tests, the C autograder allows integration with a modified version of the [Check framework](https://libcheck.github.io/check/). This framework provides functionality to run multiple test suites and test cases with individual unit tests. It is also able to capture signals (e.g., segmentation fault) by running unit tests in an isolated process.
