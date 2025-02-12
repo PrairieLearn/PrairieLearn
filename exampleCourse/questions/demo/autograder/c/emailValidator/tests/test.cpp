@@ -2,11 +2,11 @@
 #include "catch_amalgamated.hpp"
 #include <vector>
 #include <string>
-#include "../solution.h"
+#include "../solution.hpp"
 
 using namespace std;
 
-TEST_CASE("Email validation basic tests", "[email]") {
+TEST_CASE("Email validation basic tests", "[email][3]") {
     vector<string> emails = {"test@example.com", "invalid", "multiple@@at.com", "no@domain", "@nodomain.com"};
     vector<string> valid, invalid;
     
@@ -17,7 +17,7 @@ TEST_CASE("Email validation basic tests", "[email]") {
     CHECK(valid[0] == "test@example.com");
 }
 
-TEST_CASE("Empty input handling", "[email]") {
+TEST_CASE("Empty input handling", "[email][2]") {
     vector<string> emails;
     vector<string> valid, invalid;
     

@@ -74,6 +74,17 @@ UngradableException = UngradableError
 
 
 @dataclass
+class _Catch2Expression:
+    success: bool
+    type: str
+    filename: str
+    line: int
+    original: str
+    expanded: str
+    formatted: str
+
+
+@dataclass
 class _Catch2TestCase:
     """
     A dataclass representing a single test case in a Catch2 test suite.
@@ -89,6 +100,11 @@ class _Catch2TestCase:
     """The standard output of the test case."""
     tags: list[str]
     """A list of tags associated with the test case."""
+    filename: str
+    """The filename of the test case."""
+    line: int
+    """The line number of the test case."""
+    expression: _Catch2Expression | None
 
 
 @dataclass
@@ -702,16 +718,19 @@ class CGrader:
             raise UngradableError("Error parsing test suite output") from exc
 
         def default_name_formatter(
-            test_case: _Catch2TestCase, _: _Catch2TestGroup
-        ) -> str:
-            return test_case.name
-
-        def default_description_formatter(
             test_case: _Catch2TestCase, test_group: _Catch2TestGroup
         ) -> str:
-            if not test_case.tags:
-                return f"Group {test_group.name}"
-            return f"Group {test_group.name} ({', '.join(test_case.tags)})"
+            return f"[{test_group.name}] {test_case.name} [{', '.join(test_case.tags)}]"
+
+        def default_description_formatter(
+            test_case: _Catch2TestCase, _test_group: _Catch2TestGroup
+        ) -> str:
+            output = ""
+            if test_case.expression:
+                output += f"{test_case.expression.formatted}\n"
+            if test_case.stdout:
+                output += f"stdout:\n{test_case.stdout}"
+            return output
 
         if name_formatter is None:
             name_formatter = default_name_formatter
@@ -726,6 +745,9 @@ class CGrader:
             for test in group.findall(".//TestCase"):
                 name = test.attrib.get("name", "")
                 raw_tags = test.attrib.get("tags", "")
+                filename = test.attrib.get("filename", "")
+                line = int(test.attrib.get("line", -1))
+
                 tags = re.findall(r"\[(.*?)\]", raw_tags)
                 points, str_tags = self._parse_catch2_tags(tags, name)
                 result = test.find(".//OverallResult")
@@ -738,8 +760,46 @@ class CGrader:
 
                 stdout_elem = result.find(".//StdOut")
                 stdout = stdout_elem.text if stdout_elem is not None else ""
+
+                expression_el = test.find(".//Expression")
+                expression = None
+                if expression_el is not None:
+                    original = expression_el.find(".//Original")
+                    expanded = expression_el.find(".//Expanded")
+                    original_text = original.text if original is not None else ""
+                    expanded_text = expanded.text if expanded is not None else ""
+                    expression_success = expression_el.attrib.get("success") == "true"
+                    expression_type = expression_el.attrib.get("type", "")
+                    expression_filename = expression_el.attrib.get("filename", "")
+                    expression_line = int(expression_el.attrib.get("line", -1))
+                    success_str = "PASSED" if expression_success else "FAILED"
+                    formatted_expression = (
+                        f"{expression_filename}:{expression_line}: {success_str}:\n"
+                        + f'\t{expression_type}( "{original_text}" )\n'
+                        + "with expansion:\n"
+                        + f"\t{expanded_text}"
+                    )
+                    expression = _Catch2Expression(
+                        expression_success,
+                        expression_type,
+                        expression_filename,
+                        expression_line,
+                        original_text,
+                        expanded_text,
+                        formatted_expression,
+                    )
+
                 test_cases.append(
-                    _Catch2TestCase(name, points, success, stdout, str_tags)
+                    _Catch2TestCase(
+                        name,
+                        points,
+                        success,
+                        stdout,
+                        str_tags,
+                        filename,
+                        line,
+                        expression,
+                    )
                 )
             test_groups.append(_Catch2TestGroup(name, test_cases))
 
