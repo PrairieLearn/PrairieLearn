@@ -15,7 +15,7 @@ SELECT
   c.id,
   ci.id,
   date_trunc('day', s.date, 'UTC'),
-  v.authn_user_id,
+  $user_id,
   coalesce(ai.include_in_statistics, false)
 FROM
   submissions AS s
