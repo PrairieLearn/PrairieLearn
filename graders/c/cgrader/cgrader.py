@@ -643,6 +643,29 @@ class CGrader:
                 self.result["partial_scores"][field]["max_points"] += max_points
         return test
 
+    def _parse_catch2_tags(
+        self, tags: list[str], test_name: str
+    ) -> tuple[float, list[str]]:
+        """Parse Catch2 tags to extract points and string tags."""
+        points = 1
+        str_tags = []
+        found = False
+        for tag in tags:
+            try:
+                points = float(tag)
+                if points <= 0:
+                    raise UngradableError(
+                        f"Points must be positive (found point value '{points}') in test case '{test_name}'"
+                    )
+                if found:
+                    raise UngradableError(
+                        f"Multiple numeric tags found in test case '{test_name}'"
+                    )
+                found = True
+            except ValueError:  # noqa: PERF203
+                str_tags.append(tag)
+        return points, str_tags
+
     def run_catch2_suite(
         self,
         exec_file: str,
@@ -704,23 +727,7 @@ class CGrader:
                 name = test.attrib.get("name", "")
                 raw_tags = test.attrib.get("tags", "")
                 tags = re.findall(r"\[(.*?)\]", raw_tags)
-                points = 1
-                str_tags = []
-                found = False
-                for tag in tags:
-                    try:
-                        points = float(tag)
-                        if points <= 0:
-                            raise UngradableError(
-                                f"Points must be positive (found point value '{points}') in test case '{name}'"
-                            )
-                        if found:
-                            raise UngradableError(
-                                f"Multiple numeric tags found in test case '{name}'"
-                            )
-                        found = True
-                    except ValueError:  # noqa: PERF203
-                        str_tags.append(tag)
+                points, str_tags = self._parse_catch2_tags(tags, name)
                 result = test.find(".//OverallResult")
                 if result is None:
                     raise UngradableError(
