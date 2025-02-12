@@ -1,13 +1,12 @@
 WITH
-  institution_data AS (
+  institution_usage_data AS (
     SELECT
       ciu.institution_id,
       count(DISTINCT ciu.user_id) AS users,
       EXTRACT(
         EPOCH
         FROM
-          sum(
-            ciu.duration
+          sum(ciu.duration) FILTER (
             WHERE
               ciu.type = 'External grading'
           )
@@ -15,8 +14,7 @@ WITH
       EXTRACT(
         EPOCH
         FROM
-          sum(
-            ciu.duration
+          sum(ciu.duration) FILTER (
             WHERE
               ciu.type = 'Workspace'
           )
@@ -26,16 +24,16 @@ WITH
     WHERE
       ciu.date BETWEEN $start_date AND $end_date
     GROUP BY
-      i.id
+      ciu.institution_id
   )
 SELECT
   i.short_name AS institution,
-  id.users,
-  id.external_grading_hours,
-  id.workspace_hours
+  coalesce(iud.users, 0) AS users,
+  coalesce(iud.external_grading_hours, 0) AS external_grading_hours,
+  coalesce(iud.workspace_hours, 0) AS workspace_hours
 FROM
-  insitution_data AS id
-  JOIN institutions AS i ON (i.id = id.institution_id)
+  institution_usage_data AS iud
+  JOIN institutions AS i ON (i.id = iud.institution_id)
 ORDER BY
   i.short_name,
   i.id;
