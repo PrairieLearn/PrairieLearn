@@ -1,6 +1,11 @@
+-- prairielearn:migrations NO TRANSACTION
+--
 -- Declare `variants.authn_user_id` as NOT NULL; it was always required.
 -- Use the approach described here to avoid a long table lock:
 -- https://dba.stackexchange.com/questions/267947/how-can-i-set-a-column-to-not-null-without-locking-the-table-during-a-table-scan/268128#268128
+ALTER TABLE variants
+DROP CONSTRAINT IF EXISTS variants_authn_user_id_not_null;
+
 ALTER TABLE variants
 ADD CONSTRAINT variants_authn_user_id_not_null CHECK (authn_user_id IS NOT NULL) NOT VALID;
 
