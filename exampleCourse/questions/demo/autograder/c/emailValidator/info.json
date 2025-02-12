@@ -1,0 +1,19 @@
+{
+  "uuid": "f982a3c1-5d7b-4f15-b7a2-ac7d12cb5478",
+  "title": "Email Address Validator",
+  "topic": "C++",
+  "tags": [
+    "vectors",
+    "strings",
+    "validation"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-c",
+    "timeout": 30,
+    "entrypoint": "python3 /grade/tests/test.py"
+  }
+}

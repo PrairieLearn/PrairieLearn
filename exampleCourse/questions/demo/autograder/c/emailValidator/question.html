@@ -1,0 +1,41 @@
+<pl-question-panel>
+  <markdown>
+
+    # Email Address Validator
+
+    Write a program that validates a list of email addresses. Your program should implement the following functionality:
+
+    1. Create a vector to store email addresses
+    2. Accept multiple email addresses as input
+    3. For each email address, validate that it:
+    - Contains exactly one '@' symbol
+    - Has text before and after the '@' symbol
+    - Has a valid domain (characters after the '@')
+    4. Create two separate vectors:
+    - One for valid email addresses
+    - One for invalid email addresses
+    5. Display both lists (valid and invalid emails)
+
+    Complete the following function:
+
+    ```cpp
+    void validateEmails(const vector<string>& emails,
+      vector<string>& valid,
+        vector<string>& invalid);
+          ```
+
+          **Requirements:**
+          - Use C++ vectors and string operations
+          - Handle empty inputs appropriately
+          - Follow proper memory management practices
+
+          <pl-file-editor source-file-name="source.cpp" file-name="validator.cpp" ace-mode="ace/mode/c_cpp">
+          </pl-file-editor>
+
+  </markdown>
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>
