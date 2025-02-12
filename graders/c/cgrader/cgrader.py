@@ -75,17 +75,32 @@ UngradableException = UngradableError
 
 @dataclass
 class _Catch2TestCase:
+    """
+    A dataclass representing a single test case in a Catch2 test suite.
+    """
+
     name: str
+    """The name of the test case."""
     points: float
+    """The number of points associated with the test case."""
     success: bool
+    """Whether the test case passed or failed."""
     stdout: str
+    """The standard output of the test case."""
     tags: list[str]
+    """A list of tags associated with the test case."""
 
 
 @dataclass
 class _Catch2TestGroup:
+    """
+    A dataclass representing a group of test cases in a Catch2 test suite.
+    """
+
     name: str
+    """The name of the test group."""
     test_cases: list[_Catch2TestCase]
+    """A list of test cases in the group."""
 
 
 def is_str_list(val: list[float | str | int]) -> TypeGuard[list[str]]:
@@ -685,11 +700,15 @@ class CGrader:
                 tags = re.findall(r"\[(.*?)\]", raw_tags)
                 points = 1
                 str_tags = []
+                found = False
                 for tag in tags:
                     try:
                         points = float(tag)
                         if points <= 0:
-                            raise ValueError
+                            raise RuntimeError("Points must be positive")
+                        if found:
+                            raise RuntimeError("Multiple numeric tags found")
+                        found = True
                     except ValueError:  # noqa: PERF203
                         str_tags.append(tag)
                 result = test.find(".//OverallResult")
