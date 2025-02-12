@@ -13,6 +13,14 @@
  *    `user_id` at all for this to allow per-user rows (rather than
  *    per-course-instance rows) to avoid contention when many users are updating
  *    simultaneously.
+ *
+ * In the `course_instance_usages` table, we store some rows with a
+ * `course_instance_id` and some with only a `course_id`. The latter are for
+ * course staff accessing questions outside of the context of a course instance.
+ * This means that a course staff member might have two rows recorded for them,
+ * one with a `course_instance_id` and one without, but this is ok because all
+ * of our billing queries will either count distinct `user_id`s or sum the
+ * `duration` for compute usage.
  */
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
