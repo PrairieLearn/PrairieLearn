@@ -66,7 +66,7 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
   const existingEntitiesMap = new Map(existingEntities.map((entity) => [entity.name, entity]));
   const desiredEntities = new Map<string, DesiredEntity<Entity>>();
 
-  // If `infoCourse.json` is invalid, keep all existing assessment sets in place.
+  // If `infoCourse.json` is invalid, keep all existing entities in place.
   // Otherwise, sync whatever is in the JSON file.
   if (isInfoCourseValid) {
     for (const entity of courseEntities) {
