@@ -304,7 +304,7 @@ For tests that involve more complex scenarios, particularly related to individua
 
 To run a Catch2 suite, create a main C++ file containing the tests following the [Catch2 test case structure](https://github.com/catchorg/Catch2/blob/devel/docs/tutorial.md). The example course includes a basic test suite that can be used as an example.
 
-A typical `test.py` file for a Catch2-based suite will look something like this, assuming `student_code.cpp` contains the student code and `/grade/tests/tests.cpp` contains the Catch2 tests:
+A typical `test.py` file for a Catch2-based suite will look something like this, assuming `tests.cpp` contains the Catch2 test harness:
 
 ```python title="test.py"
 import cgrader
@@ -350,10 +350,16 @@ self.run_catch2_suite("./main", description_formatter=custom_description_formatt
 
 Any output produced by the test case using `INFO()` or `CAPTURE()` macros will be included in the test output visible to students.
 
-Additional command-line arguments can be passed to the Catch2 executable using the `args` parameter:
+Additional command-line arguments can be passed to the Catch2 executable using the `args` parameter. For example:
 
 ```python title="test.py"
+# This will run the tests in a random order
 self.run_catch2_suite("./main", args=["--order", "rand"])
+```
+
+```python title="test.py"
+# This will run only tests with the tag "[my_tag]"
+self.run_catch2_suite("./main", args=["[my_tag]"])
 ```
 
 ### Running a Check framework test suite
