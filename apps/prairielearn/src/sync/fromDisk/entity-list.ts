@@ -110,9 +110,9 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
     }
   }
 
-  // Based on the set of desired assessment entities, determine which ones must be
-  // added, updated, or deleted.
-  const entitiesToAdd = new Map<string, DesiredEntity<Entity>>();
+  // Based on the set of desired entities, determine which ones must be
+  // created, updated, or deleted.
+  const entitiesToCreate = new Map<string, DesiredEntity<Entity>>();
   const entitiesToUpdate = new Map<string, DesiredEntity<Entity>>();
   const entitiesToDelete = new Set<string>();
 
@@ -120,7 +120,7 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
     const existingEntity = existingEntitiesMap.get(name);
 
     if (!existingEntity) {
-      entitiesToAdd.set(name, entity);
+      entitiesToCreate.set(name, entity);
     } else if (
       !_.isEqual(
         _.pick(existingEntity, fullComparisonProperties),
@@ -141,7 +141,7 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
   }
 
   return {
-    entitiesToCreate: Array.from(entitiesToAdd.values()),
+    entitiesToCreate: Array.from(entitiesToCreate.values()),
     entitiesToUpdate: Array.from(entitiesToUpdate.values()),
     entitiesToDelete: Array.from(entitiesToDelete.values()),
   };
