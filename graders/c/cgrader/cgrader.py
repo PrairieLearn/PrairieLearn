@@ -669,8 +669,14 @@ class CGrader:
             name_formatter: A function that takes a test case and a test group and returns the name of the test case.
             description_formatter: A function that takes a test case and a test group and returns the description of the test case.
         """
+        if not os.path.isfile(exec_file):
+            raise UngradableError(f"Test suite executable not found: {exec_file}")
+
         out = self.run_command([exec_file, "-r", "xml", *args], sandboxed=True)
-        tree = et.fromstring(out.encode("utf-8"), parser=et.XMLParser())
+        try:
+            tree = et.fromstring(out.encode("utf-8"), parser=et.XMLParser())
+        except et.XMLSyntaxError as exc:
+            raise UngradableError("Error parsing test suite output") from exc
 
         def default_name_formatter(
             test_case: _Catch2TestCase, _: _Catch2TestGroup
@@ -705,16 +711,20 @@ class CGrader:
                     try:
                         points = float(tag)
                         if points <= 0:
-                            raise RuntimeError("Points must be positive")
+                            raise UngradableError(
+                                f"Points must be positive (found point value '{points}') in test case '{name}'"
+                            )
                         if found:
-                            raise RuntimeError("Multiple numeric tags found")
+                            raise UngradableError(
+                                f"Multiple numeric tags found in test case '{name}'"
+                            )
                         found = True
                     except ValueError:  # noqa: PERF203
                         str_tags.append(tag)
                 result = test.find(".//OverallResult")
                 if result is None:
                     raise UngradableError(
-                        "Missing 'OverallResult' element in test case"
+                        f"Missing 'OverallResult' element in test case '{name}'"
                     )
 
                 success = result.attrib.get("success") == "true"
