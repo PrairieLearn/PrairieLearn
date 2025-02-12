@@ -1,4 +1,5 @@
 -- prairielearn:migrations NO TRANSACTION
+--
 -- For whatever reason, we ended up with rows in the `groups` table where
 -- `group_config_id` was NULL. This is invalid, since `groups` rows aren't
 -- reachable via our joins with such a value defined. So that we can mark
