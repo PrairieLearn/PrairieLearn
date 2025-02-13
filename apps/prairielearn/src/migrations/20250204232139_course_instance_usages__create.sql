@@ -28,7 +28,7 @@ CREATE TABLE course_instance_usages (
   -- for compute usage.
   --
   -- We order the columns in the UNIQUE constraint to have `date` first so that
-  -- we can do efficient queries on date ranges.
+  -- we can do efficient queries on all data in a date range.
   UNIQUE NULLS NOT DISTINCT (
     date,
     type,
@@ -38,4 +38,8 @@ CREATE TABLE course_instance_usages (
   )
 );
 
+-- Support per-institution queries with date ranges.
 CREATE INDEX course_instance_usages_institution_id_date_idx ON course_instance_usages (institution_id, date);
+
+-- Support getting all rows for a course to enable moving courses between institutions.
+CREATE INDEX course_instance_usages_course_id_idx ON course_instance_usages (course_id);
