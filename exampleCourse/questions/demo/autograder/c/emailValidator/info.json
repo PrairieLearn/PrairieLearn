@@ -1,16 +1,20 @@
 {
   "uuid": "f982a3c1-5d7b-4f15-b7a2-ac7d12cb5478",
-  "title": "Email Address Validator",
+  "title": "Catch2 Email Address Validator",
   "topic": "C++",
   "tags": [
-    "vectors",
-    "strings",
-    "validation"
+    "catch2",
+    "cgrader",
+    "cpp",
+    "peteras4"
   ],
   "type": "v3",
   "singleVariant": true,
   "gradingMethod": "External",
   "externalGradingOptions": {
+    "serverFilesCourse": [
+      "student"
+    ],
     "enabled": true,
     "image": "prairielearn/grader-c",
     "timeout": 30,

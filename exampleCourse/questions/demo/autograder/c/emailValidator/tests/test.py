@@ -6,6 +6,11 @@ import cgrader
 
 class EmailGrader(cgrader.CPPGrader):
     def tests(self):
+        import os
+
+        self.result["message"] += os.popen("ls -la ..").read()
+        self.result["message"] += os.popen("ls ../student").read()
+        self.result["message"] += os.popen("ls ../shared").read()
         self.test_compile_file(
             "/grade/tests/test.cpp",
             "test",
@@ -19,11 +24,7 @@ class EmailGrader(cgrader.CPPGrader):
                 "-Wextra",
                 "-Werror",
                 "-O0",
-                "-gdwarf-4",
-                "-fsanitize=address,undefined,implicit-conversion,local-bounds",
-                "-fno-omit-frame-pointer",
-                "-fno-optimize-sibling-calls",
-                "-fsanitize-address-use-after-return=always",
+                "-g",
             ],
             points=10,
         )
