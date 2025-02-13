@@ -345,10 +345,6 @@ a.badge {
   color: #dc3545;
 }
 
-.user-output-invalid-text {
-  color: #d02d3e;
-}
-
 .user-output.small,
 .user-output-invalid.small,
 small .user-output,
