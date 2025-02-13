@@ -245,7 +245,7 @@ export async function processGradingResult(content: any): Promise<void> {
 
     if (updateUsages) {
       // This has to come after `grading_jobs_update_after_grading` above
-      // because it uses the `grading_finished_value` updated there.
+      // because it uses the `grading_finished_at` value updated there.
       await updateCourseInstanceUsagesForGradingJob({
         grading_job_id: content.gradingId,
       });
