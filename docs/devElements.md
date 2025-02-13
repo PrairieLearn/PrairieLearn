@@ -25,7 +25,7 @@ parsing the student's submission, and optionally grading the submission.
 As a simple example, element `pl-my-element` would have the following file
 structure:
 
-```
+```text
 pl-my-element
 +-- info.json
 |-- pl-my-element.py

@@ -33,7 +33,7 @@ def get_form_name(answers_name: str, index: int) -> str:
 
 
 def get_counter(i: int, counter_type: str) -> str:
-    """Converts an integer counter to the specified CSS counter type"""
+    """Convert an integer counter to the specified CSS counter type"""
     if counter_type == "lower-alpha":
         return pl.index2key(i - 1)
     elif counter_type == "upper-alpha":
@@ -49,14 +49,14 @@ def get_counter(i: int, counter_type: str) -> str:
 
 
 def legal_answer(answer: int, options: list[Any]) -> bool:
-    """Checks that the given answer is within the range of the given counter type."""
+    """Check that the given answer is within the range of the given counter type."""
     return -1 <= answer < len(options)
 
 
 def get_select_options(
     options_list: list[Any], selected_value: int, blank_used: bool
 ) -> list[dict[str, Any]]:
-    def transform(i: int, opt: Any):
+    def transform(i: int, opt: Any) -> dict[str, Any]:
         index = i - int(blank_used)
         return {
             "index": index,
@@ -74,10 +74,9 @@ def partition(
     data: list[ListItem], pred: Callable[[ListItem], bool]
 ) -> tuple[list[ListItem], list[ListItem]]:
     """
-    Implements a partition function, splitting the data into two lists based on the predicate.
+    Split the data into two lists based on the predicate.
     TODO move this into prairielearn.py once it's used in another element.
     """
-
     yes, no = [], []
     for d in data:
         if pred(d):
@@ -209,9 +208,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         else:
             # Add a sample of the distractors.
             distractor_sample = random.sample(distractors, more_needed)
-            needed_options_keys = needed_options_keys.union(
-                {o["name"] for o in distractor_sample}
-            )
+            needed_options_keys = needed_options_keys.union({
+                o["name"] for o in distractor_sample
+            })
             needed_options = [o for o in options if o["name"] in needed_options_keys]
         options = needed_options
         if not fixed_options_order:
@@ -235,9 +234,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             random.shuffle(options)
 
     if nota:
-        options.append(
-            {"index": len(options), "name": "__nota__", "html": "None of the above"}
-        )
+        options.append({
+            "index": len(options),
+            "name": "__nota__",
+            "html": "None of the above",
+        })
 
     # Build the options to display to the student.
     chosen_option_names = []

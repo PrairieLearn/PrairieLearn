@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copy over config files
 cp -r /opt/defaults/config /home/prairielearner/.config
