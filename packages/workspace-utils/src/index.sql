@@ -149,7 +149,9 @@ SELECT
   -- many users updating simultaneously.
   v.authn_user_id,
   coalesce(ai.include_in_statistics, false),
-  $duration
+  make_interval(
+    secs => $duration_milliseconds::double precision / 1000.0
+  )
 FROM
   workspaces AS w
   JOIN variants AS v ON (v.workspace_id = w.id)

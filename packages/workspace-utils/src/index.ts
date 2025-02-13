@@ -66,13 +66,13 @@ export async function updateWorkspaceState(
   message = '',
 ): Promise<void> {
   // TODO: add locking
-  const delta = await queryRow(
+  const duration_milliseconds = await queryRow(
     sql.update_workspace_state,
     { workspace_id, state, message },
     IntervalSchema,
   );
-  if (delta > 0) {
-    await updateCourseInstanceUsagesForWorkspace({ workspace_id, duration: delta });
+  if (duration_milliseconds > 0) {
+    await updateCourseInstanceUsagesForWorkspace({ workspace_id, duration_milliseconds });
   }
   emitMessageForWorkspace(workspace_id, 'change:state', {
     workspace_id,
@@ -217,13 +217,13 @@ export const workspaceFastGlobDefaultOptions = {
  */
 export async function updateCourseInstanceUsagesForWorkspace({
   workspace_id,
-  duration,
+  duration_milliseconds,
 }: {
   workspace_id: string | number;
-  duration: number;
+  duration_milliseconds: number;
 }) {
   await queryAsync(sql.update_course_instance_usages_for_workspace, {
     workspace_id,
-    duration,
+    duration_milliseconds,
   });
 }
