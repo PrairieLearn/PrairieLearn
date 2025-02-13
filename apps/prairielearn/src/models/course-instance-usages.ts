@@ -47,7 +47,7 @@ export async function updateCourseInstanceUsagesForSubmission({
 }
 
 /**
- * Update the course instance usages for exernal grading job.
+ * Update the course instance usages for external grading job.
  *
  * @param param.grading_job_id The ID of the grading job.
  */
