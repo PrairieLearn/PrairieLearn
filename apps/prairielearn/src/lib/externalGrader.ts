@@ -9,6 +9,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
 import { updateCourseInstanceUsagesForGradingJob } from '../models/course-instance-usages.js';
+import { selectOptionalGradingJob } from '../models/grading-job.js';
 
 import { config } from './config.js';
 import {
@@ -218,6 +219,13 @@ export async function processGradingResult(content: any): Promise<void> {
       }
     }
 
+    const grading_job = await selectOptionalGradingJob(content.gradingId);
+    // Only update course instance usages if the job hasn't been graded yet.
+    // We have to compute this before calling
+    // `grading_jobs_update_after_grading` below because that will update
+    // `graded_at`.
+    const updateUsages = grading_job && grading_job.graded_at == null;
+
     await sqldb.callAsync('grading_jobs_update_after_grading', [
       content.gradingId,
       content.grading.receivedTime,
@@ -235,9 +243,13 @@ export async function processGradingResult(content: any): Promise<void> {
       null, // `v2_score`: gross legacy, this can safely be null
     ]);
 
-    await updateCourseInstanceUsagesForGradingJob({
-      grading_job_id: content.gradingId,
-    });
+    if (updateUsages) {
+      // This has to come after `grading_jobs_update_after_grading` above
+      // because it uses the `grading_finished_value` updated there.
+      await updateCourseInstanceUsagesForGradingJob({
+        grading_job_id: content.gradingId,
+      });
+    }
 
     const assessment_instance_id = await sqldb.queryOptionalRow(
       sql.select_assessment_for_grading_job,
