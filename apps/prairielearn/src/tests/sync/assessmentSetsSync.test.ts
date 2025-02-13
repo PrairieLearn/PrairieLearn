@@ -1,5 +1,6 @@
 import { assert } from 'chai';
 
+import { AssessmentSetSchema, CourseSchema, type AssessmentSet } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -11,12 +12,14 @@ import * as util from './util.js';
  * @param syncedAssessmentSet - The assessment set from the database
  * @param assessmentSet - The assessment set from `infoCourse.json`.
  */
-function checkAssessmentSet(syncedAssessmentSet: any, assessmentSet: any) {
+function checkAssessmentSet(
+  syncedAssessmentSet: AssessmentSet | null | undefined,
+  assessmentSet: Partial<AssessmentSet>,
+) {
   assert.isOk(syncedAssessmentSet);
-  assert.equal(syncedAssessmentSet.name, assessmentSet.name);
-  assert.equal(syncedAssessmentSet.abbreviation, assessmentSet.abbreviation);
-  assert.equal(syncedAssessmentSet.heading, assessmentSet.heading);
-  assert.equal(syncedAssessmentSet.color, assessmentSet.color);
+  for (const key of Object.keys(assessmentSet)) {
+    assert.equal(syncedAssessmentSet[key], assessmentSet[key]);
+  }
 }
 
 /**
@@ -42,7 +45,10 @@ describe('Assessment set syncing', () => {
     const newAssessmentSet = makeAssessmentSet();
     courseData.course.assessmentSets.push(newAssessmentSet);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    const syncedAssessmentSets = await util.dumpTableWithSchema(
+      'assessment_sets',
+      AssessmentSetSchema,
+    );
     const syncedAssessmentSet = syncedAssessmentSets.find(
       (as) => as.name === newAssessmentSet.name,
     );
@@ -57,7 +63,10 @@ describe('Assessment set syncing', () => {
     await util.syncCourseData(courseDir);
     courseData.course.assessmentSets.splice(0, 1);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    const syncedAssessmentSets = await util.dumpTableWithSchema(
+      'assessment_sets',
+      AssessmentSetSchema,
+    );
     const syncedAssessmentSet = syncedAssessmentSets.find(
       (as) => as.name === oldAssessmentSet.name,
     );
@@ -74,9 +83,9 @@ describe('Assessment set syncing', () => {
     const newName = 'new name';
     courseData.course.assessmentSets[0].name = newName;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const dbAssessmentSets = await util.dumpTable('assessment_sets');
+    const dbAssessmentSets = await util.dumpTableWithSchema('assessment_sets', AssessmentSetSchema);
     assert.isUndefined(dbAssessmentSets.find((as) => as.name === oldName));
-    const dbAssessmentSet = dbAssessmentSets.find((as) => (as.name = newName));
+    const dbAssessmentSet = dbAssessmentSets.find((as) => as.name === newName);
     checkAssessmentSet(dbAssessmentSet, courseData.course.assessmentSets[0]);
   });
 
@@ -97,14 +106,17 @@ describe('Assessment set syncing', () => {
     courseData.course.assessmentSets.push(newAssessmentSet1);
     courseData.course.assessmentSets.push(newAssessmentSet2);
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    const syncedAssessmentSets = await util.dumpTableWithSchema(
+      'assessment_sets',
+      AssessmentSetSchema,
+    );
     const syncedAssessmentSet = syncedAssessmentSets.find(
       (as) => as.name === newAssessmentSet1.name,
     );
     checkAssessmentSet(syncedAssessmentSet, newAssessmentSet2);
-    const syncedCourses = await util.dumpTable('pl_courses');
+    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
     const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
-    assert.match(syncedCourse?.sync_warnings, /Found duplicates in 'assessmentSets'/);
+    assert.match(syncedCourse?.sync_warnings ?? '', /Found duplicates in 'assessmentSets'/);
   });
 
   it('adds default assessment sets if used by assessments but not specified in courseData', async () => {
@@ -125,7 +137,10 @@ describe('Assessment set syncing', () => {
 
     await util.writeAndSyncCourseData(courseData);
 
-    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    const syncedAssessmentSets = await util.dumpTableWithSchema(
+      'assessment_sets',
+      AssessmentSetSchema,
+    );
     const syncedWorksheetSet = syncedAssessmentSets.find((as) => as.name === 'Worksheet');
 
     // Ensure that the Worksheet set was added and matches the corresponding set in DEFAULT_ASSESSMENT_SETS
@@ -146,6 +161,73 @@ describe('Assessment set syncing', () => {
       name: 'Machine Problem',
       heading: 'Machine Problems',
       color: 'turquoise1',
+    });
+  });
+
+  it('deletes all assessment sets when none are used', async () => {
+    const courseData = util.getCourseData();
+
+    // Perform an initial sync with the course's assessment sets.
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
+
+    // Assert there are some assessment sets in the database.
+    const syncedAssessmentSets = await util.dumpTableWithSchema(
+      'assessment_sets',
+      AssessmentSetSchema,
+    );
+    assert.isAtLeast(syncedAssessmentSets.length, 1);
+
+    // Remove all course-level assessment sets.
+    courseData.course.assessmentSets = [];
+
+    // Remove all course instances, thus removing all assessments that would
+    // have specified an assessment set.
+    courseData.courseInstances = {};
+
+    // Sync again.
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    // Assert that there are no assessment sets in the database.
+    const remainingAssessmentSets = await util.dumpTableWithSchema(
+      'assessment_sets',
+      AssessmentSetSchema,
+    );
+    assert.isEmpty(remainingAssessmentSets);
+  });
+
+  it('handles course with only a single implicit assessment set', async () => {
+    const courseData = util.getCourseData();
+    const courseInstance = courseData.courseInstances[util.COURSE_INSTANCE_ID];
+
+    // Remove all course assessment sets.
+    courseData.course.assessmentSets = [];
+
+    // Save a reference to the test assessment.
+    const testAssessment = courseInstance.assessments[util.ASSESSMENT_ID];
+
+    // Remove all assessments.
+    courseInstance.assessments = {};
+
+    // Add a single assessment that uses a set that isn't in the list of defaults.
+    courseInstance.assessments[util.ASSESSMENT_ID] = testAssessment;
+    testAssessment.set = 'X';
+
+    // Sync the course.
+    await util.writeAndSyncCourseData(courseData);
+
+    // Assert that the expected set is present and that it has the correct number.
+    const syncedAssessmentSets = await util.dumpTableWithSchema(
+      'assessment_sets',
+      AssessmentSetSchema,
+    );
+    assert.equal(syncedAssessmentSets.length, 1);
+    checkAssessmentSet(syncedAssessmentSets[0], {
+      abbreviation: 'X',
+      name: 'X',
+      heading:
+        'X (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)',
+      color: 'gray1',
+      number: 1,
     });
   });
 });
