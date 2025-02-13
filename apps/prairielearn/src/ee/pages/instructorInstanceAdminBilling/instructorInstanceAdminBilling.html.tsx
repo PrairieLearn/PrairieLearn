@@ -1,5 +1,6 @@
-import { PreactHeadContents } from '../../../components/HeadContents.html.js';
-import { PreactNavbar } from '../../../components/Navbar.html.js';
+import { Fragment } from 'preact';
+
+import { PreactPageLayout } from '../../../components/PageLayout.html.js';
 import { renderHtmlDocument, renderForClientHydration } from '../../../lib/preact.js';
 import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
@@ -30,13 +31,16 @@ export function InstructorCourseInstanceBilling({
   resLocals: Record<string, any>;
 }) {
   return renderHtmlDocument(
-    <html lang="en">
-      <head>
-        <PreactHeadContents resLocals={resLocals} />
-      </head>
-      <body>
-        <PreactNavbar resLocals={resLocals} />
-        <main id="content" class="container mb-4">
+    PreactPageLayout({
+      resLocals,
+      pageTitle: 'Billing',
+      navContext: {
+        type: 'instructor',
+        page: 'instance_admin',
+        subPage: 'billing',
+      },
+      content: (
+        <Fragment>
           {!editable && (
             <div class="alert alert-warning">Only course owners can change billing settings.</div>
           )}
@@ -62,8 +66,8 @@ export function InstructorCourseInstanceBilling({
               )}
             </div>
           </div>
-        </main>
-      </body>
-    </html>,
+        </Fragment>
+      ),
+    }),
   );
 }
