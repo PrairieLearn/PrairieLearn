@@ -22,5 +22,5 @@ export function gradingJobStatus(gradingJob: GradingJob | null): GradingJobStatu
  * @returns The grading job, or null if it does not exist.
  */
 export async function selectOptionalGradingJob(grading_job_id: string): Promise<GradingJob | null> {
-  return queryOptionalRow(sql.select_grading_job, { grading_job_id }, GradingJobSchema);
+  return await queryOptionalRow(sql.select_grading_job, { grading_job_id }, GradingJobSchema);
 }
