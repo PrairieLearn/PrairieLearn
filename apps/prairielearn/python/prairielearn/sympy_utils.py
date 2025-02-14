@@ -1,4 +1,4 @@
-"""This file contains utility functions for parsing and evaluating sympy expressions."""
+"""Utility functions for parsing and evaluating SymPy expressions."""
 
 import ast
 import copy
