@@ -1,3 +1,14 @@
+"""These are the core functions for developing elements in PrairieLearn.
+
+`QuestionData` and `PartialScore` are described in more detail in the [Developer Elements](../devElements.md) page.
+
+Usage:
+
+```python
+from prairielearn.core import ...
+```
+"""
+
 import collections
 import html
 import importlib
@@ -328,32 +339,35 @@ def to_json(
 ) -> Any | _JSONSerializedType:
     """
     If v has a standard type that cannot be json serialized, it is replaced with
-    a {'_type':..., '_value':...} pair that can be json serialized:
+    a `{'_type': ..., '_value': ...}` pair that can be json serialized.
 
-    If np_encoding_version is set to 2, will serialize numpy scalars as follows:
+    This is a complete table of the mappings:
 
-    - numpy scalar -> `'_type': 'np_scalar'`
-
-    If df_encoding_version is set to 2, will serialize pandas DataFrames as follows:
-
-    - `pandas.DataFrame` -> `'_type': 'dataframe_v2'`
-
-    Otherwise, the following mappings are used:
-
-    - any complex scalar (including numpy) -> `'_type': 'complex'`
-    - non-complex `ndarray` (assumes each element can be json serialized) -> `'_type': 'ndarray'`
-    - complex `ndarray` -> `'_type': 'complex_ndarray'`
-    - `sympy.Expr` (i.e., any scalar sympy expression) -> `'_type': 'sympy'`
-    - `sympy.Matrix` -> `'_type': 'sympy_matrix'`
-    - `pandas.DataFrame` -> `'_type': 'dataframe'`
-    - any networkx graph type -> `'_type': 'networkx_graph'`
+    | Type | JSON `_type` field | notes |
+    | --- | --- | --- |
+    | complex scalar | `complex` | including numpy |
+    | non-complex ndarray | `ndarray` | assumes each element can be json serialized |
+    | complex ndarray | `complex_ndarray` | |
+    | sympy.Expr | `sympy` | any scalar sympy expression |
+    | sympy.Matrix | `sympy_matrix` | |
+    | pandas.DataFrame | `dataframe` | `df_encoding_version=1` |
+    | pandas.DataFrame | `dataframe_v2` | `df_encoding_version=2` |
+    | networkx graph type | `networkx_graph` |
+    | numpy scalar | `np_scalar` | `np_encoding_version=2` |
+    | any | `v` | if v can be json serialized |
 
     !!! note
         The 'dataframe_v2' encoding allows for missing and date time values whereas
         the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
         numbers while 'dataframe_v2' does not.
 
-    If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
+    If np_encoding_version is set to 2, then numpy scalars serialize using `'_type': 'np_scalar'`.
+
+    If df_encoding_version is set to 2, then pandas DataFrames serialize using `'_type': 'dataframe_v2'`.
+
+    See :func:`prairielearn.core.from_json` for details about the differences between encodings.
+
+    If v is an ndarray, this function preserves its dtype (by adding `'_dtype'` as
     a third field in the dictionary).
 
     If v can be json serialized or does not have a standard type, then it is
@@ -448,18 +462,21 @@ def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
 
 def from_json(v: _JSONSerializedType | Any) -> Any:
     """
-    If v has the format {'_type':..., '_value':...} as would have been created
-    using to_json(...), then it is replaced:
+    If v has the format `{'_type': ..., '_value': ...}` as would have been created
+    using `to_json(...)`, then it is replaced according to the following table:
 
-    - '_type': 'complex' -> `complex`
-    - '_type': 'np_scalar' -> numpy scalar defined by '_concrete_type'
-    - '_type': 'ndarray' -> non-complex `ndarray`
-    - '_type': 'complex_ndarray' -> complex `ndarray`
-    - '_type': 'sympy' -> `sympy.Expr`
-    - '_type': 'sympy_matrix' -> `sympy.Matrix`
-    - '_type': 'dataframe' -> `pandas.DataFrame`
-    - '_type': 'dataframe_v2' -> `pandas.DataFrame`
-    - '_type': 'networkx_graph' -> corresponding networkx graph
+    | JSON `_type` field | Python type |
+    | --- | --- |
+    | `complex` | `complex` |
+    | `np_scalar` | numpy scalar defined by `_concrete_type` |
+    | `ndarray` | non-complex `ndarray` |
+    | `complex_ndarray` | complex `ndarray` |
+    | `sympy` | `sympy.Expr` |
+    | `sympy_matrix` | `sympy.Matrix` |
+    | `dataframe` | `pandas.DataFrame` |
+    | `dataframe_v2` | `pandas.DataFrame` |
+    | `networkx_graph` | corresponding networkx graph |
+    | missing | input value v returned |
 
     If v encodes an ndarray and has the field '_dtype', this function recovers
     its dtype.
