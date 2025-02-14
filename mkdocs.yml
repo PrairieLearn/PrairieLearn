@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://json.schemastore.org/mkdocs-1.6.json
 site_name: PrairieLearn Docs
 site_url: https://prairielearn.readthedocs.io
 repo_url: https://github.com/PrairieLearn/PrairieLearn
@@ -72,6 +73,7 @@ plugins:
       pad: 20
       theme: 0
   - mkdocstrings:
+      custom_templates: docs/mkdocstrings
       default_handler: python
       handlers:
         python:
@@ -142,6 +144,9 @@ markdown_extensions:
   - attr_list
   # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=tabbed#tabbed
   - pymdownx.tabbed:
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
       alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
