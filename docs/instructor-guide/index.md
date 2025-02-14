@@ -18,9 +18,10 @@ Learn more about configuring the four main aspects of your course:
 Some other important links are:
 
 - [Access control](../accessControl/index.md): learn how to control when and where students can access your course content.
-- [Element catalog](../elements.md): a reference for all elements available for use in questions
-- [Code autograders](../externalGrading.md): learn about the external code autograders
+- [Element catalog](../elements.md): a reference for all elements available for use in questions.
+- [Code autograders](../externalGrading.md): learn how to automatically grade student code.
   - [Python](../python-grader/index.md)
   - [C / C++](../c-grader/index.md)
-- [FAQ](../faq.md): Common questions and answers
-- [Editing and syncing course content](../sync.md): Tradeoffs between in-browser editing and local editing
+  - [Java](../java-grader/index.md)
+- [FAQ](../faq.md): find answers to common questions.
+- [Editing and syncing course content](../sync.md): understand tradeoffs between in-browser editing and local editing.
