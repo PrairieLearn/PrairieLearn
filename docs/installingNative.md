@@ -213,13 +213,11 @@ Most of these prerequisites can be installed using the package manager of your O
 
   You may need to restart the PostgreSQL server after changing the file above.
 
-- Run the test suite:
+- Run the test suite (Docker must be installed and running):
 
   ```sh
   make test
   ```
-
-  _Note:_ Docker is required to pass the test suite
 
 - Run the linters:
 
