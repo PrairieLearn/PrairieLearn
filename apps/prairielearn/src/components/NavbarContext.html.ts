@@ -15,6 +15,7 @@ export function ContextNavigation({
 }) {
   if (!navPage) return '';
 
+  const showSideNav = resLocals.has_enhanced_navigation && resLocals.course !== undefined;
   const navPagesTabs = getNavPageTabs(resLocals.has_enhanced_navigation);
   const navPageTabs = navPagesTabs[navPage];
 
@@ -22,7 +23,16 @@ export function ContextNavigation({
 
   return html`
     <nav>
-      <ul class="nav nav-tabs pl-nav-tabs-bar pt-3 px-3 bg-light">
+      <ul
+        class="
+          nav 
+          nav-tabs 
+          pl-nav-tabs-bar 
+          ${showSideNav ? 'pt-3' : 'pt-2'} 
+          px-3 
+          bg-light
+        "
+      >
         ${navPageTabs.map((tabInfo) => NavbarTab({ navSubPage, resLocals, tabInfo }))}
       </ul>
     </nav>
