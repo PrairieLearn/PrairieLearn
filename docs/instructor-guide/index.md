@@ -17,7 +17,7 @@ Learn more about configuring the four main aspects of your course:
 
 Some other important links are:
 
-- [Access Control](../accessControl/index.md)
+- [Access control](../accessControl/index.md): learn how to control when and where students can access your course content.
 - [Element catalog](../elements.md)
 - [Code autograders](../externalGrading.md)
   - [Python](../python-grader/index.md)
