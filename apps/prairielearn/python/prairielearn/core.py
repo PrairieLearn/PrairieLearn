@@ -55,7 +55,7 @@ if TYPE_CHECKING:
 class PartialScore(TypedDict):
     """A class with type signatures for the partial scores dict.
 
-    For more information see [Developer Elements](../../devElements.md).
+    For more information see the [element developer guide](../../devElements.md).
     """
 
     score: float | None
@@ -73,7 +73,7 @@ class PartialScore(TypedDict):
 class QuestionData(TypedDict):
     """A class with type signatures for the data dictionary.
 
-    For more information see [Developer Elements](../../devElements.md).
+    For more information see the [element developer guide](../../devElements.md).
     """
 
     params: dict[str, Any]
