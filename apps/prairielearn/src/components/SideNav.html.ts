@@ -6,13 +6,13 @@ import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
 interface SideNavTabInfo {
-  /** For the side nav tab to be active, the navPage must be in activePages. */
+  /** For the side nav tab to be active, the current navPage must be in activePages. */
   activePages: NavPage[];
   /**
-   * For navPages in checkActiveSubPageForPages, the subPage must be in activeSubPages for
+   * For navPages in checkActiveSubPageForPages, the current subPage must also be in activeSubPages for
    * the side nav tab to be active.
    *
-   * For all other navPages, only the navPage must be in activePages.
+   * For all other navPages, only the current navPage must be in activePages.
    *
    * If not specified, activeSubPages will be checked on all pages.
    **/

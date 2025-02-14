@@ -66,7 +66,7 @@ export function PageLayout({
         ?.map((tab) => tab.activeSubPage)
         .flat();
 
-      // If the user is on a course admin settings subpage, show the ContextNavigation
+      // If the user is on a course admin settings subpage, show ContextNavigation
       if (navContext.subPage && courseAdminSettingsNavSubPages?.includes(navContext.subPage)) {
         showContextNavigation = true;
       } else {
