@@ -118,7 +118,7 @@ export function AdministratorInstitutionSaml({
                 name="issuer"
                 id="issuer"
                 value="${samlProvider?.issuer ?? ''}"
-                describedBy="issuer-help"
+                describedby="issuer-help"
                 aria-describedby="issuerHelp"
               />
               <small id="issuerHelp" class="form-text text-muted">
@@ -168,7 +168,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
                 name="validate_audience"
                 value="1"
                 ${(samlProvider?.validate_audience ?? true) ? 'checked' : ''}
-                aria-describedBy="validateAudienceHelp"
+                aria-describedby="validateAudienceHelp"
               />
               <label class="form-check-label" for="validate_audience">Validate audience</label>
               <div id="validateAudienceHelp" class="small text-muted">
@@ -185,7 +185,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
                 name="want_assertions_signed"
                 value="1"
                 ${(samlProvider?.want_assertions_signed ?? true) ? 'checked' : ''}
-                aria-describedBy="wantAssertionsSignedHelp"
+                aria-describedby="wantAssertionsSignedHelp"
               />
               <label class="form-check-label" for="want_assertions_signed">
                 Require signed assertions
@@ -204,7 +204,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
                 name="want_authn_response_signed"
                 value="1"
                 ${(samlProvider?.want_authn_response_signed ?? true) ? 'checked' : ''}
-                aria-describedBy="wantAuthnResponseSignedHelp"
+                aria-describedby="wantAuthnResponseSignedHelp"
               />
               <label class="form-check-label" for="want_authn_response_signed">
                 Require signed response
@@ -362,7 +362,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
                       id="strictMode"
                       name="strict_mode"
                       value="1"
-                      aria-describedBy="strictModeHelp"
+                      aria-describedby="strictModeHelp"
                     />
                     <label class="form-check-label" for="strictMode">Strict mode</label>
                     <small id="strictModeHelp" class="form-text text-muted mt-0">
