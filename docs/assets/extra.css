@@ -117,8 +117,12 @@ foreignObject .md pre {
   margin-bottom: 0;
 }
 
-.flex-row-between {
+/* .doc-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
+} */
+
+.doc-heading > .md-content__button {
+  margin: 0;
 }
