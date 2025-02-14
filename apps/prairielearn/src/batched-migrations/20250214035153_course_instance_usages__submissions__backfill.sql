@@ -1,7 +1,8 @@
 -- BLOCK delete_old_usages
 DELETE FROM course_instance_usages
 WHERE
-  date < $CUTOFF_DATE;
+  type = 'Submission'
+  AND date < $CUTOFF_DATE;
 
 -- BLOCK select_bounds
 SELECT
