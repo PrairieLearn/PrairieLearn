@@ -82,6 +82,7 @@ plugins:
             show_root_heading: true
             summary:
               attributes: false
+              modules: true
             show_source: false
             show_bases: false # e.g. 'TypedDict'
             show_labels: true # e.g. 'instance-attribute'
@@ -92,20 +93,17 @@ plugins:
             docstring_section_style: table
             show_symbol_type_heading: false # class, meth, attr
 
-            members_order: source
-
             show_signature_annotations: true
             separate_signature: true
             signature_crossrefs: true
+            show_if_no_docstring: false # ignore undocumented members
 
-            show_if_no_docstring: true
-
-            # scoped_crossrefs: true
-            show_symbol_type_toc: true # type in the TOC
+            show_symbol_type_toc: true
             show_root_full_path: true # prairielearn.core
             show_root_toc_entry: true
-            heading_level: 1
-            group_by_category: false
+            heading_level: 2
+            group_by_category: false # e.g. 'classes', 'functions'
+            members_order: source # source, alphabetical
 
           import:
             - url: https://numpy.org/doc/stable/objects.inv
@@ -205,7 +203,7 @@ nav:
       - 'API': 'api.md'
       - 'LMS Integration': 'lmsIntegrationInstructor.md'
   - Developer Guide:
-      - 'Developer guide': 'dev-guide/guide.md'
+      - 'Developer guide': 'dev-guide/index.md'
       - 'Running in Docker with local source': 'installingLocal.md'
       - 'Running natively': 'installingNative.md'
       - 'Server configuration': 'configJson.md'

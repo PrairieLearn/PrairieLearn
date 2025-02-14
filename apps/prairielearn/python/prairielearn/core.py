@@ -1,9 +1,5 @@
 """These are the core functions for developing elements in PrairieLearn.
 
-`QuestionData` and `PartialScore` are described in more detail in the [Developer Elements](../devElements.md) page.
-
-Usage:
-
 ```python
 from prairielearn.core import ...
 ```
@@ -55,7 +51,10 @@ if TYPE_CHECKING:
 
 
 class PartialScore(TypedDict):
-    """A class with type signatures for the partial scores dict"""
+    """A class with type signatures for the partial scores dict.
+
+    For more information see [Developer Elements](../../devElements.md).
+    """
 
     score: float | None
     weight: NotRequired[int]
@@ -70,7 +69,10 @@ class PartialScore(TypedDict):
 # for their answer data, feedback data, etc., but TypedDicts with Generics are
 # not yet supported: https://bugs.python.org/issue44863
 class QuestionData(TypedDict):
-    """A class with type signatures for the data dictionary"""
+    """A class with type signatures for the data dictionary.
+
+    For more information see [Developer Elements](../../devElements.md).
+    """
 
     params: dict[str, Any]
     correct_answers: dict[str, Any]
@@ -481,7 +483,7 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
     If v encodes an ndarray and has the field '_dtype', this function recovers
     its dtype.
 
-    If v does not have the format {'_type':..., '_value':...}, then it is
+    If v does not have the format `{'_type': ..., '_value': ...}`, then it is
     returned without change.
     """
     if isinstance(v, dict) and "_type" in v:
