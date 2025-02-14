@@ -7,7 +7,7 @@ To develop questions and other course content on your own computer, see the [loc
 Learn more about configuring the four main aspects of your course:
 
 - [Courses](../course/index.md)
-- [Course Instances](../courseInstance.md)
+- [Course instances](../courseInstance.md)
 - [Assessments](../assessment/index.md)
 - [Questions](../question.md)
 
