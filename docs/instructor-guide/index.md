@@ -18,7 +18,7 @@ Learn more about configuring the four main aspects of your course:
 Some other important links are:
 
 - [Access Control](../accessControl/index.md)
-- [Element catalogue](../elements.md)
+- [Element catalog](../elements.md)
 - [Autograders](../externalGrading.md)
   - [Python](../python-grader/index.md)
   - [C / C++](../c-grader/index.md)
