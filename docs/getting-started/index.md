@@ -14,4 +14,4 @@ Welcome to PrairieLearn! You probably want to read / complete the following page
 
   This page explains how to use and navigate the PrairieLearn interface.
 
-Afterwards, you may want to check out the [instructor guide](../instructor-guide/index.md) for more details on how to use PrairieLearn.
+Afterward, you may want to check out the [instructor guide](../instructor-guide/index.md) for more details on how to use PrairieLearn.
