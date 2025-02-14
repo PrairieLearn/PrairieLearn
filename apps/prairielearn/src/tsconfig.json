@@ -5,7 +5,6 @@
     "outDir": "../dist",
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
-    "skipLibCheck": true,
     "paths": {
       "react": ["./node_modules/preact/compat/", "../../../node_modules/preact/compat/"],
       "react/jsx-runtime": [
