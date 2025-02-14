@@ -126,7 +126,6 @@ export function PageLayout({
                         resLocals,
                         navPage: navContext.page,
                         navSubPage: navContext.subPage,
-                        fullWidth: options.fullWidth,
                       })
                     : ''}
                 </div>
@@ -137,6 +136,7 @@ export function PageLayout({
                     ${options.fullWidth ? 'container-fluid' : 'container'} 
                     ${marginBottom ? 'mb-4' : ''}
                     ${options.fullHeight ? 'flex-grow-1' : ''}
+                    ${showSideNav ? 'p-3' : ''}
                   "
                 >
                   ${content}

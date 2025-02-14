@@ -8,30 +8,21 @@ export function ContextNavigation({
   resLocals,
   navPage,
   navSubPage,
-  fullWidth = false,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage: NavSubPage;
-  fullWidth?: boolean;
 }) {
   if (!navPage) return '';
 
   const navPagesTabs = getNavPageTabs(resLocals.has_enhanced_navigation);
   const navPageTabs = navPagesTabs[navPage];
-  const showSideNav = resLocals.course !== undefined;
 
   if (!navPageTabs) return '';
 
   return html`
-    <nav
-      class="${resLocals.has_enhanced_navigation && showSideNav && !fullWidth ? 'container' : ''}"
-    >
-      <ul
-        class="nav nav-tabs pl-nav-tabs-bar ${resLocals.has_enhanced_navigation && showSideNav
-          ? 'mt-2 mb-4'
-          : 'pt-2 px-3 bg-light'}"
-      >
+    <nav>
+      <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
         ${navPageTabs.map((tabInfo) => NavbarTab({ navSubPage, resLocals, tabInfo }))}
       </ul>
     </nav>

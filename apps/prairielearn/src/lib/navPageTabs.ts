@@ -287,11 +287,11 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             tabLabel: 'Topics',
           },
           {
-            activeSubPage: 'staff',
-            urlSuffix: '/course_admin/staff',
-            iconClasses: 'fas fa-users',
-            tabLabel: 'Staff',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_own,
+            activeSubPage: 'sharing',
+            urlSuffix: '/course_admin/sharing',
+            iconClasses: 'fas fa-share-nodes',
+            tabLabel: 'Sharing',
+            renderCondition: (resLocals) => resLocals.question_sharing_enabled,
           },
         ]
       : [

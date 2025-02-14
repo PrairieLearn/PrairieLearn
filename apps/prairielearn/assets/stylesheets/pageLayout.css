@@ -43,7 +43,6 @@ body:has(div.app-container) {
   height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 1rem;
 }
 
 .side-nav {

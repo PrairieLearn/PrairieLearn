@@ -51,7 +51,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       tabLabel: 'Files',
     },
     {
-      activePages: ['gradebook'],
+      activePages: ['instance_admin'],
       activeSubPages: ['gradebook'],
       urlSuffix: '/instance_admin/gradebook',
       iconClasses: 'fas fa-balance-scale',
@@ -132,11 +132,11 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
     },
     {
       activePages: ['course_admin'],
-      activeSubPages: ['sharing'],
-      urlSuffix: '/course_admin/sharing',
-      iconClasses: 'fas fa-share-nodes',
-      tabLabel: 'Sharing',
-      renderCondition: (resLocals) => resLocals.question_sharing_enabled,
+      activeSubPages: ['staff'],
+      urlSuffix: '/course_admin/staff',
+      iconClasses: 'fas fa-users',
+      tabLabel: 'Staff',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_own,
     },
     {
       activePages: ['course_admin'],
@@ -157,7 +157,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
     },
     {
       activePages: ['course_admin'],
-      activeSubPages: ['settings', 'sets', 'modules', 'tags', 'topics', 'staff'],
+      activeSubPages: ['settings', 'sets', 'modules', 'tags', 'topics', 'sharing'],
       urlSuffix: '/course_admin/settings',
       iconClasses: 'fas fa-cog',
       tabLabel: 'Settings',
