@@ -336,6 +336,7 @@ function SideNavLink({
     <a
       href="${urlPrefix}${urlSuffix}"
       class="side-nav-link ${isActive ? 'side-nav-link-active' : ''}"
+      aria-current="${isActive ? 'page' : ''}"
     >
       <i class="${iconClasses}"></i>
       ${tabLabel} ${htmlSuffix?.(resLocals) || ''}
