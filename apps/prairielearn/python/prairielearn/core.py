@@ -340,6 +340,8 @@ def to_json(
     np_encoding_version: Literal[1, 2] = 1,
 ) -> Any | _JSONSerializedType:
     """
+    Convert a value to a JSON serializable format.
+
     If v has a standard type that cannot be json serialized, it is replaced with
     a `{'_type': ..., '_value': ...}` pair that can be json serialized.
 
@@ -464,6 +466,8 @@ def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
 
 def from_json(v: _JSONSerializedType | Any) -> Any:
     """
+    Converts a JSON serialized value (from `to_json`) back to its original type.
+
     If v has the format `{'_type': ..., '_value': ...}` as would have been created
     using `to_json(...)`, then it is replaced according to the following table:
 
