@@ -185,9 +185,8 @@ export function InstructorCourseAdminStaff({
                   The settings above do not affect access to the course's Git repository. To change
                   repository permissions, go to the
                   <a class="alert-link" href="${githubAccessLink}" target="_blank">
-                    GitHub access settings page
-                  </a>
-                  .
+                    GitHub access settings page</a
+                  >.
                 </div>
               `
             : ''}
