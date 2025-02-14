@@ -8,7 +8,7 @@ All `server.py` files for questions are executed in a Docker container created f
 
 To run a command line version of this Python environment, you may start it with the following command:
 
-```
+```sh
 docker run -it --rm prairielearn/prairielearn /bin/bash
 ```
 
@@ -19,7 +19,7 @@ The quickest way to add custom libraries is to install them directly to your cou
 1. Check out a copy of your course locally with Git, and make sure the main branch is up-to-date.
 2. Locate the package that you would like to install. You can find a list of all the available Python libraries at the [Python Package Index](https://pypi.org).
 3. Install the package to your course's `serverFileCourse` directory with the following command. Make sure to replace `<path-to-course>` and `<library>` with the absolute path to the course on your local computer and the library you wish to install, respectively.
-   ```
+   ```sh
    docker run -it --rm -v <path-to-course>:/course prairielearn/prairielearn pip3 install --target /course/serverFilesCourse <library>
    ```
 4. Using Git, commit and push the new files that are now in your `serverFilesCourse` directory.
