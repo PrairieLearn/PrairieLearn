@@ -1,5 +1,5 @@
-import { Fragment } from 'preact';
-import { useState } from 'preact/hooks';
+import { Fragment } from '@prairielearn/preact-cjs';
+import { useState } from '@prairielearn/preact-cjs/hooks';
 
 import { run } from '@prairielearn/run';
 

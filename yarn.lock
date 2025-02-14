@@ -3749,6 +3749,7 @@ __metadata:
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/postgres-tools": "workspace:^"
+    "@prairielearn/preact-cjs": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/session": "workspace:^"
@@ -3804,6 +3805,8 @@ __metadata:
     "@types/pem": "npm:^1.14.4"
     "@types/pg": "npm:^8.11.11"
     "@types/qrcode-svg": "npm:^1.1.5"
+    "@types/react": "npm:^19"
+    "@types/react-dom": "npm:^19"
     "@types/serve-favicon": "npm:^2.5.7"
     "@types/serve-static": "npm:^1.15.7"
     "@types/streamifier": "npm:^0.1.2"
@@ -3918,9 +3921,9 @@ __metadata:
     qs: "npm:^6.14.0"
     quill: "npm:2.0.2"
     quilljs-markdown: "npm:^1.2.0"
-    react: "npm:@preact/compat@latest"
+    react: "npm:^19.0.0"
     react-bootstrap: "npm:^2.10.9"
-    react-dom: "npm:@preact/compat@latest"
+    react-dom: "npm:^19.0.0"
     remark-gfm: "npm:^4.0.0"
     remark-parse: "npm:^11.0.0"
     remark-stringify: "npm:^11.0.0"
@@ -3957,6 +3960,26 @@ __metadata:
     xml2js: "npm:^0.6.2"
     yargs-parser: "npm:^21.1.1"
     zod: "npm:^3.24.1"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/preact-cjs-compat@workspace:packages/preact-cjs-compat":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/preact-cjs-compat@workspace:packages/preact-cjs-compat"
+  dependencies:
+    "@prairielearn/preact-cjs": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
+    typescript: "npm:^5.7.3"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/preact-cjs@workspace:^, @prairielearn/preact-cjs@workspace:packages/preact-cjs":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/preact-cjs@workspace:packages/preact-cjs"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    original-preact: "npm:preact@^10.25.4"
+    typescript: "npm:^5.7.3"
   languageName: unknown
   linkType: soft
 
@@ -6040,6 +6063,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-dom@npm:^19":
+  version: 19.0.3
+  resolution: "@types/react-dom@npm:19.0.3"
+  peerDependencies:
+    "@types/react": ^19.0.0
+  checksum: 10c0/3867427b333cbe8cbba496d7cc20ec9676d32c25ae44f4d1263a4129d42e57cf4adf0039ad263432f1215b88075c27d326e7eb4ed646128235d01a76e661d48f
+  languageName: node
+  linkType: hard
+
 "@types/react-transition-group@npm:^4.4.6":
   version: 4.4.12
   resolution: "@types/react-transition-group@npm:4.4.12"
@@ -6049,7 +6081,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:>=16.9.11":
+"@types/react@npm:>=16.9.11, @types/react@npm:^19":
   version: 19.0.8
   resolution: "@types/react@npm:19.0.8"
   dependencies:
@@ -13459,6 +13491,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"original-preact@npm:preact@^10.25.4":
+  version: 10.25.4
+  resolution: "preact@npm:10.25.4"
+  checksum: 10c0/33a009d614d2b47df1c867935fe057c1dfd2bae1aaab41d6e981434b761f75b88e82eac7847ae486b4dbcffc74af814b8dc59ccef17b10625e3effefa2e1ef67
+  languageName: node
+  linkType: hard
+
 "os-tmpdir@npm:^1.0.2, os-tmpdir@npm:~1.0.2":
   version: 1.0.2
   resolution: "os-tmpdir@npm:1.0.2"
@@ -14099,12 +14138,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"preact@npm:^10.25.4":
-  version: 10.25.4
-  resolution: "preact@npm:10.25.4"
-  checksum: 10c0/33a009d614d2b47df1c867935fe057c1dfd2bae1aaab41d6e981434b761f75b88e82eac7847ae486b4dbcffc74af814b8dc59ccef17b10625e3effefa2e1ef67
+"preact@link:./packages/preact-cjs::locator=prairielearn%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "preact@link:./packages/preact-cjs::locator=prairielearn%40workspace%3A."
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "prelude-ls@npm:^1.2.1":
   version: 1.2.1
@@ -14469,14 +14507,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:@preact/compat@latest, react@npm:@preact/compat@latest":
-  version: 18.3.1
-  resolution: "@preact/compat@npm:18.3.1"
-  peerDependencies:
-    preact: "*"
-  checksum: 10c0/7997c4b761098c9ff6ca3850362784982a4e0b3fee847eda7c1f2e5e8211cc55a1fa1ed4e91711ac8c197a1096335b0f019fa8eeb86a9ed738c0bf6e7647ceb2
+"react-dom@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "react-dom@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A."
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "react-is@npm:^16.13.1, react-is@npm:^16.3.2":
   version: 16.13.1
@@ -14506,6 +14541,12 @@ __metadata:
   checksum: 10c0/2ba754ba748faefa15f87c96dfa700d5525054a0141de8c75763aae6734af0740e77e11261a1e8f4ffc08fd9ab78510122e05c21c2d79066c38bb6861a886c82
   languageName: node
   linkType: hard
+
+"react@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "react@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A."
+  languageName: node
+  linkType: soft
 
 "read-yaml-file@npm:^1.1.0":
   version: 1.1.0

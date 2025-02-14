@@ -1,8 +1,7 @@
-import { Fragment } from 'preact';
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { Fragment } from '@prairielearn/preact-cjs';
 import { run } from '@prairielearn/run';
 
 import { IssueBadge } from '../../components/IssueBadge.html.js';

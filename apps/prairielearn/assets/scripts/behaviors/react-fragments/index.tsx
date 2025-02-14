@@ -1,7 +1,7 @@
-import { hydrate, type ComponentType } from 'preact';
 import { observe } from 'selector-observer';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
+import { hydrate, type ComponentType } from '@prairielearn/preact-cjs';
 
 import { ReactFragmentsRegistry } from './registry.js';
 

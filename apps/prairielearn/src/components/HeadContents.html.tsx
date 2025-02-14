@@ -1,4 +1,4 @@
-import { Fragment } from 'preact';
+import { Fragment } from '@prairielearn/preact-cjs';
 
 import { nodeModulesAssetPath, assetPath, compiledScriptPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';

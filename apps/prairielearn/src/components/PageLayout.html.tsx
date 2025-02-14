@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
-import { type VNode } from 'preact';
 
 import { html, type HtmlValue } from '@prairielearn/html';
+import { type VNode } from '@prairielearn/preact-cjs';
 
 import { HeadContents, PreactHeadContents } from './HeadContents.html.js';
 import { Navbar, PreactNavbar } from './Navbar.html.js';

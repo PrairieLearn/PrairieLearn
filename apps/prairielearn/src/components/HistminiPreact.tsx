@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useRef } from '@prairielearn/preact-cjs/hooks';
 
 // This is duplicates from `assets/scripts/lib/histmini.ts` since we otherwise
 // couldn't import it.

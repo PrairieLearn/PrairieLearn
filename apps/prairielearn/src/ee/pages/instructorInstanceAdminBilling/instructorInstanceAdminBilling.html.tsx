@@ -1,4 +1,4 @@
-import { Fragment } from 'preact';
+import { Fragment } from '@prairielearn/preact-cjs';
 
 import { PreactPageLayout } from '../../../components/PageLayout.html.js';
 import { renderHtmlDocument, renderForClientHydration } from '../../../lib/preact.js';

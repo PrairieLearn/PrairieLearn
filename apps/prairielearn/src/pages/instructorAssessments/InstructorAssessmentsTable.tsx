@@ -1,6 +1,6 @@
 import * as async from 'async';
-import { Fragment } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { Fragment } from '@prairielearn/preact-cjs';
+import { useEffect, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { formatInterval } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';

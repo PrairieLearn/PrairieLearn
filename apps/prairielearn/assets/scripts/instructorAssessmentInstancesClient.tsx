@@ -1,11 +1,11 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
-import { render } from 'preact';
-import { useState } from 'preact/hooks';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
+import { render } from '@prairielearn/preact-cjs';
+import { useState } from '@prairielearn/preact-cjs/hooks';
 
 import { Scorebar } from '../../src/components/Scorebar.html.js';
 import { type AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';

@@ -1,4 +1,4 @@
-import { type ComponentType } from 'preact';
+import { type ComponentType } from '@prairielearn/preact-cjs';
 
 import { deferredPromise, type DeferredPromise } from '../../../../src/lib/deferred.js';
 

@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useState } from '@prairielearn/preact-cjs/hooks';
 
 import { type PlanName, planGrantsMatchPlanFeatures } from '../plans-types.js';
 

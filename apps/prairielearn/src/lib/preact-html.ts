@@ -1,4 +1,4 @@
-import type { VNode } from 'preact';
+import type { VNode } from '@prairielearn/preact-cjs';
 import { render } from 'preact-render-to-string/jsx';
 
 import { unsafeHtml, type HtmlSafeString } from '@prairielearn/html';
