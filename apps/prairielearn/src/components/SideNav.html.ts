@@ -223,6 +223,7 @@ function CourseNav({
             return html`
               <a
                 class="dropdown-item ${`${resLocals.course.id}` === `${course.id}` ? 'active' : ''}"
+                aria-current="${`${resLocals.course.id}` === `${course.id}` ? 'page' : ''}"
                 href="/pl/course/${course.id}/course_admin"
               >
                 ${course.short_name}
@@ -277,6 +278,7 @@ function CourseInstanceNav({
                   class="dropdown-item ${`${resLocals.course_instance.id}` === `${ci.id}`
                     ? 'active'
                     : ''}"
+                  aria-current="${`${resLocals.course_instance.id}` === `${ci.id}` ? 'page' : ''}"
                   href="/pl/course_instance/${ci.id}/instructor/instance_admin"
                 >
                   ${ci.short_name}
