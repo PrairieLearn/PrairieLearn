@@ -23,10 +23,9 @@ ${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
       data-trigger="hover"
       data-container="body"
       data-html="true"
-      data-title="${title}"
+      title="${title}"
       data-content="${escapeHtml(popoverContent)}"
       data-custom-class="popover-wide"
-      aria-label="${title}"
     >
       <i class="fa ${classes}" aria-hidden="true"></i>
     </button>
