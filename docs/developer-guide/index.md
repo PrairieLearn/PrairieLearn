@@ -1,6 +1,6 @@
 # Developer Guide
 
-This section provides documentation for all aspects of using PrairieLearn as a developer.
+This section provides documentation for working with the PrairieLearn codebase.
 
 If you are developing your own elements, we recommend running with [local source](../installingLocal.md) in docker. Then check out the [element development guide](../devElements.md).
 
