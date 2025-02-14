@@ -8,4 +8,4 @@ Welcome to PrairieLearn! Check out the following pages to get started:
 
 - [Quick start](../getStarted.md): learn how to use and navigate the PrairieLearn interface.
 
-Afterward, you may want to check out the [instructor guide](../instructor-guide/index.md) for more details on how to use PrairieLearn.
+Next, check out the [instructor guide](../instructor-guide/index.md) for more details on how to use PrairieLearn.
