@@ -1,6 +1,6 @@
 # Getting Started
 
-Welcome to PrairieLearn! You probably want to read / complete the following pages:
+Welcome to PrairieLearn! Check out the following pages to get started:
 
 - [Request a course space](../requestCourse/index.md): get access to your own course on PrairieLearn.
 
