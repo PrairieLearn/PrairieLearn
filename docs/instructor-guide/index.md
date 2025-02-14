@@ -19,7 +19,7 @@ Some other important links are:
 
 - [Access Control](../accessControl/index.md)
 - [Element catalog](../elements.md)
-- [Autograders](../externalGrading.md)
+- [Code autograders](../externalGrading.md)
   - [Python](../python-grader/index.md)
   - [C / C++](../c-grader/index.md)
 - [FAQ](../faq.md)
