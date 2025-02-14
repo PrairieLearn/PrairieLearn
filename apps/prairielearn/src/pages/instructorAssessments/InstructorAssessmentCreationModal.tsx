@@ -1,4 +1,4 @@
-import ModalOriginal from 'react-bootstrap/cjs/Modal.js';
+import ModalOriginal, { type ModalProps } from 'react-bootstrap/cjs/Modal.js';
 import ModalBodyOriginal from 'react-bootstrap/cjs/ModalBody.js';
 import ModalFooterOriginal from 'react-bootstrap/cjs/ModalFooter.js';
 import ModalHeaderOriginal from 'react-bootstrap/cjs/ModalHeader.js';
@@ -12,12 +12,9 @@ const ModalBody = ModalBodyOriginal as unknown as typeof ModalBodyOriginal.defau
 const ModalFooter = ModalFooterOriginal as unknown as typeof ModalFooterOriginal.default;
 const Modal = ModalOriginal as unknown as typeof ModalOriginal.default;
 
-// TODO tomorrow: figure out why the CJS and ESM hooks implementations aren't sharing state.
-// This should be easy to reproduce in isolation with a Node project: run ESM, have it import
-// the CJS version of `react-bootstrap`, try to `preact-render-to-string` it, it should error.
-// Report a bug with the reproduction, details, and a potential fix.
 export function InstructorAssessmentCreationModal({
   open,
+  onHide,
   csrfToken,
   urlPrefix,
   assessmentSets,
@@ -25,6 +22,7 @@ export function InstructorAssessmentCreationModal({
   assessmentsGroupBy,
 }: {
   open: boolean;
+  onHide: NonNullable<ModalProps['onHide']>;
   csrfToken: string;
   urlPrefix: string;
   assessmentSets: AssessmentSet[];
@@ -32,7 +30,7 @@ export function InstructorAssessmentCreationModal({
   assessmentsGroupBy: 'Set' | 'Module';
 }) {
   return (
-    <Modal open={open}>
+    <Modal show={open} onHide={onHide}>
       <ModalHeader closeButton>
         <ModalTitle as="h2" className="h4">
           Add assessment
@@ -120,7 +118,7 @@ export function InstructorAssessmentCreationModal({
         <ModalFooter>
           <input type="hidden" name="__action" value="add_assessment" />
           <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          <button type="button" class="btn btn-secondary" onClick={onHide}>
             Cancel
           </button>
           <button type="submit" class="btn btn-primary">

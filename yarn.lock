@@ -3805,8 +3805,6 @@ __metadata:
     "@types/pem": "npm:^1.14.4"
     "@types/pg": "npm:^8.11.11"
     "@types/qrcode-svg": "npm:^1.1.5"
-    "@types/react": "npm:^19"
-    "@types/react-dom": "npm:^19"
     "@types/serve-favicon": "npm:^2.5.7"
     "@types/serve-static": "npm:^1.15.7"
     "@types/streamifier": "npm:^0.1.2"
@@ -6063,15 +6061,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:^19":
-  version: 19.0.3
-  resolution: "@types/react-dom@npm:19.0.3"
-  peerDependencies:
-    "@types/react": ^19.0.0
-  checksum: 10c0/3867427b333cbe8cbba496d7cc20ec9676d32c25ae44f4d1263a4129d42e57cf4adf0039ad263432f1215b88075c27d326e7eb4ed646128235d01a76e661d48f
-  languageName: node
-  linkType: hard
-
 "@types/react-transition-group@npm:^4.4.6":
   version: 4.4.12
   resolution: "@types/react-transition-group@npm:4.4.12"
@@ -6081,7 +6070,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:>=16.9.11, @types/react@npm:^19":
+"@types/react@npm:>=16.9.11":
   version: 19.0.8
   resolution: "@types/react@npm:19.0.8"
   dependencies:

@@ -19,7 +19,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && rm -rf dist && mv dist-tmp dist",
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {

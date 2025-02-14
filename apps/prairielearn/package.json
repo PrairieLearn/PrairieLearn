@@ -241,8 +241,6 @@
     "@types/pem": "^1.14.4",
     "@types/pg": "^8.11.11",
     "@types/qrcode-svg": "^1.1.5",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
     "@types/serve-favicon": "^2.5.7",
     "@types/serve-static": "^1.15.7",
     "@types/streamifier": "^0.1.2",

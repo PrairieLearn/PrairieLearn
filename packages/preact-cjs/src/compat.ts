@@ -1,3 +1,3 @@
 import React from 'original-preact/compat';
 
-export = React;
+export = React as typeof React;

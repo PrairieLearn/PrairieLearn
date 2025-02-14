@@ -1,6 +1,5 @@
 import { Fragment } from '@prairielearn/preact-cjs';
 import { useState } from '@prairielearn/preact-cjs/hooks';
-
 import { run } from '@prairielearn/run';
 
 import type { AssessmentModule, AssessmentSet } from '../../lib/db-types.js';
@@ -35,11 +34,13 @@ export function InstructorAssessmentsCard({
   assessmentsGroupBy: 'Set' | 'Module';
 }) {
   const [createAssessmentModalOpen, setCreateAssessmentModalOpen] = useState(false);
+  console.log('modal open?', createAssessmentModalOpen);
 
   return (
     <Fragment>
       <InstructorAssessmentCreationModal
         open={createAssessmentModalOpen}
+        onHide={() => setCreateAssessmentModalOpen(false)}
         csrfToken={csrfToken}
         urlPrefix={urlPrefix}
         assessmentSets={assessmentSets}
@@ -53,8 +54,7 @@ export function InstructorAssessmentsCard({
             <button
               type="button"
               class="btn btn-sm btn-light ml-auto"
-              data-toggle="modal"
-              data-target="#createAssessmentModal"
+              onClick={() => setCreateAssessmentModalOpen(true)}
             >
               <i class="fa fa-plus" aria-hidden="true"></i>
               <span class="d-none d-sm-inline ml-1">Add assessment</span>
@@ -97,8 +97,7 @@ export function InstructorAssessmentsCard({
                   <button
                     type="button"
                     class="btn btn-sm btn-primary"
-                    data-toggle="modal"
-                    data-target="#createAssessmentModal"
+                    onClick={() => setCreateAssessmentModalOpen(true)}
                   >
                     <i class="fa fa-plus" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Add assessment</span>

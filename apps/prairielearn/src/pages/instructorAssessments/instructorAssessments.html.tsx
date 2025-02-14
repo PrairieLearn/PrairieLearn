@@ -281,18 +281,6 @@ export function PreactInstructorAssessments({
           <div
             // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
             dangerouslySetInnerHTML={{
-              __html: CreateAssessmentModal({
-                csrfToken: __csrf_token,
-                urlPrefix,
-                assessmentSets,
-                assessmentModules,
-                assessmentsGroupBy,
-              }).toString(),
-            }}
-          />
-          <div
-            // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-            dangerouslySetInnerHTML={{
               __html: CourseInstanceSyncErrorsAndWarnings({
                 authz_data,
                 courseInstance: resLocals.course_instance,

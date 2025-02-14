@@ -1,8 +1,8 @@
 import * as async from 'async';
-import { Fragment } from '@prairielearn/preact-cjs';
-import { useEffect, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { formatInterval } from '@prairielearn/formatter';
+import { Fragment } from '@prairielearn/preact-cjs';
+import { useEffect, useState } from '@prairielearn/preact-cjs/hooks';
 import { run } from '@prairielearn/run';
 
 import { HistminiPreact } from '../../components/HistminiPreact.js';
