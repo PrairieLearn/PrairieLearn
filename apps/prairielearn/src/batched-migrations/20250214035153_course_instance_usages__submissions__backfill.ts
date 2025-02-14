@@ -3,8 +3,6 @@ import { z } from 'zod';
 import { makeBatchedMigration } from '@prairielearn/migrations';
 import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 
-import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
-
 const sql = loadSqlEquiv(import.meta.url);
 
 const CUTOFF_DATE = '2025-02-15T00:00:00Z';
@@ -26,16 +24,6 @@ export default makeBatchedMigration({
     return { min, max, batchSize: 1000 };
   },
   async execute(start: bigint, end: bigint): Promise<void> {
-    for (let i = start; i <= end; i++) {
-      const user_id = await queryRow(
-        sql.select_user_id_for_submission_id,
-        { submission_id: i },
-        z.string(),
-      );
-      await updateCourseInstanceUsagesForSubmission({
-        submission_id: i.toString(),
-        user_id,
-      });
-    }
+    await queryAsync(sql.update_course_instance_usages_for_submissions, { start, end });
   },
 });
