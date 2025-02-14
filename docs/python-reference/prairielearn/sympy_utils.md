@@ -1,5 +1,5 @@
+<!-- markdownlint-disable MD041 -->
 <!-- prettier-ignore -->
-<!-- markdownlint-disable-next-line MD041 -->
 ::: prairielearn.sympy_utils
     options:
         members:
