@@ -355,7 +355,9 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the string `plist` is given as a dictionar with the following format:
 
-`plist = '[{"x": x1, "y": y1}, {"x": x2,"y": x2}, ... , {"x": xn,"y": yn}]'`
+```python
+plist = '[{"x": x1, "y": y1}, {"x": x2,"y": x2}, ... , {"x": xn,"y": yn}]'
+```
 
 For an example that uses `server.py` to generate `plist` refer to QID: `Example-pl-drawing-beam-cross-section`
 
