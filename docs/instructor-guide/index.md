@@ -4,7 +4,7 @@ This section provides detailed documentation for all aspects of using PrairieLea
 
 To develop questions and other course content on your own computer, see the [local installation guide](../installing.md).
 
-For more details about configuring the four main aspects of your course:
+Learn more about configuring the four main aspects of your course:
 
 - [Courses](../course/index.md)
 - [Course Instances](../courseInstance.md)
