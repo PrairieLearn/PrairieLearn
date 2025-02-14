@@ -238,7 +238,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
         </div>
 
         <div class="form-group">
-          <label for="name_attribute">UID attribute</label>
+          <label for="uid_attribute">UID attribute</label>
           <input
             type="text"
             class="form-control"
@@ -256,7 +256,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
         </div>
 
         <div class="form-group">
-          <label for="name_attribute">UIN attribute</label>
+          <label for="uin_attribute">UIN attribute</label>
           <input
             type="text"
             class="form-control"
