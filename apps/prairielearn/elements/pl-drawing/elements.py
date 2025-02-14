@@ -52,9 +52,7 @@ class BaseElement:
         return True
 
     def get_attributes():
-        """
-        Returns a list of attributes that the element may contain.
-        """
+        """Return a list of attributes that the element may contain."""
         return []
 
 
@@ -747,12 +745,10 @@ class Vector(BaseElement):
             return False
 
         # Get position of student answer relative to reference answer
-        basis = np.array(
-            [
-                [np.cos(rang_rad), -np.sin(rang_rad)],
-                [np.sin(rang_rad), np.cos(rang_rad)],
-            ]
-        ).T
+        basis = np.array([
+            [np.cos(rang_rad), -np.sin(rang_rad)],
+            [np.sin(rang_rad), np.cos(rang_rad)],
+        ]).T
         epos_rel = basis @ (epos - rpos)
         rely, relx = epos_rel
 
@@ -1193,12 +1189,10 @@ class DistributedLoad(BaseElement):
             return False
 
         # Get position of student answer relative to reference answer
-        basis = np.array(
-            [
-                [-np.sin(rang_rad), -np.cos(rang_rad)],
-                [np.cos(rang_rad), -np.sin(rang_rad)],
-            ]
-        ).T
+        basis = np.array([
+            [-np.sin(rang_rad), -np.cos(rang_rad)],
+            [np.cos(rang_rad), -np.sin(rang_rad)],
+        ]).T
         epos_rel = basis @ (epos - rpos)
         rely, relx = epos_rel
         if relx > tol or relx < -tol or rely > max_forward or rely < -max_backward:
@@ -2034,15 +2028,13 @@ class GraphLine(BaseElement):
         if not curved_line:
             obj.update({"x2": x0 + x2, "y2": y0 - y2, "type": "pl-controlled-line"})
         else:
-            obj.update(
-                {
-                    "x3": x0 + x2,
-                    "y3": y0 - y2,
-                    "x2": x0 + x3,
-                    "y2": y0 - y3,
-                    "type": "pl-controlled-curved-line",
-                }
-            )
+            obj.update({
+                "x3": x0 + x2,
+                "y3": y0 - y2,
+                "x2": x0 + x3,
+                "y2": y0 - y3,
+                "type": "pl-controlled-curved-line",
+            })
         return obj
 
     def grading_name(element):
