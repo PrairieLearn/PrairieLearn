@@ -1,6 +1,6 @@
 # Running natively
 
-This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS. Certain features, such as external graders and workspaces, still require Docker if you intend to use them. PrairieLearn supports native execution on macOS, Linux, and Windows inside [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install).
+This page describes the procedure to install and run PrairieLearn fully natively without using Docker. Certain features, such as external graders and workspaces, still require Docker. PrairieLearn supports native execution on macOS, Linux, and Windows inside [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install).
 
 - Install the prerequisites:
 
