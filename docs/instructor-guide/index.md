@@ -24,4 +24,5 @@ Some other important links are:
   - [C / C++](../c-grader/index.md)
   - [Java](../java-grader/index.md)
 - [FAQ](../faq.md): find answers to common questions.
+- [Workspaces](../workspaces/index.md): learn about workspaces, which provide students with a coding environment.
 - [Editing and syncing course content](../sync.md): understand tradeoffs between in-browser editing and local editing.
