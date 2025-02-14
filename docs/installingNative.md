@@ -251,7 +251,7 @@ Most of these prerequisites can be installed using the package manager of your O
   make start
   ```
 
-- If you need support for [workspaces](workspaces/index.md), start Docker first, and then in a separate terminal run:
+- If you need support for [workspaces](workspaces/index.md), ensure Docker is installed and running, and then in a separate terminal run:
 
   ```sh
   sudo make dev-workspace-host # or sudo make start-workspace-host
