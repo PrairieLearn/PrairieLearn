@@ -486,7 +486,7 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
     | `networkx_graph` | corresponding networkx graph |
     | missing | input value v returned |
 
-    If v encodes an ndarray and has the field '_dtype', this function recovers
+    If v encodes an ndarray and has the field `'_dtype'`, this function recovers
     its dtype.
 
     If v does not have the format `{'_type': ..., '_value': ...}`, then it is
