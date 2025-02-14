@@ -2,6 +2,11 @@ import { IssueBadge } from '../components/IssueBadge.html.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
 import { ProgressCircle } from '../components/ProgressCircle.html.js';
 
+/**
++ * Retrieves horizontal navigation tabs for ContextNavigation.
++ * @param hasEnhancedNavigation - Flag indicating if the enhanced navigation feature is enabled
++ * @returns Navigation page tabs and their configurations
++ */
 export function getNavPageTabs(hasEnhancedNavigation: boolean) {
   const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
     public_question: [
