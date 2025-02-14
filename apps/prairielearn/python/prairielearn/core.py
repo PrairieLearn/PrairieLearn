@@ -1,6 +1,8 @@
-"""These are the core functions for developing elements in PrairieLearn.
+"""Utilities for building questions and elements in PrairieLearn.
 
 ```python
+from prairielearn import ...
+# or ...
 from prairielearn.core import ...
 ```
 """
@@ -352,22 +354,22 @@ def to_json(
     | complex scalar | `complex` | including numpy |
     | non-complex ndarray | `ndarray` | assumes each element can be json serialized |
     | complex ndarray | `complex_ndarray` | |
-    | sympy.Expr | `sympy` | any scalar sympy expression |
-    | sympy.Matrix | `sympy_matrix` | |
-    | pandas.DataFrame | `dataframe` | `df_encoding_version=1` |
-    | pandas.DataFrame | `dataframe_v2` | `df_encoding_version=2` |
+    | `sympy.Expr` | `sympy` | any scalar sympy expression |
+    | `sympy.Matrix` | `sympy_matrix` | |
+    | `pandas.DataFrame` | `dataframe` | `df_encoding_version=1` |
+    | `pandas.DataFrame` | `dataframe_v2` | `df_encoding_version=2` |
     | networkx graph type | `networkx_graph` |
     | numpy scalar | `np_scalar` | `np_encoding_version=2` |
     | any | `v` | if v can be json serialized |
 
     !!! note
-        The 'dataframe_v2' encoding allows for missing and date time values whereas
-        the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
-        numbers while 'dataframe_v2' does not.
+        The `'dataframe_v2'` encoding allows for missing and date time values whereas
+        the `'dataframe'` (default) does not. However, the `'dataframe'` encoding allows for complex
+        numbers while `'dataframe_v2'` does not.
 
-    If np_encoding_version is set to 2, then numpy scalars serialize using `'_type': 'np_scalar'`.
+    If `np_encoding_version` is set to 2, then numpy scalars serialize using `'_type': 'np_scalar'`.
 
-    If df_encoding_version is set to 2, then pandas DataFrames serialize using `'_type': 'dataframe_v2'`.
+    If `df_encoding_version` is set to 2, then pandas DataFrames serialize using `'_type': 'dataframe_v2'`.
 
     See [from_json][prairielearn.core.from_json] for details about the differences between encodings.
 
