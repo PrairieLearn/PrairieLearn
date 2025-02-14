@@ -52,6 +52,7 @@ theme:
     - navigation.instant.progress
     - navigation.tracking
     - navigation.footer
+    - navigation.indexes
     - search.suggest
     - content.action.edit
     - content.code.copy
@@ -157,6 +158,7 @@ extra:
 nav:
   - Overview: 'index.md'
   - Getting Started:
+      - getting-started/index.md
       - 'Requesting your course space': 'requestCourse/index.md'
       - 'Concepts': 'concepts/index.md'
       - 'Quick start': 'getStarted.md'
@@ -164,6 +166,7 @@ nav:
   - Student Guide:
       - 'Accessibility': 'student-guide/accessibility.md'
   - Instructor Guide:
+      - instructor-guide/index.md
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course/index.md'
@@ -190,6 +193,7 @@ nav:
       - 'API': 'api.md'
       - 'LMS Integration': 'lmsIntegrationInstructor.md'
   - Developer Guide:
+      - developer-guide/index.md
       - 'Developer guide': 'dev-guide/index.md'
       - 'Running in Docker with local source': 'installingLocal.md'
       - 'Running natively': 'installingNative.md'
