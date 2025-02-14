@@ -131,7 +131,7 @@ def get_and_save_json(endpoint, filename, args, logfile):
     end_time = time.time()
     log(
         logfile,
-        f"successfully downloaded {r.headers['content-length']} bytes in {end_time - start_time} seconds",
+        f"successfully downloaded {len(r.text)} bytes in {end_time - start_time} seconds",
     )
 
     full_filename = os.path.join(args.output_dir, filename + ".json")
