@@ -127,6 +127,9 @@ markdown_extensions:
   - attr_list
   # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=tabbed#tabbed
   - pymdownx.tabbed:
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
       alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
