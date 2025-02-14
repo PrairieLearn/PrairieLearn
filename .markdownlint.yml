@@ -1,16 +1,11 @@
-# Line length
-MD013: false
-# Multiple headings with the same content
-MD024: false
+# yaml-language-server: $schema=https://raw.githubusercontent.com/DavidAnson/markdownlint/main/schema/markdownlint-config-schema.json
+MD013: false # Line length
+MD024: false # Multiple headings with the same content
+MD046: false # indented / fenced code blocks (false positives)
 # These rules should be enabled/disabled eventually
-MD026: false
-MD030: false
-MD031: false
-MD033: false
+MD033: # No inline HTML except div and img
+  allowed_elements:
+    - div
+    - img
 MD034: false
-MD038: false
-MD036: false
-MD041: false
 MD045: false
-MD046: false
-MD053: false
