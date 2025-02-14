@@ -656,11 +656,10 @@ function NavbarButtons({
     href: string;
   }[] = [];
 
+  allNavbarButtons.push({ text: 'Home', href: '/' });
+
   if (resLocals.is_administrator) {
-    allNavbarButtons.push(
-      { text: 'Home', href: '/' },
-      { text: 'Global Admin', href: '/pl/administrator/admins' },
-    );
+    allNavbarButtons.push({ text: 'Global Admin', href: '/pl/administrator/admins' });
   }
 
   if (resLocals.is_institution_administrator && resLocals.institution) {
