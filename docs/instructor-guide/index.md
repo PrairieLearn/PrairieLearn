@@ -2,7 +2,7 @@
 
 This section provides detailed documentation for all aspects of using PrairieLearn as an instructor.
 
-To run and test question development locally, see the [local installation guide](../installing.md).
+To develop questions and other course content on your own computer, see the [local installation guide](../installing.md).
 
 For more details about configuring the four main aspects of your course:
 
