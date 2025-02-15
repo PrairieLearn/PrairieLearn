@@ -50,7 +50,8 @@ FROM
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.course_id = a.course_instance_id)
 WHERE
-  w.id = $workspace_id
+  w.id >= $start
+  AND w.id <= $end
 ON CONFLICT (
   type,
   course_id,
