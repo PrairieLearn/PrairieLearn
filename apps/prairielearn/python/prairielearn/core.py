@@ -1,3 +1,12 @@
+"""Utilities for building questions and elements in PrairieLearn.
+
+```python
+from prairielearn import ...
+# or ...
+from prairielearn.core import ...
+```
+"""
+
 import collections
 import html
 import importlib
@@ -44,7 +53,10 @@ if TYPE_CHECKING:
 
 
 class PartialScore(TypedDict):
-    """A class with type signatures for the partial scores dict"""
+    """A class with type signatures for the partial scores dict.
+
+    For more information see the [element developer guide](../../devElements.md).
+    """
 
     score: float | None
     weight: NotRequired[int]
@@ -59,7 +71,10 @@ class PartialScore(TypedDict):
 # for their answer data, feedback data, etc., but TypedDicts with Generics are
 # not yet supported: https://bugs.python.org/issue44863
 class QuestionData(TypedDict):
-    """A class with type signatures for the data dictionary"""
+    """A class with type signatures for the data dictionary.
+
+    For more information see the [element developer guide](../../devElements.md).
+    """
 
     params: dict[str, Any]
     correct_answers: dict[str, Any]
@@ -282,7 +297,6 @@ _JSONSerializedType = (
     | _JSONSerializedSympyMatrix
 )
 
-# This represents the object formats that will be serialized by the to_json function
 _JSONPythonType = (
     np.complex64
     | np.complex128
@@ -297,6 +311,10 @@ _JSONPythonType = (
     | nx.MultiGraph
     | nx.MultiDiGraph
 )
+"""
+This represents additional object formats (i.e. non-standard Python types)
+that can be serialized / deserialized.
+"""
 
 
 @overload
@@ -324,32 +342,38 @@ def to_json(
     np_encoding_version: Literal[1, 2] = 1,
 ) -> Any | _JSONSerializedType:
     """
+    Convert a value to a JSON serializable format.
+
     If v has a standard type that cannot be json serialized, it is replaced with
-    a {'_type':..., '_value':...} pair that can be json serialized:
+    a `{'_type': ..., '_value': ...}` pair that can be json serialized.
 
-        If np_encoding_version is set to 2, will serialize numpy scalars as follows:
+    This is a complete table of the mappings:
 
-        numpy scalar -> '_type': 'np_scalar'
+    | Type | JSON `_type` field | notes |
+    | --- | --- | --- |
+    | complex scalar | `complex` | including numpy |
+    | non-complex ndarray | `ndarray` | assumes each element can be json serialized |
+    | complex ndarray | `complex_ndarray` | |
+    | `sympy.Expr` | `sympy` | any scalar sympy expression |
+    | `sympy.Matrix` | `sympy_matrix` | |
+    | `pandas.DataFrame` | `dataframe` | `df_encoding_version=1` |
+    | `pandas.DataFrame` | `dataframe_v2` | `df_encoding_version=2` |
+    | networkx graph type | `networkx_graph` |
+    | numpy scalar | `np_scalar` | `np_encoding_version=2` |
+    | any | `v` | if v can be json serialized |
 
-        If df_encoding_version is set to 2, will serialize pandas DataFrames as follows:
+    !!! note
+        The `'dataframe_v2'` encoding allows for missing and date time values whereas
+        the `'dataframe'` (default) does not. However, the `'dataframe'` encoding allows for complex
+        numbers while `'dataframe_v2'` does not.
 
-        pandas.DataFrame -> '_type': 'dataframe_v2'
+    If `np_encoding_version` is set to 2, then numpy scalars serialize using `'_type': 'np_scalar'`.
 
-        Otherwise, the following mappings are used:
+    If `df_encoding_version` is set to 2, then pandas DataFrames serialize using `'_type': 'dataframe_v2'`.
 
-        any complex scalar (including numpy) -> '_type': 'complex'
-        non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
-        complex ndarray -> '_type': 'complex_ndarray'
-        sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
-        sympy.Matrix -> '_type': 'sympy_matrix'
-        pandas.DataFrame -> '_type': 'dataframe'
-        any networkx graph type -> '_type': 'networkx_graph'
+    See [from_json][prairielearn.core.from_json] for details about the differences between encodings.
 
-    Note that the 'dataframe_v2' encoding allows for missing and date time values whereas
-    the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
-    numbers while 'dataframe_v2' does not.
-
-    If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
+    If v is an ndarray, this function preserves its dtype (by adding `'_dtype'` as
     a third field in the dictionary).
 
     If v can be json serialized or does not have a standard type, then it is
@@ -444,23 +468,28 @@ def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
 
 def from_json(v: _JSONSerializedType | Any) -> Any:
     """
-    If v has the format {'_type':..., '_value':...} as would have been created
-    using to_json(...), then it is replaced:
+    Converts a JSON serialized value (from `to_json`) back to its original type.
 
-        '_type': 'complex' -> complex
-        '_type': 'np_scalar' -> numpy scalar defined by '_concrete_type'
-        '_type': 'ndarray' -> non-complex ndarray
-        '_type': 'complex_ndarray' -> complex ndarray
-        '_type': 'sympy' -> sympy.Expr
-        '_type': 'sympy_matrix' -> sympy.Matrix
-        '_type': 'dataframe' -> pandas.DataFrame
-        '_type': 'dataframe_v2' -> pandas.DataFrame
-        '_type': 'networkx_graph' -> corresponding networkx graph
+    If v has the format `{'_type': ..., '_value': ...}` as would have been created
+    using `to_json(...)`, then it is replaced according to the following table:
 
-    If v encodes an ndarray and has the field '_dtype', this function recovers
+    | JSON `_type` field | Python type |
+    | --- | --- |
+    | `complex` | `complex` |
+    | `np_scalar` | numpy scalar defined by `_concrete_type` |
+    | `ndarray` | non-complex `ndarray` |
+    | `complex_ndarray` | complex `ndarray` |
+    | `sympy` | `sympy.Expr` |
+    | `sympy_matrix` | `sympy.Matrix` |
+    | `dataframe` | `pandas.DataFrame` |
+    | `dataframe_v2` | `pandas.DataFrame` |
+    | `networkx_graph` | corresponding networkx graph |
+    | missing | input value v returned |
+
+    If v encodes an ndarray and has the field `'_dtype'`, this function recovers
     its dtype.
 
-    If v does not have the format {'_type':..., '_value':...}, then it is
+    If v does not have the format `{'_type': ..., '_value': ...}`, then it is
     returned without change.
     """
     if isinstance(v, dict) and "_type" in v:

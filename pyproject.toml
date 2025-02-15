@@ -89,6 +89,11 @@ ignore = [
     "D104", # undocumented-public-package
     "D107", # undocumented-public-init
 ]
+
+[tool.ruff.lint.pydocstyle]
+# Default for mkdocstrings (https://mkdocstrings.github.io/python/usage/configuration/docstrings)
+convention = "google"
+
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
 # broken in isolation. We'll allow specific errors in these files to

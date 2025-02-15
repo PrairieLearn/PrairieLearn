@@ -6,7 +6,7 @@
 This block renders the heading for the function.
 -#}
 {% if config.show_symbol_type_heading %}<code class="doc-symbol doc-symbol-heading doc-symbol-{{ symbol_type }}"></code>{% endif %}
-<div class="flex-row-between">
+{# <div class="flex-row-between"> #}
 {% if config.separate_signature %}
     <span class="doc doc-object-name doc-function-name">{{ config.heading if config.heading and root else function_name }}</span>
 {% else %}
@@ -20,7 +20,7 @@ This block renders the heading for the function.
             <svg viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6z"></path></svg>
         </a>
     {% endif %}
-</div>
+{# </div> #}
 {% endblock heading %}
 {% block source %}
 {% endblock source %}
