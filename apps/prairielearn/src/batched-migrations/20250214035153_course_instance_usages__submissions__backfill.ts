@@ -18,7 +18,7 @@ export default makeBatchedMigration({
       { CUTOFF_DATE },
       z.bigint({ coerce: true }).nullable(),
     );
-    return { min: 1n, max, batchSize: 1000 };
+    return { min: 1n, max, batchSize: 100_000 };
   },
   async execute(start: bigint, end: bigint): Promise<void> {
     await queryAsync(sql.update_course_instance_usages_for_submissions, { start, end });
