@@ -107,7 +107,7 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${resLocals.has_enhanced_navigation && isInPageLayout
+    ${resLocals.has_enhanced_navigation
       ? FlashMessages()
       : html`
           <div class="mb-3">

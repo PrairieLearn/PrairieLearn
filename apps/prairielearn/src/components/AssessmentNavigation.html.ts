@@ -19,13 +19,14 @@ export function AssessmentNavigation({
     <div class="dropdown p-3 bg-light pb-2">
       <button
         type="button"
-        class="btn w-fit min-w-25 dropdown-toggle dropdown-menu-right border border-gray bg-white d-flex justify-content-between align-items-center"
+        style="min-width: 25%; max-width: 100%;"
+        class="btn w-fit dropdown-toggle dropdown-menu-right border border-gray bg-white d-flex justify-content-between align-items-center"
         data-toggle="dropdown"
         aria-haspopup="true"
         aria-expanded="false"
         data-boundary="window"
       >
-        <span> ${assessment.title} </span>
+        <span class="overflow-hidden text-truncate"> ${assessment.title} </span>
       </button>
       <div class="dropdown-menu py-0 overflow-hidden">
         <div style="max-height: 50vh" class="overflow-auto">
