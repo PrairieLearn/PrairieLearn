@@ -11,7 +11,10 @@ FROM
   grading_jobs
 WHERE
   grading_method = 'External'
-  AND date < $CUTOFF_DATE;
+  -- use `date` for the index
+  AND date < $CUTOFF_DATE
+  -- also check `grading_finished_at` so we don't double-count
+  AND grading_finished_at < $CUTOFF_DATE;
 
 -- BLOCK update_course_instance_usages_for_external_gradings
 INSERT INTO
