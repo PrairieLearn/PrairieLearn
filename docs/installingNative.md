@@ -1,6 +1,6 @@
 # Running natively
 
-This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS. PrairieLearn supports native execution on macOS, Linux, and Windows inside [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install).
+This page describes the procedure to install and run PrairieLearn fully natively without using Docker. Certain features, such as external graders and workspaces, still require Docker. PrairieLearn supports native execution on macOS, Linux, and Windows inside [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install).
 
 - Install the prerequisites:
 
@@ -126,7 +126,7 @@ Most of these prerequisites can be installed using the package manager of your O
     mise use -g python@3.10
     ```
 
-    Or you can install it through [uv](https://github.com/astral-sh/uv) (reccomended):
+    Or you can install it through [uv](https://github.com/astral-sh/uv) (recommended):
 
     ```sh
     mise use -g uv
@@ -213,7 +213,7 @@ Most of these prerequisites can be installed using the package manager of your O
 
   You may need to restart the PostgreSQL server after changing the file above.
 
-- Run the test suite:
+- Run the test suite (Docker must be installed and running):
 
   ```sh
   make test
@@ -249,7 +249,7 @@ Most of these prerequisites can be installed using the package manager of your O
   make start
   ```
 
-- If you need support for [workspaces](workspaces/index.md), in a separate terminal run:
+- If you need support for [workspaces](workspaces/index.md), ensure Docker is installed and running, and then in a separate terminal run:
 
   ```sh
   sudo make dev-workspace-host # or sudo make start-workspace-host
