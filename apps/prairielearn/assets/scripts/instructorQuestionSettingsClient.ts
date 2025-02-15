@@ -31,7 +31,7 @@ onDocumentReady(() => {
           <div>
             ${TopicBadge(data)}
             <div>
-              <small class="text-muted">${data.description}</small>
+              <small>${data.description}</small>
             </div>
           </div>
         `.toString();
@@ -52,7 +52,7 @@ onDocumentReady(() => {
           <div>
             ${TagBadge(data)}
             <div>
-              <small class="text-muted">${data.description}</small>
+              <small>${data.description}</small>
             </div>
           </div>
         `.toString();

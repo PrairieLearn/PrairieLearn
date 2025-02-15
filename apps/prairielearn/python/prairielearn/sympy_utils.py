@@ -1,3 +1,5 @@
+"""Utility functions for parsing and evaluating SymPy expressions."""
+
 import ast
 import copy
 import html
@@ -23,6 +25,12 @@ STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SympyMapT = dict[str, Callable[..., Any] | sympy.Basic]
 ASTWhiteListT = tuple[type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
+"""
+A dictionary of assumptions for variables in the expression.
+
+Examples:
+    >>> {"x": {"positive": True}, "y": {"real": True}}
+"""
 
 
 class SympyJson(TypedDict):
@@ -462,6 +470,27 @@ def convert_string_to_sympy(
     custom_functions: None | Iterable[str] = None,
     assumptions: None | AssumptionsDictT = None,
 ) -> sympy.Expr:
+    """
+    Convert a string to a sympy expression, with optional restrictions on
+    the variables and functions that can be used. If the string is invalid,
+    raise an exception with a message that can be displayed to the user.
+
+    Parameters:
+        expr: The string to convert to a sympy expression.
+        variables: A list of variable names that are allowed in the expression.
+        allow_hidden: Whether to allow hidden variables (like pi and e).
+        allow_complex: Whether to allow complex numbers (like i).
+        allow_trig_functions: Whether to allow trigonometric functions.
+        custom_functions: A list of custom function names that are allowed in the expression.
+        assumptions: A dictionary of assumptions for variables in the expression.
+
+    Examples:
+        >>> convert_string_to_sympy("n * sin(7*m) + m**2 * cos(6*n)", variables=["m", "n"])
+        n * sympy.sin(m * 7) + m * m * sympy.cos(n * 6)
+        >>> convert_string_to_sympy("-infty")
+        -sympy.oo
+        >>> convert_string_to_sympy("z**2 + y - x", variables=["x", "y", "z"], allow_complex=True, assumptions={"x": {"positive": False}, "z": {"complex": True}})
+    """
     return convert_string_to_sympy_with_source(
         expr,
         variables=variables,

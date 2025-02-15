@@ -30,7 +30,10 @@ export function AdministratorInstitutionSaml({
   const testSamlStrictUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/login?RelayState=test,strict`;
 
   return PageLayout({
-    resLocals: { ...resLocals, institution },
+    resLocals: {
+      ...resLocals,
+      institution,
+    },
     pageTitle: 'SAML - Institution Admin',
     navContext: {
       type: 'administrator_institution',
@@ -110,7 +113,7 @@ export function AdministratorInstitutionSaml({
             name="issuer"
             id="issuer"
             value="${samlProvider?.issuer ?? ''}"
-            describedBy="issuer-help"
+            describedby="issuer-help"
             aria-describedby="issuerHelp"
           />
           <small id="issuerHelp" class="form-text text-muted">
@@ -160,7 +163,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
             name="validate_audience"
             value="1"
             ${(samlProvider?.validate_audience ?? true) ? 'checked' : ''}
-            aria-describedBy="validateAudienceHelp"
+            aria-describedby="validateAudienceHelp"
           />
           <label class="form-check-label" for="validate_audience">Validate audience</label>
           <div id="validateAudienceHelp" class="small text-muted">
@@ -177,7 +180,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
             name="want_assertions_signed"
             value="1"
             ${(samlProvider?.want_assertions_signed ?? true) ? 'checked' : ''}
-            aria-describedBy="wantAssertionsSignedHelp"
+            aria-describedby="wantAssertionsSignedHelp"
           />
           <label class="form-check-label" for="want_assertions_signed">
             Require signed assertions
@@ -196,7 +199,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
             name="want_authn_response_signed"
             value="1"
             ${(samlProvider?.want_authn_response_signed ?? true) ? 'checked' : ''}
-            aria-describedBy="wantAuthnResponseSignedHelp"
+            aria-describedby="wantAuthnResponseSignedHelp"
           />
           <label class="form-check-label" for="want_authn_response_signed">
             Require signed response
@@ -238,7 +241,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
         </div>
 
         <div class="form-group">
-          <label for="uid_attribute">UID attribute</label>
+          <label for="name_attribute">UID attribute</label>
           <input
             type="text"
             class="form-control"
@@ -256,7 +259,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
         </div>
 
         <div class="form-group">
-          <label for="uin_attribute">UIN attribute</label>
+          <label for="name_attribute">UIN attribute</label>
           <input
             type="text"
             class="form-control"
@@ -354,7 +357,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
                   id="strictMode"
                   name="strict_mode"
                   value="1"
-                  aria-describedBy="strictModeHelp"
+                  aria-describedby="strictModeHelp"
                 />
                 <label class="form-check-label" for="strictMode">Strict mode</label>
                 <small id="strictModeHelp" class="form-text text-muted mt-0">
@@ -380,17 +383,19 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
           `
         : ''}
     `,
-    postContent: html` <script>
-      (function () {
-        // Show the configuration form when the button is clicked.
-        document
-          .querySelector('.js-configure-prompt-button')
-          .addEventListener('click', function () {
-            document.querySelector('.js-configure-prompt').hidden = true;
-            document.querySelector('.js-configure-form').hidden = false;
-          });
-      })();
-    </script>`,
+    postContent: html`
+      <script>
+        (function () {
+          // Show the configuration form when the button is clicked.
+          document
+            .querySelector('.js-configure-prompt-button')
+            .addEventListener('click', function () {
+              document.querySelector('.js-configure-prompt').hidden = true;
+              document.querySelector('.js-configure-form').hidden = false;
+            });
+        })();
+      </script>
+    `,
   });
 }
 

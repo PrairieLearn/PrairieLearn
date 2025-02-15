@@ -126,7 +126,7 @@ Most of these prerequisites can be installed using the package manager of your O
     mise use -g python@3.10
     ```
 
-    Or you can install it through [uv](https://github.com/astral-sh/uv) (reccomended):
+    Or you can install it through [uv](https://github.com/astral-sh/uv) (recommended):
 
     ```sh
     mise use -g uv
