@@ -10,6 +10,8 @@ import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
 const check = process.argv[2] === 'check';
 
 const orderedStringify = (schema) => {
+  // TODO: this is a hack to get the schemas to be in a consistent order
+  // Remove in a future PR
   const headKeys = [
     '$schema',
     'title',
@@ -82,9 +84,16 @@ const schemaDir = path.resolve(import.meta.dirname, '../apps/prairielearn/src/sc
 if (check) {
   for (const [name, schema] of Object.entries(ajvSchemas)) {
     // Compare abstract contents are the same since prettier formatting may be different
-    const file = orderedStringify(JSON.parse(fs.readFileSync(`${schemaDir}/${name}.json`, 'utf8')));
-    if (file !== orderedStringify(schema)) {
-      console.error(`Mismatch in ${name} (Do you need to run \`tsx tools/gen-jsonschema.mts\`?)`);
+    try {
+      const file = orderedStringify(
+        JSON.parse(fs.readFileSync(`${schemaDir}/${name}.json`, 'utf8')),
+      );
+      if (file !== orderedStringify(schema)) {
+        console.error(`Mismatch in ${name} (Do you need to run \`make update-jsonschema\`?)`);
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error(`Error reading schema file ${name}.json:`, error);
       process.exit(1);
     }
   }

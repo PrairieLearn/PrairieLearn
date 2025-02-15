@@ -33,9 +33,7 @@ export const CourseInstanceJsonSchema = z
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
-      .regex(
-        new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'),
-      )
+      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
       .describe('Unique identifier (UUID v4).'),
     longName: z.string().describe("The long name of this course instance (e.g., 'Spring 2015')."),
     shortName: z.string().describe('DEPRECATED -- do not use.').optional(),

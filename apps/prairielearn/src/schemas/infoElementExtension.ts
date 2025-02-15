@@ -30,7 +30,7 @@ const DependencyJsonSchema = z
       .optional(),
     clientFilesCourseScripts: z
       .array(z.string().describe('A .js file located in clientFilesCourse.'))
-      .describe('The styles required by this extension from clientFilesCourse.')
+      .describe('The scripts required by this extension from clientFilesCourse.')
       .optional(),
     extensionStyles: z
       .array(z.string().describe("A .css file located in the extension's directory."))

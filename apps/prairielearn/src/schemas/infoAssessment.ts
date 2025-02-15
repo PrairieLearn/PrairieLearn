@@ -39,9 +39,7 @@ export const AssessmentAccessRuleJsonSchema = z
     mode: z.enum(['Public', 'Exam']).describe('The server mode required for access.').optional(),
     examUuid: z
       .string()
-      .regex(
-        new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'),
-      )
+      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
       .describe(
         'The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.',
       )

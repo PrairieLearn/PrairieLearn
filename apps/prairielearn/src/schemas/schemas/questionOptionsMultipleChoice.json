@@ -19,7 +19,8 @@
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "minItems": 1
     },
     "incorrectAnswers": {
       "description": "A list of incorrect answers to the question. Each is an HTML string.",

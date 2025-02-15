@@ -26,5 +26,5 @@ export * from './questionOptionsMultipleTrueFalse.js';
 export * from './questionOptionsv3.js';
 export * from './comment.js';
 
-// Defines the JSON schemas for the Zod schemas
+// Defines the JSON schemas for the Zod schemas, used by ajv-based validation
 export * from './jsonSchemas.js';

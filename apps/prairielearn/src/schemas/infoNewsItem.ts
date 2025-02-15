@@ -7,9 +7,7 @@ export const NewsItemJsonSchema = z
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
-      .regex(
-        new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'),
-      )
+      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
       .describe('Unique identifier (UUID v4).'),
     title: z.string().describe('The title of the news item.'),
     author: z.string().describe('The author of the news item.').optional(),

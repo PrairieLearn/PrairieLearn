@@ -8,6 +8,7 @@ export const QuestionMultipleChoiceOptionsJsonSchema = z
     text: z.string().describe('The question HTML text that comes before the options.'),
     correctAnswers: z
       .array(z.string())
+      .min(1, 'At least one correct answer is required')
       .describe('A list of correct answers to the question. Each is an HTML string.'),
     incorrectAnswers: z
       .array(z.string())

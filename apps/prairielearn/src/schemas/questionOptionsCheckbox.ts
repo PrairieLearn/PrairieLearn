@@ -32,6 +32,6 @@ export const QuestionCheckboxOptionsJsonSchema = z
       .optional(),
   })
   .strict()
-  .describe('Options for a MultipleChoice question.');
+  .describe('Options for a Checkbox question.');
 
 export type QuestionCheckboxOptionsJson = z.infer<typeof QuestionCheckboxOptionsJsonSchema>;
