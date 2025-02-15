@@ -8,6 +8,7 @@ import lxml.html
 import pytest
 from prairielearn.core import (
     QuestionData,
+    clean_identifier_name,
     get_uuid,
     grade_answer_parameterized,
     index2key,
@@ -189,3 +190,39 @@ def test_iter_keys(length: int, expected_output: list[str]) -> None:
 )
 def test_index2key(idx: int, expected_output: str) -> None:
     assert index2key(idx) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("input_name", "expected_output"),
+    [
+        # Basic alphanumeric cases
+        ("abc", "abc"),
+        ("ABC", "ABC"),
+        ("abc123", "abc123"),
+        ("123abc", "abc"),
+        # Special characters
+        ("hello#world", "hello_world"),
+        ("hello.$world", "hello__world"),
+        ("hello##`'\"world", "hello_____world"),
+        ("hello  world 123", "hello__world_123"),
+        # Leading special characters
+        ("_hello", "hello"),
+        ("123hello", "hello"),
+        # Mixed cases
+        ("HelloWorld!", "HelloWorld_"),
+        ("hello_World_123", "hello_World_123"),
+        ("123_hello_world", "hello_world"),
+        ("___hello___", "hello___"),
+        # Edge cases
+        ("", ""),
+        ("___", ""),
+        ("123", ""),
+        ("123_456", ""),
+        ("!@#$%", ""),
+        # Unicode characters
+        ("hello™world→", "hello_world_"),
+    ],
+)
+def test_clean_identifier_name(*, input_name: str, expected_output: str) -> None:
+    """Test clean_identifier_name with various input strings."""
+    assert clean_identifier_name(input_name) == expected_output
