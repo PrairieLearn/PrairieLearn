@@ -369,6 +369,11 @@ small .user-output-invalid {
   background: #fff;
 }
 
+/**
+ * We use red text in light buttons to indicate errors on many elements.
+ * By default, this has insufficient contrast. We override the color in
+ * this specific case to improve the contrast.
+ */
 .btn.btn-light.text-danger {
   color: hsl(from rgb(var(--bs-danger-rgb)) h s calc(l - 5)) !important;
 }
