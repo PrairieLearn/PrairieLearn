@@ -32,7 +32,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['instance_admin'],
       activeSubPages: ['access'],
       urlSuffix: '/instance_admin/access',
-      iconClasses: 'far fa-calendar-alt',
+      iconClasses: 'far fa-calendar-alt fa-fw',
       tabLabel: 'Access',
     },
     {
@@ -40,21 +40,21 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       checkActiveSubPageForPages: ['instance_admin'],
       activeSubPages: ['assessments'],
       urlSuffix: '/instance_admin/assessments',
-      iconClasses: 'fa fa-list',
+      iconClasses: 'fa fa-list fa-fw',
       tabLabel: 'Assessments',
     },
     {
       activePages: ['instance_admin'],
       activeSubPages: ['file_view', 'file_edit'],
       urlSuffix: '/instance_admin/file_view',
-      iconClasses: 'fa fa-edit',
+      iconClasses: 'fa fa-edit fa-fw',
       tabLabel: 'Files',
     },
     {
       activePages: ['instance_admin'],
       activeSubPages: ['gradebook'],
       urlSuffix: '/instance_admin/gradebook',
-      iconClasses: 'fas fa-balance-scale',
+      iconClasses: 'fas fa-balance-scale fa-fw',
       tabLabel: 'Gradebook',
       renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
     },
@@ -62,7 +62,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['instance_admin'],
       activeSubPages: ['lti'],
       urlSuffix: '/instance_admin/lti',
-      iconClasses: 'fas fa-graduation-cap',
+      iconClasses: 'fas fa-graduation-cap fa-fw',
       tabLabel: 'LTI',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
     },
@@ -70,7 +70,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['instance_admin'],
       activeSubPages: ['lti13'],
       urlSuffix: '/instance_admin/lti13_instance',
-      iconClasses: 'fas fa-school-flag',
+      iconClasses: 'fas fa-school-flag fa-fw',
       tabLabel: 'LTI 1.3',
       renderCondition: (resLocals) => resLocals.lti13_enabled,
     },
@@ -78,7 +78,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['instance_admin'],
       activeSubPages: ['billing'],
       urlSuffix: '/instance_admin/billing',
-      iconClasses: 'fas fa-credit-card',
+      iconClasses: 'fas fa-credit-card fa-fw',
       tabLabel: 'Billing',
       renderCondition: (resLocals) => resLocals.billing_enabled,
     },
@@ -86,7 +86,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['instance_admin'],
       activeSubPages: ['settings'],
       urlSuffix: '/instance_admin/settings',
-      iconClasses: 'fas fa-cog',
+      iconClasses: 'fas fa-cog fa-fw',
       tabLabel: 'Settings',
     },
   ],
@@ -95,7 +95,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['course_admin'],
       activeSubPages: ['getting_started'],
       urlSuffix: '/course_admin/getting_started',
-      iconClasses: 'fa fa-tasks',
+      iconClasses: 'fa fa-tasks fa-fw',
       tabLabel: 'Getting Started',
       htmlSuffix: ({
         navbarCompleteGettingStartedTasksCount,
@@ -112,14 +112,15 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['course_admin'],
       activeSubPages: ['instances'],
       urlSuffix: '/course_admin/instances',
-      iconClasses: 'fas fa-chalkboard-teacher',
+      iconClasses: 'fas fa-chalkboard-teacher fa-fw',
       tabLabel: 'Course Instances',
     },
     {
-      activePages: ['course_admin'],
+      activePages: ['course_admin', 'question'],
+      checkActiveSubPageForPages: ['course_admin'],
       activeSubPages: ['questions'],
       urlSuffix: '/course_admin/questions',
-      iconClasses: 'fa fa-question',
+      iconClasses: 'fa fa-question fa-fw',
       tabLabel: 'Questions',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
     },
@@ -127,14 +128,14 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['course_admin'],
       activeSubPages: ['issues'],
       urlSuffix: '/course_admin/issues',
-      iconClasses: 'fas fa-bug',
+      iconClasses: 'fas fa-bug fa-fw',
       tabLabel: 'Issues',
     },
     {
       activePages: ['course_admin'],
       activeSubPages: ['staff'],
       urlSuffix: '/course_admin/staff',
-      iconClasses: 'fas fa-users',
+      iconClasses: 'fas fa-users fa-fw',
       tabLabel: 'Staff',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_own,
     },
@@ -142,7 +143,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['course_admin'],
       activeSubPages: ['syncs'],
       urlSuffix: '/course_admin/syncs',
-      iconClasses: 'fas fa-sync-alt',
+      iconClasses: 'fas fa-sync-alt fa-fw',
       tabLabel: 'Sync',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
     },
@@ -151,7 +152,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['course_admin'],
       activeSubPages: ['file_view', 'file_edit'],
       urlSuffix: '/course_admin/file_view',
-      iconClasses: 'fa fa-edit',
+      iconClasses: 'fa fa-edit fa-fw',
       tabLabel: 'Files',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_view,
     },
@@ -159,7 +160,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['course_admin'],
       activeSubPages: ['settings', 'sets', 'modules', 'tags', 'topics', 'sharing'],
       urlSuffix: '/course_admin/settings',
-      iconClasses: 'fas fa-cog',
+      iconClasses: 'fas fa-cog fa-fw',
       tabLabel: 'Settings',
     },
   ],
@@ -218,28 +219,32 @@ function CourseNav({
         >
           <span> ${resLocals.course.short_name} </span>
         </button>
-        <div class="dropdown-menu">
-          ${resLocals.courses.map((course: Course) => {
-            return html`
-              <a
-                class="dropdown-item ${`${resLocals.course.id}` === `${course.id}` ? 'active' : ''}"
-                aria-current="${`${resLocals.course.id}` === `${course.id}` ? 'page' : ''}"
-                href="/pl/course/${course.id}/course_admin"
-              >
-                ${course.short_name}
-              </a>
-            `;
-          })}
+        <div class="dropdown-menu py-0 overflow-hidden">
+          <div style="max-height: 50vh" class="overflow-auto">
+            ${resLocals.courses.map((course: Course) => {
+              return html`
+                <a
+                  class="dropdown-item ${`${resLocals.course.id}` === `${course.id}`
+                    ? 'active'
+                    : ''}"
+                  aria-current="${`${resLocals.course.id}` === `${course.id}` ? 'page' : ''}"
+                  href="/pl/course/${course.id}/course_admin"
+                >
+                  ${course.short_name}
+                </a>
+              `;
+            })}
+          </div>
         </div>
+        ${courseSideNavPageTabs.map((tabInfo) =>
+          SideNavLink({
+            resLocals,
+            navPage: page,
+            navSubPage: subPage,
+            tabInfo,
+          }),
+        )}
       </div>
-      ${courseSideNavPageTabs.map((tabInfo) =>
-        SideNavLink({
-          resLocals,
-          navPage: page,
-          navSubPage: subPage,
-          tabInfo,
-        }),
-      )}
     </div>
   `;
 }
@@ -271,20 +276,22 @@ function CourseInstanceNav({
           >
             <span> ${resLocals.course_instance.short_name} </span>
           </button>
-          <div class="dropdown-menu">
-            ${resLocals.course_instances.map((ci) => {
-              return html`
-                <a
-                  class="dropdown-item ${`${resLocals.course_instance.id}` === `${ci.id}`
-                    ? 'active'
-                    : ''}"
-                  aria-current="${`${resLocals.course_instance.id}` === `${ci.id}` ? 'page' : ''}"
-                  href="/pl/course_instance/${ci.id}/instructor/instance_admin"
-                >
-                  ${ci.short_name}
-                </a>
-              `;
-            })}
+          <div class="dropdown-menu py-0 overflow-hidden">
+            <div style="max-height: 50vh" class="overflow-auto">
+              ${resLocals.course_instances.map((ci) => {
+                return html`
+                  <a
+                    class="dropdown-item ${`${resLocals.course_instance.id}` === `${ci.id}`
+                      ? 'active'
+                      : ''}"
+                    aria-current="${`${resLocals.course_instance.id}` === `${ci.id}` ? 'page' : ''}"
+                    href="/pl/course_instance/${ci.id}/instructor/instance_admin"
+                  >
+                    ${ci.short_name}
+                  </a>
+                `;
+              })}
+            </div>
           </div>
           ${courseInstanceSideNavPageTabs.map((tabInfo) =>
             SideNavLink({

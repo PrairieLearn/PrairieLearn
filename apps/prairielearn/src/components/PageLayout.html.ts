@@ -98,6 +98,7 @@ export function PageLayout({
                 navPage: navContext.page,
                 navSubPage: navContext.subPage,
                 navbarType: navContext.type,
+                isInPageLayout: true,
               })}
             </div>
             ${showSideNav
@@ -120,15 +121,13 @@ export function PageLayout({
                   assessment: resLocals.assessment,
                   assessments: resLocals.assessments,
                 })}
-                <div class="${showSideNav ? '' : 'mb-3'}">
-                  ${showContextNavigation
-                    ? ContextNavigation({
-                        resLocals,
-                        navPage: navContext.page,
-                        navSubPage: navContext.subPage,
-                      })
-                    : ''}
-                </div>
+                ${showContextNavigation
+                  ? ContextNavigation({
+                      resLocals,
+                      navPage: navContext.page,
+                      navSubPage: navContext.subPage,
+                    })
+                  : ''}
                 ${preContent}
                 <main
                   id="content"
@@ -136,7 +135,7 @@ export function PageLayout({
                     ${options.fullWidth ? 'container-fluid' : 'container'} 
                     ${marginBottom ? 'mb-4' : ''}
                     ${options.fullHeight ? 'flex-grow-1' : ''}
-                    ${showSideNav ? 'p-3' : ''}
+                    pt-3 ${showSideNav ? 'px-3' : ''}
                   "
                 >
                   ${content}

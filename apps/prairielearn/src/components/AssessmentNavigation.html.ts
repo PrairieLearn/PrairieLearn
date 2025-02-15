@@ -27,18 +27,20 @@ export function AssessmentNavigation({
       >
         <span> ${assessment.title} </span>
       </button>
-      <div class="dropdown-menu">
-        ${assessments.map((a) => {
-          return html`
-            <a
-              class="dropdown-item ${`${assessment.id}` === `${a.id}` ? 'active' : ''}"
-              aria-current="${`${assessment.id}` === `${a.id}` ? 'page' : ''}"
-              href="/pl/course_instance/${courseInstance.id}/instructor/assessment/${a.id}"
-            >
-              ${a.title}
-            </a>
-          `;
-        })}
+      <div class="dropdown-menu py-0 overflow-hidden">
+        <div style="max-height: 50vh" class="overflow-auto">
+          ${assessments.map((a) => {
+            return html`
+              <a
+                class="dropdown-item ${`${assessment.id}` === `${a.id}` ? 'active' : ''}"
+                aria-current="${`${assessment.id}` === `${a.id}` ? 'page' : ''}"
+                href="/pl/course_instance/${courseInstance.id}/instructor/assessment/${a.id}"
+              >
+                ${a.title}
+              </a>
+            `;
+          })}
+        </div>
       </div>
     </div>
   `;

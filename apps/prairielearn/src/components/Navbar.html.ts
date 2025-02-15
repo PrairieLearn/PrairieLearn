@@ -14,11 +14,13 @@ export function Navbar({
   navPage,
   navSubPage,
   navbarType,
+  isInPageLayout = false,
 }: {
   resLocals: Record<string, any>;
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
+  isInPageLayout?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix } = resLocals;
   navPage ??= resLocals.navPage;
@@ -105,7 +107,7 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${resLocals.has_enhanced_navigation
+    ${resLocals.has_enhanced_navigation && isInPageLayout
       ? FlashMessages()
       : html`
           <div class="mb-3">
