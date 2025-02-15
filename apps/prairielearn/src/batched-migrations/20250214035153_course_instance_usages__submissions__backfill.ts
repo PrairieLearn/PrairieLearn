@@ -13,15 +13,12 @@ export default makeBatchedMigration({
     await queryAsync(sql.delete_old_usages, { CUTOFF_DATE });
 
     // Only backfill from submissions that are older than the cutoff date
-    const { min, max } = await queryRow(
+    const max = await queryRow(
       sql.select_bounds,
       { CUTOFF_DATE },
-      z.object({
-        min: z.bigint({ coerce: true }).nullable(),
-        max: z.bigint({ coerce: true }).nullable(),
-      }),
+      z.bigint({ coerce: true }).nullable(),
     );
-    return { min, max, batchSize: 1000 };
+    return { min: 1n, max, batchSize: 1000 };
   },
   async execute(start: bigint, end: bigint): Promise<void> {
     await queryAsync(sql.update_course_instance_usages_for_submissions, { start, end });

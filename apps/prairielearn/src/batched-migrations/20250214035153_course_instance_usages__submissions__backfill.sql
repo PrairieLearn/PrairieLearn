@@ -6,7 +6,6 @@ WHERE
 
 -- BLOCK select_bounds
 SELECT
-  min(id),
   max(id)
 FROM
   submissions
