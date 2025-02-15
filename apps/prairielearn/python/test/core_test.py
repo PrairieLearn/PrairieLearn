@@ -5,8 +5,17 @@ from collections.abc import Callable
 from typing import Any
 
 import lxml.html
-import prairielearn.core as pl
 import pytest
+from prairielearn.core import (
+    QuestionData,
+    get_uuid,
+    grade_answer_parameterized,
+    index2key,
+    inner_html,
+    iter_keys,
+    set_all_or_nothing_score_data,
+    set_weighted_score_data,
+)
 
 
 @pytest.mark.parametrize(
@@ -21,28 +30,28 @@ import pytest
 )
 def test_inner_html(inner_html_string: str) -> None:
     e = lxml.html.fragment_fromstring(f"<div>{inner_html_string}</div>")
-    assert pl.inner_html(e) == inner_html_string
+    assert inner_html(e) == inner_html_string
 
 
 @pytest.mark.parametrize(
     ("weight_set_function", "score_1", "score_2", "score_3", "expected_score"),
     [
         # Check set weighted score data
-        (pl.set_weighted_score_data, 0.0, 0.0, 0.0, 0.0),
-        (pl.set_weighted_score_data, 0.0, 0.5, 0.0, 2.0 / 7.0),
-        (pl.set_weighted_score_data, 0.0, 0.75, 1.0, 4.0 / 7.0),
-        (pl.set_weighted_score_data, 0.5, 0.75, 1.0, 5.0 / 7.0),
-        (pl.set_weighted_score_data, 1.0, 1.0, 1.0, 1.0),
+        (set_weighted_score_data, 0.0, 0.0, 0.0, 0.0),
+        (set_weighted_score_data, 0.0, 0.5, 0.0, 2.0 / 7.0),
+        (set_weighted_score_data, 0.0, 0.75, 1.0, 4.0 / 7.0),
+        (set_weighted_score_data, 0.5, 0.75, 1.0, 5.0 / 7.0),
+        (set_weighted_score_data, 1.0, 1.0, 1.0, 1.0),
         # Check all or nothing weighted score data
-        (pl.set_all_or_nothing_score_data, 0.0, 0.0, 0.0, 0.0),
-        (pl.set_all_or_nothing_score_data, 0.5, 0.0, 1, 0.0),
-        (pl.set_all_or_nothing_score_data, 0.5, 0.75, 1.0, 0.0),
-        (pl.set_all_or_nothing_score_data, 1.0, 1.0, 1.0, 1.0),
+        (set_all_or_nothing_score_data, 0.0, 0.0, 0.0, 0.0),
+        (set_all_or_nothing_score_data, 0.5, 0.0, 1, 0.0),
+        (set_all_or_nothing_score_data, 0.5, 0.75, 1.0, 0.0),
+        (set_all_or_nothing_score_data, 1.0, 1.0, 1.0, 1.0),
     ],
 )
 def test_set_score_data(
-    question_data: pl.QuestionData,
-    weight_set_function: Callable[[pl.QuestionData], None],
+    question_data: QuestionData,
+    weight_set_function: Callable[[QuestionData], None],
     score_1: float,
     score_2: float,
     score_3: float,
@@ -72,7 +81,7 @@ def test_set_score_data(
     ],
 )
 def test_grade_answer_parametrized_correct(
-    question_data: pl.QuestionData,
+    question_data: QuestionData,
     question_name: str,
     student_answer: str,
     weight: int,
@@ -88,9 +97,7 @@ def test_grade_answer_parametrized_correct(
             return True, good_feedback
         return False, bad_feedback
 
-    pl.grade_answer_parameterized(
-        question_data, question_name, grading_function, weight
-    )
+    grade_answer_parameterized(question_data, question_name, grading_function, weight)
 
     expected_score = 1.0 if expected_grade else 0.0
     assert question_data["partial_scores"][question_name]["score"] == expected_score
@@ -108,7 +115,7 @@ def test_grade_answer_parametrized_correct(
 
 
 def test_grade_answer_parametrized_bad_grade_function(
-    question_data: pl.QuestionData,
+    question_data: QuestionData,
 ) -> None:
     question_name = "name"
 
@@ -118,11 +125,11 @@ def test_grade_answer_parametrized_bad_grade_function(
         return "True", f"The answer {ans} is right"
 
     with pytest.raises(AssertionError):
-        pl.grade_answer_parameterized(question_data, question_name, grading_function)
+        grade_answer_parameterized(question_data, question_name, grading_function)
 
 
 def test_grade_answer_parametrized_key_error_blank(
-    question_data: pl.QuestionData,
+    question_data: QuestionData,
 ) -> None:
     question_name = "name"
 
@@ -134,21 +141,21 @@ def test_grade_answer_parametrized_key_error_blank(
         return (True, None)
 
     with pytest.raises(KeyError):
-        pl.grade_answer_parameterized(question_data, question_name, grading_function)
+        grade_answer_parameterized(question_data, question_name, grading_function)
 
     # Empty out submitted answers
     question_data["submitted_answers"] = {}
     question_data["format_errors"] = {}
-    pl.grade_answer_parameterized(question_data, question_name, grading_function)
+    grade_answer_parameterized(question_data, question_name, grading_function)
 
     assert question_data["partial_scores"][question_name]["score"] == 0.0
 
 
 @pytest.mark.repeat(100)
 def test_get_uuid() -> None:
-    """Test basic properties of the pl.get_uuid() function."""
+    """Test basic properties of the get_uuid() function."""
 
-    pl_uuid = pl.get_uuid()
+    pl_uuid = get_uuid()
     clauses = pl_uuid.split("-")
 
     # Assert clauses have standard structure.
@@ -173,7 +180,7 @@ def test_get_uuid() -> None:
     ],
 )
 def test_iter_keys(length: int, expected_output: list[str]) -> None:
-    assert list(it.islice(pl.iter_keys(), length)) == expected_output
+    assert list(it.islice(iter_keys(), length)) == expected_output
 
 
 @pytest.mark.parametrize(
@@ -181,4 +188,4 @@ def test_iter_keys(length: int, expected_output: list[str]) -> None:
     [(0, "a"), (1, "b"), (3, "d"), (26, "aa"), (27, "ab")],
 )
 def test_index2key(idx: int, expected_output: str) -> None:
-    assert pl.index2key(idx) == expected_output
+    assert index2key(idx) == expected_output

@@ -1,8 +1,8 @@
 from enum import Enum
 
 import lxml.html
-import prairielearn.attribute_utils as pl
 import pytest
+from prairielearn.attribute_utils import get_enum_attrib
 
 
 class DummyEnum(Enum):
@@ -33,7 +33,7 @@ class DummyEnum(Enum):
 )
 def test_get_enum_attrib(html_str: str, expected_result: DummyEnum) -> None:
     element = lxml.html.fragment_fromstring(html_str)
-    result = pl.get_enum_attrib(element, "test-choice", DummyEnum, DummyEnum.DEFAULT)
+    result = get_enum_attrib(element, "test-choice", DummyEnum, DummyEnum.DEFAULT)
 
     assert result is expected_result
 
@@ -51,4 +51,4 @@ def test_get_enum_attrib_exceptions(html_str: str) -> None:
     element = lxml.html.fragment_fromstring(html_str)
 
     with pytest.raises(ValueError):  # noqa: PT011
-        pl.get_enum_attrib(element, "test-choice", DummyEnum)
+        get_enum_attrib(element, "test-choice", DummyEnum)

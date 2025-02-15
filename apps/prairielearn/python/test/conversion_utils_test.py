@@ -4,9 +4,16 @@ from typing import Any, cast
 import networkx as nx
 import numpy as np
 import pandas as pd
-import prairielearn.conversion_utils as pl
 import pytest
 from numpy.typing import ArrayLike
+from prairielearn.conversion_utils import (
+    from_json,
+    latex_from_2darray,
+    numpy_to_matlab_sf,
+    string_from_number_sigfig,
+    string_from_numpy,
+    to_json,
+)
 
 
 def city_dataframe() -> pd.DataFrame:
@@ -102,14 +109,14 @@ def test_encoding_pandas(df: pd.DataFrame) -> None:
     """Test that new json encoding works"""
 
     # Test encoding as json doesn't throw exceptions
-    json_df = pl.to_json(df, df_encoding_version=2)
+    json_df = to_json(df, df_encoding_version=2)
     json_str = json.dumps(json_df)
 
     assert isinstance(json_str, str)
 
     # Deserialize and check equality
     loaded_str = json.loads(json_str)
-    deserialized_df = cast(pd.DataFrame, pl.from_json(loaded_str))
+    deserialized_df = cast(pd.DataFrame, from_json(loaded_str))
 
     # Column types get erased, need to account for this in testing
     reference_df = df.copy()
@@ -124,7 +131,7 @@ def test_encoding_pandas(df: pd.DataFrame) -> None:
 )
 def test_encoding_legacy(df: pd.DataFrame) -> None:
     """Add compatibility test for legacy encoding"""
-    reserialized_dataframe = cast(pd.DataFrame, pl.from_json(pl.to_json(df)))
+    reserialized_dataframe = cast(pd.DataFrame, from_json(to_json(df)))
     pd.testing.assert_frame_equal(df, reserialized_dataframe)
 
 
@@ -152,8 +159,8 @@ def test_networkx_serialization(
         edge_data["weight"] = i
         edge_data["label"] = chr(ord("a") + i)
 
-    json_object = json.dumps(pl.to_json(networkx_graph), allow_nan=False)
-    decoded_json_object = pl.from_json(json.loads(json_object))
+    json_object = json.dumps(to_json(networkx_graph), allow_nan=False)
+    decoded_json_object = from_json(json.loads(json_object))
 
     assert type(decoded_json_object) is type(networkx_graph)
 
@@ -190,9 +197,9 @@ def test_numpy_serialization(numpy_object: ArrayLike) -> None:
     """Test equality after conversion of various numpy objects."""
 
     json_object = json.dumps(
-        pl.to_json(numpy_object, np_encoding_version=2), allow_nan=False
+        to_json(numpy_object, np_encoding_version=2), allow_nan=False
     )
-    decoded_json_object = pl.from_json(json.loads(json_object))
+    decoded_json_object = from_json(json.loads(json_object))
 
     assert type(numpy_object) is type(decoded_json_object)
 
@@ -209,8 +216,8 @@ def test_numpy_serialization(numpy_object: ArrayLike) -> None:
 def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> None:
     """Test that nothing happens under the old encoding for numpy scalars."""
 
-    json_object = json.dumps(pl.to_json(object_to_encode), allow_nan=False)
-    decoded_json_object = pl.from_json(json.loads(json_object))
+    json_object = json.dumps(to_json(object_to_encode), allow_nan=False)
+    decoded_json_object = from_json(json.loads(json_object))
 
     assert decoded_json_object == expected_result
 
@@ -252,7 +259,7 @@ def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> No
     ],
 )
 def test_string_from_numpy(value: Any, args: dict, expected_output: str) -> None:
-    assert pl.string_from_numpy(value, **args) == expected_output
+    assert string_from_numpy(value, **args) == expected_output
 
 
 @pytest.mark.parametrize(
@@ -279,7 +286,7 @@ def test_string_from_numpy(value: Any, args: dict, expected_output: str) -> None
 def test_string_from_number_sigfig(
     value: Any, args: dict, expected_output: str
 ) -> None:
-    assert pl.string_from_number_sigfig(value, **args) == expected_output
+    assert string_from_number_sigfig(value, **args) == expected_output
 
 
 @pytest.mark.parametrize(
@@ -300,7 +307,7 @@ def test_string_from_number_sigfig(
     ],
 )
 def test_numpy_to_matlab_sf(value: Any, args: dict, expected_output: str) -> None:
-    assert pl.numpy_to_matlab_sf(value, **args) == expected_output
+    assert numpy_to_matlab_sf(value, **args) == expected_output
 
 
 @pytest.mark.parametrize(
@@ -313,4 +320,4 @@ def test_numpy_to_matlab_sf(value: Any, args: dict, expected_output: str) -> Non
     ],
 )
 def test_latex_from_2darray(value: Any, expected_output: str) -> None:
-    assert pl.latex_from_2darray(value) == expected_output
+    assert latex_from_2darray(value) == expected_output
