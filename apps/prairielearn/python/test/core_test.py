@@ -82,7 +82,7 @@ def r_types_dataframe() -> pd.DataFrame:
     return pd.DataFrame({
         # Scalars
         "integer": 1,
-        "numeric": 3.14,
+        "numeric": 3.15,
         "logical": False,
         "character": "foo",
         # TODO adding in complex numbers won't deserialize correctly, fix this (somehow?)
@@ -544,3 +544,188 @@ def test_numpy_to_matlab_sf(value: Any, args: dict, expected_output: str) -> Non
 )
 def test_latex_from_2darray(value: Any, expected_output: str) -> None:
     assert pl.latex_from_2darray(value) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("text", "allow_complex", "expected_matrix", "expected_format"),
+    [
+        # Scalar inputs
+        ("5", True, np.array([[5.0]]), "python"),
+        ("5.3", True, np.array([[5.3]]), "python"),
+        ("-5.3", True, np.array([[-5.3]]), "python"),
+        ("1+2j", True, np.array([[1 + 2j]]), "python"),
+        ("1-2j", True, np.array([[1 - 2j]]), "python"),
+        # MATLAB format
+        ("[1 2 3]", True, np.array([[1.0, 2.0, 3.0]]), "matlab"),
+        ("[1, 2, 3]", True, np.array([[1.0, 2.0, 3.0]]), "matlab"),
+        ("[1 2; 3 4]", True, np.array([[1.0, 2.0], [3.0, 4.0]]), "matlab"),
+        ("[1+2j 3-4j]", True, np.array([[1 + 2j, 3 - 4j]]), "matlab"),
+        ("[1+2j, 3-4j]", True, np.array([[1 + 2j, 3 - 4j]]), "matlab"),
+        # Python format
+        ("[[1, 2], [3, 4]]", True, np.array([[1.0, 2.0], [3.0, 4.0]]), "python"),
+        (
+            "[[1+2j, 3-4j], [5+6j, 7-8j]]",
+            True,
+            np.array([[1 + 2j, 3 - 4j], [5 + 6j, 7 - 8j]]),
+            "python",
+        ),
+        # Edge cases
+        ("0", True, np.array([[0.0]]), "python"),
+        ("[0]", True, np.array([[0.0]]), "matlab"),
+        ("[[0]]", True, np.array([[0.0]]), "python"),
+        # Complex numbers disabled
+        ("5", False, np.array([[5.0]]), "python"),
+        ("[1 2]", False, np.array([[1.0, 2.0]]), "matlab"),
+        ("[[1, 2]]", False, np.array([[1.0, 2.0]]), "python"),
+    ],
+)
+def test_string_to_2darray_valid(
+    *,
+    text: str,
+    allow_complex: bool,
+    expected_matrix: np.ndarray[Any, Any],
+    expected_format: str,
+) -> None:
+    matrix, format_data = pl.string_to_2darray(text, allow_complex=allow_complex)
+    assert matrix is not None
+    assert np.allclose(matrix, expected_matrix)
+    assert format_data.get("format_type") == expected_format
+
+
+@pytest.mark.parametrize(
+    ("text", "allow_complex", "expected_error"),
+    [
+        # Invalid format
+        ("a", True, "invalid format"),
+        ("[a b]", True, "invalid format"),
+        ("[[a, b]]", True, "invalid format"),
+        # Complex numbers disabled
+        ("1+2j", False, "invalid format"),
+        ("[1+2j]", False, "invalid format"),
+        ("[[1+2j]]", False, "invalid format"),
+        # Unbalanced brackets
+        ("[1, 2", True, "unbalanced square brackets"),
+        ("[[1, 2]", True, "unbalanced square brackets"),
+        ("[1, 2]]", True, "unbalanced square brackets"),
+        # Inconsistent dimensions
+        (
+            "[1 2; 3]",
+            True,
+            "rows 1 and 2 of the matrix have a different number of columns",
+        ),
+        (
+            "[[1,2], [3]]",
+            True,
+            "rows 1 and 2 of the matrix have a different number of columns",
+        ),
+        # Invalid delimiters
+        ("[[1; 2]]", True, "semicolons cannot be used as delimiters"),
+        ("[1..2]", True, "invalid format"),
+        # Empty matrices
+        ("[]", True, "row 1 of the matrix has no columns"),
+        ("[[]]", True, "row 1 of the matrix has no columns"),
+    ],
+)
+def test_string_to_2darray_invalid(
+    *, text: str, allow_complex: bool, expected_error: str
+) -> None:
+    matrix, format_data = pl.string_to_2darray(text, allow_complex=allow_complex)
+    assert matrix is None
+    assert "format_error" in format_data
+    assert expected_error in format_data["format_error"].lower()
+
+
+@pytest.mark.parametrize(
+    ("text", "allow_complex", "expected_result"),
+    [
+        # Basic integer/float inputs
+        ("0", True, np.float64(0.0)),
+        ("1", True, np.float64(1.0)),
+        ("-1", True, np.float64(-1.0)),
+        ("1.0", True, np.float64(1.0)),
+        ("-1.0", True, np.float64(-1.0)),
+        ("1e0", True, np.float64(1.0)),
+        ("1e1", True, np.float64(10.0)),
+        ("1e-1", True, np.float64(0.1)),
+        ("-1e-1", True, np.float64(-0.1)),
+        # Complex numbers with various formats
+        ("1+1j", True, np.complex128(1 + 1j)),
+        ("1-1j", True, np.complex128(1 - 1j)),
+        ("1+i", True, np.complex128(1 + 1j)),
+        ("1-i", True, np.complex128(1 - 1j)),
+        ("i", True, np.complex128(1j)),
+        ("j", True, np.complex128(1j)),
+        ("-i", True, np.complex128(-1j)),
+        ("2.5+3.6j", True, np.complex128(2.5 + 3.6j)),
+        # Unicode minus sign
+        ("\u22121.0", True, np.float64(-1.0)),
+        ("1\u2212i", True, np.complex128(1 - 1j)),
+        # Without complex numbers allowed
+        ("1", False, np.float64(1.0)),
+        ("1.0", False, np.float64(1.0)),
+        ("-1.0", False, np.float64(-1.0)),
+        ("1e0", False, np.float64(1.0)),
+        # Invalid inputs should return None
+        ("", True, None),
+        ("abc", True, None),
+        ("1++1", True, None),
+        ("1+-1", True, None),
+        ("1+2+3j", True, None),
+        ("1+", True, None),
+        # Complex inputs should return None when complex not allowed
+        ("1+1j", False, None),
+        ("1+i", False, None),
+        ("i", False, None),
+    ],
+)
+def test_string_to_number(
+    *,
+    text: str,
+    allow_complex: bool,
+    expected_result: np.float64 | np.complex128 | None,
+) -> None:
+    """Test the string_to_number function with various inputs."""
+    result = pl.string_to_number(text, allow_complex=allow_complex)
+
+    if expected_result is None:
+        assert result is None
+    else:
+        assert result is not None
+        assert type(result) is type(expected_result)
+        assert np.allclose(result, expected_result)
+
+
+@pytest.mark.parametrize(
+    ("input_name", "expected_output"),
+    [
+        # Basic alphanumeric cases
+        ("abc", "abc"),
+        ("ABC", "ABC"),
+        ("abc123", "abc123"),
+        ("123abc", "abc"),
+        # Special characters
+        ("hello#world", "hello_world"),
+        ("hello.$world", "hello__world"),
+        ("hello##`'\"world", "hello_____world"),
+        ("hello  world 123", "hello__world_123"),
+        # Leading special characters
+        ("_hello", "hello"),
+        ("123hello", "hello"),
+        # Mixed cases
+        ("HelloWorld!", "HelloWorld_"),
+        ("hello_World_123", "hello_World_123"),
+        ("123_hello_world", "hello_world"),
+        ("___hello___", "hello___"),
+        # Edge cases
+        ("", ""),
+        ("___", ""),
+        ("123", ""),
+        ("123_456", ""),
+        ("!@#$%", ""),
+        # Unicode characters
+        ("hello™world→", "hello_world_"),
+    ],
+)
+def test_clean_identifier_name(*, input_name: str, expected_output: str) -> None:
+    """Test clean_identifier_name with various input strings."""
+    assert pl.clean_identifier_name(input_name) == expected_output
