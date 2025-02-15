@@ -46,7 +46,6 @@ theme:
   features:
     - navigation.sections
     - navigation.indexes
-    - navigation.expand
     - navigation.path
     - navigation.instant
     - navigation.instant.prefetch
