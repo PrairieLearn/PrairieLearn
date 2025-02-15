@@ -63,7 +63,7 @@ check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
 # Runs additional third-party linters
-lint-all: lint lint-docker lint-actions lint-shell
+lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell
 
 lint: lint-js lint-python lint-html lint-links
 lint-js:
