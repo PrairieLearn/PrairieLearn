@@ -38,8 +38,11 @@ to use any of these helpers. Any code from `prairielearn.internal` should be con
 ::: prairielearn
     options:
         members:
-            - core
+            - conversion_utils
+            - attribute_utils
+            - validation_utils
             - sympy_utils
-            - colors
             - unicode_utils
+            - core
+            - colors
             - internal
