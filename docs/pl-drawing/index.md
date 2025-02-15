@@ -512,7 +512,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-collar-rod element](pl-collar-rod.png){ width=50% }
+![Screenshot of the pl-collar-rod element](pl-collar.png){ width=50% }
 
 #### Customizations
 
