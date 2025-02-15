@@ -65,7 +65,7 @@ check-dependencies:
 # Runs additional third-party linters
 lint-all: lint lint-docker lint-actions lint-shell
 
-lint: lint-js lint-python lint-html lint-docs
+lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
 	@yarn prettier --check "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
@@ -85,7 +85,7 @@ lint-shell:
 lint-actions:
 	@actionlint
 
-format: format-js format-python format-d2
+format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,ts}"
 	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
@@ -109,7 +109,7 @@ changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
 
-lint-docs: lint-d2 lint-links
+lint-docs: lint-d2 lint-links lint-markdown
 
 build-docs:
 	@python3 -m venv /tmp/pldocs/venv
