@@ -31,7 +31,7 @@ export const QuestionDependencyJsonSchema = z
       .optional(),
     clientFilesCourseScripts: z
       .array(z.string().describe('A .js file located in clientFilesCourse.'))
-      .describe('The styles required by this question from clientFilesCourse.')
+      .describe('The scripts required by this question from clientFilesCourse.')
       .optional(),
     clientFilesQuestionStyles: z
       .array(z.string().describe('A .css file located in the clientFilesQuestion.'))
