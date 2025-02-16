@@ -5,6 +5,14 @@ import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+function isExampleCourse(courseInfo: CourseData['course']['data']): boolean {
+  return (
+    courseInfo?.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
+    courseInfo?.title === 'Example Course' &&
+    courseInfo?.name === 'XC 101'
+  );
+}
+
 export async function sync(courseData: CourseData, courseId: string) {
   if (infofile.hasErrors(courseData.course)) {
     const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course_errors, {
@@ -21,17 +29,12 @@ export async function sync(courseData: CourseData, courseId: string) {
     throw new Error('Course info file is missing data');
   }
 
-  const isExampleCourse =
-    courseId === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
-    courseInfo.title === 'Example Course' &&
-    courseInfo.name === 'XC 101';
-
   const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course, {
     course_id: courseId,
     short_name: courseInfo.name,
     title: courseInfo.title,
     display_timezone: courseInfo.timezone || null,
-    example_course: isExampleCourse,
+    example_course: isExampleCourse(courseInfo),
     options: courseInfo.options || {},
     sync_warnings: infofile.stringifyWarnings(courseData.course),
   });
