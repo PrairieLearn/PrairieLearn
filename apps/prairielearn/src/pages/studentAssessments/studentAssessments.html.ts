@@ -75,7 +75,10 @@ export function StudentAssessments({
                       ? html`
                           <tr>
                             <th colspan="4" scope="row" data-testid="assessment-group-heading">
-                              ${row.assessment_group_heading}
+                              ${row.assessment_group_heading &&
+                              row.assessment_group_heading !== 'null'
+                                ? row.assessment_group_heading
+                                : row.assessment_set_name}
                             </th>
                           </tr>
                         `

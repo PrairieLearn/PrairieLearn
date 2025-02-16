@@ -117,7 +117,13 @@ export function InstructorAssessments({
                         ${row.start_new_assessment_group
                           ? html`
                               <tr>
-                                <th colspan="7" scope="row">${row.assessment_group_heading}</th>
+                                <th colspan="7" scope="row">
+                                  ${row.assessment_group_heading &&
+                                  row.assessment_group_heading !== 'null'
+                                    ? row.assessment_group_heading
+                                    : row.abbreviation +
+                                      ' (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)'}
+                                </th>
                               </tr>
                             `
                           : ''}
