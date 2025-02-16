@@ -11,7 +11,6 @@ const AccessRuleJsonSchema = z
       .optional(),
     uids: z
       .array(z.string())
-      .min(1, "At least one UID is required")
       .describe('A list of UIDs, one of which is required for access')
       .optional(),
     startDate: z.string().describe('The earliest date on which access is permitted.').optional(),
