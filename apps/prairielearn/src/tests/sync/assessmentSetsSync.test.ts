@@ -224,8 +224,7 @@ describe('Assessment set syncing', () => {
     checkAssessmentSet(syncedAssessmentSets[0], {
       abbreviation: 'X',
       name: 'X',
-      heading:
-        'X',
+      heading: 'X',
       color: 'gray1',
       number: 1,
     });
