@@ -190,7 +190,7 @@
           }
         },
         "clientFilesCourseScripts": {
-          "description": "The styles required by this question from clientFilesCourse.",
+          "description": "The scripts required by this question from clientFilesCourse.",
           "type": "array",
           "items": {
             "description": "A .js file located in clientFilesCourse.",

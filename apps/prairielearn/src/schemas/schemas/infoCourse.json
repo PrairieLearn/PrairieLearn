@@ -118,7 +118,7 @@
       "description": "Question topics (visible to students).",
       "type": "array",
       "items": {
-        "description": "A single assessment set description.",
+        "description": "A single topic description for organizing questions.",
         "type": "object",
         "additionalProperties": false,
         "required": ["name", "color"],
