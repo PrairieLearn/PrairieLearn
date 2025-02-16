@@ -68,7 +68,7 @@ export async function sync(courseId: string, courseData: CourseData) {
     makeImplicitEntity: (name) => ({
       name,
       abbreviation: name,
-      heading: 'null',
+      heading: name,
       color: 'gray1',
       implicit: true,
     }),

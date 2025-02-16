@@ -28,6 +28,7 @@ SELECT
   aset.abbreviation,
   aset.name,
   aset.color,
+  aset.implicit,
   (aset.abbreviation || a.number) as label,
   (
     LAG(

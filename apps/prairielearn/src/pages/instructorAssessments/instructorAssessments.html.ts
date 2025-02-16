@@ -27,7 +27,7 @@ export const AssessmentStatsRowSchema = AssessmentSchema.extend({
 type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
 
 export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
+  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true, implicit: true }),
 ).extend({
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: AssessmentSetSchema.shape.heading,
@@ -118,8 +118,7 @@ export function InstructorAssessments({
                           ? html`
                               <tr>
                                 <th colspan="7" scope="row">
-                                  ${row.assessment_group_heading &&
-                                  row.assessment_group_heading !== 'null'
+                                  ${!row.implicit
                                     ? row.assessment_group_heading
                                     : row.abbreviation +
                                       ' (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)'}

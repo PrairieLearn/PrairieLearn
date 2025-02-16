@@ -55,7 +55,7 @@ export function InstructorCourseAdminSets({
                     </td>
                     <td class="align-middle">${assessment_set.name}</td>
                     <td class="align-middle">
-                      ${assessment_set.heading && assessment_set.heading !== 'null'
+                      ${!assessment_set.implicit
                         ? assessment_set.heading
                         : assessment_set.abbreviation +
                           ' (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)'}
