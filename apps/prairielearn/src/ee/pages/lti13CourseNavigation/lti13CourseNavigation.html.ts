@@ -101,7 +101,7 @@ export function Lti13CourseNavigationInstructor({
             data-bs-toggle="modal"
             data-bs-target="#terminology-modal"
           >
-            New here? Learn about our terminology
+            New here? Learn about PrairieLearn terminology
           </button>
         </main>
       </body>
