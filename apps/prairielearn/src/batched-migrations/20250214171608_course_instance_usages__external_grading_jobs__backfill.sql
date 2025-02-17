@@ -52,7 +52,8 @@ FROM
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.course_id = a.course_instance_id)
 WHERE
-  gj.id >= $start
+  gj.grading_method = 'External'
+  AND gj.id >= $start
   AND gj.id <= $end
 ON CONFLICT (
   type,
