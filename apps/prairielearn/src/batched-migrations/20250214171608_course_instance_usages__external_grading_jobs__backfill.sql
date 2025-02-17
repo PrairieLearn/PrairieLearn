@@ -30,6 +30,7 @@ INSERT INTO
   )
 SELECT
   'External grading',
+  -- There will only be one institution, so we can use `any_value()`
   any_value (i.id),
   c.id,
   ci.id,
@@ -38,6 +39,8 @@ SELECT
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
   v.authn_user_id,
+  -- It's possible that there are different values of `include_in_statistics` bu
+  -- we aren't worried about tracking this accurately.
   any_value (coalesce(ai.include_in_statistics, false)),
   sum(gj.grading_finished_at - gj.grading_received_at)
 FROM
@@ -63,6 +66,8 @@ GROUP BY
   date_trunc('day', gj.grading_finished_at, 'UTC'),
   v.authn_user_id
 ON CONFLICT (
+  -- Conflicts will only occur with pre-existing rows, not from rows inserted by
+  -- the current execution of this query.
   type,
   course_id,
   course_instance_id,
