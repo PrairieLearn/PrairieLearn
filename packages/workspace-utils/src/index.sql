@@ -129,21 +129,21 @@ VALUES
 -- BLOCK update_course_instance_usages_for_workspace
 INSERT INTO
   course_instance_usages (
+    date,
     type,
     institution_id,
     course_id,
     course_instance_id,
-    date,
     user_id,
     include_in_statistics,
     duration
   )
 SELECT
+  date_trunc('day', w.state_updated_at, 'UTC'),
   'Workspace',
   i.id,
   c.id,
   ci.id,
-  date_trunc('day', w.state_updated_at, 'UTC'),
   -- Use v.authn_user_id because we don't care about really tracking the
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
@@ -165,11 +165,13 @@ FROM
 WHERE
   w.id = $workspace_id
 ON CONFLICT (
+  date,
   type,
+  institution_id,
   course_id,
   course_instance_id,
-  date,
-  user_id
+  user_id,
+  include_in_statistics
 ) DO UPDATE
 SET
   duration = course_instance_usages.duration + EXCLUDED.duration;

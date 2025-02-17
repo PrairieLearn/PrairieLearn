@@ -5,6 +5,7 @@ columns
     dependencies: jsonb not null default '{}'::jsonb
     directory: text
     draft: boolean not null default false
+    external_grading_autograder: text
     external_grading_enable_networking: boolean
     external_grading_enabled: boolean default false
     external_grading_entrypoint: text

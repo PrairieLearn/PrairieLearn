@@ -1,20 +1,20 @@
 -- BLOCK update_course_instance_usages_for_submission
 INSERT INTO
   course_instance_usages (
+    date,
     type,
     institution_id,
     course_id,
     course_instance_id,
-    date,
     user_id,
     include_in_statistics
   )
 SELECT
+  date_trunc('day', s.date, 'UTC'),
   'Submission',
   i.id,
   c.id,
   ci.id,
-  date_trunc('day', s.date, 'UTC'),
   $user_id,
   coalesce(ai.include_in_statistics, false)
 FROM
@@ -30,31 +30,33 @@ FROM
 WHERE
   s.id = $submission_id
 ON CONFLICT (
+  date,
   type,
+  institution_id,
   course_id,
   course_instance_id,
-  date,
-  user_id
+  user_id,
+  include_in_statistics
 ) DO NOTHING;
 
 -- BLOCK update_course_instance_usages_for_external_grading
 INSERT INTO
   course_instance_usages (
+    date,
     type,
     institution_id,
     course_id,
     course_instance_id,
-    date,
     user_id,
     include_in_statistics,
     duration
   )
 SELECT
+  date_trunc('day', gj.grading_finished_at, 'UTC'),
   'External grading',
   i.id,
   c.id,
   ci.id,
-  date_trunc('day', gj.grading_finished_at, 'UTC'),
   -- Use v.authn_user_id because we don't care about really tracking the
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
@@ -75,11 +77,13 @@ FROM
 WHERE
   gj.id = $grading_job_id
 ON CONFLICT (
+  date,
   type,
+  institution_id,
   course_id,
   course_instance_id,
-  date,
-  user_id
+  user_id,
+  include_in_statistics
 ) DO UPDATE
 SET
   duration = course_instance_usages.duration + EXCLUDED.duration;
