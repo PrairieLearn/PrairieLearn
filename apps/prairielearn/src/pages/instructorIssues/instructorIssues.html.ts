@@ -180,6 +180,7 @@ export function InstructorIssues({
                   title="Show filter help"
                   data-toggle="modal"
                   data-target="#filterHelpModal"
+                  aria-label="Show filter help"
                 >
                   <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </button>

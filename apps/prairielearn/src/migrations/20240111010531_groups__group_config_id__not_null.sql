@@ -1,3 +1,5 @@
+-- prairielearn:migrations NO TRANSACTION
+--
 -- For whatever reason, we ended up with rows in the `groups` table where
 -- `group_config_id` was NULL. This is invalid, since `groups` rows aren't
 -- reachable via our joins with such a value defined. So that we can mark
@@ -9,6 +11,9 @@ WHERE
 -- Declare `groups.group_config_id` as NOT NULL, since it is now backfilled.
 -- Use the approach described here to avoid a long table lock:
 -- https://dba.stackexchange.com/questions/267947/how-can-i-set-a-column-to-not-null-without-locking-the-table-during-a-table-scan/268128#268128
+ALTER TABLE groups
+DROP CONSTRAINT IF EXISTS groups_group_config_id_not_null;
+
 ALTER TABLE groups
 ADD CONSTRAINT groups_group_config_id_not_null CHECK (group_config_id IS NOT NULL) NOT VALID;
 

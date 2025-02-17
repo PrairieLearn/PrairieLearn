@@ -1,3 +1,5 @@
+"""Utilities for working with unicode strings."""
+
 from text_unidecode import unidecode
 
 

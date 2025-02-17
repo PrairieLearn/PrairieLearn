@@ -88,7 +88,7 @@ def process(
 
     def process_element(
         element: lxml.html.HtmlElement,
-    ) -> None | str | lxml.html.HtmlElement:
+    ) -> str | lxml.html.HtmlElement | None:
         nonlocal result
 
         if element.tag not in elements:
