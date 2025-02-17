@@ -30,7 +30,7 @@ INSERT INTO
   )
 SELECT
   'External grading',
-  i.id,
+  any_value (i.id),
   c.id,
   ci.id,
   date_trunc('day', gj.grading_finished_at, 'UTC'),
@@ -38,7 +38,7 @@ SELECT
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
   v.authn_user_id,
-  coalesce(ai.include_in_statistics, false),
+  any_value (coalesce(ai.include_in_statistics, false)),
   sum(gj.grading_finished_at - gj.grading_received_at)
 FROM
   grading_jobs AS gj
@@ -57,13 +57,11 @@ WHERE
   AND gj.id <= $end
 GROUP BY
   -- We need to aggregate by all columns in the unique constraint because INSERT
-  -- ... ON CONFLICT can't update a row multiple times.
-  i.id,
+  -- ... ON CONFLICT DO UPDATE can't update a row multiple times.
   c.id,
   ci.id,
   date_trunc('day', gj.grading_finished_at, 'UTC'),
-  v.authn_user_id,
-  coalesce(ai.include_in_statistics, false)
+  v.authn_user_id
 ON CONFLICT (
   type,
   course_id,
