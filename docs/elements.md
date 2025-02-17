@@ -1123,7 +1123,7 @@ Displays question content within a card-styled component. Optionally displays a 
 
 #### Details
 
-The `pl-card` attributes mirror the options of [Bootstrap cards](https://getbootstrap.com/docs/5.3/components/card/). The `header` and `footer` tag attributes accept HTML tags to allow for styling of their content.
+The `pl-card` attributes mirror the options of [Bootstrap cards](https://getbootstrap.com/docs/5.3/components/card/). The `header` and `footer` tag attributes can include HTML tags alongside plaintext to allow for styling of their content.
 
 #### Example implementations
 
