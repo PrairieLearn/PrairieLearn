@@ -29,18 +29,8 @@ export function Lti13CourseNavigationInstructor({
         <main id="content" class="container mb-4">
           <h1>Welcome to PrairieLearn</h1>
           <p>
-            To finish the integration for your course, we need to connect
+            To finish the integration for your course, you need to connect
             <strong>${courseName}</strong> with a PrairieLearn course instance.
-          </p>
-          <p>
-            <button
-              type="button"
-              class="btn btn-sm btn-info"
-              data-bs-toggle="modal"
-              data-bs-target="#terminology-modal"
-            >
-              New here? Learn about our terminology
-            </button>
           </p>
 
           ${courses.length === 0
@@ -82,7 +72,7 @@ export function Lti13CourseNavigationInstructor({
                     >
                       <option selected disabled value="">See above</option>
                     </select>
-                    <input type="submit" class="btn btn-primary" value="Connect courses" />
+                    <button type="submit" class="btn btn-primary">Connect course instance</button>
                   </form>
                 </div>
               `}
@@ -105,6 +95,14 @@ export function Lti13CourseNavigationInstructor({
             If you need a new course instance, create one in PrairieLearn first then revisit this
             course linking flow.
           </p>
+          <button
+            type="button"
+            class="btn btn-link"
+            data-bs-toggle="modal"
+            data-bs-target="#terminology-modal"
+          >
+            New here? Learn about our terminology
+          </button>
         </main>
       </body>
     </html>

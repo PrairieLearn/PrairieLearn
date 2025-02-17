@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { html, joinHtml, type HtmlSafeString } from '@prairielearn/html';
 import { loadSqlEquiv, queryOptionalRow, queryAsync } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
@@ -100,12 +100,10 @@ router.get(
         No course instances found where you have student data editor permissions.
       </option>`;
     } else {
-      options = course_instances.reduce(
-        (output, ci) => {
-          return html`${output}
-            <option value="${ci.id}">${ci.short_name}: ${ci.long_name}</option>`;
-        },
-        html``,
+      options = joinHtml(
+        course_instances.map((ci) => {
+          return html`<option value="${ci.id}">${ci.short_name}: ${ci.long_name}</option>`;
+        }),
       );
     }
 
