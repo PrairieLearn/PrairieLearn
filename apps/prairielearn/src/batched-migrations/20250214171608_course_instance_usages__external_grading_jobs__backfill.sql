@@ -39,7 +39,7 @@ SELECT
   -- many users updating simultaneously.
   v.authn_user_id,
   coalesce(ai.include_in_statistics, false),
-  gj.grading_finished_at - gj.grading_received_at
+  sum(gj.grading_finished_at - gj.grading_received_at)
 FROM
   grading_jobs AS gj
   JOIN submissions AS s ON (s.id = gj.submission_id)
@@ -55,6 +55,15 @@ WHERE
   gj.grading_method = 'External'
   AND gj.id >= $start
   AND gj.id <= $end
+GROUP BY
+  -- We need to aggregate by all columns in the unique constraint because INSERT
+  -- ... ON CONFLICT can't update a row multiple times.
+  i.id,
+  c.id,
+  ci.id,
+  date_trunc('day', gj.grading_finished_at, 'UTC'),
+  v.authn_user_id,
+  coalesce(ai.include_in_statistics, false)
 ON CONFLICT (
   type,
   course_id,
