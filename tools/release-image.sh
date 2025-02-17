@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 while getopts ":t:" o; do
     case "${o}" in
     t)

@@ -81,7 +81,7 @@ lint-links:
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 lint-shell:
-	@shellcheck -S error $(SH_FILES)
+	@shellcheck -S warning $(SH_FILES)
 lint-actions:
 	@actionlint
 
