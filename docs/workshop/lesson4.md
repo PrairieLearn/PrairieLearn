@@ -18,7 +18,7 @@ Since there is more than one solution that satisfies this problem, you will need
 
 Modify the example from Lesson 3 below:
 
-![](figs/logic-diagram2.png)
+![Circuit logic diagram](figs/logic-diagram2.png)
 
 Now ask students to enter three input values and one output that makes this logic diagram correct. Since there are several solutions that are correct, you will need to customize the grade function.
 

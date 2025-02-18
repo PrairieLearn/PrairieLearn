@@ -1,6 +1,6 @@
 # SAML SSO configuration
 
-SAML SSO is available for users of us.prairielearn.com and ca.prairielearn.com. Reach out to support@prairielearn.com to get it set up.
+SAML SSO is available for users of us.prairielearn.com and ca.prairielearn.com. Reach out to <support@prairielearn.com> to get it set up.
 
 ## Required attributes
 
@@ -12,7 +12,7 @@ The full name of the user, e.g. "Joe Smith". This attribute is often named `disp
 
 ### UID
 
-An identifier with an institution-specific suffix, e.g. "jsmith@example.com". This attribute is often named `eppn`, `eduPersonPrincipalName`, or `urn:oid:1.3.6.1.4.1.5923.1.1.1.6`.
+An identifier with an institution-specific suffix, e.g. `jsmith@example.com`. This attribute is often named `eppn`, `eduPersonPrincipalName`, or `urn:oid:1.3.6.1.4.1.5923.1.1.1.6`.
 
 This attribute is allowed to change. For instance, at many institutions, someone who changes their name will receive an updated identifier. The next time they log in to PrairieLearn, their UID will be updated to reflect the latest value from the IdP.
 
@@ -32,6 +32,6 @@ For institutions using PrairieTest, this value can be used when deploying ID-car
 
 ### Email
 
-The email address of the user, e.g. "student@example.com". This attribute is often named `mail` or `urn:oid:0.9.2342.19200300.100.1.3`.
+The email address of the user, e.g. `student@example.com`. This attribute is often named `mail` or `urn:oid:0.9.2342.19200300.100.1.3`.
 
 While this attribute is not strictly required, it is highly recommended. In the future, it will be used to send notifications to students about upcoming exams and other important information.
