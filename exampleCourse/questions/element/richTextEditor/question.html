@@ -105,12 +105,12 @@
 
   <pl-question-panel>
     <p>
-      The element also supports the use of markdown format in the starting text
-      by setting <code>format="markdown"</code>. This option allows the source
-      file name or initial content to be interpreted in this format. Note that,
-      in order to avoid the loss of data typically associated with converting
-      HTML to markdown, the resulting file is still stored in HTML, regardless
-      of the value of this option.
+      The element also supports markdown format by
+      setting <code>format="markdown"</code>. This option will cause
+      the final result to be saved in markdown, and also allows the
+      source file name or content to be interpreted in this
+      format. The student experience will not typically be
+      significantly affected.
     </p>
 
     <div class="alert alert-info">The use of format="markdown" is not recommended except for very narrow circumstances. Due to the nature of markdown syntax, some combinations of content, such as blank paragraphs or formatting inside code, may be lost or corrupted in the conversion to markdown. If possible, use the default format, which is HTML.</div>
@@ -120,7 +120,7 @@
     </p>
   </pl-question-panel>
   
-  <pl-rich-text-editor file-name="pbj.html" format="markdown"
+  <pl-rich-text-editor file-name="pbj.md" format="markdown"
                        quill-theme="bubble">
 * Open the bread package;
 * [continue]
