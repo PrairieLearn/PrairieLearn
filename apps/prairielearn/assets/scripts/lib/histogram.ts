@@ -80,7 +80,7 @@ export function histogram(
     .append('svg')
     .attr('width', resolvedOptions.width)
     .attr('height', resolvedOptions.height)
-    .attr('class', 'center-block statsPlot newClass')
+    .attr('class', 'center-block statsPlot')
     .attr('role', 'img')
     .attr('aria-label', resolvedOptions.ariaLabel)
     .append('g')
