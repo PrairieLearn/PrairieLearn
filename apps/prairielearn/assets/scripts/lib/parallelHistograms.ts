@@ -1,4 +1,4 @@
-import { scaleLinear, scaleBand, axisBottom, axisLeft, range, select, lab } from 'd3';
+import { scaleLinear, scaleBand, axisBottom, axisLeft, range, select } from 'd3';
 
 interface Data {
   label: string;
