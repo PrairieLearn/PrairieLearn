@@ -22,7 +22,7 @@ import string
 import unicodedata
 import uuid
 from collections import namedtuple
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Iterable
 from enum import Enum
 from io import StringIO
 from types import ModuleType
@@ -1984,3 +1984,19 @@ def add_submitted_file(
         add_files_format_error(
             data, '"_files" is present in "submitted_answers" but is not an array'
         )
+
+
+ListItem = TypeVar("ListItem")
+
+
+def partition(
+    data: Iterable[ListItem], pred: Callable[[ListItem], bool]
+) -> tuple[list[ListItem], list[ListItem]]:
+    """Implement a partition function, splitting the data into two lists based on the predicate."""
+    yes, no = [], []
+    for d in data:
+        if pred(d):
+            yes.append(d)
+        else:
+            no.append(d)
+    return (yes, no)
