@@ -4,7 +4,7 @@ from prairielearn.unicode_utils import escape_unicode_string, full_unidecode
 def test_full_unidecode():
     assert full_unidecode("café") == "cafe"
     assert full_unidecode("naïve") == "naive"
-    assert full_unidecode("−5") == "-5"  # Unicode minus to normal minus
+    assert full_unidecode("−5") == "-5"  # Unicode minus to normal minus  # noqa: RUF001
     assert full_unidecode("résumé") == "resume"
     assert full_unidecode("über") == "uber"
     assert full_unidecode("test") == "test"
