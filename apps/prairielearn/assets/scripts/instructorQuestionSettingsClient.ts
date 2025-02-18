@@ -23,7 +23,7 @@ onDocumentReady(() => {
     valueField: 'name',
     searchField: ['name', 'description'],
     closeAfterSelect: true,
-    plugins: ['dropdown_input', 'no_backspace_delete'],
+    plugins: ['no_backspace_delete'],
     maxItems: 1,
     render: {
       option(data: Topic) {
@@ -45,7 +45,7 @@ onDocumentReady(() => {
   new TomSelect('#tags', {
     valueField: 'name',
     searchField: ['name', 'description'],
-    plugins: ['dropdown_input', 'remove_button'],
+    plugins: ['remove_button'],
     render: {
       option(data: Tag) {
         return html`
