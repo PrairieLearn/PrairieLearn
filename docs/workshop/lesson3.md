@@ -4,7 +4,7 @@
 
 Convert these questions from the "paper-pencil" format to PrairieLearn.
 
-## Example 1:
+## Example 1
 
 Given a matrix $A$ and a vector $b$, compute the matrix-vector multiplication $y = Ab$
 
@@ -22,15 +22,15 @@ Given a matrix $A$ and a vector $b$, compute the matrix-vector multiplication $y
 
 - [workshop/Lesson3_example1_v3](https://us.prairielearn.com/pl/course/108/question/8211626/preview)
 
-## Example 2:
+## Example 2
 
 Consider the Standard I-beam cross-section:
 
-![](figs/cross-section.png)
+![Diagram of a I-beam cross-section](figs/cross-section.png)
 
 The table below has the geometric properties for different specifications for a steel beam:
 
-![](figs/properties.png)
+![Table of steel beam geometric properties](figs/properties.png)
 
 For the **S20 x 66** beam, what is the maximum normal stress $\sigma_x$ assuming that the maximum moment is equal to $M_{max} = 5 \times 10^5 \rm\ lb \cdot in$.
 
@@ -47,11 +47,9 @@ $$\sigma_x = \frac{M_{max} \,c}{I_x} = 0.042 \times 10^5 \rm\ lb/in^2 = 4.2 \rm\
 
 You can download the figure files and the table:
 
-<a href="../figs/cross-section.png" target="_blank">Download cross-section figure</a>
-
-<a href="../figs/properties.png" target="_blank">Download table figure</a>
-
-<a href="../figs/properties.csv" target="_blank">Download table with properties</a>
+- [Cross-section figure](figs/cross-section.png)
+- [Table figure](figs/properties.png)
+- [Table with properties](figs/properties.csv)
 
 **PrairieLearn implementation:**
 
@@ -61,7 +59,7 @@ You can download the figure files and the table:
 
 - [workshop/Lesson3_example2_v3](https://us.prairielearn.com/pl/course/108/question/8211630/preview)
 
-## Example 3:
+## Example 3
 
 Convert an integer number $x$ from decimal representation (base 10) to binary representation (base 2).
 
@@ -73,17 +71,17 @@ You can use `pl-multiple-choice` for this question. If you want to have the stud
 
 - [workshop/Lesson3_example3](https://us.prairielearn.com/pl/course/108/question/8211631/preview)
 
-## Example 4:
+## Example 4
 
 For given values of X, Y and Z, determine F.
 
-![](figs/logic-diagram.png)
+![Circuit logic diagram](figs/logic-diagram.png)
 
 **Think about:**
 
 You can use `pl-overlay` to add the input boxes on top of the image.
 
-<a href="../figs/logic-diagram.png" target="_blank">Download image</a>
+- [Download image](figs/logic-diagram.png)
 
 **PrairieLearn implementation:**
 

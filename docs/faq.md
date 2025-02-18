@@ -327,7 +327,7 @@ To address this, there are a variety of different ways. In particular, we have:
 - Restart docker
   - Click the Whale icon in the taskbar and select "Restart".
 - Restart your computer.
-- Stop the process in terminal with <kbd>CNTRL</kbd> + <kbd>C</kbd> and, then,
+- Stop the process in terminal with ++ctrl+c++ and, then,
   close the terminal application.
 
 ## Why do special characters like (<=) break my question display?
@@ -351,37 +351,11 @@ Example:
 
 ## How can I make a block that can be re-used in many questions?
 
-If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can do the following.
+If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can use the [`<pl-template>` element](./elements.md#pl-template-element). This element allows you to define a template in one place and then use it in many questions.
 
-1.  Put a file called `local_template.py` into `serverFilesCourse` that contains:
+!!! danger
 
-        import chevron, os
-
-        def render(data, template_filename, params):
-            with open(os.path.join(data["options"]["server_files_course_path"], template_filename)) as f:
-                return chevron.render(f, params)
-
-2.  Put a template (this example is called `units_instructions.html`) into `serverFilesCourse`:
-
-        <pl-question-panel>
-          <p>
-            All data for this problem is given in {{given_units}} units. Your answers should be in {{answer_units}}.
-          </p>
-        </pl-question-panel>
-
-3.  In the `server.py` for a question, render the template like this:
-
-        import local_template
-
-        def generate(data):
-            data["params"]["units_instructions"] = local_template.render(data, "units_instructions.html", {
-                "given_units": "US customary",
-                "answer_units": "metric",
-            })
-
-4.  In the `question.html` for the same question, insert the rendered template like this (note the use of triple curly braces):
-
-        {{{params.units_instructions}}}
+    Elements that accept and/or grade student input used within this element will not work correctly with `<pl-template>`. Templates should only contain other decorative elements.
 
 ## How can I hide the correct answer when students see their grading results?
 
