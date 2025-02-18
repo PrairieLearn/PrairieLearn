@@ -288,7 +288,7 @@ and external grading system.
 
 #### Sample element
 
-![Screenshot of the file editor element](elements/pl-file-editor.png)
+![Screenshot of the pl-file-editor element](elements/pl-file-editor.png)
 
 <!-- prettier-ignore -->
 ```html title="question.html"
@@ -383,7 +383,7 @@ Fill in the blank field that requires an **integer** input.
 
 #### Sample element
 
-![Screenshot of the integer input element](elements/pl-integer-input.png)
+![Screenshot of the pl-integer-input element](elements/pl-integer-input.png)
 
 ```html title="question.html"
 <pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
