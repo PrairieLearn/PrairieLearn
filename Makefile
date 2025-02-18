@@ -56,7 +56,6 @@ test-js-dist: start-support
 	@yarn turbo run test:dist
 test-python:
 	@python3 -m pytest
-	@python3 -m coverage xml -o .coverage.xml
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
 

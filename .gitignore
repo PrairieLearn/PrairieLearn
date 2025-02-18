@@ -116,4 +116,4 @@ packages/*/coverage
 isolate-*-v8.log
 
 ## Codecov
-.coverage.xml
+coverage.xml
