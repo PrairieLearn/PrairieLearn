@@ -577,11 +577,13 @@ function DirectoryBrowserBody({
 }) {
   return html`
     <table class="table table-sm table-hover" aria-label="Directories and files">
-      <tbody>
-        <tr class="sr-only">
+      <thead class="sr-only">
+        <tr>
           <th>File</th>
           <th>Actions</th>
         </tr>
+      </thead>
+      <tbody>
         ${directoryListings.files?.map(
           (f) => html`
             <tr>

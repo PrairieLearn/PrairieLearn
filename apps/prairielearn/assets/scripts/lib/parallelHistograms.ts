@@ -22,7 +22,6 @@ export function parallelHistograms(
     ylabel?: string;
     topPadding?: number;
     rightPadding?: number;
-    ariaLabel?: string;
   },
 ) {
   if (data === undefined) data = JSON.parse(selector.dataset.histograms ?? '[]');
@@ -38,7 +37,6 @@ export function parallelHistograms(
     xAxisHeight: 70,
     topPadding: 15,
     rightPadding: 2,
-    ariaLabel: 'Parallel Histograms',
     ...options,
   };
 
@@ -74,8 +72,8 @@ export function parallelHistograms(
     .attr('width', totalWidth)
     .attr('height', totalHeight)
     .attr('class', 'center-block statsPlot')
-    .attr('role', 'img')
-    .attr('aria-label', resolvedOptions.ariaLabel);
+    // We are deliberately setting role="none" here as we do not have any meaningful information to expose to screen readers.
+    .attr('role', 'none');
 
   const verticalGridLinear = axisBottom(xLinear)
     .tickSize(-height)

@@ -129,7 +129,6 @@ export function InstructorAssessmentQuestionStatistics({
                     radius: 2,
                     topMargin: 30,
                     labels: rows.map((q) => q.assessment_question_number),
-                    ariaLabel: 'Question difficulty discrimination scatter plot',
                   })}"
                 ></div>
               </div>

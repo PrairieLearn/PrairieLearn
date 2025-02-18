@@ -18,7 +18,6 @@ export function histogram(
     rightMargin?: number;
     bottomMargin?: number;
     leftMargin?: number;
-    ariaLabel?: string;
   },
 ) {
   if (data === undefined) data = JSON.parse(selector.dataset.histogram ?? '[]');
@@ -40,7 +39,6 @@ export function histogram(
     rightMargin: 20,
     bottomMargin: 55,
     leftMargin: 70,
-    ariaLabel: 'Histogram',
     ...options,
   };
 
@@ -81,8 +79,8 @@ export function histogram(
     .attr('width', resolvedOptions.width)
     .attr('height', resolvedOptions.height)
     .attr('class', 'center-block statsPlot')
-    .attr('role', 'img')
-    .attr('aria-label', resolvedOptions.ariaLabel)
+    // We are deliberately setting role="none" here as we do not have any meaningful information to expose to screen readers.
+    .attr('role', 'none')
     .append('g')
     .attr('transform', `translate(${resolvedOptions.leftMargin},${resolvedOptions.topMargin})`);
 
