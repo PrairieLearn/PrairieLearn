@@ -370,13 +370,19 @@ small .user-output-invalid {
 }
 
 /* Styling for the side nav toggle button */
-.side-nav-toggler {
-  margin-right: 1rem;
+/* .side-nav-toggler {
+  margin-right: 0.5rem;
+  padding: 0.25rem 0.5rem;
 }
 
 .side-nav-toggle-icon {
   width: 1em;
   height: 1em;
+} */
+
+.side-nav-toggler {
+  margin-right: 0.75rem;
+  padding: 0.25rem 0.5rem;
 }
 
 /**

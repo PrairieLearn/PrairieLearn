@@ -59,7 +59,8 @@ export function Navbar({
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid">
         <button
-          class="navbar-toggler side-nav-toggler d-none d-md-inline-block"
+          id="side-nav-toggler"
+          class="navbar-toggler d-none d-md-inline-block side-nav-toggler"
           type="button"
           aria-expanded="false"
           aria-label="Toggle side nav"

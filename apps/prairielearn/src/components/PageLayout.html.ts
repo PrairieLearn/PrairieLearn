@@ -1,6 +1,7 @@
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 
+import { compiledScriptTag } from '../lib/assets.js';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.html.js';
@@ -12,6 +13,7 @@ import { SideNav } from './SideNav.html.js';
 
 export function PageLayout({
   resLocals,
+  reqSession,
   pageTitle,
   navContext,
   options = {},
@@ -22,6 +24,8 @@ export function PageLayout({
 }: {
   /** The locals object from the Express response. */
   resLocals: Record<string, any>;
+  /** The session object from the Express request */
+  reqSession?: Record<string, any>;
   /** The title of the page in the browser. */
   pageTitle: string;
   /** The information used to configure the navbar. */
@@ -85,13 +89,14 @@ export function PageLayout({
             pageTitle,
             pageNote: options.pageNote,
           })}
+          ${showSideNav ? compiledScriptTag('pageLayoutClient.ts') : ''}
           ${compiledStylesheetTag('pageLayout.css')} ${headContent}
         </head>
         <body
           ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
         >
-          <div class="app-container ${!showSideNav ? 'no-sidebar' : ''}">
+          <div id="app-container" class="app-container ${!showSideNav ? 'no-sidebar' : ''}">
             <div class="app-top-nav">
               ${Navbar({
                 resLocals,
@@ -103,7 +108,7 @@ export function PageLayout({
             </div>
             ${showSideNav
               ? html`
-                  <div class="app-side-nav">
+                  <div id="side-nav" class="app-side-nav">
                     ${SideNav({
                       resLocals,
                       page: navContext.page,
