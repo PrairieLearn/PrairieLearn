@@ -81,6 +81,7 @@ export function Navbar({
               navPage,
               navSubPage,
               navbarType,
+              isInPageLayout,
             })}
           </ul>
 
