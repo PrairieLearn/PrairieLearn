@@ -4,5 +4,6 @@
   "topic": "Element",
   "gradingMethod": "Manual",
   "tags": ["jonatan"],
-  "type": "v3"
+  "type": "v3",
+  "showCorrectAnswer": false
 }

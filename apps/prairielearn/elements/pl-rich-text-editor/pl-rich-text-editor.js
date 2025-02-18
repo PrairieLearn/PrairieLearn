@@ -147,7 +147,6 @@
       let contents = quill.editor?.isBlank?.()
         ? ''
         : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
-      if (contents && renderer) contents = renderer.makeMarkdown(contents);
       inputElement.val(
         btoa(
           he.encode(contents, {
