@@ -107,7 +107,7 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${resLocals.has_enhanced_navigation
+    ${resLocals.has_enhanced_navigation && isInPageLayout
       ? FlashMessages()
       : html`
           <div class="mb-3">
@@ -122,11 +122,13 @@ function NavbarByType({
   navPage,
   navSubPage,
   navbarType,
+  isInPageLayout,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage: NavSubPage;
   navbarType: NavbarType;
+  isInPageLayout?: boolean;
 }) {
   // Student and public navbars remain unchanged
   // when enhanced navigation is enabled.
@@ -135,7 +137,7 @@ function NavbarByType({
   } else if (navbarType === 'public') {
     return NavbarPublic({ resLocals });
   } else {
-    if (resLocals.has_enhanced_navigation) {
+    if (resLocals.has_enhanced_navigation && isInPageLayout) {
       return NavbarButtons({
         resLocals,
         navPage,
