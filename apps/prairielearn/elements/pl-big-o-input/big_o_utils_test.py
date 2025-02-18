@@ -1,6 +1,6 @@
 import big_o_utils as bou
+import prairielearn.sympy_utils as psu
 import pytest
-import python_helper_sympy as phs
 
 VARIABLES = ["n"]
 
@@ -13,7 +13,7 @@ ALL_GRADING_FUNCTIONS = [
 
 class TestBigOInput:
     @pytest.mark.parametrize(
-        "a_true, a_sub",
+        ("a_true", "a_sub"),
         [
             ("n**2", "n**2"),
             ("n**2", "n ** 2"),
@@ -34,7 +34,7 @@ class TestBigOInput:
         assert feedback == bou.CORRECT_UNCONDITIONAL_FEEDBACK
 
     @pytest.mark.parametrize(
-        "a_true, a_sub",
+        ("a_true", "a_sub"),
         [
             ("log(n)", "1*log(n)"),
             ("log(n)", "log(n-n+n)"),
@@ -56,7 +56,7 @@ class TestBigOInput:
         assert feedback == bou.CORRECT_COMPLEX_FEEDBACK
 
     @pytest.mark.parametrize(
-        "a_true, a_sub",
+        ("a_true", "a_sub"),
         [
             ("log(n)", "log(n)+log(log(n))"),
             ("log(n)", "log(n)+42"),
@@ -77,7 +77,7 @@ class TestBigOInput:
         assert "lower order" in feedback
 
     @pytest.mark.parametrize(
-        "a_true, a_sub",
+        ("a_true", "a_sub"),
         [
             ("1", "14"),
             ("1", "20"),
@@ -101,7 +101,7 @@ class TestBigOInput:
         assert "constant" in feedback
 
     @pytest.mark.parametrize(
-        "a_true, a_sub",
+        ("a_true", "a_sub"),
         [
             ("log(n)", "-log(n**2)"),
             ("log(n)", "-log(n**3)"),
@@ -123,7 +123,7 @@ class TestBigOInput:
         assert feedback == bou.NEGATIVE_FEEDBACK
 
     @pytest.mark.parametrize(
-        "a_true, a_sub",
+        ("a_true", "a_sub"),
         [
             ("log(n)", "n*log(n)"),
             ("log(n)", "n**2"),
@@ -147,7 +147,7 @@ class TestBigOInput:
         assert feedback == bou.TOO_LOOSE_FEEDBACK
 
     @pytest.mark.parametrize(
-        "a_true, a_sub",
+        ("a_true", "a_sub"),
         [
             ("n*log(n)", "log(n)"),
             ("n**2", "log(n)"),
@@ -171,7 +171,7 @@ class TestBigOInput:
         assert feedback == bou.TOO_LOOSE_FEEDBACK
 
     @pytest.mark.parametrize(
-        "a_true, a_sub",
+        ("a_true", "a_sub"),
         [
             ("log(n)", "1"),
             ("log(n)", "log(log(n))"),
@@ -199,7 +199,7 @@ class TestBigOInput:
         assert feedback == bou.INCORRECT_FEEDBACK
 
     @pytest.mark.parametrize(
-        "a_true, a_sub",
+        ("a_true", "a_sub"),
         [
             ("1", "log(n)"),
             ("log(log(n))", "log(n)"),
@@ -249,8 +249,8 @@ class TestExceptions:
         a_true = "n**2"
 
         # Test for invalid functions in student submission and solution
-        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidFunctionError)):
+        with pytest.raises((psu.HasInvalidSymbolError, psu.HasInvalidFunctionError)):
             grading_fn(a_true, a_sub, VARIABLES)
 
-        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidFunctionError)):
+        with pytest.raises((psu.HasInvalidSymbolError, psu.HasInvalidFunctionError)):
             grading_fn(a_sub, a_true, VARIABLES)

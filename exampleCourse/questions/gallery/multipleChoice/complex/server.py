@@ -17,7 +17,7 @@ def generate(data):
     v0x = v0 * math.cos(theta * math.pi / 180)
     v0y = v0 * math.sin(theta * math.pi / 180)
     # time in the air (s)
-    t = round(d / v0x)
+    t = d / v0x
     # height of the cliff (m)
     h = round(v0y * t + 0.5 * g * t**2, 3)
 
@@ -32,7 +32,7 @@ def generate(data):
     data["params"]["none"] = random.choice(["false", "true"])
 
     # this is the correct answer
-    data["params"]["t_c"] = t
+    data["params"]["t_c"] = round(t, 3)
     # these are the distractors
     data["params"]["t_x1"] = round(math.sqrt(2 * h / g), 3)
     data["params"]["t_x2"] = round(d / v0, 3)

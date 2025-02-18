@@ -4,11 +4,11 @@
 
 ## Quick overview
 
-Let's take a look at some of the features available when customizing your assessments. You can find more information about assessment configuration [here](../assessment.md).
+Let's take a look at some of the features available when customizing your assessments. You can find more information about assessment configuration [here](../assessment/index.md).
 
 The beginning of the `infoAssessment.json` usually looks like this:
 
-```json
+```json title="infoAssessment.json"
 {
   "uuid": "F11AD160-A99D-40AA-AC80-797A9E74ED43",
   "type": "Homework",
@@ -23,7 +23,7 @@ The beginning of the `infoAssessment.json` usually looks like this:
 
 There are two available options:
 
-```json
+```json title="infoAssessment.json"
 {
   "type": "Homework"
 }
@@ -31,17 +31,17 @@ There are two available options:
 
 and
 
-```json
+```json title="infoAssessment.json"
 {
   "type": "Exam"
 }
 ```
 
-#### Homework:
+#### Homework
 
 Every question added in the `infoAssessment.json` file will appear in the assessment. By default, the questions will appear in the same order they are entered in the `json` file. To shuffle the question, add the option:
 
-```json
+```json title="infoAssessment.json"
 {
   "shuffleQuestions": true
 }
@@ -49,11 +49,11 @@ Every question added in the `infoAssessment.json` file will appear in the assess
 
 Students can create new instances of the question with different variables (when questions are randomized). The grading scheme rewards repeated correct answers for the same question.
 
-#### Exam:
+#### Exam
 
 Option to randomly select questions that will appear in the Assessment, out of a list of questions in the `infoAssessment.json`. Order of questions is randomized. The title of the question is not displayed. For each exam instance, there is only one instance of the question and hence the variables are fixed. Students can retry questions for reduced points. To create "practice exams", where students can generate many instances of the same assessment, use:
 
-```json
+```json title="infoAssessment.json"
 {
   "multipleInstance": true
 }
@@ -65,7 +65,7 @@ There are many options to help customizing when and who should have access to yo
 
 There are two available options:
 
-```json
+```json title="infoAssessment.json"
 {
   "mode": "Public"
 }
@@ -73,7 +73,7 @@ There are two available options:
 
 and
 
-```json
+```json title="infoAssessment.json"
 {
   "mode": "Exam"
 }
@@ -81,7 +81,7 @@ and
 
 **Exam** is used when students are taking an assessment via CBTF (in-person or the online service starting in the Fall 2020). **Public** is used for all other cases, where students have access to the assessment via the internet using any device.
 
-## Examples:
+## Examples
 
 Before you start creating your assessments, make sure you have at least 4 questions inside your course. If you don't have that yet, copy some from the example course `XC 101` as we discussed in the previous lesson.
 
@@ -90,7 +90,7 @@ Before you start creating your assessments, make sure you have at least 4 questi
 - Use `"mode": "Public"`
 - Use `"type":"Homework"`
 - Questions appear in randomized order
-- Homework submitted at the deadline receive 100% credit. Homework submitted up to 4 days late receive 70% credit. Homework submitted at least 2 days before the deadline get 5% bonus.
+- Students submitting by the deadline receive 100% credit. Students submitting up to 4 days late are capped at 70% credit. If students earn 100% at least 2 days before the deadline, they'll receive an additional 5% bonus for a total of 105%. Learn more about credit in the [access control docs](https://prairielearn.readthedocs.io/en/latest/accessControl/#credit).
 - Include two zones: one for easy questions, where each question has `"maxPoints": 5` and another one for more advanced questions, with `"maxPoints": 3`
 
 [Assessment template](https://us.prairielearn.com/pl/course_instance/4970/assessment/2316937) from the Example Course
@@ -101,7 +101,7 @@ Before you start creating your assessments, make sure you have at least 4 questi
 - Use `"type":"Exam"`
 - Use `alternatives` to select questions out of a pre-defined set. For example:
 
-  ```json
+  ```json title="infoAssessment.json"
   {
     "questions": [
       {
@@ -134,9 +134,8 @@ When using [PrairieTest](https://us.prairietest.com/pt/docs/course/welcome) to s
 - Start from `Configuration 2`
 - Remove `startDate` and `endDate` from `allowAccess`. Instead use:
 
-  ```json
+  ```json title="infoAssessment.json"
   {
-    "mode": "Exam",
     "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
     "credit": 100
   }

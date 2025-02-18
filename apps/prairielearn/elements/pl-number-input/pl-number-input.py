@@ -75,7 +75,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     correct_answer = pl.get_float_attrib(element, "correct-answer", None)
     if correct_answer is not None:
         if name in data["correct_answers"]:
-            raise Exception("duplicate correct_answers variable name: %s" % name)
+            raise ValueError(f"duplicate correct_answers variable name: {name}")
         data["correct_answers"][name] = correct_answer
 
     custom_format = pl.get_string_attrib(element, "custom-format", None)
@@ -83,7 +83,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         try:
             _ = ("{:" + custom_format + "}").format(0)
         except ValueError:
-            raise Exception("invalid custom format: %s" % custom_format) from None
+            raise ValueError(f"invalid custom format: {custom_format}") from None
 
 
 def format_true_ans(
@@ -97,11 +97,19 @@ def format_true_ans(
             element, "comparison", ComparisonType, COMPARISON_DEFAULT
         )
 
+        # Correct answers may be specified as strings, so we need to convert them
+        # to numbers for formatting. See the note in `grade()` for why we cast to
+        # these specific types.
+        if np.iscomplexobj(correct_answer):
+            correct_answer = np.complex128(correct_answer)
+        else:
+            correct_answer = np.float64(correct_answer)
+
         if custom_format is not None:
             correct_answer = ("{:" + custom_format + "}").format(correct_answer)
         elif comparison is ComparisonType.RELABS:
             # FIXME: render correctly with respect to rtol and atol
-            correct_answer = "{:.12g}".format(correct_answer)
+            correct_answer = f"{correct_answer:.12g}"
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             correct_answer = pl.string_from_number_sigfig(correct_answer, digits=digits)
@@ -160,7 +168,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
     partial_score = data["partial_scores"].get(name, {"score": None})
     score = partial_score.get("score", None)
-    with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     if data["panel"] == "question":
@@ -194,42 +202,34 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
-                raise ValueError(
-                    "Attribute rtol = {:g} must be non-negative".format(rtol)
-                )
+                raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
-                raise ValueError(
-                    "Attribute atol = {:g} must be non-negative".format(atol)
-                )
+                raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
             info_params = {
                 "format": True,
                 "relabs": True,
-                "rtol": "{:g}".format(rtol),
-                "atol": "{:g}".format(atol),
+                "rtol": f"{rtol:g}",
+                "atol": f"{atol:g}",
             }
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "sigfig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 1)),
                 "digits_plural": digits > 1,
             }
         elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "decdig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 0)),
                 "digits_plural": digits > 1,
             }
@@ -295,11 +295,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
-        else:
-            if raw_submitted_answer is not None:
-                html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    raw_submitted_answer
-                )
+        elif raw_submitted_answer is not None:
+            html_params["raw_submitted_answer"] = pl.escape_unicode_string(
+                raw_submitted_answer
+            )
         # Add true answer to be able to display it in the submitted answer panel
         if show_correct_answer:
             html_params["correct_answer"] = format_true_ans(element, data, name)
@@ -341,7 +340,7 @@ def get_format_string(
         "allow_fractions": allow_fractions,
         "format_error_message": message,
     }
-    with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         return chevron.render(f, params).strip()
 
 
@@ -360,13 +359,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_answer = data["submitted_answers"].get(name, None)
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
         submitted_answer = blank_value
-    value, newdata = pl.string_fraction_to_number(
-        submitted_answer, allow_fractions, allow_complex
-    )
 
-    if value is not None:
+    res = pl.string_fraction_to_number(
+        submitted_answer, allow_fractions=allow_fractions, allow_complex=allow_complex
+    )
+    if res[0] is not None:
+        _, newdata = res
         data["submitted_answers"][name] = newdata["submitted_answers"]
     else:
+        _, newdata = res
         data["format_errors"][name] = get_format_string(
             allow_complex, allow_fractions, newdata["format_errors"]
         )
@@ -505,7 +506,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             # Get max error according to numpy.allclose()
-            eps = np.absolute(correct_answer) * rtol + atol
+            eps = np.absolute(correct_answer_converted) * rtol + atol
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])
         elif comparison is ComparisonType.SIGFIG:
@@ -514,7 +515,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             if correct_answer == 0:
                 n = digits - 1
             else:
-                n = -int(np.floor(np.log10(np.abs(correct_answer)))) + (digits - 1)
+                n = -int(np.floor(np.log10(np.abs(correct_answer_converted)))) + (
+                    digits - 1
+                )
             eps = 0.51 * (10**-n)
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])

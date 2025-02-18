@@ -1,5 +1,4 @@
 import math
-from typing import Optional
 
 import chevron
 import lxml.etree
@@ -17,7 +16,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     pl.check_attribs(element, [], [])
 
     # Parse hints from frontend
-    hints: list[tuple[int, int, Optional[str], str]] = []
+    hints: list[tuple[int, int, str | None, str]] = []
 
     # Use position so that hints appear in order if show-after-submission values are equal.
     for position, child in enumerate(element):
@@ -32,7 +31,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             hints.append((priority, position, hint_name, pl.inner_html(child)))
 
-        elif child.tag is lxml.etree.Comment:
+        elif isinstance(child, lxml.etree._Comment):
             continue
 
         else:
@@ -59,5 +58,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             hints_to_display.append(hint_dict)
 
-    with open("pl-hidden-hints.mustache", "r") as f:
+    with open("pl-hidden-hints.mustache") as f:
         return chevron.render(f, {"hints": hints_to_display}).strip()

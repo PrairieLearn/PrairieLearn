@@ -1,7 +1,7 @@
 import { differenceInMilliseconds } from 'date-fns';
 import { z } from 'zod';
 
-import { HtmlValue, html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
@@ -151,7 +151,7 @@ export function SubmissionPanel({
                                     ? html`
                                         <button
                                           type="button"
-                                          class="btn btn-xs text-info"
+                                          class="btn btn-xs btn-ghost"
                                           data-toggle="popover"
                                           data-content="${item.explanation_rendered}"
                                           data-html="true"
@@ -225,7 +225,7 @@ export function SubmissionPanel({
           </div>
           <button
             type="button"
-            class="btn btn-outline-secondary btn-sm ml-2 mr-2"
+            class="btn btn-outline-dark btn-sm ml-2 mr-2"
             data-submission-id="${submission.id}"
             data-toggle="modal"
             data-target="#submissionInfoModal-${submission.id}"
@@ -235,7 +235,7 @@ export function SubmissionPanel({
           </button>
           <button
             type="button"
-            class="expand-icon-container btn btn-outline-secondary btn-sm text-nowrap ${!expanded
+            class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap ${!expanded
               ? 'collapsed'
               : ''}"
             data-toggle="collapse"
@@ -254,7 +254,7 @@ export function SubmissionPanel({
             : ''}"
           data-submission-id="${submission.id}"
           id="submission-${submission.id}-body"
-          ${submissionHtml === undefined && question.type === 'Freeform'
+          ${question.type === 'Freeform'
             ? html`
                 data-dynamic-render-url="${renderUrlPrefix}/variant/${variant_id}/submission/${submission.id}"
               `

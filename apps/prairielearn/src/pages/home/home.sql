@@ -1,5 +1,20 @@
 -- BLOCK select_instructor_courses
 WITH
+  admin_institutions AS (
+    -- Note that we only consider institutions where the user is explicitly
+    -- added as an administrator. We do not include all institutions if the
+    -- user is a global administrator, as that would be a very long list.
+    --
+    -- Global admins can access institutions/courses via the admin pages.
+    SELECT
+      i.*
+    FROM
+      institutions AS i
+      JOIN institution_administrators AS ia ON (
+        ia.institution_id = i.id
+        AND ia.user_id = $user_id
+      )
+  ),
   example_courses AS (
     SELECT
       c.short_name,
@@ -14,12 +29,15 @@ WITH
             d.start_date DESC NULLS LAST,
             d.end_date DESC NULLS LAST,
             ci.id DESC
+        ) FILTER (
+          WHERE
+            ci.id IS NOT NULL
         ),
         '[]'::jsonb
       ) AS course_instances
     FROM
       pl_courses AS c
-      JOIN course_instances AS ci ON (
+      LEFT JOIN course_instances AS ci ON (
         ci.course_id = c.id
         AND ci.deleted_at IS NULL
       ),
@@ -172,3 +190,22 @@ ORDER BY
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,
   ci.id DESC;
+
+-- BLOCK select_admin_institutions
+-- Note that we only consider institutions where the user is explicitly
+-- added as an administrator. We do not include all institutions if the
+-- user is a global administrator, as that would be a very long list.
+--
+-- Global admins can access institutions/courses via the admin pages.
+SELECT
+  i.*
+FROM
+  institutions AS i
+  JOIN institution_administrators AS ia ON (
+    ia.institution_id = i.id
+    AND ia.user_id = $user_id
+  )
+ORDER BY
+  i.short_name,
+  i.long_name,
+  i.id;

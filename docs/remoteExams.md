@@ -2,20 +2,21 @@
 
 This page lists sample assessment configurations for remote exams, where students are not physically present in the same location as the proctors.
 
-_See the [Access control](accessControl.md) page for details on `allowAccess` rules._
+_See the [Access control](accessControl/index.md) page for details on `allowAccess` rules._
 
 ## Exams in a PrairieTest-managed testing center
 
 If you are using PrairieTest for remote proctoring then the access control should look like:
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "mode": "Exam",
-        "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
-        "credit": 100
+      "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
+      "credit": 100
     }
-],
+  ]
+}
 ```
 
 Some notes about this configuration:
@@ -28,21 +29,21 @@ Some notes about this configuration:
 Sometimes exams in a testing center ([see above](#exams-in-a-prairietest-managed-testing-center)) need to have a few students take the exam without PrairieTest proctoring, for example if they have missed the exam and need to take it later without proctoring. The access control for this should look like:
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "mode": "Exam",
-        "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
-        "credit": 100
+      "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
+      "credit": 100
     },
     {
-        "uids": ["student1@example.com", "student2@example.com"],
-        "mode": "Public",
-        "credit": 100,
-        "startDate": "2020-04-20T11:00:00",
-        "endDate": "2020-04-20T12:40:00",
-        "timeLimitMin": 90
+      "uids": ["student1@example.com", "student2@example.com"],
+      "credit": 100,
+      "startDate": "2020-04-20T11:00:00",
+      "endDate": "2020-04-20T12:40:00",
+      "timeLimitMin": 90
     }
-],
+  ]
+}
 ```
 
 Some notes about this configuration:
@@ -53,47 +54,55 @@ Some notes about this configuration:
 
 ## Synchronous, timed exams
 
-**We recommend that exams held outside a controlled testing center should be run using a synchronous, timed configuration.** Below is an example of an assessment configured to have students taking the exam at the same time with a time limit.
+!!! tip
+
+    We recommend that exams held outside a controlled testing center should be run using a synchronous, timed configuration.
+
+Below is an example of an assessment configured to have students taking the exam at the same time with a time limit.
 
 This configuration is good when:
 
 - Almost all students take the exam at the same time
-- Some students have accommodations, such as 1.5x time — **these students must be listed first in the access rules**
+- Some students have accommodations, such as 1.5x time
+
+  !!! warning
+
+        Students with custom accommodations must be listed *first* in the access rules for these to take effect.
+
 - Some students take the exam at a later "conflict" time, mainly because they are in a different timezone
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "uids": ["student1@example.com", "student2@example.com"],
-        "mode": "Public",
-        "credit": 100,
-        "startDate": "2020-04-20T11:00:00",
-        "endDate": "2020-04-20T12:40:00",
-        "timeLimitMin": 90,
-        "showClosedAssessment": false
+      "uids": ["student1@example.com", "student2@example.com"],
+      "credit": 100,
+      "startDate": "2020-04-20T11:00:00",
+      "endDate": "2020-04-20T12:40:00",
+      "timeLimitMin": 90,
+      "showClosedAssessment": false
     },
     {
-        "uids": ["student3@example.com", "student4@example.com"],
-        "mode": "Public",
-        "credit": 100,
-        "startDate": "2020-04-20T23:00:00",
-        "endDate": "2020-04-21T00:05:00",
-        "timeLimitMin": 60,
-        "showClosedAssessment": false
+      "uids": ["student3@example.com", "student4@example.com"],
+      "credit": 100,
+      "startDate": "2020-04-20T23:00:00",
+      "endDate": "2020-04-21T00:05:00",
+      "timeLimitMin": 60,
+      "showClosedAssessment": false
     },
     {
-        "mode": "Public",
-        "credit": 100,
-        "startDate": "2020-04-20T11:00:00",
-        "endDate": "2020-04-20T12:05:00",
-        "timeLimitMin": 60,
-        "showClosedAssessment": false
+      "credit": 100,
+      "startDate": "2020-04-20T11:00:00",
+      "endDate": "2020-04-20T12:05:00",
+      "timeLimitMin": 60,
+      "showClosedAssessment": false
     },
     {
-        "active": false,
-        "showClosedAssessment": false
+      "active": false,
+      "showClosedAssessment": false
     }
-],
+  ]
+}
 ```
 
 Some notes about this configuration:
@@ -115,33 +124,38 @@ This configuration is good when:
 
 - Students can choose when to take the exam over a long period (typically about 24 hours)
 - Once a student starts working on the exam, they have limited time (1 hour in the example below)
-- Some students have accommodations, such as 1.5x time — **these students must be listed first in the access rules**
+- Some students have accommodations, such as 1.5x time
+
+  !!! warning
+
+        Students with custom accommodations must be listed *first* in the access rules for these to take effect.
+
 - There is no need for conflict exams because students can choose their own time
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "uids": ["student1@example.com", "student2@example.com"],
-        "mode": "Public",
-        "credit": 100,
-        "startDate": "2020-04-20T06:00:00",
-        "endDate": "2020-04-21T06:00:00",
-        "timeLimitMin": 90,
-        "showClosedAssessment": false
+      "uids": ["student1@example.com", "student2@example.com"],
+      "credit": 100,
+      "startDate": "2020-04-20T06:00:00",
+      "endDate": "2020-04-21T06:00:00",
+      "timeLimitMin": 90,
+      "showClosedAssessment": false
     },
     {
-        "mode": "Public",
-        "credit": 100,
-        "startDate": "2020-04-20T06:00:00",
-        "endDate": "2020-04-21T06:00:00",
-        "timeLimitMin": 60,
-        "showClosedAssessment": false
+      "credit": 100,
+      "startDate": "2020-04-20T06:00:00",
+      "endDate": "2020-04-21T06:00:00",
+      "timeLimitMin": 60,
+      "showClosedAssessment": false
     },
     {
-        "active": false,
-        "showClosedAssessment": false
+      "active": false,
+      "showClosedAssessment": false
     }
-],
+  ]
+}
 ```
 
 Some notes about this configuration:
@@ -161,45 +175,44 @@ This configuration is good when:
 - The exam only contains multiple-choice questions or very simple numeric questions. More complex questions need to allow students multiple attempts, which this configuration disables by turning off real-time grading.
 
 ```json
-"allowRealTimeGrading": false,
-"allowAccess": [
+{
+  "allowRealTimeGrading": false,
+  "allowAccess": [
     {
-        "uids": ["student1@example.com", "student2@example.com"],
-        "mode": "Public",
-        "credit": 100,
-        "startDate": "2020-04-20T11:00:00",
-        "endDate": "2020-04-20T12:40:00",
-        "timeLimitMin": 90,
-        "showClosedAssessment": false
+      "uids": ["student1@example.com", "student2@example.com"],
+      "credit": 100,
+      "startDate": "2020-04-20T11:00:00",
+      "endDate": "2020-04-20T12:40:00",
+      "timeLimitMin": 90,
+      "showClosedAssessment": false
     },
     {
-        "mode": "Public",
-        "credit": 100,
-        "startDate": "2020-04-20T11:00:00",
-        "endDate": "2020-04-20T12:10:00",
-        "timeLimitMin": 60,
-        "showClosedAssessment": false
+      "credit": 100,
+      "startDate": "2020-04-20T11:00:00",
+      "endDate": "2020-04-20T12:10:00",
+      "timeLimitMin": 60,
+      "showClosedAssessment": false
     },
     {
-        "uids": ["student3@example.com", "student4@example.com"],
-        "mode": "Public",
-        "credit": 100,
-        "startDate": "2020-04-20T23:00:00",
-        "endDate": "2020-04-21T00:10:00",
-        "timeLimitMin": 60,
-        "showClosedAssessment": false
+      "uids": ["student3@example.com", "student4@example.com"],
+      "credit": 100,
+      "startDate": "2020-04-20T23:00:00",
+      "endDate": "2020-04-21T00:10:00",
+      "timeLimitMin": 60,
+      "showClosedAssessment": false
     },
     {
-        "active": false,
-        "showClosedAssessment": false
+      "active": false,
+      "showClosedAssessment": false
     }
-],
+  ]
+}
 ```
 
 Some notes about this configuration:
 
 - All of the the [notes above for synchronous, timed exams](#synchronous-timed-exams) still apply.
-- The only change between this configuration and the [synchronous, timed](#synchronous-timed-exams) configuration above is the addition of the `"allowRealTimeGrading": false`. [Disabling real-time grading](assessment.md#disabling-real-time-grading) will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden.
+- The only change between this configuration and the [synchronous, timed](#synchronous-timed-exams) configuration above is the addition of the `"allowRealTimeGrading": false`. [Disabling real-time grading](assessment/index.md#disabling-real-time-grading) will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden.
 - When they are doing the exam, students can save answers to a question as many times as they like. When the exam finishes, the most recent saved answer for each question (if any) will be graded. Any earlier saved answers will be ignored.
 - With this configuration students will never see their grading results for specific questions. This is because `"allowRealTimeGrading": false` disallows grading _during_ the exam, and `"showClosedAssessment": false` hides per-question grading results _after_ the exam is over.
 - To prevent students from seeing their total exam score as soon as the exam is over, set `"showClosedAssessmentScore": false`, otherwise the students will see their total score (even if the per-question score is hidden).

@@ -2,7 +2,7 @@ import copy
 import os
 import warnings
 from itertools import chain
-from typing import Any, cast
+from typing import Any
 
 import chevron
 import lxml.etree
@@ -15,39 +15,46 @@ DIRECTORY_CHOICE_DEFAULT = "serverFilesCourse"
 LOG_TAG_WARNINGS_DEFAULT = True
 
 # These elements should be display only
-ALLOWED_PL_TAGS = frozenset(
-    (
-        "pl-template",
-        "pl-variable",
-        "pl-code",
-        "pl-card",
-        "pl-figure",
-        "pl-file-download",
-        "pl-matrix-latex",
-    )
-)
+ALLOWED_PL_TAGS = frozenset((
+    "pl-template",
+    "pl-variable",
+    "pl-code",
+    "pl-card",
+    "pl-figure",
+    "pl-file-download",
+    "pl-matrix-latex",
+))
 
 # Entries from the data dict to copy
 DATA_ENTRIES_TO_COPY = ("params",)
 
 
 def check_tags(element_html: str) -> None:
-    element_list = cast(list, lxml.html.fragments_fromstring(element_html))
+    element_list = lxml.html.fragments_fromstring(element_html)
 
     # First element can be a string, remove since there's nothing to check.
     if isinstance(element_list[0], str):
         element_list.pop(0)
 
-    for e in chain.from_iterable(element.iter() for element in element_list):
-        if e.tag is not lxml.etree.Comment:
-            is_tag_invald = (
-                e.tag.startswith("pl-") and e.tag not in ALLOWED_PL_TAGS
-            ) or e.tag == "markdown"
+    for e in chain.from_iterable(
+        element.iter()
+        for element in element_list
+        if isinstance(element, lxml.html.HtmlElement)
+    ):
+        if isinstance(e, lxml.etree._Comment):
+            continue
 
-            if is_tag_invald:
-                warnings.warn(
-                    f'Element "{e.tag}" may not work correctly when used inside of "pl-template" element.'
-                )
+        is_tag_invald = (
+            isinstance(e.tag, str)
+            and e.tag.startswith("pl-")
+            and e.tag not in ALLOWED_PL_TAGS
+        ) or e.tag == "markdown"
+
+        if is_tag_invald:
+            warnings.warn(
+                f'Element "{e.tag}" may not work correctly when used inside of "pl-template" element.',
+                stacklevel=2,
+            )
 
 
 def get_file_path(element: lxml.html.HtmlElement, data: pl.QuestionData) -> str:
@@ -111,8 +118,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     f'pl-variable "{name}" must have at most one of file-name or its inner html defined'
                 )
 
-            elif has_template_file:
-                with open(get_file_path(child, data), "r") as f:
+            if has_template_file:
+                with open(get_file_path(child, data)) as f:
                     variable_dict[name] = f.read()
 
             else:
@@ -121,7 +128,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if pl.get_boolean_attrib(child, "trim-whitespace", TRIM_WHITESPACE_DEFAULT):
                 variable_dict[name] = variable_dict[name].strip()
 
-        elif child.tag is lxml.etree.Comment:
+        elif isinstance(child, lxml.etree._Comment):
             continue
 
         else:
@@ -137,7 +144,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "log-tag-warnings", LOG_TAG_WARNINGS_DEFAULT
     )
 
-    with open(get_file_path(element, data), "r") as f:
+    with open(get_file_path(element, data)) as f:
         res = chevron.render(f, variable_dict, warn=log_variable_warnings)
 
     if log_tag_warnings:

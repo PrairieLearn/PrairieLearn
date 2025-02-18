@@ -71,6 +71,7 @@ yarn-error.log
 ## Programming languages
 
 ### Python
+.venv/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -107,3 +108,9 @@ packages/*/coverage
 ## Question HTML snapshots
 /new-renderer/
 /old-renderer/
+
+## d2 cache
+.cache
+
+## v8 crash reports
+isolate-*-v8.log

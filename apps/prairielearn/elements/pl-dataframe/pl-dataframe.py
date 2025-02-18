@@ -1,6 +1,5 @@
 import pprint
 from enum import Enum
-from typing import cast
 
 import chevron
 import lxml.html
@@ -14,6 +13,9 @@ class DisplayLanguage(Enum):
     R = 2
 
 
+# Taken from: https://docs.python.org/3/library/string.html#format-specification-mini-language
+VALID_PRESENTATION_TYPES = {"e", "E", "f", "F", "g", "G", "n", "%"}
+
 SHOW_HEADER_DEFAULT = True
 SHOW_INDEX_DEFAULT = True
 SHOW_DIMENSIONS_DEFAULT = True
@@ -23,11 +25,12 @@ SHOW_DTYPE_DEFAULT = False
 NUM_DIGITS_DEFAULT = None
 SHOW_PYTHON_DEFAULT = True
 WIDTH_DEFAULT = 500
+PRESENTATION_TYPE_DEFAULT = "g"
 
 
 def convert_pandas_dtype_to_r(s: pd.Series) -> str:
     # Force series to avoid odd element-wise output
-    s.dtype
+    _ = s.dtype
 
     if pd.api.types.is_float_dtype(s):
         return "numeric"
@@ -77,6 +80,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "display-variable-name",
             "digits",
             "width",
+            "presentation-type",
         ],
     )
 
@@ -101,6 +105,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
 
     num_digits = pl.get_integer_attrib(element, "digits", NUM_DIGITS_DEFAULT)
+    presentation_type = pl.get_string_attrib(
+        element, "presentation-type", PRESENTATION_TYPE_DEFAULT
+    )
 
     width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
 
@@ -109,13 +116,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             f'Could not find "{varname}" in params. Please double check the parameter name is spelled correctly.'
         )
 
+    if presentation_type not in VALID_PRESENTATION_TYPES:
+        raise ValueError(
+            f'Invalid presentation type "{presentation_type}", must be one of {VALID_PRESENTATION_TYPES}.'
+        )
+
     # Always assume that entry in params dict is serialized dataframe
     frame = pl.from_json(data["params"][varname])
 
     if not isinstance(frame, pd.DataFrame):
-        raise ValueError(f"Parameter name '{varname}' does not encode a dataframe.")
-
-    frame = cast(pd.DataFrame, frame)
+        raise TypeError(f'Parameter name "{varname}" does not encode a dataframe.')
 
     frame_style = frame.style
 
@@ -123,13 +133,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     integer_column_names = frame.select_dtypes(include="int").columns
     frame_style.format(subset=integer_column_names, thousands=",")
 
-    if num_digits is not None:
-        # Get headers for all floating point columns and style them to use the desired number of sig figs.
-        float_column_names = frame.select_dtypes(include="float").columns
+    # Generate format string
+    if num_digits is None:
+        format_str = f"{{:{presentation_type}}}"
+    else:
+        # This format string displays the specified number of digits
+        format_str = f"{{:.{num_digits}{presentation_type}}}"
 
-        # This format string displays the desired number of digits, as given by the instructor
-        # Switches between exponential and decimal notation as needed
-        frame_style.format(subset=float_column_names, formatter=f"{{:.{num_digits}g}}")
+    # Get headers for all floating point columns and style them to use the desired number of digits.
+    float_column_names = frame.select_dtypes(include="float").columns
+    frame_style.format(subset=float_column_names, formatter=format_str)
 
     if show_dtype:
         if display_language is DisplayLanguage.PYTHON:
@@ -143,9 +156,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             ["dtype"], axis="index", copy=False
         )
         other = descriptors.style.map(lambda v: "font-weight: bold;")  # type: ignore
-        frame_style.set_table_styles(
-            [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
-        )
+        frame_style.set_table_styles([
+            {"selector": ".foot_row0", "props": "border-top: 1px solid black;"}
+        ])
         frame_style.concat(other)
 
     if not show_header:
@@ -161,7 +174,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Might be worth moving everything out of the CSS file and handle it all with the builtin styler.
     frame_style.set_table_attributes("class=pl-dataframe-table")
 
-    html_params = {
+    html_params: dict[str, str | bool | int] = {
         "uuid": pl.get_uuid(),
         "frame_html": frame_style.to_html(),
         "code_string": pprint.pformat(
@@ -174,5 +187,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if show_dimensions:
         html_params["num_rows"], html_params["num_cols"] = frame.shape
 
-    with open("pl-dataframe.mustache", "r", encoding="utf-8") as f:
+    with open("pl-dataframe.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

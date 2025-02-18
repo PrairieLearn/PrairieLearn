@@ -1,10 +1,18 @@
-import * as sqldb from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { CourseData } from '../course-db.js';
+import { AssessmentModuleSchema } from '../../lib/db-types.js';
+import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
-import { makePerformance } from '../performance.js';
 
-const perf = makePerformance('assessmentModules');
+import { determineOperationsForEntities } from './entity-list.js';
+
+const sql = loadSqlEquiv(import.meta.url);
+
+interface DesiredAssessmentModule {
+  name: string;
+  // TODO: make non-nullable once we make this non-null in the database schema.
+  heading: string | null;
+}
 
 export async function sync(courseId: string, courseData: CourseData) {
   // We can only safely remove unused assessment modules if both `infoCourse.json`
@@ -15,13 +23,6 @@ export async function sync(courseId: string, courseData: CourseData) {
   });
   const deleteUnused = isInfoCourseValid && areAllInfoAssessmentsValid;
 
-  let courseAssessmentModules: string[] = [];
-  if (!infofile.hasErrors(courseData.course)) {
-    courseAssessmentModules = (courseData.course.data?.assessmentModules ?? []).map((u) =>
-      JSON.stringify([u.name, u.heading]),
-    );
-  }
-
   const knownAssessmentModuleNames = new Set<string>();
   Object.values(courseData.courseInstances).forEach((ci) => {
     Object.values(ci.assessments).forEach((a) => {
@@ -30,15 +31,70 @@ export async function sync(courseId: string, courseData: CourseData) {
       }
     });
   });
-  const assessmentModuleNames = [...knownAssessmentModuleNames];
 
-  perf.start('sproc:sync_assessment_modules');
-  await sqldb.callOneRowAsync('sync_assessment_modules', [
+  const existingAssessmentModules = await queryRows(
+    sql.select_assessment_modules,
+    { course_id: courseId },
+    AssessmentModuleSchema,
+  );
+
+  // Based on the set of desired assessment modules, determine which ones must be
+  // added, updated, or deleted.
+  const {
+    entitiesToCreate: assessmentModulesToCreate,
+    entitiesToUpdate: assessmentModulesToUpdate,
+    entitiesToDelete: assessmentModulesToDelete,
+  } = determineOperationsForEntities<DesiredAssessmentModule>({
+    courseEntities: courseData.course.data?.assessmentModules ?? [],
+    extraEntities: [
+      {
+        name: 'Default',
+        heading: 'Default module',
+        implicit: true,
+      },
+    ],
+    existingEntities: existingAssessmentModules,
+    knownNames: knownAssessmentModuleNames,
+    makeImplicitEntity: (name) => ({
+      name,
+      heading: `${name} (Auto-generated from use in an assessment; add this assessment module to your infoCourse.json file to customize)`,
+      implicit: true,
+    }),
+    comparisonProperties: ['heading'],
     isInfoCourseValid,
     deleteUnused,
-    courseAssessmentModules,
-    assessmentModuleNames,
-    courseId,
-  ]);
-  perf.end('sproc:sync_assessment_modules');
+  });
+
+  if (
+    assessmentModulesToCreate.length ||
+    assessmentModulesToUpdate.length ||
+    assessmentModulesToDelete.length
+  ) {
+    await runInTransactionAsync(async () => {
+      if (assessmentModulesToCreate.length) {
+        await queryAsync(sql.insert_assessment_modules, {
+          course_id: courseId,
+          modules: assessmentModulesToCreate.map((am) =>
+            JSON.stringify([am.name, am.heading, am.number, am.implicit]),
+          ),
+        });
+      }
+
+      if (assessmentModulesToUpdate.length) {
+        await queryAsync(sql.update_assessment_modules, {
+          course_id: courseId,
+          modules: assessmentModulesToUpdate.map((am) =>
+            JSON.stringify([am.name, am.heading, am.number, am.implicit]),
+          ),
+        });
+      }
+
+      if (assessmentModulesToDelete.length) {
+        await queryAsync(sql.delete_assessment_modules, {
+          course_id: courseId,
+          modules: assessmentModulesToDelete,
+        });
+      }
+    });
+  }
 }

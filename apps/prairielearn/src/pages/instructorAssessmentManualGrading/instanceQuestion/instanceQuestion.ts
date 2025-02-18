@@ -14,7 +14,11 @@ import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/que
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
-import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html.js';
+import {
+  type GradingJobData,
+  GradingJobDataSchema,
+  InstanceQuestion,
+} from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 const router = express.Router();
@@ -36,7 +40,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
   resLocals.manualGradingInterface = true;
-  await getAndRenderVariant(variant_with_submission_id, null, resLocals);
+  await getAndRenderVariant(variant_with_submission_id, null, resLocals as any);
 
   let conflict_grading_job: GradingJobData | null = null;
   if (query.conflict_grading_job_id) {
@@ -73,19 +77,22 @@ router.get(
 router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
+    const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
-      question_id: res.locals.question.id,
-      instance_question_id: res.locals.instance_question.id,
+      question: res.locals.question,
+      instance_question: res.locals.instance_question,
       variant_id: req.params.variant_id,
-      user_id: res.locals.user.user_id,
+      user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'manual_grading',
-      csrfToken: null,
-      authorizedEdit: null,
+      // This is only used by score panels, which are not rendered in this context.
+      authorizedEdit: false,
+      // The score panels never need to be live-updated in this context.
       renderScorePanels: false,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
     });
-    res.send({ submissionPanel, extraHeadersHtml });
+    res.json(panels);
   }),
 );
 

@@ -77,11 +77,6 @@ export async function init() {
       intervalSec: 'daily',
     },
     {
-      name: 'externalGraderLoad',
-      module: await import('./externalGraderLoad.js'),
-      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
-    },
-    {
       name: 'serverLoad',
       module: await import('./serverLoad.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,
@@ -122,6 +117,12 @@ export async function init() {
   ];
 
   if (isEnterprise()) {
+    jobs.push({
+      name: 'externalGraderLoad',
+      module: await import('../ee/cron/externalGraderLoad.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
+    });
+
     jobs.push({
       name: 'workspaceHostLoads',
       module: await import('../ee/cron/workspaceHostLoads.js'),
@@ -387,9 +388,9 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
 async function runJob(job: CronJob, cronUuid: string) {
   debug(`runJob(): ${job.name}`);
   logger.verbose('cron: starting ' + job.name, { cronUuid });
-  const startTime = Date.now();
+  const startTime = performance.now();
   await job.module.run();
-  const endTime = Date.now();
+  const endTime = performance.now();
   const elapsedTimeMS = endTime - startTime;
   debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
   logger.verbose('cron: ' + job.name + ' success', {

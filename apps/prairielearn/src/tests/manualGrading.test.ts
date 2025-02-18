@@ -16,7 +16,7 @@ import {
   setUser,
   parseInstanceQuestionId,
   saveOrGrade,
-  User,
+  type User,
   assertAlert,
 } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -1025,9 +1025,8 @@ describe('Manual Grading', function () {
           body: new URLSearchParams({
             __action: 'set_time_limit_all',
             __csrf_token: token,
-            plus_minus: 'unlimited',
+            action: 'unlimited',
             time_add: '0',
-            time_ref: 'minutes',
             reopen_closed: 'on',
           }).toString(),
         });

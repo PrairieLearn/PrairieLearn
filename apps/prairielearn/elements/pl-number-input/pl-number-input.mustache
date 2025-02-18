@@ -17,7 +17,8 @@
           size="{{size}}"
           {{^editable}}disabled{{/editable}}
           {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-          aria-describedby="pl-integer-input-{{uuid}}-label pl-number-input-{{uuid}}-suffix"
+          aria-describedby="pl-number-input-{{uuid}}-suffix"
+          aria-labelledby="pl-number-input-{{uuid}}-label"
           placeholder="{{placeholder}}" />
 
           <span class="input-group-append">
@@ -25,22 +26,22 @@
             <span class="input-group-text" id="pl-number-input-{{uuid}}-suffix">{{suffix}}</span>
             {{/suffix}}
             {{#show_info}}
-              <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="{{popup_title}}" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+              <button type="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="{{popup_title}}" data-content="{{info}}" data-placement="auto">
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
-              </a>
+              </button>
             {{/show_info}}
             {{#parse_error}}
-                 <a role="button"
-                   class="btn btn-light border d-flex align-items-center text-danger"
-                   data-toggle="popover"
-                   data-html="true"
-                   title="Format Error"
-                   data-placement="auto"
-                   data-trigger="focus"
-                   tabindex="0"
-                   data-content="{{parse_error}}">
+                 <button
+                    type="button"
+                    class="btn btn-light border d-flex align-items-center text-danger"
+                    data-toggle="popover"
+                    data-html="true"
+                    title="Format Error"
+                    data-placement="auto"
+                    data-content="{{parse_error}}"
+                >
                     <span class="mr-1">Invalid </span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-                </a>
+                </button>
             {{/parse_error}}
             {{#show_score}}
                 {{#correct}}
@@ -74,15 +75,15 @@
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
-    <a href="javascript:void(0);" role="button" class="badge text-danger badge-invalid btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i></a>
+    <button type="button" class="badge text-danger badge-invalid btn btn-sm btn-secondary small border" data-placement="auto" data-toggle="popover" data-html="true" title="Format Error" data-content="{{parse_error}}"> Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i></button>
 {{/parse_error}}
 {{#missing_input}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
 
     <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
 
-    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Missing Input" tabindex="0" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
-    </a>
+    <button type="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-toggle="popover" data-html="true" title="Missing Input" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </button>
 {{/missing_input}}
 
 </span>

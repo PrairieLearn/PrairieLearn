@@ -27,9 +27,9 @@ def graphviz_from_networkx(
 
     networkx_graph = pl.from_json(data["params"][input_param_name])
 
-    G = nx.nx_agraph.to_agraph(networkx_graph)
+    graph = nx.nx_agraph.to_agraph(networkx_graph)
 
-    return G.string()
+    return graph.string()
 
 
 def graphviz_from_adj_matrix(
@@ -97,18 +97,18 @@ def graphviz_from_adj_matrix(
 
     # Create pygraphviz graph representation
 
-    G = pygraphviz.AGraph(directed=directed)
-    G.add_nodes_from(mat_label)
+    graph = pygraphviz.AGraph(directed=directed)
+    graph.add_nodes_from(mat_label)
 
-    for in_node, row in zip(mat_label, mat):
-        for out_node, x in zip(mat_label, row):
+    for in_node, row in zip(mat_label, mat, strict=True):
+        for out_node, x in zip(mat_label, row, strict=True):
             # If showing negative weights, show every entry that is not None
             # Otherwise, only show positive weights
             if x is None or (not negative_weights and x <= 0.0):
                 continue
 
             if show_weights:
-                G.add_edge(
+                graph.add_edge(
                     out_node,
                     in_node,
                     label=pl.string_from_2darray(
@@ -116,9 +116,9 @@ def graphviz_from_adj_matrix(
                     ),
                 )
             else:
-                G.add_edge(out_node, in_node)
+                graph.add_edge(out_node, in_node)
 
-    return G.string()
+    return graph.string()
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -192,8 +192,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Only apply ignore filter if we enable hiding warnings
         if not log_warnings:
             warnings.simplefilter("ignore")
-        svg = translated_dotcode.draw(format="svg", prog=engine).decode(
-            "utf-8", "strict"
-        )
+
+        svg_bytes = translated_dotcode.draw(format="svg", prog=engine)
+        if svg_bytes is None:
+            raise TypeError("Graph was not returned.")
+        svg = svg_bytes.decode("utf-8", "strict")
 
     return f'<div class="pl-graph">{svg}</div>'

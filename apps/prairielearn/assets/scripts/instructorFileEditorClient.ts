@@ -5,6 +5,8 @@ import * as prettier from 'prettier/standalone';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import { configureAceBasePaths } from './lib/ace.js';
+
 /**
  * Given an Ace cursor position (consisting of a row and column) and the lines
  * of the document, returns a cursor offset from the start of the document.
@@ -44,7 +46,7 @@ class InstructorFileEditor {
     element,
     saveElement,
     aceMode,
-    readOnly,
+    readOnly = false,
     contents,
     diskContents,
   }: {
@@ -69,11 +71,11 @@ class InstructorFileEditor {
       autoScrollEditorIntoView: true,
       wrap: true,
       showPrintMargin: false,
-      mode: aceMode || undefined,
+      mode: aceMode ?? 'ace/mode/text',
       readOnly,
       enableKeyboardAccessibility: true,
       theme: 'ace/theme/chrome',
-    });
+    } satisfies Partial<ace.Ace.EditorOptions>);
 
     this.setEditorContents(contents ? this.b64DecodeUnicode(contents) : '');
     this.diskContents = diskContents ? this.b64DecodeUnicode(diskContents) : '';
@@ -180,15 +182,7 @@ class InstructorFileEditor {
 }
 
 onDocumentReady(() => {
-  // ace loads modes/themes dynamically as needed, but its unable to identify
-  // the base path implicitly when using compiled assets. We explicitly set the
-  // base path for modes/themes here based on the meta tag set in the document,
-  // which is computed server-side based on the asset path for the ace-builds
-  // module.
-  const aceBasePath = document.querySelector('meta[name="ace-base-path"]')?.getAttribute('content');
-  ace.config.set('modePath', aceBasePath);
-  ace.config.set('workerPath', aceBasePath);
-  ace.config.set('themePath', aceBasePath);
+  configureAceBasePaths();
 
   const draftEditorElement = document.querySelector<HTMLElement>('#file-editor-draft');
   const diskEditorElement = document.querySelector<HTMLElement>('#file-editor-disk');
