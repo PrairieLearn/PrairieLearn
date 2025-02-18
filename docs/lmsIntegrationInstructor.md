@@ -24,7 +24,7 @@ go to "Settings" in the left-hand menu, then choose the "Navigation" tab and fin
 PrairieLearn in the list of hidden items. Drag PrairieLearn to the top visible list and
 click Save. When the page reloads, you should see PrairieLearn in your Canvas course left menu.
 
-If PrairieLearn is not listed under "Settings" / "Navigation" then it needs to be enabled for your university. Please email support@prairielearn.com to get it set up.
+If PrairieLearn is not listed under "Settings" / "Navigation" then it needs to be enabled for your university. Please email <support@prairielearn.com> to get it set up.
 
 The next step is to setup a connection between the Canvas course and a PrairieLearn course
 instance. As a Canvas Teacher, click the PrairieLearn left menu link. You will be presented
