@@ -283,7 +283,7 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
         case 'correct-answer':
           if (val.match(mustacheTemplateExtractorRegex)) {
             errors.push(
-              "pl-integer-input: correct-answer must be a static integer, not dynamically generated in `server.py`. If the correct answer depends on internal parameters, simply set `data['correct_answers']` accordingly and remove this attribute.",
+              "pl-integer-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
             );
           }
           break;
