@@ -4,7 +4,7 @@ Now that you have access to your course in [https://us.prairielearn.com](https:/
 
 This is a view of your course home page (or a similar variation, depending on when your course was originally created):
 
-![](start-guide/homepage.png)
+![Screenshot of the menu bar for the course home page](start-guide/homepage.png)
 
 This tutorial will show you how to create:
 
@@ -55,7 +55,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - go to the `Questions` tab. Your questions page should be similar to the example below:
 
-![](start-guide/question_tab.png)
+![Screenshot of the question tab](start-guide/question_tab.png)
 
 - click the button `Add question`.
 
@@ -207,7 +207,7 @@ Once you find a question that you want to use as template, you can follow these 
 
 - That is it! You are now viewing a copy of the question inside your course. You can modify the question following the steps from the section above.
 
-### Copying questions from www.prairielearn.com
+### Copying questions from `www.prairielearn.com`
 
 - Go to <https://www.prairielearn.com/catalog/questions>
 
