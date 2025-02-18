@@ -281,6 +281,10 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
           break;
         // string inputs are valid as strings, and these don't affect other tags, so no validation required
         case 'correct-answer':
+          if (val.match(mustacheTemplateExtractorRegex)){
+            errors.push(`pl-integer-input: correct-answer must be a static floating-point number, not dynamically generated in \`server.py\`. If the correct answer depends on internal parameters, simply set \`data[\'correct_answers\']\` accordingly and remove this attribute.`)
+          }
+          break;
         case 'label':
         case 'suffix':
         case 'placeholder':
@@ -340,6 +344,9 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
           break;
         case 'correct-answer':
           assertFloat('pl-number-input', key, val, errors);
+          if (val.match(mustacheTemplateExtractorRegex)){
+            errors.push(`pl-number-input: correct-answer must be a static floating-point number, not dynamically generated in \`server.py\`. If the correct answer depends on internal parameters, simply set \`data[\'correct_answers\']\` accordingly and remove this attribute.`)
+          }
           break;
         case 'label':
         case 'suffix':
@@ -607,12 +614,7 @@ function dfsCheckParseTree(
     for (const child of ast.childNodes) {
       const childResult = dfsCheckParseTree(child, optimistic);
       errors = errors.concat(childResult.errors);
-      childResult.mandatoryPythonCorrectAnswers?.forEach((x) => {
-        if (mandatoryPythonCorrectAnswers.has(x)) {
-          errors.push(`Duplicate \`answers-name\`: ${x}. Please deduplicate.`);
-        }
-        mandatoryPythonCorrectAnswers.add(x);
-      });
+      childResult.mandatoryPythonCorrectAnswers?.forEach((x) => mandatoryPythonCorrectAnswers.add(x),);
     }
   }
 

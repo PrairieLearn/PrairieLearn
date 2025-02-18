@@ -261,7 +261,7 @@ export async function generateQuestion({
     
     You should provide the following input methods for students to answer: ${promptUserInput}
     
-    To calculate the right answer, you should: ${promptGrading}. Do NOT display the method to calculate the correct answer in your \`question.html\` unless otherwise requested.`;
+    To calculate the right answer, you should: ${promptGrading}.`;
 
     job.info(`prompt is ${userPrompt}`);
 
@@ -271,7 +271,7 @@ export async function generateQuestion({
 ${promptPreamble(context)}
 # Prompt
 
-A user will now request your help in creating a question. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
+A user will now request your help in creating a question. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization). In their prompt, they may explain how to calculate the correct answer; this is just for the backend. Do NOT display the method to calculate the correct answer in your \`question.html\` unless otherwise requested.
 
 Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.`;
 
