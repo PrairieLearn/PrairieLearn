@@ -348,7 +348,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
           assertFloat('pl-number-input', key, val, errors);
           if (val.match(mustacheTemplateExtractorRegex)) {
             errors.push(
-              "pl-number-input: correct-answer must be a static floating-point number, not dynamically generated in `server.py`. If the correct answer depends on internal parameters, simply set `data['correct_answers']` accordingly and remove this attribute.",
+              "pl-number-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
             );
           }
           break;
