@@ -52,9 +52,7 @@
       "url": "/apps/prairielearn/src/schemas/schemas/infoQuestion.json"
     }
   ],
-  "python.testing.pytestArgs": [
-    "apps"
-  ],
+  "python.testing.pytestArgs": ["apps"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true
 }
