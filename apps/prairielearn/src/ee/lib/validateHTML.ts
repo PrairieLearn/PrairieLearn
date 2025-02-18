@@ -607,9 +607,12 @@ function dfsCheckParseTree(
     for (const child of ast.childNodes) {
       const childResult = dfsCheckParseTree(child, optimistic);
       errors = errors.concat(childResult.errors);
-      childResult.mandatoryPythonCorrectAnswers?.forEach((x) =>
-        mandatoryPythonCorrectAnswers.add(x),
-      );
+      childResult.mandatoryPythonCorrectAnswers?.forEach((x) => {
+        if (mandatoryPythonCorrectAnswers.has(x)) {
+          errors.push(`Duplicate \`answers-name\`: ${x}. Please deduplicate.`);
+        }
+        mandatoryPythonCorrectAnswers.add(x);
+      });
     }
   }
 
