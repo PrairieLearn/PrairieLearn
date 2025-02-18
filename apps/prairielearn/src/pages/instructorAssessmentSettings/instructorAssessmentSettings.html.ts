@@ -245,20 +245,6 @@ ${resLocals.assessment.text}</textarea
               </div>
             </div>
             <div class="form-group">
-              <label for="grade_rate_minutes">Grade rate minutes</label>
-              <input
-                type="number"
-                class="form-control"
-                id="grade_rate_minutes"
-                name="grade_rate_minutes"
-                value="${resLocals.assessment.grade_rate_minutes}"
-                ${canEdit ? '' : 'disabled'}
-              />
-              <small class="form-text text-muted">
-                Minimum amount of time (in minutes) between graded submissions to the same question.
-              </small>
-            </div>
-            <div class="form-group">
               <div class="form-group form-check">
                 <input
                   class="form-check-input"

@@ -199,11 +199,6 @@ router.post(
         req.body.allow_real_time_grading === 'on',
         true,
       );
-      assessmentInfo.gradeRateMinutes = propertyValueWithDefault(
-        assessmentInfo.gradeRateMinutes,
-        parseInt(req.body.grade_rate_minutes),
-        0,
-      );
       assessmentInfo.requireHonorCode = propertyValueWithDefault(
         assessmentInfo.requireHonorCode,
         req.body.require_honor_code === 'on',
