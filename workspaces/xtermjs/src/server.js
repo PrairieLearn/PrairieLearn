@@ -41,7 +41,7 @@ const options = cl_args(argument_option_defs);
 if (options.help) {
   const usage = cl_usage([{ header: 'Arguments', optionList: argument_option_defs }]);
   console.log(usage);
-  return;
+  process.exit(0);
 }
 
 const default_env = {

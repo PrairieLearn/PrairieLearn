@@ -1,6 +1,6 @@
 import type { Root as HastRoot, Element } from 'hast';
 import type { Root as MdastRoot, Text } from 'mdast';
-import type { Math, InlineMath } from 'mdast-util-math';
+import type { Math as MdastMath, InlineMath as MdastInlineMath } from 'mdast-util-math';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import rehypeStringify from 'rehype-stringify';
@@ -43,7 +43,7 @@ function visitMathBlock(ast: MdastRoot) {
     const endFence = node.type === 'math' ? '\n$$' : '$';
     const text: Text = {
       type: 'text',
-      value: startFence + (node as Math | InlineMath).value + endFence,
+      value: startFence + (node as MdastMath | MdastInlineMath).value + endFence,
     };
     parent?.children.splice(index ?? 0, 1, text);
   });

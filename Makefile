@@ -68,6 +68,7 @@ lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-
 lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
+	@yarn biome lint
 	@yarn prettier --check "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
 lint-python:
 	@python3 -m ruff check ./

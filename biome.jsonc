@@ -1,0 +1,61 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"include": [
+			"**/*.ts",
+			"**/*.js"
+		],
+		"ignore": [
+			"apps/prairielearn/public/javascripts",
+			"apps/prairielearn/public/localscripts",
+		]
+	},
+	"formatter": {
+		"enabled": false
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"style": {
+				"all": false
+			},
+			"suspicious": {
+				"noAssignInExpressions": "off",
+				"noDoubleEquals": "off",
+				"noPrototypeBuiltins": "off",
+				"noImplicitAnyLet": "off",
+				"noExplicitAny": "off",
+				"useIsArray": "off",
+				"noRedeclare": "off",
+				"noDuplicateTestHooks": "off",
+				"noGlobalIsFinite": "off",
+				"noGlobalIsNan": "off",
+			},
+			"correctness": {
+				"noInnerDeclarations": "off",
+				"noUnnecessaryContinue": "off",
+			},
+			"complexity": {
+				"useArrowFunction": "off",
+				"noStaticOnlyClass": "off",
+				"noForEach": "off",
+				"useLiteralKeys": "off",
+				"useOptionalChain": "off",
+				"useRegexLiterals": "off",
+				"noUselessTernary": "off",
+				"noUselessConstructor": "off",
+				"noThisInStatic": "off"
+			},
+			"performance": {
+				"noDelete": "off"
+			}
+		}
+	}
+}
