@@ -70,8 +70,7 @@
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "minItems": 1
+            }
           },
           "startDate": {
             "description": "The earliest date on which access is permitted.",
