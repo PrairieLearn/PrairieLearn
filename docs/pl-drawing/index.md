@@ -8,7 +8,7 @@ A `pl-drawing` element displays a canvas, which can be used to display initial d
 
 The system of coordinates of the canvas is located at the top/left corner, as illustrated in the image below.
 
-<img src="pl-origin-canvas.png" width=70%>
+![Screenshot of the pl-origin-canvas element](pl-origin-canvas.png){ width=70% }
 
 #### Sample element
 
@@ -16,7 +16,7 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 <pl-drawing answers-name="fbd"> </pl-drawing>
 ```
 
-<img src="pl-drawing.png" width=70%>
+![Screenshot of the pl-drawing element](./pl-drawing.png){ width=70% }
 
 #### Customizations
 
@@ -50,7 +50,7 @@ For example, `pl-drawing-initial` can be used to create figures that are display
 </pl-drawing>
 ```
 
-<img src="pl-I.png" width=30%>
+![Screenshot of the pl-drawing-initial element](pl-I.png){ width=30% }
 
 And `pl-drawing-initial` can also be used to display initial objects in a canvas that will be used for grading. Objects inside `pl-drawing-initial` are not graded. Objects inside `pl-drawing-answer` are graded.
 
@@ -83,7 +83,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-<img src="pl-coordinates.png" width=50%>
+![Screenshot of the pl-coordinates element](pl-coordinates.png){ width=50% }
 
 #### Customizations
 
@@ -125,7 +125,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-<img src="pl-line.png" width=50%>
+![Screenshot of the pl-line element](pl-line.png){ width=50% }
 
 #### Customizations
 
@@ -169,7 +169,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-<img src="pl-arc.png" width=50%>
+![Screenshot of the pl-arc element](pl-arc.png){ width=50% }
 
 #### Customizations
 
@@ -202,7 +202,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-<img src="pl-point.png" width=50%>
+![Screenshot of the pl-point element](pl-point.png){ width=50% }
 
 #### Customizations
 
@@ -235,7 +235,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-<img src="pl-triangle.png" width=50%>
+![Screenshot of the pl-triangle element](pl-triangle.png){ width=50% }
 
 #### Customizations
 
@@ -271,7 +271,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-<img src="pl-rectangle.png" width=50%>
+![Screenshot of the pl-rectangle element](pl-rectangle.png){ width=50% }
 
 #### Customizations
 
@@ -306,7 +306,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-<img src="pl-circle.png" width=50%>
+![Screenshot of the pl-circle element](pl-circle.png){ width=50% }
 
 #### Customizations
 
@@ -341,7 +341,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-<img src="pl-polygon.png" width=50%>
+![Screenshot of the pl-polygon element](pl-polygon.png){ width=50% }
 
 #### Customizations
 
@@ -355,7 +355,9 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the string `plist` is given as a dictionar with the following format:
 
-`plist = '[{"x": x1, "y": y1}, {"x": x2,"y": x2}, ... , {"x": xn,"y": yn}]' `
+```python
+plist = '[{"x": x1, "y": y1}, {"x": x2,"y": x2}, ... , {"x": xn,"y": yn}]'
+```
 
 For an example that uses `server.py` to generate `plist` refer to QID: `Example-pl-drawing-beam-cross-section`
 
@@ -375,7 +377,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-rod.png" width=50%>
+![Screenshot of the pl-rod element](pl-rod.png){ width=50% }
 
 #### Customizations
 
@@ -415,7 +417,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-3pointrod.png" width=50%>
+![A 3-point rod element in PrairieLearn](pl-3pointrod.png){ width=50% }
 
 #### Customizations
 
@@ -460,7 +462,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-4pointrod.png" width=50%>
+![Screenshot of the pl-4pointrod element](pl-4pointrod.png){ width=50% }
 
 #### Customizations
 
@@ -510,7 +512,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-collar.png" width=50%>
+![Screenshot of the pl-collar-rod element](pl-collar.png){ width=50% }
 
 #### Customizations
 
@@ -556,7 +558,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-fixed-pin.png" width=50%>
+![Screenshot of the pl-fixed-pin element](pl-fixed-pin.png){ width=50% }
 
 #### Customizations
 
@@ -595,7 +597,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-roller.png" width=50%>
+![Screenshot of the pl-roller element](pl-roller.png){ width=50% }
 
 #### Customizations
 
@@ -635,7 +637,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-clamped.png" width=50%>
+![A clamped end element in PrairieLearn](pl-clamped.png){ width=50% }
 
 #### Customizations
 
@@ -672,7 +674,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-spring.png" width=50%>
+![Screenshot of the pl-spring element](pl-spring.png){ width=50% }
 
 #### Customizations
 
@@ -708,7 +710,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-coil.png" width=50%>
+![Screenshot of the pl-coil element](pl-coil.png){ width=50% }
 
 #### Customizations
 
@@ -742,7 +744,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-pulley.png" width=50%>
+![Screenshot of the pl-pulley element](pl-pulley.png){ width=50% }
 
 #### Customizations
 
@@ -813,7 +815,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-dimensions.png" width=50%>
+![Screenshot of the pl-dimensions element](pl-dimensions.png){ width=50% }
 
 #### Customizations
 
@@ -865,7 +867,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-arc-dimensions.png" width=50%>
+![Screenshot of the pl-arc-dimensions element](pl-arc-dimensions.png){ width=50% }
 
 #### Customizations
 
@@ -919,7 +921,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-<img src="pl-vector.png" width=50%>
+![Screenshot of the pl-vector element](pl-vector.png){ width=50% }
 
 #### Customizations
 
@@ -973,7 +975,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-double-headed-vector.png" width=50%>
+![Screenshot of the pl-double-headed-vector element](pl-double-headed-vector.png){ width=50% }
 
 #### Customizations
 
@@ -1030,7 +1032,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-paired-vector.png" width=50%>
+![Screenshot of the pl-paired-vector element](pl-paired-vector.png){ width=50% }
 
 #### Customizations
 
@@ -1073,7 +1075,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-arc-vector.png" width=50%>
+![Screenshot of the pl-arc-vector element](pl-arc-vector.png){ width=50% }
 
 #### Customizations
 
@@ -1135,7 +1137,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-distributed-load.png" width=50%>
+![Screenshot of the pl-distributed-load element](pl-distributed-load.png){ width=50% }
 
 #### Customizations
 
@@ -1198,7 +1200,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-controlled-line.png" width=50%>
+![Screenshot of the pl-controlled-line element](pl-controlled-line.png){ width=50% }
 
 #### Customizations
 
@@ -1245,7 +1247,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-controlled-curved-line.png" width=50%>
+![Screenshot of the pl-controlled-curved-line element](pl-controlled-curved-line.png){ width=50% }
 
 #### Customizations
 
@@ -1287,7 +1289,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-text.png" width=50%>
+![Screenshot of the pl-text element](pl-text.png){ width=50% }
 
 #### Customizations
 
@@ -1325,7 +1327,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-capacitor.png" width=50%>
+![Screenshot of the pl-capacitor element](pl-capacitor.png){ width=50% }
 
 #### Customizations
 
@@ -1381,7 +1383,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-resistor.png" width=50%>
+![Screenshot of the pl-resistor element](pl-resistor.png){ width=50% }
 
 #### Customizations
 
@@ -1421,7 +1423,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-battery.png" width=50%>
+![Screenshot of the pl-battery element](pl-battery.png){ width=50% }
 
 #### Customizations
 
@@ -1471,7 +1473,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-switch.png" width=50%>
+![Screenshot of the pl-switch element](pl-switch.png){ width=50% }
 
 #### Customizations
 
@@ -1521,7 +1523,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-<img src="pl-inductor.png" width=50%>
+![Screenshot of the pl-inductor element](pl-inductor.png){ width=50% }
 
 #### Customizations
 
@@ -1606,7 +1608,7 @@ The element `pl-drawing-answer` is required when setting a drawing canvas for gr
 </pl-drawing>
 ```
 
-<img src="pl-vector-grading-canvas-example.png" width=70%>
+![Screenshot of the pl-drawing-group element](pl-vector-grading-canvas-example.png){ width=70% }
 
 ### `pl-drawing-answer` element
 
@@ -1620,7 +1622,7 @@ This element will wrap all the elements that will be graded (checked for correct
 
 In the example above, `pl-vector` is the only object that is graded. The corresponding answer panel is given as:
 
-<img src="pl-vector-correct-answer.png" width=50%>
+![Screenshot of the pl-drawing-answer element](pl-vector-correct-answer.png){ width=50% }
 
 ### `pl-drawing-initial` element
 
@@ -1660,11 +1662,11 @@ The example [demo/drawing/buttons] illustrates all the `pl-drawing-button`s that
 
 The example [demo/drawing/customizedButtons] illustrates how custom objects can be generated via buttons.
 
-<img src="pl-all-buttons.png" width=70%>
+![Screenshot of all the pl-drawing-button elements](pl-all-buttons.png){ width=70% }
 
 ### `pl-drawing-buttons` element
 
-#### To insert a point:
+#### Insert a point
 
 ```html
 <pl-drawing-button type="pl-point"></pl-drawing-button>
@@ -1672,9 +1674,9 @@ The example [demo/drawing/customizedButtons] illustrates how custom objects can 
 
 This button adds a point to the canvas. The grading algorithm will check if the submitted point is within the error box. By default, the error box for `pl-point` is a square centered at the correct point, with side of length `tol = 0.5*grid-size`. The tolerance `tol` is an attribute of `pl-drawing` to make sure that all elements use the same tolerance.
 
-<img src="pl-point-error-box.png" width=30%>
+![Screenshot of the pl-drawing-button set to pl-point](pl-point-error-box.png){ width=30% }
 
-#### To insert a vector:
+#### Insert a vector
 
 ```html
 <pl-drawing-button type="pl-vector"></pl-drawing-button>
@@ -1684,13 +1686,13 @@ This button adds a vector to the canvas. A vector is marked as correct when the 
 
 By default, the error box for `pl-vector` is a rectangle aligned with direction of the vector. The width of the rectangle is `tol` and the height is `hb + hf`, as illustrated below. `hb = offset-backward + tol` and `hf = offset-forward + tol`. The attribute `offset-backward` is set to the length of the vector by default. The attribute `offset-forward` is set to zero by default. The tolerances `tol` and `angle-tol` are attributes of `pl-drawing` to make sure that all elements use the same tolerance.
 
-<img src="pl-vector-error-box-zoom.png" width=50%>
+![Screenshot showing an error box for a pl-vector element](pl-vector-error-box.png){ width=50% }
 
 If the orientation of the vector is not important, so that vectors `p` and `-p` are both considered correct, the attribute `disregard-sense` should be set to `true`.
 
 If a vector is expected as a correct answer, but the author does not want to assign a grade to it, the attribute `optional-grading` can be set to `true`. In this case, the grading algorithm will not assign points to the vector, but will not penalize students either by considering it as extra objects.
 
-#### To insert an arc vector:
+#### Insert an arc vector
 
 ```html
 <pl-drawing-button type="pl-arc-vector-CCW"></pl-drawing-button>
@@ -1703,7 +1705,7 @@ By default, the error box for `pl-arc-vector` is a square centered at the anchor
 
 If the orientation of the arc vector is not important (both clockwise and counter-clockwise orientations are accepted), the attribute `disregard-sense` should be set to `true`.
 
-#### To insert a distributed load:
+#### Insert a distributed load
 
 ```html
 <pl-drawing-button type="pl-distributed-load" w1="20" anchor_is_tail="true"></pl-drawing-button>
@@ -1715,7 +1717,7 @@ This button adds a distributed load to the canvas. A distributed load is marked 
 
 The error box for `pl-distributed-load` is defined in the same way as `pl-vector` but considering the anchor point as the center of the baseline. If the orientation of the distributed load is not important, the attribute `disregard-sense` should be set to `true`.
 
-#### To insert a "help" line:
+#### Insert a "help" line
 
 ```html
 <pl-drawing-button type="help-line"></pl-drawing-button>
@@ -1723,7 +1725,7 @@ The error box for `pl-distributed-load` is defined in the same way as `pl-vector
 
 This button will add a line to the canvas that is not graded, but can be used by students to facilitate the placement of other objects.
 
-#### To delete any object previously placed in the canvas:
+#### Delete any object previously placed in the canvas
 
 ```html
 <pl-drawing-button type="delete"></pl-drawing-button>
@@ -1733,7 +1735,7 @@ This button deletes objects that were previously placed on the canvas.
 
 ## Elements for sketching plots
 
-<img src="pl-graph.png" width=50%>
+![Screenshot of the pl-graph element](pl-graph.png) { width=50% }
 
 ```html
 <pl-drawing-initial>

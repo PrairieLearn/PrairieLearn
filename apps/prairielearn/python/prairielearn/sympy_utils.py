@@ -1,3 +1,5 @@
+"""Utility functions for parsing and evaluating SymPy expressions."""
+
 import ast
 import copy
 import html
@@ -23,6 +25,12 @@ STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SympyMapT = dict[str, Callable[..., Any] | sympy.Basic]
 ASTWhiteListT = tuple[type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
+"""
+A dictionary of assumptions for variables in the expression.
+
+Examples:
+    >>> {"x": {"positive": True}, "y": {"real": True}}
+"""
 
 
 class SympyJson(TypedDict):
@@ -454,14 +462,35 @@ def evaluate_with_source(
 
 def convert_string_to_sympy(
     expr: str,
-    variables: None | Iterable[str] = None,
+    variables: Iterable[str] | None = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | Iterable[str] = None,
-    assumptions: None | AssumptionsDictT = None,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
 ) -> sympy.Expr:
+    """
+    Convert a string to a sympy expression, with optional restrictions on
+    the variables and functions that can be used. If the string is invalid,
+    raise an exception with a message that can be displayed to the user.
+
+    Parameters:
+        expr: The string to convert to a sympy expression.
+        variables: A list of variable names that are allowed in the expression.
+        allow_hidden: Whether to allow hidden variables (like pi and e).
+        allow_complex: Whether to allow complex numbers (like i).
+        allow_trig_functions: Whether to allow trigonometric functions.
+        custom_functions: A list of custom function names that are allowed in the expression.
+        assumptions: A dictionary of assumptions for variables in the expression.
+
+    Examples:
+        >>> convert_string_to_sympy("n * sin(7*m) + m**2 * cos(6*n)", variables=["m", "n"])
+        n * sympy.sin(m * 7) + m * m * sympy.cos(n * 6)
+        >>> convert_string_to_sympy("-infty")
+        -sympy.oo
+        >>> convert_string_to_sympy("z**2 + y - x", variables=["x", "y", "z"], allow_complex=True, assumptions={"x": {"positive": False}, "z": {"complex": True}})
+    """
     return convert_string_to_sympy_with_source(
         expr,
         variables=variables,
@@ -475,13 +504,13 @@ def convert_string_to_sympy(
 
 def convert_string_to_sympy_with_source(
     expr: str,
-    variables: None | Iterable[str] = None,
+    variables: Iterable[str] | None = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | Iterable[str] = None,
-    assumptions: None | AssumptionsDictT = None,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
 ) -> tuple[sympy.Expr, str]:
     const = _Constants()
 
@@ -638,14 +667,14 @@ def json_to_sympy(
 
 def validate_string_as_sympy(
     expr: str,
-    variables: None | Iterable[str],
+    variables: Iterable[str] | None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | list[str] = None,
-    imaginary_unit: None | str = None,
-) -> None | str:
+    custom_functions: list[str] | None = None,
+    imaginary_unit: str | None = None,
+) -> str | None:
     """Try to parse expr as a sympy expression. If it fails, return a string with an appropriate error message for display on the frontend."""
     try:
         expr_parsed = convert_string_to_sympy(
@@ -741,7 +770,7 @@ def validate_string_as_sympy(
     return None
 
 
-def get_items_list(items_string: None | str) -> list[str]:
+def get_items_list(items_string: str | None) -> list[str]:
     if items_string is None:
         return []
 

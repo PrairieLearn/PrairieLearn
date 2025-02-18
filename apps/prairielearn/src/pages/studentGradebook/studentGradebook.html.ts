@@ -35,7 +35,7 @@ export function StudentGradebook({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Gradebook' })}
       </head>
       <body>
         ${Navbar({ resLocals, navPage: 'gradebook', navSubPage: 'gradebook' })}
