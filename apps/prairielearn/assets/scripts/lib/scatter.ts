@@ -23,6 +23,7 @@ export function scatter(
     leftMargin?: number;
     radius?: number;
     labels?: [];
+    ariaLabel?: string;
   },
 ) {
   if (xdata === undefined) xdata = JSON.parse(selector.dataset.xdata ?? '[]');
@@ -49,6 +50,7 @@ export function scatter(
     leftMargin: 70,
     radius: 2,
     labels: [],
+    ariaLabel: 'Scatter plot',
     ...options,
   };
 
@@ -106,6 +108,8 @@ export function scatter(
       height + (resolvedOptions.topMargin ?? 10) + (resolvedOptions.bottomMargin ?? 55),
     )
     .attr('class', 'center-block statsPlot')
+    .attr('role', 'img')
+    .attr('aria-label', resolvedOptions.ariaLabel)
     .append('g')
     .attr('transform', `translate(${resolvedOptions.leftMargin},${resolvedOptions.topMargin})`);
 

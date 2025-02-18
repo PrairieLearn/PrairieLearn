@@ -95,6 +95,7 @@ export function InstructorAssessmentStatistics({
                     ymin: 0,
                     xlabel: 'score / %',
                     ylabel: 'number of students',
+                    ariaLabel: 'Score statistics histogram',
                   })}"
                 ></div>
               </div>
@@ -173,6 +174,7 @@ export function InstructorAssessmentStatistics({
                     xlabel: 'duration',
                     ylabel: 'number of students',
                     xTickLabels: durationStat.threshold_labels,
+                    ariaLabel: 'Duration statistics histogram',
                   })}"
                 ></div>
               </div>
@@ -233,6 +235,7 @@ export function InstructorAssessmentStatistics({
                     xlabel: 'duration',
                     ylabel: 'score / %',
                     xTickLabels: durationStat.threshold_labels,
+                    ariaLabel: 'Duration versus score scatter plot',
                   })}"
                 ></div>
               </div>
@@ -272,6 +275,7 @@ export function InstructorAssessmentStatistics({
                     ylabel: 'score / %',
                     yTickLabels: _.range(100, -10, -10),
                     width: assessmentScoreHistogramByDate.length * 200,
+                    ariaLabel: 'Score statistics by date parallel histograms',
                   })}"
                 ></div>
               </div>

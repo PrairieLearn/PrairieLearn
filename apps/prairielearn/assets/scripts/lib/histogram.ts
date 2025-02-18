@@ -18,6 +18,7 @@ export function histogram(
     rightMargin?: number;
     bottomMargin?: number;
     leftMargin?: number;
+    ariaLabel?: string;
   },
 ) {
   if (data === undefined) data = JSON.parse(selector.dataset.histogram ?? '[]');
@@ -39,6 +40,7 @@ export function histogram(
     rightMargin: 20,
     bottomMargin: 55,
     leftMargin: 70,
+    ariaLabel: 'Histogram',
     ...options,
   };
 
@@ -78,7 +80,9 @@ export function histogram(
     .append('svg')
     .attr('width', resolvedOptions.width)
     .attr('height', resolvedOptions.height)
-    .attr('class', 'center-block statsPlot')
+    .attr('class', 'center-block statsPlot newClass')
+    .attr('role', 'img')
+    .attr('aria-label', resolvedOptions.ariaLabel)
     .append('g')
     .attr('transform', `translate(${resolvedOptions.leftMargin},${resolvedOptions.topMargin})`);
 
