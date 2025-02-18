@@ -259,7 +259,7 @@ export async function generateQuestion({
     
     You should provide the following input methods for students to answer: ${promptUserInput}
     
-    To calculate the right answer, you should: ${promptGrading}`;
+    To calculate the right answer, you should: ${promptGrading}. Do NOT display the method to calculate the correct answer in your \`question.html\` unless otherwise requested.`;
 
     job.info(`prompt is ${userPrompt}`);
 
