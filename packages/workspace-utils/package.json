@@ -22,6 +22,7 @@
   "dependencies": {
     "@prairielearn/path-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/zod": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
     "fast-glob": "^3.3.3",
     "filesize": "^10.1.6",
