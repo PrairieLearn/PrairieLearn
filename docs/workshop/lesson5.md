@@ -8,7 +8,7 @@
 
 Create a question with a decision tree. Think about ways to create dynamic versions of the question. You can use `pl-figure` to load images, but here we want to explore the use of `pl-graph` ([check the documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-graph-element)).
 
-![](figs/tree.png)
+![Decision tree diagram](figs/tree.png)
 
 [Image from http://www.sfu.ca/iat813/lectures/lecture6.html]
 
@@ -20,7 +20,7 @@ Create a question with a decision tree. Think about ways to create dynamic versi
 
 Write a question that provides the outgoing links from a set of websites and use the PageRank algorithm to determine the most popular website.
 
-![](figs/page-rank.png)
+![Page rank image](figs/page-rank.png)
 
 [Image from https://en.wikipedia.org/wiki/PageRank]
 
@@ -38,7 +38,7 @@ Write a question that uses the drawing canvas to collect input from student. Tak
 
 In this example, ask students to add a vector providing the position and direction.
 
-![](figs/canvas.png)
+![Empty question canvas](figs/canvas.png)
 
 **PrairieLearn implementation:**
 

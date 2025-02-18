@@ -59,7 +59,7 @@ $$\frac{1}{T_2} = \frac{1}{T_1} - \frac{k}{Q_v} \ln\left(\frac{N_{v2}}{N_{v1}} \
 
 Determine the equivalent resistance of the circuit below:
 
-![](figs/circ1.png)
+![A circuit figure](figs/circ1.png)
 
 **Solution:**
 
@@ -76,7 +76,7 @@ $R_T = 12.5 \Omega$
   $I_T = V_T/R_T = 10 A$
 - select the figure from two options: the parallel circuit above, or the series circuit below.
 
-![](figs/circ2.png)
+![A second circuit figure](figs/circ2.png)
 
 $R_T = R_1 + R_2 + R_3 = 170 \Omega$
 
