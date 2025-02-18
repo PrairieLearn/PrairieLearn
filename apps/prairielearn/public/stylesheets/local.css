@@ -506,13 +506,6 @@ small .user-output-invalid {
   outline-offset: -2px !important;
 }
 
-.btn.nav-link.dropdown-toggle:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
 /* The sticky-column class is used to make the first column of a bootstrap-table sticky. */
 .table > :not(caption) > * > .sticky-column {
   position: sticky;
