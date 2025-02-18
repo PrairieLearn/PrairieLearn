@@ -58,6 +58,15 @@ export function Navbar({
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid">
+        <button
+          class="navbar-toggler side-nav-toggler d-none d-md-inline-block"
+          type="button"
+          aria-expanded="false"
+          aria-label="Toggle side nav"
+        >
+          <span class="navbar-toggler-icon side-nav-toggle-icon"></span>
+        </button>
+
         <a class="navbar-brand" href="${config.homeUrl}" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
