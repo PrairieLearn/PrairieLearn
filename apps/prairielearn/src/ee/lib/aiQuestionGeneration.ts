@@ -23,6 +23,8 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-4o';
 
+const NUM_TOTAL_ATTEMPTS = 2;
+
 /**
  * Generates the common preamble with general PrairieLearn information for the LLM
  *
@@ -363,7 +365,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
         originalHTML: html || '',
         originalPython: typeof results?.python === 'string' ? results?.python : undefined,
-        remainingAttempts: 0,
+        remainingAttempts: NUM_TOTAL_ATTEMPTS - 1,
         isAutomated: true,
         questionId: saveResults.question_id,
         courseId,
@@ -634,7 +636,7 @@ export async function regenerateQuestion(
       revisionPrompt,
       originalHTML,
       originalPython,
-      remainingAttempts: 1,
+      remainingAttempts: NUM_TOTAL_ATTEMPTS,
       isAutomated: false,
       questionId: question.id,
       questionQid,
