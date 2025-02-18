@@ -296,6 +296,22 @@ window.PLFileEditor.prototype.preview = {
     return async (value) => {
       if (marked == null) {
         marked = (await import('marked')).marked;
+        marked.use({
+          extensions: [
+            {
+              name: 'math',
+              level: 'inline',
+              start: (src) => src.match(/\$/)?.index,
+              tokenizer(src) {
+                const match = src.match(/^\$([^$\n]+?)\$/);
+                if (match) {
+                  // Only escape the content, let Mathjax handle the rest.
+                  return { type: 'escape', raw: match[0], text: match[0] };
+                }
+              },
+            },
+          ],
+        });
       }
       return await marked.parse(value);
     };
