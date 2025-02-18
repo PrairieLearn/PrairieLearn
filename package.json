@@ -43,7 +43,10 @@
     "typescript": "^5.7.3"
   },
   "resolutions": {
-    "notebookjs/jsdom": "^25.0.0"
+    "notebookjs/jsdom": "^25.0.0",
+    "preact": "link:./packages/preact-cjs",
+    "react": "link:./packages/preact-cjs-compat",
+    "react-dom": "link:./packages/preact-cjs-compat"
   },
   "workspaces": [
     "apps/*",

@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { instructorInstanceAdminBillingState } from './InstructorInstanceAdminBillingForm.html.js';
+import { instructorInstanceAdminBillingState } from './InstructorInstanceAdminBillingForm.js';
 
 describe('instructorInstanceAdminBillingState', () => {
   it('allows enabling student billing by default', () => {

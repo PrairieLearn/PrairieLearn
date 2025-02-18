@@ -47,6 +47,9 @@ module.exports = {
       typescript: true,
       node: true,
     },
+    react: {
+      pragma: 'h',
+    },
   },
   reportUnusedDisableDirectives: true,
   rules: {
@@ -152,11 +155,6 @@ module.exports = {
       env: {
         browser: true,
         jquery: true,
-      },
-      settings: {
-        react: {
-          pragma: 'h',
-        },
       },
     },
   ],

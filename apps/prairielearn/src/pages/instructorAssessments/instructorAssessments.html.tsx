@@ -1,40 +1,25 @@
-import { z } from 'zod';
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { Fragment } from '@prairielearn/preact-cjs';
 import { run } from '@prairielearn/run';
 
 import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout, PreactPageLayout } from '../../components/PageLayout.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import { renderForClientHydration, renderHtmlDocument } from '../../lib/preact.js';
+
+import { InstructorAssessmentsCard } from './InstructorAssessmentsCard.js';
 import {
-  type AssessmentModule,
-  AssessmentSchema,
-  type AssessmentSet,
-  AssessmentSetSchema,
-} from '../../lib/db-types.js';
-
-import { type StatsUpdateData } from './instructorAssessments.types.js';
-
-export const AssessmentStatsRowSchema = AssessmentSchema.extend({
-  needs_statistics_update: z.boolean().optional(),
-});
-type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
-
-export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
-  start_new_assessment_group: z.boolean(),
-  assessment_group_heading: AssessmentSetSchema.shape.heading,
-  label: z.string(),
-  open_issue_count: z.coerce.number(),
-});
-type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
+  type AssessmentRow,
+  type AssessmentStatsRow,
+  type StatsUpdateData,
+} from './instructorAssessments.types.js';
 
 export function InstructorAssessments({
   resLocals,
@@ -86,12 +71,13 @@ export function InstructorAssessments({
           ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
             ? html`
                 <button
+                  type="button"
                   class="btn btn-sm btn-light ml-auto"
                   data-toggle="modal"
                   data-target="#createAssessmentModal"
                 >
                   <i class="fa fa-plus" aria-hidden="true"></i>
-                  <span class="d-none d-sm-inline">Add assessment</span>
+                  <span class="d-none d-sm-inline ml-1">Add assessment</span>
                 </button>
               `
             : ''}
@@ -137,12 +123,10 @@ export function InstructorAssessments({
                                     output: row.sync_warnings,
                                   })
                                 : ''}
-                            <a href="${urlPrefix}/assessment/${row.id}/">
-                              ${row.title}
-                              ${row.group_work
-                                ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                                : ''}
-                            </a>
+                            <a href="${urlPrefix}/assessment/${row.id}/">${row.title}</a>
+                            ${row.group_work
+                              ? html` <i class="fas fa-users text-primary" aria-hidden="true"></i> `
+                              : ''}
                             ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
                           </td>
 
@@ -157,9 +141,9 @@ export function InstructorAssessments({
               </div>
               <div class="card-footer">
                 Download
-                <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}">
-                  ${csvFilename}
-                </a>
+                <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}"
+                  >${csvFilename}</a
+                >
                 (includes more statistics columns than displayed above)
               </div>
             `
@@ -175,6 +159,7 @@ export function InstructorAssessments({
                   <a
                     href="https://prairielearn.readthedocs.io/en/latest/assessment/"
                     target="_blank"
+                    rel="noopener noreferrer"
                     >assessments documentation</a
                   >.
                 </p>
@@ -187,6 +172,7 @@ export function InstructorAssessments({
                   }
                   return html`
                     <button
+                      type="button"
                       class="btn btn-sm btn-primary"
                       data-toggle="modal"
                       data-target="#createAssessmentModal"
@@ -257,6 +243,69 @@ export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
           : html`&mdash;`}
     </td>
   `;
+}
+
+export function PreactInstructorAssessments({
+  resLocals,
+  rows,
+  assessmentIdsNeedingStatsUpdate,
+  csvFilename,
+  assessmentSets,
+  assessmentModules,
+  assessmentsGroupBy,
+}: {
+  resLocals: Record<string, any>;
+  rows: AssessmentRow[];
+  assessmentIdsNeedingStatsUpdate: string[];
+  csvFilename: string;
+  assessmentSets: AssessmentSet[];
+  assessmentModules: AssessmentModule[];
+  assessmentsGroupBy: 'Set' | 'Module';
+}) {
+  const { urlPrefix, authz_data, course, __csrf_token } = resLocals;
+
+  return renderHtmlDocument(
+    PreactPageLayout({
+      resLocals,
+      pageTitle: 'Assessments',
+      navContext: {
+        type: 'instructor',
+        page: 'instance_admin',
+        subPage: 'assessments',
+      },
+      options: {
+        fullWidth: true,
+      },
+      content: (
+        <Fragment>
+          <div
+            // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+            dangerouslySetInnerHTML={{
+              __html: CourseInstanceSyncErrorsAndWarnings({
+                authz_data,
+                courseInstance: resLocals.course_instance,
+                course,
+                urlPrefix,
+              }).toString(),
+            }}
+          />
+          {renderForClientHydration('InstructorAssessmentsCard', InstructorAssessmentsCard, {
+            // TODO: reorder for consistency.
+            rows,
+            assessmentIdsNeedingStatsUpdate,
+            csvFilename,
+            hasCoursePermissionEdit: authz_data.has_course_permission_edit,
+            isExampleCourse: course.example_course,
+            urlPrefix,
+            csrfToken: __csrf_token,
+            assessmentSets,
+            assessmentModules,
+            assessmentsGroupBy,
+          })}
+        </Fragment>
+      ),
+    }),
+  );
 }
 
 function CreateAssessmentModal({
