@@ -4116,6 +4116,7 @@ __metadata:
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
+    "@prairielearn/zod": "workspace:^"
     "@socket.io/redis-emitter": "npm:^5.1.0"
     "@types/node": "npm:^20.17.16"
     fast-glob: "npm:^3.3.3"
