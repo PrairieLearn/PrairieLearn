@@ -501,7 +501,7 @@ small .user-output-invalid {
 
 .btn.btn-med-light:focus:focus-visible {
   outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-color: var(--bs-btn-hover-color, #212529) !important;
   outline-width: 2px !important;
   outline-offset: -2px !important;
 }
