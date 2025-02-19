@@ -793,6 +793,9 @@ def test_get_integer_attrib_invalid(html_str: str) -> None:
         ('<pl-thing float-val="5.5"></pl-thing>', 5.5, None),
         # Scientific notation
         ('<pl-thing float-val="-1.2e-3"></pl-thing>', -0.0012, None),
+        # Special values
+        ('<pl-thing float-val="-inf"></pl-thing>', float("-inf"), None),
+        ('<pl-thing float-val="nan"></pl-thing>', float("nan"), None),
         # Default value cases
         ("<pl-thing></pl-thing>", 0.0, 0.0),
         ("<pl-thing></pl-thing>", None, None),
@@ -1008,8 +1011,8 @@ def test_is_correct_ndarray2d_dd(
     [
         # Basic array equality
         (
-            np.array([[1.0, 2.0], [3.0, 4.0]]),
-            np.array([[1.0, 2.0], [3.0, 4.0]]),
+            np.array([[1.0, np.inf], [3.0, np.nan]]),
+            np.array([[1.0, np.inf], [3.0, np.nan]]),
             2,
             True,
         ),
