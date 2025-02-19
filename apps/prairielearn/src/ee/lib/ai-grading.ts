@@ -105,7 +105,7 @@ async function generateGPTPrompt({
     messages.push({
       role: 'system',
       content:
-        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description (name), and item explanation. You must grade the assignment by using the rubric and returning an array of all rubric items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should always list all the rubric items, no matter if they are selected or not. You should also provide feedback on how to improve the answer by incorporating information from the rubric. I will provide some example answers and their corresponding grades.',
+        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description, and item explanation. You must grade the assignment by using the rubric and returning an array of all rubric items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should always list all the rubric items, no matter if they are selected or not. You should also provide feedback on how to improve the answer by incorporating information from the rubric. I will provide some example answers and their corresponding grades.',
     });
     messages.push({
       role: 'system',
@@ -131,7 +131,7 @@ async function generateGPTPrompt({
       const rubric_grading_items = await queryRows(
         sql.select_rubric_grading_items,
         {
-          maunal_rubric_grading_id: example.manual_rubric_grading_id,
+          manual_rubric_grading_id: example.manual_rubric_grading_id,
         },
         RubricItemSchema,
       );
@@ -310,7 +310,7 @@ async function ensureSubmissionEmbedding({
   return new_submission_embedding;
 }
 
-function validateRubric(old_rubric_items: RubricItem[], new_rubric_items: RubricItem[]): void {
+function assertRubricNotModified(old_rubric_items: RubricItem[], new_rubric_items: RubricItem[]): void {
   if (old_rubric_items.length !== new_rubric_items.length) {
     throw new Error('rubric modified between rubric retrieval and grade insertion');
   }
@@ -475,11 +475,11 @@ export async function aiGrade({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
-          response_format: zodResponseFormat(GPTRubricGradeSchema, 'grades'),
+          response_format: zodResponseFormat(GPTRubricGradeSchema, 'score'),
         });
         try {
           job.info(
-            `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}`,
+            `Number of tokens used: ${completion.usage?.total_tokens ?? 0}`,
           );
           const grade_response = completion.choices[0].message;
           job.info(`Raw ChatGPT response:\n${grade_response.content}`);
@@ -507,7 +507,7 @@ export async function aiGrade({
               RubricItemSchema,
             );
             // Check if rubric items has been modified
-            validateRubric(rubric_items, new_rubric_items);
+            assertRubricNotModified(rubric_items, new_rubric_items);
             await manualGrading.updateInstanceQuestionScore(
               assessment_question.assessment_id,
               instance_question.id,
@@ -539,11 +539,11 @@ export async function aiGrade({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
-          response_format: zodResponseFormat(GPTGradeSchema, 'grades'),
+          response_format: zodResponseFormat(GPTGradeSchema, 'score'),
         });
         try {
           job.info(
-            `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}`,
+            `Number of tokens used: ${completion.usage?.total_tokens ?? 0}`,
           );
           const grade_response = completion.choices[0].message;
           job.info(`Raw ChatGPT response:\n${grade_response.content}`);

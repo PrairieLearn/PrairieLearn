@@ -130,4 +130,4 @@ FROM
   rubric_grading_items AS rgi
   JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
 WHERE
-  rgi.rubric_grading_id = $maunal_rubric_grading_id;
+  rgi.rubric_grading_id = $manual_rubric_grading_id;
