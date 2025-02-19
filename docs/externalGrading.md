@@ -139,7 +139,7 @@ In particular, the file system structure of the grader looks like:
 +-- /...                       # Additional directories and files as needed.
 ```
 
-When your container starts up, your `entrypoint` script will be executed. After that, you can do whatever you want. The only requirement is that by the time that script finished, you should have written results for the grading job to `/grade/results/results.json`; the format for this is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
+When your container starts up, your `entrypoint` script will be executed. After that, you can do whatever you want. The only requirement is that by the time that script finished, you should have written results for the grading job to `/grade/results/results.json`; the format for this is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students. The `/grade/results` folder *is not* automatically created, so you'll need to create it yourself before you attempt to write to `/grade/results/results.json`.
 
 ## Directory layout
 
