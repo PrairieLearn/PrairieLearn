@@ -304,7 +304,7 @@ window.PLFileEditor.prototype.preview = {
               level: 'inline',
               start: (src) => src.match(startMath)?.index,
               tokenizer(src) {
-                if (!src.match(startMath)?.index !== 0) return false;
+                if (src.match(startMath)?.index !== 0) return false;
                 // Use MathJax API to retrieve the math content.
                 for (const inputJax of MathJax.startup.getInputJax() ?? []) {
                   for (const foundMath of inputJax.findMath([src]) ?? []) {
