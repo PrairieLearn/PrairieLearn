@@ -8,6 +8,11 @@ comment:
   # Only post a comment if a base and head commit are both present.
   require_base: true
   require_head: true
+
+# Ignore coverage for test files
+ignore:
+  - 'apps/prairielearn/python/test'
+
 coverage:
   status:
     project:
