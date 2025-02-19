@@ -149,7 +149,7 @@ const findEditUrlData = [
   },
   {
     name: 'instance admin',
-    selector: 'a:contains("infoCourseInstance.json") + a:contains("Edit")',
+    selector: '[data-testid="edit-course-instance-configuration-link"]',
     url: courseInstanceInstanceAdminSettingsUrl,
     expectedEditUrl: courseInstanceInstanceAdminEditUrl,
   },
@@ -1049,14 +1049,16 @@ function testRenameFile(params: {
 
   describe(`POST to ${params.url} with action rename_file`, function () {
     it('should load successfully', async () => {
-      const form = {
-        __action: 'rename_file',
-        __csrf_token: locals.__csrf_token,
-        working_path: locals.working_path,
-        old_file_name: locals.old_file_name,
-        new_file_name: params.new_file_name,
-      };
-      const res = await fetch(params.url, { method: 'POST', body: new URLSearchParams(form) });
+      const res = await fetch(params.url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'rename_file',
+          __csrf_token: locals.__csrf_token,
+          working_path: locals.working_path,
+          old_file_name: locals.old_file_name,
+          new_file_name: params.new_file_name,
+        }),
+      });
       assert.isOk(res.ok);
       locals.$ = cheerio.load(await res.text());
     });
@@ -1094,12 +1096,14 @@ function testDeleteFile(params: { url: string; path: string }) {
 
   describe(`POST to ${params.url} with action delete_file`, function () {
     it('should load successfully', async () => {
-      const form = {
-        __action: 'delete_file',
-        __csrf_token: locals.__csrf_token,
-        file_path: locals.file_path,
-      };
-      const res = await fetch(params.url, { method: 'POST', body: new URLSearchParams(form) });
+      const res = await fetch(params.url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'delete_file',
+          __csrf_token: locals.__csrf_token,
+          file_path: locals.file_path,
+        }),
+      });
       assert.isOk(res.ok);
     });
   });

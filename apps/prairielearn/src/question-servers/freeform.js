@@ -470,7 +470,7 @@ function checkData(data, origData, phase) {
   /**************************************************************************************************************************************/
   //              property                 type       presentPhases                         changePhases
   /**************************************************************************************************************************************/
-  err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade'])
+  err =   checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
        || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
        || checkProp('variant_seed',          'integer', allPhases,                            [])
        || checkProp('options',               'object',  allPhases,                            [])
@@ -525,7 +525,7 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
       context.question.directory,
       'question.html',
       phase,
-      [data, pythonContext],
+      [pythonContext, data],
     );
     result = res.result;
     output = res.output;
@@ -552,7 +552,7 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
 }
 
 async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, html) {
-  const origData = JSON.parse(JSON.stringify(data));
+  const origData = structuredClone(data);
   const renderedElementNames = [];
   const courseIssues = [];
   let fileData = Buffer.from('');
@@ -679,7 +679,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
 }
 
 async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, $) {
-  const origData = JSON.parse(JSON.stringify(data));
+  const origData = structuredClone(data);
   const renderedElementNames = [];
   const courseIssues = [];
   let fileData = Buffer.from('');
@@ -808,9 +808,9 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
  * @param {QuestionProcessingContext} context
  */
 async function processQuestionHtml(phase, codeCaller, data, context) {
-  const origData = JSON.parse(JSON.stringify(data));
-
-  const checkErr = checkData(data, origData, phase);
+  // We deliberately reuse the same `data` object for both the "new" and "original"
+  // arguments to avoid an unnecessary deep clone and comparison.
+  const checkErr = checkData(data, data, phase);
   if (checkErr) {
     return {
       courseIssues: [
@@ -893,7 +893,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
 
 async function processQuestionServer(phase, codeCaller, data, html, fileData, context) {
   const courseIssues = [];
-  const origData = JSON.parse(JSON.stringify(data));
+  const origData = structuredClone(data);
 
   const checkErrBefore = checkData(data, origData, phase);
   if (checkErrBefore) {

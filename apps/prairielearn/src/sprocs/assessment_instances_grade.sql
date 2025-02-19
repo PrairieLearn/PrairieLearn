@@ -98,7 +98,7 @@ BEGIN
 
     UPDATE instance_questions AS iq
     SET
-        used_for_grade = (iq.id = ANY(instance_questions_used_for_grade))
+        used_for_grade = (iq.id = ANY (instance_questions_used_for_grade))
     WHERE
         iq.assessment_instance_id = assessment_instances_grade.assessment_instance_id;
 

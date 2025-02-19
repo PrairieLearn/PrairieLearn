@@ -4,9 +4,8 @@ import { z } from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobStatus } from '../../components/JobStatus.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { config } from '../../lib/config.js';
 import {
   type Course,
@@ -43,116 +42,118 @@ export function CourseSyncs({
   jobSequences: JobSequenceRow[];
 }) {
   const { course, __csrf_token, urlPrefix } = resLocals;
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
-          <h1 class="sr-only">Course Sync</h1>
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <h2>Repository status</h2>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-sm" aria-label="Repository status">
-                <tbody>
-                  <tr>
-                    <th class="align-middle">Current commit hash</th>
-                    <td colspan="2">${course.commit_hash}</td>
-                  </tr>
 
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Course sync',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'syncs',
+    },
+    options: {
+      fullWidth: true,
+    },
+    content: html`
+      <h1 class="sr-only">Course Sync</h1>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h2>Repository status</h2>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm" aria-label="Repository status">
+            <tbody>
+              <tr>
+                <th class="align-middle">Current commit hash</th>
+                <td colspan="2">${course.commit_hash}</td>
+              </tr>
+
+              <tr>
+                <th class="align-middle">Path on disk</th>
+                <td class="align-middle">${course.path}</td>
+                <td>
+                  <form name="confirm-form" method="POST">
+                    <input type="hidden" name="__action" value="status" />
+                    <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                    <button type="submit" class="btn btn-sm btn-primary">
+                      <i class="fa fa-info-circle" aria-hidden="true"></i>
+                      Show server git status
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              <tr>
+                <th class="align-middle">Remote repository</th>
+                <td class="align-middle">${course.repository}</td>
+                <td>
+                  <form name="confirm-form" method="POST">
+                    <input type="hidden" name="__action" value="pull" />
+                    <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                    <button type="submit" class="btn btn-sm btn-primary">
+                      <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
+                      Pull from remote git repository
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h2>Docker images</h2>
+        </div>
+        ${ImageTable({ images, course, urlPrefix, __csrf_token })}
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h2>Sync job history</h2>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover" aria-label="Sync job history">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>User</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${jobSequences.map(
+                (jobSequence) => html`
                   <tr>
-                    <th class="align-middle">Path on disk</th>
-                    <td class="align-middle">${course.path}</td>
+                    <td>${jobSequence.number}</td>
                     <td>
-                      <form name="confirm-form" method="POST">
-                        <input type="hidden" name="__action" value="status" />
-                        <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                        <button type="submit" class="btn btn-sm btn-primary">
-                          <i class="fa fa-info-circle" aria-hidden="true"></i>
-                          Show server git status
-                        </button>
-                      </form>
+                      ${jobSequence.start_date == null
+                        ? html`&mdash;`
+                        : formatDate(jobSequence.start_date, course.display_timezone)}
+                    </td>
+                    <td>${jobSequence.description}</td>
+                    <td>${jobSequence.user_uid ?? '(System)'}</td>
+                    <td>${JobStatus({ status: jobSequence.status })}</td>
+                    <td>
+                      <a
+                        href="${urlPrefix}/jobSequence/${jobSequence.id}"
+                        class="btn btn-xs btn-info"
+                      >
+                        Details
+                      </a>
                     </td>
                   </tr>
-                  <tr>
-                    <th class="align-middle">Remote repository</th>
-                    <td class="align-middle">${course.repository}</td>
-                    <td>
-                      <form name="confirm-form" method="POST">
-                        <input type="hidden" name="__action" value="pull" />
-                        <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                        <button type="submit" class="btn btn-sm btn-primary">
-                          <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
-                          Pull from remote git repository
-                        </button>
-                      </form>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <h2>Docker images</h2>
-            </div>
-            ${ImageTable({ images, course, urlPrefix, __csrf_token })}
-          </div>
-
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <h2>Sync job history</h2>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-sm table-hover" aria-label="Sync job history">
-                <thead>
-                  <tr>
-                    <th>Number</th>
-                    <th>Date</th>
-                    <th>Description</th>
-                    <th>User</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${jobSequences.map(
-                    (jobSequence) => html`
-                      <tr>
-                        <td>${jobSequence.number}</td>
-                        <td>
-                          ${jobSequence.start_date == null
-                            ? html`&mdash;`
-                            : formatDate(jobSequence.start_date, course.display_timezone)}
-                        </td>
-                        <td>${jobSequence.description}</td>
-                        <td>${jobSequence.user_uid ?? '(System)'}</td>
-                        <td>${JobStatus({ status: jobSequence.status })}</td>
-                        <td>
-                          <a
-                            href="${urlPrefix}/jobSequence/${jobSequence.id}"
-                            class="btn btn-xs btn-info"
-                          >
-                            Details
-                          </a>
-                        </td>
-                      </tr>
-                    `,
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+                `,
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `,
+  });
 }
 
 function ImageTable({

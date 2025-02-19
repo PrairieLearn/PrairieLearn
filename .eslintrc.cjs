@@ -23,11 +23,19 @@ module.exports = {
     'eslint:recommended',
     'plugin:import-x/recommended',
     'plugin:import-x/typescript',
+    'plugin:@eslint-react/recommended-legacy',
     'plugin:@typescript-eslint/stylistic',
     'plugin:@typescript-eslint/strict',
     'prettier',
   ],
-  plugins: ['@typescript-eslint', 'no-floating-promise', 'no-only-tests', 'mocha', '@prairielearn'],
+  plugins: [
+    'no-floating-promise',
+    'no-only-tests',
+    'mocha',
+    '@eslint-react',
+    '@prairielearn',
+    '@typescript-eslint',
+  ],
   parserOptions: {
     ecmaVersion: 13,
   },
@@ -144,6 +152,11 @@ module.exports = {
       env: {
         browser: true,
         jquery: true,
+      },
+      settings: {
+        react: {
+          pragma: 'h',
+        },
       },
     },
   ],

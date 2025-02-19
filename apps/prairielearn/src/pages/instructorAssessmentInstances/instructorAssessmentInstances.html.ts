@@ -1,187 +1,186 @@
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 
 export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record<string, any> }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Instances',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'instances',
+    },
+    options: {
+      fullWidth: true,
+    },
+    headContent: html`
+      <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
+      <script src="${nodeModulesAssetPath(
+          'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
+        )}"></script>
+      <script src="${nodeModulesAssetPath(
+          'bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js',
+        )}"></script>
+      <link
+        href="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.css')}"
+        rel="stylesheet"
+      />
+      <link
+        href="${nodeModulesAssetPath(
+          'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css',
+        )}"
+        rel="stylesheet"
+      />
 
-        <script src="${nodeModulesAssetPath(
-            'bootstrap-table/dist/bootstrap-table.min.js',
-          )}"></script>
-        <script src="${nodeModulesAssetPath(
-            'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-          )}"></script>
-        <script src="${nodeModulesAssetPath(
-            'bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js',
-          )}"></script>
-        <link
-          href="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.css')}"
-          rel="stylesheet"
-        />
-        <link
-          href="${nodeModulesAssetPath(
-            'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css',
-          )}"
-          rel="stylesheet"
-        />
+      ${compiledScriptTag('instructorAssessmentInstancesClient.tsx')}
+    `,
+    content: html`
+      ${AssessmentSyncErrorsAndWarnings({
+        authz_data: resLocals.authz_data,
+        assessment: resLocals.assessment,
+        courseInstance: resLocals.course_instance,
+        course: resLocals.course,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+      ${resLocals.authz_data.has_course_instance_permission_edit
+        ? html`
+            ${DeleteAssessmentInstanceModal({
+              assessmentSetName: resLocals.assessment_set.name,
+              assessmentNumber: resLocals.assessment.number,
+              assessmentGroupWork: resLocals.assessment.group_work,
+              csrfToken: resLocals.__csrf_token,
+            })}
+            ${DeleteAllAssessmentInstancesModal({
+              assessmentSetName: resLocals.assessment_set.name,
+              assessmentNumber: resLocals.assessment.number,
+              csrfToken: resLocals.__csrf_token,
+            })}
+            ${GradeAllAssessmentInstancesModal({
+              assessmentSetName: resLocals.assessment_set.name,
+              assessmentNumber: resLocals.assessment.number,
+              csrfToken: resLocals.__csrf_token,
+            })}
+            ${CloseAllAssessmentInstancesModal({
+              assessmentSetName: resLocals.assessment_set.name,
+              assessmentNumber: resLocals.assessment.number,
+              csrfToken: resLocals.__csrf_token,
+            })}
+          `
+        : ''}
 
-        ${compiledScriptTag('instructorAssessmentInstancesClient.ts')}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
-          ${AssessmentSyncErrorsAndWarnings({
-            authz_data: resLocals.authz_data,
-            assessment: resLocals.assessment,
-            courseInstance: resLocals.course_instance,
-            course: resLocals.course,
-            urlPrefix: resLocals.urlPrefix,
-          })}
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students</h1>
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
-                ${DeleteAssessmentInstanceModal({
-                  assessmentSetName: resLocals.assessment_set.name,
-                  assessmentNumber: resLocals.assessment.number,
-                  assessmentGroupWork: resLocals.assessment.group_work,
-                  csrfToken: resLocals.__csrf_token,
-                })}
-                ${DeleteAllAssessmentInstancesModal({
-                  assessmentSetName: resLocals.assessment_set.name,
-                  assessmentNumber: resLocals.assessment.number,
-                  csrfToken: resLocals.__csrf_token,
-                })}
-                ${GradeAllAssessmentInstancesModal({
-                  assessmentSetName: resLocals.assessment_set.name,
-                  assessmentNumber: resLocals.assessment.number,
-                  csrfToken: resLocals.__csrf_token,
-                })}
-                ${CloseAllAssessmentInstancesModal({
-                  assessmentSetName: resLocals.assessment_set.name,
-                  assessmentNumber: resLocals.assessment.number,
-                  csrfToken: resLocals.__csrf_token,
-                })}
+                <div class="ml-auto">
+                  <div class="dropdown d-flex flex-row">
+                    <button
+                      type="button"
+                      class="btn btn-light dropdown-toggle"
+                      data-toggle="dropdown"
+                      aria-haspopup="true"
+                      aria-expanded="false"
+                    >
+                      Action for all instances <span class="caret"></span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right">
+                      ${resLocals.authz_data.has_course_instance_permission_edit
+                        ? html`
+                            <button
+                              class="dropdown-item"
+                              data-toggle="modal"
+                              data-target="#deleteAllAssessmentInstancesModal"
+                            >
+                              <i class="fas fa-times" aria-hidden="true"></i> Delete all instances
+                            </button>
+                            <button
+                              class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
+                              data-placement="left"
+                              data-bs-toggle-popover
+                            >
+                              <i class="far fa-clock" aria-hidden="true"></i> Change time limit for
+                              all instances
+                            </button>
+                            <button
+                              class="dropdown-item"
+                              data-toggle="modal"
+                              data-target="#grade-all-form"
+                            >
+                              <i class="fas fa-clipboard-check" aria-hidden="true"></i> Grade all
+                              instances
+                            </button>
+                            <button
+                              class="dropdown-item"
+                              data-toggle="modal"
+                              data-target="#closeAllAssessmentInstancesModal"
+                            >
+                              <i class="fas fa-ban" aria-hidden="true"></i> Grade and close all
+                              instances
+                            </button>
+                          `
+                        : html`
+                            <button class="dropdown-item disabled" disabled>
+                              Must have editor permission
+                            </button>
+                          `}
+                    </div>
+                  </div>
+                </div>
               `
             : ''}
+        </div>
 
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students</h1>
-              ${resLocals.authz_data.has_course_instance_permission_edit
-                ? html`
-                    <div class="ml-auto">
-                      <div class="dropdown d-flex flex-row">
-                        <button
-                          type="button"
-                          class="btn btn-light dropdown-toggle"
-                          data-toggle="dropdown"
-                          aria-haspopup="true"
-                          aria-expanded="false"
-                        >
-                          Action for all instances <span class="caret"></span>
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-right">
-                          ${resLocals.authz_data.has_course_instance_permission_edit
-                            ? html`
-                                <button
-                                  class="dropdown-item"
-                                  data-toggle="modal"
-                                  data-target="#deleteAllAssessmentInstancesModal"
-                                >
-                                  <i class="fas fa-times" aria-hidden="true"></i> Delete all
-                                  instances
-                                </button>
-                                <button
-                                  class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
-                                  data-placement="left"
-                                  data-bs-toggle-popover
-                                >
-                                  <i class="far fa-clock" aria-hidden="true"></i> Change time limit
-                                  for all instances
-                                </button>
-                                <button
-                                  class="dropdown-item"
-                                  data-toggle="modal"
-                                  data-target="#grade-all-form"
-                                >
-                                  <i class="fas fa-clipboard-check" aria-hidden="true"></i> Grade
-                                  all instances
-                                </button>
-                                <button
-                                  class="dropdown-item"
-                                  data-toggle="modal"
-                                  data-target="#closeAllAssessmentInstancesModal"
-                                >
-                                  <i class="fas fa-ban" aria-hidden="true"></i> Grade and close all
-                                  instances
-                                </button>
-                              `
-                            : html`
-                                <button class="dropdown-item disabled" disabled>
-                                  Must have editor permission
-                                </button>
-                              `}
-                        </div>
-                      </div>
-                    </div>
-                  `
-                : ''}
-            </div>
+        <table
+          id="usersTable"
+          aria-label="Assessment instances"
+          data-unique-id="assessment_instance_id"
+          data-classes="table table-sm table-hover table-bordered"
+          data-show-button-text="true"
+          data-url="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+            .id}/instances/raw_data.json"
+          data-search="true"
+          data-show-columns="true"
+          data-show-refresh="true"
+          data-auto-refresh="true"
+          data-auto-refresh-status="false"
+          data-auto-refresh-interval="30"
+          data-buttons-order="['refresh', 'autoRefresh', 'columns']"
+          data-thead-classes="thead-light"
+          data-pagination="true"
+          data-pagination-v-align="both"
+          data-pagination-h-align="left"
+          data-pagination-detail-h-align="right"
+          data-toolbar=".fixed-table-pagination:nth(0)"
+          data-page-list="[10,20,50,100,200,500,unlimited]"
+          data-page-size="50"
+          data-smart-display="false"
+          data-show-extended-pagination="true"
+          data-sticky-header="true"
+          data-assessment-group-work="${resLocals.assessment.group_work}"
+          data-assessment-multiple-instance="${resLocals.assessment.multiple_instance}"
+          data-assessment-number="${resLocals.assessment.number}"
+          data-url-prefix="${resLocals.urlPrefix}"
+          data-assessment-set-abbr="${resLocals.assessment_set.abbreviation}"
+          data-csrf-token="${resLocals.__csrf_token}"
+          data-has-course-instance-permission-edit="${resLocals.authz_data
+            .has_course_instance_permission_edit}"
+          data-timezone="${resLocals.course_instance.display_timezone}"
+        ></table>
 
-            <table
-              id="usersTable"
-              aria-label="Assessment instances"
-              data-unique-id="assessment_instance_id"
-              data-classes="table table-sm table-hover table-bordered"
-              data-show-button-text="true"
-              data-url="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                .id}/instances/raw_data.json"
-              data-search="true"
-              data-show-columns="true"
-              data-show-refresh="true"
-              data-auto-refresh="true"
-              data-auto-refresh-status="false"
-              data-auto-refresh-interval="30"
-              data-buttons-order="['refresh', 'autoRefresh', 'columns']"
-              data-thead-classes="thead-light"
-              data-pagination="true"
-              data-pagination-v-align="both"
-              data-pagination-h-align="left"
-              data-pagination-detail-h-align="right"
-              data-toolbar=".fixed-table-pagination:nth(0)"
-              data-page-list="[10,20,50,100,200,500,unlimited]"
-              data-page-size="50"
-              data-smart-display="false"
-              data-show-extended-pagination="true"
-              data-sticky-header="true"
-              data-assessment-group-work="${resLocals.assessment.group_work}"
-              data-assessment-multiple-instance="${resLocals.assessment.multiple_instance}"
-              data-assessment-number="${resLocals.assessment.number}"
-              data-url-prefix="${resLocals.urlPrefix}"
-              data-assessment-set-abbr="${resLocals.assessment_set.abbreviation}"
-              data-csrf-token="${resLocals.__csrf_token}"
-              data-has-course-instance-permission-edit="${resLocals.authz_data
-                .has_course_instance_permission_edit}"
-            ></table>
+        <div class="spinning-wheel card-body spinner-border">
+          <span class="sr-only">Loading...</span>
+        </div>
 
-            <div class="spinning-wheel card-body spinner-border">
-              <span class="sr-only">Loading...</span>
-            </div>
-
-            ${RoleHelpModal()} ${FingerprintChangesHelpModal()} ${DurationHelpModal()}
-            ${TimeRemainingHelpModal()}
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+        ${RoleHelpModal()} ${FingerprintChangesHelpModal()} ${DurationHelpModal()}
+        ${TimeRemainingHelpModal()}
+      </div>
+    `,
+  });
 }
 
 function RoleHelpModal() {
@@ -402,8 +401,7 @@ function GradeAllAssessmentInstancesModal({
     title: 'Grade all assessment instances',
     body: html`
       Are you sure you want to grade pending submissions for all assessment instances for
-      <strong> ${assessmentSetName} ${assessmentNumber} </strong>
-      ? This cannot be undone.
+      <strong>${assessmentSetName} ${assessmentNumber}</strong>? This cannot be undone.
     `,
     footer: html`
       <input type="hidden" name="__action" value="grade_all" />
@@ -428,8 +426,7 @@ function CloseAllAssessmentInstancesModal({
     title: 'Grade and Close all assessment instances',
     body: html`
       Are you sure you want to grade and close all assessment instances for
-      <strong> ${assessmentSetName} ${assessmentNumber} </strong>
-      ? This cannot be undone.
+      <strong>${assessmentSetName} ${assessmentNumber}</strong>? This cannot be undone.
     `,
     footer: html`
       <input type="hidden" name="__action" value="close_all" />

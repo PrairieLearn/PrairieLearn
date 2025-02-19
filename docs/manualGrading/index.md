@@ -7,15 +7,14 @@ Some questions may require manual grading, either fully (e.g., freeform essay-ty
 
 ## Configuring a question for manual grading
 
-For questions that require manual grading, the question can be set up for manual grading by using `manualPoints` in the [assessment configuration](../assessment.md#question-specification), like this:
+For questions that require manual grading, the question can be set up for manual grading by using `manualPoints` in the [assessment configuration](../assessment/index.md#question-specification), like this:
 
-```json
+```json title="infoAssessment.json"
 {
-    "questions": [
-        {"id": "manualGradingOnly", "manualPoints": 2},
-        {"id": "combinedManualAndAutoGrading", "autoPoints": 2, "manualPoints": 6}
-    ]
-    ...
+  "questions": [
+    { "id": "manualGradingOnly", "manualPoints": 2 },
+    { "id": "combinedManualAndAutoGrading", "autoPoints": 2, "manualPoints": 6 }
+  ]
 }
 ```
 
@@ -23,11 +22,10 @@ Questions set to use only manual grading (i.e., with manual points but no auto p
 
 It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments. By default, manual grading is performed only for the last submission of the last variant, so having a single variant simplifies both the grading process and the student feedback. The `singleVariant` setting can be updated in the [`info.json` file](../question.md#question-infojson) in the question, like this:
 
-```json
+```json title="info.json"
 {
-    "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
-    "singleVariant": true,
-    ...
+  "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
+  "singleVariant": true
 }
 ```
 
@@ -52,15 +50,12 @@ If the students uploaded files then you may also download `<assessment>_files_fo
 
 The `<assessment>_files_for_manual_grading.zip` file contains all files uploaded by the student for grading. For workspace questions, list any files that you want to include in this download file in the `"gradedFiles"` list in the question's [`info.json` file](../workspaces/index.md#infojson):
 
-```json
-"workspaceOptions": {
-        "gradedFiles": [
-            "starter_code.h",
-            "starter_code.c"
-        ],
-        ...
+```json title="info.json"
+{
+  "workspaceOptions": {
+    "gradedFiles": ["starter_code.h", "starter_code.c"]
+  }
 }
-...
 ```
 
 ### Uploading the scores and feedback
@@ -94,7 +89,7 @@ The user interface for manual grading is built to encourage a workflow where all
 
 After students have completed their assessments, open the "Manual Grading" tab. This page will list all questions in this assessment, as well as the number of submissions that require grading. For questions that have at least one submission tagged for grading, the "Grade next submission" button will be shown, which will jump directly to one of the submissions that need to be graded. Alternatively, clicking on the question's title will open a list of all student answers for that question.
 
-The list of student submissions for a question gives course staff the ability to tag individual student answers (or all answers for the question) to specific graders. This can be done by selecting the submissions to be tagged, then selecting the "Tag for grading" button and choosing the grader responsible for those submissions. Only staff members with [Editor permission for the course instance](../course.md#student-data-access-roles) are listed for tagging.
+The list of student submissions for a question gives course staff the ability to tag individual student answers (or all answers for the question) to specific graders. This can be done by selecting the submissions to be tagged, then selecting the "Tag for grading" button and choosing the grader responsible for those submissions. Only staff members with [Editor permission for the course instance](../course/index.md#student-data-access-roles) are listed for tagging.
 
 In the grading page for individual submissions, the grader can assign a specific set of manual points to the question, and provide feedback as needed (Markdown formatting is allowed). For questions with auto points, it is also possible to override the auto-grading points assigned to the question. Graders also have the option to use a percentage score instead of points. Once these values are set, the grader can select "Submit", which will update the score and open the next question to be graded.
 

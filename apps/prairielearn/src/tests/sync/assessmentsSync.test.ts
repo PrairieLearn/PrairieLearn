@@ -2280,6 +2280,31 @@ describe('Assessment syncing', () => {
     assert.equal(newAssessmentRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 
+  it('forbids draft questions on assessments', async () => {
+    const courseData = util.getCourseData();
+
+    // "Rename" the default question such that it is a draft.
+    courseData.questions['__drafts__/draft_1'] = courseData.questions[util.QUESTION_ID];
+    delete courseData.questions[util.QUESTION_ID];
+
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [{ id: '__drafts__/draft_1', points: 5 }],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('fail');
+    assert.isOk(syncedData.assessment.sync_errors);
+    console.log(syncedData.assessment.sync_errors);
+    assert.match(
+      syncedData.assessment?.sync_errors,
+      /The following questions are marked as draft and therefore cannot be used in assessments: __drafts__\/draft_1/,
+    );
+  });
+
   describe('exam UUID validation', () => {
     let originalCheckAccessRulesExamUuid: boolean;
     before(() => {

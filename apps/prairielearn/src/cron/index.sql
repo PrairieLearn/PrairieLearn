@@ -12,8 +12,7 @@ INSERT INTO
   cron_jobs (name, date)
 VALUES
   ($name, now())
-ON CONFLICT (name) DO
-UPDATE
+ON CONFLICT (name) DO UPDATE
 SET
   date = EXCLUDED.date;
 

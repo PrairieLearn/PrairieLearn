@@ -63,7 +63,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
     - `**` can be used to identify files in all subdirectories of the workspace (e.g., `**/*.py` will copy the files with `.py` extension in the home directory and in all its subdirectories).
     - `?` matches any single character except path separators.
     - `[seq]` matches any character in `seq`.
-  - `args` (optional, default none): command line arguments to pass to the Docker image
+  - `args` (optional, default none): command line arguments to pass to the Docker image. May be a string (e.g., `"--auth none"`) or an array of strings (e.g., `["--auth", "none"]`).
   - `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
   - `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode. It is strongly recommended to use the default (no networking) for exam questions, because network access can be used to enable cheating. Only enable networking for homework questions, and only if it is strictly required, for example for downloading data from the internet.
   - `environment` (optional, default `{}`): environment variables to set inside the workspace container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`).
@@ -72,7 +72,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
 
 For an ungraded workspace, a full `info.json` file should look something like:
 
-```json
+```json title="info.json"
 {
     "uuid": "...",
     "title": "...",
@@ -93,7 +93,7 @@ For an ungraded workspace, a full `info.json` file should look something like:
 
 For an externally graded workspace, a full `info.json` file should look something like:
 
-```json
+```json title="info.json"
 {
     "uuid": "...",
     "title": "...",
@@ -268,7 +268,7 @@ docker run -it --rm -p HOST_PORT:CLIENT_PORT --user 1001:1001 IMAGE_NAME
 
 For example, the [example JupyterLab workspace](https://us.prairielearn.com/pl/course/108/question/9045312/preview) using the [JupyterLab image](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python) uses port 8080 and so can be run successfully like this:
 
-```
+```sh
 docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyterlab-python
 ```
 

@@ -2,13 +2,12 @@ import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import {
   type CourseInstance,
-  CourseInstanceSchema,
   CourseInstancePermissionSchema,
+  CourseInstanceSchema,
   CoursePermissionSchema,
   type User,
   UserSchema,
@@ -56,140 +55,145 @@ export function InstructorCourseAdminStaff({
   uidsLimit: number;
   githubAccessLink: string | null;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
-        <style>
-          .popover {
-            max-width: 35%;
-          }
-        </style>
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
-          ${CourseSyncErrorsAndWarnings({
-            authz_data: resLocals.authz_data,
-            course: resLocals.course,
-            urlPrefix: resLocals.urlPrefix,
-          })}
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex flex-wrap align-items-center">
-              <h1 class="mr-2">Staff</h1>
-              <div class="ml-auto">
-                <button
-                  type="button"
-                  class="btn btn-light btn-sm ml-auto"
-                  data-toggle="popover"
-                  data-container="body"
-                  data-html="true"
-                  data-placement="auto"
-                  title="Remove all student data access"
-                  data-content="${escapeHtml(
-                    CoursePermissionsRemoveStudentDataAccessForm({
-                      csrfToken: resLocals.__csrf_token,
-                    }),
-                  )}"
-                  data-testid="remove-all-student-data-access-button"
-                >
-                  <i class="fas fa-eye-slash" aria-hidden="true"></i>
-                  <span class="d-none d-sm-inline">Remove all student data access</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-light btn-sm ml-auto"
-                  data-toggle="popover"
-                  data-container="body"
-                  data-html="true"
-                  data-placement="auto"
-                  title="Delete users with no access"
-                  data-content="${escapeHtml(
-                    CoursePermissionsDeleteNoAccessForm({
-                      csrfToken: resLocals.__csrf_token,
-                    }),
-                  )}"
-                  data-testid="delete-users-with-no-access-button"
-                >
-                  <i class="fas fa-recycle" aria-hidden="true"></i>
-                  <span class="d-none d-sm-inline">Delete users with no access</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-light btn-sm ml-auto"
-                  data-toggle="popover"
-                  data-container="body"
-                  data-html="true"
-                  data-placement="auto"
-                  title="Delete non-owners"
-                  data-content="${escapeHtml(
-                    CoursePermissionsDeleteNonOwnersForm({
-                      csrfToken: resLocals.__csrf_token,
-                    }),
-                  )}"
-                  data-testid="delete-non-owners-button"
-                >
-                  <i class="fas fa-users-slash" aria-hidden="true"></i>
-                  <span class="d-none d-sm-inline">Delete non-owners</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-light btn-sm ml-auto"
-                  data-toggle="popover"
-                  data-container="body"
-                  data-html="true"
-                  data-placement="auto"
-                  title="Add users"
-                  data-content="${escapeHtml(
-                    CoursePermissionsInsertForm({
-                      csrfToken: resLocals.__csrf_token,
-                      uidsLimit,
-                      courseInstances,
-                    }),
-                  )}"
-                  data-testid="add-users-button"
-                >
-                  <i class="fas fa-users" aria-hidden="true"></i>
-                  <span class="d-none d-sm-inline">Add users</span>
-                </button>
-              </div>
-            </div>
-            ${StaffTable({
-              csrfToken: resLocals.__csrf_token,
-              courseUsers,
-              authnUser: resLocals.authn_user,
-              user: resLocals.user,
-              isAdministrator: resLocals.is_administrator,
-            })}
-            <small class="card-footer">
-              ${hasUnknownUsers(courseUsers)
-                ? html`
-                    <p class="alert alert-warning">
-                      Users with name "<span class="text-danger">Unknown user</span>" either have
-                      never logged in or have an incorrect UID.
-                    </p>
-                  `
-                : ''}
-              <details>
-                <summary>Recommended access levels</summary>
-                ${AccessLevelsTable()}
-              </details>
-              ${githubAccessLink
-                ? html`
-                    <div class="alert alert-info mt-3">
-                      The settings above do not affect access to the course's Git repository. To
-                      change repository permissions, go to the
-                      <a href="${githubAccessLink}" target="_blank">GitHub access settings page</a>.
-                    </div>
-                  `
-                : ''}
-            </small>
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Staff',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'staff',
+    },
+    options: {
+      fullWidth: true,
+    },
+    headContent: html`
+      <style>
+        .popover {
+          max-width: 35%;
+        }
+      </style>
+    `,
+    content: html`
+      ${CourseSyncErrorsAndWarnings({
+        authz_data: resLocals.authz_data,
+        course: resLocals.course,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex flex-wrap align-items-center">
+          <h1 class="mr-2">Staff</h1>
+          <div class="ml-auto">
+            <button
+              type="button"
+              class="btn btn-light btn-sm ml-auto"
+              data-toggle="popover"
+              data-container="body"
+              data-html="true"
+              data-placement="auto"
+              title="Remove all student data access"
+              data-content="${escapeHtml(
+                CoursePermissionsRemoveStudentDataAccessForm({
+                  csrfToken: resLocals.__csrf_token,
+                }),
+              )}"
+              data-testid="remove-all-student-data-access-button"
+            >
+              <i class="fas fa-eye-slash" aria-hidden="true"></i>
+              <span class="d-none d-sm-inline">Remove all student data access</span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-light btn-sm ml-auto"
+              data-toggle="popover"
+              data-container="body"
+              data-html="true"
+              data-placement="auto"
+              title="Delete users with no access"
+              data-content="${escapeHtml(
+                CoursePermissionsDeleteNoAccessForm({
+                  csrfToken: resLocals.__csrf_token,
+                }),
+              )}"
+              data-testid="delete-users-with-no-access-button"
+            >
+              <i class="fas fa-recycle" aria-hidden="true"></i>
+              <span class="d-none d-sm-inline">Delete users with no access</span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-light btn-sm ml-auto"
+              data-toggle="popover"
+              data-container="body"
+              data-html="true"
+              data-placement="auto"
+              title="Delete non-owners"
+              data-content="${escapeHtml(
+                CoursePermissionsDeleteNonOwnersForm({
+                  csrfToken: resLocals.__csrf_token,
+                }),
+              )}"
+              data-testid="delete-non-owners-button"
+            >
+              <i class="fas fa-users-slash" aria-hidden="true"></i>
+              <span class="d-none d-sm-inline">Delete non-owners</span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-light btn-sm ml-auto"
+              data-toggle="popover"
+              data-container="body"
+              data-html="true"
+              data-placement="auto"
+              title="Add users"
+              data-content="${escapeHtml(
+                CoursePermissionsInsertForm({
+                  csrfToken: resLocals.__csrf_token,
+                  uidsLimit,
+                  courseInstances,
+                }),
+              )}"
+              data-testid="add-users-button"
+            >
+              <i class="fas fa-users" aria-hidden="true"></i>
+              <span class="d-none d-sm-inline">Add users</span>
+            </button>
           </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+        </div>
+        ${StaffTable({
+          csrfToken: resLocals.__csrf_token,
+          courseUsers,
+          authnUser: resLocals.authn_user,
+          user: resLocals.user,
+          isAdministrator: resLocals.is_administrator,
+        })}
+        <small class="card-footer">
+          ${hasUnknownUsers(courseUsers)
+            ? html`
+                <p class="alert alert-warning">
+                  Users with name "<span class="text-danger">Unknown user</span>" either have never
+                  logged in or have an incorrect UID.
+                </p>
+              `
+            : ''}
+          <details>
+            <summary>Recommended access levels</summary>
+            ${AccessLevelsTable()}
+          </details>
+          ${githubAccessLink
+            ? html`
+                <div class="alert alert-info mt-3">
+                  The settings above do not affect access to the course's Git repository. To change
+                  repository permissions, go to the
+                  <a class="alert-link" href="${githubAccessLink}" target="_blank">
+                    GitHub access settings page</a
+                  >.
+                </div>
+              `
+            : ''}
+        </small>
+      </div>
+    `,
+  });
 }
 
 function CoursePermissionsRemoveStudentDataAccessForm({ csrfToken }: { csrfToken: string }) {
@@ -263,7 +267,7 @@ function CoursePermissionsInsertForm({
           class="form-control"
           id="addUsersInputUid"
           name="uid"
-          placeholder="student1@example.com, student2@example.com"
+          placeholder="staff1@example.com, staff2@example.com"
           required
           aria-describedby="addUsersInputUidHelp"
         ></textarea>

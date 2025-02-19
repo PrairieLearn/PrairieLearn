@@ -1,9 +1,8 @@
 -- BLOCK backfill_share_publicly
-UPDATE questions AS q
+UPDATE questions
 SET
-  share_publicly = q.shared_publicly
-FROM
-  questions
+  share_publicly = shared_publicly
 WHERE
-  q.id >= $start
-  AND q.id <= $end;
+  shared_publicly IS TRUE
+  AND id >= $start
+  AND id <= $end;

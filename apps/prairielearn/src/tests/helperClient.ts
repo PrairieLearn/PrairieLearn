@@ -21,16 +21,8 @@ interface CheerioResponse extends Response {
  */
 export async function fetchCheerio(
   url: string | URL,
-  options: RequestInit & { form?: Record<string, any> } = {},
+  options: RequestInit = {},
 ): Promise<CheerioResponse> {
-  if (options.form) {
-    options.body = JSON.stringify(options.form);
-    options.headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-    delete options.form;
-  }
   const response = await fetch(url, options);
   const text = await response.text();
 

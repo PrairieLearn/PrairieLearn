@@ -1,15 +1,26 @@
 import math
 import random
+from enum import Enum
 from html import escape
+from typing import Literal
 
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
+from sympy import Expr
+from typing_extensions import assert_never
+
+
+class ComparisonMode(Enum):
+    RELABS = "relabs"
+    SIGFIG = "sigfig"
+    DECDIG = "decdig"
+
 
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
-COMPARISON_DEFAULT = "relabs"
+COMPARISON_DEFAULT = ComparisonMode.RELABS
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
@@ -19,7 +30,7 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = 0
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
     optional_attribs = [
@@ -44,25 +55,25 @@ def prepare(element_html, data):
     if name not in data["correct_answers"]:
         m = pl.get_integer_attrib(element, "rows", None)
         if m is None:
-            raise Exception(
+            raise ValueError(
                 "Number of rows is not set in pl-matrix-component-input with no correct answer."
             )
         if m < 1:
-            raise Exception(
+            raise ValueError(
                 "Number of rows in pl-matrix-component-input must be strictly positive."
             )
         n = pl.get_integer_attrib(element, "columns", None)
         if n is None:
-            raise Exception(
+            raise ValueError(
                 "Number of columns is not set in pl-matrix-component-input with no correct answer."
             )
         if n < 1:
-            raise Exception(
+            raise ValueError(
                 "Number of columns in pl-matrix-component-input must be strictly positive."
             )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, "answers-name")
@@ -83,85 +94,72 @@ def render(element_html, data):
         # Get true answer
         a_tru = pl.from_json(data["correct_answers"].get(name, None))
         if a_tru is None:
-            m = pl.get_integer_attrib(element, "rows", None)
-            n = pl.get_integer_attrib(element, "columns", None)
+            m = pl.get_integer_attrib(element, "rows")
+            n = pl.get_integer_attrib(element, "columns")
         else:
             if np.isscalar(a_tru):
-                raise Exception(
-                    'Value in data["correct_answers"] for variable %s in pl-matrix-component-input element cannot be a scalar.'
-                    % name
+                raise ValueError(
+                    f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element cannot be a scalar.'
                 )
-            else:
-                a_tru = np.array(a_tru)
+            a_tru = np.array(a_tru)
 
             if a_tru.ndim != 2:
-                raise Exception(
-                    'Value in data["correct_answers"] for variable %s in pl-matrix-component-input element must be a 2D array.'
-                    % name
+                raise ValueError(
+                    f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element must be a 2D array.'
                 )
-            else:
-                m, n = np.shape(a_tru)
+            m, n = np.shape(a_tru)
 
-        input_array = createTableForHTMLDisplay(m, n, name, label, data, "input")
+        input_array = create_table_for_html_display(m, n, name, label, data, "input")
 
         # Get comparison parameters and info strings
-        comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
-        if comparison == "relabs":
+        comparison = pl.get_enum_attrib(
+            element, "comparison", ComparisonMode, COMPARISON_DEFAULT
+        )
+        if comparison is ComparisonMode.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
-                raise ValueError(
-                    "Attribute rtol = {:g} must be non-negative".format(rtol)
-                )
+                raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
-                raise ValueError(
-                    "Attribute atol = {:g} must be non-negative".format(atol)
-                )
+                raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
             info_params = {
                 "format": True,
                 "relabs": True,
-                "rtol": "{:g}".format(rtol),
-                "atol": "{:g}".format(atol),
+                "rtol": f"{rtol:g}",
+                "atol": f"{atol:g}",
             }
-        elif comparison == "sigfig":
+        elif comparison is ComparisonMode.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "sigfig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 1)),
             }
-        elif comparison == "decdig":
+        elif comparison is ComparisonMode.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "decdig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 0)),
             }
         else:
-            raise ValueError(
-                'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                % comparison
-            )
+            assert_never(comparison)
 
         info_params["allow_fractions"] = allow_fractions
-        with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
-        with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             info_params.pop("format", None)
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
 
-        html_params = {
+        html_params: dict[str, bool | str | float | None] = {
             "question": True,
             "name": name,
             "label": label,
@@ -175,18 +173,10 @@ def render(element_html, data):
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
-        with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -199,35 +189,35 @@ def render(element_html, data):
 
         if parse_error is None:
             a_submitted = pl.from_json(data["submitted_answers"].get(name, None))
-            if a_submitted is not None and len(a_submitted.shape) == 2:
+            if (
+                a_submitted is not None
+                and isinstance(a_submitted, np.ndarray)
+                and len(a_submitted.shape) == 2
+            ):
                 m, n = np.shape(a_submitted)
+            else:
+                raise ValueError(
+                    f"submitted answer for {name} is not a 2D array or is not in the correct format"
+                )
         else:
             a_tru = np.array(pl.from_json(data["correct_answers"].get(name, None)))
             if a_tru is not None and len(a_tru.shape) == 2:
                 m, n = np.shape(a_tru)
             else:
-                m = pl.get_integer_attrib(element, "rows", None)
-                n = pl.get_integer_attrib(element, "columns", None)
+                m = pl.get_integer_attrib(element, "rows")
+                n = pl.get_integer_attrib(element, "columns")
 
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         if parse_error is None and name in data["submitted_answers"]:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data["submitted_answers"].get(name, None)
             if a_sub is None:
-                raise Exception("submitted answer is None")
+                raise ValueError("submitted answer is None")
             # If answer is in a format generated by pl.to_json, convert it back to a standard type (otherwise, do nothing)
             a_sub = pl.from_json(a_sub)
             # Wrap answer in an ndarray (if it's already one, this does nothing)
@@ -239,7 +229,7 @@ def render(element_html, data):
                 + "$"
             )
             # When allowing feedback, display submitted answers using html table
-            sub_html_table = createTableForHTMLDisplay(
+            sub_html_table = create_table_for_html_display(
                 m, n, name, label, data, "output-feedback"
             )
             if allow_feedback and score is not None:
@@ -254,7 +244,7 @@ def render(element_html, data):
             html_params["parse_error"] = None
         else:
             # create html table to show submitted answer when there is an invalid format
-            html_params["raw_submitted_answer"] = createTableForHTMLDisplay(
+            html_params["raw_submitted_answer"] = create_table_for_html_display(
                 m, n, name, label, data, "output-invalid"
             )
 
@@ -262,7 +252,7 @@ def render(element_html, data):
             "missing_input", False
         )
 
-        with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -272,8 +262,10 @@ def render(element_html, data):
             a_tru = np.array(a_tru)
 
             # Get comparison parameters and create the display data
-            comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
-            if comparison == "relabs":
+            comparison = pl.get_enum_attrib(
+                element, "comparison", ComparisonMode, COMPARISON_DEFAULT
+            )
+            if comparison is ComparisonMode.RELABS:
                 rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
                 atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
                 # FIXME: render correctly with respect to rtol and atol
@@ -282,7 +274,7 @@ def render(element_html, data):
                     + pl.latex_from_2darray(a_tru, presentation_type="g", digits=12)
                     + "$"
                 )
-            elif comparison == "sigfig":
+            elif comparison is ComparisonMode.SIGFIG:
                 digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
                 latex_data = (
                     "$"
@@ -291,7 +283,7 @@ def render(element_html, data):
                     )
                     + "$"
                 )
-            elif comparison == "decdig":
+            elif comparison is ComparisonMode.DECDIG:
                 digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
                 latex_data = (
                     "$"
@@ -299,10 +291,7 @@ def render(element_html, data):
                     + "$"
                 )
             else:
-                raise ValueError(
-                    'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                    % comparison
-                )
+                assert_never(comparison)
 
             html_params = {
                 "answer": True,
@@ -310,18 +299,18 @@ def render(element_html, data):
                 "latex_data": latex_data,
             }
 
-            with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+            with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ""
 
     else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+        raise ValueError("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_fractions = pl.get_boolean_attrib(
@@ -333,15 +322,14 @@ def parse(element_html, data):
     # Get dimensions of the input matrix
     a_tru = pl.from_json(data["correct_answers"].get(name, None))
     if a_tru is None:
-        m = pl.get_integer_attrib(element, "rows", None)
-        n = pl.get_integer_attrib(element, "columns", None)
+        m = pl.get_integer_attrib(element, "rows")
+        n = pl.get_integer_attrib(element, "columns")
     else:
         a_tru = np.array(a_tru)
         if a_tru.ndim != 2:
             raise ValueError("true answer must be a 2D array")
-        else:
-            m, n = np.shape(a_tru)
-    A = np.empty((m, n))
+        m, n = np.shape(a_tru)
+    matrix = np.empty((m, n))
 
     # Create an array for the submitted answer to be stored in data['submitted_answer'][name]
     # used for display in the answer and submission panels
@@ -353,30 +341,32 @@ def parse(element_html, data):
             a_sub = data["submitted_answers"].get(each_entry_name, None)
             if allow_blank and a_sub is not None and a_sub.strip() == "":
                 a_sub = blank_value
-            value, newdata = pl.string_fraction_to_number(
-                a_sub, allow_fractions, allow_complex=False
+            res = pl.string_fraction_to_number(
+                a_sub, allow_fractions=allow_fractions, allow_complex=False
             )
-            if value is not None:
-                A[i, j] = value
+            if res[0] is not None:
+                value, newdata = res
+                matrix[i, j] = value
                 data["submitted_answers"][each_entry_name] = newdata[
                     "submitted_answers"
                 ]
             else:
+                _, newdata = res
                 invalid_format = True
                 data["format_errors"][each_entry_name] = newdata["format_errors"]
                 data["submitted_answers"][each_entry_name] = None
 
     if invalid_format:
-        with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             data["format_errors"][name] = chevron.render(
                 f, {"format_error": True, "allow_fractions": allow_fractions}
             ).strip()
         data["submitted_answers"][name] = None
     else:
-        data["submitted_answers"][name] = pl.to_json(A)
+        data["submitted_answers"][name] = pl.to_json(matrix)
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_partial_credit = pl.get_boolean_attrib(
@@ -387,16 +377,18 @@ def grade(element_html, data):
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # Get method of comparison, with relabs as default
-    comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
-    if comparison == "relabs":
+    comparison = pl.get_enum_attrib(
+        element, "comparison", ComparisonMode, COMPARISON_DEFAULT
+    )
+
+    rtol, atol, digits = RTOL_DEFAULT, ATOL_DEFAULT, DIGITS_DEFAULT
+    if comparison is ComparisonMode.RELABS:
         rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
         atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
-    elif comparison == "sigfig":
-        digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
-    elif comparison == "decdig":
+    elif comparison in (ComparisonMode.SIGFIG, ComparisonMode.DECDIG):
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
     else:
-        raise ValueError('method of comparison "%s" is not valid' % comparison)
+        assert_never(comparison)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -408,8 +400,7 @@ def grade(element_html, data):
     # Throw an error if true answer is not a 2D numpy array
     if a_tru.ndim != 2:
         raise ValueError("true answer must be a 2D array")
-    else:
-        m, n = np.shape(a_tru)
+    m, n = np.shape(a_tru)
 
     number_of_correct = 0
     feedback = {}
@@ -425,14 +416,20 @@ def grade(element_html, data):
             # back to a standard type (otherwise, do nothing)
             a_sub = pl.from_json(a_sub)
 
-            # Compare submitted answer with true answer
-            if comparison == "relabs":
-                correct = pl.is_correct_scalar_ra(a_sub, a_tru[i, j], rtol, atol)
-            elif comparison == "sigfig":
-                correct = pl.is_correct_scalar_sf(a_sub, a_tru[i, j], digits)
-            elif comparison == "decdig":
-                correct = pl.is_correct_scalar_dd(a_sub, a_tru[i, j], digits)
+            # If submitted answer is not a of valid type, score is zero
+            if isinstance(a_sub, Expr | dict):
+                data["partial_scores"][name] = {"score": 0, "weight": weight}
+                return
 
+            # Compare submitted answer with true answer
+            if comparison is ComparisonMode.RELABS:
+                correct = pl.is_correct_scalar_ra(a_sub, a_tru[i, j], rtol, atol)
+            elif comparison is ComparisonMode.SIGFIG:
+                correct = pl.is_correct_scalar_sf(a_sub, a_tru[i, j], digits)
+            elif comparison is ComparisonMode.DECDIG:
+                correct = pl.is_correct_scalar_dd(a_sub, a_tru[i, j], digits)
+            else:
+                assert_never(comparison)
             if correct:
                 number_of_correct += 1
                 feedback.update({each_entry_name: "correct"})
@@ -453,7 +450,7 @@ def grade(element_html, data):
         }
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -471,8 +468,7 @@ def test(element_html, data):
     # Throw an error if true answer is not a 2D numpy array
     if a_tru.ndim != 2:
         raise ValueError("true answer must be a 2D array")
-    else:
-        m, n = np.shape(a_tru)
+    m, n = np.shape(a_tru)
 
     result = data["test_type"]
 
@@ -499,7 +495,7 @@ def test(element_html, data):
                     data["raw_submitted_answers"][name] = ""
                     data["format_errors"][each_entry_name] = "(Invalid blank entry)"
             else:
-                raise Exception("invalid result: %s" % result)
+                raise RuntimeError(f"invalid result: {result}")
 
     if result == "invalid":
         data["format_errors"][name] = (
@@ -520,10 +516,17 @@ def test(element_html, data):
         }
 
 
-def createTableForHTMLDisplay(m, n, name, label, data, format):
+def create_table_for_html_display(
+    m: int,
+    n: int,
+    name: str,
+    label: str | None,
+    data: pl.QuestionData,
+    format_type: Literal["output-invalid", "output-feedback", "input"],
+) -> str:
     editable = data["editable"]
 
-    if format == "output-invalid":
+    if format_type == "output-invalid":
         display_array = "<table>"
         display_array += "<tr>"
         display_array += (
@@ -573,10 +576,10 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
             display_array += "</tr>"
         display_array += "</table>"
 
-    elif format == "output-feedback":
+    elif format_type == "output-feedback":
         partial_score_feedback = data["partial_scores"].get(name, {"feedback": None})
-        feedback_each_entry = partial_score_feedback.get("feedback", None)
-        score = partial_score_feedback.get("score", None)
+        feedback_each_entry = partial_score_feedback.get("feedback")
+        score = partial_score_feedback.get("score")
 
         if score is not None:
             score = float(score)
@@ -612,11 +615,17 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
             )
             display_array += '<td class="allborder">'
             display_array += escape(raw_submitted_answer)
-            if feedback_each_entry is not None:
+            if feedback_each_entry is not None and isinstance(
+                feedback_each_entry, dict
+            ):
                 if feedback_each_entry[each_entry_name] == "correct":
                     feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                 elif feedback_each_entry[each_entry_name] == "incorrect":
                     feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                else:
+                    raise ValueError(
+                        f"invalid feedback type: {feedback_each_entry[each_entry_name]}"
+                    )
                 display_array += feedback_message
             display_array += "</td> "
         # Add the suffix
@@ -626,7 +635,7 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
             + str(m)
             + '"></td>'
         )
-        if score_message is not None:
+        if score_message:
             display_array += '<td rowspan="0">&nbsp;' + score_message + "</td>"
         display_array += "</tr>"
         # Add the other rows
@@ -639,17 +648,23 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
                 )
                 display_array += ' <td class="allborder"> '
                 display_array += escape(raw_submitted_answer)
-                if feedback_each_entry is not None:
+                if feedback_each_entry is not None and isinstance(
+                    feedback_each_entry, dict
+                ):
                     if feedback_each_entry[each_entry_name] == "correct":
                         feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                     elif feedback_each_entry[each_entry_name] == "incorrect":
                         feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                    else:
+                        raise ValueError(
+                            "invalid feedback type: this should not happen"
+                        )
                     display_array += feedback_message
                 display_array += " </td> "
             display_array += "</tr>"
         display_array += "</table>"
 
-    elif format == "input":
+    elif format_type == "input":
         display_array = "<table>"
         display_array += "<tr>"
         # Add first row
@@ -703,6 +718,6 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         display_array += "</table>"
 
     else:
-        display_array = ""
+        assert_never(format_type)
 
     return display_array

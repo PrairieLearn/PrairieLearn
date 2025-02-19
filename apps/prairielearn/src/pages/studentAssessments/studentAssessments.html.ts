@@ -49,10 +49,10 @@ export function StudentAssessments({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Assessments' })}
       </head>
       <body>
-        ${Navbar({ resLocals, navPage: 'assessments' })}
+        ${Navbar({ resLocals, navPage: 'assessments', navSubPage: 'assessments' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">

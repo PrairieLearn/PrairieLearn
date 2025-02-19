@@ -8,7 +8,7 @@ All `server.py` files for questions are executed in a Docker container created f
 
 To run a command line version of this Python environment, you may start it with the following command:
 
-```
+```sh
 docker run -it --rm prairielearn/prairielearn /bin/bash
 ```
 
@@ -19,9 +19,11 @@ The quickest way to add custom libraries is to install them directly to your cou
 1. Check out a copy of your course locally with Git, and make sure the main branch is up-to-date.
 2. Locate the package that you would like to install. You can find a list of all the available Python libraries at the [Python Package Index](https://pypi.org).
 3. Install the package to your course's `serverFileCourse` directory with the following command. Make sure to replace `<path-to-course>` and `<library>` with the absolute path to the course on your local computer and the library you wish to install, respectively.
-   ```
+
+   ```sh
    docker run -it --rm -v <path-to-course>:/course prairielearn/prairielearn pip3 install --target /course/serverFilesCourse <library>
    ```
+
 4. Using Git, commit and push the new files that are now in your `serverFilesCourse` directory.
 
 After these steps, you should be able to `import` the library as normal in your `server.py` files.
@@ -34,7 +36,7 @@ If a library is very large or requires specific dependencies, it may be infeasib
 
 PrairieLearn downloads all of its Python packages from the [Python Package Index](https://pypi.org); your first step should be to locate the package and version you want. You can find the versions under "Release history" on the left. Most of the time the latest version should be chosen unless there is a specific need for an older release.
 
-![](scipy_version.png)
+![SciPy release page](scipy_version.png)
 Example for SciPy. The newest release as of writing this guide is `1.6.1`.
 
 ### Add the library to `python-requirements.txt`
@@ -43,7 +45,7 @@ A list of of the Python libraries that PrairieLearn uses is stored in a file cal
 
 First, browse to the file `images/plbase/python-requirements.txt` in the [PL GitHub Repo](https://github.com/prairielearn/prairielearn). An edit button should be visible on the top right of the file preview:
 
-![](edit_btn.png)
+![GitHub edit button](edit_btn.png)
 
 Click the edit button to open a file editor. Add the new library and version on a new line in the format `library==version`, taking care to maintain alphabetical order in the file:
 

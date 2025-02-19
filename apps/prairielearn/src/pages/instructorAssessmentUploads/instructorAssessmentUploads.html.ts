@@ -2,10 +2,9 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
@@ -23,39 +22,40 @@ export function InstructorAssessmentUploads({
   resLocals: Record<string, any>;
   uploadJobSequences: UploadJobSequence[];
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
-          ${AssessmentSyncErrorsAndWarnings({
-            authz_data: resLocals.authz_data,
-            assessment: resLocals.assessment,
-            courseInstance: resLocals.course_instance,
-            course: resLocals.course,
-            urlPrefix: resLocals.urlPrefix,
-          })}
-          ${resLocals.authz_data.has_course_instance_permission_edit
-            ? html`
-                ${UploadInstanceQuestionScoresModal({ csrfToken: resLocals.__csrf_token })}
-                ${UploadAssessmentInstanceScoresModal({ csrfToken: resLocals.__csrf_token })}
-              `
-            : ''}
-          ${AssessmentUploadCard({
-            assessmentSetName: resLocals.assessment_set.name,
-            assessmentNumber: resLocals.assessment.number,
-            authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
-            uploadJobSequences,
-            urlPrefix: resLocals.urlPrefix,
-          })}
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Uploads',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'uploads',
+    },
+    options: {
+      fullWidth: true,
+    },
+    content: html`
+      ${AssessmentSyncErrorsAndWarnings({
+        authz_data: resLocals.authz_data,
+        assessment: resLocals.assessment,
+        courseInstance: resLocals.course_instance,
+        course: resLocals.course,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+      ${resLocals.authz_data.has_course_instance_permission_edit
+        ? html`
+            ${UploadInstanceQuestionScoresModal({ csrfToken: resLocals.__csrf_token })}
+            ${UploadAssessmentInstanceScoresModal({ csrfToken: resLocals.__csrf_token })}
+          `
+        : ''}
+      ${AssessmentUploadCard({
+        assessmentSetName: resLocals.assessment_set.name,
+        assessmentNumber: resLocals.assessment.number,
+        authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
+        uploadJobSequences,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+    `,
+  });
 }
 
 function AssessmentUploadCard({

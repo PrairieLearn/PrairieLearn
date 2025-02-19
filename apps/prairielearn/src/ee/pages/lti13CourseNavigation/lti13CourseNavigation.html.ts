@@ -5,6 +5,7 @@ import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { config } from '../../../lib/config.js';
 import { type Course, type CourseInstance } from '../../../lib/db-types.js';
+import { STUDENT_ROLE } from '../../lib/lti13.js';
 
 export function Lti13CourseNavigationInstructor({
   courseName,
@@ -127,9 +128,11 @@ export function Lti13CourseNavigationInstructor({
 export function Lti13CourseNavigationNotReady({
   courseName,
   resLocals,
+  ltiRoles,
 }: {
   courseName: string;
   resLocals: Record<string, any>;
+  ltiRoles: string[];
 }): string {
   return html`
     <!doctype html>
@@ -145,10 +148,30 @@ export function Lti13CourseNavigationNotReady({
 
           <p>An instructor has not yet configured ${courseName} in PrairieLearn.</p>
           <p>Please come back later.</p>
-          <a href="${config.urlPrefix}" class="btn btn-primary">
-            <i class="fa fa-home" aria-hidden="true"></i>
-            PrairieLearn home
-          </a>
+          <p>
+            <a href="${config.urlPrefix}" class="btn btn-primary">
+              <i class="fa fa-home" aria-hidden="true"></i>
+              PrairieLearn home
+            </a>
+          </p>
+          ${ltiRoles.includes(STUDENT_ROLE)
+            ? ''
+            : html`
+                <div class="card">
+                  <div class="card-header bg-info">Debugging information</div>
+                  <div class="card-body">
+                    <p>
+                      You do not have the permissions to integrate PrairieLearn course instances. An
+                      instructor or designer (and not Teaching Assistant) LMS role is needed to do
+                      this.
+                    </p>
+                    <p>Here are your roles that we received from your LMS:</p>
+                    <ul class="mb-0">
+                      ${ltiRoles.map((role) => html`<li><code>${role}</code></li>`)}
+                    </ul>
+                  </div>
+                </div>
+              `}
         </main>
       </body>
     </html>

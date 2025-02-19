@@ -4,6 +4,7 @@ columns
     deleted_at: timestamp with time zone
     dependencies: jsonb not null default '{}'::jsonb
     directory: text
+    draft: boolean not null default false
     external_grading_enable_networking: boolean
     external_grading_enabled: boolean default false
     external_grading_entrypoint: text
@@ -53,9 +54,11 @@ foreign-key constraints
     questions_topic_id_fkey: FOREIGN KEY (topic_id) REFERENCES topics(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
+    ai_question_generation_prompts: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessment_questions: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     chunks: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     current_pages: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    draft_question_metadata: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     issues: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE SET NULL
     page_view_logs: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     question_tags: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE

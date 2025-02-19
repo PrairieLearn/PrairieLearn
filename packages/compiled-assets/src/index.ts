@@ -53,7 +53,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
     //
     // Note that esbuild doesn't support globs, so the server will not pick up
     // new entrypoints that are added while the server is running.
-    const sourceGlob = path.join(options.sourceDirectory, '*', '*.{js,ts,css}');
+    const sourceGlob = path.join(options.sourceDirectory, '*', '*.{js,ts,jsx,tsx,css}');
     const sourcePaths = await globby(sourceGlob);
 
     // Save the result of globbing for the source paths so that we can later
@@ -76,7 +76,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       entryNames: '[dir]/[name]',
     });
 
-    esbuildServer = await esbuildContext.serve();
+    esbuildServer = await esbuildContext.serve({ host: '127.0.0.1' });
   }
 }
 
@@ -115,14 +115,14 @@ export function handler(): RequestHandler {
     throw new Error('esbuild server not initialized');
   }
 
-  const { host, port } = esbuildServer;
+  const { port } = esbuildServer;
 
   // We're running in dev mode, so we need to boot up ESBuild to start building
   // and watching our assets.
   return function (req, res) {
     const proxyReq = http.request(
       {
-        hostname: host,
+        hostname: '127.0.0.1',
         port,
         path: req.url,
         method: req.method,

@@ -164,15 +164,14 @@ export function deleteAttachedFile(locals) {
 
   describe('deleteAttachedFile-3. POST to delete attached file', () => {
     it('should load successfully', async () => {
-      const form = {
-        __action: locals.__action,
-        __csrf_token: locals.__csrf_token,
-        __variant_id: locals.__variant_id,
-        file_id: locals.file_id,
-      };
       const res = await fetch(locals.attachFilesUrl, {
         method: 'POST',
-        body: new URLSearchParams(form),
+        body: new URLSearchParams({
+          __action: locals.__action,
+          __csrf_token: locals.__csrf_token,
+          __variant_id: locals.__variant_id,
+          file_id: locals.file_id,
+        }),
       });
       assert.isOk(res.ok);
       locals.$ = cheerio.load(await res.text());

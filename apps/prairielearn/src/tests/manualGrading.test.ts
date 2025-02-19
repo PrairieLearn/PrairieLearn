@@ -1025,7 +1025,7 @@ describe('Manual Grading', function () {
           body: new URLSearchParams({
             __action: 'set_time_limit_all',
             __csrf_token: token,
-            plus_minus: 'unlimited',
+            action: 'unlimited',
             time_add: '0',
             reopen_closed: 'on',
           }).toString(),
