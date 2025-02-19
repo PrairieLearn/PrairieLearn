@@ -2,6 +2,7 @@ import json
 from itertools import chain, repeat
 from typing import Any
 
+import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
@@ -252,6 +253,14 @@ class TestSympy:
         json_converted_expr = psu.json_to_sympy(json.loads(json_expr))
         assert sympy_expr == json_converted_expr
         assert sympy_expr.assumptions0 == json_converted_expr.assumptions0
+
+        # Ensure this works with to_json/from_json as well
+        assert sympy_expr == pl.from_json(pl.to_json(sympy_expr))
+
+    @pytest.mark.parametrize(("matrix"), [sympy.Matrix([[1, -1], [3, 4], [0, 2]])])
+    def test_matrix_conversion(self, matrix: sympy.Matrix) -> None:
+        # Check equivalence after converting back
+        assert matrix == pl.from_json(pl.to_json(matrix))
 
     @pytest.mark.parametrize(
         ("expr", "bad_assumptions"),
