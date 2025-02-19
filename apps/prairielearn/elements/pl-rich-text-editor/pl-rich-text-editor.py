@@ -122,16 +122,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
 
         submitted_files = data["submitted_answers"].get("_files", [])
-        submitted_file = [
-            f for f in submitted_files if f.get("name", None) == file_name
-        ]
+        submitted_file = next(
+            (f for f in submitted_files if f.get("name", None) == file_name), None
+        )
         if submitted_file:
-            html_params["current_file_contents"] = submitted_file[0].get("contents")
+            html_params["current_file_contents"] = submitted_file.get("contents")
             # If the mimetype is provided, override the input format
-            if submitted_file[0].get("mimetype"):
+            if submitted_file.get("mimetype"):
                 html_params["format"] = (
                     "html"
-                    if submitted_file[0].get("mimetype") == "text/html"
+                    if submitted_file.get("mimetype") == "text/html"
                     else "markdown"
                 )
         else:
