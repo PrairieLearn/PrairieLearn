@@ -49,7 +49,7 @@ export function StudentAssessments({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Assessments' })}
       </head>
       <body>
         ${Navbar({ resLocals, navPage: 'assessments', navSubPage: 'assessments' })}
