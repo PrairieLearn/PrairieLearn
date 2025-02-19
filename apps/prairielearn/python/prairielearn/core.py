@@ -19,7 +19,6 @@ import os
 import random
 import re
 import string
-import unicodedata
 import uuid
 from collections import namedtuple
 from collections.abc import Callable, Generator
@@ -46,7 +45,7 @@ from prairielearn.sympy_utils import (
     sympy_to_json,
 )
 from prairielearn.to_precision import to_precision
-from prairielearn.unicode_utils import full_unidecode
+from prairielearn.unicode_utils import escape_unicode_string, full_unidecode
 
 if TYPE_CHECKING:
     from numpy.core.arrayprint import _FormatDict
@@ -1836,28 +1835,6 @@ def get_uuid() -> str:
     random_char = random.choice("abcdef")
 
     return random_char + uuid_string[1:]
-
-
-def escape_unicode_string(string: str) -> str:
-    """
-    Replace invisible/unprintable characters with a
-    text representation of their hex id: <U+xxxx>
-
-    A character is considered invisible if its category is "control" or "format", as
-    reported by the 'unicodedata' library.
-
-    More info on unicode categories:
-    https://en.wikipedia.org/wiki/Unicode_character_property#General_Category
-    """
-
-    def escape_unprintable(x: str) -> str:
-        category = unicodedata.category(x)
-        if category in ("Cc", "Cf"):
-            return f"<U+{ord(x):x}>"
-        else:
-            return x
-
-    return "".join(map(escape_unprintable, string))
 
 
 def escape_invalid_string(string: str) -> str:
