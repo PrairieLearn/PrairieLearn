@@ -591,6 +591,7 @@ def test_latex_from_2darray(value: Any, expected_output: str) -> None:
     ],
 )
 def test_string_to_2darray_valid(
+    *,
     text: str,
     allow_complex: bool,
     expected_matrix: np.ndarray[Any, Any],
