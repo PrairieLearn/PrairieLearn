@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax, DOMPurify */
+/* global ace, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -292,12 +292,35 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
 window.PLFileEditor.prototype.preview = {
   html: (value) => value,
   markdown: (() => {
-    let markdownRenderer = new showdown.Converter({
-      literalMidWordUnderscores: true,
-      literalMidWordAsterisks: true,
-    });
-
-    return async (value) => markdownRenderer.makeHtml(value);
+    let marked = null;
+    return async (value) => {
+      if (marked == null) {
+        marked = (await import('marked')).marked;
+        const startMath = /(\$|\\\(|\\\[)/;
+        marked.use({
+          extensions: [
+            {
+              name: 'math',
+              level: 'inline',
+              start: (src) => src.match(startMath)?.index,
+              tokenizer(src) {
+                if (src.match(startMath)?.index !== 0) return false;
+                // Use MathJax API to retrieve the math content.
+                for (const inputJax of MathJax.startup.getInputJax() ?? []) {
+                  for (const foundMath of inputJax.findMath([src]) ?? []) {
+                    if (foundMath?.start?.n === 0) {
+                      const raw = src.substring(0, foundMath.end.n);
+                      return { type: 'escape', raw, text: raw };
+                    }
+                  }
+                }
+              },
+            },
+          ],
+        });
+      }
+      return await marked.parse(value);
+    };
   })(),
   dot: (() => {
     let vizPromise = null;
