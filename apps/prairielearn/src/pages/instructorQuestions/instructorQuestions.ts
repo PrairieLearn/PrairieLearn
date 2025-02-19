@@ -13,6 +13,7 @@ import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
+import { selectOptionalQuestionByQid } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 import { loadQuestions } from '../../sync/course-db.js';
 
@@ -70,6 +71,21 @@ router.get(
           requiredPermissions: 'Previewer',
         }),
       );
+      return;
+    }
+
+    if (req.query.qid && typeof req.query.qid === 'string') {
+      // Find the question they're after.
+      const question = await selectOptionalQuestionByQid({
+        qid: req.query.qid,
+        course_id: res.locals.course.id,
+      });
+
+      if (!question) {
+        throw new error.HttpStatusError(404, 'Question not found');
+      }
+
+      res.redirect(`${res.locals.urlPrefix}/question/${question.id}/preview`);
       return;
     }
 
