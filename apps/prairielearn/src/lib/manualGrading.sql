@@ -420,7 +420,8 @@ INSERT INTO
     manual_points,
     feedback,
     partial_scores,
-    manual_rubric_grading_id
+    manual_rubric_grading_id,
+    is_ai_graded
   )
 VALUES
   (
@@ -435,7 +436,8 @@ VALUES
     $manual_points,
     $feedback,
     $partial_scores,
-    $manual_rubric_grading_id
+    $manual_rubric_grading_id,
+    $is_ai_graded
   )
 RETURNING
   id;
@@ -476,7 +478,8 @@ WITH
       modified_at = now(),
       highest_submission_score = COALESCE($score, highest_submission_score),
       requires_manual_grading = FALSE,
-      last_grader = $authn_user_id
+      last_grader = $authn_user_id,
+      is_ai_graded = $is_ai_graded
     WHERE
       iq.id = $instance_question_id
     RETURNING
