@@ -1,6 +1,6 @@
 <!-- markdownlint-disable MD041 -->
 <!-- prettier-ignore -->
-::: prairielearn.core
+::: prairielearn.conversion_utils
     options:
         members:
             - from_json
