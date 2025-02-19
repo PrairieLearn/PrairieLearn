@@ -23,7 +23,8 @@ def test_full_unidecode_parametrized(input_str: str, expected: str):
         ("hello\u200bworld", "hello<U+200b>world"),  # Zero-width space
         ("control\u0001char", "control<U+1>char"),  # Control character
         ("test\u200etext", "test<U+200e>text"),  # Left-to-right mark
-        ("test\u200ftext", "test<U+200f>text"),  # Right-to-left mark
+        ("", ""),
+        ("a\u200bb\u200f", "a<U+200b>b<U+200f>"),
         ("normal text", "normal text"),
     ],
 )
