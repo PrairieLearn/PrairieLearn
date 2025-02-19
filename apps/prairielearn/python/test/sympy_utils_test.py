@@ -362,6 +362,7 @@ class TestExceptions:
             (INVALID_PARSE_CASES, "syntax error"),
             (INVALID_ESCAPE_CASES, 'must not contain the character "\\"'),
             (INVALID_COMMENT_CASES, 'must not contain the character "#"'),
+            (COMPLEX_CASES, "must be expressed as integers"),
         ],
     )
     def test_invalid_format(self, a_sub_list: list[str], target_string: str) -> None:
@@ -379,3 +380,14 @@ class TestExceptions:
 )
 def test_greek_unicode_transform(input_str: str, expected_output: str) -> None:
     assert psu.greek_unicode_transform(input_str) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("items_string", "expected_output"),
+    [
+        ("1, 2, a", ["1", "2", "a"]),
+        (None, []),
+    ],
+)
+def test_get_items_list(items_string: str | None, expected_output: list[str]) -> None:
+    assert psu.get_items_list(items_string) == expected_output
