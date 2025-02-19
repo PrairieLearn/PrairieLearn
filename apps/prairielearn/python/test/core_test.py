@@ -539,9 +539,27 @@ def test_string_from_number_sigfig(
         (np.complex64(complex(1, 2)), {}, "1.0+2.0j"),
         (np.complex64(complex(0, 2)), {}, "0.0+2.0j"),
         (np.complex64(complex(1, 0)), {}, "1.0+0.0j"),
+        # 1D arrays
+        (np.array([1, 2, 3]), {"style": "legacy"}, "[1.0, 2.0, 3.0]"),
+        (np.array([1, 2, 3]), {"style": "space"}, "[1.0 2.0 3.0]"),
+        (np.array([1, 2, 3]), {"style": "comma"}, "[1.0, 2.0, 3.0]"),
+        (np.array([1.5, 2.5]), {}, "[1.5, 2.5]"),
+        (np.array([1 + 2j, 3 + 4j]), {}, "[1.0+2.0j, 3.0+4.0j]"),
+        # 2D arrays
+        (np.array([[1, 2], [3, 4]]), {}, "[1.0 2.0; 3.0 4.0]"),
+        (np.array([[1, 2], [3, 4]]), {"style": "space"}, "[1.0 2.0; 3.0 4.0]"),
+        (np.array([[1, 2], [3, 4]]), {"style": "comma"}, "[1.0, 2.0; 3.0, 4.0]"),
+        (np.array([[1.5, 2.5], [3.5, 4.5]]), {}, "[1.5 2.5; 3.5 4.5]"),
+        (
+            np.array([[1 + 2j, 3 + 4j], [5 + 6j, 7 + 8j]]),
+            {},
+            "[1.0+2.0j 3.0+4.0j; 5.0+6.0j 7.0+8.0j]",
+        ),
     ],
 )
-def test_numpy_to_matlab_sf(value: Any, args: dict, expected_output: str) -> None:
+def test_numpy_to_matlab_sf(
+    value: Any, args: dict[str, Any], expected_output: str
+) -> None:
     assert pl.numpy_to_matlab_sf(value, **args) == expected_output
 
 

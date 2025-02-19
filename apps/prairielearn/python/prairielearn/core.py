@@ -1087,7 +1087,9 @@ def _string_from_complex_sigfig(
 
 
 def numpy_to_matlab_sf(
-    A: _NumericScalarType | npt.NDArray[Any], ndigits: int = 2
+    A: _NumericScalarType | npt.NDArray[Any],
+    ndigits: int = 2,
+    style: Literal["legacy", "comma", "space"] = "legacy",
 ) -> str:
     """
     Return A as a MATLAB-formatted string in which each number has
@@ -1097,6 +1099,11 @@ def numpy_to_matlab_sf(
 
         - a number (float or complex)
         - a 2D ndarray (float or complex)
+
+    The style argument must be one of three values:
+    - legacy: formats 1d arrays with commas and 2d arrays with spaces
+    - comma: formats all arrays with commas
+    - space: formats all arrays with spaces
     """
     if np.isscalar(A):
         assert not isinstance(A, memoryview | str | bytes)
@@ -1108,6 +1115,8 @@ def numpy_to_matlab_sf(
             scalar_str = to_precision(A, ndigits)
         return scalar_str
     assert isinstance(A, np.ndarray)
+    sep_1d = ", " if style in ["comma", "legacy"] else " "
+    sep_2d = ", " if style == "comma" else " "
     if A.ndim == 1:
         s = A.shape
         m = s[0]
@@ -1118,7 +1127,7 @@ def numpy_to_matlab_sf(
             else:
                 vector_str += to_precision(A[i], ndigits)
             if i < m - 1:
-                vector_str += ", "
+                vector_str += sep_1d
         vector_str += "]"
         return vector_str
     else:
@@ -1138,7 +1147,7 @@ def numpy_to_matlab_sf(
                     else:
                         matrix_str += "; "
                 else:
-                    matrix_str += " "
+                    matrix_str += sep_2d
         return matrix_str
 
 
