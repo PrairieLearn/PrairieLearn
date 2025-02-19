@@ -73,6 +73,7 @@ import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
+import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
@@ -1111,7 +1112,7 @@ export async function initExpress(): Promise<Express> {
       res.redirect(
         url.format({
           pathname: `${req.params[0]}/preview`,
-          search: url.parse(req.originalUrl).search,
+          search: getSearchParams(req).toString(),
         }),
       );
     },
@@ -1583,7 +1584,7 @@ export async function initExpress(): Promise<Express> {
     res.redirect(
       url.format({
         pathname: `${req.params[0]}/preview`,
-        search: new URL(req.originalUrl, `${req.protocol}://${req.headers.host}/`).search,
+        search: getSearchParams(req).toString(),
       }),
     );
   });

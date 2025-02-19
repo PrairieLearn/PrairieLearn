@@ -1,3 +1,5 @@
+import * as url from 'node:url';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -12,6 +14,7 @@ import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import { getSearchParams } from '../../lib/url.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectOptionalQuestionByQid } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
@@ -74,6 +77,11 @@ router.get(
       return;
     }
 
+    // Special case: if the user accesses the route `.../questions/?qid=...`, we
+    // will redirect them to the preview page for that question.
+    //
+    // This is meant to support automated testing of questions when one might not
+    // want to jump through hoops to get a question ID from a QID.
     if (req.query.qid && typeof req.query.qid === 'string') {
       // Find the question they're after.
       const question = await selectOptionalQuestionByQid({
@@ -85,7 +93,17 @@ router.get(
         throw new error.HttpStatusError(404, 'Question not found');
       }
 
-      res.redirect(`${res.locals.urlPrefix}/question/${question.id}/preview`);
+      // Forward all query parameters except `qid`. Specifically, we want to support
+      // `variant_seed` for previewing questions with a specific seed.
+      const searchParams = getSearchParams(req);
+      searchParams.delete('qid');
+
+      res.redirect(
+        url.format({
+          pathname: `${res.locals.urlPrefix}/question/${question.id}/preview`,
+          search: searchParams.toString(),
+        }),
+      );
       return;
     }
 

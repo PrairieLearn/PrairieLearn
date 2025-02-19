@@ -147,4 +147,24 @@ describe('Instructor questions', function () {
     testFileDownloads(previewPageInfo, downloadFile, true);
     testElementClientFiles(previewPageInfo, customElement);
   });
+
+  describe('QID redirect routes', () => {
+    it('redirects to the correct question from course route', async () => {
+      const res = await fetch(`${questionsUrlCourse}?qid=addNumbers&variant_seed=1234`);
+      assert.equal(res.status, 200);
+      assert.equal(
+        res.url,
+        `${baseUrl}/course/1/question/${addNumbers.id}/preview?variant_seed=1234`,
+      );
+    });
+
+    it('redirects to the correct question from instance route', async () => {
+      const res = await fetch(`${questionsUrl}?qid=addNumbers&variant_seed=1234`);
+      assert.equal(res.status, 200);
+      assert.equal(
+        res.url,
+        `${baseUrl}/course_instance/1/instructor/question/${addNumbers.id}/preview?variant_seed=1234`,
+      );
+    });
+  });
 });
