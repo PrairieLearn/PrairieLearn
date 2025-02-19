@@ -5,13 +5,13 @@ from typing import Any, Literal
 
 from typing_extensions import assert_never
 
+Notation = Literal["auto", "sci", "std", "standard", "eng", "engineering", "scientific"]
+
 
 def to_precision(
     value: Any,
     precision: int,
-    notation: Literal[
-        "auto", "sci", "std", "standard", "eng", "engineering", "scientific"
-    ] = "auto",
+    notation: Notation = "auto",
     filler: str = "e",
 ) -> str:
     """
