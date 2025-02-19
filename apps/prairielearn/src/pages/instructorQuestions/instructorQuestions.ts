@@ -92,6 +92,7 @@ router.get(
     res.send(
       QuestionsPage({
         questions,
+
         templateQuestions,
         course_instances: courseInstances,
         showAddQuestionButton:
@@ -104,6 +105,7 @@ router.get(
           isEnterprise() &&
           (await features.enabledFromLocals('ai-question-generation', res.locals)),
         resLocals: res.locals,
+        reqSession: req.session,
       }),
     );
   }),
