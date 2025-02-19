@@ -140,7 +140,7 @@ def to_json(
 
     If `df_encoding_version` is set to 2, then pandas DataFrames serialize using `'_type': 'dataframe_v2'`.
 
-    See [from_json][prairielearn.core.from_json] for details about the differences between encodings.
+    See [from_json][prairielearn.conversion_utils.from_json] for details about the differences between encodings.
 
     If v is an ndarray, this function preserves its dtype (by adding `'_dtype'` as
     a third field in the dictionary).
