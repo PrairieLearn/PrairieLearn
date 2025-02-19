@@ -16,17 +16,17 @@ export function AssessmentNavigation({
   assessments: Assessment[];
 }) {
   return html`
-    <div class="dropdown p-3 bg-light pb-2">
+    <div class="dropdown bg-light p-3 pb-0">
       <button
         type="button"
-        style="min-width: 25%; max-width: 100%;"
-        class="btn w-fit dropdown-toggle dropdown-menu-right border border-gray bg-white d-flex justify-content-between align-items-center"
+        class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center"
+        style="max-width: 100%;"
         data-toggle="dropdown"
         aria-haspopup="true"
         aria-expanded="false"
         data-boundary="window"
       >
-        <span class="overflow-hidden text-truncate"> ${assessment.title} </span>
+        <span class="h6 mb-0 mr-1 overflow-hidden text-truncate">${assessment.title}</span>
       </button>
       <div class="dropdown-menu py-0 overflow-hidden">
         <div style="max-height: 50vh" class="overflow-auto">
