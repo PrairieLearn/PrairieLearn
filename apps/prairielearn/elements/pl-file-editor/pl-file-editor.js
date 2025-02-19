@@ -296,17 +296,23 @@ window.PLFileEditor.prototype.preview = {
     return async (value) => {
       if (marked == null) {
         marked = (await import('marked')).marked;
+        const startMath = /(\$|\\\(|\\\[)/;
         marked.use({
           extensions: [
             {
               name: 'math',
               level: 'inline',
-              start: (src) => src.match(/\$/)?.index,
+              start: (src) => src.match(startMath)?.index,
               tokenizer(src) {
-                const match = src.match(/^\$([^$\n]+?)\$/);
-                if (match) {
-                  // Only escape the content, let Mathjax handle the rest.
-                  return { type: 'escape', raw: match[0], text: match[0] };
+                if (!src.match(startMath)?.index !== 0) return false;
+                // Use MathJax API to retrieve the math content.
+                for (const inputJax of MathJax.startup.getInputJax() ?? []) {
+                  for (const foundMath of inputJax.findMath([src]) ?? []) {
+                    if (foundMath?.start?.n === 0) {
+                      const raw = src.substring(0, foundMath.end.n);
+                      return { type: 'escape', raw, text: raw };
+                    }
+                  }
                 }
               },
             },
