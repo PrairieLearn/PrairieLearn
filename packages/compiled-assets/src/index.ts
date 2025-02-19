@@ -76,7 +76,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       entryNames: '[dir]/[name]',
     });
 
-    esbuildServer = await esbuildContext.serve();
+    esbuildServer = await esbuildContext.serve({ host: '127.0.0.1' });
   }
 }
 
@@ -115,14 +115,14 @@ export function handler(): RequestHandler {
     throw new Error('esbuild server not initialized');
   }
 
-  const { host, port } = esbuildServer;
+  const { port } = esbuildServer;
 
   // We're running in dev mode, so we need to boot up ESBuild to start building
   // and watching our assets.
   return function (req, res) {
     const proxyReq = http.request(
       {
-        hostname: host,
+        hostname: '127.0.0.1',
         port,
         path: req.url,
         method: req.method,
