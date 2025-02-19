@@ -8,7 +8,7 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "text": {
       "description": "The question HTML text that comes before the options.",
@@ -19,7 +19,8 @@
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "minItems": 1
     },
     "incorrectAnswers": {
       "description": "A list of incorrect answers to the question. Each is an HTML string.",
@@ -31,6 +32,24 @@
     "numberAnswers": {
       "description": "The total number of answers in the list of possible answers.",
       "type": "integer"
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     }
   }
 }
