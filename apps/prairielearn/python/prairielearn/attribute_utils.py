@@ -49,6 +49,7 @@ def get_enum_attrib(
 
     return enum_type[upper_enum_str.replace("-", "_")]
 
+
 def compat_array(arr: list[str]) -> list[str]:
     new_arr = []
     for i in arr:

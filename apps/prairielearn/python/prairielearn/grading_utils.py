@@ -224,8 +224,10 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
         for part in partial_scores.values()
     )
 
+
 def is_int_json_serializable(n: int) -> bool:
     return -((2**53) - 1) <= n <= 2**53 - 1
+
 
 def add_files_format_error(data: QuestionData, error: str) -> None:
     """Add a format error to the data dictionary."""
