@@ -1,3 +1,30 @@
+import json
+import numbers
+import re
+from io import StringIO
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast, overload
+
+import networkx as nx
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
+import sympy
+from typing_extensions import assert_never
+
+from prairielearn.misc_utils import escape_invalid_string
+from prairielearn.sympy_utils import (
+    convert_string_to_sympy,
+    is_sympy_json,
+    json_to_sympy,
+    sympy_to_json,
+)
+from prairielearn.to_precision import to_precision
+from prairielearn.unicode_utils import full_unidecode
+
+if TYPE_CHECKING:
+    from numpy.core.arrayprint import _FormatDict
+
+
 class _JSONSerializedGeneric(TypedDict):
     _type: Literal[
         "sympy",
@@ -318,6 +345,7 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
         else:
             raise ValueError("variable has unknown type {}".format(v_json["_type"]))
     return v
+
 
 _NumericScalarType = numbers.Number | complex | np.generic
 
@@ -839,6 +867,8 @@ def latex_from_2darray(
     rv.extend("  " + " & ".join(line.split()) + r"\\" for line in lines)
     rv.append(r"\end{bmatrix}")
     return "".join(rv)
+
+
 def string_partition_first_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
@@ -859,7 +889,6 @@ def string_partition_outer_interval(
     (s, _, s_after_right) = s.rpartition(right)
     # Return results
     return s_before_left, s, s_after_right
-
 
 
 def string_to_2darray(

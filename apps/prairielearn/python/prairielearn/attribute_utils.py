@@ -1,3 +1,11 @@
+import re
+from enum import Enum
+from typing import Any, TypeVar, overload
+
+import lxml.html
+
+from prairielearn.colors import PLColor
+
 EnumT = TypeVar("EnumT", bound=Enum)
 
 

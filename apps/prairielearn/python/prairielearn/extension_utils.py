@@ -1,3 +1,15 @@
+import collections
+import importlib
+import importlib.util
+import os
+from collections import namedtuple
+from collections.abc import Callable
+from types import ModuleType
+from typing import Any, TypeVar
+
+from prairielearn.misc_utils import QuestionData, clean_identifier_name
+
+
 def load_extension(data: QuestionData, extension_name: str) -> Any:
     """
     Load a single specific extension by name for an element.

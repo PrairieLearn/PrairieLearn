@@ -1,3 +1,15 @@
+import math
+from collections.abc import Callable
+from typing import Any, Literal
+
+import numpy as np
+import numpy.typing as npt
+from numpy.typing import ArrayLike
+from typing_extensions import assert_never
+
+from prairielearn.misc_utils import QuestionData
+
+
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
 def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
     return is_correct_ndarray2d_dd(*args, **kwargs)

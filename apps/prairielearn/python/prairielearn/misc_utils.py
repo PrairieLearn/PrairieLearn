@@ -7,48 +7,21 @@ from prairielearn.core import ...
 ```
 """
 
-import collections
 import html
-import importlib
-import importlib.util
 import itertools as it
-import json
-import math
-import numbers
 import os
 import random
 import re
 import string
 import uuid
-from collections import namedtuple
-from collections.abc import Callable, Generator
-from enum import Enum
-from io import StringIO
-from types import ModuleType
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, cast, overload
+from collections.abc import Generator
+from typing import Any, Literal, TypedDict
 
 import lxml.html
-import networkx as nx
-import numpy as np
-import numpy.typing as npt
-import pandas as pd
-import sympy
-from numpy.typing import ArrayLike
 from pint import UnitRegistry
-from typing_extensions import NotRequired, assert_never
+from typing_extensions import NotRequired
 
-from prairielearn.colors import PLColor
-from prairielearn.sympy_utils import (
-    convert_string_to_sympy,
-    is_sympy_json,
-    json_to_sympy,
-    sympy_to_json,
-)
-from prairielearn.to_precision import to_precision
-from prairielearn.unicode_utils import escape_unicode_string, full_unidecode
-
-if TYPE_CHECKING:
-    from numpy.core.arrayprint import _FormatDict
+from prairielearn.unicode_utils import escape_unicode_string
 
 
 class PartialScore(TypedDict):
