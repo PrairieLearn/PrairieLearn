@@ -155,6 +155,25 @@ mjx-container {
 }
 
 /**
+ * Similar to `btn-light`, but with a slightly darker background.
+ */
+.btn.btn-med-light {
+  --bs-btn-color: #292121;
+  --bs-btn-bg: #dbdcdc;
+  --bs-btn-border-color: #dbdcdc;
+  --bs-btn-hover-color: #292121;
+  --bs-btn-hover-bg: #ced0d0;
+  --bs-btn-focus-bg: #c3c3c3;
+  --bs-btn-focus-shadow-rgb: 195, 195, 195;
+  --bs-btn-active-color: #292121;
+  --bs-btn-active-bg: #c3c3c3;
+  --bs-btn-active-border-color: #c3c3c3;
+  --bs-btn-disabled-color: #292121;
+  --bs-btn-disabled-bg: #c3c3c3;
+  --bs-btn-disabled-border-color: #c3c3c3;
+}
+
+/**
  * Remove the bottom border from the final row of the last table in a card.
  */
 .card > table.table:last-of-type tbody tr:last-child th,
@@ -306,20 +325,6 @@ a.badge {
 }
 
 /* Custom button styles that look better in input groups */
-.btn.btn-med-light {
-  color: #212529;
-  background-color: #dbdcdc;
-}
-
-.btn.btn-med-light:hover {
-  background-color: #ced0d0;
-}
-
-.btn.btn-med-light:focus {
-  background-color: #c3c3c3;
-  box-shadow: 0 0 0 0.2rem rgba(195, 195, 195, 0.25);
-}
-
 .user-output,
 .user-output-invalid {
   display: inline;
@@ -381,136 +386,27 @@ small .user-output-invalid {
 /***********************************
  * Button focus accessibility styles
  ***********************************/
-
-/**
- * TODO: After we're running with only Bootstrap 5, these can be collapsed into
- * a single rule with all the different selectors, since they can all share the
- * same var(--bs-btn-hover-color) value.
- */
-
-.btn.btn-primary:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-secondary:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-success:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-danger:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-warning:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #000000) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-info:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
+.btn.btn-primary:focus:focus-visible,
+.btn.btn-secondary:focus:focus-visible,
+.btn.btn-success:focus:focus-visible,
+.btn.btn-danger:focus:focus-visible,
+.btn.btn-warning:focus:focus-visible,
+.btn.btn-info:focus:focus-visible,
 .btn.btn-light:focus:focus-visible,
-.btn.btn-ghost:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #000000) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-dark:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-link:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #007bff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-primary:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #007bff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-secondary:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #6c757d) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-success:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #28a745) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-danger:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #dc3545) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-warning:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffc107) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-info:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #17a2b8) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-light:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #f8f9fa) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-dark:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #343a40) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
+.btn.btn-ghost:focus:focus-visible,
+.btn.btn-dark:focus:focus-visible,
+.btn.btn-link:focus:focus-visible,
+.btn.btn-outline-primary:focus:focus-visible,
+.btn.btn-outline-secondary:focus:focus-visible,
+.btn.btn-outline-success:focus:focus-visible,
+.btn.btn-outline-danger:focus:focus-visible,
+.btn.btn-outline-warning:focus:focus-visible,
+.btn.btn-outline-info:focus:focus-visible,
+.btn.btn-outline-light:focus:focus-visible,
+.btn.btn-outline-dark:focus:focus-visible,
 .btn.btn-med-light:focus:focus-visible {
   outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #212529) !important;
+  outline-color: var(--bs-btn-hover-color) !important;
   outline-width: 2px !important;
   outline-offset: -2px !important;
 }
