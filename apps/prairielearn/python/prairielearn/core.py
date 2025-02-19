@@ -1773,6 +1773,10 @@ def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
         imag_comp = is_correct_scalar_dd(a_sub.imag, a_tru.imag, digits=digits)  # type: ignore
         return real_comp and imag_comp
 
+    if np.abs(a_tru) == math.inf:
+        return a_sub == a_tru
+    elif np.isnan(a_tru):
+        return np.isnan(a_sub)  # type: ignore
     # Get bounds on submitted answer
     eps = 0.51 * (10**-digits)
     lower_bound = a_tru - eps
@@ -1793,6 +1797,10 @@ def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
     # Get bounds on submitted answer
     if a_tru == 0:
         n = digits - 1
+    elif np.abs(a_tru) == math.inf:
+        return a_sub == a_tru
+    elif np.isnan(a_tru):
+        return np.isnan(a_sub)  # type: ignore
     else:
         n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
     eps = 0.51 * (10**-n)

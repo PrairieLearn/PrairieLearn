@@ -1,3 +1,4 @@
+import base64
 import itertools as it
 import json
 import math
@@ -810,7 +811,10 @@ def test_get_float_attrib(
         # Test without default value
         if "float-val" in element.attrib:
             result = pl.get_float_attrib(element, "float-val")
-            assert result == expected_result
+            if expected_result is not None and np.isnan(expected_result):
+                assert np.isnan(result)
+            else:
+                assert result == expected_result
         else:
             with pytest.raises(ValueError, match="missing and no default is available"):
                 pl.get_float_attrib(element, "float-val")
@@ -1124,4 +1128,69 @@ def test_add_files_format_error(question_data: pl.QuestionData) -> None:
     assert question_data["format_errors"]["_files"] == [
         '"_files" was present in "format_errors" but was not an array',
         "Error 3",
+    ]
+
+
+def test_check_attribs() -> None:
+    """Test checking required and optional attributes."""
+    element = lxml.html.fragment_fromstring(
+        '<pl-test required-attr="val" optional-attr="val"></pl-test>'
+    )
+
+    # Should pass with correct attributes
+    pl.check_attribs(element, ["required-attr"], ["optional-attr"])
+
+    # Should fail if required attribute missing
+    with pytest.raises(ValueError, match='Required attribute "missing-attr" missing'):
+        pl.check_attribs(element, ["missing-attr"], ["optional-attr"])
+
+
+def test_get_string_attrib() -> None:
+    """Test getting string attributes with various cases."""
+    element = lxml.html.fragment_fromstring('<pl-test str-attr="value"></pl-test>')
+
+    # Basic attribute retrieval
+    assert pl.get_string_attrib(element, "str-attr") == "value"
+
+    # Default value when attribute missing
+    assert pl.get_string_attrib(element, "missing-attr", "default") == "default"
+
+    # Error when no default and attribute missing
+    with pytest.raises(ValueError, match='Attribute "missing-attr" missing'):
+        pl.get_string_attrib(element, "missing-attr")
+
+
+def test_string_to_integer() -> None:
+    """Test converting strings to integers."""
+    # Basic integer parsing
+    assert pl.string_to_integer("42") == 42
+    assert pl.string_to_integer("3.14") is None
+    assert pl.string_to_integer("not a number") is None
+
+
+def test_load_host_script() -> None:
+    """Test loading host scripts."""
+    # Test loading dummy_extension.py
+    script = pl.load_host_script("dummy_extension")
+
+    # Verify the loaded module has expected attributes
+    assert script.sample_function() == "Hello from dummy extension"
+    assert script.SAMPLE_CONSTANT == 42
+
+
+def test_add_submitted_file(question_data: pl.QuestionData) -> None:
+    """Test adding submitted files to question data."""
+    # Test adding first file
+    base64_msg1 = base64.b64encode(b"msg1").decode("utf-8")
+    base64_msg2 = base64.b64encode(b"msg2").decode("utf-8")
+    pl.add_submitted_file(question_data, "test1.txt", base64_msg1)
+    assert question_data["submitted_answers"]["_files"] == [
+        {"name": "test1.txt", "contents": base64_msg1}
+    ]
+
+    # Test adding second file
+    pl.add_submitted_file(question_data, "test2.txt", base64_msg2)
+    assert question_data["submitted_answers"]["_files"] == [
+        {"name": "test1.txt", "contents": base64_msg1},
+        {"name": "test2.txt", "contents": base64_msg2},
     ]
