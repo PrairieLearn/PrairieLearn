@@ -862,6 +862,7 @@ def numpy_to_matlab(
     np_object: _NumericScalarType | npt.NDArray[Any],
     ndigits: int = 2,
     wtype: str = "f",
+    style: Literal["legacy", "space", "comma"] = "legacy",
 ) -> str:
     """
     Return np_object as a MATLAB-formatted string in which each number has "ndigits"
@@ -880,6 +881,8 @@ def numpy_to_matlab(
 
     assert isinstance(np_object, np.ndarray)
 
+    sep_1d = ", " if style in ["comma", "legacy"] else " "
+    sep_2d = ", " if style == "comma" else " "
     if np_object.ndim == 1:
         s = np_object.shape
         m = s[0]
@@ -889,7 +892,7 @@ def numpy_to_matlab(
                 np_object[i], indigits=ndigits, iwtype=wtype
             )
             if i < m - 1:
-                vector_str += ", "
+                vector_str += sep_1d
         vector_str += "]"
         return vector_str
     else:
@@ -908,7 +911,7 @@ def numpy_to_matlab(
                     else:
                         matrix_str += "; "
                 else:
-                    matrix_str += " "
+                    matrix_str += sep_2d
         return matrix_str
 
 

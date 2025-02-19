@@ -510,7 +510,7 @@ def test_string_from_numpy(value: Any, args: dict, expected_output: str) -> None
         (complex(0, 2), {}, "0.0+2.0j"),
         (complex(1, 0), {}, "1.0+0.0j"),
         (np.complex64(complex(1, 2)), {}, "1.0+2.0j"),
-        (np.complex64(complex(0, 2)), {}, "0.0+2.0j"),
+        (np.complex64(complex(0, -2)), {}, "0.0-2.0j"),
         (np.complex64(complex(1, 0)), {}, "1.0+0.0j"),
         # For legacy reasons, we must also support strings.
         ("0", {}, "0.0"),
@@ -561,6 +561,18 @@ def test_numpy_to_matlab_sf(
     value: Any, args: dict[str, Any], expected_output: str
 ) -> None:
     assert pl.numpy_to_matlab_sf(value, **args) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("value", "args", "expected_output"),
+    [
+        (0.0123, {}, "0.01"),
+    ],
+)
+def test_numpy_to_matlab(
+    value: Any, args: dict[str, Any], expected_output: str
+) -> None:
+    assert pl.numpy_to_matlab(value, **args) == expected_output
 
 
 @pytest.mark.parametrize(
@@ -1212,3 +1224,27 @@ def test_add_submitted_file(question_data: pl.QuestionData) -> None:
         {"name": "test1.txt", "contents": base64_msg1},
         {"name": "test2.txt", "contents": base64_msg2},
     ]
+
+
+@pytest.mark.parametrize(
+    ("answers_names", "name", "should_raise"),
+    [
+        ({"x": None, "y": None}, "z", False),
+        ({"x": None, "y": None}, "x", True),
+        ({}, "y", False),
+    ],
+)
+def test_check_answers_names(
+    *,
+    answers_names: dict[str, Any],
+    name: str,
+    should_raise: bool,
+) -> None:
+    """Test checking answer name validation."""
+    question_data = cast(pl.QuestionData, {"answers_names": answers_names})
+    if should_raise:
+        with pytest.raises(KeyError):
+            pl.check_answers_names(question_data, name)
+    else:
+        # Should not raise an exception
+        pl.check_answers_names(question_data, name)
