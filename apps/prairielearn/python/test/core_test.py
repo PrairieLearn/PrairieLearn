@@ -1175,19 +1175,34 @@ def test_check_attribs() -> None:
         pl.check_attribs(element, ["missing-attr"], ["optional-attr"])
 
 
-def test_get_string_attrib() -> None:
-    """Test getting string attributes with various cases."""
-    element = lxml.html.fragment_fromstring('<pl-test str-attr="value"></pl-test>')
-
-    # Basic attribute retrieval
-    assert pl.get_string_attrib(element, "str-attr") == "value"
-
-    # Default value when attribute missing
-    assert pl.get_string_attrib(element, "missing-attr", "default") == "default"
-
-    # Error when no default and attribute missing
-    with pytest.raises(ValueError, match='Attribute "missing-attr" missing'):
-        pl.get_string_attrib(element, "missing-attr")
+@pytest.mark.parametrize(
+    ("element_str", "expected_result", "default"),
+    [
+        # Empty and whitespace
+        ('<pl-test str-attr=""></pl-test>', "", None),
+        ('<pl-test str-attr="   "></pl-test>', "   ", None),
+        # Special characters
+        ('<pl-test str-attr="hello&quot;world"></pl-test>', 'hello"world', None),
+        # Unicode
+        ('<pl-test str-attr="こんにちは"></pl-test>', "こんにちは", None),
+        # '<pl-test str-attr="value"></pl-test>'
+        ('<pl-test str-attr="value"></pl-test>', "value", None),
+        # Default value cases
+        ("<pl-test></pl-test>", "default", "default"),
+        ("<pl-test></pl-test>", None, None),
+    ],
+)
+def test_get_string_attrib(
+    *, element_str: str, expected_result: str, default: str | None
+) -> None:
+    """Test edge cases for string attribute retrieval."""
+    element = lxml.html.fragment_fromstring(element_str)
+    if default is None and "str-attr" not in element.attrib:
+        with pytest.raises(ValueError, match='Attribute "str-attr" missing'):
+            pl.get_string_attrib(element, "str-attr")
+    else:
+        result = pl.get_string_attrib(element, "str-attr", default)
+        assert result == expected_result
 
 
 def test_string_to_integer() -> None:

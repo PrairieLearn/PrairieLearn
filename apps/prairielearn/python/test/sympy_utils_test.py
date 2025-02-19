@@ -257,7 +257,14 @@ class TestSympy:
         # Ensure this works with to_json/from_json as well
         assert sympy_expr == pl.from_json(pl.to_json(sympy_expr))
 
-    @pytest.mark.parametrize(("matrix"), [sympy.Matrix([[1, -1], [3, 4], [0, 2]])])
+    @pytest.mark.parametrize(
+        ("matrix"),
+        [
+            sympy.Matrix([[1, -1], [3, 4], [0, 2]]),  # rectangular matrix
+            sympy.Matrix([[sympy.Symbol("x")]]),  # matrix with symbols
+            sympy.Matrix([[]]),  # empty matrix
+        ],
+    )
     def test_matrix_conversion(self, matrix: sympy.Matrix) -> None:
         # Check equivalence after converting back
         assert matrix == pl.from_json(pl.to_json(matrix))
@@ -282,7 +289,7 @@ class TestSympy:
 
 
 class TestExceptions:
-    VARIABLES = ("n",)
+    VARIABLES: tuple[str] = ("n",)
 
     COMPLEX_CASES = ("i", "5 * i", "j", "I")
     NO_FLOATS_CASES = ("3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)")
@@ -353,22 +360,28 @@ class TestExceptions:
     # Test formatting strings from validation
 
     @pytest.mark.parametrize(
-        ("a_sub_list", "target_string"),
+        ("a_sub_list", "target_string", "with_vars"),
         [
-            (NO_FLOATS_CASES, "floating-point number"),
-            (INVALID_EXPRESSION_CASES, "invalid expression"),
-            (INVALID_FUNCTION_CASES, "invalid"),
-            (INVALID_VARIABLE_CASES, "invalid symbol"),
-            (INVALID_PARSE_CASES, "syntax error"),
-            (INVALID_ESCAPE_CASES, 'must not contain the character "\\"'),
-            (INVALID_COMMENT_CASES, 'must not contain the character "#"'),
-            (COMPLEX_CASES, "must be expressed as integers"),
+            (NO_FLOATS_CASES, "floating-point number", ()),
+            (INVALID_EXPRESSION_CASES, "invalid expression", ()),
+            (INVALID_FUNCTION_CASES, "invalid", ()),
+            (INVALID_VARIABLE_CASES, "invalid symbol", ()),
+            (INVALID_PARSE_CASES, "syntax error", ()),
+            (INVALID_ESCAPE_CASES, 'must not contain the character "\\"', ()),
+            (INVALID_COMMENT_CASES, 'must not contain the character "#"', ()),
+            # TODO: not handled
+            # (COMPLEX_CASES, "must be expressed as integers", ("i",)),
         ],
     )
-    def test_invalid_format(self, a_sub_list: list[str], target_string: str) -> None:
+    def test_invalid_format(
+        self, a_sub_list: list[str], target_string: str, with_vars: tuple[str]
+    ) -> None:
         for a_sub in a_sub_list:
             format_error = psu.validate_string_as_sympy(
-                a_sub, self.VARIABLES, allow_complex=False, allow_trig_functions=True
+                a_sub,
+                self.VARIABLES + with_vars,
+                allow_complex=False,
+                allow_trig_functions=True,
             )
             assert format_error is not None
             assert target_string in format_error

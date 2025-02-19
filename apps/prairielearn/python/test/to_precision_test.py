@@ -26,6 +26,9 @@ from prairielearn.to_precision import Notation, to_precision
         (0, 3, "auto", "0.00"),
         (0, 3, "sci", "0.00e0"),
         (1e10, 3, "auto", "1.00e10"),
+        (1.23, 1, "auto", "1"),
+        (1e-15, 3, "auto", "0.00000000000000100"),
+        (1.23456789, 10, "auto", "1.234567890"),
     ],
 )
 def test_to_precision(
