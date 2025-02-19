@@ -13,6 +13,16 @@ comment:
 ignore:
   - 'apps/prairielearn/python/test'
 
+flag_management:
+  default_rules:
+    carryforward: true
+  individual_flags:
+    - name: python
+      paths:
+        - apps/prairielearn/elements
+        - apps/prairielearn/python
+      carryforward: true
+
 coverage:
   status:
     project:
