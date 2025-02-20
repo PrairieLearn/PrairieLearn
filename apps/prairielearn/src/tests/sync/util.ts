@@ -289,12 +289,7 @@ const course: Course = {
   name: 'TEST 101',
   title: 'Test Course',
   assessmentSets: [
-    {
-      name: 'TEST',
-      abbreviation: 'Test',
-      heading: 'Testing set',
-      color: 'red1',
-    },
+    { name: 'TEST', abbreviation: 'Test', heading: 'Testing set', color: 'red1' },
     {
       name: 'ANOTHER TEST',
       abbreviation: 'Another Test',
@@ -308,35 +303,14 @@ const course: Course = {
       color: 'red2',
     },
   ],
-  assessmentModules: [
-    {
-      name: 'TEST',
-      heading: 'Test module',
-    },
-  ],
+  assessmentModules: [{ name: 'TEST', heading: 'Test module' }],
   topics: [
-    {
-      name: 'Test',
-      color: 'gray1',
-      description: 'A test topic',
-    },
-    {
-      name: 'Another test',
-      color: 'gray2',
-      description: 'Another test topic',
-    },
+    { name: 'Test', color: 'gray1', description: 'A test topic' },
+    { name: 'Another test', color: 'gray2', description: 'Another test topic' },
   ],
   tags: [
-    {
-      name: 'test',
-      color: 'blue1',
-      description: 'A test tag',
-    },
-    {
-      name: 'another test',
-      color: 'blue2',
-      description: 'Another test tag',
-    },
+    { name: 'test', color: 'blue1', description: 'A test tag' },
+    { name: 'another test', color: 'blue2', description: 'Another test tag' },
   ],
 };
 
@@ -394,33 +368,16 @@ const courseInstances: Record<string, CourseInstanceData> = {
         type: 'Exam',
         set: 'PRIVATE SET',
         number: '100',
-        allowAccess: [
-          {
-            mode: 'Exam',
-          },
-        ],
+        allowAccess: [{ mode: 'Exam' }],
         zones: [
-          {
-            title: 'zone 1',
-            questions: [
-              {
-                points: 10,
-                alternatives: [{ id: 'private' }],
-              },
-            ],
-          },
+          { title: 'zone 1', questions: [{ points: 10, alternatives: [{ id: 'private' }] }] },
         ],
       },
     },
     courseInstance: {
       uuid: 'a17b1abd-eaf6-45dc-99bc-9890a7fb345e',
       longName: 'Testing instance',
-      allowAccess: [
-        {
-          startDate: '2000-01-01T00:00:00',
-          endDate: '3000-01-01T00:00:00',
-        },
-      ],
+      allowAccess: [{ startDate: '2000-01-01T00:00:00', endDate: '3000-01-01T00:00:00' }],
     },
   },
 };
@@ -431,21 +388,11 @@ const courseInstances: Record<string, CourseInstanceData> = {
 export function getCourseData(): CourseData {
   // Copy all data with `structuredClone` to ensure that mutations to nested
   // objects aren't reflected in the original objects.
-  return structuredClone({
-    course,
-    questions,
-    courseInstances,
-  });
+  return structuredClone({ course, questions, courseInstances });
 }
 
 export function getFakeLogger() {
-  return {
-    verbose: () => {},
-    debug: () => {},
-    info: () => {},
-    warn: () => {},
-    error: () => {},
-  };
+  return { verbose: () => {}, debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 }
 
 /**
@@ -464,11 +411,7 @@ export async function createAndSyncCourseData() {
   const courseDir = await writeCourseToTempDirectory(courseData);
   const syncResults = await syncCourseData(courseDir);
 
-  return {
-    courseData,
-    courseDir,
-    syncResults,
-  };
+  return { courseData, courseDir, syncResults };
 }
 
 /**
@@ -478,10 +421,9 @@ export async function createAndSyncCourseData() {
  * @param courseData - The course data to write and sync
  * @returns The path to the new temp directory and the sync results
  */
-export async function writeAndSyncCourseData(courseData: CourseData): Promise<{
-  courseDir: string;
-  syncResults: syncFromDisk.SyncResults;
-}> {
+export async function writeAndSyncCourseData(
+  courseData: CourseData,
+): Promise<{ courseDir: string; syncResults: syncFromDisk.SyncResults }> {
   const courseDir = await writeCourseToTempDirectory(courseData);
   const syncResults = await syncCourseData(courseDir);
   return { courseDir, syncResults };

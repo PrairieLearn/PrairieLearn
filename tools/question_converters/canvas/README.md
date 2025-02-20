@@ -11,10 +11,7 @@ https://github.com/ubc-cpsc/canvasgrading and has been migrated to this reposito
 Before running the script, you must create a `config.json` file as follows:
 
 ```json title="config.json"
-{
-  "api_url": "https://[YOUR_INSTITUTION_CANVAS_URL]/api/v1",
-  "access_token": "[YOUR_ACCESS_TOKEN]"
-}
+{ "api_url": "https://[YOUR_INSTITUTION_CANVAS_URL]/api/v1", "access_token": "[YOUR_ACCESS_TOKEN]" }
 ```
 
 The `api_url` value is based on your institution's Canvas URL. The `access_token` is based on an

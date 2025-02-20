@@ -331,12 +331,7 @@ function badGet(url, expected_status, should_parse) {
           // `new URL()` to avoid path normalization.
           const parsedUrl = nodeUrl.parse(url);
           const req = http.request(
-            {
-              hostname: 'localhost',
-              port: config.serverPort,
-              path: parsedUrl.path,
-              method: 'GET',
-            },
+            { hostname: 'localhost', port: config.serverPort, path: parsedUrl.path, method: 'GET' },
             (res) => {
               let data = '';
 
@@ -345,10 +340,7 @@ function badGet(url, expected_status, should_parse) {
               });
 
               res.on('end', () => {
-                resolve({
-                  status: res.statusCode ?? 500,
-                  text: () => Promise.resolve(data),
-                });
+                resolve({ status: res.statusCode ?? 500, text: () => Promise.resolve(data) });
               });
             },
           );
@@ -384,27 +376,12 @@ async function createCourseFiles() {
     cwd: '.',
     env: process.env,
   });
-  await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-    cwd: '.',
-    env: process.env,
-  });
+  await execa('git', ['clone', courseOriginDir, courseLiveDir], { cwd: '.', env: process.env });
   await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
-  await execa('git', ['add', '-A'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['commit', '-m', 'initial commit'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['push'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['clone', courseOriginDir, courseDevDir], {
-    cwd: '.',
-    env: process.env,
-  });
+  await execa('git', ['add', '-A'], { cwd: courseLiveDir, env: process.env });
+  await execa('git', ['commit', '-m', 'initial commit'], { cwd: courseLiveDir, env: process.env });
+  await execa('git', ['push'], { cwd: courseLiveDir, env: process.env });
+  await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
 }
 
 async function deleteCourseFiles() {
@@ -663,10 +640,7 @@ function writeAndCommitFileInLive(fileName, fileContents) {
       await fs.writeFile(path.join(courseLiveDir, fileName), fileContents);
     });
     it('should add', async () => {
-      await execa('git', ['add', '-A'], {
-        cwd: courseLiveDir,
-        env: process.env,
-      });
+      await execa('git', ['add', '-A'], { cwd: courseLiveDir, env: process.env });
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
@@ -680,10 +654,7 @@ function writeAndCommitFileInLive(fileName, fileContents) {
 function pullAndVerifyFileInDev(fileName, fileContents) {
   describe(`pull in dev and verify contents of ${fileName}`, function () {
     it('should pull', async () => {
-      await execa('git', ['pull'], {
-        cwd: courseDevDir,
-        env: process.env,
-      });
+      await execa('git', ['pull'], { cwd: courseDevDir, env: process.env });
     });
     it('should match contents', function () {
       assert.strictEqual(readFileSync(path.join(courseDevDir, fileName), 'utf-8'), fileContents);
@@ -694,10 +665,7 @@ function pullAndVerifyFileInDev(fileName, fileContents) {
 function pullAndVerifyFileNotInDev(fileName) {
   describe(`pull in dev and verify ${fileName} does not exist`, function () {
     it('should pull', async () => {
-      await execa('git', ['pull'], {
-        cwd: courseDevDir,
-        env: process.env,
-      });
+      await execa('git', ['pull'], { cwd: courseDevDir, env: process.env });
     });
     it('should not exist', function (callback) {
       fs.access(path.join(courseDevDir, fileName), (err) => {
@@ -718,10 +686,7 @@ function writeAndPushFileInDev(fileName, fileContents) {
       await fs.writeFile(path.join(courseDevDir, fileName), fileContents);
     });
     it('should add', async () => {
-      await execa('git', ['add', '-A'], {
-        cwd: courseDevDir,
-        env: process.env,
-      });
+      await execa('git', ['add', '-A'], { cwd: courseDevDir, env: process.env });
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
@@ -730,10 +695,7 @@ function writeAndPushFileInDev(fileName, fileContents) {
       });
     });
     it('should push', async () => {
-      await execa('git', ['push'], {
-        cwd: courseDevDir,
-        env: process.env,
-      });
+      await execa('git', ['push'], { cwd: courseDevDir, env: process.env });
     });
   });
 }

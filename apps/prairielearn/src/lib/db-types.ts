@@ -41,10 +41,7 @@ export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 // because `Group` comes before `GroupConfig` alphabetically.
 // *******************************************************************************
 
-export const AdministratorSchema = z.object({
-  id: IdSchema,
-  user_id: IdSchema,
-});
+export const AdministratorSchema = z.object({ id: IdSchema, user_id: IdSchema });
 export type Administrator = z.infer<typeof AdministratorSchema>;
 
 export const AlternativeGroupSchema = z.object({
@@ -258,10 +255,7 @@ export const AuditLogSchema = z.object({
 });
 export type AuditLog = z.infer<typeof AuditLogSchema>;
 
-export const AuthnProviderSchema = z.object({
-  id: IdSchema,
-  name: z.string().nullable(),
-});
+export const AuthnProviderSchema = z.object({ id: IdSchema, name: z.string().nullable() });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
 export const ClientFingerprintSchema = z.object({

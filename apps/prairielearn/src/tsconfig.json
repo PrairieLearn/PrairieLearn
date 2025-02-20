@@ -1,8 +1,5 @@
 {
   "extends": "@prairielearn/tsconfig/tsconfig.app.json",
-  "compilerOptions": {
-    "rootDir": "./",
-    "outDir": "../dist"
-  },
+  "compilerOptions": { "rootDir": "./", "outDir": "../dist" },
   "include": ["**/*"]
 }

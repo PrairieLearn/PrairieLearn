@@ -5,10 +5,7 @@ interface ButtonConfig {
   text?: string;
   icon?: string;
   render?: boolean;
-  attributes?: {
-    title?: string;
-    [key: string]: string | undefined;
-  };
+  attributes?: { title?: string; [key: string]: string | undefined };
   html?: string | ((data: any) => string);
   event?: ((data: any) => void) | Record<string, unknown> | string;
 }

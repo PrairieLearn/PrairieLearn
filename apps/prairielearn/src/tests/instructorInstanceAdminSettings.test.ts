@@ -33,10 +33,7 @@ describe('Updating a course instance ID', () => {
       env: process.env,
     });
 
-    await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-      cwd: '.',
-      env: process.env,
-    });
+    await execa('git', ['clone', courseOriginDir, courseLiveDir], { cwd: '.', env: process.env });
 
     await fs.copy(courseTemplateDir, courseLiveDir);
 

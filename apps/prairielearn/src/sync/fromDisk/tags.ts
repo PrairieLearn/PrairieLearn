@@ -93,10 +93,7 @@ export async function sync(
       }
 
       if (tagsToDelete.length > 0) {
-        await queryAsync(sql.delete_tags, {
-          course_id: courseId,
-          tags: tagsToDelete,
-        });
+        await queryAsync(sql.delete_tags, { course_id: courseId, tags: tagsToDelete });
       }
 
       return insertedTags;

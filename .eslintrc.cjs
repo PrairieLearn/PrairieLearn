@@ -15,10 +15,7 @@ const NO_RESTRICTED_SYNTAX = [
 ];
 
 module.exports = {
-  env: {
-    node: true,
-    es2021: true,
-  },
+  env: { node: true, es2021: true },
   extends: [
     'eslint:recommended',
     'plugin:import-x/recommended',
@@ -36,17 +33,10 @@ module.exports = {
     '@prairielearn',
     '@typescript-eslint',
   ],
-  parserOptions: {
-    ecmaVersion: 13,
-  },
+  parserOptions: { ecmaVersion: 13 },
   settings: {
-    'import-x/parsers': {
-      '@typescript-eslint/parser': ['.ts', '.js'],
-    },
-    'import-x/resolver': {
-      typescript: true,
-      node: true,
-    },
+    'import-x/parsers': { '@typescript-eslint/parser': ['.ts', '.js'] },
+    'import-x/resolver': { typescript: true, node: true },
   },
   reportUnusedDisableDirectives: true,
   rules: {
@@ -73,16 +63,8 @@ module.exports = {
       'error',
       {
         'newlines-between': 'always',
-        alphabetize: {
-          order: 'asc',
-        },
-        pathGroups: [
-          {
-            pattern: '@prairielearn/**',
-            group: 'external',
-            position: 'after',
-          },
-        ],
+        alphabetize: { order: 'asc' },
+        pathGroups: [{ pattern: '@prairielearn/**', group: 'external', position: 'after' }],
         pathGroupsExcludedImportTypes: ['builtin'],
       },
     ],
@@ -99,13 +81,7 @@ module.exports = {
     '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
 
     // Replaces the standard `no-unused-vars` rule.
-    '@typescript-eslint/no-unused-vars': [
-      'error',
-      {
-        args: 'after-used',
-        argsIgnorePattern: '^_',
-      },
-    ],
+    '@typescript-eslint/no-unused-vars': ['error', { args: 'after-used', argsIgnorePattern: '^_' }],
 
     // We use empty functions in quite a few places, so we'll disable this rule.
     '@typescript-eslint/no-empty-function': 'off',
@@ -141,23 +117,11 @@ module.exports = {
         ],
       },
     },
-    {
-      files: ['*.test.{js,ts,mjs}'],
-      env: {
-        mocha: true,
-      },
-    },
+    { files: ['*.test.{js,ts,mjs}'], env: { mocha: true } },
     {
       files: ['apps/prairielearn/assets/scripts/**/*'],
-      env: {
-        browser: true,
-        jquery: true,
-      },
-      settings: {
-        react: {
-          pragma: 'h',
-        },
-      },
+      env: { browser: true, jquery: true },
+      settings: { react: { pragma: 'h' } },
     },
   ],
 };

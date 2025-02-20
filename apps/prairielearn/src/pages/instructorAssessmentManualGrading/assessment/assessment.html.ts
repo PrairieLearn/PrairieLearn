@@ -44,14 +44,8 @@ export function ManualGradingAssessment({
   return PageLayout({
     resLocals,
     pageTitle: 'Manual Grading',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'manual_grading',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'manual_grading' },
+    options: { fullWidth: true },
     headContent: html`
       ${compiledScriptTag('instructorAssessmentManualGradingAssessmentClient.ts')}
     `,

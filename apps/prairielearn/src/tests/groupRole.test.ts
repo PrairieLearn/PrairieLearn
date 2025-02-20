@@ -79,10 +79,7 @@ async function joinGroup(assessmentUrl: string, joinCode: string) {
 async function leaveGroup(assessmentUrl: string) {
   const res = await fetch(assessmentUrl, {
     method: 'POST',
-    body: new URLSearchParams({
-      __action: 'leave_group',
-      __csrf_token: locals.__csrf_token,
-    }),
+    body: new URLSearchParams({ __action: 'leave_group', __csrf_token: locals.__csrf_token }),
   });
   assert.isOk(res.ok);
 }
@@ -92,10 +89,7 @@ async function verifyRoleAssignmentsInDatabase(
   assessmentId: string,
 ) {
   const expected = roleAssignments
-    .map(({ roleId, groupUserId }) => ({
-      user_id: groupUserId,
-      group_role_id: roleId,
-    }))
+    .map(({ roleId, groupUserId }) => ({ user_id: groupUserId, group_role_id: roleId }))
     .sort((a, b) => a.user_id - b.user_id || a.group_role_id - b.group_role_id);
   const result = await sqldb.queryAsync(sql.select_group_user_roles, {
     assessment_id: assessmentId,
@@ -200,9 +194,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('contains the 4 group roles for the assessment', async function () {
-    const params = {
-      assessment_id: locals.assessment_id,
-    };
+    const params = { assessment_id: locals.assessment_id };
     const result = await sqldb.queryAsync(sql.select_assessment_group_roles, params);
     assert.lengthOf(result.rows, 4);
     locals.groupRoles = result.rows;
@@ -829,9 +821,7 @@ describe('Test group based assessments with custom group roles from student side
 
       // Assert that the recorder role is given to either the second or fourth user because
       // they previously had non-required roles
-      const params = {
-        assessment_id: locals.assessment_id,
-      };
+      const params = { assessment_id: locals.assessment_id };
       const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
       assert.lengthOf(result.rows, 4);
 
@@ -1070,9 +1060,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   before('set up testing server', async function () {
     // Create a copy of the course that we can safely manipulate.
     tempTestCourseDir = await tmp.dir({ unsafeCleanup: true });
-    await fs.copy(TEST_COURSE_PATH, tempTestCourseDir.path, {
-      overwrite: true,
-    });
+    await fs.copy(TEST_COURSE_PATH, tempTestCourseDir.path, { overwrite: true });
 
     await helperServer.before(tempTestCourseDir.path).call(this);
 
@@ -1563,9 +1551,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     step(
       'should have correct role configuration in the database after first user leaves',
       async function () {
-        const params = {
-          assessment_id: assessmentId,
-        };
+        const params = { assessment_id: assessmentId };
         const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
 
         // Ensure that there are two recorder assignments, one manager, and one reflector, and no contributors
@@ -1612,9 +1598,7 @@ describe('Test group role reassignment logic when user leaves', function () {
   });
 
   step('should contain the 4 group roles for the assessment', async function () {
-    const params = {
-      assessment_id: locals.assessment_id,
-    };
+    const params = { assessment_id: locals.assessment_id };
     const result = await sqldb.queryAsync(sql.select_assessment_group_roles, params);
     assert.lengthOf(result.rows, 4);
     locals.groupRoles = result.rows;
@@ -1675,14 +1659,8 @@ describe('Test group role reassignment logic when user leaves', function () {
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
       locals.groupInfo.groupSize = 2;
       const roleAssignments = [
-        {
-          user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.manager.id,
-        },
-        {
-          user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.recorder.id,
-        },
+        { user_id: locals.studentUsers[0].user_id, group_role_id: locals.manager.id },
+        { user_id: locals.studentUsers[1].user_id, group_role_id: locals.recorder.id },
       ];
       locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
@@ -1698,14 +1676,8 @@ describe('Test group role reassignment logic when user leaves', function () {
       );
       // Recorder role should be transferred to first user
       const expected = [
-        {
-          user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.manager.id,
-        },
-        {
-          user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.recorder.id,
-        },
+        { user_id: locals.studentUsers[0].user_id, group_role_id: locals.manager.id },
+        { user_id: locals.studentUsers[0].user_id, group_role_id: locals.recorder.id },
       ];
       assert.sameDeepMembers(result, expected);
     },
@@ -1718,14 +1690,8 @@ describe('Test group role reassignment logic when user leaves', function () {
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
       locals.groupInfo.groupSize = 2;
       const roleAssignments = [
-        {
-          user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.manager.id,
-        },
-        {
-          user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.contributor.id,
-        },
+        { user_id: locals.studentUsers[0].user_id, group_role_id: locals.manager.id },
+        { user_id: locals.studentUsers[1].user_id, group_role_id: locals.contributor.id },
       ];
       locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
@@ -1741,10 +1707,7 @@ describe('Test group role reassignment logic when user leaves', function () {
       );
       // Manager role should replace first user's contributor role
       const expected = [
-        {
-          user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.manager.id,
-        },
+        { user_id: locals.studentUsers[1].user_id, group_role_id: locals.manager.id },
       ];
       assert.sameDeepMembers(result, expected);
     },
@@ -1757,22 +1720,10 @@ describe('Test group role reassignment logic when user leaves', function () {
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 3);
       locals.groupInfo.groupSize = 3;
       const roleAssignments = [
-        {
-          user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.manager.id,
-        },
-        {
-          user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.reflector.id,
-        },
-        {
-          user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.contributor.id,
-        },
-        {
-          user_id: locals.studentUsers[2].user_id,
-          group_role_id: locals.contributor.id,
-        },
+        { user_id: locals.studentUsers[0].user_id, group_role_id: locals.manager.id },
+        { user_id: locals.studentUsers[0].user_id, group_role_id: locals.reflector.id },
+        { user_id: locals.studentUsers[1].user_id, group_role_id: locals.contributor.id },
+        { user_id: locals.studentUsers[2].user_id, group_role_id: locals.contributor.id },
       ];
       locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
@@ -1789,24 +1740,12 @@ describe('Test group role reassignment logic when user leaves', function () {
       // Case 1: Manager role should replace second user's contributor role, and
       // reflector role should replace third user's contributor role
       const expected1 = [
-        {
-          user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.manager.id,
-        },
-        {
-          user_id: locals.studentUsers[2].user_id,
-          group_role_id: locals.reflector.id,
-        },
+        { user_id: locals.studentUsers[1].user_id, group_role_id: locals.manager.id },
+        { user_id: locals.studentUsers[2].user_id, group_role_id: locals.reflector.id },
       ];
       const expected2 = [
-        {
-          user_id: locals.studentUsers[2].user_id,
-          group_role_id: locals.manager.id,
-        },
-        {
-          user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.reflector.id,
-        },
+        { user_id: locals.studentUsers[2].user_id, group_role_id: locals.manager.id },
+        { user_id: locals.studentUsers[1].user_id, group_role_id: locals.reflector.id },
       ];
 
       assert.lengthOf(result, 2);
@@ -1828,26 +1767,11 @@ describe('Test group role reassignment logic when user leaves', function () {
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 3);
       locals.groupInfo.groupSize = 3;
       const roleAssignments = [
-        {
-          user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.manager.id,
-        },
-        {
-          user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.recorder.id,
-        },
-        {
-          user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.reflector.id,
-        },
-        {
-          user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.contributor.id,
-        },
-        {
-          user_id: locals.studentUsers[2].user_id,
-          group_role_id: locals.contributor.id,
-        },
+        { user_id: locals.studentUsers[0].user_id, group_role_id: locals.manager.id },
+        { user_id: locals.studentUsers[0].user_id, group_role_id: locals.recorder.id },
+        { user_id: locals.studentUsers[0].user_id, group_role_id: locals.reflector.id },
+        { user_id: locals.studentUsers[1].user_id, group_role_id: locals.contributor.id },
+        { user_id: locals.studentUsers[2].user_id, group_role_id: locals.contributor.id },
       ];
       locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
@@ -1889,14 +1813,8 @@ describe('Test group role reassignment logic when user leaves', function () {
     locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
     locals.groupInfo.groupSize = 2;
     const roleAssignments = [
-      {
-        user_id: locals.studentUsers[0].user_id,
-        group_role_id: locals.manager.id,
-      },
-      {
-        user_id: locals.studentUsers[1].user_id,
-        group_role_id: locals.contributor.id,
-      },
+      { user_id: locals.studentUsers[0].user_id, group_role_id: locals.manager.id },
+      { user_id: locals.studentUsers[1].user_id, group_role_id: locals.contributor.id },
     ];
     locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
       ...role,
@@ -1912,10 +1830,7 @@ describe('Test group role reassignment logic when user leaves', function () {
     );
     // Recorder role should be transferred to first user
     const expected = [
-      {
-        user_id: locals.studentUsers[0].user_id,
-        group_role_id: locals.manager.id,
-      },
+      { user_id: locals.studentUsers[0].user_id, group_role_id: locals.manager.id },
     ];
     assert.sameDeepMembers(result, expected);
   });
@@ -1925,10 +1840,7 @@ describe('Test group role reassignment logic when user leaves', function () {
     locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
     locals.groupInfo.groupSize = 2;
     const roleAssignments = [
-      {
-        user_id: locals.studentUsers[0].user_id,
-        group_role_id: locals.manager.id,
-      },
+      { user_id: locals.studentUsers[0].user_id, group_role_id: locals.manager.id },
     ];
     locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
       ...role,
@@ -1944,10 +1856,7 @@ describe('Test group role reassignment logic when user leaves', function () {
     );
     // Recorder role should be transferred to first user
     const expected = [
-      {
-        user_id: locals.studentUsers[0].user_id,
-        group_role_id: locals.manager.id,
-      },
+      { user_id: locals.studentUsers[0].user_id, group_role_id: locals.manager.id },
     ];
     assert.sameDeepMembers(result, expected);
   });

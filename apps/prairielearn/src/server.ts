@@ -2025,10 +2025,7 @@ export async function startServer() {
     opentelemetry.createObservableValueGauges(
       meter,
       'http.connections.active',
-      {
-        valueType: opentelemetry.ValueType.INT,
-        interval: 1000,
-      },
+      { valueType: opentelemetry.ValueType.INT, interval: 1000 },
       () => {
         return util.promisify(server.getConnections.bind(server))();
       },
@@ -2162,9 +2159,7 @@ if (esMain(import.meta) && config.startServer) {
         // See related issues:
         // https://github.com/openai/openai-node/issues/903
         // https://github.com/getsentry/sentry-javascript/issues/12414
-        registerEsmLoaderHooks: {
-          exclude: [/openai/],
-        },
+        registerEsmLoaderHooks: { exclude: [/openai/] },
 
         // We have our own OpenTelemetry setup, so ensure Sentry doesn't
         // try to set that up for itself, but only if OpenTelemetry is
@@ -2207,10 +2202,7 @@ if (esMain(import.meta) && config.startServer) {
         serverAddress: config.pyroscopeServerAddress,
         basicAuthUser: config.pyroscopeBasicAuthUser,
         basicAuthPassword: config.pyroscopeBasicAuthPassword,
-        tags: {
-          instanceId: config.instanceId,
-          ...config.pyroscopeTags,
-        },
+        tags: { instanceId: config.instanceId, ...config.pyroscopeTags },
       });
       Pyroscope.start();
     }
@@ -2319,14 +2311,8 @@ if (esMain(import.meta) && config.startServer) {
     const meter = opentelemetry.metrics.getMeter('prairielearn');
 
     const pools = [
-      {
-        name: 'default',
-        pool: sqldb.defaultPool,
-      },
-      {
-        name: 'named-locks',
-        pool: namedLocks.pool,
-      },
+      { name: 'default', pool: sqldb.defaultPool },
+      { name: 'named-locks', pool: namedLocks.pool },
     ];
 
     pools.forEach(({ name, pool }) => {

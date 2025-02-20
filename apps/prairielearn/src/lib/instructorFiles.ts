@@ -19,16 +19,8 @@ export interface InstructorFilePaths {
   workingPathRelativeToCourse: string;
   workingDirectory: string;
   workingFilename: string;
-  specialDirs: {
-    label: string;
-    path: string;
-    info: HtmlSafeString;
-  }[];
-  branch: {
-    name: string;
-    path: string;
-    canView: boolean;
-  }[];
+  specialDirs: { label: string; path: string; info: HtmlSafeString }[];
+  branch: { name: string; path: string; canView: boolean }[];
 }
 
 function getContextPaths(

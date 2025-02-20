@@ -47,9 +47,7 @@ async function loadServer(questionServerPath, coursePath) {
         setTimeout(() => resolve(server), 0);
       },
       (err) => {
-        const e = new Error(`Error loading ${path.basename(questionServerPath)}`, {
-          cause: err,
-        });
+        const e = new Error(`Error loading ${path.basename(questionServerPath)}`, { cause: err });
         reject(e);
       },
     );
@@ -141,10 +139,7 @@ const stdoutWrite = process.stdout.write.bind(process.stdout);
 process.stdout.write = process.stderr.write.bind(process.stderr);
 
 (async () => {
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
 
   const line = await getLineOnce(rl);
 

@@ -30,11 +30,9 @@ export function InstructorCourseAdminInstances({
     resLocals.course.time_zone,
   );
 
-  const initialEndDate = initialStartDate.add({ months: 4 }).with({
-    hour: 23,
-    minute: 59,
-    second: 0,
-  });
+  const initialEndDate = initialStartDate
+    .add({ months: 4 })
+    .with({ hour: 23, minute: 59, second: 0 });
   const initialEndDateFormatted = formatDateYMDHM(
     new Date(initialEndDate.epochMilliseconds),
     resLocals.course.time_zone,
@@ -43,14 +41,8 @@ export function InstructorCourseAdminInstances({
   return PageLayout({
     resLocals,
     pageTitle: 'Course Instances',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'instances',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'instances' },
+    options: { fullWidth: true },
     headContent: [compiledScriptTag('instructorCourseAdminInstancesClient.ts')],
     content: html`
       ${CourseSyncErrorsAndWarnings({
@@ -136,15 +128,9 @@ export function InstructorCourseAdminInstances({
                         <tr>
                           <td class="align-left">
                             ${row.sync_errors
-                              ? SyncProblemButton({
-                                  type: 'error',
-                                  output: row.sync_errors,
-                                })
+                              ? SyncProblemButton({ type: 'error', output: row.sync_errors })
                               : row.sync_warnings
-                                ? SyncProblemButton({
-                                    type: 'warning',
-                                    output: row.sync_warnings,
-                                  })
+                                ? SyncProblemButton({ type: 'warning', output: row.sync_warnings })
                                 : ''}
                             <a
                               href="${resLocals.plainUrlPrefix}/course_instance/${row.id}/instructor/instance_admin"

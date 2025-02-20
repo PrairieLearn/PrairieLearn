@@ -75,15 +75,9 @@ onDocumentReady(() => {
   window.qidFormatter = function (_qid: any, question: QuestionsPageData) {
     let text = '';
     if (question.sync_errors) {
-      text += SyncProblemButton({
-        type: 'error',
-        output: question.sync_errors,
-      });
+      text += SyncProblemButton({ type: 'error', output: question.sync_errors });
     } else if (question.sync_warnings) {
-      text += SyncProblemButton({
-        type: 'warning',
-        output: question.sync_warnings,
-      });
+      text += SyncProblemButton({ type: 'warning', output: question.sync_warnings });
     }
 
     // We only want to show the sharing name prefix for publicly-shared questions.
@@ -204,9 +198,7 @@ onDocumentReady(() => {
     // TODO: If we can pick up the following change, we can drop the `icons` config here:
     // https://github.com/wenzhixin/bootstrap-table/pull/7190
     iconsPrefix: 'fa',
-    icons: {
-      columns: 'fa-table-list',
-    },
+    icons: { columns: 'fa-table-list' },
 
     buttons: {
       clearFilters: {

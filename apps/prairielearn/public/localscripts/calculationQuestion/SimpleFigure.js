@@ -34,9 +34,7 @@ define(['underscore', 'backbone', 'PrairieDraw'], function (_, Backbone, Prairie
   });
 
   var addFigure = function (client, el, drawFcn) {
-    var FigureView = SimpleFigureView.extend({
-      render: drawFcn,
-    });
+    var FigureView = SimpleFigureView.extend({ render: drawFcn });
     var figureView = new FigureView({
       el: el,
       model: client.model,
@@ -48,8 +46,5 @@ define(['underscore', 'backbone', 'PrairieDraw'], function (_, Backbone, Prairie
     return figureView;
   };
 
-  return {
-    SimpleFigureView: SimpleFigureView,
-    addFigure: addFigure,
-  };
+  return { SimpleFigureView: SimpleFigureView, addFigure: addFigure };
 });

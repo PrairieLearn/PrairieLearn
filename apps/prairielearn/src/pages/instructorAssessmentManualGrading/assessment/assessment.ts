@@ -27,10 +27,7 @@ router.get(
     }
     const questions = await queryRows(
       sql.select_questions_manual_grading,
-      {
-        assessment_id: res.locals.assessment.id,
-        user_id: res.locals.authz_data.user.user_id,
-      },
+      { assessment_id: res.locals.assessment.id, user_id: res.locals.authz_data.user.user_id },
       ManualGradingQuestionSchema,
     );
     const num_open_instances = questions[0]?.num_open_instances || 0;
@@ -64,9 +61,7 @@ router.post(
         ? req.body.assigned_grader
         : [req.body.assigned_grader];
       const allowedGraderIds = (
-        await selectCourseInstanceGraderStaff({
-          course_instance_id: res.locals.course_instance.id,
-        })
+        await selectCourseInstanceGraderStaff({ course_instance_id: res.locals.course_instance.id })
       ).map((user) => user.user_id);
       if (assignedGraderIds.some((graderId) => !allowedGraderIds.includes(graderId))) {
         flash(

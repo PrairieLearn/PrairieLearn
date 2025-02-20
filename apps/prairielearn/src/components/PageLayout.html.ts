@@ -47,12 +47,7 @@ export function PageLayout({
     <!doctype html>
     <html lang="en" class="${options.fullHeight ? 'h-100' : ''}">
       <head>
-        ${HeadContents({
-          resLocals,
-          pageTitle,
-          pageNote: options.pageNote,
-        })}
-        ${headContent}
+        ${HeadContents({ resLocals, pageTitle, pageNote: options.pageNote })} ${headContent}
       </head>
       <body
         ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}

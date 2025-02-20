@@ -96,11 +96,7 @@ export class FeatureManager<FeatureName extends string> {
 
     const featureIsEnabled = await queryOptionalRow(
       sql.is_feature_enabled,
-      {
-        name,
-        ...DEFAULT_CONTEXT,
-        ...context,
-      },
+      { name, ...DEFAULT_CONTEXT, ...context },
       z.boolean(),
     );
 
@@ -148,10 +144,7 @@ export class FeatureManager<FeatureName extends string> {
     if (!locals.institution) {
       return this.enabled(name, user_context);
     } else if (!locals.course) {
-      return this.enabled(name, {
-        institution_id: locals.institution.id,
-        ...user_context,
-      });
+      return this.enabled(name, { institution_id: locals.institution.id, ...user_context });
     } else if (!locals.course_instance) {
       return this.enabled(name, {
         institution_id: locals.institution.id,

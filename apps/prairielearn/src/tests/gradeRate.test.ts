@@ -38,10 +38,7 @@ describe('Exam assessment with grade rate set', function () {
   step('start the exam', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
-      body: new URLSearchParams({
-        __action: 'new_instance',
-        __csrf_token: context.__csrf_token,
-      }),
+      body: new URLSearchParams({ __action: 'new_instance', __csrf_token: context.__csrf_token }),
     });
     assert.isTrue(response.ok);
 

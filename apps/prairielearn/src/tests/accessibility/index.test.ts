@@ -271,10 +271,7 @@ describe('accessibility', () => {
     config.cronActive = true;
 
     // We want to test a news item page, so we need to "init" them.
-    await news_items.init({
-      notifyIfPreviouslyEmpty: true,
-      errorIfLockNotAcquired: true,
-    });
+    await news_items.init({ notifyIfPreviouslyEmpty: true, errorIfLockNotAcquired: true });
 
     const app = await server.initExpress();
     endpoints = expressListEndpoints(app);
@@ -287,16 +284,12 @@ describe('accessibility', () => {
 
     const assessmentResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM assessments WHERE tid = $tid',
-      {
-        tid: 'hw1-automaticTestSuite',
-      },
+      { tid: 'hw1-automaticTestSuite' },
     );
 
     const questionResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM questions WHERE qid = $qid',
-      {
-        qid: 'downloadFile',
-      },
+      { qid: 'downloadFile' },
     );
 
     await features.enable('question-sharing');

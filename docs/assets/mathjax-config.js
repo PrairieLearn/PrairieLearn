@@ -5,10 +5,6 @@ var MathJax = {
       ['\\(', '\\)'],
     ],
   },
-  svg: {
-    fontCache: 'global',
-  },
-  loader: {
-    load: ['input/tex', 'output/svg'],
-  },
+  svg: { fontCache: 'global' },
+  loader: { load: ['input/tex', 'output/svg'] },
 };

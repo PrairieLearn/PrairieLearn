@@ -40,10 +40,7 @@ async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<
   } catch (err) {
     // We shouldn't ever get malformed JSON from the caller - but if we do,
     // handle it gracefully.
-    return {
-      error: err.message,
-      needsFullRestart: false,
-    };
+    return { error: err.message, needsFullRestart: false };
   }
 
   if (request.fcn === 'restart') {
@@ -56,10 +53,7 @@ async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<
       restartErr = err;
     }
 
-    return {
-      data: 'success',
-      needsFullRestart: !!restartErr || !success,
-    };
+    return { data: 'success', needsFullRestart: !!restartErr || !success };
   }
 
   // Course will always be at `/course` in the Docker executor
@@ -127,11 +121,7 @@ async function prepareCodeCaller() {
 
   // Our overall loop looks like this: read a line of input from stdin, spin
   // off a python worker to handle it, and write the results back to stdout.
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false,
-  });
+  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: false });
 
   // Once the readline interface closes, we can't get any more input; die
   // immediately to allow our container to be removed.

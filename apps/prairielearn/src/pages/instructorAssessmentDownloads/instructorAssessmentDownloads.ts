@@ -457,12 +457,7 @@ router.get(
 
       const cursor = await sqldb.queryValidatedCursor(
         sql.assessment_instance_submissions,
-        {
-          assessment_id: res.locals.assessment.id,
-          include_all,
-          include_final,
-          include_best,
-        },
+        { assessment_id: res.locals.assessment.id, include_all, include_final, include_best },
         AssessmentInstanceSubmissionRowSchema,
       );
 
@@ -511,10 +506,7 @@ router.get(
     } else if (req.params.filename === filenames.filesForManualGradingZipFilename) {
       const cursor = await sqldb.queryValidatedCursor(
         sql.submissions_for_manual_grading,
-        {
-          assessment_id: res.locals.assessment.id,
-          include_files: true,
-        },
+        { assessment_id: res.locals.assessment.id, include_files: true },
         ManualGradingSubmissionRowSchema,
       );
 
@@ -531,12 +523,7 @@ router.get(
 
       const cursor = await sqldb.queryValidatedCursor(
         sql.assessment_instance_submissions,
-        {
-          assessment_id: res.locals.assessment.id,
-          include_all,
-          include_final,
-          include_best,
-        },
+        { assessment_id: res.locals.assessment.id, include_all, include_final, include_best },
         AssessmentInstanceSubmissionRowSchema,
       );
 

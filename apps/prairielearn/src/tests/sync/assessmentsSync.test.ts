@@ -117,10 +117,7 @@ describe('Assessment syncing', () => {
   it('adds a new zone to an assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    assessment.zones?.push({
-      title: 'zone 1',
-      questions: [{ id: util.QUESTION_ID, points: 5 }],
-    });
+    assessment.zones?.push({ title: 'zone 1', questions: [{ id: util.QUESTION_ID, points: 5 }] });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
     assessment.zones?.push({
@@ -194,20 +191,9 @@ describe('Assessment syncing', () => {
       questions: [
         {
           points: 10,
-          alternatives: [
-            {
-              id: util.QUESTION_ID,
-            },
-            {
-              id: util.ALTERNATIVE_QUESTION_ID,
-              points: 5,
-            },
-          ],
+          alternatives: [{ id: util.QUESTION_ID }, { id: util.ALTERNATIVE_QUESTION_ID, points: 5 }],
         },
-        {
-          points: 7,
-          id: util.MANUAL_GRADING_QUESTION_ID,
-        },
+        { points: 7, id: util.MANUAL_GRADING_QUESTION_ID },
       ],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
@@ -256,20 +242,11 @@ describe('Assessment syncing', () => {
           maxPoints: 20,
           points: 10,
           alternatives: [
-            {
-              id: util.QUESTION_ID,
-            },
-            {
-              id: util.ALTERNATIVE_QUESTION_ID,
-              maxPoints: 15,
-              points: 5,
-            },
+            { id: util.QUESTION_ID },
+            { id: util.ALTERNATIVE_QUESTION_ID, maxPoints: 15, points: 5 },
           ],
         },
-        {
-          points: 7,
-          id: util.MANUAL_GRADING_QUESTION_ID,
-        },
+        { points: 7, id: util.MANUAL_GRADING_QUESTION_ID },
       ],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
@@ -318,20 +295,11 @@ describe('Assessment syncing', () => {
           autoPoints: 10,
           manualPoints: 3,
           alternatives: [
-            {
-              id: util.QUESTION_ID,
-            },
-            {
-              id: util.ALTERNATIVE_QUESTION_ID,
-              autoPoints: 5,
-            },
+            { id: util.QUESTION_ID },
+            { id: util.ALTERNATIVE_QUESTION_ID, autoPoints: 5 },
           ],
         },
-        {
-          autoPoints: 1,
-          manualPoints: 7,
-          id: util.MANUAL_GRADING_QUESTION_ID,
-        },
+        { autoPoints: 1, manualPoints: 7, id: util.MANUAL_GRADING_QUESTION_ID },
       ],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
@@ -381,21 +349,11 @@ describe('Assessment syncing', () => {
           autoPoints: 10,
           manualPoints: 3,
           alternatives: [
-            {
-              id: util.QUESTION_ID,
-            },
-            {
-              id: util.ALTERNATIVE_QUESTION_ID,
-              maxAutoPoints: 15,
-              autoPoints: 5,
-            },
+            { id: util.QUESTION_ID },
+            { id: util.ALTERNATIVE_QUESTION_ID, maxAutoPoints: 15, autoPoints: 5 },
           ],
         },
-        {
-          autoPoints: 1,
-          manualPoints: 7,
-          id: util.MANUAL_GRADING_QUESTION_ID,
-        },
+        { autoPoints: 1, manualPoints: 7, id: util.MANUAL_GRADING_QUESTION_ID },
       ],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['hwwithmanual1'] = assessment;
@@ -443,19 +401,11 @@ describe('Assessment syncing', () => {
         {
           points: [10, 7, 5, 2, 1],
           alternatives: [
-            {
-              id: util.QUESTION_ID,
-            },
-            {
-              id: util.ALTERNATIVE_QUESTION_ID,
-              points: [5, 3],
-            },
+            { id: util.QUESTION_ID },
+            { id: util.ALTERNATIVE_QUESTION_ID, points: [5, 3] },
           ],
         },
-        {
-          points: [7, 6, 5],
-          id: util.MANUAL_GRADING_QUESTION_ID,
-        },
+        { points: [7, 6, 5], id: util.MANUAL_GRADING_QUESTION_ID },
       ],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
@@ -504,20 +454,11 @@ describe('Assessment syncing', () => {
           autoPoints: [10, 7, 5, 2, 1],
           manualPoints: 8,
           alternatives: [
-            {
-              id: util.QUESTION_ID,
-            },
-            {
-              id: util.ALTERNATIVE_QUESTION_ID,
-              autoPoints: [5, 3],
-            },
+            { id: util.QUESTION_ID },
+            { id: util.ALTERNATIVE_QUESTION_ID, autoPoints: [5, 3] },
           ],
         },
-        {
-          autoPoints: [7, 6, 5],
-          manualPoints: 3,
-          id: util.MANUAL_GRADING_QUESTION_ID,
-        },
+        { autoPoints: [7, 6, 5], manualPoints: 3, id: util.MANUAL_GRADING_QUESTION_ID },
       ],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
@@ -563,14 +504,8 @@ describe('Assessment syncing', () => {
       {
         title: 'zone 1',
         questions: [
-          {
-            id: util.QUESTION_ID,
-            points: 5,
-          },
-          {
-            id: util.ALTERNATIVE_QUESTION_ID,
-            points: 10,
-          },
+          { id: util.QUESTION_ID, points: 5 },
+          { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
         ],
       },
     ];
@@ -619,10 +554,7 @@ describe('Assessment syncing', () => {
   it('removes a zone from an assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    assessment.zones?.push({
-      title: 'zone 1',
-      questions: [{ id: util.QUESTION_ID, points: 5 }],
-    });
+    assessment.zones?.push({ title: 'zone 1', questions: [{ id: util.QUESTION_ID, points: 5 }] });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
     assessment.zones?.pop();
@@ -639,14 +571,7 @@ describe('Assessment syncing', () => {
   it('removes an access rule from an exam', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    assessment.allowAccess?.push(
-      {
-        mode: 'Exam',
-      },
-      {
-        mode: 'Public',
-      },
-    );
+    assessment.allowAccess?.push({ mode: 'Exam' }, { mode: 'Public' });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
     const syncedAssessments = await util.dumpTable('assessments');
@@ -665,9 +590,7 @@ describe('Assessment syncing', () => {
   it('sets mode to Exam if an access rule specifies an examUuid but not mode=Exam', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    assessment.allowAccess?.push({
-      examUuid: 'f593a8c9-ccd4-449c-936c-c26c96ea089b',
-    });
+    assessment.allowAccess?.push({ examUuid: 'f593a8c9-ccd4-449c-936c-c26c96ea089b' });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['implicitexam'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('implicitexam');
@@ -686,10 +609,7 @@ describe('Assessment syncing', () => {
     // NOTE: our JSON schema explicitly prohibits a zone question from having
     // an empty points array, so we can't test that here as it's impossible
     // for it to ever be written to the database.
-    assessment.allowAccess?.push({
-      mode: 'Exam',
-      uids: [],
-    });
+    assessment.allowAccess?.push({ mode: 'Exam', uids: [] });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessments = await util.dumpTable('assessments');
@@ -831,10 +751,7 @@ describe('Assessment syncing', () => {
       canView: ['Recorder', 'Contributor'],
       canSubmit: ['Recorder'],
       questions: [
-        {
-          id: util.QUESTION_ID,
-          points: 5,
-        },
+        { id: util.QUESTION_ID, points: 5 },
         {
           id: util.ALTERNATIVE_QUESTION_ID,
           points: 5,
@@ -924,10 +841,7 @@ describe('Assessment syncing', () => {
     groupAssessment.zones?.push({
       title: 'test zone',
       questions: [
-        {
-          id: util.QUESTION_ID,
-          points: 5,
-        },
+        { id: util.QUESTION_ID, points: 5 },
         {
           id: util.ALTERNATIVE_QUESTION_ID,
           points: 5,
@@ -1062,12 +976,7 @@ describe('Assessment syncing', () => {
     const lastZone = groupAssessment?.zones?.[groupAssessment.zones.length - 1];
     if (!lastZone) throw new Error('could not find last zone');
     lastZone.questions = [
-      {
-        id: util.QUESTION_ID,
-        points: 5,
-        canView: ['Recorder'],
-        canSubmit: ['Recorder'],
-      },
+      { id: util.QUESTION_ID, points: 5, canView: ['Recorder'], canSubmit: ['Recorder'] },
       {
         id: util.ALTERNATIVE_QUESTION_ID,
         points: 5,
@@ -1143,10 +1052,7 @@ describe('Assessment syncing', () => {
       canView: ['Recorder', 'Invalid'],
       canSubmit: ['Recorder'],
       questions: [
-        {
-          id: util.QUESTION_ID,
-          points: 5,
-        },
+        { id: util.QUESTION_ID, points: 5 },
         {
           id: util.ALTERNATIVE_QUESTION_ID,
           points: 5,
@@ -1175,10 +1081,7 @@ describe('Assessment syncing', () => {
     groupAssessment.zones?.push({
       title: 'test zone',
       questions: [
-        {
-          id: util.QUESTION_ID,
-          points: 5,
-        },
+        { id: util.QUESTION_ID, points: 5 },
         {
           id: util.ALTERNATIVE_QUESTION_ID,
           points: 5,
@@ -1285,12 +1188,7 @@ describe('Assessment syncing', () => {
     const lastZone = groupAssessment?.zones?.[groupAssessment.zones.length - 1];
     if (!lastZone) throw new Error('could not find last zone');
     lastZone.questions = [
-      {
-        id: util.QUESTION_ID,
-        points: 5,
-        canView: ['Recorder'],
-        canSubmit: ['Recorder'],
-      },
+      { id: util.QUESTION_ID, points: 5, canView: ['Recorder'], canSubmit: ['Recorder'] },
       {
         id: util.ALTERNATIVE_QUESTION_ID,
         points: 5,
@@ -1347,12 +1245,7 @@ describe('Assessment syncing', () => {
     firstGroupAssessment.zones?.push({
       title: 'test zone',
       questions: [
-        {
-          id: util.QUESTION_ID,
-          points: 5,
-          canView: ['Recorder'],
-          canSubmit: ['Recorder'],
-        },
+        { id: util.QUESTION_ID, points: 5, canView: ['Recorder'], canSubmit: ['Recorder'] },
       ],
     });
 
@@ -1362,12 +1255,7 @@ describe('Assessment syncing', () => {
     secondGroupAssessment.zones?.push({
       title: 'test zone',
       questions: [
-        {
-          id: util.QUESTION_ID,
-          points: 5,
-          canView: ['Recorder'],
-          canSubmit: ['Recorder'],
-        },
+        { id: util.QUESTION_ID, points: 5, canView: ['Recorder'], canSubmit: ['Recorder'] },
       ],
     });
 
@@ -1495,10 +1383,7 @@ describe('Assessment syncing', () => {
   it('records an error if an access rule start date is invalid', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    assessment.allowAccess?.push({
-      startDate: 'not a valid date',
-      endDate: '2019-01-01T00:00:00',
-    });
+    assessment.allowAccess?.push({ startDate: 'not a valid date', endDate: '2019-01-01T00:00:00' });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
@@ -1511,10 +1396,7 @@ describe('Assessment syncing', () => {
   it('records an error if an access rule end date is invalid', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    assessment.allowAccess?.push({
-      startDate: '2020-01-01T11:11:11',
-      endDate: 'not a valid date',
-    });
+    assessment.allowAccess?.push({ startDate: '2020-01-01T11:11:11', endDate: 'not a valid date' });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
@@ -1527,10 +1409,7 @@ describe('Assessment syncing', () => {
   it('records an error if an access rule sets active to false and has nonzero credit', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    assessment.allowAccess?.push({
-      credit: 100,
-      active: false,
-    });
+    assessment.allowAccess?.push({ credit: 100, active: false });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
@@ -1559,10 +1438,7 @@ describe('Assessment syncing', () => {
   it('records an error if a question specifies neither an ID nor an alternative', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    assessment.zones?.push({
-      title: 'test zone',
-      questions: [{}],
-    });
+    assessment.zones?.push({ title: 'test zone', questions: [{}] });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
@@ -1577,13 +1453,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData, 'Exam');
     assessment.zones?.push({
       title: 'test zone',
-      questions: [
-        {
-          id: util.QUESTION_ID,
-          maxPoints: 5,
-          points: 5,
-        },
-      ],
+      questions: [{ id: util.QUESTION_ID, maxPoints: 5, points: 5 }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -1597,14 +1467,7 @@ describe('Assessment syncing', () => {
   it('records an error if a question does not specify points on an Exam-type assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
-    assessment.zones?.push({
-      title: 'test zone',
-      questions: [
-        {
-          id: util.QUESTION_ID,
-        },
-      ],
-    });
+    assessment.zones?.push({ title: 'test zone', questions: [{ id: util.QUESTION_ID }] });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
@@ -1617,14 +1480,7 @@ describe('Assessment syncing', () => {
   it('records an error if a question does not specify points on a Homework-type assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
-    assessment.zones?.push({
-      title: 'test zone',
-      questions: [
-        {
-          id: util.QUESTION_ID,
-        },
-      ],
-    });
+    assessment.zones?.push({ title: 'test zone', questions: [{ id: util.QUESTION_ID }] });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
@@ -1639,13 +1495,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.zones?.push({
       title: 'test zone',
-      questions: [
-        {
-          id: util.QUESTION_ID,
-          points: 5,
-          autoPoints: 5,
-        },
-      ],
+      questions: [{ id: util.QUESTION_ID, points: 5, autoPoints: 5 }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -1661,13 +1511,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.zones?.push({
       title: 'test zone',
-      questions: [
-        {
-          id: util.QUESTION_ID,
-          points: 5,
-          manualPoints: 5,
-        },
-      ],
+      questions: [{ id: util.QUESTION_ID, points: 5, manualPoints: 5 }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -1683,13 +1527,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.zones?.push({
       title: 'test zone',
-      questions: [
-        {
-          id: util.QUESTION_ID,
-          maxPoints: 15,
-          autoPoints: 5,
-        },
-      ],
+      questions: [{ id: util.QUESTION_ID, maxPoints: 15, autoPoints: 5 }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -1705,13 +1543,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.zones?.push({
       title: 'test zone',
-      questions: [
-        {
-          id: util.QUESTION_ID,
-          maxPoints: 10,
-          points: [1, 2, 3],
-        },
-      ],
+      questions: [{ id: util.QUESTION_ID, maxPoints: 10, points: [1, 2, 3] }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -1727,13 +1559,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.zones?.push({
       title: 'test zone',
-      questions: [
-        {
-          id: util.QUESTION_ID,
-          maxPoints: 10,
-          points: 0,
-        },
-      ],
+      questions: [{ id: util.QUESTION_ID, maxPoints: 10, points: 0 }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -1746,13 +1572,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.zones?.push({
       title: 'test zone',
-      questions: [
-        {
-          id: util.QUESTION_ID,
-          maxAutoPoints: 10,
-          autoPoints: 0,
-        },
-      ],
+      questions: [{ id: util.QUESTION_ID, maxAutoPoints: 10, autoPoints: 0 }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -1781,12 +1601,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData);
     assessment.zones?.push({
       title: 'test zone',
-      questions: [
-        {
-          id: 'i do not exist',
-          points: [1, 2, 3],
-        },
-      ],
+      questions: [{ id: 'i do not exist', points: [1, 2, 3] }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -1811,12 +1626,7 @@ describe('Assessment syncing', () => {
       const assessment = makeAssessment(courseData);
       assessment.zones?.push({
         title: 'test zone',
-        questions: [
-          {
-            id: '@example-course/i do not exist',
-            points: [1, 2, 3],
-          },
-        ],
+        questions: [{ id: '@example-course/i do not exist', points: [1, 2, 3] }],
       });
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
       await util.writeAndSyncCourseData(courseData);
@@ -1834,14 +1644,8 @@ describe('Assessment syncing', () => {
     assessment.zones?.push({
       title: 'test zone',
       questions: [
-        {
-          id: util.QUESTION_ID,
-          points: 5,
-        },
-        {
-          id: util.QUESTION_ID,
-          points: 5,
-        },
+        { id: util.QUESTION_ID, points: 5 },
+        { id: util.QUESTION_ID, points: 5 },
       ],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
@@ -1874,14 +1678,8 @@ describe('Assessment syncing', () => {
       {
         title: 'zone 1',
         questions: [
-          {
-            id: util.QUESTION_ID,
-            points: [5, 4, 3],
-          },
-          {
-            id: util.ALTERNATIVE_QUESTION_ID,
-            points: [10, 9, 8],
-          },
+          { id: util.QUESTION_ID, points: [5, 4, 3] },
+          { id: util.ALTERNATIVE_QUESTION_ID, points: [10, 9, 8] },
         ],
       },
     ];
@@ -1902,14 +1700,8 @@ describe('Assessment syncing', () => {
       {
         title: 'zone 1',
         questions: [
-          {
-            id: util.QUESTION_ID,
-            points: [5],
-          },
-          {
-            id: util.ALTERNATIVE_QUESTION_ID,
-            points: [10],
-          },
+          { id: util.QUESTION_ID, points: [5] },
+          { id: util.ALTERNATIVE_QUESTION_ID, points: [10] },
         ],
       },
     ];
@@ -1945,13 +1737,8 @@ describe('Assessment syncing', () => {
           {
             points: [10, 9, 8],
             alternatives: [
-              {
-                id: util.QUESTION_ID,
-              },
-              {
-                id: util.ALTERNATIVE_QUESTION_ID,
-                points: [5, 4, 3],
-              },
+              { id: util.QUESTION_ID },
+              { id: util.ALTERNATIVE_QUESTION_ID, points: [5, 4, 3] },
             ],
           },
         ],
@@ -1970,15 +1757,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
     assessment.zones = [
-      {
-        title: 'zone 1',
-        questions: [
-          {
-            points: [10, 10, 9, 10],
-            id: util.QUESTION_ID,
-          },
-        ],
-      },
+      { title: 'zone 1', questions: [{ points: [10, 10, 9, 10], id: util.QUESTION_ID }] },
     ];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -1997,13 +1776,8 @@ describe('Assessment syncing', () => {
           {
             points: [10],
             alternatives: [
-              {
-                id: util.QUESTION_ID,
-              },
-              {
-                id: util.ALTERNATIVE_QUESTION_ID,
-                points: [5],
-              },
+              { id: util.QUESTION_ID },
+              { id: util.ALTERNATIVE_QUESTION_ID, points: [5] },
             ],
           },
         ],
@@ -2323,23 +2097,14 @@ describe('Assessment syncing', () => {
       const courseInstance = courseInstanceData.courseInstance;
       if (!courseInstance) throw new Error('missing courseInstance');
       courseInstance.allowAccess = [
-        {
-          startDate: '2000-01-01T00:00:00',
-          endDate: '3000-01-01T00:00:00',
-        },
+        { startDate: '2000-01-01T00:00:00', endDate: '3000-01-01T00:00:00' },
       ];
 
       // This assessment has both valid and invalid exam UUIDs.
       const assessment = makeAssessment(courseData);
       assessment.allowAccess = [
-        {
-          mode: 'Exam',
-          examUuid: '00000000-0000-0000-0000-000000000000',
-        },
-        {
-          mode: 'Exam',
-          examUuid: '11111111-1111-1111-1111-111111111111',
-        },
+        { mode: 'Exam', examUuid: '00000000-0000-0000-0000-000000000000' },
+        { mode: 'Exam', examUuid: '11111111-1111-1111-1111-111111111111' },
       ];
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
 
@@ -2363,21 +2128,13 @@ describe('Assessment syncing', () => {
       const courseInstance = courseInstanceData.courseInstance;
       if (!courseInstance) throw new Error('missing courseInstance');
       courseInstance.allowAccess = [
-        {
-          startDate: '1000-01-01T00:00:00',
-          endDate: '2000-01-01T00:00:00',
-        },
+        { startDate: '1000-01-01T00:00:00', endDate: '2000-01-01T00:00:00' },
       ];
 
       // Create an assessment with an invalid exam UUID.
       const assessment = makeAssessment(courseData);
       assessment.type = 'Exam';
-      assessment.allowAccess = [
-        {
-          mode: 'Exam',
-          examUuid: '00000000-0000-0000-0000-000000000000',
-        },
-      ];
+      assessment.allowAccess = [{ mode: 'Exam', examUuid: '00000000-0000-0000-0000-000000000000' }];
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
 
       await util.writeAndSyncCourseData(courseData);

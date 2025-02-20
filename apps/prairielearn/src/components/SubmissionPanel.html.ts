@@ -271,12 +271,7 @@ export function SubmissionPanel({
           </div>
         </div>
 
-        ${SubmissionInfoModal({
-          urlPrefix,
-          submission,
-          question,
-          course_instance_id,
-        })}
+        ${SubmissionInfoModal({ urlPrefix, submission, question, course_instance_id })}
       </div>
     </div>
   `;

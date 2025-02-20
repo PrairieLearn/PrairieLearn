@@ -58,9 +58,7 @@ router.get(
 
     const instances = await queryRows(
       sql.select_lti13_instances,
-      {
-        course_instance_id: res.locals.course_instance.id,
-      },
+      { course_instance_id: res.locals.course_instance.id },
       Lti13CombinedInstanceSchema,
     );
 
@@ -100,9 +98,7 @@ router.get(
 
     const lineitems = await queryRows(
       sql.select_lti13_assessments,
-      {
-        lti13_course_instance_id: instance.lti13_course_instance.id,
-      },
+      { lti13_course_instance_id: instance.lti13_course_instance.id },
       Lti13AssessmentsSchema,
     );
 
@@ -191,9 +187,7 @@ router.post(
             unsafe_assessment_id: req.body.unsafe_assessment_id,
             course_instance_id: instance.lti13_course_instance.course_instance_id,
           },
-          AssessmentSchema.extend({
-            label: z.string(),
-          }),
+          AssessmentSchema.extend({ label: z.string() }),
         );
 
         const assessment_metadata = {
@@ -243,9 +237,7 @@ router.post(
           group_id,
           assessments_group_by: res.locals.course_instance.assessments_group_by,
         },
-        AssessmentSchema.extend({
-          label: z.string(),
-        }),
+        AssessmentSchema.extend({ label: z.string() }),
       );
 
       if (assessments.length === 0) {

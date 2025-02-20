@@ -17,9 +17,7 @@ import { writeCourseIssues } from './issues.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const VariantWithFormattedDateSchema = VariantSchema.extend({
-  formatted_date: z.string(),
-});
+const VariantWithFormattedDateSchema = VariantSchema.extend({ formatted_date: z.string() });
 type VariantWithFormattedDate = z.infer<typeof VariantWithFormattedDateSchema>;
 
 const InstanceQuestionDataSchema = z.object({

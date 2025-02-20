@@ -128,10 +128,7 @@ export class CodeCallerNative implements CodeCaller {
       return 'python3.10';
     });
 
-    const codeCaller = new CodeCallerNative({
-      pythonExecutable,
-      ...options,
-    });
+    const codeCaller = new CodeCallerNative({ pythonExecutable, ...options });
     await codeCaller.ensureChild();
     return codeCaller;
   }
@@ -559,10 +556,7 @@ export class CodeCallerNative implements CodeCaller {
     this.debug('enter _callIsFinished()');
     if (!this._checkState([IN_CALL])) return;
     this._clearTimeout();
-    let data: {
-      val: any;
-      present: boolean;
-    } | null = null;
+    let data: { val: any; present: boolean } | null = null;
     let err: Error | null = null;
     try {
       data = JSON.parse(this.outputData.join(''));

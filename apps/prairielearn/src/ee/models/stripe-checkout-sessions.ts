@@ -40,9 +40,7 @@ export async function getStripeCheckoutSessionByStripeObjectId(
 ): Promise<StripeCheckoutSession | null> {
   return await queryOptionalRow(
     sql.get_stripe_checkout_session_by_stripe_object_id,
-    {
-      stripe_object_id,
-    },
+    { stripe_object_id },
     StripeCheckoutSessionSchema,
   );
 }
@@ -54,9 +52,7 @@ export async function getStripeCheckoutSessionByStripeObjectId(
  * @param stripe_object_id Stripe's ID for the checkout session object
  */
 export async function markStripeCheckoutSessionCompleted(stripe_object_id: string) {
-  await queryAsync(sql.mark_stripe_checkout_session_completed, {
-    stripe_object_id,
-  });
+  await queryAsync(sql.mark_stripe_checkout_session_completed, { stripe_object_id });
 }
 
 export async function updateStripeCheckoutSessionData({
@@ -68,10 +64,7 @@ export async function updateStripeCheckoutSessionData({
 }): Promise<StripeCheckoutSession> {
   return await queryRow(
     sql.update_stripe_checkout_session_data,
-    {
-      stripe_object_id,
-      data,
-    },
+    { stripe_object_id, data },
     StripeCheckoutSessionSchema,
   );
 }

@@ -135,13 +135,9 @@ router.post(
       }
 
       const profile = await saml
-        .validatePostResponseAsync({
-          SAMLResponse: req.body.encoded_assertion,
-        })
+        .validatePostResponseAsync({ SAMLResponse: req.body.encoded_assertion })
         .catch((err) => {
-          return {
-            error: err.message,
-          };
+          return { error: err.message };
         });
 
       res.send(DecodedAssertion({ xml, profile: JSON.stringify(profile, null, 2) }));

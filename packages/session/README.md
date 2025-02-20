@@ -13,12 +13,7 @@ import { createSessionMiddleware, MemoryStore } from '@prairielearn/session';
 
 const app = express();
 
-app.use(
-  createSessionMiddleware({
-    store: new MemoryStore(),
-    secret: 'top_secret',
-  }),
-);
+app.use(createSessionMiddleware({ store: new MemoryStore(), secret: 'top_secret' }));
 ```
 
 ### Rotate session cookies
@@ -43,10 +38,5 @@ In this example, the session will be loaded from and persisted to the `legacy_se
 After this code has been running in production for a while, it will be safe to switch to reading from and writing to the new `session` cookie exclusively:
 
 ```ts
-createSessionMiddleware({
-  cookie: {
-    name: 'session',
-    domain: '.example.com',
-  },
-});
+createSessionMiddleware({ cookie: { name: 'session', domain: '.example.com' } });
 ```

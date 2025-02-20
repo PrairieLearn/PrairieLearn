@@ -103,10 +103,7 @@ app.get(
     } else {
       res.status(200);
     }
-    res.json({
-      docker: containers,
-      postgres: db_status,
-    });
+    res.json({ docker: containers, postgres: db_status });
   }),
 );
 
@@ -173,10 +170,7 @@ async
     },
     async () => {
       if (config.sentryDsn) {
-        await Sentry.init({
-          dsn: config.sentryDsn,
-          environment: config.sentryEnvironment,
-        });
+        await Sentry.init({ dsn: config.sentryDsn, environment: config.sentryEnvironment });
       }
     },
     async () => {
@@ -306,9 +300,7 @@ async
  */
 async function pruneStoppedContainers() {
   const instance_id = workspace_server_settings.instance_id;
-  const recently_stopped = await sqldb.queryAsync(sql.get_stopped_workspaces, {
-    instance_id,
-  });
+  const recently_stopped = await sqldb.queryAsync(sql.get_stopped_workspaces, { instance_id });
   await async.each(recently_stopped.rows, async (ws) => {
     let container;
     try {
@@ -335,9 +327,7 @@ async function pruneStoppedContainers() {
  */
 async function pruneRunawayContainers() {
   const instance_id = workspace_server_settings.instance_id;
-  const db_workspaces = await sqldb.queryAsync(sql.get_running_workspaces, {
-    instance_id,
-  });
+  const db_workspaces = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id });
 
   const db_workspaces_uuid_set = new Set(
     db_workspaces.rows.map((ws) => `workspace-${ws.launch_uuid}`),
@@ -437,10 +427,7 @@ async function killAndRemoveWorkspace(workspace_id: string | number, container: 
 async function markSelfUnhealthy(reason: Error | string) {
   try {
     Sentry.captureException(reason);
-    const params = {
-      instance_id: workspace_server_settings.instance_id,
-      unhealthy_reason: reason,
-    };
+    const params = { instance_id: workspace_server_settings.instance_id, unhealthy_reason: reason };
     await sqldb.queryAsync(sql.mark_host_unhealthy, params);
     logger.warn('Marked self as unhealthy', reason);
   } catch (err) {
@@ -479,10 +466,7 @@ const _allocateContainerPortMutex = new Mutex();
 async function _allocateContainerPort(workspace_id: string | number): Promise<number> {
   // Check if a port is considered free in the database
   async function check_port_db(port: number) {
-    const params = {
-      instance_id: workspace_server_settings.instance_id,
-      port,
-    };
+    const params = { instance_id: workspace_server_settings.instance_id, port };
     const result = await sqldb.queryOneRowAsync(sql.get_is_port_occupied, params);
     return !result.rows[0].port_used;
   }
@@ -544,9 +528,7 @@ function _checkServer(workspace: Workspace): Promise<void> {
     function checkWorkspace() {
       const hostname = workspace_server_settings.server_to_container_hostname;
       const port = workspace.launch_port;
-      fetch(`http://${hostname}:${port}/`, {
-        signal: AbortSignal.timeout(healthCheckTimeout),
-      })
+      fetch(`http://${hostname}:${port}/`, { signal: AbortSignal.timeout(healthCheckTimeout) })
         .then(() => {
           // We might get all sorts of strange status codes from the server.
           // This is okay since it still means the server is running and we're
@@ -578,9 +560,7 @@ function _checkServer(workspace: Workspace): Promise<void> {
  * @return Workspace launch settings.
  */
 async function _getWorkspaceSettings(workspace_id: string | number): Promise<WorkspaceSettings> {
-  const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {
-    workspace_id,
-  });
+  const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, { workspace_id });
   const workspace_environment = result.rows[0].workspace_environment || {};
 
   // Set base URL needed by certain workspaces (e.g., jupyterlab, rstudio)
@@ -610,12 +590,7 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
   return settings;
 }
 
-const ProgressDetailsSchema = z.record(
-  z.object({
-    current: z.number(),
-    total: z.number(),
-  }),
-);
+const ProgressDetailsSchema = z.record(z.object({ current: z.number(), total: z.number() }));
 type ProgressDetails = z.infer<typeof ProgressDetailsSchema>;
 
 async function _getCachedProgressDetails(workspace_image: string): Promise<ProgressDetails> {
@@ -819,15 +794,11 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   );
   const container = await docker.createContainer({
     Image: settings.workspace_image,
-    ExposedPorts: {
-      [`${settings.workspace_port}/tcp`]: {},
-    },
+    ExposedPorts: { [`${settings.workspace_port}/tcp`]: {} },
     Env: settings.workspace_environment,
     User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
     HostConfig: {
-      PortBindings: {
-        [`${settings.workspace_port}/tcp`]: [{ HostPort: `${launch_port}` }],
-      },
+      PortBindings: { [`${settings.workspace_port}/tcp`]: [{ HostPort: `${launch_port}` }] },
       Binds: [`${workspacePath}:${containerPath}`],
       Memory: config.workspaceDockerMemory,
       MemorySwap: config.workspaceDockerMemorySwap,
@@ -855,9 +826,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     },
     Cmd: args?.length ? shlex.split(args) : undefined,
     name: local_name,
-    Volumes: {
-      [containerPath]: {},
-    },
+    Volumes: { [containerPath]: {} },
   });
 
   await sqldb.queryAsync(sql.update_load_count, {
@@ -1130,11 +1099,7 @@ async function flushLogsToS3(container: Docker.Container) {
   const parsedLogs = parseDockerLogs(logs);
 
   const key = `${workspaceId}/${version}/${startedAt}.log`;
-  const tags = {
-    WorkspaceId: workspaceId,
-    CourseId: courseId,
-    InstitutionId: institutionId,
-  };
+  const tags = { WorkspaceId: workspaceId, CourseId: courseId, InstitutionId: institutionId };
 
   const s3 = new S3(makeS3ClientConfig({ maxAttempts: 3 }));
   await new Upload({

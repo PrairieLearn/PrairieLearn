@@ -215,10 +215,7 @@ function makeGradingFailureWithMessage(jobId: string, data: any, message: string
       startTime: (data && data.start_time) || null,
       endTime: (data && data.end_time) || null,
       score: 0,
-      feedback: {
-        succeeded: false,
-        message,
-      },
+      feedback: { succeeded: false, message },
       format_errors: {},
     },
   };

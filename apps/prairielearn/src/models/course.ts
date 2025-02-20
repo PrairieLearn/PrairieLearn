@@ -31,13 +31,7 @@ const CourseWithPermissionsSchema = CourseSchema.extend({
 export type CourseWithPermissions = z.infer<typeof CourseWithPermissionsSchema>;
 
 export async function selectCourseById(course_id: string): Promise<Course> {
-  return await queryRow(
-    sql.select_course_by_id,
-    {
-      course_id,
-    },
-    CourseSchema,
-  );
+  return await queryRow(sql.select_course_by_id, { course_id }, CourseSchema);
 }
 
 export function getLockNameForCoursePath(coursePath: string): string {
@@ -53,10 +47,7 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
     return stdout.trim();
   } catch (err) {
     throw new error.AugmentedError(`Could not get git status; exited with code ${err.code}`, {
-      data: {
-        stdout: err.stdout,
-        stderr: err.stderr,
-      },
+      data: { stdout: err.stdout, stderr: err.stderr },
     });
   }
 }
@@ -70,10 +61,7 @@ export async function updateCourseCommitHash(course: {
   path: string;
 }): Promise<string> {
   const hash = await getCourseCommitHash(course.path);
-  await queryAsync(sql.update_course_commit_hash, {
-    course_id: course.id,
-    commit_hash: hash,
-  });
+  await queryAsync(sql.update_course_commit_hash, { course_id: course.id, commit_hash: hash });
   return hash;
 }
 
@@ -130,10 +118,7 @@ export async function selectCoursesWithEditAccess({
   user_id: string;
   is_administrator: boolean;
 }) {
-  const courses = await selectCoursesWithStaffAccess({
-    user_id,
-    is_administrator,
-  });
+  const courses = await selectCoursesWithStaffAccess({ user_id, is_administrator });
   return courses.filter((c) => c.permissions_course.has_course_permission_edit);
 }
 
@@ -177,21 +162,11 @@ export async function insertCourse({
 }: Pick<
   Course,
   'institution_id' | 'short_name' | 'title' | 'display_timezone' | 'path' | 'repository' | 'branch'
-> & {
-  authn_user_id: string;
-}): Promise<Course> {
+> & { authn_user_id: string }): Promise<Course> {
   return await runInTransactionAsync(async () => {
     const course = await queryRow(
       sql.insert_course,
-      {
-        institution_id,
-        short_name,
-        title,
-        display_timezone,
-        path,
-        repository,
-        branch,
-      },
+      { institution_id, short_name, title, display_timezone, path, repository, branch },
       CourseSchema,
     );
     await insertAuditLog({
@@ -217,8 +192,5 @@ export async function updateCourseShowGettingStarted({
   course_id: string;
   show_getting_started: boolean;
 }) {
-  await queryAsync(sql.update_course_show_getting_started, {
-    course_id,
-    show_getting_started,
-  });
+  await queryAsync(sql.update_course_show_getting_started, { course_id, show_getting_started });
 }

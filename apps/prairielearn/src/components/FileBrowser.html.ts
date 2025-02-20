@@ -72,18 +72,9 @@ interface DirectoryListings {
   files: DirectoryEntryFile[];
 }
 
-type FileUploadInfo = {
-  id: string | number;
-  info?: HtmlValue;
-} & (
-  | {
-      path: string;
-      working_path?: unknown;
-    }
-  | {
-      path?: null | undefined;
-      working_path: string;
-    }
+type FileUploadInfo = { id: string | number; info?: HtmlValue } & (
+  | { path: string; working_path?: unknown }
+  | { path?: null | undefined; working_path: string }
 );
 
 interface FileDeleteInfo {
@@ -327,14 +318,8 @@ export function FileBrowser({
   return PageLayout({
     resLocals,
     pageTitle,
-    navContext: {
-      type: resLocals.navbarType,
-      page: navPage,
-      subPage: 'file_view',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: resLocals.navbarType, page: navPage, subPage: 'file_view' },
+    options: { fullWidth: true },
     preContent: html`
       <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
       ${compiledScriptTag('instructorFileBrowserClient.ts')}
@@ -518,10 +503,7 @@ function DirectoryBrowserActions({
       data-placement="auto"
       title="Upload file"
       data-content="${escapeHtml(
-        FileUploadForm({
-          file: { id: 'New', working_path: paths.workingPath },
-          csrfToken,
-        }),
+        FileUploadForm({ file: { id: 'New', working_path: paths.workingPath }, csrfToken }),
       )}"
       data-trigger="click"
     >
@@ -589,15 +571,9 @@ function DirectoryBrowserBody({
             <tr>
               <td>
                 ${f.sync_errors
-                  ? SyncProblemButton({
-                      type: 'error',
-                      output: f.sync_errors,
-                    })
+                  ? SyncProblemButton({ type: 'error', output: f.sync_errors })
                   : f.sync_warnings
-                    ? SyncProblemButton({
-                        type: 'warning',
-                        output: f.sync_warnings,
-                      })
+                    ? SyncProblemButton({ type: 'warning', output: f.sync_warnings })
                     : ''}
                 <span><i class="far fa-file-alt fa-fw"></i></span>
                 ${f.canView

@@ -79,11 +79,7 @@ describe('plans', () => {
       await helperDb.runInTransactionAndRollback(async () => {
         // Manually insert an institution plan grant.
         await ensurePlanGrant({
-          plan_grant: {
-            plan_name: 'everything',
-            type: 'gift',
-            institution_id: '1',
-          },
+          plan_grant: { plan_name: 'everything', type: 'gift', institution_id: '1' },
           authn_user_id: '1',
         });
 
@@ -119,11 +115,7 @@ describe('plans', () => {
       await helperDb.runInTransactionAndRollback(async () => {
         // Institution plan grant
         await ensurePlanGrant({
-          plan_grant: {
-            plan_name: 'everything',
-            type: 'gift',
-            institution_id: '1',
-          },
+          plan_grant: { plan_name: 'everything', type: 'gift', institution_id: '1' },
           authn_user_id: '1',
         });
 
@@ -164,11 +156,7 @@ describe('plans', () => {
     it('returns institution plan grants', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         await ensurePlanGrant({
-          plan_grant: {
-            plan_name: 'compute',
-            type: 'invoice',
-            institution_id: '1',
-          },
+          plan_grant: { plan_name: 'compute', type: 'invoice', institution_id: '1' },
           authn_user_id: '1',
         });
 
@@ -185,11 +173,7 @@ describe('plans', () => {
     it('returns course instance plan grants', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         await ensurePlanGrant({
-          plan_grant: {
-            plan_name: 'basic',
-            type: 'invoice',
-            institution_id: '1',
-          },
+          plan_grant: { plan_name: 'basic', type: 'invoice', institution_id: '1' },
           authn_user_id: '1',
         });
         await ensurePlanGrant({
@@ -221,11 +205,7 @@ describe('plans', () => {
     it('returns course instance user plan grants', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         await ensurePlanGrant({
-          plan_grant: {
-            plan_name: 'basic',
-            type: 'invoice',
-            institution_id: '1',
-          },
+          plan_grant: { plan_name: 'basic', type: 'invoice', institution_id: '1' },
           authn_user_id: '1',
         });
         await ensurePlanGrant({

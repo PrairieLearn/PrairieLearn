@@ -9,7 +9,5 @@ define(['underscore', 'SimpleClient'], function (_, SimpleClient) {
   }
   MCQClient.prototype = new SimpleClient.SimpleClient();
 
-  return {
-    MCQClient: MCQClient,
-  };
+  return { MCQClient: MCQClient };
 });

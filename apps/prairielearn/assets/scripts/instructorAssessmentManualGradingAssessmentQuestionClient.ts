@@ -33,11 +33,7 @@ onDocumentReady(() => {
     // TODO: If we can pick up the following change, we can drop the `icons` config here:
     // https://github.com/wenzhixin/bootstrap-table/pull/7190
     iconsPrefix: 'fa',
-    icons: {
-      refresh: 'fa-sync',
-      autoRefresh: 'fa-clock',
-      columns: 'fa-table-list',
-    },
+    icons: { refresh: 'fa-sync', autoRefresh: 'fa-clock', columns: 'fa-table-list' },
 
     classes: 'table table-sm table-bordered',
     url: instancesUrl,
@@ -65,10 +61,7 @@ onDocumentReady(() => {
         text: 'AI Grade All',
         icon: 'fa-pen',
         render: aiGradingEnabled,
-        attributes: {
-          id: 'js-ai-grade-button',
-          title: 'AI grade all instances',
-        },
+        attributes: { id: 'js-ai-grade-button', title: 'AI grade all instances' },
         event: () => {
           const form = document.getElementById('ai-grading') as HTMLFormElement;
           form?.submit();

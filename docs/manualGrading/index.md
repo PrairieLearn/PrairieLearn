@@ -23,10 +23,7 @@ Questions set to use only manual grading (i.e., with manual points but no auto p
 It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments. By default, manual grading is performed only for the last submission of the last variant, so having a single variant simplifies both the grading process and the student feedback. The `singleVariant` setting can be updated in the [`info.json` file](../question.md#question-infojson) in the question, like this:
 
 ```json title="info.json"
-{
-  "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
-  "singleVariant": true
-}
+{ "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff", "singleVariant": true }
 ```
 
 Any [elements](../elements.md) can be used in the [`question.html`](../question.md#question-questionhtml) to write manually graded questions. All of the student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
@@ -51,11 +48,7 @@ If the students uploaded files then you may also download `<assessment>_files_fo
 The `<assessment>_files_for_manual_grading.zip` file contains all files uploaded by the student for grading. For workspace questions, list any files that you want to include in this download file in the `"gradedFiles"` list in the question's [`info.json` file](../workspaces/index.md#infojson):
 
 ```json title="info.json"
-{
-  "workspaceOptions": {
-    "gradedFiles": ["starter_code.h", "starter_code.c"]
-  }
-}
+{ "workspaceOptions": { "gradedFiles": ["starter_code.h", "starter_code.c"] } }
 ```
 
 ### Uploading the scores and feedback

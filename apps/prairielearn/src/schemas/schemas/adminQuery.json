@@ -10,17 +10,11 @@
       "description": "Arbitrary comment for reference purposes.",
       "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
     },
-    "description": {
-      "description": "Brief one-line description of the query.",
-      "type": "string"
-    },
+    "description": { "description": "Brief one-line description of the query.", "type": "string" },
     "resultFormats": {
       "description": "Custom formats for result columns.",
       "type": "object",
-      "additionalProperties": {
-        "type": "string",
-        "enum": ["pre"]
-      }
+      "additionalProperties": { "type": "string", "enum": ["pre"] }
     },
     "params": {
       "description": "Parameters for the query.",
@@ -42,10 +36,7 @@
             "description": "Brief one-line description of the parameter.",
             "type": "string"
           },
-          "default": {
-            "description": "Default value.",
-            "type": "string"
-          }
+          "default": { "description": "Default value.", "type": "string" }
         }
       }
     }

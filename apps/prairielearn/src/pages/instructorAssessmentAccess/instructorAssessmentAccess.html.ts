@@ -33,14 +33,8 @@ export function InstructorAssessmentAccess({
   return PageLayout({
     resLocals,
     pageTitle: 'Access',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'access',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'access' },
+    options: { fullWidth: true },
     content: html`
       ${AssessmentSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

@@ -67,10 +67,7 @@ export function QuestionsTable({
       },
       'questions-table-data',
     )}
-    ${CreateQuestionModal({
-      csrfToken: __csrf_token,
-      templateQuestions,
-    })}
+    ${CreateQuestionModal({ csrfToken: __csrf_token, templateQuestions })}
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
         <h1>Questions</h1>

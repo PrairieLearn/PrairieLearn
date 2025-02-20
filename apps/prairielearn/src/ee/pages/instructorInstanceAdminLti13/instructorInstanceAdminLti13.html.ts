@@ -46,15 +46,8 @@ export function InstructorInstanceAdminLti13({
   return PageLayout({
     resLocals,
     pageTitle: 'LTI 1.3',
-    navContext: {
-      type: 'instructor',
-      page: 'instance_admin',
-      subPage: 'lti13',
-    },
-    options: {
-      fullWidth: true,
-      marginBottom: true,
-    },
+    navContext: { type: 'instructor', page: 'instance_admin', subPage: 'lti13' },
+    options: { fullWidth: true, marginBottom: true },
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
@@ -111,12 +104,7 @@ export function InstructorInstanceAdminLti13({
               <h3 id="assessments">Linked Assessments</h3>
               ${instance.lti13_course_instance.context_memberships_url &&
               instance.lti13_course_instance.lineitems_url
-                ? LinkedAssessments({
-                    resLocals,
-                    lms_name,
-                    assessments,
-                    lineitems,
-                  })
+                ? LinkedAssessments({ resLocals, lms_name, assessments, lineitems })
                 : html`
                     <p>
                       PrairieLearn does not have enough LTI metadata to link assignments and do

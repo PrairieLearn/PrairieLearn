@@ -16,9 +16,7 @@ import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 
 const awsConfigProvider = makeAwsConfigProvider({
   credentials: fromNodeProviderChain(),
-  getClientConfig: () => ({
-    region: 'us-east-2',
-  }),
+  getClientConfig: () => ({ region: 'us-east-2' }),
 });
 
 export const makeAwsClientConfig = awsConfigProvider.makeAwsClientConfig;
@@ -40,11 +38,7 @@ const s3 = new S3Client(makeS3ClientConfig());
 The `get...` functions support passing in extra config. If this extra config conflicts with other config, such as that returned from `getClientConfig()`, this extra config will take precedence.
 
 ```ts
-const s3 = new S3Client(
-  makeS3ClientConfig({
-    maxAttempts: 3,
-  }),
-);
+const s3 = new S3Client(makeS3ClientConfig({ maxAttempts: 3 }));
 ```
 
 ### Customizing S3 config
@@ -56,17 +50,12 @@ For instance, to use [`s3rver`](https://github.com/jamhall/s3rver) when running 
 ```ts
 const awsConfigProvider = makeAwsConfigProvider({
   credentials: fromNodeProviderChain(),
-  getClientConfig: () => ({
-    region: 'us-east-2',
-  }),
+  getClientConfig: () => ({ region: 'us-east-2' }),
   makeS3ClientConfig: () => {
     if (process.env.NODE_ENV !== 'production') {
       return {
         forcePathStyle: true,
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-        },
+        credentials: { accessKeyId: 'S3RVER', secretAccessKey: 'S3RVER' },
         endpoint: 'http://127.0.0.1:5000',
       };
     }

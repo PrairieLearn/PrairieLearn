@@ -101,9 +101,7 @@ async function sendJobToQueue(jobId, question, config) {
       if (QUEUE_URL) return;
 
       const data = await sqs.send(
-        new GetQueueUrlCommand({
-          QueueName: config.externalGradingJobsQueueName,
-        }),
+        new GetQueueUrlCommand({ QueueName: config.externalGradingJobsQueueName }),
       );
       QUEUE_URL = data.QueueUrl;
     },
@@ -122,10 +120,7 @@ async function sendJobToQueue(jobId, question, config) {
         environment: question.external_grading_environment || {},
       };
       await sqs.send(
-        new SendMessageCommand({
-          QueueUrl: QUEUE_URL,
-          MessageBody: JSON.stringify(messageBody),
-        }),
+        new SendMessageCommand({ QueueUrl: QUEUE_URL, MessageBody: JSON.stringify(messageBody) }),
       );
       logger.verbose('Queued external grading job', {
         grading_job_id: jobId,

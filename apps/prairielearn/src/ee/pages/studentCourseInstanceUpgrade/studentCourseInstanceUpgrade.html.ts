@@ -131,10 +131,7 @@ export function CourseInstanceStudentUpdateSuccess({
 function getPlanDetails(planName: PlanName) {
   switch (planName) {
     case 'basic':
-      return {
-        name: 'Course access',
-        description: 'Provides access to this course.',
-      };
+      return { name: 'Course access', description: 'Provides access to this course.' };
     case 'compute':
       return {
         name: 'Compute',

@@ -111,10 +111,7 @@ export async function syncDiskToSqlWithLock(
     checkSharingConfigurationValid(courseId, courseData, logger),
   );
   if (!sharingConfigurationValid) {
-    return {
-      status: 'sharing_error',
-      courseId,
-    };
+    return { status: 'sharing_error', courseId };
   }
 
   logger.info('Syncing info to database');

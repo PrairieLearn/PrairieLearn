@@ -40,10 +40,7 @@ export function UserSettings({
   return PageLayout({
     resLocals,
     pageTitle: 'User Settings',
-    navContext: {
-      page: 'user_settings',
-      type: 'plain',
-    },
+    navContext: { page: 'user_settings', type: 'plain' },
     content: html`
       <h1 class="mb-4">Settings</h1>
       <div class="card mb-4">
@@ -147,11 +144,7 @@ export function UserSettings({
             `
           : ''}
         <ul class="list-group list-group-flush">
-          ${TokenList({
-            accessTokens,
-            isExamMode,
-            resLocals,
-          })}
+          ${TokenList({ accessTokens, isExamMode, resLocals })}
         </ul>
 
         <div class="card-footer small">

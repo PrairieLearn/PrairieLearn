@@ -36,11 +36,7 @@ onDocumentReady(() => {
     // TODO: If we can pick up the following change, we can drop the `icons` config here:
     // https://github.com/wenzhixin/bootstrap-table/pull/7190
     iconsPrefix: 'fa',
-    icons: {
-      refresh: 'fa-sync',
-      autoRefresh: 'fa-clock',
-      columns: 'fa-table-list',
-    },
+    icons: { refresh: 'fa-sync', autoRefresh: 'fa-clock', columns: 'fa-table-list' },
 
     buttons: {
       studentsOnly: {
@@ -455,10 +451,7 @@ onDocumentReady(() => {
       row.action === 'set_time_limit_all' || row.open || !form.reopen_without_limit;
 
     function updateFormState<T extends keyof typeof form>(key: T, value: (typeof form)[T]) {
-      setForm({
-        ...form,
-        [key]: value,
-      });
+      setForm({ ...form, [key]: value });
     }
 
     function proposedClosingTime() {

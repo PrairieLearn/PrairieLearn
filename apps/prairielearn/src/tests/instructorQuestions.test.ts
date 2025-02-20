@@ -23,12 +23,7 @@ const courseInstanceBaseUrl = baseUrl + '/course_instance/1/instructor';
 const questionsUrl = courseInstanceBaseUrl + '/course_admin/questions';
 const questionsUrlCourse = baseUrl + '/course/1/course_admin/questions';
 
-const addNumbers = {
-  id: '',
-  qid: 'addNumbers',
-  type: 'Freeform',
-  title: 'Add two numbers',
-};
+const addNumbers = { id: '', qid: 'addNumbers', type: 'Freeform', title: 'Add two numbers' };
 const addVectors = {
   id: '',
   qid: 'addVectors',

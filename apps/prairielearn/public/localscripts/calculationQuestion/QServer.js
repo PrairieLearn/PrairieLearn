@@ -2,11 +2,7 @@ define(['underscore', 'PrairieGeom'], function (_, PrairieGeom) {
   function QServer() {}
 
   QServer.prototype.gradeAnswer = function (vid, params, trueAnswer, submittedAnswer, options) {
-    options = _.defaults(options, {
-      type: 'equal',
-      relTol: 1e-2,
-      absTol: 1e-8,
-    });
+    options = _.defaults(options, { type: 'equal', relTol: 1e-2, absTol: 1e-8 });
     var trueAns = trueAnswer;
     var subAns = submittedAnswer;
     if (this.transformTrueAnswer)

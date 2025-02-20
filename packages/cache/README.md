@@ -9,11 +9,7 @@ First, you will need to initialize the library with the cache type that you are 
 ```ts
 import { cache } from '@prairielearn/cache';
 
-await cache.init({
-  type: 'redis',
-  keyPrefix: 'my-app:',
-  redisUrl: 'redis://localhost:6379/',
-});
+await cache.init({ type: 'redis', keyPrefix: 'my-app:', redisUrl: 'redis://localhost:6379/' });
 ```
 
 Alternatively, you can create new instances of the `Cache` class instead of using the global `cache` object:
@@ -23,11 +19,7 @@ import { Cache } from '@prairielearn/cache';
 
 const myCache = new Cache();
 
-await myCache.init({
-  type: 'redis',
-  keyPrefix: 'my-app:',
-  redisUrl: 'redis://localhost:6379/',
-});
+await myCache.init({ type: 'redis', keyPrefix: 'my-app:', redisUrl: 'redis://localhost:6379/' });
 ```
 
 After initializing, you can use `set`, `get`, `del`, `reset` or `close` functions to interact with the cache. Note that `set`, `get`, and `del` have required arguments. Calling `set` will require the intended KEY, VALUE, and length of time to store the data (in milliseconds). Calling `get` or `del` will require the KEY for the intended result.

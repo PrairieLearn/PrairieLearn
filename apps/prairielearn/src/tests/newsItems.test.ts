@@ -25,19 +25,12 @@ describe('News items', function () {
 
   describe('News item initialization', () => {
     it('should prepare by creating the student test user', async () => {
-      const res = await fetch(locals.baseUrl, {
-        headers: {
-          Cookie: 'pl_test_user=test_student',
-        },
-      });
+      const res = await fetch(locals.baseUrl, { headers: { Cookie: 'pl_test_user=test_student' } });
       assert.isOk(res.ok);
       locals.$ = cheerio.load(await res.text());
     });
     it('should succeed with notifications turned on', async () => {
-      await news_items.init({
-        notifyIfPreviouslyEmpty: true,
-        errorIfLockNotAcquired: true,
-      });
+      await news_items.init({ notifyIfPreviouslyEmpty: true, errorIfLockNotAcquired: true });
     });
     it('should create a notification for news item 1 for admin user', async () => {
       const results = await sqldb.queryAsync(sql.select_notification, {
@@ -135,9 +128,7 @@ describe('News items', function () {
 
   describe('News items page', () => {
     it('should load in course instructor level', async () => {
-      const res = await fetch(locals.baseUrl + '/course/1/news_items', {
-        method: 'HEAD',
-      });
+      const res = await fetch(locals.baseUrl + '/course/1/news_items', { method: 'HEAD' });
       assert.isOk(res.ok);
     });
     it('should load in course instance instructor level', async () => {
@@ -147,18 +138,14 @@ describe('News items', function () {
       assert.isOk(res.ok);
     });
     it('should load in course instance student level', async () => {
-      const res = await fetch(locals.baseUrl + '/course_instance/1/news_items', {
-        method: 'HEAD',
-      });
+      const res = await fetch(locals.baseUrl + '/course_instance/1/news_items', { method: 'HEAD' });
       assert.isOk(res.ok);
     });
   });
 
   describe('Single news item page', () => {
     it('should load in course instructor level', async () => {
-      const res = await fetch(locals.baseUrl + '/course/1/news_item/1/', {
-        method: 'HEAD',
-      });
+      const res = await fetch(locals.baseUrl + '/course/1/news_item/1/', { method: 'HEAD' });
       assert.isOk(res.ok);
     });
     it('should load in course instance instructor level', async () => {

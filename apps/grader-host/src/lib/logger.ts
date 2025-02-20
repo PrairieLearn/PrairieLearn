@@ -7,8 +7,6 @@ const consoleTransport = new winston.transports.Console({
   format: format.combine(format.colorize(), format.simple()),
 });
 
-const logger = winston.createLogger({
-  transports: [consoleTransport],
-});
+const logger = winston.createLogger({ transports: [consoleTransport] });
 
 export default logger;

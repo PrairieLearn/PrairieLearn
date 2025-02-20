@@ -37,9 +37,7 @@ describe('Instructor Assessment Downloads', function () {
           assessment_instance_score_perc: (assessmentPoints / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c,
-          };
+          return { c: variant.true_answer.c };
         };
       });
     });

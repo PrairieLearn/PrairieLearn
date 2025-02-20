@@ -50,104 +50,20 @@ const assessmentMaxPoints = 57;
 // sub_total_points: additional total points for this submission
 const zoneGradingTests: TestZone[][] = [
   [
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 5,
-      sub_total_points: 5,
-    },
-    {
-      qid: 'partialCredit2',
-      action: 'grade',
-      score: 100,
-      sub_points: 5,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit2',
-      action: 'grade',
-      score: 100,
-      sub_points: 10,
-      sub_total_points: 10,
-    },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 0,
-      sub_points: 0,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit4_v2',
-      action: 'grade',
-      score: 100,
-      sub_points: 4,
-      sub_total_points: 4,
-    },
-    {
-      qid: 'partialCredit3',
-      action: 'grade',
-      score: 100,
-      sub_points: 5,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit3',
-      action: 'grade',
-      score: 100,
-      sub_points: 10,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit3',
-      action: 'grade',
-      score: 40,
-      sub_points: 2,
-      sub_total_points: 2,
-    },
-    {
-      qid: 'partialCredit4_v2',
-      action: 'grade',
-      score: 100,
-      sub_points: 4,
-      sub_total_points: 3,
-    },
-    {
-      qid: 'partialCredit4_v2',
-      action: 'grade',
-      score: 100,
-      sub_points: 0,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 5,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 10,
-      sub_total_points: 3,
-    },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 10,
-      sub_total_points: 10,
-    },
-    {
-      qid: 'partialCredit2',
-      action: 'grade',
-      score: 100,
-      sub_points: 15,
-      sub_total_points: 0,
-    },
+    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 5, sub_total_points: 5 },
+    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 5, sub_total_points: 0 },
+    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 10, sub_total_points: 10 },
+    { qid: 'partialCredit1', action: 'grade', score: 0, sub_points: 0, sub_total_points: 0 },
+    { qid: 'partialCredit4_v2', action: 'grade', score: 100, sub_points: 4, sub_total_points: 4 },
+    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 5, sub_total_points: 0 },
+    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 10, sub_total_points: 0 },
+    { qid: 'partialCredit3', action: 'grade', score: 40, sub_points: 2, sub_total_points: 2 },
+    { qid: 'partialCredit4_v2', action: 'grade', score: 100, sub_points: 4, sub_total_points: 3 },
+    { qid: 'partialCredit4_v2', action: 'grade', score: 100, sub_points: 0, sub_total_points: 0 },
+    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 5, sub_total_points: 0 },
+    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 10, sub_total_points: 3 },
+    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 10, sub_total_points: 10 },
+    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 15, sub_total_points: 0 },
   ],
 ];
 
@@ -322,9 +238,7 @@ describe('Zone grading homework assessment', function () {
                 assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };
               locals.getSubmittedAnswer = function (_variant) {
-                return {
-                  s: String(questionTest.score),
-                };
+                return { s: String(questionTest.score) };
               };
             });
           });

@@ -22,24 +22,12 @@ define(['underscore', 'QServer', 'PrairieRandom'], function (_, QServer, Prairie
     answers = answers.concat(rand.randNElem(numberIncorrect, options.incorrectAnswers));
     var perm = rand.shuffle(answers);
     answers = _(answers).map(function (value, index) {
-      return {
-        key: String.fromCharCode('a'.charCodeAt() + index),
-        text: value,
-      };
+      return { key: String.fromCharCode('a'.charCodeAt() + index), text: value };
     });
-    var params = {
-      text: options.text,
-      answers: answers,
-    };
+    var params = { text: options.text, answers: answers };
     var trueIndex = _(perm).indexOf(0);
-    var trueAnswer = {
-      key: answers[trueIndex].key,
-      text: answers[trueIndex].text,
-    };
-    var questionData = {
-      params: params,
-      trueAnswer: trueAnswer,
-    };
+    var trueAnswer = { key: answers[trueIndex].key, text: answers[trueIndex].text };
+    var questionData = { params: params, trueAnswer: trueAnswer };
     return questionData;
   };
 

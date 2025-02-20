@@ -11,10 +11,7 @@ const router = Router();
 
 router.get('/', function (req, res) {
   res.send(
-    AuthPassword({
-      resLocals: res.locals,
-      passwordInvalid: 'pl2_assessmentpw' in req.cookies,
-    }),
+    AuthPassword({ resLocals: res.locals, passwordInvalid: 'pl2_assessmentpw' in req.cookies }),
   );
 });
 

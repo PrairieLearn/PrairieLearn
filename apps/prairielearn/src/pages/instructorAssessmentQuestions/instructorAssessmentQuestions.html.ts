@@ -60,14 +60,8 @@ export function InstructorAssessmentQuestions({
     resLocals,
     pageTitle: 'Questions',
     headContent: [compiledScriptTag('instructorAssessmentQuestionsClient.ts')],
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'questions',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'questions' },
+    options: { fullWidth: true },
     content: html`
       ${AssessmentSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,
@@ -234,15 +228,9 @@ function AssessmentQuestionsTable({
                 </td>
                 <td>
                   ${question.sync_errors
-                    ? SyncProblemButton({
-                        type: 'error',
-                        output: question.sync_errors,
-                      })
+                    ? SyncProblemButton({ type: 'error', output: question.sync_errors })
                     : question.sync_warnings
-                      ? SyncProblemButton({
-                          type: 'warning',
-                          output: question.sync_warnings,
-                        })
+                      ? SyncProblemButton({ type: 'warning', output: question.sync_warnings })
                       : ''}
                   ${question.display_name}
                 </td>

@@ -89,10 +89,7 @@ router.post(
 
       const editor = new FileModifyEditor({
         locals: res.locals as any,
-        container: {
-          rootPath: paths.rootPath,
-          invalidRootPaths: paths.invalidRootPaths,
-        },
+        container: { rootPath: paths.rootPath, invalidRootPaths: paths.invalidRootPaths },
         filePath: path.join(res.locals.course.path, 'infoCourse.json'),
         editContents: b64EncodeUnicode(JSON.stringify(courseInfoEdit, null, 2)),
         origHash,
@@ -112,16 +109,11 @@ router.post(
         name: path.basename(res.locals.course.path),
         title: path.basename(res.locals.course.path),
         timezone: res.locals.institution.display_timezone,
-        options: {
-          useNewQuestionRenderer: true,
-        },
+        options: { useNewQuestionRenderer: true },
         tags: [],
         topics: [],
       };
-      const editor = new CourseInfoCreateEditor({
-        locals: res.locals as any,
-        infoJson,
-      });
+      const editor = new CourseInfoCreateEditor({ locals: res.locals as any, infoJson });
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);

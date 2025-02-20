@@ -319,9 +319,7 @@ export function checkQuestionScore(locals: Record<string, any>) {
       if (_.has(locals.expectedResult, 'submission_score')) {
         const result = await sqldb.queryOneRowAsync(
           sql.select_last_submission_for_instance_question,
-          {
-            instance_question_id: locals.question?.id,
-          },
+          { instance_question_id: locals.question?.id },
         );
         locals.submission = result.rows[0];
       }
@@ -486,10 +484,7 @@ export function regradeAssessment(locals: Record<string, any>) {
       assert(locals.instructorAssessmentRegradingUrl);
       const response = await fetch(locals.instructorAssessmentRegradingUrl, {
         method: 'POST',
-        body: new URLSearchParams({
-          __action: 'regrade_all',
-          __csrf_token: locals.__csrf_token,
-        }),
+        body: new URLSearchParams({ __action: 'regrade_all', __csrf_token: locals.__csrf_token }),
       });
       assert.equal(response.status, 200);
     });
@@ -630,10 +625,7 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings/test';
         const response = await fetch(questionUrl, {
           method: 'POST',
-          body: new URLSearchParams({
-            __action: 'test_once',
-            __csrf_token: locals.__csrf_token,
-          }),
+          body: new URLSearchParams({ __action: 'test_once', __csrf_token: locals.__csrf_token }),
         });
         assert.equal(response.status, 200);
       });

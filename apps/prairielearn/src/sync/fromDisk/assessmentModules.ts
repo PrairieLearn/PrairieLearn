@@ -46,13 +46,7 @@ export async function sync(courseId: string, courseData: CourseData) {
     entitiesToDelete: assessmentModulesToDelete,
   } = determineOperationsForEntities<DesiredAssessmentModule>({
     courseEntities: courseData.course.data?.assessmentModules ?? [],
-    extraEntities: [
-      {
-        name: 'Default',
-        heading: 'Default module',
-        implicit: true,
-      },
-    ],
+    extraEntities: [{ name: 'Default', heading: 'Default module', implicit: true }],
     existingEntities: existingAssessmentModules,
     knownNames: knownAssessmentModuleNames,
     makeImplicitEntity: (name) => ({

@@ -6,11 +6,7 @@
   "number": "4",
   "module": "Module2",
   "allowAccess": [
-    {
-      "credit": 100,
-      "startDate": "1900-07-07T23:59:59",
-      "endDate": "2300-07-10T23:59:59"
-    }
+    { "credit": 100, "startDate": "1900-07-07T23:59:59", "endDate": "2300-07-10T23:59:59" }
   ],
   "zones": [
     {

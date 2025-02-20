@@ -35,10 +35,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.send(
-      AdministratorFeatures({
-        features: features.allFeatures().sort(),
-        resLocals: res.locals,
-      }),
+      AdministratorFeatures({ features: features.allFeatures().sort(), resLocals: res.locals }),
     );
   }),
 );

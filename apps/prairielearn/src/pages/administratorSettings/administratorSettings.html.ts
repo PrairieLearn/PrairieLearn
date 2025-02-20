@@ -10,14 +10,8 @@ export function AdministratorSettings({ resLocals }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Administrator Settings',
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'settings',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'settings' },
+    options: { fullWidth: true },
     content: html`
       <h1 class="sr-only">Administrator Settings</h1>
       <!-- Chunk generation -->

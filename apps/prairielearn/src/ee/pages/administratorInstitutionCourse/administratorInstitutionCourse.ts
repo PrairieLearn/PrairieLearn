@@ -23,10 +23,7 @@ router.get(
     const institution = await getInstitution(req.params.institution_id);
     const course = await queryRow(
       sql.select_course,
-      {
-        institution_id: req.params.institution_id,
-        course_id: req.params.course_id,
-      },
+      { institution_id: req.params.institution_id, course_id: req.params.course_id },
       CourseSchema,
     );
     const rows = await queryRows(
@@ -34,14 +31,7 @@ router.get(
       { course_id: course.id },
       CourseInstanceRowSchema,
     );
-    res.send(
-      AdministratorInstitutionCourse({
-        institution,
-        course,
-        rows,
-        resLocals: res.locals,
-      }),
-    );
+    res.send(AdministratorInstitutionCourse({ institution, course, rows, resLocals: res.locals }));
   }),
 );
 
@@ -50,10 +40,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const course = await queryRow(
       sql.select_course,
-      {
-        institution_id: req.params.institution_id,
-        course_id: req.params.course_id,
-      },
+      { institution_id: req.params.institution_id, course_id: req.params.course_id },
       CourseSchema,
     );
 

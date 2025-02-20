@@ -124,10 +124,7 @@ export async function makeContext(
     mandatoryElementNames.length > 0
       ? await queryRows(
           sql.select_documents_by_chunk_id,
-          {
-            doc_path: 'docs/elements.md',
-            chunk_ids: mandatoryElementNames,
-          },
+          { doc_path: 'docs/elements.md', chunk_ids: mandatoryElementNames },
           QuestionGenerationContextEmbeddingSchema,
         )
       : [];
@@ -151,11 +148,7 @@ export async function makeContext(
 
     const elementDoc = await queryRow(
       sql.select_nearby_documents_from_file,
-      {
-        embedding: vectorToString(embeddingUserInput),
-        doc_path: 'docs/elements.md',
-        limit: 1,
-      },
+      { embedding: vectorToString(embeddingUserInput), doc_path: 'docs/elements.md', limit: 1 },
       QuestionGenerationContextEmbeddingSchema,
     );
     if (numElements > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {

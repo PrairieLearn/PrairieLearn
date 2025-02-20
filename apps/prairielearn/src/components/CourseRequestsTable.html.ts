@@ -92,10 +92,7 @@ export function CourseRequestsTable({
                             data-placement="auto"
                             title="Deny course request"
                             data-content="${escapeHtml(
-                              CourseRequestDenyForm({
-                                request: row,
-                                csrfToken,
-                              }),
+                              CourseRequestDenyForm({ request: row, csrfToken }),
                             )}"
                           >
                             <i class="fa fa-times" aria-hidden="true"></i> Deny

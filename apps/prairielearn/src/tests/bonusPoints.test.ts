@@ -64,9 +64,7 @@ describe('Exam assessment with bonus points', function () {
   });
 
   step('check assessment points', async () => {
-    const params = {
-      assessment_id: context.assessmentId,
-    };
+    const params = { assessment_id: context.assessmentId };
     const results = await sqldb.queryOneRowAsync(sql.read_assessment_instance_points, params);
     assert.equal(results.rowCount, 1);
     assert.equal(results.rows[0].points, 6);
@@ -96,9 +94,7 @@ describe('Exam assessment with bonus points', function () {
   });
 
   step('check assessment points', async () => {
-    const params = {
-      assessment_id: context.assessmentId,
-    };
+    const params = { assessment_id: context.assessmentId };
     const results = await sqldb.queryOneRowAsync(sql.read_assessment_instance_points, params);
     assert.equal(results.rowCount, 1);
     // 6+8 is 14, but limit should be 10+2 (max plus bonus)

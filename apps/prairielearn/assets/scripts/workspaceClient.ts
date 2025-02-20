@@ -26,12 +26,7 @@ $(function () {
     30 * 60,
   );
 
-  const socket = io('/workspace', {
-    auth: {
-      token: socketToken,
-      workspace_id: workspaceId,
-    },
-  });
+  const socket = io('/workspace', { auth: { token: socketToken, workspace_id: workspaceId } });
   const loadingFrame = document.getElementById('loading') as HTMLDivElement;
   const stoppedFrame = document.getElementById('stopped') as HTMLDivElement;
   const workspaceFrame = document.getElementById('workspace') as HTMLIFrameElement;

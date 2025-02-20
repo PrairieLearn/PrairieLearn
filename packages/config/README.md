@@ -10,9 +10,7 @@ This package _should not_ be depended upon by other packages directly. Instead, 
 import { ConfigLoader, makeFileConfig } from '@prairielearn/config';
 import { z } from 'zod';
 
-const ConfigSchema = z.object({
-  hello: z.string().default('world'),
-});
+const ConfigSchema = z.object({ hello: z.string().default('world') });
 
 const configLoader = new ConfigLoader(ConfigSchema);
 

@@ -53,9 +53,7 @@ export default asyncHandler(async (req, res, next) => {
       provider: 'LoadTest',
     };
 
-    await authnLib.loadUser(req, res, authnParams, {
-      redirect: false,
-    });
+    await authnLib.loadUser(req, res, authnParams, { redirect: false });
 
     // Enroll the load test user in the example course.
     await sqldb.queryAsync(sql.enroll_user_in_example_course, {
@@ -97,16 +95,9 @@ export default asyncHandler(async (req, res, next) => {
 
     if (!uid) throw new Error('Missing uid');
 
-    const authnParams: LoadUserAuth = {
-      uid,
-      uin,
-      name,
-      provider: 'dev',
-    };
+    const authnParams: LoadUserAuth = { uid, uin, name, provider: 'dev' };
 
-    await authnLib.loadUser(req, res, authnParams, {
-      redirect: false,
-    });
+    await authnLib.loadUser(req, res, authnParams, { redirect: false });
     return next();
   }
 
@@ -158,9 +149,7 @@ export default asyncHandler(async (req, res, next) => {
     provider: req.session.authn_provider_name,
   };
 
-  await authnLib.loadUser(req, res, authnParams, {
-    redirect: false,
-  });
+  await authnLib.loadUser(req, res, authnParams, { redirect: false });
 
   next();
 });

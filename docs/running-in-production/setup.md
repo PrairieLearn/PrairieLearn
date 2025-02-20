@@ -29,9 +29,7 @@ A reverse proxy can be implemented using something like [Apache](https://httpd.a
 In `config.json` to configure your domain add:
 
 ```json title="config.json"
-{
-  "serverCanonicalHost": "https://yourdomain"
-}
+{ "serverCanonicalHost": "https://yourdomain" }
 ```
 
 ### Authentication

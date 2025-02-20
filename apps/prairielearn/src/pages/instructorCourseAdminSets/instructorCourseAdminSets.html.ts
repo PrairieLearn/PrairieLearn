@@ -14,14 +14,8 @@ export function InstructorCourseAdminSets({
   return PageLayout({
     resLocals,
     pageTitle: 'Assessment Sets',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'sets',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'sets' },
+    options: { fullWidth: true },
     content: html`
       ${CourseSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

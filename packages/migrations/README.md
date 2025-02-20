@@ -65,10 +65,7 @@ import { queryOneRowAsync, queryAsync } from '@prairielearn/postgres';
 export default makeBatchedMigration({
   async getParameters() {
     const result = await queryOneRowAsync('SELECT MAX(id) as max from examples;', {});
-    return {
-      max: result.rows[0].max,
-      batchSize: 1000,
-    };
+    return { max: result.rows[0].max, batchSize: 1000 };
   },
 
   async execute(min: bigint, max: bigint) {
@@ -140,10 +137,7 @@ runner.on('error', (error) => {
 
 await init([path.join(__dirname, 'migrations')], 'prairielearn');
 
-startBatchedMigrations({
-  workDurationMs: 60_000,
-  sleepDurationMs: 30_000,
-});
+startBatchedMigrations({ workDurationMs: 60_000, sleepDurationMs: 30_000 });
 ```
 
 If you want to gracefully shut down your server, you can stop processing batched migrations and wait for any in-progress jobs to finish.

@@ -24,10 +24,7 @@ describe('database', function () {
 
   it('should match the database described in /database', async function () {
     this.timeout(20000);
-    const options = {
-      outputFormat: 'string',
-      coloredOutput: process.stdout.isTTY,
-    };
+    const options = { outputFormat: 'string', coloredOutput: process.stdout.isTTY };
     const dbDirectory = path.resolve(REPOSITORY_ROOT_PATH, 'database');
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
     const diff = await diffDirectoryAndDatabase(dbDirectory, dbName, options);

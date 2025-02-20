@@ -38,9 +38,7 @@ const RoleAssignmentSchema = z.object({
 });
 type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
 
-const GroupRoleWithCountSchema = GroupRoleSchema.extend({
-  count: z.number(),
-});
+const GroupRoleWithCountSchema = GroupRoleSchema.extend({ count: z.number() });
 type GroupRoleWithCount = z.infer<typeof GroupRoleWithCountSchema>;
 
 interface RolesInfo {
@@ -210,10 +208,7 @@ async function selectUserInCourseInstance({
       [user.user_id, course_instance_id],
       z.boolean(),
     )) ||
-    (await getEnrollmentForUserInCourseInstance({
-      course_instance_id,
-      user_id: user.user_id,
-    }))
+    (await getEnrollmentForUserInCourseInstance({ course_instance_id, user_id: user.user_id }))
   ) {
     return user;
   }
@@ -464,10 +459,7 @@ export function getGroupRoleReassignmentsAfterLeave(
           undefined,
     )?.user_id;
     if (userIdWithNoRoles !== undefined) {
-      groupRoleAssignmentUpdates.push({
-        user_id: userIdWithNoRoles,
-        group_role_id: roleId,
-      });
+      groupRoleAssignmentUpdates.push({ user_id: userIdWithNoRoles, group_role_id: roleId });
       continue;
     }
 
@@ -492,10 +484,7 @@ export function getGroupRoleReassignmentsAfterLeave(
         ),
     )?.user_id;
     if (assigneeUserId !== undefined) {
-      groupRoleAssignmentUpdates.push({
-        user_id: assigneeUserId,
-        group_role_id: roleId,
-      });
+      groupRoleAssignmentUpdates.push({ user_id: assigneeUserId, group_role_id: roleId });
       continue;
     }
   }
@@ -607,11 +596,7 @@ export async function updateGroupRoles(
       if (!groupInfo.rolesInfo?.groupRoles.some((role) => idsEqual(role.id, roleId))) {
         throw new error.HttpStatusError(403, `Role ${roleId} does not exist for this assessment`);
       }
-      return {
-        group_id: groupId,
-        user_id: userId,
-        group_role_id: roleId,
-      };
+      return { group_id: groupId, user_id: userId, group_role_id: roleId };
     });
 
     // If no one is being given a role with assigner permissions, give that role to the current user

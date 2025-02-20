@@ -15,14 +15,8 @@ export function InstructorCourseAdminTags({
   return PageLayout({
     resLocals,
     pageTitle: 'Tags',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'tags',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'tags' },
+    options: { fullWidth: true },
     content: html`
       ${CourseSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

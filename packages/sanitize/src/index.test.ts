@@ -16,66 +16,32 @@ describe('sanitizeObject', () => {
   });
 
   it('handles null byte in nested string', () => {
-    const input = {
-      test: {
-        nestedTest: 'test\u0000ing',
-      },
-    };
-    const expected = {
-      test: {
-        nestedTest: 'test\\u0000ing',
-      },
-    };
+    const input = { test: { nestedTest: 'test\u0000ing' } };
+    const expected = { test: { nestedTest: 'test\\u0000ing' } };
     assert.deepEqual(expected, sanitizeObject(input));
   });
 
   it('handles null byte in top-level array', () => {
-    const input = {
-      test: ['testing', 'test\u0000ing'],
-    };
-    const expected = {
-      test: ['testing', 'test\\u0000ing'],
-    };
+    const input = { test: ['testing', 'test\u0000ing'] };
+    const expected = { test: ['testing', 'test\\u0000ing'] };
     assert.deepEqual(expected, sanitizeObject(input));
   });
 
   it('handles null byte in nested array', () => {
-    const input = {
-      test: {
-        test2: ['testing', 'test\u0000ing'],
-      },
-    };
-    const expected = {
-      test: {
-        test2: ['testing', 'test\\u0000ing'],
-      },
-    };
+    const input = { test: { test2: ['testing', 'test\u0000ing'] } };
+    const expected = { test: { test2: ['testing', 'test\\u0000ing'] } };
     assert.deepEqual(expected, sanitizeObject(input));
   });
 
   it('handles numbers correctly', () => {
-    const input = {
-      test: 'test\u0000ing',
-      a: 1,
-      b: 2.45,
-    };
-    const expected = {
-      test: 'test\\u0000ing',
-      a: 1,
-      b: 2.45,
-    };
+    const input = { test: 'test\u0000ing', a: 1, b: 2.45 };
+    const expected = { test: 'test\\u0000ing', a: 1, b: 2.45 };
     assert.deepEqual(expected, sanitizeObject(input));
   });
 
   it('handles null values correctly', () => {
-    const input = {
-      test: 'test\u0000ing',
-      a: null,
-    };
-    const expected = {
-      test: 'test\\u0000ing',
-      a: null,
-    };
+    const input = { test: 'test\u0000ing', a: null };
+    const expected = { test: 'test\\u0000ing', a: null };
     assert.deepEqual(expected, sanitizeObject(input));
   });
 });

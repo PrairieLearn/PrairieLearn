@@ -194,13 +194,7 @@ function getParamsForAssessment(
             (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
           const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints,
-            pointsList: undefined,
-          };
+          return { ...alternative, hasSplitPoints, maxPoints, initPoints, pointsList: undefined };
         } else {
           throw new Error(`Unknown assessment type: ${assessment.type}`);
         }
@@ -293,10 +287,7 @@ function parseSharedQuestionReference(qid) {
   const firstSlash = qid.indexOf('/');
   if (firstSlash === -1) {
     // No QID, invalid question reference. An error will be recorded when trying to locate this question
-    return {
-      sharing_name: qid.substring(1, qid.length),
-      qid: '',
-    };
+    return { sharing_name: qid.substring(1, qid.length), qid: '' };
   }
 
   return {

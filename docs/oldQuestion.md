@@ -132,9 +132,7 @@ A `File` question gives the student a file to download, and then requires an upl
   "tags": ["recursion"],
   "clientFiles": ["client.js", "question.html", "answer.html", "fib.py"],
   "type": "File",
-  "options": {
-    "fileName": "fib.py"
-  }
+  "options": { "fileName": "fib.py" }
 }
 ```
 
@@ -167,17 +165,9 @@ define(['PrairieRandom'], function (PrairieRandom) {
     var a = rand.randInt(5, 10);
     var b = rand.randInt(5, 10);
     var c = a + b;
-    var params = {
-      a: a,
-      b: b,
-    };
-    var trueAnswer = {
-      c: c,
-    };
-    var questionData = {
-      params: params,
-      trueAnswer: trueAnswer,
-    };
+    var params = { a: a, b: b };
+    var trueAnswer = { c: c };
+    var questionData = { params: params, trueAnswer: trueAnswer };
     return questionData;
   };
 

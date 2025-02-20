@@ -20,9 +20,7 @@ const stringifier = stringifyStream({
   columns: [{ key: 'id', header: 'ID' }],
   // Optionally provide a function to transform each item in the stream.
   transform(record) {
-    return {
-      id: `workspace-${id}`,
-    };
+    return { id: `workspace-${id}` };
   },
 });
 
@@ -37,10 +35,7 @@ import { createWriteStream } from 'node:fs';
 
 const data = Array.from(new Array(100_000), (_, i) => ({ id: i }));
 const output = createWriteStream('numbers.csv');
-stringifyNonblocking(data, {
-  header: true,
-  columns: [{ key: 'id', header: 'ID' }],
-}).pipe(output);
+stringifyNonblocking(data, { header: true, columns: [{ key: 'id', header: 'ID' }] }).pipe(output);
 ```
 
 For lower-level usage, `stringify` and `Stringifier` are also re-exported from `csv-stringify`:

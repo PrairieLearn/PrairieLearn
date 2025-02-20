@@ -25,13 +25,7 @@ router.get(
     }
 
     const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
-    res.send(
-      QuestionsPage({
-        questions,
-        showAddQuestionButton: false,
-        resLocals: res.locals,
-      }),
-    );
+    res.send(QuestionsPage({ questions, showAddQuestionButton: false, resLocals: res.locals }));
   }),
 );
 

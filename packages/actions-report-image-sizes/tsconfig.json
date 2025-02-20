@@ -1,7 +1,4 @@
 {
   "extends": "@prairielearn/tsconfig/tsconfig.package-cjs.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  }
+  "compilerOptions": { "outDir": "./dist", "rootDir": "./src" }
 }

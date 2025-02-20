@@ -1,4 +1,1 @@
-{
-  "description": "Finds all courses that have chunks generated.",
-  "params": []
-}
+{ "description": "Finds all courses that have chunks generated.", "params": [] }

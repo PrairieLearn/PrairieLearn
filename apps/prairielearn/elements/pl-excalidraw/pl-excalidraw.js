@@ -105,15 +105,7 @@ export async function initializeExcalidraw(uuid, name, metadata) {
   sketch.node = rootElement;
   sketch.root = ReactDOM.createRoot(rootElement);
   sketch.root.render(
-    elt(
-      React.StrictMode,
-      null,
-      elt(DrawWidget, {
-        sketchName: name,
-        metadata,
-        setHiddenInput,
-      }),
-    ),
+    elt(React.StrictMode, null, elt(DrawWidget, { sketchName: name, metadata, setHiddenInput })),
   );
 
   return sketch;

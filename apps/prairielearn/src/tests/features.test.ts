@@ -105,10 +105,7 @@ describe('features', () => {
 
     assert.isTrue(await features.enabled('test:example-feature-flag', { institution_id: '1' }));
     assert.isFalse(
-      await features.enabled('test:example-feature-flag', {
-        institution_id: '1',
-        course_id: '1',
-      }),
+      await features.enabled('test:example-feature-flag', { institution_id: '1', course_id: '1' }),
     );
     assert.isFalse(
       await features.enabled('test:example-feature-flag', {
@@ -138,15 +135,11 @@ describe('features', () => {
     const context = { institution_id: '1', course_id: '1' };
 
     await queryAsync('UPDATE pl_courses SET options = $options WHERE id = 1', {
-      options: {
-        devModeFeatures: { 'test:example-feature-flag': true },
-      },
+      options: { devModeFeatures: { 'test:example-feature-flag': true } },
     });
     assert.isTrue(await features.enabled('test:example-feature-flag', context));
 
-    await queryAsync('UPDATE pl_courses SET options = $options WHERE id = 1', {
-      options: {},
-    });
+    await queryAsync('UPDATE pl_courses SET options = $options WHERE id = 1', { options: {} });
     assert.isFalse(await features.enabled('test:example-feature-flag', context));
   });
 

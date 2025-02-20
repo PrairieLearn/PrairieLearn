@@ -42,14 +42,8 @@ export function InstructorAssessmentDownloads({
   return PageLayout({
     resLocals,
     pageTitle: 'Downloads',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'downloads',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'downloads' },
+    options: { fullWidth: true },
     content: html`
       ${AssessmentSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

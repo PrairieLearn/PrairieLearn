@@ -15,9 +15,7 @@ export default asyncHandler(async (req, res, next) => {
   const workspace_id = res.locals.workspace_id;
   const oldCookieName = `pl_authz_workspace_${workspace_id}`;
   const newCookieName = `pl2_authz_workspace_${workspace_id}`;
-  const tokenData = {
-    workspace_id: res.locals.workspace_id,
-  };
+  const tokenData = { workspace_id: res.locals.workspace_id };
   const cookieData = generateSignedToken(tokenData, config.secretKey);
   setCookie(res, [oldCookieName, newCookieName], cookieData, {
     maxAge: config.workspaceAuthzCookieMaxAgeMilliseconds,

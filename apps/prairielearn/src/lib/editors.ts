@@ -92,10 +92,7 @@ async function cleanAndResetRepository(
   job.info('Clean local files not in remote git repository');
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
   job.info('Reset state to remote git repository');
-  await job.exec('git', ['reset', '--hard', revision], {
-    cwd: course.path,
-    env,
-  });
+  await job.exec('git', ['reset', '--hard', revision], { cwd: course.path, env });
 }
 
 export function getUniqueNames({
@@ -167,25 +164,15 @@ export function getUniqueNames({
 
   if (number === 1 && shortName !== 'New' && longName !== 'New') {
     // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
-    return {
-      shortName,
-      longName,
-    };
+    return { shortName, longName };
   } else {
     // If there are existing copies, a number is needed at the end of the names
-    return {
-      shortName: `${shortName}_${number}`,
-      longName: `${longName} (${number})`,
-    };
+    return { shortName: `${shortName}_${number}`, longName: `${longName} (${number})` };
   }
 }
 
 interface BaseEditorOptions<ResLocals = object> {
-  locals: {
-    authz_data: Record<string, any>;
-    course: Course;
-    user: User;
-  } & ResLocals;
+  locals: { authz_data: Record<string, any>; course: Course; user: User } & ResLocals;
 }
 
 interface BaseEditorOptionsInternal extends BaseEditorOptions {
@@ -338,10 +325,7 @@ export abstract class Editor {
               '-m',
               writeResult.commitMessage,
             ],
-            {
-              cwd: this.course.path,
-              env: gitEnv,
-            },
+            { cwd: this.course.path, env: gitEnv },
           );
         };
 
@@ -370,10 +354,7 @@ export abstract class Editor {
 
           try {
             job.info('Push changes to remote git repository');
-            await job.exec('git', ['push'], {
-              cwd: this.course.path,
-              env: gitEnv,
-            });
+            await job.exec('git', ['push'], { cwd: this.course.path, env: gitEnv });
             job.data.saveSucceeded = true;
 
             // If we were able to push the change to GitHub, we can safely
@@ -391,10 +372,7 @@ export abstract class Editor {
             job.info('Pulling changes from remote git repository and trying again');
 
             job.info('Fetch from remote git repository');
-            await job.exec('git', ['fetch'], {
-              cwd: this.course.path,
-              env: gitEnv,
-            });
+            await job.exec('git', ['fetch'], { cwd: this.course.path, env: gitEnv });
 
             // This will both discard the commit we made locally and also pull
             // in any new changes from the remote.
@@ -404,10 +382,7 @@ export abstract class Editor {
 
             try {
               job.info('Push changes to remote git repository');
-              await job.exec('git', ['push'], {
-                cwd: this.course.path,
-                env: gitEnv,
-              });
+              await job.exec('git', ['push'], { cwd: this.course.path, env: gitEnv });
               job.data.saveSucceeded = true;
             } finally {
               // Clean up to remove any empty directories that might have been
@@ -783,10 +758,7 @@ export class AssessmentAddEditor extends Editor {
   ) {
     const { course_instance } = params.locals;
 
-    super({
-      ...params,
-      description: `${course_instance.short_name}: Add assessment`,
-    });
+    super({ ...params, description: `${course_instance.short_name}: Add assessment` });
 
     this.course_instance = course_instance;
 
@@ -881,10 +853,7 @@ export class CourseInstanceCopyEditor extends Editor {
   constructor(params: BaseEditorOptions<{ course_instance: CourseInstance }>) {
     const { course_instance } = params.locals;
 
-    super({
-      ...params,
-      description: `Copy course instance ${course_instance.short_name}`,
-    });
+    super({ ...params, description: `Copy course instance ${course_instance.short_name}` });
 
     this.course_instance = course_instance;
 
@@ -948,10 +917,7 @@ export class CourseInstanceDeleteEditor extends Editor {
   constructor(params: BaseEditorOptions<{ course_instance: CourseInstance }>) {
     const { course_instance } = params.locals;
 
-    super({
-      ...params,
-      description: `Delete course instance ${course_instance.short_name}`,
-    });
+    super({ ...params, description: `Delete course instance ${course_instance.short_name}` });
 
     this.course_instance = course_instance;
   }
@@ -1048,10 +1014,7 @@ export class CourseInstanceAddEditor extends Editor {
       end_access_date?: Temporal.ZonedDateTime;
     },
   ) {
-    super({
-      ...params,
-      description: 'Add course instance',
-    });
+    super({ ...params, description: 'Add course instance' });
 
     this.uuid = uuidv4();
 
@@ -1122,18 +1085,14 @@ export class CourseInstanceAddEditor extends Editor {
           ? formatDate(
               new Date(this.start_access_date.epochMilliseconds),
               this.course.display_timezone,
-              {
-                includeTz: false,
-              },
+              { includeTz: false },
             )
           : undefined,
         endDate: this.end_access_date
           ? formatDate(
               new Date(this.end_access_date.epochMilliseconds),
               this.course.display_timezone,
-              {
-                includeTz: false,
-              },
+              { includeTz: false },
             )
           : undefined,
       };
@@ -1153,10 +1112,7 @@ export class CourseInstanceAddEditor extends Editor {
       flag: 'wx',
     });
 
-    return {
-      pathsToAdd: [courseInstancePath],
-      commitMessage: `add course instance ${shortName}`,
-    };
+    return { pathsToAdd: [courseInstancePath], commitMessage: `add course instance ${shortName}` };
   }
 }
 
@@ -1178,10 +1134,7 @@ export class QuestionAddEditor extends Editor {
       isDraft?: boolean;
     },
   ) {
-    super({
-      ...params,
-      description: 'Add question',
-    });
+    super({ ...params, description: 'Add question' });
 
     this.uuid = uuidv4();
     this.qid = params.qid;
@@ -1318,12 +1271,7 @@ export class QuestionAddEditor extends Editor {
       const newQuestionHtmlFilePath = path.join(newQuestionPath, 'question.html');
       const newQuestionScriptFilePath = path.join(newQuestionPath, 'server.py');
 
-      const data = {
-        uuid: this.uuid,
-        title,
-        topic: 'Default',
-        type: 'v3',
-      };
+      const data = { uuid: this.uuid, title, topic: 'Default', type: 'v3' };
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(data));
 
@@ -1365,10 +1313,7 @@ export class QuestionAddEditor extends Editor {
         }
       }
     }
-    return {
-      pathsToAdd: [newQuestionPath],
-      commitMessage: `add question ${qid}`,
-    };
+    return { pathsToAdd: [newQuestionPath], commitMessage: `add question ${qid}` };
   }
 }
 
@@ -1378,19 +1323,14 @@ export class QuestionModifyEditor extends Editor {
   private files: Record<string, string | null>;
 
   constructor(
-    params: BaseEditorOptions<{ question: Question }> & {
-      files: Record<string, string | null>;
-    },
+    params: BaseEditorOptions<{ question: Question }> & { files: Record<string, string | null> },
   ) {
     const {
       locals: { question },
       files,
     } = params;
 
-    super({
-      ...params,
-      description: `Modify question ${question.qid}`,
-    });
+    super({ ...params, description: `Modify question ${question.qid}` });
 
     this.question = question;
     this.files = files;
@@ -1423,10 +1363,7 @@ export class QuestionModifyEditor extends Editor {
       }
     }
 
-    return {
-      pathsToAdd: [questionPath],
-      commitMessage: this.description,
-    };
+    return { pathsToAdd: [questionPath], commitMessage: this.description };
   }
 }
 
@@ -1489,10 +1426,7 @@ export class QuestionRenameEditor extends Editor {
       qid_new,
     } = params;
 
-    super({
-      ...params,
-      description: `Rename question ${question.qid}`,
-    });
+    super({ ...params, description: `Rename question ${question.qid}` });
 
     this.qid_new = qid_new;
     this.question = question;
@@ -1580,10 +1514,7 @@ export class QuestionRenameEditor extends Editor {
       await fs.writeFile(infoPath, formattedJson);
     }
 
-    return {
-      pathsToAdd,
-      commitMessage: `rename question ${this.question.qid} to ${this.qid_new}`,
-    };
+    return { pathsToAdd, commitMessage: `rename question ${this.question.qid} to ${this.qid_new}` };
   }
 }
 
@@ -1597,10 +1528,7 @@ export class QuestionCopyEditor extends Editor {
       locals: { question },
     } = params;
 
-    super({
-      ...params,
-      description: `Copy question ${question.qid}`,
-    });
+    super({ ...params, description: `Copy question ${question.qid}` });
 
     this.question = question;
 
@@ -1680,10 +1608,7 @@ export class QuestionTransferEditor extends Editor {
     const from_course =
       from_course_short_name == null ? 'unknown course' : `course ${from_course_short_name}`;
 
-    super({
-      ...params,
-      description: `Copy question ${from_qid} from ${from_course}`,
-    });
+    super({ ...params, description: `Copy question ${from_qid} from ${from_course}` });
 
     this.from_qid = from_qid;
     this.from_path = from_path;
@@ -1822,10 +1747,7 @@ export class FileDeleteEditor extends Editor {
     // This will silently do nothing if deletePath no longer exists.
     await fs.remove(this.deletePath);
 
-    return {
-      pathsToAdd: [this.deletePath],
-      commitMessage: this.description,
-    };
+    return { pathsToAdd: [this.deletePath], commitMessage: this.description };
   }
 }
 
@@ -1856,10 +1778,7 @@ export class FileRenameEditor extends Editor {
     const relativeOldPath = path.relative(container.rootPath, oldPath);
     const relativeNewPath = path.relative(container.rootPath, newPath);
 
-    super({
-      ...params,
-      description: `${prefix}Rename ${relativeOldPath} to ${relativeNewPath}`,
-    });
+    super({ ...params, description: `${prefix}Rename ${relativeOldPath} to ${relativeNewPath}` });
 
     this.container = container;
     this.oldPath = oldPath;
@@ -1944,10 +1863,7 @@ export class FileRenameEditor extends Editor {
     debug('rename file');
     await fs.rename(this.oldPath, this.newPath);
 
-    return {
-      pathsToAdd: [this.oldPath, this.newPath],
-      commitMessage: this.description,
-    };
+    return { pathsToAdd: [this.oldPath, this.newPath], commitMessage: this.description };
   }
 }
 
@@ -2062,10 +1978,7 @@ export class FileUploadEditor extends Editor {
     debug('write file');
     await fs.writeFile(this.filePath, this.fileContents);
 
-    return {
-      pathsToAdd: [this.filePath],
-      commitMessage: this.description,
-    };
+    return { pathsToAdd: [this.filePath], commitMessage: this.description };
   }
 }
 
@@ -2192,10 +2105,7 @@ export class FileModifyEditor extends Editor {
     debug('write file');
     await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
 
-    return {
-      pathsToAdd: [this.filePath],
-      commitMessage: this.description,
-    };
+    return { pathsToAdd: [this.filePath], commitMessage: this.description };
   }
 }
 
@@ -2203,10 +2113,7 @@ export class CourseInfoCreateEditor extends Editor {
   private infoJson: any;
 
   constructor(params: BaseEditorOptions & { infoJson: any }) {
-    super({
-      ...params,
-      description: 'Create infoCourse.json',
-    });
+    super({ ...params, description: 'Create infoCourse.json' });
 
     this.infoJson = params.infoJson;
   }
@@ -2222,10 +2129,7 @@ export class CourseInfoCreateEditor extends Editor {
     // - Creating a new file and infoPath does exist (use of 'wx')
     await fs.writeFile(infoPath, formattedJson, { flag: 'wx' });
 
-    return {
-      pathsToAdd: [infoPath],
-      commitMessage: 'create infoCourse.json',
-    };
+    return { pathsToAdd: [infoPath], commitMessage: 'create infoCourse.json' };
   }
 }
 
@@ -2265,9 +2169,6 @@ export class MultiEditor extends Editor {
 
     if (!didChange) return null;
 
-    return {
-      pathsToAdd: Array.from(pathsToAdd),
-      commitMessage: commitMessages.join('; '),
-    };
+    return { pathsToAdd: Array.from(pathsToAdd), commitMessage: commitMessages.join('; ') };
   }
 }

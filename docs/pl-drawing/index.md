@@ -1980,9 +1980,7 @@ Afterwards, all elements must be explicitly registered with the `pl-drawing` ele
 ```javascript
 // This should exactly match the folder in `elementExtensions/`
 const my_extension_name = 'extension';
-const my_extensions = {
-  'pl-point': Point,
-};
+const my_extensions = { 'pl-point': Point };
 PLDrawingApi.registerElements(my_extension_name, my_extension);
 ```
 

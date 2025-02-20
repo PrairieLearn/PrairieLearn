@@ -65,9 +65,7 @@ export class BatchedMigrationRunner {
   private async refreshMigrationStatus(migration: BatchedMigrationRow) {
     this.migrationStatus = await queryRow(
       sql.get_migration_status,
-      {
-        id: migration.id,
-      },
+      { id: migration.id },
       BatchedMigrationStatusSchema,
     );
   }

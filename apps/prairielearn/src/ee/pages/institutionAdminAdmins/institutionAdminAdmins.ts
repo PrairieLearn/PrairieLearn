@@ -42,12 +42,7 @@ router.get(
     );
 
     res.send(
-      InstitutionAdminAdmins({
-        institution,
-        rows,
-        uidsLimit: MAX_UIDS,
-        resLocals: res.locals,
-      }),
+      InstitutionAdminAdmins({ institution, rows, uidsLimit: MAX_UIDS, resLocals: res.locals }),
     );
   }),
 );

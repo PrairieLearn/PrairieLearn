@@ -30,10 +30,7 @@ export function AdministratorInstitutionGeneral({
 }) {
   return PageLayout({
     pageTitle: 'Institution Administration',
-    resLocals: {
-      ...resLocals,
-      institution,
-    },
+    resLocals: { ...resLocals, institution },
     headContent: html`
       ${compiledScriptTag('administratorInstitutionGeneralClient.ts')}
       <style>
@@ -59,10 +56,7 @@ export function AdministratorInstitutionGeneral({
       <h2 class="h4">Statistics</h2>
       <div class="card-grid mb-3">
         ${StatisticsCard({ title: 'Courses', value: statistics.course_count })}
-        ${StatisticsCard({
-          title: 'Course instances',
-          value: statistics.course_instance_count,
-        })}
+        ${StatisticsCard({ title: 'Course instances', value: statistics.course_instance_count })}
         ${StatisticsCard({ title: 'Enrollments', value: statistics.enrollment_count })}
       </div>
       <h2 class="h4">General Information</h2>

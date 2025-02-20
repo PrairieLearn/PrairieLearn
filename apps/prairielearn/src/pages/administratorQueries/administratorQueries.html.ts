@@ -34,14 +34,8 @@ export function AdministratorQueries({
   return PageLayout({
     resLocals,
     pageTitle: 'Administrator Queries',
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'queries',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'queries' },
+    options: { fullWidth: true },
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

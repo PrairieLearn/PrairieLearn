@@ -449,10 +449,7 @@ class PLDrawingAnswerState {
     }
   }
 
-  const builtins = {
-    delete: DrawingDeleteButton,
-    'help-line': DrawingHelpLineButton,
-  };
+  const builtins = { delete: DrawingDeleteButton, 'help-line': DrawingHelpLineButton };
 
   window.PLDrawingApi.registerElements('_base', builtins);
 })();

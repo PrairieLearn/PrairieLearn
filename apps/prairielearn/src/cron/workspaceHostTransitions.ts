@@ -40,14 +40,8 @@ async function checkDBConsistency() {
   const runningHosts = new Set<string>();
   const instances = await ec2.describeInstances({
     Filters: [
-      {
-        Name: 'tag-key',
-        Values: [config.workspaceLoadLaunchTag],
-      },
-      {
-        Name: 'instance-state-name',
-        Values: ['pending', 'running'],
-      },
+      { Name: 'tag-key', Values: [config.workspaceLoadLaunchTag] },
+      { Name: 'instance-state-name', Values: ['pending', 'running'] },
     ],
     MaxResults: 500,
   });
@@ -67,9 +61,7 @@ async function checkDBConsistency() {
   const hostsNotInDatabase = setDifference(runningHosts, nonTerminatedHosts);
   if (hostsNotInDatabase.size > 0) {
     logger.info('Terminating hosts that are not in the database', Array.from(hostsNotInDatabase));
-    await queryAsync(sql.add_terminating_hosts, {
-      instances: Array.from(hostsNotInDatabase),
-    });
+    await queryAsync(sql.add_terminating_hosts, { instances: Array.from(hostsNotInDatabase) });
     await ec2.terminateInstances({ InstanceIds: Array.from(hostsNotInDatabase) });
   }
 

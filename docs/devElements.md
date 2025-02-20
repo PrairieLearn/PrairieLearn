@@ -39,10 +39,7 @@ And an `info.json` with the following contents:
 ```json title="info.json"
 {
   "controller": "pl-my-element.py",
-  "dependencies": {
-    "elementScripts": ["pl-my-element.js"],
-    "elementStyles": ["pl-my-element.css"]
-  }
+  "dependencies": { "elementScripts": ["pl-my-element.js"], "elementStyles": ["pl-my-element.css"] }
 }
 ```
 
@@ -143,12 +140,8 @@ In addition to static dependencies, elements can also declare dynamic dependenci
 ```json title="info.json"
 {
   "controller": "pl-my-element.py",
-  "dependencies": {
-    "elementScripts": ["pl-my-element.js"]
-  },
-  "dynamicDependencies": {
-    "nodeModulesScripts": { "d3": "d3/dist/d3.min.js" }
-  }
+  "dependencies": { "elementScripts": ["pl-my-element.js"] },
+  "dynamicDependencies": { "nodeModulesScripts": { "d3": "d3/dist/d3.min.js" } }
 }
 ```
 

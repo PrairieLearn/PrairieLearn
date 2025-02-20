@@ -35,13 +35,7 @@ Optionally, you may configure the lock to automatically "renew" itself by period
 ```ts
 import { doWithLock } from '@prairielearn/named-locks';
 
-await doWithLock(
-  'name',
-  {
-    autoRenew: true,
-  },
-  async () => {
-    console.log('Doing some work');
-  },
-);
+await doWithLock('name', { autoRenew: true }, async () => {
+  console.log('Doing some work');
+});
 ```

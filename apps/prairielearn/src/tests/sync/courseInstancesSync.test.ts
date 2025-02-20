@@ -13,13 +13,7 @@ import * as util from './util.js';
  * Makes an empty course instance.
  */
 function makeCourseInstance(): util.CourseInstanceData {
-  return {
-    courseInstance: {
-      uuid: uuidv4(),
-      longName: 'Test course instance',
-    },
-    assessments: {},
-  };
+  return { courseInstance: { uuid: uuidv4(), longName: 'Test course instance' }, assessments: {} };
 }
 
 describe('Course instance syncing', () => {
@@ -56,11 +50,7 @@ describe('Course instance syncing', () => {
         endDate: '2024-01-31T00:00:00',
         uids: ['student@example.com'],
       },
-      {
-        startDate: '2024-02-01T00:00:00',
-        endDate: '2024-02-28T00:00:00',
-        institution: 'Any',
-      },
+      { startDate: '2024-02-01T00:00:00', endDate: '2024-02-28T00:00:00', institution: 'Any' },
     ];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);

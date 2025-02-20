@@ -30,9 +30,7 @@ async function getToken(): Promise<string> {
   cachedTokenExpiration = Date.now() + TOKEN_TTL * 1000;
   const tokenRes = await fetch(`${IMDS_URI}${TOKEN_PATH}`, {
     method: 'PUT',
-    headers: {
-      'X-aws-ec2-metadata-token-ttl-seconds': TOKEN_TTL.toString(),
-    },
+    headers: { 'X-aws-ec2-metadata-token-ttl-seconds': TOKEN_TTL.toString() },
     signal: AbortSignal.timeout(5_000),
   });
   if (!tokenRes.ok) {
@@ -47,9 +45,7 @@ export async function fetchImdsText(path: string): Promise<string> {
   const token = await getToken();
 
   const res = await fetch(`${IMDS_URI}${path}`, {
-    headers: {
-      'X-aws-ec2-metadata-token': token,
-    },
+    headers: { 'X-aws-ec2-metadata-token': token },
     signal: AbortSignal.timeout(5_000),
   });
 

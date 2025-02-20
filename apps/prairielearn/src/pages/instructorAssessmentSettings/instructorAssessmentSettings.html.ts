@@ -28,11 +28,7 @@ export function InstructorAssessmentSettings({
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'settings',
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'settings' },
     headContent: html` ${compiledScriptTag('instructorAssessmentSettingsClient.ts')} `,
     content: html`
       ${AssessmentSyncErrorsAndWarnings({

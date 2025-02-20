@@ -41,14 +41,16 @@ router.get(
   asyncHandler(async (req, res) => {
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.example_course) {
-      res.status(403).send(
-        InsufficientCoursePermissionsCardPage({
-          resLocals: res.locals,
-          courseOwners: [],
-          pageTitle: 'File editor',
-          requiredPermissions: 'Editor',
-        }),
-      );
+      res
+        .status(403)
+        .send(
+          InsufficientCoursePermissionsCardPage({
+            resLocals: res.locals,
+            courseOwners: [],
+            pageTitle: 'File editor',
+            requiredPermissions: 'Editor',
+          }),
+        );
       return;
     }
 
@@ -56,14 +58,16 @@ router.get(
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get edit permissions.
       const courseOwners = await getCourseOwners(res.locals.course.id);
-      res.status(403).send(
-        InsufficientCoursePermissionsCardPage({
-          resLocals: res.locals,
-          courseOwners,
-          pageTitle: 'File editor',
-          requiredPermissions: 'Editor',
-        }),
-      );
+      res
+        .status(403)
+        .send(
+          InsufficientCoursePermissionsCardPage({
+            resLocals: res.locals,
+            courseOwners,
+            pageTitle: 'File editor',
+            requiredPermissions: 'Editor',
+          }),
+        );
       return;
     }
 
@@ -175,10 +179,7 @@ router.post(
 
     const paths = getPaths(req.params[0], res.locals);
 
-    const container = {
-      rootPath: paths.rootPath,
-      invalidRootPaths: paths.invalidRootPaths,
-    };
+    const container = { rootPath: paths.rootPath, invalidRootPaths: paths.invalidRootPaths };
 
     // NOTE: All actions are meant to do things to *files* and not to directories
     // (or anything else). However, nowhere do we check that it is actually being

@@ -21,14 +21,8 @@ export function NewsItem({
   return PageLayout({
     resLocals,
     pageTitle: newsItem.title,
-    navContext: {
-      type: resLocals.navbarType,
-      page: 'news_item',
-      subPage: 'news_item',
-    },
-    options: {
-      pageNote: formattedDate,
-    },
+    navContext: { type: resLocals.navbarType, page: 'news_item', subPage: 'news_item' },
+    options: { pageNote: formattedDate },
     content: html`
       <article>
         <header>

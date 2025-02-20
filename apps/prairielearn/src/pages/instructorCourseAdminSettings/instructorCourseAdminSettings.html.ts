@@ -21,11 +21,7 @@ export function InstructorCourseAdminSettings({
   return PageLayout({
     resLocals,
     pageTitle: 'Course Settings',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'settings',
-    },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'settings' },
     headContent: [compiledScriptTag('instructorCourseAdminSettingsClient.ts')],
     content: html`
       ${CourseSyncErrorsAndWarnings({
@@ -40,11 +36,7 @@ export function InstructorCourseAdminSettings({
         </div>
         <div class="card-body">
           ${!courseInfoExists || !coursePathExists
-            ? CourseDirectoryMissingAlert({
-                resLocals,
-                coursePathExists,
-                courseInfoExists,
-              })
+            ? CourseDirectoryMissingAlert({ resLocals, coursePathExists, courseInfoExists })
             : ''}
           <form name="edit-course-settings-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />

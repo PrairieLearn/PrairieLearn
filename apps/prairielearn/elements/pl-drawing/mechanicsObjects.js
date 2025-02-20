@@ -1428,23 +1428,13 @@ mechanicsObjects.makeCoordinates = function (options) {
   let obj1 = new mechanicsObjects.Arrow(options);
   group.addWithUpdate(obj1);
 
-  var options2 = _.defaults(
-    {
-      angle: options.angle - 90,
-    },
-    options,
-  );
+  var options2 = _.defaults({ angle: options.angle - 90 }, options);
 
   let obj2 = new mechanicsObjects.Arrow(options2);
   group.addWithUpdate(obj2);
 
   var options3 = _.defaults(
-    {
-      radius: 4,
-      originX: 'center',
-      originY: 'center',
-      fill: options.stroke,
-    },
+    { radius: 4, originX: 'center', originY: 'center', fill: options.stroke },
     options,
   );
 
@@ -1513,12 +1503,7 @@ mechanicsObjects.makeControlCurvedLine = function (x1, y1, x2, y2, x3, y3, optio
 mechanicsObjects.byType = {};
 mechanicsObjects.addCanvasBackground = function (canvas, w, h, gridsize) {
   canvas.backgroundColor = '#FFFFF0';
-  var options = {
-    stroke: '#D3D3D3',
-    strokeWidth: 1,
-    selectable: false,
-    evented: false,
-  };
+  var options = { stroke: '#D3D3D3', strokeWidth: 1, selectable: false, evented: false };
 
   for (let i = 1; i < w / gridsize; i++) {
     canvas.add(new fabric.Line([gridsize * i, 0, gridsize * i, h], options));
@@ -3498,17 +3483,11 @@ mechanicsObjects.byType['pl-controlled-line'] = class extends PLDrawingBaseEleme
       height: options.heightErrorBox,
     };
     if (options.drawErrorBox) {
-      var end_points_options_1 = {
-        left: options.x1,
-        top: options.y1,
-      };
+      var end_points_options_1 = { left: options.x1, top: options.y1 };
       let opt = Object.assign(options_error_box, end_points_options_1);
       canvas.add(new fabric.Rect(opt));
 
-      var end_points_options_2 = {
-        left: options.x2,
-        top: options.y2,
-      };
+      var end_points_options_2 = { left: options.x2, top: options.y2 };
       opt = Object.assign(options_error_box, end_points_options_2);
       canvas.add(new fabric.Rect(opt));
     }
@@ -3609,17 +3588,11 @@ mechanicsObjects.byType['pl-controlled-curved-line'] = class extends PLDrawingBa
       height: options.heightErrorBox,
     };
     if (options.drawErrorBox) {
-      var end_points_options_1 = {
-        left: options.x1,
-        top: options.y1,
-      };
+      var end_points_options_1 = { left: options.x1, top: options.y1 };
       let opt = Object.assign(options_error_box, end_points_options_1);
       canvas.add(new fabric.Rect(opt));
 
-      var end_points_options_2 = {
-        left: options.x3,
-        top: options.y3,
-      };
+      var end_points_options_2 = { left: options.x3, top: options.y3 };
       opt = Object.assign(options_error_box, end_points_options_2);
       canvas.add(new fabric.Rect(opt));
 
@@ -4117,13 +4090,7 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
       if (!('id' in objPin1)) {
         objPin1.id = window.PLDrawingApi.generateID();
       }
-      var circleOptions2 = _.defaults(
-        {
-          left: xm2,
-          top: ym2,
-        },
-        circleOptions,
-      );
+      var circleOptions2 = _.defaults({ left: xm2, top: ym2 }, circleOptions);
       let objPin2 = new fabric.Circle(circleOptions2);
       if (!('id' in objPin2)) {
         objPin2.id = window.PLDrawingApi.generateID();

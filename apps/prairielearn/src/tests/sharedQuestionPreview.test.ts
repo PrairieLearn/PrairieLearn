@@ -18,12 +18,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
-const addNumbers = {
-  id: '',
-  qid: 'addNumbers',
-  type: 'Freeform',
-  title: 'Add two numbers',
-};
+const addNumbers = { id: '', qid: 'addNumbers', type: 'Freeform', title: 'Add two numbers' };
 const addVectors = {
   id: '',
   qid: 'addVectors',
@@ -58,9 +53,7 @@ describe('Shared Question Preview', function () {
     for (const testQuestion of testQuestions) {
       testQuestion.id = await sqldb.queryRow(
         sql.select_question_id,
-        {
-          qid: testQuestion.qid,
-        },
+        { qid: testQuestion.qid },
         z.string(),
       );
     }

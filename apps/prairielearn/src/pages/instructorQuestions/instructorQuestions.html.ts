@@ -24,14 +24,8 @@ export const QuestionsPage = ({
   return PageLayout({
     resLocals,
     pageTitle: 'Questions',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'questions',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'questions' },
+    options: { fullWidth: true },
     headContent: [QuestionsTableHead()],
     content: html`
       ${CourseSyncErrorsAndWarnings({

@@ -6,20 +6,9 @@ export function IssueBadge({
   issueQid,
   urlPrefix,
   className,
-}: {
-  count: number;
-  className?: string;
-} & (
-  | {
-      suppressLink: true;
-      urlPrefix?: undefined;
-      issueQid?: undefined;
-    }
-  | {
-      suppressLink?: false;
-      urlPrefix: string;
-      issueQid?: string | null;
-    }
+}: { count: number; className?: string } & (
+  | { suppressLink: true; urlPrefix?: undefined; issueQid?: undefined }
+  | { suppressLink?: false; urlPrefix: string; issueQid?: string | null }
 )) {
   // Convert explicitly to a number because some unvalidated queries still return a string (via bigint)
   if (Number(count) === 0) return '';

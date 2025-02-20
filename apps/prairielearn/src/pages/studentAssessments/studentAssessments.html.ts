@@ -106,9 +106,7 @@ export function StudentAssessments({
                         ${row.assessment_instance_open !== false
                           ? row.credit_date_string
                           : 'Assessment closed.'}
-                        ${StudentAccessRulesPopover({
-                          accessRules: row.access_rules,
-                        })}
+                        ${StudentAccessRulesPopover({ accessRules: row.access_rules })}
                       </td>
                       <td class="text-center align-middle">
                         ${row.multiple_instance_header

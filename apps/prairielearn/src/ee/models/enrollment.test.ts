@@ -63,18 +63,9 @@ describe('getEnrollmentCountsForInstitution', () => {
       email: 'paid2@example.com',
     });
 
-    await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: freeUser.user_id,
-    });
-    await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: paidUser1.user_id,
-    });
-    await ensureEnrollment({
-      course_instance_id: courseInstance.id,
-      user_id: paidUser2.user_id,
-    });
+    await ensureEnrollment({ course_instance_id: '1', user_id: freeUser.user_id });
+    await ensureEnrollment({ course_instance_id: '1', user_id: paidUser1.user_id });
+    await ensureEnrollment({ course_instance_id: courseInstance.id, user_id: paidUser2.user_id });
 
     await ensurePlanGrant({
       plan_grant: {

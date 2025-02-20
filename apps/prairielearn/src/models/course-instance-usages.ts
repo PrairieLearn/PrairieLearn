@@ -40,10 +40,7 @@ export async function updateCourseInstanceUsagesForSubmission({
   submission_id: string;
   user_id: string;
 }) {
-  await queryAsync(sql.update_course_instance_usages_for_submission, {
-    submission_id,
-    user_id,
-  });
+  await queryAsync(sql.update_course_instance_usages_for_submission, { submission_id, user_id });
 }
 
 /**
@@ -56,7 +53,5 @@ export async function updateCourseInstanceUsagesForGradingJob({
 }: {
   grading_job_id: string;
 }) {
-  await queryAsync(sql.update_course_instance_usages_for_external_grading, {
-    grading_job_id,
-  });
+  await queryAsync(sql.update_course_instance_usages_for_external_grading, { grading_job_id });
 }

@@ -181,10 +181,7 @@ export function applyMiddleware(app: express.Application) {
   );
   router.use(
     '/elements/:cachebuster',
-    elementFiles({
-      publicQuestionEndpoint: false,
-      coreElements: true,
-    }),
+    elementFiles({ publicQuestionEndpoint: false, coreElements: true }),
   );
 
   app.use(assetsPrefix, router);

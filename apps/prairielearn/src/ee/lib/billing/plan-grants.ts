@@ -35,11 +35,7 @@ export async function checkPlanGrantsForLocals(locals: ResLocals) {
   const institution = InstitutionSchema.parse(locals.institution);
   const course_instance = CourseInstanceSchema.parse(locals.course_instance);
 
-  return await checkPlanGrants({
-    institution,
-    course_instance,
-    authz_data: locals.authz_data,
-  });
+  return await checkPlanGrants({ institution, course_instance, authz_data: locals.authz_data });
 }
 
 export async function checkPlanGrants({

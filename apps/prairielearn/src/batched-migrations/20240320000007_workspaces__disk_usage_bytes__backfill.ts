@@ -8,11 +8,7 @@ import { WorkspaceSchema } from '../lib/db-types.js';
 export default makeBatchedMigration({
   async getParameters() {
     const result = await queryOneRowAsync('SELECT MAX(id) as max from workspaces;', {});
-    return {
-      min: 1n,
-      max: result.rows[0].max,
-      batchSize: 100,
-    };
+    return { min: 1n, max: result.rows[0].max, batchSize: 100 };
   },
   async execute(min: bigint, max: bigint): Promise<void> {
     // We skip all workspaces that already have a disk usage value.

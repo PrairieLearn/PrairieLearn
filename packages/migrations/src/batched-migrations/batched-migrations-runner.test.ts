@@ -13,9 +13,7 @@ import { BatchedMigrationsRunner } from './batched-migrations-runner.js';
 
 chaiUse(chaiAsPromised);
 
-const postgresTestUtils = makePostgresTestUtils({
-  database: 'prairielearn_migrations',
-});
+const postgresTestUtils = makePostgresTestUtils({ database: 'prairielearn_migrations' });
 
 describe('BatchedMigrationsRunner', () => {
   before(async () => {
@@ -100,9 +98,7 @@ describe('BatchedMigrationsRunner', () => {
     await runner.enqueueBatchedMigration('20230406184107_failing_migration');
 
     await assert.isRejected(
-      runner.finalizeBatchedMigration('20230406184107_failing_migration', {
-        logProgress: false,
-      }),
+      runner.finalizeBatchedMigration('20230406184107_failing_migration', { logProgress: false }),
       "but it is 'failed'",
     );
 

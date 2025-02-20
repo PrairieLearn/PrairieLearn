@@ -26,28 +26,12 @@ describe('Course with assessments grouped by Set vs Module', function () {
 
   const course = getCourseData();
   course.course.assessmentSets = [
-    {
-      name: 'Homeworks',
-      abbreviation: 'HW',
-      heading: 'Homeworks',
-      color: 'red1',
-    },
-    {
-      name: 'Exams',
-      abbreviation: 'E',
-      heading: 'Exams',
-      color: 'red2',
-    },
+    { name: 'Homeworks', abbreviation: 'HW', heading: 'Homeworks', color: 'red1' },
+    { name: 'Exams', abbreviation: 'E', heading: 'Exams', color: 'red2' },
   ];
   course.course.assessmentModules = [
-    {
-      name: 'Module 1',
-      heading: 'Module 1',
-    },
-    {
-      name: 'Module 2',
-      heading: 'Module 2',
-    },
+    { name: 'Module 1', heading: 'Module 1' },
+    { name: 'Module 2', heading: 'Module 2' },
   ];
   course.courseInstances[COURSE_INSTANCE_ID].assessments = {
     'homework-1': {

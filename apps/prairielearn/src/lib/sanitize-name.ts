@@ -27,9 +27,7 @@ export function courseFilenamePrefix(course: { short_name: string }): string {
  * @return {String} The sanitized prefix string.
  */
 export function courseInstanceFilenamePrefix(
-  course_instance: {
-    short_name: string;
-  },
+  course_instance: { short_name: string },
   course: { short_name: string },
 ): string {
   const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name) + '_';
@@ -46,18 +44,10 @@ export function courseInstanceFilenamePrefix(
  * @return {String} The sanitized prefix string.
  */
 export function assessmentFilenamePrefix(
-  assessment: {
-    number: string;
-  },
-  assessment_set: {
-    abbreviation: string;
-  },
-  course_instance: {
-    short_name: string;
-  },
-  course: {
-    short_name: string;
-  },
+  assessment: { number: string },
+  assessment_set: { abbreviation: string },
+  course_instance: { short_name: string },
+  course: { short_name: string },
 ): string {
   const prefix =
     courseInstanceFilenamePrefix(course_instance, course) +
@@ -74,14 +64,7 @@ export function assessmentFilenamePrefix(
  * @param {Object} course - The course database object.
  * @return {String} The sanitized prefix string.
  */
-export function questionFilenamePrefix(
-  question: {
-    qid: string;
-  },
-  course: {
-    short_name: string;
-  },
-) {
+export function questionFilenamePrefix(question: { qid: string }, course: { short_name: string }) {
   const prefix = courseFilenamePrefix(course) + sanitizeString(question.qid) + '_';
   return prefix;
 }

@@ -186,14 +186,8 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
   "message": "Tests completed successfully.",
   "output": "Running tests...\nTest 1 passed\nTest 2 failed!\n...",
   "images": [
-    {
-      "label": "First Image",
-      "url": "data:image/png;base64,..."
-    },
-    {
-      "label": "Second Image",
-      "url": "data:image/jpeg;base64,..."
-    }
+    { "label": "First Image", "url": "data:image/png;base64,..." },
+    { "label": "Second Image", "url": "data:image/jpeg;base64,..." }
   ],
   "tests": [
     {
@@ -212,14 +206,8 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
       "message": "Make sure that your code is doing the thing correctly.",
       "output": "Running test...\nYour output did not match the expected output.",
       "images": [
-        {
-          "label": "First Image",
-          "url": "data:image/gif;base64,..."
-        },
-        {
-          "label": "First Image",
-          "url": "data:image/png;base64,..."
-        }
+        { "label": "First Image", "url": "data:image/gif;base64,..." },
+        { "label": "First Image", "url": "data:image/png;base64,..." }
       ]
     }
   ]
@@ -248,10 +236,7 @@ If you want to write your own submission mechanism (as a custom element, for ins
       "name": "fib.py",
       "contents": "ZGVmIGZpYihuKToNCiAgaWYgKG4gPT0gMCk6DQogICAgICByZXR1cm4gMA0KICBlbGlmIChuID09IDEpOg0KICAgICAgcmV0dXJuIDENCiAgZWxzZToNCiAgICAgIHJldHVybiBmaWIobiAtIDEpICsgZmliKG4gLSAyKQ=="
     },
-    {
-      "name": "anotherFile.py",
-      "contents": "base64EncodedFileGoesHere"
-    }
+    { "name": "anotherFile.py", "contents": "base64EncodedFileGoesHere" }
   ]
 }
 ```

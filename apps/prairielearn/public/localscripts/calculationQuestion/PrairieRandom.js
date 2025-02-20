@@ -539,7 +539,5 @@ define(['mersenne', 'underscore', 'PrairieGeom'], function (mersenne, _, Prairie
     return givenGroups;
   };
 
-  return {
-    RandomGenerator: RandomGenerator,
-  };
+  return { RandomGenerator: RandomGenerator };
 });

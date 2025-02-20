@@ -231,14 +231,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
     const dayMS = 24 * 60 * 60 * 1000;
     let tMS = (cronDailyMS - sinceMidnightMS + dayMS) % dayMS;
     if (tMS < 0) {
-      logger.error('negative tMS', {
-        now,
-        midnight,
-        sinceMidnightMS,
-        cronDailyMS,
-        dayMS,
-        tMS,
-      });
+      logger.error('negative tMS', { now, midnight, sinceMidnightMS, cronDailyMS, dayMS, tMS });
       tMS = 24 * 60 * 60 * 1000;
     }
     return tMS;
@@ -293,18 +286,10 @@ async function runJobs(jobsList: CronJob[]) {
             cronUuid,
           });
 
-          Sentry.captureException(err, {
-            tags: {
-              'cron.name': job.name,
-              'cron.uuid': cronUuid,
-            },
-          });
+          Sentry.captureException(err, { tags: { 'cron.name': job.name, 'cron.uuid': cronUuid } });
 
           span.recordException(err);
-          span.setStatus({
-            code: SpanStatusCode.ERROR,
-            message: err.message,
-          });
+          span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
         }
 
         debug(`runJobs(): completed ${job.name}`);
@@ -335,14 +320,10 @@ async function tryJobWithLock(job: CronJob, cronUuid: string) {
 
   if (didLock) {
     debug(`tryJobWithLock(): ${job.name}: released lock`);
-    logger.verbose('cron: ' + job.name + ' released lock', {
-      cronUuid,
-    });
+    logger.verbose('cron: ' + job.name + ' released lock', { cronUuid });
   } else {
     debug(`tryJobWithLock(): ${job.name}: did not acquire lock`);
-    logger.verbose('cron: ' + job.name + ' did not acquire lock', {
-      cronUuid,
-    });
+    logger.verbose('cron: ' + job.name + ' did not acquire lock', { cronUuid });
   }
 }
 
@@ -371,9 +352,7 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
   }
 
   debug(`tryJobWithTime(): ${job.name}: job was not recently run`);
-  logger.verbose('cron: ' + job.name + ' job was not recently run', {
-    cronUuid,
-  });
+  logger.verbose('cron: ' + job.name + ' job was not recently run', { cronUuid });
   const params = { name: job.name };
   await sqldb.queryAsync(sql.update_cron_job_time, params);
   debug(`tryJobWithTime(): ${job.name}: updated run time`);
@@ -393,8 +372,5 @@ async function runJob(job: CronJob, cronUuid: string) {
   const endTime = performance.now();
   const elapsedTimeMS = endTime - startTime;
   debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
-  logger.verbose('cron: ' + job.name + ' success', {
-    cronUuid,
-    elapsedTimeMS,
-  });
+  logger.verbose('cron: ' + job.name + ' success', { cronUuid, elapsedTimeMS });
 }

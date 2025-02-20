@@ -28,9 +28,7 @@ router.get(
     }
     const assessmentInstances = await sqldb.queryRows(
       sql.select_assessment_instances,
-      {
-        assessment_id: res.locals.assessment.id,
-      },
+      { assessment_id: res.locals.assessment.id },
       AssessmentInstanceRowSchema,
     );
     res.send(assessmentInstances);

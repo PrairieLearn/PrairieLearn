@@ -116,10 +116,7 @@ router.post(
         parameters.context_id,
         res.locals.req_date,
       ],
-      z.object({
-        user_id: IdSchema,
-        has_access: z.boolean(),
-      }),
+      z.object({ user_id: IdSchema, has_access: z.boolean() }),
     );
     if (!userResult?.has_access) {
       throw new HttpStatusError(403, 'Access denied');

@@ -27,42 +27,27 @@
           "description": "[DEPRECATED, DO NOT USE] The scripts required by this extension from /public/javascripts.",
           "deprecated": true,
           "type": "array",
-          "items": {
-            "description": "A .js file located in /public/javascripts.",
-            "type": "string"
-          }
+          "items": { "description": "A .js file located in /public/javascripts.", "type": "string" }
         },
         "nodeModulesStyles": {
           "description": "The styles required by this extension from /node_modules.",
           "type": "array",
-          "items": {
-            "description": "A .css file located in /node_modules.",
-            "type": "string"
-          }
+          "items": { "description": "A .css file located in /node_modules.", "type": "string" }
         },
         "nodeModulesScripts": {
           "description": "The scripts required by this extension from /node_modules.",
           "type": "array",
-          "items": {
-            "description": "A .js file located in /node_modules.",
-            "type": "string"
-          }
+          "items": { "description": "A .js file located in /node_modules.", "type": "string" }
         },
         "clientFilesCourseStyles": {
           "description": "The styles required by this extension from clientFilesCourse.",
           "type": "array",
-          "items": {
-            "description": "A .css file located in clientFilesCourse.",
-            "type": "string"
-          }
+          "items": { "description": "A .css file located in clientFilesCourse.", "type": "string" }
         },
         "clientFilesCourseScripts": {
           "description": "The styles required by this extension from clientFilesCourse.",
           "type": "array",
-          "items": {
-            "description": "A .js file located in clientFilesCourse.",
-            "type": "string"
-          }
+          "items": { "description": "A .js file located in clientFilesCourse.", "type": "string" }
         },
         "extensionStyles": {
           "description": "The styles required by this extension from the extension's directory.",

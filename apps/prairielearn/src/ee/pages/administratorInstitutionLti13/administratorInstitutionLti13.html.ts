@@ -23,10 +23,7 @@ export function AdministratorInstitutionLti13({
   canonicalHost: string;
 }): string {
   return PageLayout({
-    resLocals: {
-      ...resLocals,
-      institution,
-    },
+    resLocals: { ...resLocals, institution },
     pageTitle: 'LTI 1.3 - Institution Admin',
     headContent: [compiledScriptTag('administratorInstitutionLti13Client.ts')],
     navContext: {

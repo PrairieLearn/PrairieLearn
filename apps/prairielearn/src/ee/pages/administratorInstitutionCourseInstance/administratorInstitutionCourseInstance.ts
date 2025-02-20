@@ -28,14 +28,8 @@ async function selectCourseInstanceAndCourseInInstitution({
 }) {
   return await queryRow(
     sql.select_course_and_instance,
-    {
-      institution_id,
-      course_instance_id: unsafe_course_instance_id,
-    },
-    z.object({
-      course: CourseSchema,
-      course_instance: CourseInstanceSchema,
-    }),
+    { institution_id, course_instance_id: unsafe_course_instance_id },
+    z.object({ course: CourseSchema, course_instance: CourseInstanceSchema }),
   );
 }
 

@@ -78,14 +78,8 @@ export function InstructorAIGenerateDrafts({
         }
       </style>
     `,
-    options: {
-      hxExt: 'loading-states',
-    },
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'questions',
-    },
+    options: { hxExt: 'loading-states' },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'questions' },
     content: html`
       <div class="mb-3">
         <a href="${resLocals.urlPrefix}/course_admin/questions" class="btn btn-sm btn-primary">

@@ -4,32 +4,15 @@ requirejs.config({
     clientCode: document.urlPrefix + '/clientFilesCourse',
     clientFilesCourse: document.urlPrefix + '/clientFilesCourse',
   },
-  map: {
-    '*': {
-      numeric: 'numeric-1.2.6.min',
-    },
-  },
+  map: { '*': { numeric: 'numeric-1.2.6.min' } },
   waitSeconds: 60,
   shim: {
-    'numeric-1.2.6.min': {
-      exports: 'numeric',
-    },
-    backbone: {
-      deps: ['underscore', 'jquery'],
-      exports: 'Backbone',
-    },
-    underscore: {
-      exports: '_',
-    },
-    sha1: {
-      exports: 'Sha1',
-    },
-    'jquery-ui': {
-      deps: ['jquery'],
-    },
-    'jquery.jsPlumb': {
-      deps: ['jquery', 'jquery-ui'],
-    },
+    'numeric-1.2.6.min': { exports: 'numeric' },
+    backbone: { deps: ['underscore', 'jquery'], exports: 'Backbone' },
+    underscore: { exports: '_' },
+    sha1: { exports: 'Sha1' },
+    'jquery-ui': { deps: ['jquery'] },
+    'jquery.jsPlumb': { deps: ['jquery', 'jquery-ui'] },
   },
   config: {
     text: {

@@ -19,11 +19,7 @@ export async function selectSharedQuestions(courseId: string): Promise<SharedQue
   return await sqldb.queryRows(
     sql.select_shared_questions,
     { course_id: courseId },
-    z.object({
-      id: IdSchema,
-      qid: z.string(),
-      shared_publicly: z.boolean(),
-    }),
+    z.object({ id: IdSchema, qid: z.string(), shared_publicly: z.boolean() }),
   );
 }
 
@@ -145,11 +141,7 @@ export async function checkInvalidSharingSetRemovals(
   const sharedQuestions = await sqldb.queryRows(
     sql.select_question_sharing_sets,
     { course_id: courseId },
-    z.object({
-      id: IdSchema,
-      qid: z.string(),
-      sharing_sets: z.string().array(),
-    }),
+    z.object({ id: IdSchema, qid: z.string(), sharing_sets: z.string().array() }),
   );
 
   const invalidSharingSetRemovals: Record<string, string[]> = {};

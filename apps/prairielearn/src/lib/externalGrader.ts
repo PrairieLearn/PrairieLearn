@@ -126,10 +126,7 @@ function handleGraderError(grading_job_id: string, err: Error): void {
       score: 0,
       startTime: null,
       endTime: null,
-      feedback: {
-        results: { succeeded: false, gradable: false },
-        message: err.toString(),
-      },
+      feedback: { results: { succeeded: false, gradable: false }, message: err.toString() },
     },
   }).catch((err) => {
     logger.error(`Error processing results for grading job ${grading_job_id}`, err);
@@ -246,9 +243,7 @@ export async function processGradingResult(content: any): Promise<void> {
     if (updateUsages) {
       // This has to come after `grading_jobs_update_after_grading` above
       // because it uses the `grading_finished_at` value updated there.
-      await updateCourseInstanceUsagesForGradingJob({
-        grading_job_id: content.gradingId,
-      });
+      await updateCourseInstanceUsagesForGradingJob({ grading_job_id: content.gradingId });
     }
 
     const assessment_instance_id = await sqldb.queryOptionalRow(

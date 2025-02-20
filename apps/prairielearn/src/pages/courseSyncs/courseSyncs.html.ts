@@ -46,14 +46,8 @@ export function CourseSyncs({
   return PageLayout({
     resLocals,
     pageTitle: 'Course sync',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'syncs',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'syncs' },
+    options: { fullWidth: true },
     content: html`
       <h1 class="sr-only">Course Sync</h1>
       <div class="card mb-4">

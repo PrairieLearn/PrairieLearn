@@ -14,11 +14,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const defaultUser = {
-  authUid: config.authUid,
-  authName: config.authName,
-  authUin: config.authUin,
-};
+const defaultUser = { authUid: config.authUid, authName: config.authName, authUin: config.authUin };
 
 const mockStudents = [
   { authUid: 'student1', authName: 'Student User 1', authUin: '00000001' },

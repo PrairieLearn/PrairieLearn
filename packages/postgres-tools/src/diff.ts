@@ -131,10 +131,7 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
 }
 
 async function loadDescriptionFromDisk(dirPath: string): Promise<Description> {
-  const description: Description = {
-    tables: {},
-    enums: {},
-  };
+  const description: Description = { tables: {}, enums: {} };
 
   const tables = await fs.readdir(path.join(dirPath, 'tables'));
   for (const table of tables) {
@@ -168,14 +165,8 @@ async function loadDescription(db: DiffTarget): Promise<Description> {
 
 export async function diffDatabases(database1: string, database2: string, options: DiffOptions) {
   return diff(
-    {
-      type: 'database',
-      name: database1,
-    },
-    {
-      type: 'database',
-      name: database2,
-    },
+    { type: 'database', name: database1 },
+    { type: 'database', name: database2 },
     options,
   );
 }
@@ -186,14 +177,8 @@ export async function diffDatabaseAndDirectory(
   options: DiffOptions,
 ) {
   return diff(
-    {
-      type: 'database',
-      name: database,
-    },
-    {
-      type: 'directory',
-      path: directory,
-    },
+    { type: 'database', name: database },
+    { type: 'directory', path: directory },
     options,
   );
 }
@@ -204,14 +189,8 @@ export async function diffDirectoryAndDatabase(
   options: DiffOptions,
 ) {
   return diff(
-    {
-      type: 'directory',
-      path: directory,
-    },
-    {
-      type: 'database',
-      name: database,
-    },
+    { type: 'directory', path: directory },
+    { type: 'database', name: database },
     options,
   );
 }
@@ -222,14 +201,8 @@ export async function diffDirectories(
   options: DiffOptions,
 ) {
   return diff(
-    {
-      type: 'directory',
-      path: directory1,
-    },
-    {
-      type: 'directory',
-      path: directory2,
-    },
+    { type: 'directory', path: directory1 },
+    { type: 'directory', path: directory2 },
     options,
   );
 }

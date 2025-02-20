@@ -27,50 +27,18 @@ const DEFAULT_QUESTION_INFO = {
   type: 'Calculation',
   clientFiles: ['client.js', 'question.html', 'answer.html'],
 };
-const DEFAULT_COURSE_INSTANCE_INFO = {
-  groupAssessmentsBy: 'Set',
-};
+const DEFAULT_COURSE_INSTANCE_INFO = { groupAssessmentsBy: 'Set' };
 const DEFAULT_ASSESSMENT_INFO = {};
 
 const DEFAULT_ASSESSMENT_SETS = [
-  {
-    abbreviation: 'HW',
-    name: 'Homework',
-    heading: 'Homeworks',
-    color: 'green1',
-  },
+  { abbreviation: 'HW', name: 'Homework', heading: 'Homeworks', color: 'green1' },
   { abbreviation: 'Q', name: 'Quiz', heading: 'Quizzes', color: 'red1' },
-  {
-    abbreviation: 'PQ',
-    name: 'Practice Quiz',
-    heading: 'Practice Quizzes',
-    color: 'pink1',
-  },
+  { abbreviation: 'PQ', name: 'Practice Quiz', heading: 'Practice Quizzes', color: 'pink1' },
   { abbreviation: 'E', name: 'Exam', heading: 'Exams', color: 'brown1' },
-  {
-    abbreviation: 'PE',
-    name: 'Practice Exam',
-    heading: 'Practice Exams',
-    color: 'yellow1',
-  },
-  {
-    abbreviation: 'P',
-    name: 'Prep',
-    heading: 'Question Preparation',
-    color: 'gray1',
-  },
-  {
-    abbreviation: 'MP',
-    name: 'Machine Problem',
-    heading: 'Machine Problems',
-    color: 'turquoise1',
-  },
-  {
-    abbreviation: 'WS',
-    name: 'Worksheet',
-    heading: 'Worksheets',
-    color: 'purple1',
-  },
+  { abbreviation: 'PE', name: 'Practice Exam', heading: 'Practice Exams', color: 'yellow1' },
+  { abbreviation: 'P', name: 'Prep', heading: 'Question Preparation', color: 'gray1' },
+  { abbreviation: 'MP', name: 'Machine Problem', heading: 'Machine Problems', color: 'turquoise1' },
+  { abbreviation: 'WS', name: 'Worksheet', heading: 'Worksheets', color: 'purple1' },
   { abbreviation: 'U', name: 'Unknown', heading: 'Unknown', color: 'red3' },
 ];
 
@@ -80,11 +48,7 @@ const DEFAULT_TAGS = [
     color: 'brown1',
     description: 'The answer format is one or more numerical values.',
   },
-  {
-    name: 'symbolic',
-    color: 'blue1',
-    description: 'The answer format is a symbolic expression.',
-  },
+  { name: 'symbolic', color: 'blue1', description: 'The answer format is a symbolic expression.' },
   {
     name: 'drawing',
     color: 'yellow1',
@@ -97,11 +61,7 @@ const DEFAULT_TAGS = [
     description:
       'The answer format is choosing from a small finite set of answers (multiple choice, possibly with multiple selections allowed, up to 10 possible answers).',
   },
-  {
-    name: 'code',
-    color: 'turquoise1',
-    description: 'The answer format is a piece of code.',
-  },
+  { name: 'code', color: 'turquoise1', description: 'The answer format is a piece of code.' },
   {
     name: 'multianswer',
     color: 'orange2',
@@ -449,10 +409,7 @@ export async function loadFullCourse(
       }
     }
 
-    courseInstances[courseInstanceId] = {
-      courseInstance,
-      assessments,
-    };
+    courseInstances[courseInstanceId] = { courseInstance, assessments };
   }
 
   const courseInfo = await loadCourseInfo({
@@ -462,11 +419,7 @@ export async function loadFullCourse(
     tagsInUse,
   });
 
-  return {
-    course: courseInfo,
-    questions,
-    courseInstances,
-  };
+  return { course: courseInfo, questions, courseInstances };
 }
 
 function writeErrorsAndWarningsForInfoFileIfNeeded<T>(
@@ -614,10 +567,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
 
     if (!schema) {
       // Skip schema validation, just return the data
-      return infofile.makeInfoFile({
-        uuid: json.uuid,
-        data: json,
-      });
+      return infofile.makeInfoFile({ uuid: json.uuid, data: json });
     }
 
     // Validate file against schema
@@ -626,17 +576,12 @@ export async function loadInfoFile<T extends { uuid: string }>({
       validate(json);
       if (validate.errors) {
         const result = infofile.makeInfoFile<T>({ uuid: json.uuid });
-        const errorText = betterAjvErrors(schema, json, validate.errors, {
-          indent: 2,
-        });
+        const errorText = betterAjvErrors(schema, json, validate.errors, { indent: 2 });
         const errorTextString = String(errorText); // hack to fix incorrect type in better-ajv-errors/typings.d.ts
         infofile.addError(result, errorTextString);
         return result;
       }
-      return infofile.makeInfoFile({
-        uuid: json.uuid,
-        data: json,
-      });
+      return infofile.makeInfoFile({ uuid: json.uuid, data: json });
     } catch (err) {
       return infofile.makeError(err.message);
     }
@@ -1086,10 +1031,7 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
       `Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`,
     );
   }
-  return {
-    errors,
-    accessibleInFuture: !endDate || isFuture(endDate),
-  };
+  return { errors, accessibleInFuture: !endDate || isFuture(endDate) };
 }
 
 async function validateQuestion(

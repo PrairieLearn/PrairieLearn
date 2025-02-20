@@ -13,16 +13,12 @@ export default asyncHandler(async (req, res, next) => {
 
   if (token === undefined) {
     // No authentication token present
-    res.status(401).send({
-      message: 'An authentication token must be provided',
-    });
+    res.status(401).send({ message: 'An authentication token must be provided' });
     return;
   }
 
   if (typeof token !== 'string') {
-    res.status(401).send({
-      message: 'The provided authentication token was invalid',
-    });
+    res.status(401).send({ message: 'The provided authentication token was invalid' });
     return;
   }
 
@@ -31,9 +27,7 @@ export default asyncHandler(async (req, res, next) => {
   });
   if (result.rows.length === 0) {
     // Invalid token received
-    res.status(401).send({
-      message: 'The provided authentication token was invalid',
-    });
+    res.status(401).send({ message: 'The provided authentication token was invalid' });
     return;
   }
 
@@ -45,9 +39,7 @@ export default asyncHandler(async (req, res, next) => {
   next();
 
   sqldb
-    .queryAsync(sql.update_token_last_used, {
-      token_id: result.rows[0].token_id,
-    })
+    .queryAsync(sql.update_token_last_used, { token_id: result.rows[0].token_id })
     .catch((err) => {
       Sentry.captureException(err);
       logger.error('Error in sql.update_token_last_used', err);

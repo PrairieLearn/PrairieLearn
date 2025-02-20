@@ -45,15 +45,8 @@ export function InstructorQuestionStatistics({
   return PageLayout({
     resLocals,
     pageTitle: 'Statistics',
-    navContext: {
-      type: 'instructor',
-      page: 'question',
-      subPage: 'statistics',
-    },
-    options: {
-      fullWidth: true,
-      pageNote: resLocals.question.qid,
-    },
+    navContext: { type: 'instructor', page: 'question', subPage: 'statistics' },
+    options: { fullWidth: true, pageNote: resLocals.question.qid },
     headContent: [compiledScriptTag('instructorQuestionStatisticsClient.ts')],
     content: html`
       ${QuestionSyncErrorsAndWarnings({
@@ -249,10 +242,7 @@ export function InstructorQuestionStatistics({
                         ? html`
                             <div
                               class="js-histmini"
-                              data-options="${JSON.stringify({
-                                ...histminiOptions,
-                                ymax: 100,
-                              })}"
+                              data-options="${JSON.stringify({ ...histminiOptions, ymax: 100 })}"
                               data-data="${JSON.stringify(row.quintile_question_scores)}"
                             ></div>
                           `

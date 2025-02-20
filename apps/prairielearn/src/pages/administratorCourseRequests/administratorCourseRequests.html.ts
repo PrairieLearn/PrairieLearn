@@ -19,14 +19,8 @@ export function AdministratorCourseRequests({
   return PageLayout({
     resLocals,
     pageTitle: 'Course Requests',
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'courses',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'courses' },
+    options: { fullWidth: true },
     content: html`
       <h1 class="sr-only">All Course Requests</h1>
       ${CourseRequestsTable({

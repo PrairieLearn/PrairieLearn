@@ -79,10 +79,7 @@ async function loadLogsForWorkspaceVersion(
     // possible undefined.
     if (!item.Key) continue;
 
-    const res = await s3Client.getObject({
-      Bucket: config.workspaceLogsS3Bucket,
-      Key: item.Key,
-    });
+    const res = await s3Client.getObject({ Bucket: config.workspaceLogsS3Bucket, Key: item.Key });
 
     const body = await res.Body?.transformToString();
     if (body) {

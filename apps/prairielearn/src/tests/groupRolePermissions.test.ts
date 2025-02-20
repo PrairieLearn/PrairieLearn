@@ -79,11 +79,7 @@ async function createGroup(
 ): Promise<cheerio.CheerioAPI> {
   const res = await fetch(assessmentUrl, {
     method: 'POST',
-    body: new URLSearchParams({
-      __action: 'create_group',
-      __csrf_token: csrfToken,
-      groupName,
-    }),
+    body: new URLSearchParams({ __action: 'create_group', __csrf_token: csrfToken, groupName }),
   });
   assert.isOk(res.ok);
   const $ = cheerio.load(await res.text());
@@ -171,10 +167,7 @@ async function getQuestionUrl(
 ): Promise<string> {
   const result = await queryRow(
     sql.select_instance_questions,
-    {
-      assessment_instance_id: assessmentInstanceId,
-      question_id: questionId,
-    },
+    { assessment_instance_id: assessmentInstanceId, question_id: questionId },
     IdSchema,
   );
   assert.isDefined(result);
@@ -202,12 +195,7 @@ async function prepareGroup() {
   const groupRoles = await queryRows(
     sql.select_assessment_group_roles,
     { assessment_id: assessmentId },
-    GroupRoleSchema.pick({
-      id: true,
-      role_name: true,
-      minimum: true,
-      maximum: true,
-    }),
+    GroupRoleSchema.pick({ id: true, role_name: true, minimum: true, maximum: true }),
   );
   assert.lengthOf(groupRoles, 4);
 
@@ -269,10 +257,7 @@ async function prepareGroup() {
   // Start the assessment
   const response = await fetch(assessmentUrl, {
     method: 'POST',
-    body: new URLSearchParams({
-      __action: 'new_instance',
-      __csrf_token: firstUserCsrfToken,
-    }),
+    body: new URLSearchParams({ __action: 'new_instance', __csrf_token: firstUserCsrfToken }),
     follow: 1,
   });
   assert.isOk(response.ok);

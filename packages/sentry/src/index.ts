@@ -18,10 +18,7 @@ export async function init(options: Sentry.NodeOptions) {
     }
   }
 
-  Sentry.init({
-    release,
-    ...options,
-  });
+  Sentry.init({ release, ...options });
 }
 
 /**

@@ -291,9 +291,7 @@ export async function validateLti13CourseInstance(
 
   const hasLti13CourseInstance = await queryRow(
     sql.select_ci_validation,
-    {
-      course_instance_id: resLocals.course_instance.id,
-    },
+    { course_instance_id: resLocals.course_instance.id },
     z.boolean(),
   );
 
@@ -324,10 +322,7 @@ export async function getAccessToken(lti13_instance_id: string) {
   const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
 
   tokenSet = await client.grant(
-    {
-      grant_type: 'client_credentials',
-      scope: TOKEN_SCOPES.join(' '),
-    },
+    { grant_type: 'client_credentials', scope: TOKEN_SCOPES.join(' ') },
     {
       clientAssertionPayload: {
         // Canvas requires the `aud` claim the be (or contain) the token endpoint:
@@ -406,10 +401,7 @@ export async function syncLineitems(instance: Lti13CombinedInstance, job: Server
         lti13_course_instance_id: instance.lti13_course_instance.id,
         lineitems_import: JSON.stringify(lineitems_import),
       },
-      z.object({
-        updated: z.string(),
-        deleted: z.string(),
-      }),
+      z.object({ updated: z.string(), deleted: z.string() }),
     );
 
     job.info(
@@ -422,11 +414,7 @@ export async function syncLineitems(instance: Lti13CombinedInstance, job: Server
 export async function createAndLinkLineitem(
   instance: Lti13CombinedInstance,
   job: ServerJob,
-  assessment: {
-    label: string;
-    id: string;
-    url: string;
-  },
+  assessment: { label: string; id: string; url: string },
 ) {
   if (instance.lti13_course_instance.lineitems_url == null) {
     throw new HttpStatusError(400, 'Lineitems not defined');
@@ -481,10 +469,7 @@ export async function unlinkAssessment(
   lti13_course_instance_id: string,
   assessment_id: string | number,
 ) {
-  await queryAsync(sql.delete_lti13_assessment, {
-    lti13_course_instance_id,
-    assessment_id,
-  });
+  await queryAsync(sql.delete_lti13_assessment, { lti13_course_instance_id, assessment_id });
 }
 
 export async function linkAssessment(
@@ -494,10 +479,7 @@ export async function linkAssessment(
 ) {
   const assessment = await queryRow(
     sql.select_assessment_in_lti13_course_instance,
-    {
-      unsafe_assessment_id,
-      lti13_course_instance_id,
-    },
+    { unsafe_assessment_id, lti13_course_instance_id },
     AssessmentSchema,
   );
 
@@ -531,16 +513,9 @@ export async function linkAssessment(
 export async function fetchRetry(
   input: RequestInfo | URL,
   opts?: RequestInit | undefined,
-  incomingfetchRetryOpts?: {
-    retryLeft?: number;
-    sleepMs?: number;
-  },
+  incomingfetchRetryOpts?: { retryLeft?: number; sleepMs?: number },
 ): Promise<Response> {
-  const fetchRetryOpts = {
-    retryLeft: 5,
-    sleepMs: 1000,
-    ...incomingfetchRetryOpts,
-  };
+  const fetchRetryOpts = { retryLeft: 5, sleepMs: 1000, ...incomingfetchRetryOpts };
   try {
     const response = await fetch(input, opts);
 
@@ -584,10 +559,7 @@ export async function fetchRetry(
 export async function fetchRetryPaginated(
   input: RequestInfo | URL,
   opts?: RequestInit | undefined,
-  incomingfetchRetryOpts?: {
-    retryLeft?: number;
-    sleepMs?: number;
-  },
+  incomingfetchRetryOpts?: { retryLeft?: number; sleepMs?: number },
 ): Promise<unknown[]> {
   const output: unknown[] = [];
 
@@ -621,9 +593,7 @@ export const Lti13ScoreSchema = z.object({
 });
 export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 
-const UsersWithLti13SubSchema = UserSchema.extend({
-  lti13_sub: z.string().nullable(),
-});
+const UsersWithLti13SubSchema = UserSchema.extend({ lti13_sub: z.string().nullable() });
 type UsersWithLti13Sub = z.infer<typeof UsersWithLti13SubSchema>;
 
 // https://www.imsglobal.org/spec/lti-nrps/v2p0/#sharing-of-personal-data
@@ -637,9 +607,7 @@ type ContextMembership = z.infer<typeof ContextMembershipSchema>;
 
 const ContextMembershipContainerSchema = z.object({
   id: z.string(),
-  context: z.object({
-    id: z.string(),
-  }),
+  context: z.object({ id: z.string() }),
   members: ContextMembershipSchema.array(),
 });
 
@@ -732,10 +700,7 @@ export async function updateLti13Scores(
   // Get the assessment metadata
   const assessment = await queryRow(
     sql.select_assessment_for_lti13_scores,
-    {
-      unsafe_assessment_id,
-      lti13_course_instance_id: instance.lti13_course_instance.id,
-    },
+    { unsafe_assessment_id, lti13_course_instance_id: instance.lti13_course_instance.id },
     AssessmentSchema.extend({
       lti13_lineitem_id_url: z.string(),
       lti13_instance_id: z.string(),
@@ -753,9 +718,7 @@ export async function updateLti13Scores(
 
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
-    {
-      assessment_id: assessment.id,
-    },
+    { assessment_id: assessment.id },
     AssessmentInstanceSchema.extend({
       score_perc: z.number(), // not .nullable() from SQL query
       date: DateFromISOString, // not .nullable() from SQL query

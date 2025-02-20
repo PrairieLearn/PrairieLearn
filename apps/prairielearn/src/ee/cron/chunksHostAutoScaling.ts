@@ -34,12 +34,7 @@ export async function run() {
           Metric: {
             Namespace: 'PrairieLearn',
             MetricName: 'PageViewsPerSecond',
-            Dimensions: [
-              {
-                Name: 'Server Group',
-                Value: config.groupName,
-              },
-            ],
+            Dimensions: [{ Name: 'Server Group', Value: config.groupName }],
           },
           Period: 10,
           Stat: 'Maximum',
@@ -52,14 +47,8 @@ export async function run() {
             Namespace: 'PrairieLearn',
             MetricName: 'CurrentJobs',
             Dimensions: [
-              {
-                Name: 'Server Group',
-                Value: config.groupName,
-              },
-              {
-                Name: 'Job Type',
-                Value: 'python_worker_active',
-              },
+              { Name: 'Server Group', Value: config.groupName },
+              { Name: 'Job Type', Value: 'python_worker_active' },
             ],
           },
           Period: 10,
@@ -73,14 +62,8 @@ export async function run() {
             Namespace: 'AWS/ApplicationELB',
             MetricName: 'RequestCount',
             Dimensions: [
-              {
-                Name: 'LoadBalancer',
-                Value: config.chunksLoadBalancerDimensionName,
-              },
-              {
-                Name: 'TargetGroup',
-                Value: config.chunksTargetGroupDimensionName,
-              },
+              { Name: 'LoadBalancer', Value: config.chunksLoadBalancerDimensionName },
+              { Name: 'TargetGroup', Value: config.chunksTargetGroupDimensionName },
             ],
           },
           Period: 60,

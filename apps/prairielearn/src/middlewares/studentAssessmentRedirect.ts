@@ -12,10 +12,7 @@ export default asyncHandler(async (req, res, next) => {
     // instance. If so, redirect to it.
     const assessment_instance_id = await queryOptionalRow(
       sql.select_single_assessment_instance,
-      {
-        assessment_id: res.locals.assessment.id,
-        user_id: res.locals.user.user_id,
-      },
+      { assessment_id: res.locals.assessment.id, user_id: res.locals.user.user_id },
       IdSchema,
     );
     if (assessment_instance_id != null) {

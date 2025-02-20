@@ -24,10 +24,7 @@ export async function sync(
   const courseSharingSets = await sqldb.queryRows(
     sql.select_course_sharing_sets,
     { course_id: courseId },
-    z.object({
-      id: IdSchema,
-      name: z.string(),
-    }),
+    z.object({ id: IdSchema, name: z.string() }),
   );
   const sharingSetIdsByName = {};
   for (const sharingSet of courseSharingSets) {
@@ -42,10 +39,7 @@ export async function sync(
       (sharingSet) => sharingSetIdsByName[sharingSet],
     );
     questionSharingSetIds.forEach((sharingSetId) => {
-      questionSharingSets.push({
-        question_id: questionIds[qid],
-        sharing_set_id: sharingSetId,
-      });
+      questionSharingSets.push({ question_id: questionIds[qid], sharing_set_id: sharingSetId });
     });
   });
 

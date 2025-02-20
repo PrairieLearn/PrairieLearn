@@ -33,9 +33,7 @@ const mathjaxPromise = new Promise<void>((resolve, reject) => {
       // https://github.com/mathjax/MathJax-src/pull/859
       fontCache: 'local',
     },
-    loader: {
-      load: ['input/tex', 'ui/menu', outputComponent],
-    },
+    loader: { load: ['input/tex', 'ui/menu', outputComponent] },
     // Kept for compatibility reasons.
     onReady: (cb: any) => {
       mathjaxPromise.then(cb);

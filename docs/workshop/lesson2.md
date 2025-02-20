@@ -24,17 +24,13 @@ The beginning of the `infoAssessment.json` usually looks like this:
 There are two available options:
 
 ```json title="infoAssessment.json"
-{
-  "type": "Homework"
-}
+{ "type": "Homework" }
 ```
 
 and
 
 ```json title="infoAssessment.json"
-{
-  "type": "Exam"
-}
+{ "type": "Exam" }
 ```
 
 #### Homework
@@ -42,9 +38,7 @@ and
 Every question added in the `infoAssessment.json` file will appear in the assessment. By default, the questions will appear in the same order they are entered in the `json` file. To shuffle the question, add the option:
 
 ```json title="infoAssessment.json"
-{
-  "shuffleQuestions": true
-}
+{ "shuffleQuestions": true }
 ```
 
 Students can create new instances of the question with different variables (when questions are randomized). The grading scheme rewards repeated correct answers for the same question.
@@ -54,9 +48,7 @@ Students can create new instances of the question with different variables (when
 Option to randomly select questions that will appear in the Assessment, out of a list of questions in the `infoAssessment.json`. Order of questions is randomized. The title of the question is not displayed. For each exam instance, there is only one instance of the question and hence the variables are fixed. Students can retry questions for reduced points. To create "practice exams", where students can generate many instances of the same assessment, use:
 
 ```json title="infoAssessment.json"
-{
-  "multipleInstance": true
-}
+{ "multipleInstance": true }
 ```
 
 ### Assessment `allowAccess`
@@ -66,17 +58,13 @@ There are many options to help customizing when and who should have access to yo
 There are two available options:
 
 ```json title="infoAssessment.json"
-{
-  "mode": "Public"
-}
+{ "mode": "Public" }
 ```
 
 and
 
 ```json title="infoAssessment.json"
-{
-  "mode": "Exam"
-}
+{ "mode": "Exam" }
 ```
 
 **Exam** is used when students are taking an assessment via CBTF (in-person or the online service starting in the Fall 2020). **Public** is used for all other cases, where students have access to the assessment via the internet using any device.
@@ -135,10 +123,7 @@ When using [PrairieTest](https://us.prairietest.com/pt/docs/course/welcome) to s
 - Remove `startDate` and `endDate` from `allowAccess`. Instead use:
 
   ```json title="infoAssessment.json"
-  {
-    "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
-    "credit": 100
-  }
+  { "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871", "credit": 100 }
   ```
 
 You will be able to find the `examUuid` in PrairieTest.

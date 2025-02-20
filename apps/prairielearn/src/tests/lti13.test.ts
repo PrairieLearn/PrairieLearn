@@ -52,11 +52,7 @@ describe('LTI 1.3', () => {
     oidcProviderPort = await getPort();
 
     keystore = nodeJose.JWK.createKeyStore();
-    await keystore.generate('RSA', 2048, {
-      alg: 'RS256',
-      use: 'sig',
-      kid: 'test',
-    });
+    await keystore.generate('RSA', 2048, { alg: 'RS256', use: 'sig', kid: 'test' });
   });
 
   after(async () => {
@@ -228,17 +224,13 @@ describe('LTI 1.3', () => {
       },
       name: 'Test User',
       email: 'test-user@example.com',
-      'https://purl.imsglobal.org/spec/lti/claim/custom': {
-        uin: '123456789',
-      },
+      'https://purl.imsglobal.org/spec/lti/claim/custom': { uin: '123456789' },
       'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint': {
         scope: [
           'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
           'https://purl.imsglobal.org/spec/lti-ags/scope/score',
         ],
-        errors: {
-          errors: {},
-        },
+        errors: { errors: {} },
         lineitems: `https://localhost:${oidcProviderPort}/api/lti/courses/1/line_items`,
         validation_context: null,
       },
@@ -262,11 +254,7 @@ describe('LTI 1.3', () => {
     const finishLoginResponse = await withServer(app, oidcProviderPort, async () => {
       return await fetchWithCookies(redirectUri, {
         method: 'POST',
-        body: new URLSearchParams({
-          nonce,
-          state,
-          id_token: fakeIdToken,
-        }),
+        body: new URLSearchParams({ nonce, state, id_token: fakeIdToken }),
       });
     });
 
@@ -278,11 +266,7 @@ describe('LTI 1.3', () => {
     const repeatLoginTestNonce = await withServer(app, oidcProviderPort, async () => {
       return await fetchWithCookies(redirectUri, {
         method: 'POST',
-        body: new URLSearchParams({
-          nonce,
-          state,
-          id_token: fakeIdToken,
-        }),
+        body: new URLSearchParams({ nonce, state, id_token: fakeIdToken }),
         redirect: 'manual',
       });
     });
@@ -303,9 +287,7 @@ describe('LTI 1.3', () => {
     // The new user should have an entry in `lti13_users`.
     const ltiUser = await queryOptionalRow(
       'SELECT * FROM lti13_users WHERE user_id = $user_id',
-      {
-        user_id: user?.user_id,
-      },
+      { user_id: user?.user_id },
       Lti13UserSchema,
     );
     assert.ok(ltiUser);

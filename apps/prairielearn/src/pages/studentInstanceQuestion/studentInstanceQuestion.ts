@@ -277,12 +277,14 @@ router.get(
         IdSchema,
       );
       if (last_variant_id == null) {
-        res.status(403).send(
-          StudentInstanceQuestion({
-            resLocals: res.locals,
-            userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
-          }),
-        );
+        res
+          .status(403)
+          .send(
+            StudentInstanceQuestion({
+              resLocals: res.locals,
+              userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+            }),
+          );
         return;
       }
 

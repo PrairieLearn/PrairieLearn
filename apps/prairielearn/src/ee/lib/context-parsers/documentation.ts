@@ -24,10 +24,10 @@ export interface DocumentChunk {
 }
 
 function stringify(content: any) {
-  return unified().use(remarkStringify).use(remarkGfm).stringify({
-    type: 'root',
-    children: content,
-  });
+  return unified()
+    .use(remarkStringify)
+    .use(remarkGfm)
+    .stringify({ type: 'root', children: content });
 }
 
 function extractElementSections(ast: any) {
@@ -203,10 +203,7 @@ export async function buildContextForElementDocs(rawMarkdown: string): Promise<D
 
     const markdown = stringify(section.content);
 
-    return {
-      chunkId: section.elementName,
-      text: markdown,
-    };
+    return { chunkId: section.elementName, text: markdown };
   });
 
   return contexts.filter((x) => ALLOWED_ELEMENTS.includes(x.chunkId));

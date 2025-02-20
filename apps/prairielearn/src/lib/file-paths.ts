@@ -48,19 +48,12 @@ export async function questionFilePath(
 
   if (await fs.pathExists(fullPath)) {
     // Found the file!
-    return {
-      fullPath,
-      effectiveFilename: filename,
-      rootPath,
-    };
+    return { fullPath, effectiveFilename: filename, rootPath };
   }
 
   if (question.template_directory) {
     // We have a template, try it
-    const params = {
-      course_id: question.course_id,
-      directory: question.template_directory,
-    };
+    const params = { course_id: question.course_id, directory: question.template_directory };
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_question, params);
     if (result.rowCount === 0) {
       throw new error.HttpStatusError(
@@ -79,21 +72,14 @@ export async function questionFilePath(
     );
   } else {
     // No template, try default files
-    const filenameToSuffix = {
-      'client.js': 'Client.js',
-      'server.js': 'Server.js',
-    };
+    const filenameToSuffix = { 'client.js': 'Client.js', 'server.js': 'Server.js' };
     if (filenameToSuffix[filename] === undefined) {
       // no default for this file type, so try clientFilesCourse
       const rootPathCourse = path.join(coursePath, 'clientFilesCourse');
       const fullPathCourse = path.join(rootPathCourse, filename);
 
       if (await fs.pathExists(fullPathCourse)) {
-        return {
-          fullPath: fullPathCourse,
-          effectiveFilename: filename,
-          rootPath: rootPathCourse,
-        };
+        return { fullPath: fullPathCourse, effectiveFilename: filename, rootPath: rootPathCourse };
       } else {
         throw new Error(`File not found at "${fullPath}" or "${fullPathCourse}"`);
       }

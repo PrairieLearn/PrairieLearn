@@ -8,17 +8,11 @@ define(['fs', 'module', 'path'], function (fs, module, path) {
     var fileBuffer = fs.readFileSync(path.join(questionDir, fileName));
     var fileData = encodeURIComponent(fileBuffer.toString('base64'));
 
-    var params = {
-      fileData: fileData,
-      fileName: fileName,
-    };
+    var params = { fileData: fileData, fileName: fileName };
 
     var trueAnswer = {};
 
-    return {
-      params: params,
-      trueAnswer: trueAnswer,
-    };
+    return { params: params, trueAnswer: trueAnswer };
   };
 
   server.gradeAnswer = function (vid, params, trueAnswer, submittedAnswer, options) {

@@ -22,11 +22,7 @@ export function InstructorInstanceAdminSettings({
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
-    navContext: {
-      type: 'instructor',
-      page: 'instance_admin',
-      subPage: 'settings',
-    },
+    navContext: { type: 'instructor', page: 'instance_admin', subPage: 'settings' },
     headContent: [compiledScriptTag('instructorInstanceAdminSettingsClient.ts')],
     content: html`
       ${CourseInstanceSyncErrorsAndWarnings({

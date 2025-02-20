@@ -51,9 +51,7 @@ function getCourseFilesLink() {
         .setIssuer('PrairieLearn')
         .sign(secret);
 
-      return {
-        Authorization: `Bearer ${jwt}`,
-      };
+      return { Authorization: `Bearer ${jwt}` };
     },
   });
 }

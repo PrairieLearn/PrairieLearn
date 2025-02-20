@@ -21,24 +21,15 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const COURSE: courseDB.CourseData = {
   course: makeInfoFile(),
-  questions: {
-    'simple-question': makeInfoFile(),
-    'complex/question': makeInfoFile(),
-  },
+  questions: { 'simple-question': makeInfoFile(), 'complex/question': makeInfoFile() },
   courseInstances: {
     'simple-course-instance': {
       courseInstance: makeInfoFile(),
-      assessments: {
-        'simple-assessment': makeInfoFile(),
-        'complex/assessment': makeInfoFile(),
-      },
+      assessments: { 'simple-assessment': makeInfoFile(), 'complex/assessment': makeInfoFile() },
     },
     'complex/course/instance': {
       courseInstance: makeInfoFile(),
-      assessments: {
-        'simple-assessment': makeInfoFile(),
-        'complex/assessment': makeInfoFile(),
-      },
+      assessments: { 'simple-assessment': makeInfoFile(), 'complex/assessment': makeInfoFile() },
     },
   },
 };
@@ -46,9 +37,7 @@ const COURSE: courseDB.CourseData = {
 async function getAllChunksForCourse(course_id) {
   return await sqldb.queryRows(
     sql.select_all_chunks,
-    {
-      course_id,
-    },
+    { course_id },
     z.object({
       id: z.string(),
       uuid: z.string(),
@@ -241,20 +230,14 @@ describe('chunks', () => {
 
     it('works for simple question chunk', () => {
       assert.equal(
-        chunksLib.coursePathForChunk('/course/', {
-          type: 'question',
-          questionName: 'foo',
-        }),
+        chunksLib.coursePathForChunk('/course/', { type: 'question', questionName: 'foo' }),
         '/course/questions/foo',
       );
     });
 
     it('works for complex question chunk', () => {
       assert.equal(
-        chunksLib.coursePathForChunk('/course/', {
-          type: 'question',
-          questionName: 'foo/bar',
-        }),
+        chunksLib.coursePathForChunk('/course/', { type: 'question', questionName: 'foo/bar' }),
         '/course/questions/foo/bar',
       );
     });
@@ -276,9 +259,7 @@ describe('chunks', () => {
       // We need to modify the test course - create a copy that we can
       // safely manipulate.
       tempTestCourseDir = await tmp.dir({ unsafeCleanup: true });
-      await fs.copy(TEST_COURSE_PATH, tempTestCourseDir.path, {
-        overwrite: true,
-      });
+      await fs.copy(TEST_COURSE_PATH, tempTestCourseDir.path, { overwrite: true });
 
       // `testCourse` doesn't include an `elementExtensions` directory.
       // We add one here for the sake of testing.
@@ -456,31 +437,13 @@ describe('chunks', () => {
       });
 
       const chunksToLoad: chunksLib.Chunk[] = [
-        {
-          type: 'elements',
-        },
-        {
-          type: 'elementExtensions',
-        },
-        {
-          type: 'serverFilesCourse',
-        },
-        {
-          type: 'clientFilesCourse',
-        },
-        {
-          type: 'clientFilesCourseInstance',
-          courseInstanceId,
-        },
-        {
-          type: 'clientFilesAssessment',
-          courseInstanceId,
-          assessmentId,
-        },
-        {
-          type: 'question',
-          questionId,
-        },
+        { type: 'elements' },
+        { type: 'elementExtensions' },
+        { type: 'serverFilesCourse' },
+        { type: 'clientFilesCourse' },
+        { type: 'clientFilesCourseInstance', courseInstanceId },
+        { type: 'clientFilesAssessment', courseInstanceId, assessmentId },
+        { type: 'question', questionId },
       ];
 
       // Generate chunks for the test course

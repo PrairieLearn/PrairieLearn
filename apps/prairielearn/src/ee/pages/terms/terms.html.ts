@@ -7,10 +7,7 @@ export function Terms({ user, resLocals }: { user: User; resLocals: Record<strin
   return PageLayout({
     resLocals,
     pageTitle: 'Terms and conditions',
-    navContext: {
-      type: 'plain',
-      page: 'home',
-    },
+    navContext: { type: 'plain', page: 'home' },
     content: html`
       <h1>Terms and Conditions</h1>
       ${user.terms_accepted_at

@@ -1,9 +1,7 @@
 /**
  * Produces a type that only includes the nullable properties of T.
  */
-type NullableProperties<T> = {
-  [K in keyof T as null extends T[K] ? K : never]: T[K];
-};
+type NullableProperties<T> = { [K in keyof T as null extends T[K] ? K : never]: T[K] };
 
 /**
  * Produces a type containing the keys of T that are nullable.

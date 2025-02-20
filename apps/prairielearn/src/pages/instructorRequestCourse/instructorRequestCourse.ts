@@ -111,10 +111,7 @@ router.post(
 
     const hasExistingCourseRequest = await queryRow(
       sql.get_existing_course_requests,
-      {
-        user_id: res.locals.authn_user.user_id,
-        short_name,
-      },
+      { user_id: res.locals.authn_user.user_id, short_name },
       z.boolean(),
     );
 
@@ -148,9 +145,7 @@ router.post(
     // Check if we can automatically approve and create the course.
     const canAutoCreateCourse = await queryRow(
       sql.can_auto_create_course,
-      {
-        user_id: res.locals.authn_user.user_id,
-      },
+      { user_id: res.locals.authn_user.user_id },
       z.boolean(),
     );
 
@@ -159,10 +154,7 @@ router.post(
       const existingSettingsResult = await queryRow(
         sql.get_existing_owner_course_settings,
         { user_id: res.locals.authn_user.user_id },
-        z.object({
-          institution_id: IdSchema,
-          display_timezone: z.string(),
-        }),
+        z.object({ institution_id: IdSchema, display_timezone: z.string() }),
       );
       const repo_short_name = github.reponameFromShortname(short_name);
       const repo_options = {

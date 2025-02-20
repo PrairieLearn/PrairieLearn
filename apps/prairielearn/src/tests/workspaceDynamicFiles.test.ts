@@ -34,27 +34,16 @@ describe('Workspace dynamic files', function () {
           },
           { name: 'blank_file.txt', contents: null },
           { name: 'template_and_dynamic.csv', contents: 'a,b\n1,1\n2,4\n3,9' },
-          {
-            name: 'reference_file.txt',
-            questionFile: 'file_in_question_dir.txt',
-          },
-          {
-            name: 'reference_to_subdir.txt',
-            questionFile: 'path/with/another/file.txt',
-          },
-          {
-            name: 'server_file.txt',
-            serverFilesCourseFile: 'workspace_file.txt',
-          },
+          { name: 'reference_file.txt', questionFile: 'file_in_question_dir.txt' },
+          { name: 'reference_to_subdir.txt', questionFile: 'path/with/another/file.txt' },
+          { name: 'server_file.txt', serverFilesCourseFile: 'workspace_file.txt' },
           {
             name: 'path/../not_normalized.txt',
             contents: 'File identified by path that is not normalized\n',
           },
         ],
       },
-      correctAnswers: {
-        b: 35,
-      },
+      correctAnswers: { b: 35 },
       targetPath: targetPath.path,
     });
 
@@ -175,9 +164,7 @@ describe('Workspace dynamic files', function () {
           },
         ],
       },
-      correctAnswers: {
-        b: 53,
-      },
+      correctAnswers: { b: 53 },
       targetPath: targetPath.path,
     });
 

@@ -167,10 +167,7 @@ export async function loadElementsForCourse(course) {
 
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
   const elements = await loadElements(path.join(coursePath, 'elements'), 'course');
-  courseElementsCache[course.id] = {
-    commit_hash: course.commit_hash,
-    data: elements,
-  };
+  courseElementsCache[course.id] = { commit_hash: course.commit_hash, data: elements };
   return elements;
 }
 
@@ -258,10 +255,7 @@ async function loadExtensionsForCourse(context) {
     path.join(course_dir_host, 'elementExtensions'),
     path.join(course_dir, 'elementExtensions'),
   );
-  courseExtensionsCache[course.id] = {
-    commit_hash: course.commit_hash,
-    data: extensions,
-  };
+  courseExtensionsCache[course.id] = { commit_hash: course.commit_hash, data: extensions };
   return extensions;
 }
 
@@ -334,10 +328,7 @@ async function elementFunction(codeCaller, fcn, elementName, elementHtml, data, 
   } catch (err) {
     if (err instanceof FunctionMissingError) {
       // function wasn't present in server
-      return {
-        result: defaultElementFunctionRet(fcn, dataCopy),
-        output: '',
-      };
+      return { result: defaultElementFunctionRet(fcn, dataCopy), output: '' };
     }
     throw err;
   }
@@ -396,10 +387,7 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
     if (err instanceof FunctionMissingError) {
       // function wasn't present in server
       debug('execPythonServer(): function not present');
-      return {
-        result: defaultServerRet(phase, data, html, context),
-        output: '',
-      };
+      return { result: defaultServerRet(phase, data, html, context), output: '' };
     }
     throw err;
   }
@@ -669,13 +657,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
     courseIssues.push(e);
   }
 
-  return {
-    courseIssues,
-    data,
-    html: questionHtml,
-    fileData,
-    renderedElementNames,
-  };
+  return { courseIssues, data, html: questionHtml, fileData, renderedElementNames };
 }
 
 async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, $) {
@@ -792,13 +774,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
     // Black-hole any errors, they were (should have been) handled by course issues
   }
 
-  return {
-    courseIssues,
-    data,
-    html: $.html(),
-    fileData,
-    renderedElementNames,
-  };
+  return { courseIssues, data, html: $.html(), fileData, renderedElementNames };
 }
 
 /**
@@ -882,13 +858,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     }
   }
 
-  return {
-    courseIssues,
-    data: resultData,
-    html: processedHtml,
-    fileData,
-    renderedElementNames,
-  };
+  return { courseIssues, data: resultData, html: processedHtml, fileData, renderedElementNames };
 }
 
 async function processQuestionServer(phase, codeCaller, data, html, fileData, context) {
@@ -996,13 +966,7 @@ async function processQuestion(phase, codeCaller, data, context) {
         } = await processQuestionHtml(phase, codeCaller, data, context);
         const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
         if (hasFatalError) {
-          return {
-            courseIssues,
-            data,
-            html,
-            fileData,
-            renderedElementNames,
-          };
+          return { courseIssues, data, html, fileData, renderedElementNames };
         }
         const {
           courseIssues: serverCourseIssues,
@@ -1062,10 +1026,7 @@ export async function generate(question, course, variant_seed) {
       );
       return {
         courseIssues,
-        data: {
-          params: resultData.params,
-          true_answer: resultData.correct_answers,
-        },
+        data: { params: resultData.params, true_answer: resultData.correct_answers },
       };
     });
   });
@@ -1094,10 +1055,7 @@ export async function prepare(question, course, variant) {
       );
       return {
         courseIssues,
-        data: {
-          params: resultData.params,
-          true_answer: resultData.correct_answers,
-        },
+        data: { params: resultData.params, true_answer: resultData.correct_answers },
       };
     });
   });
@@ -1126,10 +1084,7 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
   debug(`renderPanel(${panel})`);
   // broken variant kills all rendering
   if (variant.broken_at) {
-    return {
-      courseIssues: [],
-      html: 'Broken question due to error in question code',
-    };
+    return { courseIssues: [], html: 'Broken question due to error in question code' };
   }
 
   // broken submission kills the submission panel, but we can
@@ -1137,10 +1092,7 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
   // missing
   if (submission && submission.broken) {
     if (panel === 'submission') {
-      return {
-        courseIssues: [],
-        html: 'Broken submission due to error in question code',
-      };
+      return { courseIssues: [], html: 'Broken submission due to error in question code' };
     } else {
       submission = null;
     }
@@ -1206,10 +1158,7 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     },
   );
 
-  return {
-    ...cachedData,
-    cacheHit,
-  };
+  return { ...cachedData, cacheHit };
 }
 
 async function renderPanelInstrumented(
@@ -1908,10 +1857,7 @@ async function getCachedDataOrCompute(course, data, context, computeFcn) {
       cache.set(cacheKey, computedData, config.questionRenderCacheTtlSec * 1000);
     }
 
-    return {
-      data: computedData,
-      cacheHit: false,
-    };
+    return { data: computedData, cacheHit: false };
   };
 
   // This function will check the cache for the specified
@@ -1940,10 +1886,7 @@ async function getCachedDataOrCompute(course, data, context, computeFcn) {
     // cache will no longer contain any entries with `courseIssues`.
     const hasCachedCourseIssues = cachedData?.courseIssues?.length > 0;
     if (cachedData && !hasCachedCourseIssues) {
-      return {
-        data: cachedData,
-        cacheHit: true,
-      };
+      return { data: cachedData, cacheHit: true };
     } else {
       return doCompute(cacheKey);
     }

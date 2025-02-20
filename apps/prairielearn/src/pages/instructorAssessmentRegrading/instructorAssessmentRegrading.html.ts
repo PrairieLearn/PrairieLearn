@@ -25,14 +25,8 @@ export function InstructorAssessmentRegrading({
   return PageLayout({
     resLocals,
     pageTitle: 'Regrading',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'regrading',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'regrading' },
+    options: { fullWidth: true },
     content: html`
       ${AssessmentSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

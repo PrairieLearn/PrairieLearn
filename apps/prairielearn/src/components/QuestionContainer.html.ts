@@ -305,10 +305,7 @@ interface QuestionFooterResLocals {
   authz_result: Record<string, any>;
   group_config: GroupConfig | null;
   group_info: GroupInfo | null;
-  group_role_permissions: {
-    can_view: boolean;
-    can_submit: boolean;
-  } | null;
+  group_role_permissions: { can_view: boolean; can_submit: boolean } | null;
   user: User;
   __csrf_token: string;
 }

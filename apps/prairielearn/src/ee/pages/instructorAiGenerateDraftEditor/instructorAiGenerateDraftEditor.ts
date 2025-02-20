@@ -83,9 +83,7 @@ async function saveRevisedQuestion({
   question: Question;
   user: User;
   authn_user: User;
-  authz_data: {
-    has_course_permission_edit: boolean;
-  };
+  authz_data: { has_course_permission_edit: boolean };
   urlPrefix: string;
   html: string;
   python?: string;
@@ -94,9 +92,7 @@ async function saveRevisedQuestion({
 }) {
   const client = getCourseFilesClient();
 
-  const files: Record<string, string | null> = {
-    'question.html': b64Util.b64EncodeUnicode(html),
-  };
+  const files: Record<string, string | null> = { 'question.html': b64Util.b64EncodeUnicode(html) };
 
   // We'll delete the `server.py` file if the Python code is empty. Setting
   // it to `null` instructs the editor to delete the file.
@@ -172,10 +168,7 @@ router.get(
 
     const prompts = await queryRows(
       sql.select_ai_question_generation_prompts,
-      {
-        question_id: req.params.question_id,
-        course_id: res.locals.course.id,
-      },
+      { question_id: req.params.question_id, course_id: res.locals.course.id },
       AiQuestionGenerationPromptSchema,
     );
 
@@ -239,10 +232,7 @@ router.post(
     if (req.body.__action === 'regenerate_question') {
       const prompts = await queryRows(
         sql.select_ai_question_generation_prompts,
-        {
-          question_id: req.params.question_id,
-          course_id: res.locals.course.id,
-        },
+        { question_id: req.params.question_id, course_id: res.locals.course.id },
         AiQuestionGenerationPromptSchema,
       );
 
@@ -264,9 +254,7 @@ router.post(
       );
 
       if (result.htmlResult) {
-        res.set({
-          'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_editor/${question.id}`,
-        });
+        res.set({ 'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_editor/${question.id}` });
         res.send();
       } else {
         res.send(
@@ -279,10 +267,7 @@ router.post(
     } else if (req.body.__action === 'save_question') {
       const prompts = await queryRows(
         sql.select_ai_question_generation_prompts,
-        {
-          question_id: question.id,
-          course_id: res.locals.course.id,
-        },
+        { question_id: question.id, course_id: res.locals.course.id },
         AiQuestionGenerationPromptSchema,
       );
 

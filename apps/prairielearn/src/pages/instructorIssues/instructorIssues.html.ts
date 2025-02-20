@@ -41,10 +41,7 @@ export const IssueRowSchema = IssueSchema.extend({
   issue_count: z.number(),
 });
 export type IssueRow = z.infer<typeof IssueRowSchema>;
-type IssueComputedRow = IssueRow & {
-  showUser: boolean;
-  hideAssessmentLink: boolean;
-};
+type IssueComputedRow = IssueRow & { showUser: boolean; hideAssessmentLink: boolean };
 
 const commonQueries = {
   allOpenQuery: 'is:open',
@@ -80,23 +77,13 @@ export function InstructorIssues({
   return PageLayout({
     resLocals,
     pageTitle: 'Issues',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'issues',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'issues' },
+    options: { fullWidth: true },
     headContent: [compiledStylesheetTag('instructorIssues.css')],
     content: html`
       ${CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })}
       ${authz_data.has_course_permission_edit
-        ? CloseMatchingIssuesModal({
-            openFilteredIssuesCount,
-            issues,
-            csrfToken: __csrf_token,
-          })
+        ? CloseMatchingIssuesModal({ openFilteredIssuesCount, issues, csrfToken: __csrf_token })
         : ''}
       ${FilterHelpModal()}
 

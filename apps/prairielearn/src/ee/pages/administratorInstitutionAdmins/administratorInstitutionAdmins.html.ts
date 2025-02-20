@@ -11,10 +11,7 @@ export function AdministratorInstitutionAdmins({
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
-    resLocals: {
-      ...resLocals,
-      institution,
-    },
+    resLocals: { ...resLocals, institution },
     pageTitle: 'Admins - Institution Admin',
     navContext: {
       type: 'administrator_institution',

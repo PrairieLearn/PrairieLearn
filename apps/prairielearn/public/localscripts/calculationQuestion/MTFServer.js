@@ -37,15 +37,9 @@ define(['underscore', 'QServer', 'PrairieRandom'], function (_, QServer, Prairie
       return { key: 'q' + index.toString(), statement: value };
     });
 
-    var params = {
-      statements: allStatements,
-      text: options.text,
-    };
+    var params = { statements: allStatements, text: options.text };
 
-    var questionData = {
-      params: params,
-      trueAnswer: { correctAnswers: trueAnswer },
-    };
+    var questionData = { params: params, trueAnswer: { correctAnswers: trueAnswer } };
 
     return questionData;
   };

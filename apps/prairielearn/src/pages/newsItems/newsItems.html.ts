@@ -6,9 +6,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { NewsItemSchema } from '../../lib/db-types.js';
 
-export const NewsItemRowSchema = NewsItemSchema.extend({
-  unread: z.boolean(),
-});
+export const NewsItemRowSchema = NewsItemSchema.extend({ unread: z.boolean() });
 type NewsItemRow = z.infer<typeof NewsItemRowSchema>;
 
 export function NewsItems({

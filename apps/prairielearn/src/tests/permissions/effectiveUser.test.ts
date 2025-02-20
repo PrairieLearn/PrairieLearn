@@ -21,9 +21,7 @@ import * as helperServer from '../helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const UserWithIdSchema = z.object({
-  user_id: z.string(),
-});
+const UserWithIdSchema = z.object({ user_id: z.string() });
 
 describe('effective user', function () {
   this.timeout(60000);
@@ -108,10 +106,7 @@ describe('effective user', function () {
       UserWithIdSchema,
     );
     studentId = student.user_id;
-    await ensureEnrollment({
-      user_id: studentId,
-      course_instance_id: '1',
-    });
+    await ensureEnrollment({ user_id: studentId, course_instance_id: '1' });
   });
 
   after('shut down testing server', helperServer.after);
@@ -123,25 +118,19 @@ describe('effective user', function () {
   });
 
   step('student cannot override date (ignore when on student page)', async () => {
-    const headers = {
-      cookie: 'pl_test_user=test_student; pl2_requested_date=1700-01-19T00:00:01',
-    };
+    const headers = { cookie: 'pl_test_user=test_student; pl2_requested_date=1700-01-19T00:00:01' };
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 200);
   });
 
   step('student cannot override date (error when on instructor page)', async () => {
-    const headers = {
-      cookie: 'pl_test_user=test_student; pl2_requested_date=1700-01-19T00:00:01',
-    };
+    const headers = { cookie: 'pl_test_user=test_student; pl2_requested_date=1700-01-19T00:00:01' };
     const res = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, { headers });
     assert.equal(res.status, 403);
   });
 
   step('student cannot override date (error when on instructor page) - course route', async () => {
-    const headers = {
-      cookie: 'pl_test_user=test_student; pl2_requested_date=1700-01-19T00:00:01',
-    };
+    const headers = { cookie: 'pl_test_user=test_student; pl2_requested_date=1700-01-19T00:00:01' };
     const res = await helperClient.fetchCheerio(context.pageUrlTestCourse, { headers });
     assert.equal(res.status, 403);
   });
@@ -252,34 +241,26 @@ describe('effective user', function () {
   );
 
   step('cannot request invalid date', async () => {
-    const headers = {
-      cookie: 'pl_test_user=test_instructor; pl2_requested_date=garbage',
-    };
+    const headers = { cookie: 'pl_test_user=test_instructor; pl2_requested_date=garbage' };
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 403);
   });
 
   step('cannot request invalid uid', async () => {
-    const headers = {
-      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=garbage',
-    };
+    const headers = { cookie: 'pl_test_user=test_instructor; pl2_requested_uid=garbage' };
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 403);
   });
 
   step('cannot request uid of administrator when not administrator', async () => {
-    const headers = {
-      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=dev@example.com',
-    };
+    const headers = { cookie: 'pl_test_user=test_instructor; pl2_requested_uid=dev@example.com' };
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 403);
   });
 
   step('can request uid of administrator when administrator', async () => {
     await sqldb.queryAsync(sql.insert_administrator, { user_id: instructorId });
-    const headers = {
-      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=dev@example.com',
-    };
+    const headers = { cookie: 'pl_test_user=test_instructor; pl2_requested_uid=dev@example.com' };
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 200);
   });

@@ -9,20 +9,12 @@ define(['PrairieRandom', 'PrairieGeom', 'QServer'], function (PrairieRandom, Pra
     var uy = rand.randInt(5, 10);
     var vx = rand.randInt(5, 10);
     var vy = rand.randInt(5, 10);
-    var params = {
-      ux: ux,
-      uy: uy,
-      vx: vx,
-      vy: vy,
-    };
+    var params = { ux: ux, uy: uy, vx: vx, vy: vy };
 
     // correct answer to the question
     var wx = ux + vx;
     var wy = uy + vy;
-    var trueAnswer = {
-      wx: wx,
-      wy: wy,
-    };
+    var trueAnswer = { wx: wx, wy: wy };
 
     // OPTIONAL, if missing then
     // relTol = 0.01 and absTol = 1e-8 will be used

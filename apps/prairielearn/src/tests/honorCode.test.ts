@@ -22,9 +22,7 @@ describe('Exam assessment response to `requireHonorCode`', function () {
   after('shut down testing server', helperServer.after);
 
   it('visits the landing page of default assessment', async () => {
-    const results = await sqldb.queryOneRowAsync(sql.select_exam, {
-      number: '1',
-    });
+    const results = await sqldb.queryOneRowAsync(sql.select_exam, { number: '1' });
     const assessmentId = results.rows[0].id;
     const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
 
@@ -38,9 +36,7 @@ describe('Exam assessment response to `requireHonorCode`', function () {
   });
 
   it('visits landing page of assessment with disabled honor code', async () => {
-    const results = await sqldb.queryOneRowAsync(sql.select_exam, {
-      number: '13',
-    });
+    const results = await sqldb.queryOneRowAsync(sql.select_exam, { number: '13' });
     const assessmentId = results.rows[0].id;
     const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
 

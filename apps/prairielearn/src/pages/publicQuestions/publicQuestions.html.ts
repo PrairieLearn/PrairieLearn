@@ -20,14 +20,8 @@ export const QuestionsPage = ({
   return PageLayout({
     resLocals,
     pageTitle: 'Public Questions',
-    navContext: {
-      type: 'public',
-      page: 'public_questions',
-      subPage: 'questions',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'public', page: 'public_questions', subPage: 'questions' },
+    options: { fullWidth: true },
     headContent: [QuestionsTableHead()],
     content: html`
       ${resLocals.course.sharing_name

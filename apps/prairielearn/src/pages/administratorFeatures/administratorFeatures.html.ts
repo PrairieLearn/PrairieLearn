@@ -36,11 +36,7 @@ export function AdministratorFeatures({
   return PageLayout({
     resLocals,
     pageTitle: 'Features',
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'features',
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'features' },
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -85,11 +81,7 @@ export function AdministratorFeature({
   return PageLayout({
     resLocals,
     pageTitle: 'Features',
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'features',
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'features' },
     headContent: html`
       ${compiledScriptTag('administratorFeaturesClient.ts')}
       <style>

@@ -34,10 +34,7 @@ describe('Course syncing', () => {
 
   it('syncs for known features as array', async () => {
     const courseData = util.getCourseData();
-    courseData.course.options = {
-      useNewQuestionRenderer: true,
-      devModeFeatures: [sampleFeature1],
-    };
+    courseData.course.options = { useNewQuestionRenderer: true, devModeFeatures: [sampleFeature1] };
 
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
@@ -75,10 +72,7 @@ describe('Course syncing', () => {
       const courseData = util.getCourseData();
       courseData.course.options = {
         useNewQuestionRenderer: true,
-        devModeFeatures: {
-          [sampleFeature1]: true,
-          [sampleFeature2]: true,
-        },
+        devModeFeatures: { [sampleFeature1]: true, [sampleFeature2]: true },
       };
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -86,10 +80,7 @@ describe('Course syncing', () => {
       // We need to create the course first so that we can enable a feature for it.
       const course = await selectOrInsertCourseByPath(courseDir);
 
-      await features.enable(sampleFeature1, {
-        institution_id: '1',
-        course_id: course.id,
-      });
+      await features.enable(sampleFeature1, { institution_id: '1', course_id: course.id });
 
       await util.syncCourseData(courseDir);
 

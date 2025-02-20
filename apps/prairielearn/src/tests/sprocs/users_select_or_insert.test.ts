@@ -30,12 +30,7 @@ async function usersSelectOrInsert(
   ]);
 }
 
-const baseUser = {
-  uid: 'user@host.com',
-  name: 'Joe User',
-  uin: null,
-  institution_id: '1',
-};
+const baseUser = { uid: 'user@host.com', name: 'Joe User', uin: null, institution_id: '1' };
 
 describe('sproc users_select_or_insert tests', () => {
   before('set up testing server', helperDb.before);
@@ -60,10 +55,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   step('user 1 updates name', async () => {
-    const user = {
-      ...baseUser,
-      name: 'J.R. User',
-    };
+    const user = { ...baseUser, name: 'J.R. User' };
 
     const result = await usersSelectOrInsert(user);
     const user_id = result.rows[0].user_id;
@@ -78,11 +70,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   step('user 1 updates institution_id', async () => {
-    const user = {
-      ...baseUser,
-      name: 'J.R. User',
-      institution_id: '100',
-    };
+    const user = { ...baseUser, name: 'J.R. User', institution_id: '100' };
 
     const result = await usersSelectOrInsert(user, 'SAML', '100');
     const user_id = result.rows[0].user_id;
@@ -93,12 +81,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   step('user 1 updates uin when uin was null', async () => {
-    const user = {
-      ...baseUser,
-      name: 'J.R. User',
-      uin: '111122223',
-      institution_id: '100',
-    };
+    const user = { ...baseUser, name: 'J.R. User', uin: '111122223', institution_id: '100' };
 
     const result = await usersSelectOrInsert(user, 'SAML', '100');
     const user_id = result.rows[0].user_id;
@@ -109,12 +92,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   step('user 1 updates uin when uin was value', async () => {
-    const user = {
-      ...baseUser,
-      name: 'J.R. User',
-      uin: '111122224',
-      institution_id: '100',
-    };
+    const user = { ...baseUser, name: 'J.R. User', uin: '111122224', institution_id: '100' };
 
     const result = await usersSelectOrInsert(user, 'SAML', '100');
     const user_id = result.rows[0].user_id;
@@ -142,12 +120,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   step('user 2 create under Shibboleth', async () => {
-    const user = {
-      uid: 'joe@example.com',
-      name: 'Joe Bob',
-      uin: '444444444',
-      institution_id: '1',
-    };
+    const user = { uid: 'joe@example.com', name: 'Joe Bob', uin: '444444444', institution_id: '1' };
 
     const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
@@ -287,11 +260,7 @@ describe('sproc users_select_or_insert tests', () => {
   // This test ensures that a malicious IDP cannot create a user with a UID
   // that doesn't match the institution's UID regexp.
   step('user 5 logs in with mismatched UID and institution', async () => {
-    const user = {
-      uid: 'jasmine@not-illinois.edu',
-      name: 'Jasmine H. Acker',
-      uin: '666666666',
-    };
+    const user = { uid: 'jasmine@not-illinois.edu', name: 'Jasmine H. Acker', uin: '666666666' };
 
     await assert.isRejected(usersSelectOrInsert(user, 'SAML', '200'), /does not match policy/);
   });

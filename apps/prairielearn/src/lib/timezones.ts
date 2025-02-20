@@ -4,10 +4,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const TimezoneCodec = z.object({
-  name: z.string(),
-  utc_offset: z.any(),
-});
+export const TimezoneCodec = z.object({ name: z.string(), utc_offset: z.any() });
 export type Timezone = z.infer<typeof TimezoneCodec>;
 
 let memoizedAvailableTimezones: Timezone[] | null = null;

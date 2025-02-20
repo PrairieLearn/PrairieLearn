@@ -17,14 +17,8 @@ export function InstructorInstanceAdminAccess({
   return PageLayout({
     resLocals,
     pageTitle: 'Access',
-    navContext: {
-      type: 'instructor',
-      page: 'instance_admin',
-      subPage: 'access',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'instance_admin', subPage: 'access' },
+    options: { fullWidth: true },
     content: html`
       ${CourseInstanceSyncErrorsAndWarnings({
         authz_data,

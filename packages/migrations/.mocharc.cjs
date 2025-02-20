@@ -1,3 +1,1 @@
-module.exports = {
-  'node-option': ['import=tsx/esm'],
-};
+module.exports = { 'node-option': ['import=tsx/esm'] };

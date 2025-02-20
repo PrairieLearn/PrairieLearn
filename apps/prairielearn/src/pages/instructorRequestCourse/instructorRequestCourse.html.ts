@@ -38,10 +38,7 @@ export function RequestCourse({
   return PageLayout({
     pageTitle: 'Request a Course',
     resLocals,
-    navContext: {
-      type: 'plain',
-      page: 'request_course',
-    },
+    navContext: { type: 'plain', page: 'request_course' },
     headContent: [compiledScriptTag('instructorRequestCourseClient.ts')],
     content: html`
       <h1 class="sr-only">Request a Course</h1>

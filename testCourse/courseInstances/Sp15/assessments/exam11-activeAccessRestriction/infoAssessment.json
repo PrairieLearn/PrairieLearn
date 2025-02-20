@@ -24,11 +24,7 @@
       "showClosedAssessment": false,
       "showClosedAssessmentScore": false
     },
-    {
-      "startDate": "1900-01-01T00:00:01",
-      "endDate": "2100-01-01T00:00:01",
-      "active": false
-    }
+    { "startDate": "1900-01-01T00:00:01", "endDate": "2100-01-01T00:00:01", "active": false }
   ],
   "zones": [
     {

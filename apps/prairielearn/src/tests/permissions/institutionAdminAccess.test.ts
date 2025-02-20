@@ -42,10 +42,7 @@ const INSTITUTION_ADMIN_USER = {
 async function insertUser(user: AuthUser) {
   const newUser = await queryRow(
     'INSERT INTO users (name, uid) VALUES ($name, $uid) RETURNING *;',
-    {
-      name: user.name,
-      uid: user.uid,
-    },
+    { name: user.name, uid: user.uid },
     UserSchema,
   );
 

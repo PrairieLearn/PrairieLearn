@@ -19,14 +19,7 @@ There are three different ways to let a student re-attempt or continue an exam:
 To allow students to see their entire exam after it is over, you can add an [access rule](accessControl/index.md) like this:
 
 ```json title="infoAssessment.json"
-{
-  "allowAccess": [
-    {
-      "startDate": "2015-01-19T00:00:01",
-      "active": false
-    }
-  ]
-}
+{ "allowAccess": [{ "startDate": "2015-01-19T00:00:01", "active": false }] }
 ```
 
 Students who took the exam will then have public access to their exams after the `startDate` until the end of the course instance, while students who did not take the exam will not be able to view it. Students will not be able to answer questions for further credit (due to `"active": false`), but they will be able to see the entire exam in exactly the same state as when they were doing the exam originally. Because students have public access to the exam, it should be assumed that all the questions will be posted to websites such as Chegg and Course Hero. To let students see their exams with some additional security, consider only allowing [limited access post-exam under controlled conditions](faq.md#should-students-be-able-to-review-their-exams-after-they-are-over) (although this requires in-person access by students and doesn't work online).
@@ -76,10 +69,7 @@ First, edit `pl-exp101/courseInstance/Fa17/infoCourseInstance.json` to add a sec
 ```json title="infoCourseInstance.json"
 {
   "allowAccess": [
-    {
-      "startDate": "2017-08-19T00:00:01",
-      "endDate": "2017-12-31T23:59:59"
-    },
+    { "startDate": "2017-08-19T00:00:01", "endDate": "2017-12-31T23:59:59" },
     {
       "uids": ["student@example.com"],
       "startDate": "2018-02-01T00:00:01",
@@ -130,9 +120,7 @@ specified in an access control is reached. If the examination is a take-home exa
 then the feature can be disabled by specifying in the `infoAssessment.json`:
 
 ```json title="infoAssessment.json"
-{
-  "autoClose": false
-}
+{ "autoClose": false }
 ```
 
 See [Auto-closing Exam assessments](assessment/index.md#auto-closing-exam-assessments)

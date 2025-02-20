@@ -20,23 +20,17 @@ export class SocketActivityMetrics {
     this.activeSocketsCounter = opentelemetry.getObservableCounter(
       meter,
       `${prefix}.sockets.active`,
-      {
-        valueType: opentelemetry.ValueType.INT,
-      },
+      { valueType: opentelemetry.ValueType.INT },
     );
     this.bytesReadCounter = opentelemetry.getObservableCounter(
       meter,
       `${prefix}.sockets.bytes_read`,
-      {
-        valueType: opentelemetry.ValueType.INT,
-      },
+      { valueType: opentelemetry.ValueType.INT },
     );
     this.bytesWrittenCounter = opentelemetry.getObservableCounter(
       meter,
       `${prefix}.sockets.bytes_written`,
-      {
-        valueType: opentelemetry.ValueType.INT,
-      },
+      { valueType: opentelemetry.ValueType.INT },
     );
   }
 

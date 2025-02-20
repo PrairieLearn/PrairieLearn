@@ -37,11 +37,7 @@ const WorkspaceLogsSchema = z.object({
 async function insertWorkspaceHost(id: string | number, state = 'launching') {
   return sqldb.queryRow(
     'INSERT INTO workspace_hosts (id, instance_id, state) VALUES ($id, $instance_id, $state) RETURNING *;',
-    {
-      id,
-      instance_id: uuidv4(),
-      state,
-    },
+    { id, instance_id: uuidv4(), state },
     WorkspaceHostSchema,
   );
 }
@@ -52,11 +48,7 @@ async function insertWorkspace(
 ) {
   return sqldb.queryRow(
     'INSERT INTO workspaces (id, state, workspace_host_id) VALUES ($id, $state, $workspace_host_id) RETURNING *;',
-    {
-      id,
-      state: 'launching',
-      workspace_host_id: hostId,
-    },
+    { id, state: 'launching', workspace_host_id: hostId },
     WorkspaceSchema,
   );
 }

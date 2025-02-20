@@ -31,10 +31,7 @@ const defaultUser: User = {
   authUin: config.authUin,
 };
 
-type MockUser = User & {
-  user_id?: string;
-  authUid: string;
-};
+type MockUser = User & { user_id?: string; authUid: string };
 
 interface RubricItem {
   id?: string;
@@ -513,10 +510,7 @@ describe('Manual Grading', function () {
         await fetch(instancesAssessmentUrl, {
           method: 'POST',
           headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            __action: 'close_all',
-            __csrf_token: token,
-          }).toString(),
+          body: new URLSearchParams({ __action: 'close_all', __csrf_token: token }).toString(),
         });
       });
 

@@ -99,9 +99,7 @@ These dependencies are specified in the `info.json` file, and can be configured 
 Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](course/index.md#adding-sharing-sets).
 
 ```json title="info.json"
-{
-  "sharingSets": ["python-exercises"]
-}
+{ "sharingSets": ["python-exercises"] }
 ```
 
 The different types of dependency properties available are summarized in this table:
@@ -461,11 +459,7 @@ And then we're done! This is an obviously more correct way to process questions,
 To opt in to the new renderer, add the following to your `infoCourse.json` file:
 
 ```json title="infoCourse.json"
-{
-  "options": {
-    "useNewQuestionRenderer": true
-  }
-}
+{ "options": { "useNewQuestionRenderer": true } }
 ```
 
 Note that this will apply to all questions, so make sure to check that you've been writing valid HTML.

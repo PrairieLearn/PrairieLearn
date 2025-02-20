@@ -272,10 +272,9 @@ function setupDynamicObjects() {
   });
 
   if (document.getElementById('submission-suspended-data')) {
-    const countdownData = decodeData<{
-      serverTimeLimitMS: number;
-      serverRemainingMS: number;
-    }>('submission-suspended-data');
+    const countdownData = decodeData<{ serverTimeLimitMS: number; serverRemainingMS: number }>(
+      'submission-suspended-data',
+    );
     setupCountdown({
       displaySelector: '#submission-suspended-display',
       progressSelector: '#submission-suspended-progress',

@@ -56,10 +56,7 @@ await tracer.startActiveSpan('span.name', async (span) => {
     span.setStatus({ status: SpanStatusCode.OK });
   } catch (err) {
     span.recordException(err);
-    span.setStatus({
-      status: SpanStatusCode.ERROR,
-      message: err.message,
-    });
+    span.setStatus({ status: SpanStatusCode.ERROR, message: err.message });
     throw err;
   }
 });
@@ -81,9 +78,7 @@ import { metrics, getCounter, ValueType } from '@prairielearn/opentelemetry';
 
 function handleRequest(req, res) {
   const meter = metrics.getMeter('meter-name');
-  const requestCounter = getCounter(meter, 'request.count', {
-    valueType: ValueType.INT,
-  });
+  const requestCounter = getCounter(meter, 'request.count', { valueType: ValueType.INT });
   requestCounter.add(1);
 }
 ```

@@ -2,5 +2,6 @@
   "$schema": "https://json.schemastore.org/prettierrc.json",
   "singleQuote": true,
   "printWidth": 100,
+  "objectWrap": "collapse",
   "plugins": ["@prairielearn/prettier-plugin-sql"]
 }

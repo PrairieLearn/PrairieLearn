@@ -189,10 +189,7 @@ async function authenticate(req: Request, res: Response): Promise<any> {
         reject(
           new AugmentedError('Authentication failed, before user validation.', {
             status: 400,
-            data: {
-              info_raw: info,
-              info: info?.toString(),
-            },
+            data: { info_raw: info, info: info?.toString() },
           }),
         );
       } else {
@@ -234,13 +231,7 @@ async function setupPassport(lti13_instance_id: string) {
 
   localPassport.use(
     'lti13',
-    new Strategy(
-      {
-        client,
-        passReqToCallback: true,
-      },
-      callbackify(verify),
-    ),
+    new Strategy({ client, passReqToCallback: true }, callbackify(verify)),
   );
 
   return localPassport;

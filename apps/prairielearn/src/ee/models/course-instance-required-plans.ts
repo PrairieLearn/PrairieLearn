@@ -41,10 +41,7 @@ export async function deleteCourseInstanceRequiredPlan(
 ) {
   const deletedRequiredPlan = await queryRow(
     sql.delete_required_plan_for_course_instance,
-    {
-      course_instance_id,
-      plan_name: plan,
-    },
+    { course_instance_id, plan_name: plan },
     CourseInstanceRequiredPlanWithContextSchema,
   );
   await insertAuditLog({

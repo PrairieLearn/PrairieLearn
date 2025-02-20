@@ -79,10 +79,7 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
         });
       }
 
-      await updateStripeCheckoutSessionData({
-        stripe_object_id: session.id,
-        data: session,
-      });
+      await updateStripeCheckoutSessionData({ stripe_object_id: session.id, data: session });
       await markStripeCheckoutSessionCompleted(session.id);
     });
   }

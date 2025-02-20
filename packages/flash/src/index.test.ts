@@ -21,9 +21,7 @@ describe('flash', () => {
   });
 
   it('adds a flash using string message', () => {
-    const req = {
-      session: {},
-    } as any;
+    const req = { session: {} } as any;
     const res = {} as any;
 
     flashMiddleware()(req, res, () => {
@@ -34,9 +32,7 @@ describe('flash', () => {
   });
 
   it('adds a flash and escapes unsafe HTML', () => {
-    const req = {
-      session: {},
-    } as any;
+    const req = { session: {} } as any;
     const res = {} as any;
 
     flashMiddleware()(req, res, () => {
@@ -49,9 +45,7 @@ describe('flash', () => {
   });
 
   it('adds a flash with HTML-safe message', () => {
-    const req = {
-      session: {},
-    } as any;
+    const req = { session: {} } as any;
     const res = {} as any;
 
     flashMiddleware()(req, res, () => {
@@ -62,9 +56,7 @@ describe('flash', () => {
   });
 
   it('stores multiples flashes with the same type', () => {
-    const req = {
-      session: {},
-    } as any;
+    const req = { session: {} } as any;
     const res = {} as any;
 
     flashMiddleware()(req, res, () => {
@@ -81,9 +73,7 @@ describe('flash', () => {
   });
 
   it('returns flash message for a given type', () => {
-    const req = {
-      session: {},
-    } as any;
+    const req = { session: {} } as any;
     const res = {} as any;
 
     flashMiddleware()(req, res, () => {
@@ -102,9 +92,7 @@ describe('flash', () => {
   });
 
   it('returns all flashes', () => {
-    const req = {
-      session: {},
-    } as any;
+    const req = { session: {} } as any;
     const res = {} as any;
 
     flashMiddleware()(req, res, () => {
@@ -121,9 +109,7 @@ describe('flash', () => {
   });
 
   it('clears flash after it has been read', () => {
-    const req = {
-      session: {},
-    } as any;
+    const req = { session: {} } as any;
     const res = {} as any;
 
     flashMiddleware()(req, res, () => {

@@ -27,22 +27,13 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 - in `longName`, add your course instance name. For example:
 
   ```json title="infoCourseInstance.json"
-  {
-    "longName": "Fall 2024, Section M"
-  }
+  { "longName": "Fall 2024, Section M" }
   ```
 
 - in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#access-controls)). For example:
 
   ```json title="infoCourseInstance.json"
-  {
-    "allowAccess": [
-      {
-        "startDate": "2024-08-17T00:00:01",
-        "endDate": "2024-12-18T23:59:59"
-      }
-    ]
-  }
+  { "allowAccess": [{ "startDate": "2024-08-17T00:00:01", "endDate": "2024-12-18T23:59:59" }] }
   ```
 
 - click `Save and sync`.
@@ -66,25 +57,19 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 - change the question `title`. For example:
 
   ```json title="info.json"
-  {
-    "title": "Find the area"
-  }
+  { "title": "Find the area" }
   ```
 
 - change the question `topic`. This will be very helpful when using the filter to find questions under a specific topic. For example:
 
   ```json title="info.json"
-  {
-    "topic": "Geometric properties"
-  }
+  { "topic": "Geometric properties" }
   ```
 
 - you can use [tags](course/index.md/#tags) to add more levels to your filter. For example, you can add the email of the question author, the semester when the question was created, and the type of question. Tags are optional.
 
   ```json title="info.json"
-  {
-    "tags": ["author@email.com", "fa24", "MC"]
-  }
+  { "tags": ["author@email.com", "fa24", "MC"] }
   ```
 
 - you should not change the `"type": "v3"` field, which is the most current version of PrairieLearn questions.
@@ -232,9 +217,7 @@ Before you create an assessment, make sure you are in the desired course instanc
 - change the `title`. For example:
 
   ```json title="infoAssessment.json"
-  {
-    "title": "Geometric properties and applications"
-  }
+  { "title": "Geometric properties and applications" }
   ```
 
 - you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also [create your own](course/index.md#assessment-sets).
@@ -246,11 +229,7 @@ Before you create an assessment, make sure you are in the desired course instanc
   ```json title="infoAssessment.json"
   {
     "allowAccess": [
-      {
-        "startDate": "2020-09-01T20:00:00",
-        "endDate": "2020-09-06T20:00:00",
-        "credit": 100
-      }
+      { "startDate": "2020-09-01T20:00:00", "endDate": "2020-09-06T20:00:00", "credit": 100 }
     ]
   }
   ```

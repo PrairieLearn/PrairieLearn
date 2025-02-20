@@ -33,9 +33,7 @@ const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';
 const GROUP_NAME = 'groupBB';
 
-const QuestionIdSchema = QuestionSchema.pick({
-  id: true,
-});
+const QuestionIdSchema = QuestionSchema.pick({ id: true });
 
 async function generateThreeStudentUsers() {
   const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
@@ -84,11 +82,7 @@ async function createGroup(
 ): Promise<cheerio.CheerioAPI> {
   const res = await fetch(assessmentUrl, {
     method: 'POST',
-    body: new URLSearchParams({
-      __action: 'create_group',
-      __csrf_token: csrfToken,
-      groupName,
-    }),
+    body: new URLSearchParams({ __action: 'create_group', __csrf_token: csrfToken, groupName }),
   });
   assert.isOk(res.ok);
   const $ = cheerio.load(await res.text());
@@ -176,10 +170,7 @@ async function getQuestionUrl(
 ): Promise<string> {
   const result = await queryValidatedOneRow(
     sql.select_instance_questions,
-    {
-      assessment_instance_id: assessmentInstanceId,
-      question_id: questionId,
-    },
+    { assessment_instance_id: assessmentInstanceId, question_id: questionId },
     QuestionIdSchema,
   );
   assert.isDefined(result.id);
@@ -206,15 +197,8 @@ async function prepareGroup() {
   // Get group roles
   const groupRoles = await queryValidatedRows(
     sql.select_assessment_group_roles,
-    {
-      assessment_id: assessmentId,
-    },
-    GroupRoleSchema.pick({
-      id: true,
-      role_name: true,
-      minimum: true,
-      maximum: true,
-    }),
+    { assessment_id: assessmentId },
+    GroupRoleSchema.pick({ id: true, role_name: true, minimum: true, maximum: true }),
   );
   assert.lengthOf(groupRoles, 4);
 
@@ -276,10 +260,7 @@ async function prepareGroup() {
   // Start the assessment
   const response = await fetch(assessmentUrl, {
     method: 'POST',
-    body: new URLSearchParams({
-      __action: 'new_instance',
-      __csrf_token: firstUserCsrfToken,
-    }),
+    body: new URLSearchParams({ __action: 'new_instance', __csrf_token: firstUserCsrfToken }),
     follow: 1,
   });
   assert.isOk(response.ok);

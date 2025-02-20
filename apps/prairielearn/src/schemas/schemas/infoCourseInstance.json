@@ -19,10 +19,7 @@
       "description": "The long name of this course instance (e.g., 'Spring 2015').",
       "type": "string"
     },
-    "shortName": {
-      "description": "DEPRECATED -- do not use.",
-      "type": "string"
-    },
+    "shortName": { "description": "DEPRECATED -- do not use.", "type": "string" },
     "timezone": {
       "description": "The timezone for all date input and display (e.g., \"America/Chicago\", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).",
       "type": "string",
@@ -69,9 +66,7 @@
           "uids": {
             "description": "A list of UIDs, one of which is required for access",
             "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "items": { "type": "string" }
           },
           "startDate": {
             "description": "The earliest date on which access is permitted.",

@@ -224,9 +224,7 @@ router.get(
     }
     const instance_question_rows = await queryRows(
       sql.select_instance_questions,
-      {
-        assessment_instance_id: res.locals.assessment_instance.id,
-      },
+      { assessment_instance_id: res.locals.assessment_instance.id },
       InstanceQuestionRowSchema,
     );
     const allPreviousVariants = await selectVariantsByInstanceQuestion({

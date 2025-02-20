@@ -78,9 +78,7 @@ router.post(
 
     if (req.body.__action === 'reboot') {
       await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Rebooting container');
-      await sqldb.queryAsync(sql.update_workspace_rebooted_at_now, {
-        workspace_id,
-      });
+      await sqldb.queryAsync(sql.update_workspace_rebooted_at_now, { workspace_id });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else if (req.body.__action === 'reset') {
       await workspaceUtils.updateWorkspaceState(

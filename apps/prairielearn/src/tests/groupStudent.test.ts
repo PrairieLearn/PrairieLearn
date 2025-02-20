@@ -444,10 +444,7 @@ describe('Group based homework assess control on student side', function () {
     it('should be able to start the assessment', async () => {
       const response = await fetch(locals.assessmentUrl, {
         method: 'POST',
-        body: new URLSearchParams({
-          __action: 'new_instance',
-          __csrf_token: locals.__csrf_token,
-        }),
+        body: new URLSearchParams({ __action: 'new_instance', __csrf_token: locals.__csrf_token }),
       });
       assert.equal(response.status, 200);
     });
@@ -505,10 +502,7 @@ describe('Group based homework assess control on student side', function () {
     it('should be able to Leave the group', async () => {
       const response = await fetch(locals.assessmentInstanceURL, {
         method: 'POST',
-        body: new URLSearchParams({
-          __action: 'leave_group',
-          __csrf_token: locals.__csrf_token,
-        }),
+        body: new URLSearchParams({ __action: 'leave_group', __csrf_token: locals.__csrf_token }),
       });
       assert.equal(response.status, 200);
       const page = await response.text();

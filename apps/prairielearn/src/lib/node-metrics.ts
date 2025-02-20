@@ -32,46 +32,14 @@ async function emit() {
     time = process.hrtime.bigint();
 
     const metrics = [
-      {
-        MetricName: 'NodeEventLoopDelay',
-        Unit: 'Milliseconds',
-        Value: loopbenchInstance.delay,
-      },
-      {
-        MetricName: 'NodeMemoryRss',
-        Unit: 'Bytes',
-        Value: memoryStats.rss,
-      },
-      {
-        MetricName: 'NodeMemoryHeapTotal',
-        Unit: 'Bytes',
-        Value: memoryStats.heapTotal,
-      },
-      {
-        MetricName: 'NodeMemoryHeapUsed',
-        Unit: 'Bytes',
-        Value: memoryStats.heapUsed,
-      },
-      {
-        MetricName: 'NodeMemoryExternal',
-        Unit: 'Bytes',
-        Value: memoryStats.external,
-      },
-      {
-        MetricName: 'NodeCpuUser',
-        Unit: 'Percent',
-        Value: userCpuPercent,
-      },
-      {
-        MetricName: 'NodeCpuSystem',
-        Unit: 'Percent',
-        Value: systemCpuPercent,
-      },
-      {
-        MetricName: 'NodeCpuTotal',
-        Unit: 'Percent',
-        Value: totalCpuPercent,
-      },
+      { MetricName: 'NodeEventLoopDelay', Unit: 'Milliseconds', Value: loopbenchInstance.delay },
+      { MetricName: 'NodeMemoryRss', Unit: 'Bytes', Value: memoryStats.rss },
+      { MetricName: 'NodeMemoryHeapTotal', Unit: 'Bytes', Value: memoryStats.heapTotal },
+      { MetricName: 'NodeMemoryHeapUsed', Unit: 'Bytes', Value: memoryStats.heapUsed },
+      { MetricName: 'NodeMemoryExternal', Unit: 'Bytes', Value: memoryStats.external },
+      { MetricName: 'NodeCpuUser', Unit: 'Percent', Value: userCpuPercent },
+      { MetricName: 'NodeCpuSystem', Unit: 'Percent', Value: systemCpuPercent },
+      { MetricName: 'NodeCpuTotal', Unit: 'Percent', Value: totalCpuPercent },
     ] as const;
 
     const cloudwatch = new CloudWatch(makeAwsClientConfig());
