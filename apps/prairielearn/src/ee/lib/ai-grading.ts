@@ -40,6 +40,7 @@ const GPTScoreSchema = z.object({ score: z.number(), feedback: z.string() });
 const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
+  feedback: z.record(z.string(), z.any()).nullable(),
   instance_question_id: z.string(),
   manual_rubric_grading_id: z.string().nullable(),
 });
@@ -123,7 +124,7 @@ async function generateGPTPrompt({
       }
       let rubric_grading_info = '';
       for (const item of rubric_grading_items) {
-        rubric_grading_info += `number: ${item.number}\n`;
+        rubric_grading_info += `description: ${item.description}\n`;
       }
       messages.push({
         role: 'user',
@@ -139,7 +140,11 @@ async function generateGPTPrompt({
       }
       messages.push({
         role: 'user',
-        content: `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nScore to this example answer: \n${example.score_perc}`,
+        content:
+          `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nScore to this example answer: \n${example.score_perc}\n` +
+          (example.feedback && example.feedback.manual
+            ? `Feedback to this example answer: \n${example.feedback.manual}\n`
+            : ''),
       });
     }
   }
@@ -336,7 +341,7 @@ export async function aiGrade({
         null,
         [],
         question_course,
-        urls,
+        urls, // https://github.com/PrairieLearn/PrairieLearn/blob/623bba7567903457d2f513800cb9e19b92267fda/apps/prairielearn/src/question-servers/freeform.js#L1163
       );
       if (render_question_results.courseIssues.length > 0) {
         job.info(render_question_results.courseIssues.toString());
@@ -440,7 +445,7 @@ export async function aiGrade({
               submission.id,
               null, // modified_at
               {
-                feedback: { manual: response.parsed.feedback },
+                // feedback: { manual: response.parsed.feedback },
                 manual_rubric_data,
               },
               user_id,

@@ -69,6 +69,7 @@ WITH
       s.id AS s_id,
       iq.id AS iq_id,
       iq.score_perc AS iq_score_perc,
+      s.feedback,
       s.manual_rubric_grading_id AS s_manual_rubric_grading_id,
       ROW_NUMBER() OVER (
         PARTITION BY
@@ -90,6 +91,7 @@ SELECT
   emb.submission_text,
   ls.s_manual_rubric_grading_id AS manual_rubric_grading_id,
   ls.iq_score_perc AS score_perc,
+  ls.feedback,
   ls.iq_id AS instance_question_id
 FROM
   latest_submissions ls
