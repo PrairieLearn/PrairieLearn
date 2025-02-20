@@ -77,36 +77,6 @@ router.get(
       return;
     }
 
-    // Special case: if the user accesses the route `.../questions/?qid=...`, we
-    // will redirect them to the preview page for that question.
-    //
-    // This is meant to support automated testing of questions when one might not
-    // want to jump through hoops to get a question ID from a QID.
-    if (req.query.qid && typeof req.query.qid === 'string') {
-      // Find the question they're after.
-      const question = await selectOptionalQuestionByQid({
-        qid: req.query.qid,
-        course_id: res.locals.course.id,
-      });
-
-      if (!question) {
-        throw new error.HttpStatusError(404, 'Question not found');
-      }
-
-      // Forward all query parameters except `qid`. Specifically, we want to support
-      // `variant_seed` for previewing questions with a specific seed.
-      const searchParams = getSearchParams(req);
-      searchParams.delete('qid');
-
-      res.redirect(
-        url.format({
-          pathname: `${res.locals.urlPrefix}/question/${question.id}/preview`,
-          search: searchParams.toString(),
-        }),
-      );
-      return;
-    }
-
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
@@ -138,6 +108,54 @@ router.get(
           isEnterprise() &&
           (await features.enabledFromLocals('ai-question-generation', res.locals)),
         resLocals: res.locals,
+      }),
+    );
+  }),
+);
+
+// This route will redirect to a question preview based on the QID.
+// This is meant to support automated testing of questions when one might not
+// want to jump through hoops to get a question ID from a QID.
+router.get(
+  '/qid/*',
+  asyncHandler(async (req, res) => {
+    // Access control may not matter as much here, since we'll still deny
+    // access after the redirect, but doing this will allow us to avoid
+    // leaking the existence or non-existence of questions to viewers,
+    // which can't hurt.
+    if (!res.locals.authz_data.has_course_permission_preview) {
+      // Access denied, but instead of sending them to an error page, we'll show
+      // them an explanatory message and prompt them to get view permissions.
+      const courseOwners = await getCourseOwners(res.locals.course.id);
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          courseOwners,
+          pageTitle: 'Questions',
+          requiredPermissions: 'Previewer',
+        }),
+      );
+      return;
+    }
+
+    const question = await selectOptionalQuestionByQid({
+      qid: req.params[0],
+      course_id: res.locals.course.id,
+    });
+
+    if (!question) {
+      throw new error.HttpStatusError(404, 'Question not found');
+    }
+
+    // Forward all query parameters except `qid`. Specifically, we want to support
+    // `variant_seed` for previewing questions with a specific seed.
+    const searchParams = getSearchParams(req);
+    searchParams.delete('qid');
+
+    res.redirect(
+      url.format({
+        pathname: `${res.locals.urlPrefix}/question/${question.id}/preview`,
+        search: searchParams.toString(),
       }),
     );
   }),
