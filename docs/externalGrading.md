@@ -139,7 +139,11 @@ In particular, the file system structure of the grader looks like:
 +-- /...                       # Additional directories and files as needed.
 ```
 
-When your container starts up, your `entrypoint` script will be executed. After that, you can do whatever you want. The only requirement is that by the time that script finished, you should have written results for the grading job to `/grade/results/results.json`; the format for this is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
+When your container starts up, your `entrypoint` script will be executed. After that, you can do whatever you want. The only requirement is that by the time that script finished, you should have written results for the grading job to `/grade/results/results.json`. The format for this is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
+
+!!! note
+
+The `/grade/results` directory is not automatically created, so you must create it yourself before writing `results.json`.
 
 ## Directory layout
 
@@ -155,7 +159,7 @@ The following is an example of a well-structured course layout:
 |   `-- /addVector
 |       +-- info.json           # required configuration goes here (see below)
 |       |-- ...                 # some other question files
-|       `-- /tests              # folder of test cases
+|       `-- /tests              # directory of test cases
 |           +-- ag.py           # testing files
 |           `-- soln_out.txt
 |
