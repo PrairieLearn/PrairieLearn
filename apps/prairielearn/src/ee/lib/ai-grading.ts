@@ -4,13 +4,7 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import {
-  loadSqlEquiv,
-  queryOneRowAsync,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import {
@@ -50,28 +44,6 @@ const GradedExampleSchema = z.object({
   manual_rubric_grading_id: z.string().nullable(),
 });
 type GradedExample = z.infer<typeof GradedExampleSchema>;
-
-const AppliedRubricItemSchema = z.object({
-  rubric_item_id: IdSchema,
-  score: z.coerce.number().nullish(),
-});
-type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
-
-function parseRubricItems({
-  rubric_items,
-  gptRubricItems,
-}: {
-  rubric_items: RubricItem[];
-  gptRubricItems: number[];
-}): AppliedRubricItem[] {
-  const output: AppliedRubricItem[] = [];
-  for (const rubric_item_number of gptRubricItems) {
-    output.push(
-      AppliedRubricItemSchema.parse({ rubric_item_id: rubric_items[rubric_item_number].id }),
-    );
-  }
-  return output;
-}
 
 async function generateGPTPrompt({
   questionPrompt,
@@ -115,7 +87,7 @@ async function generateGPTPrompt({
     messages.push({
       role: 'system',
       content:
-        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. I will provide some example answers and their corresponding grades.',
+        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a JSON object with two properties: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You omit the feedback if the answer is correct. I will provide some example answers and their corresponding grades.',
     });
   }
 
@@ -168,7 +140,7 @@ async function generateGPTPrompt({
   // Student answer
   messages.push({
     role: 'user',
-    content: `Answer: \n${submission_text} \nHow would you grade this? Please return the json object.`,
+    content: `The student submitted the following answer: \n${submission_text} \nHow would you grade this? Please return the JSON object.`,
   });
 
   if (warning) {
@@ -190,8 +162,6 @@ async function generateSubmissionEmbeddings({
   urlPrefix: string;
   openai: OpenAI;
 }): Promise<number> {
-  const question_course = await getQuestionCourse(question, course);
-
   const result = await queryRows(
     sql.select_instance_questions_for_assessment_question,
     {
@@ -208,44 +178,14 @@ async function generateSubmissionEmbeddings({
       { instance_question_id: instance_question.id },
       IdSchema,
     );
-    const submission_embedding = await queryOptionalRow(
-      sql.select_embedding_for_submission,
-      { submission_id },
-      SubmissionGradingContextEmbeddingSchema,
-    );
-
-    // Only recalculate embedding if it doesn't exist or if it requires a force update
-    if (submission_embedding) {
-      continue;
-    }
-    const { variant, submission } = await queryRow(
-      sql.select_last_variant_and_submission,
-      { instance_question_id: instance_question.id },
-      SubmissionVariantSchema,
-    );
-    const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
-    const questionModule = questionServers.getModule(question.type);
-    const render_submission_results = await questionModule.render(
-      { question: false, submissions: true, answer: false },
-      variant,
+    await ensureSubmissionEmbedding({
+      submission_id,
+      course,
       question,
-      submission,
-      [submission],
-      question_course,
-      urls,
-    );
-    const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
-    $('script').remove();
-    const submission_text = $.html();
-    const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
-
-    await queryOneRowAsync(sql.create_embedding_for_submission, {
-      embedding: vectorToString(embedding),
-      submission_id: submission.id,
-      submission_text,
-      assessment_question_id: assessment_question.id,
+      instance_question,
+      urlPrefix,
+      openai,
     });
-
     newEmbeddingsCount++;
   }
   return newEmbeddingsCount;
@@ -310,7 +250,10 @@ async function ensureSubmissionEmbedding({
   return new_submission_embedding;
 }
 
-function assertRubricNotModified(old_rubric_items: RubricItem[], new_rubric_items: RubricItem[]): void {
+function assertRubricNotModified(
+  old_rubric_items: RubricItem[],
+  new_rubric_items: RubricItem[],
+): void {
   if (old_rubric_items.length !== new_rubric_items.length) {
     throw new Error('rubric modified between rubric retrieval and grade insertion');
   }
@@ -478,9 +421,7 @@ export async function aiGrade({
           response_format: zodResponseFormat(GPTRubricGradeSchema, 'score'),
         });
         try {
-          job.info(
-            `Number of tokens used: ${completion.usage?.total_tokens ?? 0}`,
-          );
+          job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
           const grade_response = completion.choices[0].message;
           job.info(`Raw ChatGPT response:\n${grade_response.content}`);
           if (grade_response.parsed) {
@@ -494,10 +435,9 @@ export async function aiGrade({
             }
             const manual_rubric_data = {
               rubric_id: rubric_items[0].rubric_id,
-              applied_rubric_items: parseRubricItems({
-                rubric_items,
-                gptRubricItems,
-              }),
+              applied_rubric_items: gptRubricItems.map((rubric_item_number) => ({
+                rubric_item_id: rubric_items[rubric_item_number].id,
+              })),
             };
             new_rubric_items = await queryRows(
               sql.select_rubric_for_grading,
@@ -542,9 +482,7 @@ export async function aiGrade({
           response_format: zodResponseFormat(GPTGradeSchema, 'score'),
         });
         try {
-          job.info(
-            `Number of tokens used: ${completion.usage?.total_tokens ?? 0}`,
-          );
+          job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
           const grade_response = completion.choices[0].message;
           job.info(`Raw ChatGPT response:\n${grade_response.content}`);
           if (grade_response.parsed) {
