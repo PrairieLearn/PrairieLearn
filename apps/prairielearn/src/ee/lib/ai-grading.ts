@@ -72,12 +72,19 @@ async function generateGPTPrompt({
   if (rubric_items.length > 0) {
     let rubric_info = '';
     for (const item of rubric_items) {
-      rubric_info += `number: ${item.number}\ndescription: ${item.description}\nexplanation: ${item.explanation}\n\n`;
+      rubric_info += `number: ${item.number}\ndescription: ${item.description}\n`;
+      if (item.explanation) {
+        rubric_info += `explanation: ${item.explanation}\n`;
+      }
+      if (item.grader_note) {
+        rubric_info += `grader note: ${item.grader_note}\n`;
+      }
+      rubric_info += '\n';
     }
     messages.push({
       role: 'system',
       content:
-        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description, and item explanation. You must grade the assignment by using the rubric and returning an array of all rubric items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should always list all the rubric items, no matter if they are selected or not. You should also provide feedback on how to improve the answer by incorporating information from the rubric. I will provide some example answers and their corresponding grades.',
+        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description, item explanation, and a grader note about the item. You must grade the assignment by using the rubric and returning an array of all rubric items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should always list all the rubric items, no matter if they are selected or not. You should also provide feedback on how to improve the answer by incorporating information from the rubric. I will provide some example answers and their corresponding grades.',
     });
     messages.push({
       role: 'system',
