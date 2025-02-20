@@ -1,3 +1,1 @@
-module.exports = {
-  require: ['tsx'],
-};
+module.exports = { require: ['tsx'] };

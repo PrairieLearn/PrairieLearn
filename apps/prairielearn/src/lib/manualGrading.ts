@@ -51,10 +51,7 @@ const PartialScoresSchema = z
   .record(
     z.string(),
     z
-      .object({
-        score: z.coerce.number().nullish(),
-        weight: z.coerce.number().nullish(),
-      })
+      .object({ score: z.coerce.number().nullish(), weight: z.coerce.number().nullish() })
       .passthrough(),
   )
   .nullable();
@@ -664,9 +661,6 @@ export async function updateInstanceQuestionScore(
       await ltiOutcomes.updateScore(current_submission.assessment_instance_id);
     }
 
-    return {
-      grading_job_id,
-      modified_at_conflict: current_submission.modified_at_conflict,
-    };
+    return { grading_job_id, modified_at_conflict: current_submission.modified_at_conflict };
   });
 }

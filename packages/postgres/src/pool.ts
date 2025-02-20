@@ -26,10 +26,7 @@ const lastQueryMap = new WeakMap<pg.PoolClient, string>();
 const searchSchemaMap = new WeakMap<pg.PoolClient, string>();
 
 function addDataToError(err: Error, data: Record<string, any>): Error {
-  (err as any).data = {
-    ...((err as any).data ?? {}),
-    ...data,
-  };
+  (err as any).data = { ...((err as any).data ?? {}), ...data };
   return err;
 }
 
@@ -78,10 +75,7 @@ function paramsToArray(
 ): { processedSql: string; paramsArray: any } {
   if (typeof sql !== 'string') throw new Error('SQL must be a string');
   if (Array.isArray(params)) {
-    return {
-      processedSql: sql,
-      paramsArray: params,
-    };
+    return { processedSql: sql, paramsArray: params };
   }
   if (!_.isObjectLike(params)) throw new Error('params must be array or object');
 
@@ -554,10 +548,7 @@ export class PostgresPool {
     debug('queryOneRow()', 'params:', debugParams(params));
     const result = await this.queryAsync(sql, params);
     if (result.rowCount !== 1) {
-      throw new PostgresError(`Incorrect rowCount: ${result.rowCount}`, {
-        sql,
-        sqlParams: params,
-      });
+      throw new PostgresError(`Incorrect rowCount: ${result.rowCount}`, { sql, sqlParams: params });
     }
     debug('queryOneRow() success', 'rowCount:', result.rowCount);
     return result;
@@ -578,10 +569,7 @@ export class PostgresPool {
     debug('queryZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.queryAsync(sql, params);
     if (result.rowCount == null || result.rowCount > 1) {
-      throw new PostgresError(`Incorrect rowCount: ${result.rowCount}`, {
-        sql,
-        sqlParams: params,
-      });
+      throw new PostgresError(`Incorrect rowCount: ${result.rowCount}`, { sql, sqlParams: params });
     }
     debug('queryZeroOrOneRow() success', 'rowCount:', result.rowCount);
     return result;

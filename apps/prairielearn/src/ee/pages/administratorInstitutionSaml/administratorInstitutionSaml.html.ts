@@ -30,10 +30,7 @@ export function AdministratorInstitutionSaml({
   const testSamlStrictUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/login?RelayState=test,strict`;
 
   return PageLayout({
-    resLocals: {
-      ...resLocals,
-      institution,
-    },
+    resLocals: { ...resLocals, institution },
     pageTitle: 'SAML - Institution Admin',
     navContext: {
       type: 'administrator_institution',

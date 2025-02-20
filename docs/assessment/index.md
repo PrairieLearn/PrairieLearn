@@ -267,11 +267,7 @@ PrairieLearn distinguishes between _assessments_ and _assessment instances_. An 
 A student's percentage score will be determined by the number of points they have obtained, divided by the value of `maxPoints` for the assessment (subject to the rules associated to [`credit`](../accessControl/index.md#credit) in assessment access rules).
 
 ```json title="infoAssessment.json"
-{
-  "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
-  "maxPoints": 50,
-  "maxBonusPoints": 5
-}
+{ "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd", "maxPoints": 50, "maxBonusPoints": 5 }
 ```
 
 In the assessment configuration, the `maxPoints` determines the number of points a student is required to obtain to get a score of 100%. The percentage score will thus be computed based on the points the student obtained divided by the value of `maxPoints`. If not provided, `maxPoints` is computed based on the maximum number of points that can be obtained from all questions in all zones.
@@ -363,25 +359,10 @@ To opt-in to custom group roles, group roles must be defined at the root of the 
 ```json title="infoAssessment.json"
 {
   "groupRoles": [
-    {
-      "name": "Manager",
-      "minimum": 1,
-      "maximum": 1,
-      "canAssignRoles": true
-    },
-    {
-      "name": "Recorder",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Reflector",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Contributor"
-    }
+    { "name": "Manager", "minimum": 1, "maximum": 1, "canAssignRoles": true },
+    { "name": "Recorder", "minimum": 1, "maximum": 1 },
+    { "name": "Reflector", "minimum": 1, "maximum": 1 },
+    { "name": "Contributor" }
   ]
 }
 ```
@@ -402,10 +383,7 @@ Permissions can be configured at the _assessment_, _zone_, or _question_ level.
 The schema for permissions is defined as follows:
 
 ```json
-{
-  "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-  "canSubmit": ["Recorder"]
-}
+{ "canView": ["Manager", "Reflector", "Recorder", "Contributor"], "canSubmit": ["Recorder"] }
 ```
 
 | Attribute   | Type            | Default | Description                                                     |
@@ -556,9 +534,7 @@ Access control options can also be used to control the open/close dates of asses
 You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. You can use EJS syntax to access `clientFilesCourse`, `clientFilesCourseInstance`, and `clientFilesAssessment`.
 
 ```json title="infoAssessment.json"
-{
-  "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
-}
+{ "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>" }
 ```
 
 See the [`clientFiles` and `serverFiles`](../clientServerFiles.md) page for details about making files available to users.

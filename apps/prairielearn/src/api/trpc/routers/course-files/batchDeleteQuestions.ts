@@ -24,14 +24,8 @@ export const batchDeleteQuestions = privateProcedure
   )
   .output(
     z.union([
-      z.object({
-        status: z.literal('success'),
-        job_sequence_id: z.string(),
-      }),
-      z.object({
-        status: z.literal('error'),
-        job_sequence_id: z.string(),
-      }),
+      z.object({ status: z.literal('success'), job_sequence_id: z.string() }),
+      z.object({ status: z.literal('error'), job_sequence_id: z.string() }),
     ]),
   )
   .mutation(async (opts) => {
@@ -43,10 +37,7 @@ export const batchDeleteQuestions = privateProcedure
 
     const questions = await queryRows(
       sql.select_questions_by_ids_and_course_id,
-      {
-        question_ids: opts.input.question_ids,
-        course_id: opts.input.course_id,
-      },
+      { question_ids: opts.input.question_ids, course_id: opts.input.course_id },
       QuestionSchema,
     );
 
@@ -67,14 +58,8 @@ export const batchDeleteQuestions = privateProcedure
     try {
       await editor.executeWithServerJob(serverJob);
     } catch {
-      return {
-        status: 'error',
-        job_sequence_id: serverJob.jobSequenceId,
-      };
+      return { status: 'error', job_sequence_id: serverJob.jobSequenceId };
     }
 
-    return {
-      status: 'success',
-      job_sequence_id: serverJob.jobSequenceId,
-    };
+    return { status: 'success', job_sequence_id: serverJob.jobSequenceId };
   });

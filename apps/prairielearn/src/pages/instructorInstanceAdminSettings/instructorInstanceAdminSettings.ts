@@ -72,9 +72,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'copy_course_instance') {
-      const editor = new CourseInstanceCopyEditor({
-        locals: res.locals as any,
-      });
+      const editor = new CourseInstanceCopyEditor({ locals: res.locals as any });
 
       const serverJob = await editor.prepareServerJob();
       try {
@@ -101,9 +99,7 @@ router.post(
           '/instructor/instance_admin/settings',
       );
     } else if (req.body.__action === 'delete_course_instance') {
-      const editor = new CourseInstanceDeleteEditor({
-        locals: res.locals as any,
-      });
+      const editor = new CourseInstanceDeleteEditor({ locals: res.locals as any });
 
       const serverJob = await editor.prepareServerJob();
       try {
@@ -158,18 +154,12 @@ router.post(
         [
           new FileModifyEditor({
             locals: res.locals as any,
-            container: {
-              rootPath: paths.rootPath,
-              invalidRootPaths: paths.invalidRootPaths,
-            },
+            container: { rootPath: paths.rootPath, invalidRootPaths: paths.invalidRootPaths },
             filePath: infoCourseInstancePath,
             editContents: b64EncodeUnicode(formattedJson),
             origHash: req.body.orig_hash,
           }),
-          new CourseInstanceRenameEditor({
-            locals: res.locals as any,
-            ciid_new,
-          }),
+          new CourseInstanceRenameEditor({ locals: res.locals as any, ciid_new }),
         ],
       );
 

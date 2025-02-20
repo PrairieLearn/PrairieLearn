@@ -39,10 +39,7 @@ let esbuildServer: esbuild.ServeResult | null = null;
 let relativeSourcePaths: string[] | null = null;
 
 export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<void> {
-  options = {
-    ...DEFAULT_OPTIONS,
-    ...newOptions,
-  };
+  options = { ...DEFAULT_OPTIONS, ...newOptions };
 
   if (!options.publicPath.endsWith('/')) {
     options.publicPath += '/';
@@ -67,10 +64,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       sourcemap: 'inline',
       bundle: true,
       write: false,
-      loader: {
-        '.woff': 'file',
-        '.woff2': 'file',
-      },
+      loader: { '.woff': 'file', '.woff2': 'file' },
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
@@ -104,10 +98,7 @@ export function handler(): RequestHandler {
       enableBrotli: true,
       // Prefer Brotli if the client supports it.
       orderPreference: ['br'],
-      serveStatic: {
-        maxAge: '31557600',
-        immutable: true,
-      },
+      serveStatic: { maxAge: '31557600', immutable: true },
     });
   }
 
@@ -121,13 +112,7 @@ export function handler(): RequestHandler {
   // and watching our assets.
   return function (req, res) {
     const proxyReq = http.request(
-      {
-        hostname: '127.0.0.1',
-        port,
-        path: req.url,
-        method: req.method,
-        headers: req.headers,
-      },
+      { hostname: '127.0.0.1', port, path: req.url, method: req.method, headers: req.headers },
       (proxyRes) => {
         res.writeHead(proxyRes.statusCode ?? 500, proxyRes.headers);
         proxyRes.pipe(res, { end: true });
@@ -201,10 +186,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string) {
     sourcemap: 'linked',
     bundle: true,
     minify: true,
-    loader: {
-      '.woff': 'file',
-      '.woff2': 'file',
-    },
+    loader: { '.woff': 'file', '.woff2': 'file' },
     entryNames: '[dir]/[name]-[hash]',
     outbase: sourceDirectory,
     outdir: buildDirectory,

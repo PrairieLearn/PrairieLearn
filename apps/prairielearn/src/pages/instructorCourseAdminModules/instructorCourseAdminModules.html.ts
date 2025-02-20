@@ -14,14 +14,8 @@ export function InstructorCourseAdminModules({
   return PageLayout({
     resLocals,
     pageTitle: 'Assessment Modules',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'modules',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'modules' },
+    options: { fullWidth: true },
     content: html`
       ${CourseSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

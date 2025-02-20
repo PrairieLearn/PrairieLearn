@@ -78,9 +78,7 @@ async function testProject(options: CompiledAssetsOptions) {
         server.close();
       }
     },
-    {
-      unsafeCleanup: true,
-    },
+    { unsafeCleanup: true },
   );
 }
 

@@ -99,8 +99,5 @@ export async function getErrorsAndWarningsForFilePath(
   if (res.rowCount === 0) {
     return { errors: null, warnings: null };
   }
-  return {
-    errors: res.rows[0].sync_errors,
-    warnings: res.rows[0].sync_warnings,
-  };
+  return { errors: res.rows[0].sync_errors, warnings: res.rows[0].sync_warnings };
 }

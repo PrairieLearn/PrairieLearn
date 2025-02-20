@@ -15,13 +15,8 @@ export function JobSequence({
   return PageLayout({
     resLocals,
     pageTitle: `${job_sequence.description} #${job_sequence.number}`,
-    navContext: {
-      type: resLocals.navbarType,
-      page: resLocals.navPage,
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: resLocals.navbarType, page: resLocals.navPage },
+    options: { fullWidth: true },
     headContent: [compiledScriptTag('jobSequenceClient.ts')],
     content: html`
       <h1 class="sr-only">Job Sequence</h1>

@@ -22,14 +22,8 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
   return PageLayout({
     resLocals,
     pageTitle: 'LTI',
-    navContext: {
-      type: 'instructor',
-      page: 'instance_admin',
-      subPage: 'lti',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'instance_admin', subPage: 'lti' },
+    options: { fullWidth: true },
     preContent: html`
       <script>
         function copyToClipboard(element) {
@@ -223,12 +217,7 @@ function LtiLinkTargetsCard({
     assessment_id: string | null;
     created: string | null;
   }[];
-  assessments: {
-    assessment_id: string;
-    label: string;
-    title: string | null;
-    tid: string | null;
-  }[];
+  assessments: { assessment_id: string; label: string; title: string | null; tid: string | null }[];
   csrfToken: string;
 }) {
   return html`

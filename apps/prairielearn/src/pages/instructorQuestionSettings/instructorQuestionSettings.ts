@@ -161,18 +161,12 @@ router.post(
           // Each of these editors will no-op if there wasn't any change.
           new FileModifyEditor({
             locals: res.locals as any,
-            container: {
-              rootPath: paths.rootPath,
-              invalidRootPaths: paths.invalidRootPaths,
-            },
+            container: { rootPath: paths.rootPath, invalidRootPaths: paths.invalidRootPaths },
             filePath: path.join(paths.rootPath, 'info.json'),
             editContents: b64EncodeUnicode(formattedJson),
             origHash,
           }),
-          new QuestionRenameEditor({
-            locals: res.locals as any,
-            qid_new,
-          }),
+          new QuestionRenameEditor({ locals: res.locals as any, qid_new }),
         ],
       );
       const serverJob = await editor.prepareServerJob();
@@ -187,9 +181,7 @@ router.post(
     } else if (req.body.__action === 'copy_question') {
       if (idsEqual(req.body.to_course_id, res.locals.course.id)) {
         // In this case, we are making a duplicate of this question in the same course
-        const editor = new QuestionCopyEditor({
-          locals: res.locals as any,
-        });
+        const editor = new QuestionCopyEditor({ locals: res.locals as any });
         const serverJob = await editor.prepareServerJob();
         try {
           await editor.executeWithServerJob(serverJob);
@@ -283,10 +275,7 @@ router.get(
     if (sharingEnabled) {
       const result = await sqldb.queryRows(
         sql.select_sharing_sets,
-        {
-          question_id: res.locals.question.id,
-          course_id: res.locals.course.id,
-        },
+        { question_id: res.locals.question.id, course_id: res.locals.course.id },
         SharingSetRowSchema,
       );
       sharingSetsIn = result.filter((row) => row.in_set);

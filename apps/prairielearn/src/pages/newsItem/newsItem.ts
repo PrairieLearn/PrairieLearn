@@ -20,10 +20,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const newsItem = await queryOptionalRow(
       sql.select_news_item_for_read,
-      {
-        news_item_id: req.params.news_item_id,
-        user_id: res.locals.authn_user.user_id,
-      },
+      { news_item_id: req.params.news_item_id, user_id: res.locals.authn_user.user_id },
       NewsItemSchema,
     );
     if (newsItem == null) {

@@ -1,6 +1,1 @@
-{
-  "description": "Queries currently running in the DB.",
-  "resultFormats": {
-    "query": "pre"
-  }
-}
+{ "description": "Queries currently running in the DB.", "resultFormats": { "query": "pre" } }

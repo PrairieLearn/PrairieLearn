@@ -42,9 +42,7 @@ export default function (req: Request, res: Response, next: NextFunction) {
 
       // Print additional message in this case to simplify grepping logs for this scenario
       if (!res.writableFinished) {
-        logger.verbose('request aborted by client', {
-          response_id: res.locals.response_id,
-        });
+        logger.verbose('request aborted by client', { response_id: res.locals.response_id });
       }
     });
   }

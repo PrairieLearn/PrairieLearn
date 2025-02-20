@@ -98,44 +98,19 @@ const partialCreditTests = [
     // test partial credit on question without retries
     { qid: 'partialCredit1', action: 'grade', score: 15, sub_points: 0.15 },
     { qid: 'partialCredit1', action: 'grade', score: 11, sub_points: 0 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 34,
-      sub_points: 0.34 - 0.15,
-    },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 99,
-      sub_points: 0.99 - 0.34,
-    },
+    { qid: 'partialCredit1', action: 'grade', score: 34, sub_points: 0.34 - 0.15 },
+    { qid: 'partialCredit1', action: 'grade', score: 99, sub_points: 0.99 - 0.34 },
     { qid: 'partialCredit1', action: 'grade', score: 87, sub_points: 0 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 1 - 0.99,
-    },
+    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 - 0.99 },
     { qid: 'partialCredit1', action: 'grade', score: 85, sub_points: 0.85 },
     { qid: 'partialCredit1', action: 'grade', score: 85, sub_points: 0 },
     { qid: 'partialCredit1', action: 'grade', score: 84, sub_points: 0 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 1 - 0.85,
-    },
+    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 - 0.85 },
     { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 2 }, // doubled, previous was new variant
     { qid: 'partialCredit1', action: 'grade', score: 0, sub_points: 0 },
     { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
     { qid: 'partialCredit1', action: 'grade', score: 53, sub_points: 0.53 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 1 - 0.53,
-    },
+    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 - 0.53 },
     { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 0 },
   ],
   /* FIXME: temporarily disabled, re-enable after current_value update change
@@ -158,24 +133,9 @@ const partialCreditTests = [
     // test partial credit on question with retries
     { qid: 'partialCredit2', action: 'grade', score: 71, sub_points: 2 * 0.71 },
     { qid: 'partialCredit2', action: 'grade', score: 56, sub_points: 0 },
-    {
-      qid: 'partialCredit2',
-      action: 'grade',
-      score: 78,
-      sub_points: 2 * (0.78 - 0.71),
-    },
-    {
-      qid: 'partialCredit2',
-      action: 'grade',
-      score: 94,
-      sub_points: 2 * (0.94 - 0.78),
-    },
-    {
-      qid: 'partialCredit2',
-      action: 'grade',
-      score: 100,
-      sub_points: 2 * (1 - 0.94),
-    },
+    { qid: 'partialCredit2', action: 'grade', score: 78, sub_points: 2 * (0.78 - 0.71) },
+    { qid: 'partialCredit2', action: 'grade', score: 94, sub_points: 2 * (0.94 - 0.78) },
+    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 2 * (1 - 0.94) },
     { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 4 }, // doubled, although previous was old variant
     { qid: 'partialCredit2', action: 'grade', score: 82, sub_points: 1 },
     { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
@@ -183,32 +143,10 @@ const partialCreditTests = [
   ],
   [
     // test partial credit on v2 questions
-    {
-      qid: 'partialCredit4_v2',
-      action: 'grade',
-      score: 34,
-      submission_score: 0,
-      sub_points: 0,
-    },
-    {
-      qid: 'partialCredit4_v2',
-      action: 'grade',
-      score: 68,
-      submission_score: 100,
-      sub_points: 4,
-    },
-    {
-      qid: 'partialCredit5_v2_partial',
-      action: 'grade',
-      score: 27,
-      sub_points: 5 * 0.27,
-    },
-    {
-      qid: 'partialCredit5_v2_partial',
-      action: 'grade',
-      score: 56,
-      sub_points: 5 * (0.56 - 0.27),
-    },
+    { qid: 'partialCredit4_v2', action: 'grade', score: 34, submission_score: 0, sub_points: 0 },
+    { qid: 'partialCredit4_v2', action: 'grade', score: 68, submission_score: 100, sub_points: 4 },
+    { qid: 'partialCredit5_v2_partial', action: 'grade', score: 27, sub_points: 5 * 0.27 },
+    { qid: 'partialCredit5_v2_partial', action: 'grade', score: 56, sub_points: 5 * (0.56 - 0.27) },
   ],
 ];
 
@@ -465,10 +403,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (2 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            wx: variant.true_answer.wx,
-            wy: variant.true_answer.wy,
-          };
+          return { wx: variant.true_answer.wx, wy: variant.true_answer.wy };
         };
       });
     });
@@ -495,9 +430,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (5 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            key: variant.true_answer.key,
-          };
+          return { key: variant.true_answer.key };
         };
       });
     });
@@ -524,10 +457,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (5 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            wx: 400,
-            wy: -700,
-          };
+          return { wx: 400, wy: -700 };
         };
       });
     });
@@ -554,10 +484,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (7 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            wx: variant.true_answer.wx,
-            wy: variant.true_answer.wy,
-          };
+          return { wx: variant.true_answer.wx, wy: variant.true_answer.wy };
         };
       });
     });
@@ -584,10 +511,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (7 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            wx: -600,
-            wy: 700,
-          };
+          return { wx: -600, wy: 700 };
         };
       });
     });
@@ -614,10 +538,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (11 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            wx: variant.true_answer.wx,
-            wy: variant.true_answer.wy,
-          };
+          return { wx: variant.true_answer.wx, wy: variant.true_answer.wy };
         };
       });
     });
@@ -644,10 +565,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (14 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            wx: variant.true_answer.wx,
-            wy: variant.true_answer.wy,
-          };
+          return { wx: variant.true_answer.wx, wy: variant.true_answer.wy };
         };
       });
     });
@@ -674,10 +592,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (14 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            wx: variant.true_answer.wx,
-            wy: variant.true_answer.wy,
-          };
+          return { wx: variant.true_answer.wx, wy: variant.true_answer.wy };
         };
       });
     });
@@ -721,9 +636,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (14 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c + 3,
-          };
+          return { c: variant.true_answer.c + 3 };
         };
       });
     });
@@ -740,9 +653,7 @@ describe('Homework assessment', function () {
         locals.postAction = 'grade';
         locals.question = questions.addNumbers;
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c,
-          };
+          return { c: variant.true_answer.c };
         };
       });
     });
@@ -772,9 +683,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (15 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c,
-          };
+          return { c: variant.true_answer.c };
         };
       });
     });
@@ -801,9 +710,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (15 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            c: '42c',
-          };
+          return { c: '42c' };
         };
       });
     });
@@ -843,9 +750,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (17 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c,
-          };
+          return { c: variant.true_answer.c };
         };
       });
     });
@@ -872,9 +777,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (17 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c + 2,
-          };
+          return { c: variant.true_answer.c + 2 };
         };
       });
     });
@@ -901,9 +804,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (23 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            key: variant.true_answer.key,
-          };
+          return { key: variant.true_answer.key };
         };
       });
     });
@@ -930,9 +831,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (23 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            key: variant.true_answer.key === 'a' ? 'b' : 'a',
-          };
+          return { key: variant.true_answer.key === 'a' ? 'b' : 'a' };
         };
       });
     });
@@ -959,9 +858,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (26 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            key: variant.true_answer.key,
-          };
+          return { key: variant.true_answer.key };
         };
       });
     });
@@ -988,9 +885,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (26 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            key: variant.true_answer.key === 'a' ? 'b' : 'a',
-          };
+          return { key: variant.true_answer.key === 'a' ? 'b' : 'a' };
         };
       });
     });
@@ -1017,10 +912,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (26 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            s1: 45,
-            s2: 80,
-          };
+          return { s1: 45, s2: 80 };
         };
       });
     });
@@ -1047,10 +939,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (26 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            s1: 100,
-            s2: 90,
-          };
+          return { s1: 100, s2: 90 };
         };
       });
     });
@@ -1077,10 +966,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (26 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            s1: 37,
-            s2: 100,
-          };
+          return { s1: 37, s2: 100 };
         };
       });
     });
@@ -1107,10 +993,7 @@ describe('Homework assessment', function () {
           assessment_instance_score_perc: (29 / assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            s1: 100,
-            s2: 100,
-          };
+          return { s1: 100, s2: 100 };
         };
       });
     });
@@ -1328,9 +1211,7 @@ describe('Homework assessment', function () {
                 assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };
               locals.getSubmittedAnswer = function (_variant) {
-                return {
-                  s: String(questionTest.score),
-                };
+                return { s: String(questionTest.score) };
               };
             });
           });

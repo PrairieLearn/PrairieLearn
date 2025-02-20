@@ -10,11 +10,7 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 export default makeBatchedMigration({
   async getParameters() {
     const result = await queryOneRowAsync('SELECT MAX(id) as max from pl_courses;', {});
-    return {
-      min: 1n,
-      max: result.rows[0].max,
-      batchSize: 10,
-    };
+    return { min: 1n, max: result.rows[0].max, batchSize: 10 };
   },
 
   async execute(min: bigint, max: bigint): Promise<void> {

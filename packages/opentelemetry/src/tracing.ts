@@ -12,10 +12,7 @@ export async function instrumented<T>(
         span.setStatus({ code: SpanStatusCode.OK });
         return result;
       } catch (e: any) {
-        span.setStatus({
-          code: SpanStatusCode.ERROR,
-          message: e.message,
-        });
+        span.setStatus({ code: SpanStatusCode.ERROR, message: e.message });
         span.recordException(e);
         throw e;
       } finally {

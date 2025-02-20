@@ -369,10 +369,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
   assert(question.qid, `Workspace ${workspace_id} is part of a question that has no directory`);
 
   const course_path = chunks.getRuntimeDirectoryForCourse({ id: course.id, path: course.path });
-  await chunks.ensureChunksForCourseAsync(course.id, {
-    type: 'question',
-    questionId: question.id,
-  });
+  await chunks.ensureChunksForCourseAsync(course.id, { type: 'question', questionId: question.id });
 
   // local workspace files
   const questionBasePath = path.join(course_path, 'questions', question.qid);
@@ -538,10 +535,7 @@ export async function generateWorkspaceFiles({
             }
             // To avoid race conditions, no check if file exists here, rather an exception is
             // captured when attempting to copy.
-            return {
-              name: normalizedFilename,
-              localPath,
-            };
+            return { name: normalizedFilename, localPath };
           }
 
           // Discard encodings outside of explicit list of allowed encodings
@@ -705,11 +699,5 @@ function serializeError(
   err: (Error & { data?: any; cause?: Error }) | null,
 ): (Error & { data?: any; cause?: Error }) | null {
   if (err == null) return err;
-  return {
-    ...err,
-    stack: err.stack,
-    data: err.data,
-    message: err.message,
-    cause: err.cause,
-  };
+  return { ...err, stack: err.stack, data: err.data, message: err.message, cause: err.cause };
 }

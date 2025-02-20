@@ -13,11 +13,7 @@ import * as util from './util.js';
  * Makes a new tag/topic to test with.
  */
 function makeEntity(): util.Tag | util.Topic {
-  return {
-    name: 'a new entity',
-    color: 'green1',
-    description: 'description for a new entity',
-  };
+  return { name: 'a new entity', color: 'green1', description: 'description for a new entity' };
 }
 
 /**

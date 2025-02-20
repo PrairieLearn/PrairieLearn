@@ -6,9 +6,7 @@ import { config } from './config.js';
 
 const awsConfigProvider = makeAwsConfigProvider({
   credentials: fromNodeProviderChain(),
-  getClientConfig: () => ({
-    region: config.awsRegion,
-  }),
+  getClientConfig: () => ({ region: config.awsRegion }),
 });
 
 export const makeAwsClientConfig = awsConfigProvider.makeAwsClientConfig;

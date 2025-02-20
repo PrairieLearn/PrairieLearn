@@ -6,15 +6,8 @@ export function AssessmentBadge({
   urlPrefix,
   plainUrlPrefix,
   course_instance_id,
-}: {
-  assessment: { assessment_id: string; color: string; label: string };
-  hideLink?: boolean;
-} & ( // If urlPrefix is not provided, then plainUrlPrefix and course_instance_id must be provided and the appropriate URL prefix will be constructed
-  | {
-      urlPrefix: string;
-      plainUrlPrefix?: undefined;
-      course_instance_id?: undefined;
-    }
+}: { assessment: { assessment_id: string; color: string; label: string }; hideLink?: boolean } & ( // If urlPrefix is not provided, then plainUrlPrefix and course_instance_id must be provided and the appropriate URL prefix will be constructed
+  | { urlPrefix: string; plainUrlPrefix?: undefined; course_instance_id?: undefined }
   | { urlPrefix?: undefined; plainUrlPrefix: string; course_instance_id: string }
 )) {
   if (hideLink) {

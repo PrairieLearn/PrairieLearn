@@ -293,10 +293,7 @@ async function selectSubmissionForGrading(
     if (check_submission_id != null && !idsEqual(submission.id, check_submission_id)) {
       throw new error.AugmentedError('Submission ID mismatch', {
         status: 400,
-        data: {
-          submission_id: submission.id,
-          check_submission_id,
-        },
+        data: { submission_id: submission.id, check_submission_id },
       });
     }
 

@@ -149,14 +149,7 @@ Before a student can do the exam, a proctor will need to type the phrase `mysecr
 To require that students take a particular exam in a testing center or a course-managed PrairieTest session, the `examUuid` should be set to the UUID value from PrairieTest. For example:
 
 ```json
-{
-  "allowAccess": [
-    {
-      "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
-      "credit": 100
-    }
-  ]
-}
+{ "allowAccess": [{ "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871", "credit": 100 }] }
 ```
 
 Note that in this case the `startDate` and `endDate` should _NOT_ be specified. These will be automatically determined by PrairieTest and should not be set in PrairieLearn.
@@ -177,10 +170,7 @@ To block students from viewing closed assessment details, set `"showClosedAssess
       "showClosedAssessment": false,
       "credit": 100
     },
-    {
-      "active": false,
-      "showClosedAssessment": false
-    }
+    { "active": false, "showClosedAssessment": false }
   ]
 }
 ```
@@ -206,11 +196,7 @@ To block students from viewing closed assessment scores, set `"showClosedAssessm
       "showClosedAssessmentScore": false,
       "credit": 100
     },
-    {
-      "active": false,
-      "showClosedAssessment": false,
-      "showClosedAssessmentScore": false
-    }
+    { "active": false, "showClosedAssessment": false, "showClosedAssessmentScore": false }
   ]
 }
 ```
@@ -244,11 +230,7 @@ An example of the `active` access rule restriction is shown below:
       "timeLimitMin": 50,
       "credit": 100
     },
-    {
-      "startDate": "2015-01-01T00:00:01",
-      "endDate": "2015-02-15T23:59:59",
-      "active": false
-    }
+    { "startDate": "2015-01-01T00:00:01", "endDate": "2015-02-15T23:59:59", "active": false }
   ]
 }
 ```
@@ -258,14 +240,7 @@ In the example above, from January 1st to February 15th, students can see the as
 ## Course instance example
 
 ```json
-{
-  "allowAccess": [
-    {
-      "startDate": "2014-08-19T00:00:01",
-      "endDate": "2014-12-22T23:59:59"
-    }
-  ]
-}
+{ "allowAccess": [{ "startDate": "2014-08-19T00:00:01", "endDate": "2014-12-22T23:59:59" }] }
 ```
 
 The above `allowAccess` rule is appropriate for an `infoCourseInstance.json` file. It says that students have access from Aug 19th to Dec 22nd.
@@ -281,11 +256,7 @@ The above `allowAccess` rule is appropriate for an `infoCourseInstance.json` fil
       "startDate": "2014-09-12T00:00:01",
       "endDate": "2014-09-12T23:59:59"
     },
-    {
-      "credit": 100,
-      "startDate": "2014-09-07T00:00:01",
-      "endDate": "2014-09-10T23:59:59"
-    }
+    { "credit": 100, "startDate": "2014-09-07T00:00:01", "endDate": "2014-09-10T23:59:59" }
   ]
 }
 ```
@@ -299,10 +270,7 @@ The above `allowAccess` directive means that this assessment is available under 
 ```json
 {
   "allowAccess": [
-    {
-      "credit": 100,
-      "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"
-    },
+    { "credit": 100, "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871" },
     {
       "uids": ["student1@example.com", "student2@example.com"],
       "credit": 100,
@@ -323,28 +291,11 @@ The student's access will expire if they exceed the `timeLimitMin` minute durati
 ```json
 {
   "allowAccess": [
-    {
-      "active": false,
-      "endDate": "2014-10-11T23:59:59"
-    },
-    {
-      "credit": 110,
-      "startDate": "2014-10-12T00:00:01",
-      "endDate": "2014-10-15T23:59:59"
-    },
-    {
-      "credit": 100,
-      "startDate": "2014-10-16T00:00:01",
-      "endDate": "2014-10-18T23:59:59"
-    },
-    {
-      "credit": 80,
-      "startDate": "2014-10-19T00:00:01",
-      "endDate": "2014-10-25T23:59:59"
-    },
-    {
-      "startDate": "2014-10-26T00:00:01"
-    }
+    { "active": false, "endDate": "2014-10-11T23:59:59" },
+    { "credit": 110, "startDate": "2014-10-12T00:00:01", "endDate": "2014-10-15T23:59:59" },
+    { "credit": 100, "startDate": "2014-10-16T00:00:01", "endDate": "2014-10-18T23:59:59" },
+    { "credit": 80, "startDate": "2014-10-19T00:00:01", "endDate": "2014-10-25T23:59:59" },
+    { "startDate": "2014-10-26T00:00:01" }
   ]
 }
 ```

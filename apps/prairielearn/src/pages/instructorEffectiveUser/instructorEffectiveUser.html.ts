@@ -53,13 +53,8 @@ export function InstructorEffectiveUser({
   return PageLayout({
     pageTitle: 'Change Effective User',
     resLocals,
-    navContext: {
-      type: resLocals.navbarType,
-      page: 'effective',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: resLocals.navbarType, page: 'effective' },
+    options: { fullWidth: true },
     content: html`
       <h1 class="sr-only">Effective User</h1>
       <div class="card mb-4">

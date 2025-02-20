@@ -8,9 +8,7 @@ import { config } from '../../lib/config.js';
 import { type CourseRequestRow } from '../../lib/course-request.js';
 import { CourseSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
 
-export const CourseWithInstitutionSchema = CourseSchema.extend({
-  institution: InstitutionSchema,
-});
+export const CourseWithInstitutionSchema = CourseSchema.extend({ institution: InstitutionSchema });
 type CourseWithInstitution = z.infer<typeof CourseWithInstitutionSchema>;
 
 export function AdministratorCourses({
@@ -29,14 +27,8 @@ export function AdministratorCourses({
   return PageLayout({
     resLocals,
     pageTitle: 'Courses',
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'courses',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'courses' },
+    options: { fullWidth: true },
     content: html`
       <h1 class="sr-only">Courses</h1>
       ${CourseRequestsTable({
@@ -60,10 +52,7 @@ export function AdministratorCourses({
             data-placement="auto"
             title="Add new course"
             data-content="${escapeHtml(
-              CourseInsertForm({
-                institutions,
-                csrfToken: resLocals.__csrf_token,
-              }),
+              CourseInsertForm({ institutions, csrfToken: resLocals.__csrf_token }),
             )}"
           >
             <i class="fa fa-plus" aria-hidden="true"></i>
@@ -317,12 +306,7 @@ function CourseUpdateColumn({
         data-placement="auto"
         title="Change ${label}"
         data-content="${escapeHtml(
-          CourseUpdateColumnForm({
-            course,
-            column_name,
-            csrfToken,
-            label,
-          }),
+          CourseUpdateColumnForm({ course, column_name, csrfToken, label }),
         )}"
       >
         <i class="fa fa-edit" aria-hidden="true"></i>

@@ -54,9 +54,7 @@ export async function gitStatus(locals: Record<string, any>): Promise<string> {
     await job.exec(
       'git',
       ['log', '--all', '--graph', '--date=short', '--format=format:%h %cd%d %cn %s'],
-      {
-        cwd: locals.course.path,
-      },
+      { cwd: locals.course.path },
     );
   });
 
@@ -159,9 +157,7 @@ async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: Serv
   // Tag the image to add the new registry
   repository.setRegistry(cacheImageRegistry);
 
-  const options = {
-    repo: repository.getCombined(),
-  };
+  const options = { repo: repository.getCombined() };
   job.info(`Tagging image: ${options.repo}`);
   await localImage.tag(options);
   job.info('Successfully tagged image');

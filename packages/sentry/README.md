@@ -5,8 +5,5 @@ Opinionated wrapper around `@sentry/node`. Currently, the only difference is tha
 ```ts
 import { init } from '@prairielearn/sentry';
 
-await init({
-  dsn: 'DSN HERE',
-  environment: 'ENVIRONMENT HERE',
-});
+await init({ dsn: 'DSN HERE', environment: 'ENVIRONMENT HERE' });
 ```

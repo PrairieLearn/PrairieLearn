@@ -12,10 +12,7 @@ export function AuthPassword({
   return PageLayout({
     resLocals,
     pageTitle: 'Password',
-    navContext: {
-      type: 'plain',
-      page: 'password',
-    },
+    navContext: { type: 'plain', page: 'password' },
     content: html`
       <h1 class="sr-only">Assessment Password</h1>
       <div class="card mb-4">

@@ -4,11 +4,7 @@ import { queryOneRowAsync, queryAsync } from '@prairielearn/postgres';
 export default makeBatchedMigration({
   async getParameters() {
     const result = await queryOneRowAsync('SELECT MAX(id) as max from variants;', {});
-    return {
-      min: 1n,
-      max: result.rows[0].max,
-      batchSize: 1000,
-    };
+    return { min: 1n, max: result.rows[0].max, batchSize: 1000 };
   },
 
   async execute(start: bigint, end: bigint): Promise<void> {

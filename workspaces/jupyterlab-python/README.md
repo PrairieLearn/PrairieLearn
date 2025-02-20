@@ -6,9 +6,7 @@ To automatically open a file when the workspace is started, set the `LAUNCH_FILE
 {
   "workspaceOptions": {
     "image": "prairielearn/workspace-jupyterlab-python",
-    "environment": {
-      "LAUNCH_FILE_NAME": "some_file.ext"
-    }
+    "environment": { "LAUNCH_FILE_NAME": "some_file.ext" }
   }
 }
 ```

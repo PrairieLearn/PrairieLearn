@@ -43,9 +43,7 @@ async function set_resolution() {
 function setup_connection() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const url = `${protocol}//${window.location.hostname}:${window.location.port}${window.location.pathname}`;
-  const rfb = new RFB(screen, url, {
-    wsProtocols: ['binary'],
-  });
+  const rfb = new RFB(screen, url, { wsProtocols: ['binary'] });
 
   // Set parameters that can be changed on an active connection
   rfb.viewOnly = false;

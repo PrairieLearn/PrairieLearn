@@ -204,10 +204,7 @@ describe('Access control', function () {
   /**********************************************************************/
 
   async function postAssessment(cookies, includePassword, expectedStatusCode) {
-    const body = new URLSearchParams({
-      __action: 'new_instance',
-      __csrf_token,
-    });
+    const body = new URLSearchParams({ __action: 'new_instance', __csrf_token });
 
     if (includePassword) {
       body.append('password', 'secret');
@@ -328,10 +325,7 @@ describe('Access control', function () {
   /**********************************************************************/
 
   async function postInstanceQuestion(cookies, expectedStatusCode) {
-    const submittedAnswer = {
-      wx: 0,
-      wy: 0,
-    };
+    const submittedAnswer = { wx: 0, wy: 0 };
     const res = await fetchCookie(fetch, cookies)(q1Url, {
       method: 'POST',
       body: new URLSearchParams({

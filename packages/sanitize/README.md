@@ -7,20 +7,9 @@ A collection of functions for sanitizing and escaping various values.
 ```ts
 import { sanitizeObject, escapeRegExp, recursivelyTruncateStrings } from '@prairielearn/sanitize';
 
-sanitizeObject({
-  value: 'null \u0000 byte',
-});
+sanitizeObject({ value: 'null \u0000 byte' });
 
 escapeRegExp('foo*(bar)');
 
-recursivelyTruncateStrings(
-  {
-    foo: {
-      bar: {
-        baz: 'biz'.repeat(10000),
-      },
-    },
-  },
-  100,
-);
+recursivelyTruncateStrings({ foo: { bar: { baz: 'biz'.repeat(10000) } } }, 100);
 ```

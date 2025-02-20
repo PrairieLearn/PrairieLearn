@@ -62,10 +62,7 @@ describe('course database', () => {
   describe('JSON file loading', () => {
     it('loads a valid json file', async () => {
       await withTempFile(async (file) => {
-        const json = {
-          uuid: UUID,
-          foo: 'bar',
-        };
+        const json = { uuid: UUID, foo: 'bar' };
         await fs.writeJson(file.path, json);
         const result = await courseDb.loadInfoFile({
           coursePath: file.dirname,

@@ -84,9 +84,7 @@ const modal = document.querySelector('#deleteCourseModal');
 document.querySelectorAll('.js-delete-course').forEach((el) => {
   el.addEventListener('click', (e) => {
     const button = e.target;
-    templateFromAttributes(e.currentTarget, modal, {
-      'data-course-name': '.js-course-name',
-    });
+    templateFromAttributes(e.currentTarget, modal, { 'data-course-name': '.js-course-name' });
   });
 });
 ```

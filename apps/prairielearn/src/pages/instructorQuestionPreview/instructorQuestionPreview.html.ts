@@ -10,14 +10,8 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
   return PageLayout({
     resLocals,
     pageTitle: 'Question Preview',
-    navContext: {
-      type: 'instructor',
-      page: 'question',
-      subPage: 'preview',
-    },
-    options: {
-      pageNote: resLocals.question.qid,
-    },
+    navContext: { type: 'instructor', page: 'question', subPage: 'preview' },
+    options: { pageNote: resLocals.question.qid },
     headContent: html`
       ${compiledScriptTag('question.ts')}
       <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>

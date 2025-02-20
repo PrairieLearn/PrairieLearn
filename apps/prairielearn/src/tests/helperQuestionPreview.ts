@@ -34,15 +34,9 @@ export function testQuestionPreviews(
         locals.question = addVectors;
         locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
         locals.postAction = 'grade';
-        locals.expectedResult = {
-          submission_score: 1,
-          submission_correct: true,
-        };
+        locals.expectedResult = { submission_score: 1, submission_correct: true };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            wx: variant.true_answer.wx,
-            wy: variant.true_answer.wy,
-          };
+          return { wx: variant.true_answer.wx, wy: variant.true_answer.wy };
         };
       });
     });
@@ -57,15 +51,9 @@ export function testQuestionPreviews(
         locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
         locals.postAction = 'save';
         locals.question = addVectors;
-        locals.expectedResult = {
-          submission_score: null,
-          submission_correct: null,
-        };
+        locals.expectedResult = { submission_score: null, submission_correct: null };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            wx: 500,
-            wy: -100,
-          };
+          return { wx: 500, wy: -100 };
         };
       });
     });
@@ -80,15 +68,9 @@ export function testQuestionPreviews(
         locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
         locals.postAction = 'grade';
         locals.question = addVectors;
-        locals.expectedResult = {
-          submission_score: 0,
-          submission_correct: false,
-        };
+        locals.expectedResult = { submission_score: 0, submission_correct: false };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            wx: -300,
-            wy: 400,
-          };
+          return { wx: -300, wy: 400 };
         };
       });
     });
@@ -103,14 +85,9 @@ export function testQuestionPreviews(
         locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
         locals.postAction = 'grade';
         locals.question = addNumbers;
-        locals.expectedResult = {
-          submission_score: 1,
-          submission_correct: true,
-        };
+        locals.expectedResult = { submission_score: 1, submission_correct: true };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c,
-          };
+          return { c: variant.true_answer.c };
         };
       });
     });
@@ -125,14 +102,9 @@ export function testQuestionPreviews(
         locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
         locals.postAction = 'grade';
         locals.question = addNumbers;
-        locals.expectedResult = {
-          submission_score: 0,
-          submission_correct: false,
-        };
+        locals.expectedResult = { submission_score: 0, submission_correct: false };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c + 1,
-          };
+          return { c: variant.true_answer.c + 1 };
         };
       });
     });
@@ -147,14 +119,9 @@ export function testQuestionPreviews(
         locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
         locals.postAction = 'grade';
         locals.question = addNumbers;
-        locals.expectedResult = {
-          submission_score: null,
-          submission_correct: null,
-        };
+        locals.expectedResult = { submission_score: null, submission_correct: null };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            c: 'not_a_number',
-          };
+          return { c: 'not_a_number' };
         };
       });
     });

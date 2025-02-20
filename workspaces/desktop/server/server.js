@@ -10,18 +10,10 @@ const child_process = require('child_process');
 const app = express();
 express_ws(app);
 const server = http.createServer(app);
-const ws_proxy = http_proxy.createProxyServer({
-  target: 'http://localhost:5901',
-  ws: true,
-});
+const ws_proxy = http_proxy.createProxyServer({ target: 'http://localhost:5901', ws: true });
 
 const argument_option_defs = [
-  {
-    name: 'help',
-    alias: 'h',
-    type: Boolean,
-    description: 'display this usage guide',
-  },
+  { name: 'help', alias: 'h', type: Boolean, description: 'display this usage guide' },
   {
     name: 'port',
     alias: 'p',
@@ -103,21 +95,13 @@ const spawn_gui = async (width, height) => {
       '-noscrollcopyrect',
       '-noxdamage',
     ],
-    {
-      env: {
-        X11VNC_FINDDISPLAY_ALWAYS_FAILS: '1',
-      },
-    },
+    { env: { X11VNC_FINDDISPLAY_ALWAYS_FAILS: '1' } },
   );
   attach_listeners(x11vnc_proc);
 
   // Now finally, create the window manager. We don't need to kill this.
   // For some reason it gets mad if we _do_ try to kill it.  So, I'm not touching it.
-  wm_proc = child_process.spawn(options.de, [], {
-    env: {
-      DISPLAY: ':1',
-    },
-  });
+  wm_proc = child_process.spawn(options.de, [], { env: { DISPLAY: ':1' } });
   attach_listeners(wm_proc);
 };
 

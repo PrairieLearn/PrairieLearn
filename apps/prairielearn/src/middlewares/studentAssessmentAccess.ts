@@ -57,14 +57,16 @@ export default asyncHandler(async (req, res, next) => {
     // start the assessment when that access rule applies, even though they'd have no credit.
     // We rely on completely blocking access when `active: false` and `showClosedAssessment: false`
     // are both used, as there's otherwise no way to totally block access.
-    res.status(403).send(
-      StudentAssessmentAccess({
-        resLocals: res.locals,
-        showClosedScore: res.locals.authz_result?.show_closed_assessment_score ?? true,
-        showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
-        userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
-      }),
-    );
+    res
+      .status(403)
+      .send(
+        StudentAssessmentAccess({
+          resLocals: res.locals,
+          showClosedScore: res.locals.authz_result?.show_closed_assessment_score ?? true,
+          showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
+          userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+        }),
+      );
     return;
   }
 

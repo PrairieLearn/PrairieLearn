@@ -54,9 +54,7 @@ function PurchaseTable({ purchases }: { purchases: Purchase[] }) {
               <td>${purchase.stripe_checkout_session.created_at?.toUTCString()}</td>
               <td>${formatStripePrice(purchase.stripe_checkout_session.data.amount_total)} USD</td>
               <td>
-                ${StripeCheckoutSessionPaymentStatus({
-                  session: purchase.stripe_checkout_session,
-                })}
+                ${StripeCheckoutSessionPaymentStatus({ session: purchase.stripe_checkout_session })}
               </td>
             </tr>`;
           })}

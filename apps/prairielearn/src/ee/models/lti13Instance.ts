@@ -7,9 +7,7 @@ const sql = loadSqlEquiv(import.meta.url);
 export async function selectLti13Instance(lti13_instance_id: string): Promise<Lti13Instance> {
   const lti13_instance = await queryOptionalRow(
     sql.select_lti13_instance,
-    {
-      lti13_instance_id,
-    },
+    { lti13_instance_id },
     Lti13InstanceSchema,
   );
 

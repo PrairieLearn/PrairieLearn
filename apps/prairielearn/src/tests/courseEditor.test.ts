@@ -52,11 +52,7 @@ const testEditData = [
     formSelector: '#createQuestionModal',
     action: 'add_question',
     info: 'questions/New_1/info.json',
-    data: {
-      qid: 'New',
-      title: 'New',
-      start_from: 'Empty question',
-    },
+    data: { qid: 'New', title: 'New', start_from: 'Empty question' },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -134,9 +130,7 @@ const testEditData = [
     url: `${courseInstanceUrl}/question/1/settings`,
     button: '#copyQuestionButton',
     formSelector: 'form[name="copy-question-form"]',
-    data: {
-      to_course_id: 1,
-    },
+    data: { to_course_id: 1 },
     action: 'copy_question',
     info: 'questions/test/question_copy1/info.json',
     files: new Set([
@@ -170,12 +164,7 @@ const testEditData = [
     formSelector: '#createAssessmentModal',
     action: 'add_assessment',
     info: 'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
-    data: {
-      title: 'New',
-      aid: 'New',
-      type: 'Homework',
-      set: 'Homework',
-    },
+    data: { title: 'New', aid: 'New', type: 'Homework', set: 'Homework' },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -235,10 +224,7 @@ const testEditData = [
     formSelector: '#createCourseInstanceModal',
     action: 'add_course_instance',
     info: 'courseInstances/New_1/infoCourseInstance.json',
-    data: {
-      short_name: 'New',
-      long_name: 'New',
-    },
+    data: { short_name: 'New', long_name: 'New' },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -440,10 +426,7 @@ function testEdit(params) {
     });
 
     it('should pull into dev directory', async () => {
-      await execa('git', ['pull'], {
-        cwd: courseDevDir,
-        env: process.env,
-      });
+      await execa('git', ['pull'], { cwd: courseDevDir, env: process.env });
     });
 
     it('should have correct contents', async () => {
@@ -469,27 +452,12 @@ async function createCourseFiles() {
     cwd: '.',
     env: process.env,
   });
-  await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-    cwd: '.',
-    env: process.env,
-  });
+  await execa('git', ['clone', courseOriginDir, courseLiveDir], { cwd: '.', env: process.env });
   await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
-  await execa('git', ['add', '-A'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['commit', '-m', 'initial commit'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['push'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['clone', courseOriginDir, courseDevDir], {
-    cwd: '.',
-    env: process.env,
-  });
+  await execa('git', ['add', '-A'], { cwd: courseLiveDir, env: process.env });
+  await execa('git', ['commit', '-m', 'initial commit'], { cwd: courseLiveDir, env: process.env });
+  await execa('git', ['push'], { cwd: courseLiveDir, env: process.env });
+  await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
 }
 
 async function deleteCourseFiles() {

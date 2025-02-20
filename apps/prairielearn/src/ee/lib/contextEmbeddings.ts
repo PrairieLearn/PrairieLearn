@@ -149,10 +149,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
 
     await queryRows(
       sql.delete_unused_doc_chunks,
-      {
-        doc_paths: allowedFilepaths,
-        chunk_ids: files.map((doc) => doc.chunkId).concat(['']),
-      },
+      { doc_paths: allowedFilepaths, chunk_ids: files.map((doc) => doc.chunkId).concat(['']) },
       QuestionGenerationContextEmbeddingSchema,
     );
   });

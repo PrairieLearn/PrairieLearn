@@ -216,11 +216,7 @@ const BENCHMARKS: Benchmark[] = [
     promptUserInput: 'Students should enter an integer value for A dot B.',
     promptGrading: 'The correct answer is equal to x*w + y*z.',
   },
-  {
-    promptGeneral: 'sum a + b',
-    promptUserInput: 'integer',
-    promptGrading: 'c = a+b',
-  },
+  { promptGeneral: 'sum a + b', promptUserInput: 'integer', promptGrading: 'c = a+b' },
   {
     promptGeneral:
       'A car is accelerating forward with acceleration a (ranging from 2 to 5, with precision .1), with initial velocity and position = 0. Find the position and velocity of the car after elapsed time t (integer from 2 to 20)',
@@ -269,9 +265,7 @@ export async function benchmarkAiQuestionGeneration({
   serverJob.executeInBackground(async (job) => {
     // We'll create a new course in a temporary directory. This will allow us
     // to preview any generated questions in the UI.
-    const courseDirectory = await tmp.dir({
-      prefix: 'ai-question-generation-benchmark-',
-    });
+    const courseDirectory = await tmp.dir({ prefix: 'ai-question-generation-benchmark-' });
 
     // The course must be a git directory for editing to work correctly.
     await execa('git', ['init'], { cwd: courseDirectory.path });
@@ -311,10 +305,7 @@ export async function benchmarkAiQuestionGeneration({
     }
 
     // Enable the feature flag for this new course.
-    await features.enable('ai-question-generation', {
-      institution_id: '1',
-      course_id: course.id,
-    });
+    await features.enable('ai-question-generation', { institution_id: '1', course_id: course.id });
 
     const evaluationResults: QuestionGenerationEvaluation[] = [];
 

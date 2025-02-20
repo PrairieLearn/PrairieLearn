@@ -267,24 +267,10 @@ const ConfigSchema = z.object({
   shibLinkLogo: z.string().default('/images/illinois_logo.svg'),
   shibLinkColors: z
     .object({
-      normal: z.object({
-        background: z.string(),
-        border: z.string(),
-        text: z.string(),
-      }),
-      hover: z.object({
-        background: z.string(),
-        border: z.string(),
-        text: z.string(),
-      }),
-      active: z.object({
-        background: z.string(),
-        border: z.string(),
-        text: z.string(),
-      }),
-      focus: z.object({
-        shadow: z.string(),
-      }),
+      normal: z.object({ background: z.string(), border: z.string(), text: z.string() }),
+      hover: z.object({ background: z.string(), border: z.string(), text: z.string() }),
+      active: z.object({ background: z.string(), border: z.string(), text: z.string() }),
+      focus: z.object({ shadow: z.string() }),
     })
     .default({
       normal: { background: '#E84A27', border: '#E84A27', text: 'white' },
@@ -494,12 +480,7 @@ const ConfigSchema = z.object({
    * The key must have length 32, and the iv must have length 12.
    */
   azureCookieEncryptionKeys: z
-    .array(
-      z.object({
-        key: z.string().length(32),
-        iv: z.string().length(12),
-      }),
-    )
+    .array(z.object({ key: z.string().length(32), iv: z.string().length(12) }))
     .default([]),
   azureLoggingLevel: z.enum(['error', 'warn', 'info']).default('warn'),
   /**

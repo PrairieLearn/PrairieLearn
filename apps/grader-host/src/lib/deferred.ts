@@ -17,9 +17,5 @@ export function deferredPromise<T>(): DeferredPromise<T> {
   if (resolve === undefined || reject === undefined) {
     throw new Error('resolve or reject is undefined');
   }
-  return {
-    resolve,
-    reject,
-    promise,
-  };
+  return { resolve, reject, promise };
 }

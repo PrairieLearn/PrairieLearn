@@ -13,14 +13,8 @@ export function AdministratorAdmins({
   return PageLayout({
     resLocals,
     pageTitle: 'Administrators',
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'administrators',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'administrators' },
+    options: { fullWidth: true },
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -34,9 +28,7 @@ export function AdministratorAdmins({
             data-placement="auto"
             title="Add new administrator"
             data-content="${escapeHtml(
-              AdministratorInsertForm({
-                csrfToken: resLocals.__csrf_token,
-              }),
+              AdministratorInsertForm({ csrfToken: resLocals.__csrf_token }),
             )}"
             data-testid="administrator-insert-button"
           >

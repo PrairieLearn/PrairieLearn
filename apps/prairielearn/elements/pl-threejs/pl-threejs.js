@@ -615,10 +615,7 @@ PLThreeJS.prototype.makeScreen = function () {
 PLThreeJS.prototype.makeFrame = function () {
   function makeAxis(whichAxis) {
     var geometry = new THREE.CylinderGeometry(0.05, 0.05, 1);
-    var material = new THREE.MeshStandardMaterial({
-      transparent: true,
-      opacity: 0.9,
-    });
+    var material = new THREE.MeshStandardMaterial({ transparent: true, opacity: 0.9 });
     if (whichAxis === 'x' || whichAxis === 'X') {
       geometry.rotateZ(Math.PI / 2);
       geometry.translate(0.5, 0, 0);
@@ -678,10 +675,7 @@ PLThreeJS.prototype.onmousedown = function (event) {
     // - turn on dragging
     this.isDragging = true;
     // - state for rotation
-    this.previousMousePosition = {
-      x: event.offsetX,
-      y: event.offsetY,
-    };
+    this.previousMousePosition = { x: event.offsetX, y: event.offsetY };
     // - state for translation
     this.translatePlane.setFromNormalAndCoplanarPoint(
       this.camera.getWorldDirection(this.translatePlane.normal),
@@ -726,10 +720,7 @@ PLThreeJS.prototype.onmousemove = function (e) {
       // Render and update hidden input element
       this.render();
 
-      this.previousMousePosition = {
-        x: e.offsetX,
-        y: e.offsetY,
-      };
+      this.previousMousePosition = { x: e.offsetX, y: e.offsetY };
     }
   }
 };

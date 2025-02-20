@@ -15,20 +15,14 @@ interface Plan {
 
 export const PLANS = {
   // Enabled when student billing for enrollments is enabled for a course instance.
-  basic: {
-    features: ['course-instance-access'],
-  },
+  basic: { features: ['course-instance-access'] },
   // Enables workspaces and external grading. Can be used in combination with
   // the `basic` plan (for a course using student billing for enrollments) or
   // in isolation (a course instance's institution is paying for the basic plan
   // but the course instance wants to use workspaces and external grading).
-  compute: {
-    features: ['workspaces', 'external-grading'],
-  },
+  compute: { features: ['workspaces', 'external-grading'] },
   // All features that exist.
-  everything: {
-    features: ['workspaces', 'external-grading'],
-  },
+  everything: { features: ['workspaces', 'external-grading'] },
 } satisfies Record<PlanName, Plan>;
 
 export function getFeaturesForPlans(plans: PlanName[]): PlanFeatureName[] {

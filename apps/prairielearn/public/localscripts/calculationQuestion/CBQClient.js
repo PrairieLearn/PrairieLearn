@@ -31,7 +31,5 @@ define(['underscore', 'SimpleClient'], function (_, SimpleClient) {
   }
   CBQClient.prototype = new SimpleClient.SimpleClient();
 
-  return {
-    CBQClient: CBQClient,
-  };
+  return { CBQClient: CBQClient };
 });

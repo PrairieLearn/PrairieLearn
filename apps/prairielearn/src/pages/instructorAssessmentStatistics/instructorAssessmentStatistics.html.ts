@@ -62,14 +62,8 @@ export function InstructorAssessmentStatistics({
   return PageLayout({
     resLocals,
     pageTitle: 'Assessment Statistics',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'assessment_statistics',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'assessment_statistics' },
+    options: { fullWidth: true },
     headContent: [compiledScriptTag('instructorAssessmentStatisticsClient.ts')],
     content: html`
       ${AssessmentSyncErrorsAndWarnings({

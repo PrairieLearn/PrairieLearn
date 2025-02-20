@@ -27,10 +27,7 @@ export function Enroll({
   return PageLayout({
     resLocals,
     pageTitle: 'Enrollment - Courses',
-    navContext: {
-      type: 'plain',
-      page: 'enroll',
-    },
+    navContext: { type: 'plain', page: 'enroll' },
     headContent: [compiledScriptTag('enrollClient.ts')],
     preContent: html`
       ${AddCourseModal({ csrfToken: resLocals.__csrf_token })}
@@ -148,10 +145,7 @@ export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Recor
   return PageLayout({
     resLocals,
     pageTitle: 'Enrollment - Courses',
-    navContext: {
-      type: 'plain',
-      page: 'enroll',
-    },
+    navContext: { type: 'plain', page: 'enroll' },
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-danger text-white">Enrollment limit exceeded</div>

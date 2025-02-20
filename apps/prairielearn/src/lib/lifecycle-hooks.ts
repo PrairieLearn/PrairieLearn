@@ -14,9 +14,7 @@ import { config } from './config.js';
  */
 async function getInstanceLifecycleState(client: AutoScalingClient): Promise<string | undefined> {
   const res = await client.send(
-    new DescribeAutoScalingInstancesCommand({
-      InstanceIds: [config.instanceId],
-    }),
+    new DescribeAutoScalingInstancesCommand({ InstanceIds: [config.instanceId] }),
   );
 
   return res.AutoScalingInstances?.[0]?.LifecycleState;

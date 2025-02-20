@@ -13,9 +13,7 @@ interface ConfigSource {
 }
 
 export function makeLiteralConfigSource(config: AbstractConfig) {
-  return {
-    load: async () => config,
-  };
+  return { load: async () => config };
 }
 
 export function makeFileConfigSource(path: string): ConfigSource {
@@ -77,11 +75,7 @@ export function makeImdsConfigSource(): ConfigSource {
       const hostname = await fetchInstanceHostname();
       const identity = await fetchInstanceIdentity();
 
-      return {
-        hostname,
-        instanceId: identity.instanceId,
-        awsRegion: identity.region,
-      };
+      return { hostname, instanceId: identity.instanceId, awsRegion: identity.region };
     },
   };
 }

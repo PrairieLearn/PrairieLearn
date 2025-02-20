@@ -41,15 +41,9 @@ define(['underscore', 'QServer', 'PrairieRandom'], function (_, QServer, Prairie
     answers = answers.concat(rand.randNElem(numberIncorrect, options.incorrectAnswers));
     var perm = rand.shuffle(answers);
     answers = _(answers).map(function (value, index) {
-      return {
-        key: String.fromCharCode('a'.charCodeAt() + index),
-        text: value,
-      };
+      return { key: String.fromCharCode('a'.charCodeAt() + index), text: value };
     });
-    var params = {
-      text: options.text,
-      answers: answers,
-    };
+    var params = { text: options.text, answers: answers };
     var trueIndexes = _.range(numberCorrect)
       .map(function (i) {
         return _(perm).indexOf(i);
@@ -60,10 +54,7 @@ define(['underscore', 'QServer', 'PrairieRandom'], function (_, QServer, Prairie
         return answers[i];
       }),
     };
-    var questionData = {
-      params: params,
-      trueAnswer: trueAnswer,
-    };
+    var questionData = { params: params, trueAnswer: trueAnswer };
     return questionData;
   };
 

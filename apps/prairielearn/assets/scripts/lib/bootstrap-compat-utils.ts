@@ -22,30 +22,18 @@ onDocumentReady(() => {
       if (mutation.type === 'attributes') {
         const el = mutation.target as Element;
         for (const migrator of set.matches(el)) {
-          migrator.data.migrate(el, {
-            addClass,
-            migrateClass,
-            migrateAttribute,
-          });
+          migrator.data.migrate(el, { addClass, migrateClass, migrateAttribute });
         }
       }
     }
   });
-  mutationObserver.observe(window.document, {
-    attributes: true,
-    childList: true,
-    subtree: true,
-  });
+  mutationObserver.observe(window.document, { attributes: true, childList: true, subtree: true });
 });
 
 export function makeMigrator(options: MigratorOptions) {
   observe(options.selector, {
     add(el) {
-      options.migrate(el, {
-        addClass,
-        migrateClass,
-        migrateAttribute,
-      });
+      options.migrate(el, { addClass, migrateClass, migrateAttribute });
     },
   });
 

@@ -20,19 +20,11 @@ import { makePostgresTestUtils } from './test-utils.js';
 
 chaiUse(chaiAsPromised);
 
-const postgresTestUtils = makePostgresTestUtils({
-  database: 'prairielearn_postgres',
-});
+const postgresTestUtils = makePostgresTestUtils({ database: 'prairielearn_postgres' });
 
-const WorkspaceSchema = z.object({
-  id: z.string(),
-  created_at: z.date(),
-});
+const WorkspaceSchema = z.object({ id: z.string(), created_at: z.date() });
 
-const SprocTwoColumnsSchema = z.object({
-  id: z.string(),
-  negative: z.number(),
-});
+const SprocTwoColumnsSchema = z.object({ id: z.string(), negative: z.number() });
 
 describe('@prairielearn/postgres', function () {
   before(async () => {
@@ -311,13 +303,9 @@ describe('@prairielearn/postgres', function () {
   });
 
   describe('queryValidatedCursor', () => {
-    const WorkspaceSchema = z.object({
-      id: z.string(),
-    });
+    const WorkspaceSchema = z.object({ id: z.string() });
 
-    const BadWorkspaceSchema = z.object({
-      badProperty: z.string(),
-    });
+    const BadWorkspaceSchema = z.object({ badProperty: z.string() });
 
     describe('iterator', () => {
       it('validates with provided schema', async () => {

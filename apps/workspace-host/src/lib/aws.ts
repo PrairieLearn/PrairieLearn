@@ -6,19 +6,14 @@ import { config } from './config.js';
 
 const awsConfigProvider = makeAwsConfigProvider({
   credentials: fromNodeProviderChain(),
-  getClientConfig: () => ({
-    region: config.awsRegion,
-  }),
+  getClientConfig: () => ({ region: config.awsRegion }),
   getS3ClientConfig: () => {
     if (!config.runningInEc2) {
       // If we're not running in EC2, assume we're running with a local s3rver instance.
       // See https://github.com/jamhall/s3rver for more details.
       return {
         forcePathStyle: true,
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-        },
+        credentials: { accessKeyId: 'S3RVER', secretAccessKey: 'S3RVER' },
         endpoint: 'http://127.0.0.1:5000',
       };
     }

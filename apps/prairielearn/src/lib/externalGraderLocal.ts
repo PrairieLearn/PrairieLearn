@@ -38,10 +38,7 @@ export class ExternalGraderLocal implements Grader {
       timedOut?: boolean;
       message?: string;
       results?: Record<string, any> | null;
-    } = {
-      succeeded: false,
-      job_id: grading_job.id,
-    };
+    } = { succeeded: false, job_id: grading_job.id };
 
     const dir = getDevJobDirectory(grading_job.id);
     const hostDir = getDevHostJobDirectory(grading_job.id);
@@ -153,11 +150,7 @@ export class ExternalGraderLocal implements Grader {
         Entrypoint: shlex.split(question.external_grading_entrypoint),
       });
 
-      const stream = await container.attach({
-        stream: true,
-        stdout: true,
-        stderr: true,
-      });
+      const stream = await container.attach({ stream: true, stdout: true, stderr: true });
 
       const out = byline(stream);
       out.on('data', (line) => {
@@ -190,10 +183,7 @@ export class ExternalGraderLocal implements Grader {
       });
 
       // Save job output
-      await sqldb.queryAsync(sql.update_job_output, {
-        grading_job_id: grading_job.id,
-        output,
-      });
+      await sqldb.queryAsync(sql.update_job_output, { grading_job_id: grading_job.id, output });
 
       // Now that the job has completed, let's extract the results from `results.json`.
       if (results.succeeded) {

@@ -33,9 +33,7 @@ define(['underscore', 'SimpleClient'], function (_, SimpleClient) {
 
   MTFClient.prototype = new SimpleClient.SimpleClient();
 
-  return {
-    MTFClient: MTFClient,
-  };
+  return { MTFClient: MTFClient };
 });
 
 /* And here's the part that handles mutual exclusion. */

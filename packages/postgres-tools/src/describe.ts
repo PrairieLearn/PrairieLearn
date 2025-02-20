@@ -64,10 +64,7 @@ async function describeWithPool(
   const ignoreEnums = options?.ignoreEnums || [];
   let ignoreColumns: Record<string, string[]> = {};
 
-  const output: DatabaseDescription = {
-    tables: {},
-    enums: {},
-  };
+  const output: DatabaseDescription = { tables: {}, enums: {} };
 
   // Get the names of the tables and filter out any ignored tables
   const tablesRes = await pool.queryAsync(sql.get_tables, []);
@@ -97,23 +94,17 @@ async function describeWithPool(
 
   // Get column info for each table
   for (const table of tables) {
-    const columnResults = await pool.queryAsync(sql.get_columns_for_table, {
-      oid: table.oid,
-    });
+    const columnResults = await pool.queryAsync(sql.get_columns_for_table, { oid: table.oid });
 
     const columns = columnResults.rows.filter((row) => {
       return (ignoreColumns[table.name] || []).indexOf(row.name) === -1;
     });
 
-    const indexResults = await pool.queryAsync(sql.get_indexes_for_table, {
-      oid: table.oid,
-    });
+    const indexResults = await pool.queryAsync(sql.get_indexes_for_table, { oid: table.oid });
 
     const foreignKeyConstraintResults = await pool.queryAsync(
       sql.get_foreign_key_constraints_for_table,
-      {
-        oid: table.oid,
-      },
+      { oid: table.oid },
     );
 
     const referenceResults = await pool.queryAsync(sql.get_references_for_table, {
@@ -186,10 +177,7 @@ export function formatDatabaseDescription(
   description: DatabaseDescription,
   options = { coloredOutput: true },
 ): { tables: Record<string, string>; enums: Record<string, string> } {
-  const output = {
-    tables: {} as Record<string, string>,
-    enums: {} as Record<string, string>,
-  };
+  const output = { tables: {} as Record<string, string>, enums: {} as Record<string, string> };
 
   Object.keys(description.tables).forEach((tableName) => (output.tables[tableName] = ''));
 

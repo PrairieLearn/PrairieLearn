@@ -161,10 +161,7 @@
     saveSubmittedFile(name, contents) {
       var idx = this.files.findIndex((file) => file.name === name);
       if (idx === -1) {
-        this.files.push({
-          name,
-          contents,
-        });
+        this.files.push({ name, contents });
       } else {
         this.files[idx].contents = contents;
       }

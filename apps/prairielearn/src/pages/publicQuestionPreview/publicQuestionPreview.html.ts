@@ -10,14 +10,8 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
   return PageLayout({
     resLocals,
     pageTitle: resLocals.question.qid,
-    navContext: {
-      type: 'public',
-      page: 'public_question',
-      subPage: 'preview',
-    },
-    options: {
-      pageNote: 'Public Preview',
-    },
+    navContext: { type: 'public', page: 'public_question', subPage: 'preview' },
+    options: { pageNote: 'Public Preview' },
     headContent: html`
       ${compiledScriptTag('question.ts')}
       <script src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>

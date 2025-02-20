@@ -39,14 +39,7 @@ function fakeSqs(options: { message?: any; timeoutCount?: number } = {}) {
       return {};
     }
 
-    return {
-      Messages: [
-        {
-          Body: JSON.stringify(message),
-          ReceiptHandle: receiptHandle,
-        },
-      ],
-    };
+    return { Messages: [{ Body: JSON.stringify(message), ReceiptHandle: receiptHandle }] };
   });
   const changeMessageVisibility = sinon.spy((_command) => null);
   const deleteMessage = sinon.spy((_command) => null);
@@ -92,9 +85,7 @@ describe('receiveFromQueue', () => {
   });
 
   it('tries to fetch a message again if none is delivered', async () => {
-    const sqs = fakeSqs({
-      timeoutCount: 1,
-    });
+    const sqs = fakeSqs({ timeoutCount: 1 });
 
     await receiveFromQueue(sqs, 'helloworld', async () => {});
 
@@ -102,21 +93,14 @@ describe('receiveFromQueue', () => {
   });
 
   it("rejects messages that don't contain a valid json string", async () => {
-    const sqs = fakeSqs({
-      message: '{"oops, this is invalid json"',
-    });
+    const sqs = fakeSqs({ message: '{"oops, this is invalid json"' });
 
     await assert.isRejected(receiveFromQueue(sqs, '', async () => {}));
     assert.equal(sqs.deleteMessage.callCount, 0);
   });
 
   it("rejects messages that don't match the message schema", async () => {
-    const sqs = fakeSqs({
-      message: {
-        timeout: 'abc',
-        s3Bucket: 123,
-      },
-    });
+    const sqs = fakeSqs({ message: { timeout: 'abc', s3Bucket: 123 } });
 
     await assert.isRejected(receiveFromQueue(sqs, '', async () => {}));
     assert.equal(sqs.deleteMessage.callCount, 0);

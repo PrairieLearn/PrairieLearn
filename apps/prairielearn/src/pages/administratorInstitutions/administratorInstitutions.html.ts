@@ -26,14 +26,8 @@ export function AdministratorInstitutions({
   return PageLayout({
     resLocals,
     pageTitle: 'Institutions',
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'institutions',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'institutions' },
+    options: { fullWidth: true },
     content: html`
       <div id="institutions" class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">

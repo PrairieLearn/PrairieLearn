@@ -15,14 +15,8 @@ export function InstructorCourseAdminTopics({
   return PageLayout({
     resLocals,
     pageTitle: 'Topics',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'topics',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'topics' },
+    options: { fullWidth: true },
     content: html`
       ${CourseSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

@@ -120,10 +120,5 @@ export async function receiveFromQueue(
       },
     );
 
-  await sqs.send(
-    new DeleteMessageCommand({
-      QueueUrl: queueUrl,
-      ReceiptHandle: receiptHandle,
-    }),
-  );
+  await sqs.send(new DeleteMessageCommand({ QueueUrl: queueUrl, ReceiptHandle: receiptHandle }));
 }

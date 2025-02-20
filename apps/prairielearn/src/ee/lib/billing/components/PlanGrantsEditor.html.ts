@@ -91,10 +91,7 @@ export function parseDesiredPlanGrants({
     const planGranted = !!body[`plan_${plan}`];
     const planGrantType = body[`plan_${plan}_grant_type`];
     if (planGranted) {
-      desiredPlans.push({
-        plan,
-        grantType: planGrantType,
-      });
+      desiredPlans.push({ plan, grantType: planGrantType });
     }
   }
   return desiredPlans;

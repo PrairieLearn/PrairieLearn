@@ -1,7 +1,4 @@
-export const PRETTIER_CONFIG = {
-  tabWidth: 2,
-  printWidth: 100,
-};
+export const PRETTIER_CONFIG = { tabWidth: 2, printWidth: 100 };
 
 export async function formatJsonWithPrettier(json: string): Promise<string> {
   // Dynamic imports are used to avoid slowing down server startup.

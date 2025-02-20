@@ -36,11 +36,7 @@ export function InstanceQuestion({
       instance_question_info: undefined,
     },
     pageTitle: 'Manual Grading',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'manual_grading',
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'manual_grading' },
     options: {
       fullWidth: true,
       pageNote: `Instance - question ${resLocals.instance_question_info.instructor_question_number}`,

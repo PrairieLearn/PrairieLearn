@@ -30,24 +30,9 @@ const partialCreditTests = [
     { qid: 'partialCredit1', action: 'check-closed', score: 0, sub_points: 0 },
     { qid: 'partialCredit2', action: 'check-closed', score: 0, sub_points: 0 },
     { qid: 'partialCredit3', action: 'check-closed', score: 0, sub_points: 0 },
-    {
-      qid: 'partialCredit1',
-      action: 'save-stored-fail',
-      score: 0,
-      sub_points: 0,
-    },
-    {
-      qid: 'partialCredit2',
-      action: 'grade-stored-fail',
-      score: 0,
-      sub_points: 0,
-    },
-    {
-      qid: 'partialCredit3',
-      action: 'save-stored-fail',
-      score: 0,
-      sub_points: 0,
-    },
+    { qid: 'partialCredit1', action: 'save-stored-fail', score: 0, sub_points: 0 },
+    { qid: 'partialCredit2', action: 'grade-stored-fail', score: 0, sub_points: 0 },
+    { qid: 'partialCredit3', action: 'save-stored-fail', score: 0, sub_points: 0 },
   ],
   [
     // answer questions correctly on the second try
@@ -93,31 +78,11 @@ const partialCreditTests = [
         incremental_submission_points_array: [9 * 0.37, 7 * (1 - 0.37)],
       },
     },
-    {
-      qid: 'partialCredit2',
-      action: 'save-stored-fail',
-      score: 0,
-      sub_points: 0,
-    },
-    {
-      qid: 'partialCredit3',
-      action: 'grade',
-      score: 71,
-      sub_points: 13 * 0.71,
-    },
+    { qid: 'partialCredit2', action: 'save-stored-fail', score: 0, sub_points: 0 },
+    { qid: 'partialCredit3', action: 'grade', score: 71, sub_points: 13 * 0.71 },
     { qid: 'partialCredit3', action: 'store', score: 0, sub_points: 0 },
-    {
-      qid: 'partialCredit3',
-      action: 'grade',
-      score: 100,
-      sub_points: 13 * (1 - 0.71),
-    },
-    {
-      qid: 'partialCredit3',
-      action: 'grade-stored-fail',
-      score: 0,
-      sub_points: 0,
-    },
+    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 13 * (1 - 0.71) },
+    { qid: 'partialCredit3', action: 'grade-stored-fail', score: 0, sub_points: 0 },
     { qid: 'partialCredit1', action: 'check-closed', score: 0, sub_points: 0 },
     { qid: 'partialCredit2', action: 'check-closed', score: 0, sub_points: 0 },
     { qid: 'partialCredit3', action: 'check-closed', score: 0, sub_points: 0 },
@@ -152,12 +117,7 @@ const partialCreditTests = [
       },
     },
     { qid: 'partialCredit1', action: 'check-closed', score: 0, sub_points: 0 },
-    {
-      qid: 'partialCredit1',
-      action: 'save-stored-fail',
-      score: 0,
-      sub_points: 0,
-    },
+    { qid: 'partialCredit1', action: 'save-stored-fail', score: 0, sub_points: 0 },
     {
       qid: 'partialCredit2',
       action: 'grade',
@@ -238,12 +198,7 @@ const partialCreditTests = [
       },
     },
     { qid: 'partialCredit2', action: 'check-closed', score: 0, sub_points: 0 },
-    {
-      qid: 'partialCredit2',
-      action: 'grade-stored-fail',
-      score: 0,
-      sub_points: 0,
-    },
+    { qid: 'partialCredit2', action: 'grade-stored-fail', score: 0, sub_points: 0 },
     {
       qid: 'partialCredit3',
       action: 'save',
@@ -345,12 +300,7 @@ const partialCreditTests = [
       },
     },
     { qid: 'partialCredit3', action: 'check-closed', score: 0, sub_points: 0 },
-    {
-      qid: 'partialCredit3',
-      action: 'grade-stored-fail',
-      score: 0,
-      sub_points: 0,
-    },
+    { qid: 'partialCredit3', action: 'grade-stored-fail', score: 0, sub_points: 0 },
   ],
   [
     // same as above, but in an interspersed order
@@ -513,12 +463,7 @@ const partialCreditTests = [
         incremental_submission_points_array: [13 * 0.63, null, 0, null, 8 * (0.64 - 0.63), 0],
       },
     },
-    {
-      qid: 'partialCredit1',
-      action: 'save-stored-fail',
-      score: 0,
-      sub_points: 0,
-    },
+    { qid: 'partialCredit1', action: 'save-stored-fail', score: 0, sub_points: 0 },
     {
       qid: 'partialCredit2',
       action: 'grade',
@@ -568,18 +513,8 @@ const partialCreditTests = [
       },
     },
     { qid: 'partialCredit3', action: 'check-closed', score: 0, sub_points: 0 },
-    {
-      qid: 'partialCredit3',
-      action: 'grade-stored-fail',
-      score: 0,
-      sub_points: 0,
-    },
-    {
-      qid: 'partialCredit2',
-      action: 'grade-stored-fail',
-      score: 0,
-      sub_points: 0,
-    },
+    { qid: 'partialCredit3', action: 'grade-stored-fail', score: 0, sub_points: 0 },
+    { qid: 'partialCredit2', action: 'grade-stored-fail', score: 0, sub_points: 0 },
     { qid: 'partialCredit2', action: 'check-closed', score: 0, sub_points: 0 },
   ],
 ];
@@ -676,10 +611,7 @@ describe('Exam assessment', function () {
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            wx: variant.true_answer.wx,
-            wy: variant.true_answer.wy,
-          };
+          return { wx: variant.true_answer.wx, wy: variant.true_answer.wy };
         };
       });
     });
@@ -706,10 +638,7 @@ describe('Exam assessment', function () {
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            wx: -500,
-            wy: 700,
-          };
+          return { wx: -500, wy: 700 };
         };
       });
     });
@@ -736,9 +665,7 @@ describe('Exam assessment', function () {
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c + 1,
-          };
+          return { c: variant.true_answer.c + 1 };
         };
       });
     });
@@ -765,9 +692,7 @@ describe('Exam assessment', function () {
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            key: variant.true_answer.key === 'a' ? 'b' : 'a',
-          };
+          return { key: variant.true_answer.key === 'a' ? 'b' : 'a' };
         };
       });
     });
@@ -794,9 +719,7 @@ describe('Exam assessment', function () {
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            c: 'not_a_number',
-          };
+          return { c: 'not_a_number' };
         };
       });
     });
@@ -826,9 +749,7 @@ describe('Exam assessment', function () {
         locals.postAction = 'save';
         locals.question = helperExam.questions.addNumbers;
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c - 1,
-          };
+          return { c: variant.true_answer.c - 1 };
         };
       });
     });
@@ -913,9 +834,7 @@ describe('Exam assessment', function () {
           assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c,
-          };
+          return { c: variant.true_answer.c };
         };
       });
     });
@@ -931,9 +850,7 @@ describe('Exam assessment', function () {
         locals.question = helperExam.questions.addNumbers;
         locals.postAction = 'save';
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c,
-          };
+          return { c: variant.true_answer.c };
         };
       });
     });
@@ -963,9 +880,7 @@ describe('Exam assessment', function () {
           assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            key: variant.true_answer.key === 'a' ? 'b' : 'a',
-          };
+          return { key: variant.true_answer.key === 'a' ? 'b' : 'a' };
         };
       });
     });
@@ -1008,10 +923,7 @@ describe('Exam assessment', function () {
           assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
-          return {
-            wx: 2000,
-            wy: -3000,
-          };
+          return { wx: 2000, wy: -3000 };
         };
       });
     });
@@ -1027,10 +939,7 @@ describe('Exam assessment', function () {
         locals.question = helperExam.questions.addVectors;
         locals.postAction = 'save';
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            wx: variant.true_answer.wx,
-            wy: variant.true_answer.wy,
-          };
+          return { wx: variant.true_answer.wx, wy: variant.true_answer.wy };
         };
       });
     });
@@ -1071,9 +980,7 @@ describe('Exam assessment', function () {
         locals.question = helperExam.questions.fossilFuelsRadio;
         locals.postAction = 'save';
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            key: variant.true_answer.key,
-          };
+          return { key: variant.true_answer.key };
         };
       });
     });
@@ -1241,9 +1148,7 @@ describe('Exam assessment', function () {
   describe('35. instance question points uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should get the submission_ids for addNumbers', async () => {
-        const params = {
-          qid: helperExam.questions.addNumbers.qid,
-        };
+        const params = { qid: helperExam.questions.addNumbers.qid };
         const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
         const rowCount = result.rowCount ?? 0;
         // make sure we've got lots of submissions to make the later checks work
@@ -1489,9 +1394,7 @@ describe('Exam assessment', function () {
   describe('38. instance question split points uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should get the submission_ids for addNumbers', async () => {
-        const params = {
-          qid: helperExam.questions.addNumbers.qid,
-        };
+        const params = { qid: helperExam.questions.addNumbers.qid };
         const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
         const rowCount = result.rowCount ?? 0;
         // make sure we've got lots of submissions to make the later checks work
@@ -1626,9 +1529,7 @@ describe('Exam assessment', function () {
   describe('39. instance question split score_perc uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should get the submission_ids for addNumbers', async () => {
-        const params = {
-          qid: helperExam.questions.addNumbers.qid,
-        };
+        const params = { qid: helperExam.questions.addNumbers.qid };
         const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
         const rowCount = result.rowCount ?? 0;
         // make sure we've got lots of submissions to make the later checks work
@@ -1805,9 +1706,7 @@ describe('Exam assessment', function () {
                 instance_question_stats: questionTest.stats,
               };
               locals.getSubmittedAnswer = function (_variant) {
-                return {
-                  s: String(questionTest.score),
-                };
+                return { s: String(questionTest.score) };
               };
             });
           });

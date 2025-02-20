@@ -4,9 +4,7 @@
     {
       "label": "focus-terminal",
       "command": "${command:workbench.action.terminal.toggleTerminal}",
-      "runOptions": {
-        "runOn": "folderOpen"
-      },
+      "runOptions": { "runOn": "folderOpen" },
       "isBackground": true
     }
   ]

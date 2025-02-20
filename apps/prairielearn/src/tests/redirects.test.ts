@@ -8,10 +8,7 @@ import * as helperServer from './helperServer.js';
 const siteUrl = 'http://localhost:' + config.serverPort;
 
 const redirects = [
-  {
-    original: '/pl/course/1/question/4',
-    redirect: '/pl/course/1/question/4/preview',
-  },
+  { original: '/pl/course/1/question/4', redirect: '/pl/course/1/question/4/preview' },
   {
     original: '/pl/course_instance/1/instructor/question/4',
     redirect: '/pl/course_instance/1/instructor/question/4/preview',

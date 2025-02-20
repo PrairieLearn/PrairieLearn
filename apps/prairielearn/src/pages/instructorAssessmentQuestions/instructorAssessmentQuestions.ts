@@ -19,10 +19,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const questions = await queryRows(
       sql.questions,
-      {
-        assessment_id: res.locals.assessment.id,
-        course_id: res.locals.course.id,
-      },
+      { assessment_id: res.locals.assessment.id, course_id: res.locals.course.id },
       AssessmentQuestionRowSchema,
     );
     res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));

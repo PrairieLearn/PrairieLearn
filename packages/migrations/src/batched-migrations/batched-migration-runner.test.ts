@@ -15,9 +15,7 @@ import {
   updateBatchedMigrationStatus,
 } from './batched-migration.js';
 
-const postgresTestUtils = makePostgresTestUtils({
-  database: 'prairielearn_migrations',
-});
+const postgresTestUtils = makePostgresTestUtils({ database: 'prairielearn_migrations' });
 
 function makeTestBatchMigration() {
   let executionCount = 0;
@@ -25,11 +23,7 @@ function makeTestBatchMigration() {
 
   return makeBatchedMigration({
     async getParameters() {
-      return {
-        min: 1n,
-        max: 10000n,
-        batchSize: 1000,
-      };
+      return { min: 1n, max: 10000n, batchSize: 1000 };
     },
     async execute(start: bigint, end: bigint) {
       executionCount += 1;
@@ -69,9 +63,7 @@ async function getBatchedMigrationJobs(migrationId: string) {
 async function resetFailedBatchedMigrationJobs(migrationId: string) {
   await queryAsync(
     "UPDATE batched_migration_jobs SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE batched_migration_id = $batched_migration_id AND status = 'failed'",
-    {
-      batched_migration_id: migrationId,
-    },
+    { batched_migration_id: migrationId },
   );
 }
 

@@ -48,12 +48,7 @@ function resetInstructorGradingPanel() {
         ],
         500,
       );
-      $(e.trigger)
-        .popover({
-          content: 'Copied!',
-          placement: 'right',
-        })
-        .popover('show');
+      $(e.trigger).popover({ content: 'Copied!', placement: 'right' }).popover('show');
       window.setTimeout(function () {
         $(e.trigger).popover('hide');
       }, 1000);
@@ -282,10 +277,7 @@ function submitSettings(e, use_rubric) {
     settingsFormData.set('use_rubric', use_rubric);
   }
 
-  fetch(this.action, {
-    method: 'POST',
-    body: settingsFormData,
-  })
+  fetch(this.action, { method: 'POST', body: settingsFormData })
     .catch((err) => ({ err }))
     .then(async (response) => {
       const data = await response.json().catch(() => ({ err: `Error: ${response.statusText}` }));

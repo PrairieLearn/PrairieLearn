@@ -79,9 +79,7 @@ export async function uploadInstanceGroups(
         job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
         job.verbose('----------------------------------------');
         job.verbose('Processing group updates...');
-        const csvStream = streamifier.createReadStream(csvFile.buffer, {
-          encoding: 'utf8',
-        });
+        const csvStream = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' });
         const csvConverter = csvtojson({ checkType: false, maxRowLength: 10000 });
         let successCount = 0;
         const groupAssignments = (await csvConverter.fromStream(csvStream))

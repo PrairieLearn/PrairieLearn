@@ -74,11 +74,7 @@ async function createGroup(
 ): Promise<cheerio.CheerioAPI> {
   const res = await fetchCookie(fetch)(assessmentUrl, {
     method: 'POST',
-    body: new URLSearchParams({
-      __action: 'create_group',
-      __csrf_token: csrfToken,
-      groupName,
-    }),
+    body: new URLSearchParams({ __action: 'create_group', __csrf_token: csrfToken, groupName }),
   });
   assert.isOk(res.ok);
   const $ = cheerio.load(await res.text());
@@ -295,10 +291,7 @@ describe('Group based exam assessments', function () {
       // Start assessment
       const response = await fetch(assessmentUrl, {
         method: 'POST',
-        body: new URLSearchParams({
-          __action: 'new_instance',
-          __csrf_token: secondUserCsrfToken,
-        }),
+        body: new URLSearchParams({ __action: 'new_instance', __csrf_token: secondUserCsrfToken }),
         follow: 1,
       });
       assert.isOk(response.ok);
@@ -375,10 +368,7 @@ describe('cross group exam access', function () {
     // Start assessment
     const response = await fetch(assessmentUrl, {
       method: 'POST',
-      body: new URLSearchParams({
-        __action: 'new_instance',
-        __csrf_token: secondUserCsrfToken,
-      }),
+      body: new URLSearchParams({ __action: 'new_instance', __csrf_token: secondUserCsrfToken }),
       follow: 1,
     });
     assert.isOk(response.ok);

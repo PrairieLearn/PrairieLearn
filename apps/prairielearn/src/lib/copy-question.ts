@@ -41,10 +41,7 @@ export async function setQuestionCopyTargets(res: Response) {
       // The question copy form will POST to a different URL for each course, so
       // we need to generate a corresponding CSRF token for each one.
       const csrfToken = generateSignedToken(
-        {
-          url: copyUrl,
-          authn_user_id: res.locals.authn_user.user_id,
-        },
+        { url: copyUrl, authn_user_id: res.locals.authn_user.user_id },
         config.secretKey,
       );
 
@@ -63,11 +60,7 @@ export async function copyQuestionBetweenCourses(
     fromCourse,
     toCourseId,
     question,
-  }: {
-    fromCourse: Course;
-    toCourseId: string;
-    question: Question;
-  },
+  }: { fromCourse: Course; toCourseId: string; question: Question },
 ) {
   // In this case, we are sending a copy of this question to a different course.
   //

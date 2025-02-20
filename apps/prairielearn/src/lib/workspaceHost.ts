@@ -28,10 +28,7 @@ export async function markWorkspaceHostUnhealthy(
 ): Promise<WorkspaceHost> {
   return await queryRow(
     sql.set_hosts_unhealthy,
-    {
-      workspace_host_id,
-      reason,
-    },
+    { workspace_host_id, reason },
     WorkspaceHostSchema,
   );
 }
@@ -55,10 +52,7 @@ export async function assignWorkspaceToHost(
 ): Promise<string | null> {
   return await queryOptionalRow(
     sql.assign_workspace_to_host,
-    {
-      workspace_id,
-      capacity,
-    },
+    { workspace_id, capacity },
     z.string(),
   );
 }
@@ -87,10 +81,7 @@ export async function findTerminableWorkspaceHosts(
 ): Promise<WorkspaceHost[]> {
   return await queryRows(
     sql.find_terminable_hosts,
-    {
-      unhealthy_timeout_sec,
-      launch_timeout_sec,
-    },
+    { unhealthy_timeout_sec, launch_timeout_sec },
     WorkspaceHostSchema,
   );
 }

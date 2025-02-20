@@ -105,12 +105,7 @@ function ChooseSharingNameModal({
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
     `;
   }
-  return Modal({
-    title: 'Choose Sharing Name',
-    id: 'chooseSharingNameModal',
-    body,
-    footer,
-  });
+  return Modal({ title: 'Choose Sharing Name', id: 'chooseSharingNameModal', body, footer });
 }
 
 export function InstructorCourseAdminSharing({
@@ -133,14 +128,8 @@ export function InstructorCourseAdminSharing({
   return PageLayout({
     resLocals,
     pageTitle: 'Course sharing',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'sharing',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'sharing' },
+    options: { fullWidth: true },
     content: html`
       ${CourseSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,
@@ -257,10 +246,7 @@ export function InstructorCourseAdminSharing({
                             data-placement="auto"
                             title="Add Course to Sharing Set"
                             data-content="${escapeHtml(
-                              AddCourseToSharingSetPopover({
-                                resLocals,
-                                sharing_set,
-                              }),
+                              AddCourseToSharingSetPopover({ resLocals, sharing_set }),
                             )}"
                           >
                             Add...

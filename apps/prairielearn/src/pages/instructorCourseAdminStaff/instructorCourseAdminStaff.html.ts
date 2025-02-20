@@ -58,14 +58,8 @@ export function InstructorCourseAdminStaff({
   return PageLayout({
     resLocals,
     pageTitle: 'Staff',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'staff',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'course_admin', subPage: 'staff' },
+    options: { fullWidth: true },
     headContent: html`
       <style>
         .popover {
@@ -92,9 +86,7 @@ export function InstructorCourseAdminStaff({
               data-placement="auto"
               title="Remove all student data access"
               data-content="${escapeHtml(
-                CoursePermissionsRemoveStudentDataAccessForm({
-                  csrfToken: resLocals.__csrf_token,
-                }),
+                CoursePermissionsRemoveStudentDataAccessForm({ csrfToken: resLocals.__csrf_token }),
               )}"
               data-testid="remove-all-student-data-access-button"
             >
@@ -110,9 +102,7 @@ export function InstructorCourseAdminStaff({
               data-placement="auto"
               title="Delete users with no access"
               data-content="${escapeHtml(
-                CoursePermissionsDeleteNoAccessForm({
-                  csrfToken: resLocals.__csrf_token,
-                }),
+                CoursePermissionsDeleteNoAccessForm({ csrfToken: resLocals.__csrf_token }),
               )}"
               data-testid="delete-users-with-no-access-button"
             >
@@ -128,9 +118,7 @@ export function InstructorCourseAdminStaff({
               data-placement="auto"
               title="Delete non-owners"
               data-content="${escapeHtml(
-                CoursePermissionsDeleteNonOwnersForm({
-                  csrfToken: resLocals.__csrf_token,
-                }),
+                CoursePermissionsDeleteNonOwnersForm({ csrfToken: resLocals.__csrf_token }),
               )}"
               data-testid="delete-non-owners-button"
             >

@@ -17,9 +17,7 @@
   <body>
     <main id="terminal" class="terminal"></main>
     <script>
-      const term = new Terminal({
-        fontFamily: 'courier new, courier, monospace',
-      });
+      const term = new Terminal({ fontFamily: 'courier new, courier, monospace' });
       const fit = new FitAddon.FitAddon();
       term.loadAddon(fit);
       term.open(document.getElementById('terminal'));

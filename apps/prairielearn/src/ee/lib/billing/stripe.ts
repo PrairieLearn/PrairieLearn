@@ -30,9 +30,7 @@ export async function getOrCreateStripeCustomerId(
   const stripe = getStripeClient();
   const customer = await stripe.customers.create({
     name: name ?? undefined,
-    metadata: {
-      prairielearn_user_id: user_id,
-    },
+    metadata: { prairielearn_user_id: user_id },
   });
 
   // We update the user in a transaction with a lock to ensure that we only
@@ -129,10 +127,7 @@ export async function getPricesForPlans(plans: PlanName[]): Promise<Record<strin
   return prices;
 }
 
-const priceFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-});
+const priceFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
 export function formatStripePrice(price: number) {
   return priceFormatter.format(price / 100);

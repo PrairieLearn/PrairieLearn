@@ -45,11 +45,7 @@ export async function readAndValidateMigrationsFromDirectory(
       throw new Error(`Migration ${mf} does not have a timestamp`);
     }
 
-    return {
-      directory: dir,
-      filename: mf,
-      timestamp,
-    };
+    return { directory: dir, filename: mf, timestamp };
   });
 
   // First pass: validate that all migrations have a unique timestamp prefix.

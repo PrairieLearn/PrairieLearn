@@ -20,10 +20,7 @@ function getJWT(req: Request) {
 }
 
 export async function createContext({ req }: CreateExpressContextOptions) {
-  return {
-    jwt: getJWT(req),
-    bypassJwt: false,
-  };
+  return { jwt: getJWT(req), bypassJwt: false };
 }
 
 export type TRPCContext = Awaited<ReturnType<typeof createContext>>;
@@ -45,10 +42,7 @@ export const privateProcedure = t.procedure.use(async (opts) => {
   }
 
   if (!opts.ctx.jwt) {
-    throw new TRPCError({
-      code: 'UNAUTHORIZED',
-      message: 'Requires authentication',
-    });
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Requires authentication' });
   }
 
   for (const secretKey of config.trpcSecretKeys) {
@@ -65,10 +59,7 @@ export const privateProcedure = t.procedure.use(async (opts) => {
   }
 
   // We weren't able to verify the JWT with any of the secret keys.
-  throw new TRPCError({
-    code: 'UNAUTHORIZED',
-    message: 'Invalid JWT',
-  });
+  throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid JWT' });
 });
 
 export async function selectUsers({

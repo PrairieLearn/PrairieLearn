@@ -111,10 +111,7 @@ router.post(
 
       const courseInstanceId = await sqldb.queryRow(
         sql.select_course_instance_id_from_uuid,
-        {
-          uuid: editor.uuid,
-          course_id: res.locals.course.id,
-        },
+        { uuid: editor.uuid, course_id: res.locals.course.id },
         IdSchema,
       );
 

@@ -23,14 +23,8 @@ const args = yargs(process.argv.slice(2))
     string: true,
     description: 'Specify a directory to output files to',
   })
-  .option('ignore-tables', {
-    array: true,
-    description: 'a list of tables to ignore',
-  })
-  .option('ignore-enums', {
-    array: true,
-    description: 'a list of enums to ignore',
-  })
+  .option('ignore-tables', { array: true, description: 'a list of tables to ignore' })
+  .option('ignore-enums', { array: true, description: 'a list of enums to ignore' })
   .option('ignore-columns', {
     array: true,
     description: 'a list of columns to ignore, formatted like [table].[column]',

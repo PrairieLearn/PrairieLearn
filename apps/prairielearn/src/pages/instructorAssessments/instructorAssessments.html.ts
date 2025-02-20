@@ -58,14 +58,8 @@ export function InstructorAssessments({
   return PageLayout({
     resLocals,
     pageTitle: 'Assessments',
-    navContext: {
-      type: 'instructor',
-      page: 'instance_admin',
-      subPage: 'assessments',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'instance_admin', subPage: 'assessments' },
+    options: { fullWidth: true },
     headContent: html`
       ${compiledScriptTag('instructorAssessmentsClient.ts')}
       ${EncodedData<StatsUpdateData>(
@@ -127,15 +121,9 @@ export function InstructorAssessments({
                           </td>
                           <td class="align-middle">
                             ${row.sync_errors
-                              ? SyncProblemButton({
-                                  type: 'error',
-                                  output: row.sync_errors,
-                                })
+                              ? SyncProblemButton({ type: 'error', output: row.sync_errors })
                               : row.sync_warnings
-                                ? SyncProblemButton({
-                                    type: 'warning',
-                                    output: row.sync_warnings,
-                                  })
+                                ? SyncProblemButton({ type: 'warning', output: row.sync_warnings })
                                 : ''}
                             <a href="${urlPrefix}/assessment/${row.id}/">
                               ${row.title}

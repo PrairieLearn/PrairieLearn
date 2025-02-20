@@ -176,17 +176,12 @@ export function chunkMetadataFromDatabaseChunk(chunk: DatabaseChunk): ChunkMetad
     case 'elementExtensions':
     case 'clientFilesCourse':
     case 'serverFilesCourse':
-      return {
-        type: chunk.type,
-      };
+      return { type: chunk.type };
     case 'clientFilesCourseInstance':
       if (!chunk.course_instance_name) {
         throw new Error(`course_instance_name is missing for chunk ${chunk.uuid}`);
       }
-      return {
-        type: chunk.type,
-        courseInstanceName: chunk.course_instance_name,
-      };
+      return { type: chunk.type, courseInstanceName: chunk.course_instance_name };
     case 'clientFilesAssessment':
       if (!chunk.course_instance_name) {
         throw new Error(`course_instance_name is missing for chunk ${chunk.uuid}`);
@@ -203,10 +198,7 @@ export function chunkMetadataFromDatabaseChunk(chunk: DatabaseChunk): ChunkMetad
       if (!chunk.question_name) {
         throw new Error(`question_name is missing for chunk ${chunk.uuid}`);
       }
-      return {
-        type: chunk.type,
-        questionName: chunk.question_name,
-      };
+      return { type: chunk.type, questionName: chunk.question_name };
   }
 }
 
@@ -426,9 +418,7 @@ export function identifyChunksFromChangedFiles(
  * Returns all the chunks the are currently stored for the given course.
  */
 export async function getAllChunksForCourse(courseId: string) {
-  const result = await sqldb.queryAsync(sql.select_course_chunks, {
-    course_id: courseId,
-  });
+  const result = await sqldb.queryAsync(sql.select_course_chunks, { course_id: courseId });
   return result.rows;
 }
 
@@ -528,20 +518,14 @@ export async function diffChunks({
   // Next: questions
   Object.keys(courseData.questions).forEach((qid) => {
     if (!existingCourseChunks.questions.has(qid) || changedCourseChunks.questions.has(qid)) {
-      updatedChunks.push({
-        type: 'question',
-        questionName: qid,
-      });
+      updatedChunks.push({ type: 'question', questionName: qid });
     }
   });
 
   // Check for any deleted questions.
   existingCourseChunks.questions.forEach((qid) => {
     if (!courseData.questions[qid]) {
-      deletedChunks.push({
-        type: 'question',
-        questionName: qid,
-      });
+      deletedChunks.push({ type: 'question', questionName: qid });
     }
   });
 
@@ -557,10 +541,7 @@ export async function diffChunks({
         (!existingCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance ||
           changedCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance)
       ) {
-        updatedChunks.push({
-          type: 'clientFilesCourseInstance',
-          courseInstanceName: ciid,
-        });
+        updatedChunks.push({ type: 'clientFilesCourseInstance', courseInstanceName: ciid });
       }
 
       await async.each(Object.keys(courseInstanceInfo.assessments), async (tid) => {
@@ -597,10 +578,7 @@ export async function diffChunks({
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
       if (!courseInstanceExists || !clientFilesCourseInstanceExists) {
-        deletedChunks.push({
-          type: 'clientFilesCourseInstance',
-          courseInstanceName: ciid,
-        });
+        deletedChunks.push({ type: 'clientFilesCourseInstance', courseInstanceName: ciid });
       }
 
       await Promise.all(
@@ -651,24 +629,14 @@ export async function createAndUploadChunks(
     const chunkUuid = uuidv4();
 
     // Let's create a tarball for this chunk and send it off to S3
-    const tarball = tar.create(
-      {
-        gzip: true,
-        cwd: chunkDirectory,
-      },
-      ['.'],
-    );
+    const tarball = tar.create({ gzip: true, cwd: chunkDirectory }, ['.']);
 
     const passthrough = new PassThroughStream();
     tarball.pipe(passthrough);
 
     await new Upload({
       client: s3,
-      params: {
-        Bucket: config.chunksS3Bucket,
-        Key: `${chunkUuid}.tar.gz`,
-        Body: passthrough,
-      },
+      params: { Bucket: config.chunksS3Bucket, Key: `${chunkUuid}.tar.gz`, Body: passthrough },
     }).done();
 
     generatedChunks.push({ ...chunk, uuid: chunkUuid });
@@ -834,11 +802,7 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
     job.info(chalkDim('Loaded course data'));
 
     job.info(chalk.bold('Generating all chunks'));
-    const chunkOptions = {
-      coursePath: courseDir,
-      courseId: String(course_id),
-      courseData,
-    };
+    const chunkOptions = { coursePath: courseDir, courseId: String(course_id), courseData };
     const chunkChanges = await updateChunksForCourse(chunkOptions);
     logChunkChangesToJob(chunkChanges, job);
     job.info(chalkDim('Generated all chunks'));
@@ -942,10 +906,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
   // existing unpack directory to ensure a clean slate.
   await fs.remove(unpackPath);
   await fs.ensureDir(unpackPath);
-  await tar.extract({
-    file: chunkPath,
-    cwd: unpackPath,
-  });
+  await tar.extract({ file: chunkPath, cwd: unpackPath });
 
   // Before we configure the symlink, we need to check if there are any
   // outdated symlinks that need to be removed. Those can occur when a question

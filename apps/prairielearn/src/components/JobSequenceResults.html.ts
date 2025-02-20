@@ -33,11 +33,7 @@ export function JobSequenceResults({
         jobSequenceId: jobSequence.id,
         token: jobSequence.token,
         jobCount: jobSequence.jobs.length,
-        jobs: jobSequence.jobs.map((job) => ({
-          id: job.id,
-          status: job.status,
-          token: job.token,
-        })),
+        jobs: jobSequence.jobs.map((job) => ({ id: job.id, status: job.status, token: job.token })),
       },
       'job-sequence-results-data',
     )}

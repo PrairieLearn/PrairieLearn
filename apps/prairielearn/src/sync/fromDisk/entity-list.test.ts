@@ -95,19 +95,10 @@ describe('determineOperationsForEntities', () => {
         { name: 'A', heading: 'A' },
         { name: 'Default', heading: 'Custom default' },
       ],
-      extraEntities: [
-        {
-          name: 'Default',
-          heading: 'Default entity',
-          implicit: true,
-        },
-      ],
+      extraEntities: [{ name: 'Default', heading: 'Default entity', implicit: true }],
       existingEntities: [],
       knownNames: new Set(),
-      makeImplicitEntity: (name: string) => ({
-        name,
-        heading: `${name} (implicit)`,
-      }),
+      makeImplicitEntity: (name: string) => ({ name, heading: `${name} (implicit)` }),
       comparisonProperties: ['heading'],
       isInfoCourseValid: true,
       deleteUnused: true,
@@ -253,10 +244,7 @@ describe('determineOperationsForEntities', () => {
         { name: 'B', heading: 'B', implicit: false, number: 2 },
       ],
       knownNames: new Set(['A', 'B']),
-      makeImplicitEntity: (name: string) => ({
-        name,
-        heading: `${name} (implicit)`,
-      }),
+      makeImplicitEntity: (name: string) => ({ name, heading: `${name} (implicit)` }),
       comparisonProperties: ['heading'],
       isInfoCourseValid: true,
       deleteUnused: true,

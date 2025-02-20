@@ -65,10 +65,7 @@ async.series(
       globalLogger.info(JSON.stringify(config, null, 2));
 
       if (config.sentryDsn) {
-        await Sentry.init({
-          dsn: config.sentryDsn,
-          environment: config.sentryEnvironment,
-        });
+        await Sentry.init({ dsn: config.sentryDsn, environment: config.sentryEnvironment });
       }
       await lifecycle.init();
     },
@@ -164,9 +161,7 @@ async.series(
     },
   ],
   (err) => {
-    Sentry.captureException(err, {
-      level: 'fatal',
-    });
+    Sentry.captureException(err, { level: 'fatal' });
     globalLogger.error('Error in main loop:', err);
     lifecycle
       .abandonLaunch()
@@ -316,9 +311,7 @@ async function reportReceived(context: Context, receivedTime: Date) {
         MessageBody: JSON.stringify({
           jobId: job.jobId,
           event: 'job_received',
-          data: {
-            receivedTime,
-          },
+          data: { receivedTime },
         }),
       }),
     );
@@ -351,10 +344,7 @@ async function initDocker(context: Context) {
   if (config.cacheImageRegistry) {
     repository.setRegistry(config.cacheImageRegistry);
   }
-  const params = {
-    fromImage: repository.getRegistryRepo(),
-    tag: repository.getTag() || 'latest',
-  };
+  const params = { fromImage: repository.getRegistryRepo(), tag: repository.getTag() || 'latest' };
   logger.info(`Pulling image: ${JSON.stringify(params)}`);
 
   const stream = await docker.createImage(dockerAuth, params);
@@ -390,16 +380,10 @@ async function initFiles(context: Context) {
 
   try {
     logger.info('Setting up temp dir');
-    const jobDirectory = await tmp.dir({
-      prefix: `job_${jobId}_`,
-      unsafeCleanup: true,
-    });
+    const jobDirectory = await tmp.dir({ prefix: `job_${jobId}_`, unsafeCleanup: true });
 
     logger.info('Loading job files');
-    const object = await s3.getObject({
-      Bucket: s3Bucket,
-      Key: `${s3RootKey}/job.tar.gz`,
-    });
+    const object = await s3.getObject({ Bucket: s3Bucket, Key: `${s3RootKey}/job.tar.gz` });
     await pipeline(object.Body as Readable, fs.createWriteStream(jobArchiveFile.path));
 
     logger.info('Unzipping files');
@@ -441,10 +425,7 @@ async function runJob(
   // this.
   const jobTimeout = timeout + config.timeoutOverhead;
 
-  const results: GradingResults = {
-    job_id: jobId,
-    received_time: receivedTime,
-  };
+  const results: GradingResults = { job_id: jobId, received_time: receivedTime };
 
   logger.info('Launching Docker container to run grading job');
 
@@ -492,11 +473,7 @@ async function runJob(
       Entrypoint: shlex.split(entrypoint),
     });
 
-    const stream = await container.attach({
-      stream: true,
-      stdout: true,
-      stderr: true,
-    });
+    const stream = await container.attach({ stream: true, stdout: true, stderr: true });
     const out = byline(stream);
     out.on('data', (line) => {
       logger.info(`container> ${line.toString('utf8')}`);
@@ -676,10 +653,6 @@ async function uploadLogs(context: Context) {
   // Upload all logs to S3.
   await new Upload({
     client: s3,
-    params: {
-      Bucket: s3Bucket,
-      Key: `${s3RootKey}/output.log`,
-      Body: logger.getBuffer(),
-    },
+    params: { Bucket: s3Bucket, Key: `${s3RootKey}/output.log`, Body: logger.getBuffer() },
   }).done();
 }

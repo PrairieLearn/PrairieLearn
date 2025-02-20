@@ -76,13 +76,8 @@ export function InstructorAssessmentInstance({
   return PageLayout({
     resLocals,
     pageTitle: resLocals.instance_group?.name || resLocals.instance_user?.uid,
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'assessment' },
+    options: { fullWidth: true },
     headContent: html`
       <link
         href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
@@ -211,11 +206,7 @@ export function InstructorAssessmentInstance({
                         data-placement="auto"
                         title="Change total points"
                         aria-label="Change total points"
-                        data-content="${escapeHtml(
-                          EditTotalPointsForm({
-                            resLocals,
-                          }),
-                        )}"
+                        data-content="${escapeHtml(EditTotalPointsForm({ resLocals }))}"
                       >
                         <i class="fa fa-edit" aria-hidden="true"></i>
                       </button>
@@ -241,11 +232,7 @@ export function InstructorAssessmentInstance({
                         data-placement="auto"
                         title="Change total percentage score"
                         aria-label="Change total percentage score"
-                        data-content="${escapeHtml(
-                          EditTotalScorePercForm({
-                            resLocals,
-                          }),
-                        )}"
+                        data-content="${escapeHtml(EditTotalScorePercForm({ resLocals }))}"
                       >
                         <i class="fa fa-edit" aria-hidden="true"></i>
                       </button>

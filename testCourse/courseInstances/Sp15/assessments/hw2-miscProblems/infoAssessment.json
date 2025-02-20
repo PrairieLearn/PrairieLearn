@@ -6,26 +6,10 @@
   "number": "2",
   "module": "Module1",
   "allowAccess": [
-    {
-      "credit": 120,
-      "startDate": "2014-04-07T00:00:01",
-      "endDate": "2014-07-10T23:59:59"
-    },
-    {
-      "credit": 100,
-      "startDate": "2014-07-07T00:00:01",
-      "endDate": "2024-07-10T23:59:59"
-    },
-    {
-      "credit": 80,
-      "startDate": "2014-07-07T00:00:01",
-      "endDate": "2024-08-10T23:59:59"
-    },
-    {
-      "credit": 50,
-      "startDate": "2014-07-07T00:00:01",
-      "endDate": "2124-09-10T23:59:59"
-    }
+    { "credit": 120, "startDate": "2014-04-07T00:00:01", "endDate": "2014-07-10T23:59:59" },
+    { "credit": 100, "startDate": "2014-07-07T00:00:01", "endDate": "2024-07-10T23:59:59" },
+    { "credit": 80, "startDate": "2014-07-07T00:00:01", "endDate": "2024-08-10T23:59:59" },
+    { "credit": 50, "startDate": "2014-07-07T00:00:01", "endDate": "2124-09-10T23:59:59" }
   ],
   "zones": [
     {

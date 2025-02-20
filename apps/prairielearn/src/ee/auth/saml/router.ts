@@ -34,20 +34,13 @@ router.get('/login', (req, res, next) => {
 
 function authenticate(req, res): Promise<any> {
   return new Promise((resolve, reject) => {
-    passport.authenticate(
-      'saml',
-      {
-        failureRedirect: '/pl',
-        session: false,
-      },
-      (err, user) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(user);
-        }
-      },
-    )(req, res);
+    passport.authenticate('saml', { failureRedirect: '/pl', session: false }, (err, user) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(user);
+      }
+    })(req, res);
   });
 }
 
@@ -122,9 +115,7 @@ router.post(
       institution_id: institutionId,
     };
 
-    await authnLib.loadUser(req, res, authnParams, {
-      redirect: true,
-    });
+    await authnLib.loadUser(req, res, authnParams, { redirect: true });
   }),
 );
 

@@ -19,9 +19,7 @@ window.PLFileEditor = function (uuid, options) {
   this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
   this.restoreOriginalCancel = this.element.find('.restore-original-cancel');
-  this.editor = ace.edit(this.editorElement.get(0), {
-    enableKeyboardAccessibility: true,
-  });
+  this.editor = ace.edit(this.editorElement.get(0), { enableKeyboardAccessibility: true });
   this.editor.setTheme('ace/theme/chrome');
   this.editor.getSession().setUseWrapMode(true);
   this.editor.setShowPrintMargin(false);

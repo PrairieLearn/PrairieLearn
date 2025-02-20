@@ -126,10 +126,7 @@ describe('assessment instance group synchronization test', function () {
     it('should be able to start the assessment', async () => {
       const res = await fetch(locals.assessmentUrl, {
         method: 'POST',
-        body: new URLSearchParams({
-          __action: 'new_instance',
-          __csrf_token: locals.__csrf_token,
-        }),
+        body: new URLSearchParams({ __action: 'new_instance', __csrf_token: locals.__csrf_token }),
       });
       assert.equal(res.status, 200);
       page = await res.text();
@@ -172,9 +169,7 @@ describe('assessment instance group synchronization test', function () {
       locals.variant_id = Number.parseInt(locals.variant_id);
     });
     it('should have the variant in the DB if has grade or save button', async () => {
-      const result = await sqldb.queryAsync(sql.select_variant, {
-        variant_id: locals.variant_id,
-      });
+      const result = await sqldb.queryAsync(sql.select_variant, { variant_id: locals.variant_id });
       locals.variant = result.rows[0];
     });
     it('should have a CSRF token if has grade or save button', function () {
@@ -196,9 +191,7 @@ describe('assessment instance group synchronization test', function () {
         assessment_instance_score_perc: (1 / 10) * 100,
       };
       locals.getSubmittedAnswer = function (variant) {
-        return {
-          F: variant.true_answer.F,
-        };
+        return { F: variant.true_answer.F };
       };
     });
     it('should generate the submittedAnswer', async () => {

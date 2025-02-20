@@ -128,10 +128,7 @@ export function startExam(locals: Record<string, any>) {
       locals.preStartTime = Date.now();
       const response = await fetch(locals.assessmentUrl, {
         method: 'POST',
-        body: new URLSearchParams({
-          __action: 'new_instance',
-          __csrf_token: locals.__csrf_token,
-        }),
+        body: new URLSearchParams({ __action: 'new_instance', __csrf_token: locals.__csrf_token }),
       });
       locals.postStartTime = Date.now();
       assert.equal(response.status, 200);

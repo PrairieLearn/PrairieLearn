@@ -165,10 +165,7 @@ export async function reconcilePlanGrantsForCourseInstance(
       course_instance_id,
     });
     await reconcilePlanGrants(
-      {
-        institution_id: institution.id,
-        course_instance_id,
-      },
+      { institution_id: institution.id, course_instance_id },
       existingPlanGrants,
       plans,
       authn_user_id,
@@ -206,11 +203,7 @@ async function reconcilePlanGrants(
 
   for (const plan of newPlans) {
     await ensurePlanGrant({
-      plan_grant: {
-        ...context,
-        plan_name: plan.plan,
-        type: plan.grantType,
-      },
+      plan_grant: { ...context, plan_name: plan.plan, type: plan.grantType },
       authn_user_id,
     });
   }

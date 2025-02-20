@@ -19,12 +19,7 @@ export function ErrorPage({
   referrer,
   resLocals,
 }: {
-  error: {
-    message?: string;
-    stack?: string;
-    status?: number;
-    data?: Record<string, any>;
-  };
+  error: { message?: string; stack?: string; status?: number; data?: Record<string, any> };
   errorInfo?: string;
   errorId: string;
   referrer: string | null;
@@ -44,10 +39,7 @@ export function ErrorPage({
   return PageLayout({
     resLocals,
     pageTitle: `Error ${error.status}`,
-    navContext: {
-      type: resLocals.navbarType,
-      page: 'error',
-    },
+    navContext: { type: resLocals.navbarType, page: 'error' },
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-danger text-white">

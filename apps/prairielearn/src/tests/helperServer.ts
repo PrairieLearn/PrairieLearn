@@ -140,9 +140,7 @@ export async function waitForJobSequence(job_sequence_id) {
   let job_sequence;
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const result = await sqldb.queryOneRowAsync(sql.select_job_sequence, {
-      job_sequence_id,
-    });
+    const result = await sqldb.queryOneRowAsync(sql.select_job_sequence, { job_sequence_id });
     job_sequence = result.rows[0];
     if (job_sequence.status !== 'Running') break;
     await sleep(10);

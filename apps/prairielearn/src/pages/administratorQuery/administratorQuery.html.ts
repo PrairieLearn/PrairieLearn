@@ -62,14 +62,8 @@ export function AdministratorQuery({
   return PageLayout({
     resLocals,
     pageTitle: queryFilename,
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'queries',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'queries' },
+    options: { fullWidth: true },
     headContent: html`
       <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
       <link
@@ -242,9 +236,7 @@ export function AdministratorQuery({
             widthFixed: true,
             headerTemplate: '{content} {icon}',
             widgets: ['uitheme', 'zebra'],
-            widgetOptions: {
-              zebra: ['even', 'odd'],
-            },
+            widgetOptions: { zebra: ['even', 'odd'] },
           });
         });
       </script>

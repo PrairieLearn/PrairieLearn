@@ -18,20 +18,14 @@ const debug = debugfn('prairielearn:aws');
 
 const awsConfigProvider = makeAwsConfigProvider({
   credentials: fromNodeProviderChain(),
-  getClientConfig: () => ({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  }),
+  getClientConfig: () => ({ region: config.awsRegion, ...config.awsServiceGlobalOptions }),
   getS3ClientConfig: () => {
     if (!config.runningInEc2) {
       // If we're not running in EC2, assume we're running with a local s3rver instance.
       // See https://github.com/jamhall/s3rver for more details.
       return {
         forcePathStyle: true,
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-        },
+        credentials: { accessKeyId: 'S3RVER', secretAccessKey: 'S3RVER' },
         endpoint: 'http://127.0.0.1:5000',
       };
     }
@@ -78,11 +72,7 @@ export async function uploadToS3(
 
   const res = await new Upload({
     client: s3,
-    params: {
-      Bucket: s3Bucket,
-      Key: s3Path,
-      Body: body,
-    },
+    params: { Bucket: s3Bucket, Key: s3Path, Body: body },
   }).done();
   if (localPath) {
     logger.verbose(`Uploaded localPath=${localPath} to s3://${s3Bucket}/${s3Path}`);
@@ -110,10 +100,7 @@ export async function downloadFromS3(s3Bucket: string, s3Path: string, localPath
   await fs.promises.mkdir(path.dirname(localPath), { recursive: true });
 
   const s3 = new S3(makeS3ClientConfig()) as NodeJsClient<S3>;
-  const res = await s3.getObject({
-    Bucket: s3Bucket,
-    Key: s3Path,
-  });
+  const res = await s3.getObject({ Bucket: s3Bucket, Key: s3Path });
   if (res.Body === undefined) {
     throw new Error('No data returned from S3');
   }
@@ -136,10 +123,7 @@ export async function deleteFromS3(s3Bucket: string, s3Path: string, isDirectory
   if (isDirectory) {
     s3Path += s3Path.endsWith('/') ? '' : '/';
   }
-  await s3.deleteObject({
-    Bucket: s3Bucket,
-    Key: s3Path,
-  });
+  await s3.deleteObject({ Bucket: s3Bucket, Key: s3Path });
   debug(`Deleted s3://${s3Bucket}/${s3Path}`);
 }
 

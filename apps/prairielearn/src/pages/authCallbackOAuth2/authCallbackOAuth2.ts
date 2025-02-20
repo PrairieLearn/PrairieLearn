@@ -43,10 +43,7 @@ router.get(
         // pick off the useful bits and attach them to the Sentry scope so that
         // they'll be included with the error event.
         const scope = Sentry.getCurrentScope();
-        scope.setContext('OAuth', {
-          code: err.code,
-          data: err.response.data,
-        });
+        scope.setContext('OAuth', { code: err.code, data: err.response.data });
       }
       throw err;
     });
@@ -73,9 +70,7 @@ router.get(
       email: identity.email,
       provider: 'Google',
     };
-    await authnLib.loadUser(req, res, authnParams, {
-      redirect: true,
-    });
+    await authnLib.loadUser(req, res, authnParams, { redirect: true });
   }),
 );
 

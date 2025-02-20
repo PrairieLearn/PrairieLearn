@@ -68,9 +68,7 @@ export async function uploadInstanceQuestionScores(
     let skippedCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvStream = streamifier.createReadStream(csvFile.buffer, {
-      encoding: 'utf8',
-    });
+    const csvStream = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' });
     const csvConverter = csvtojson({
       colParser: {
         instance: 'number',
@@ -191,15 +189,9 @@ export async function uploadAssessmentInstanceScores(
     let errorCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvStream = streamifier.createReadStream(csvFile.buffer, {
-      encoding: 'utf8',
-    });
+    const csvStream = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' });
     const csvConverter = csvtojson({
-      colParser: {
-        instance: 'number',
-        score_perc: 'number',
-        points: 'number',
-      },
+      colParser: { instance: 'number', score_perc: 'number', points: 'number' },
       maxRowLength: 1000,
     });
 
@@ -334,13 +326,7 @@ async function updateInstanceQuestionFromJson(
   return await sqldb.runInTransactionAsync(async () => {
     const submission_data = await sqldb.queryOptionalRow(
       sql.select_submission_to_update,
-      {
-        assessment_id,
-        submission_id,
-        uid_or_group,
-        ai_number,
-        qid,
-      },
+      { assessment_id, submission_id, uid_or_group, ai_number, qid },
       z.object({
         submission_id: IdSchema.nullable(),
         instance_question_id: IdSchema,
@@ -395,11 +381,7 @@ async function getAssessmentInstanceId(json: Record<string, any>, assessment_id:
       id: json.uid,
       assessment_instance_id: await sqldb.queryOptionalRow(
         sql.select_assessment_instance_uid,
-        {
-          assessment_id,
-          uid: json.uid,
-          instance_number: json.instance,
-        },
+        { assessment_id, uid: json.uid, instance_number: json.instance },
         IdSchema,
       ),
     };
@@ -408,11 +390,7 @@ async function getAssessmentInstanceId(json: Record<string, any>, assessment_id:
       id: json.group_name,
       assessment_instance_id: await sqldb.queryOptionalRow(
         sql.select_assessment_instance_group,
-        {
-          assessment_id,
-          group_name: json.group_name,
-          instance_number: json.instance,
-        },
+        { assessment_id, group_name: json.group_name, instance_number: json.instance },
         IdSchema,
       ),
     };

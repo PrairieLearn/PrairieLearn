@@ -5,9 +5,7 @@
     "elementStyles": ["pl-excalidraw.css"]
   },
   "dynamicDependencies": {
-    "elementScripts": {
-      "pl-excalidraw-js": "pl-excalidraw.js"
-    },
+    "elementScripts": { "pl-excalidraw-js": "pl-excalidraw.js" },
     "nodeModulesScripts": {
       "@prairielearn/excalidraw-builds": "@prairielearn/excalidraw-builds/dist/index.js"
     }

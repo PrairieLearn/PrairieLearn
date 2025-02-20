@@ -9,14 +9,8 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
   return PageLayout({
     resLocals,
     pageTitle: 'Instances',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'instances',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'instances' },
+    options: { fullWidth: true },
     headContent: html`
       <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
       <script src="${nodeModulesAssetPath(

@@ -35,10 +35,7 @@ describe('Assessment modules syncing', () => {
 
   it('adds a new assessment module', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
-    const newAssessmentModule = {
-      name: 'New Module',
-      heading: 'This is a new module',
-    };
+    const newAssessmentModule = { name: 'New Module', heading: 'This is a new module' };
     courseData.course.assessmentModules?.push(newAssessmentModule);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentModules = await util.dumpTableWithSchema(
@@ -53,10 +50,7 @@ describe('Assessment modules syncing', () => {
 
   it('removes an assessment module', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
-    const newAssessmentModule = {
-      name: 'New Module',
-      heading: 'This is a new module',
-    };
+    const newAssessmentModule = { name: 'New Module', heading: 'This is a new module' };
     courseData.course.assessmentModules?.push(newAssessmentModule);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     courseData.course.assessmentModules?.pop();
@@ -73,14 +67,8 @@ describe('Assessment modules syncing', () => {
 
   it('records a warning if two assessment modules have the same name', async () => {
     const courseData = util.getCourseData();
-    const newAssessmentModule1 = {
-      name: 'new assessment set',
-      heading: 'new assessment module 1',
-    };
-    const newAssessmentModule2 = {
-      name: 'new assessment set',
-      heading: 'new assessment module 2',
-    };
+    const newAssessmentModule1 = { name: 'new assessment set', heading: 'new assessment module 1' };
+    const newAssessmentModule2 = { name: 'new assessment set', heading: 'new assessment module 2' };
     courseData.course.assessmentModules?.push(newAssessmentModule1);
     courseData.course.assessmentModules?.push(newAssessmentModule2);
     await util.writeAndSyncCourseData(courseData);
@@ -99,10 +87,7 @@ describe('Assessment modules syncing', () => {
 
   it('uses explicitly-created default assessment module', async () => {
     const courseData = util.getCourseData();
-    const defaultAssessmentModule = {
-      name: 'Default',
-      heading: 'Default assessment module',
-    };
+    const defaultAssessmentModule = { name: 'Default', heading: 'Default assessment module' };
     courseData.course.assessmentModules = [defaultAssessmentModule];
     await util.writeAndSyncCourseData(courseData);
 

@@ -193,11 +193,7 @@ describe('Question syncing', () => {
 
   it('preserves question topic even if question topic is deleted', async () => {
     const courseData = util.getCourseData();
-    const newTopic = {
-      name: 'test topic',
-      color: 'green1',
-      description: 'test topic description',
-    };
+    const newTopic = { name: 'test topic', color: 'green1', description: 'test topic description' };
     courseData.course.topics.push(newTopic);
     courseData.questions[util.QUESTION_ID].topic = newTopic.name;
     const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -219,11 +215,7 @@ describe('Question syncing', () => {
 
   it('preserves question tag even if question tag is deleted', async () => {
     const courseData = util.getCourseData();
-    const newTag = {
-      name: 'test tag',
-      color: 'green1',
-      description: 'test tag description',
-    };
+    const newTag = { name: 'test tag', color: 'green1', description: 'test tag description' };
     courseData.course.tags.push(newTag);
     courseData.questions[util.QUESTION_ID].tags?.push(newTag.name);
     const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -252,10 +244,7 @@ describe('Question syncing', () => {
     const testQuestion = courseData.questions[util.QUESTION_ID];
     testQuestion.type = 'Checkbox';
     // Bad options - missing `incorrectAnswers`
-    testQuestion.options = {
-      text: 'is this a bad question?',
-      correctAnswers: ['yes'],
-    };
+    testQuestion.options = { text: 'is this a bad question?', correctAnswers: ['yes'] };
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     const syncedQuestions = await util.dumpTable('questions');

@@ -40,15 +40,8 @@ export function AssessmentQuestion({
   return PageLayout({
     resLocals,
     pageTitle: 'Manual Grading',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'manual_grading',
-    },
-    options: {
-      fullWidth: true,
-      pageNote: `Question ${number_in_alternative_group}`,
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'manual_grading' },
+    options: { fullWidth: true, pageNote: `Question ${number_in_alternative_group}` },
     headContent: html`
       <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
         from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->

@@ -49,10 +49,7 @@ export async function deleteInstitutionAdministrator({
   await runInTransactionAsync(async () => {
     const institution_admin = await queryOptionalRow(
       sql.delete_institution_admin,
-      {
-        institution_id,
-        unsafe_institution_administrator_id,
-      },
+      { institution_id, unsafe_institution_administrator_id },
       InstitutionAdministratorSchema,
     );
 

@@ -29,17 +29,10 @@ export function InstitutionAdminAdmins({
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
-    resLocals: {
-      ...resLocals,
-      institution,
-    },
+    resLocals: { ...resLocals, institution },
     pageTitle: `Admins — ${institution.short_name}`,
     headContent: [compiledScriptTag('institutionAdminAdminsClient.ts')],
-    navContext: {
-      type: 'institution',
-      page: 'institution_admin',
-      subPage: 'admins',
-    },
+    navContext: { type: 'institution', page: 'institution_admin', subPage: 'admins' },
     content: html`
       ${AdminsCard({ rows })} ${AddAdminsModal({ uidsLimit, csrfToken: resLocals.__csrf_token })}
       ${RemoveAdminModal({ csrfToken: resLocals.__csrf_token })}

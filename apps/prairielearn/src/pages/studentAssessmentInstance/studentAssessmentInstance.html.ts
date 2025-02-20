@@ -59,12 +59,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_interval: z.string(),
   previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
-  group_role_permissions: z
-    .object({
-      can_view: z.boolean(),
-      can_submit: z.boolean(),
-    })
-    .optional(),
+  group_role_permissions: z.object({ can_view: z.boolean(), can_submit: z.boolean() }).optional(),
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
@@ -82,16 +77,8 @@ export function StudentAssessmentInstance({
   userCanDeleteAssessmentInstance: boolean;
   resLocals: Record<string, any>;
 } & (
-  | {
-      groupConfig: GroupConfig;
-      groupInfo: GroupInfo;
-      userCanAssignRoles: boolean;
-    }
-  | {
-      groupConfig?: undefined;
-      groupInfo?: undefined;
-      userCanAssignRoles?: undefined;
-    }
+  | { groupConfig: GroupConfig; groupInfo: GroupInfo; userCanAssignRoles: boolean }
+  | { groupConfig?: undefined; groupInfo?: undefined; userCanAssignRoles?: undefined }
 )) {
   let savedAnswers = 0;
   let suspendedSavedAnswers = 0;
@@ -159,10 +146,7 @@ export function StudentAssessmentInstance({
       <body>
         ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
-          ? ConfirmFinishModal({
-              instance_question_rows,
-              csrfToken: resLocals.__csrf_token,
-            })
+          ? ConfirmFinishModal({ instance_question_rows, csrfToken: resLocals.__csrf_token })
           : ''}
         ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
         ${userCanDeleteAssessmentInstance
@@ -635,9 +619,7 @@ function AssessmentStatus({
       Assessment is <strong>open</strong> and you can answer questions.
       <br />
       Available credit: ${authz_result.credit_date_string}
-      ${StudentAccessRulesPopover({
-        accessRules: authz_result.access_rules,
-      })}
+      ${StudentAccessRulesPopover({ accessRules: authz_result.access_rules })}
     `;
   }
 

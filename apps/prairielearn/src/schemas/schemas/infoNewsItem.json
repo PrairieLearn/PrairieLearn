@@ -15,14 +15,8 @@
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
-    "title": {
-      "description": "The title of the news item.",
-      "type": "string"
-    },
-    "author": {
-      "description": "The author of the news item.",
-      "type": "string"
-    },
+    "title": { "description": "The title of the news item.", "type": "string" },
+    "author": { "description": "The author of the news item.", "type": "string" },
     "visible_to_students": {
       "description": "Whether the news item should be shown to students.",
       "type": "boolean"

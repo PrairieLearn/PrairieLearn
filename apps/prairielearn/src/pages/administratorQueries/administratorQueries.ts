@@ -29,12 +29,7 @@ router.get(
         return { ...contents, filePrefix };
       }),
     );
-    res.send(
-      AdministratorQueries({
-        resLocals: res.locals,
-        queries,
-      }),
-    );
+    res.send(AdministratorQueries({ resLocals: res.locals, queries }));
   }),
 );
 

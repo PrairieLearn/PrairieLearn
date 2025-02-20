@@ -257,10 +257,7 @@ function buildLocals({
   variant: Variant;
   question: Question;
   instance_question?: InstanceQuestionWithAllowGrade | null;
-  group_role_permissions?: {
-    can_view: boolean;
-    can_submit: boolean;
-  } | null;
+  group_role_permissions?: { can_view: boolean; can_submit: boolean } | null;
   assessment?: Assessment | null;
   assessment_instance?: AssessmentInstance | null;
   assessment_question?: AssessmentQuestion | null;
@@ -413,9 +410,7 @@ export async function getAndRenderVariant(
     client_fingerprint_id?: string | null;
     manualGradingInterface?: boolean;
   },
-  options?: {
-    urlOverrides?: Partial<QuestionUrls>;
-  },
+  options?: { urlOverrides?: Partial<QuestionUrls> },
 ) {
   // We write a fair amount of unstructured data back into locals,
   // so we'll cast it to `any` once so we don't have to do it every time.
@@ -579,11 +574,7 @@ export async function getAndRenderVariant(
   const loadExtraData = config.devMode || authz_data?.has_course_permission_view;
   resultLocals.issues = await sqldb.queryRows(
     sql.select_issues,
-    {
-      variant_id: variant.id,
-      load_course_data: loadExtraData,
-      load_system_data: loadExtraData,
-    },
+    { variant_id: variant.id, load_course_data: loadExtraData, load_system_data: loadExtraData },
     IssueRenderDataSchema,
   );
 
@@ -599,10 +590,7 @@ export async function getAndRenderVariant(
       effectiveQuestionType,
       course,
       courseInstance: course_instance,
-      variant: {
-        id: variant.id,
-        params: variant.params,
-      },
+      variant: { id: variant.id, params: variant.params },
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
       trueAnswer: resultLocals.showTrueAnswer ? variant.true_answer : null,
@@ -681,10 +669,7 @@ export async function renderPanelsForSubmission({
           instance_question_id: variant.instance_question_id,
         });
 
-  const panels: SubmissionPanels = {
-    submissionPanel: null,
-    extraHeadersHtml: null,
-  };
+  const panels: SubmissionPanels = { submissionPanel: null, extraHeadersHtml: null };
 
   const locals = {
     urlPrefix,
@@ -721,10 +706,7 @@ export async function renderPanelsForSubmission({
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
       panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
-      const rubric_data = await manualGrading.selectRubricData({
-        assessment_question,
-        submission,
-      });
+      const rubric_data = await manualGrading.selectRubricData({ assessment_question, submission });
       await manualGrading.populateManualGradingData(submission);
 
       panels.submissionPanel = SubmissionPanel({

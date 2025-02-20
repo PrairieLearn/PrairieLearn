@@ -6,9 +6,7 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { WorkspaceLogSchema } from '../../lib/db-types.js';
 
-export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
-  date_formatted: z.string(),
-});
+export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({ date_formatted: z.string() });
 export type WorkspaceLogRow = z.infer<typeof WorkspaceLogRowSchema>;
 
 export function WorkspaceLogs({
@@ -26,10 +24,7 @@ export function WorkspaceLogs({
   workspaceLogs.forEach((log) => {
     if (!knownVersions.has(log.version)) {
       knownVersions.add(log.version);
-      uniqueVersions.push({
-        version: log.version,
-        date_formatted: log.date_formatted,
-      });
+      uniqueVersions.push({ version: log.version, date_formatted: log.date_formatted });
     }
   });
 

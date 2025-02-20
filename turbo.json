@@ -1,18 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", "public/build/**"]
-    },
-    "test": {
-      "outputs": [],
-      "passThroughEnv": ["*"]
-    },
-    "test:dist": {
-      "dependsOn": ["build"],
-      "outputs": [],
-      "passThroughEnv": ["*"]
-    }
+    "build": { "dependsOn": ["^build"], "outputs": ["dist/**", "public/build/**"] },
+    "test": { "outputs": [], "passThroughEnv": ["*"] },
+    "test:dist": { "dependsOn": ["build"], "outputs": [], "passThroughEnv": ["*"] }
   }
 }

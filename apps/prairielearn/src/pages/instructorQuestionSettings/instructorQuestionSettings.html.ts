@@ -84,14 +84,8 @@ export function InstructorQuestionSettings({
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
-    navContext: {
-      type: 'instructor',
-      page: 'question',
-      subPage: 'settings',
-    },
-    options: {
-      pageNote: resLocals.question.qid,
-    },
+    navContext: { type: 'instructor', page: 'question', subPage: 'settings' },
+    options: { pageNote: resLocals.question.qid },
     headContent: html`
       ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
       <style>
@@ -263,10 +257,7 @@ export function InstructorQuestionSettings({
                 <div>
                   <h2 class="h4">Sharing</h2>
                   <div data-testid="shared-with">
-                    ${QuestionSharing({
-                      question: resLocals.question,
-                      sharingSetsIn,
-                    })}
+                    ${QuestionSharing({ question: resLocals.question, sharingSetsIn })}
                   </div>
                 </div>
               `
@@ -278,12 +269,7 @@ export function InstructorQuestionSettings({
                 <hr />
                 <div>
                   <h2 class="h4">Tests</h2>
-                  <div>
-                    ${QuestionTestsForm({
-                      questionTestPath,
-                      questionTestCsrfToken,
-                    })}
-                  </div>
+                  <div>${QuestionTestsForm({ questionTestPath, questionTestCsrfToken })}</div>
                 </div>
               `
             : ''}

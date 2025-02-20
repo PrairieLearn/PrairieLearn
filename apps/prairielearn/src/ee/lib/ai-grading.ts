@@ -35,10 +35,7 @@ import { createEmbedding, vectorToString } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const SubmissionVariantSchema = z.object({
-  variant: VariantSchema,
-  submission: SubmissionSchema,
-});
+const SubmissionVariantSchema = z.object({ variant: VariantSchema, submission: SubmissionSchema });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
 const GradedExampleSchema = z.object({
   submission_text: z.string(),
@@ -55,16 +52,8 @@ async function generateGPTPromptWithExamples({
   question_prompt: string;
   student_answer: string;
   example_submissions: GradedExample[];
-}): Promise<
-  {
-    role: 'system' | 'user';
-    content: string;
-  }[]
-> {
-  const messages: {
-    role: 'system' | 'user';
-    content: string;
-  }[] = [];
+}): Promise<{ role: 'system' | 'user'; content: string }[]> {
+  const messages: { role: 'system' | 'user'; content: string }[] = [];
 
   // Instructions for grading
   messages.push({
@@ -74,10 +63,7 @@ async function generateGPTPromptWithExamples({
   });
 
   // Question prompt
-  messages.push({
-    role: 'user',
-    content: `Question: \n${question_prompt}`,
-  });
+  messages.push({ role: 'user', content: `Question: \n${question_prompt}` });
 
   // Examples
   for (const example of example_submissions) {
@@ -112,9 +98,7 @@ async function generateSubmissionEmbeddings({
 
   const result = await queryRows(
     sql.select_instance_questions_for_assessment_question,
-    {
-      assessment_question_id: assessment_question.id,
-    },
+    { assessment_question_id: assessment_question.id },
     InstanceQuestionSchema,
   );
 
@@ -269,9 +253,7 @@ export async function aiGrade({
   serverJob.executeInBackground(async (job) => {
     const result = await queryRows(
       sql.select_instance_questions_manual_grading,
-      {
-        assessment_question_id: assessment_question.id,
-      },
+      { assessment_question_id: assessment_question.id },
       InstanceQuestionSchema,
     );
 

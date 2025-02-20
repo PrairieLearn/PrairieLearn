@@ -15,10 +15,7 @@
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
-    "name": {
-      "description": "The course name (e.g., 'TAM 212').",
-      "type": "string"
-    },
+    "name": { "description": "The course name (e.g., 'TAM 212').", "type": "string" },
     "title": {
       "description": "The course title (e.g., 'Introductory Dynamics').",
       "type": "string"
@@ -45,19 +42,11 @@
         "devModeFeatures": {
           "description": "Feature flags to enable/disable in development mode.",
           "anyOf": [
-            {
-              "type": "object",
-              "additionalProperties": {
-                "type": "boolean"
-              }
-            },
+            { "type": "object", "additionalProperties": { "type": "boolean" } },
             {
               "description": "Legacy format; use an object instead.",
               "type": "array",
-              "items": {
-                "description": "A single feature flag.",
-                "type": "string"
-              }
+              "items": { "description": "A single feature flag.", "type": "string" }
             }
           ]
         }
@@ -87,9 +76,7 @@
             "description": "Plural heading for a group of assessments (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'.",
             "type": "string"
           },
-          "color": {
-            "$ref": "#/definitions/color"
-          }
+          "color": { "$ref": "#/definitions/color" }
         }
       }
     },
@@ -132,13 +119,8 @@
             "description": "Long descriptive name (preferably less than 10 words).",
             "type": "string"
           },
-          "color": {
-            "$ref": "#/definitions/color"
-          },
-          "description": {
-            "description": "Description of the topic.",
-            "type": "string"
-          }
+          "color": { "$ref": "#/definitions/color" },
+          "description": { "description": "Description of the topic.", "type": "string" }
         }
       }
     },
@@ -162,13 +144,8 @@
             "description": "Long descriptive name (preferably less than 10 words).",
             "type": "string"
           },
-          "color": {
-            "$ref": "#/definitions/color"
-          },
-          "description": {
-            "description": "Description of the tag.",
-            "type": "string"
-          }
+          "color": { "$ref": "#/definitions/color" },
+          "description": { "description": "Description of the tag.", "type": "string" }
         }
       }
     },
@@ -180,14 +157,8 @@
         "type": "object",
         "required": ["name"],
         "properties": {
-          "name": {
-            "description": "Name of the sharing set.",
-            "type": "string"
-          },
-          "description": {
-            "description": "Description of the sharing set.",
-            "type": "string"
-          }
+          "name": { "description": "Name of the sharing set.", "type": "string" },
+          "description": { "description": "Description of the sharing set.", "type": "string" }
         }
       }
     }

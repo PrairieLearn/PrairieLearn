@@ -47,10 +47,7 @@ export async function updateWorkspaceMessage(
   toDatabase = true,
 ): Promise<void> {
   if (toDatabase) await queryAsync(sql.update_workspace_message, { workspace_id, message });
-  emitMessageForWorkspace(workspace_id, 'change:message', {
-    workspace_id,
-    message,
-  });
+  emitMessageForWorkspace(workspace_id, 'change:message', { workspace_id, message });
 }
 
 /**
@@ -74,11 +71,7 @@ export async function updateWorkspaceState(
   if (duration_milliseconds > 0) {
     await updateCourseInstanceUsagesForWorkspace({ workspace_id, duration_milliseconds });
   }
-  emitMessageForWorkspace(workspace_id, 'change:state', {
-    workspace_id,
-    state,
-    message,
-  });
+  emitMessageForWorkspace(workspace_id, 'change:state', { workspace_id, state, message });
 }
 
 interface GradedFilesLimits {
@@ -92,11 +85,7 @@ export async function getWorkspaceGradedFiles(
   limits: GradedFilesLimits,
 ): Promise<Entry[]> {
   const files = (
-    await fg(gradedFiles, {
-      cwd: workspaceDir,
-      stats: true,
-      ...workspaceFastGlobDefaultOptions,
-    })
+    await fg(gradedFiles, { cwd: workspaceDir, stats: true, ...workspaceFastGlobDefaultOptions })
   ).filter((file) => contains(workspaceDir, path.join(workspaceDir, file.path)));
 
   // We generally use `archiver` downstream of this, which does not elegantly
@@ -117,11 +106,7 @@ export async function getWorkspaceGradedFiles(
 
   const totalSize = files.reduce((acc, file) => acc + (file.stats?.size ?? 0), 0);
   if (totalSize > limits.maxSize) {
-    throw new Error(
-      `Workspace files exceed limit of ${filesize(limits.maxSize, {
-        base: 2,
-      })}.`,
-    );
+    throw new Error(`Workspace files exceed limit of ${filesize(limits.maxSize, { base: 2 })}.`);
   }
 
   return files;
@@ -204,10 +189,7 @@ async function getWorkspaceFiles(dir: string): Promise<Dirent[]> {
 /**
  * Default options for calls to `fast-glob`.
  */
-export const workspaceFastGlobDefaultOptions = {
-  extglob: false,
-  braceExpansion: false,
-};
+export const workspaceFastGlobDefaultOptions = { extglob: false, braceExpansion: false };
 
 /**
  * Update the course instance usages for workspace usage.

@@ -38,9 +38,7 @@ describe('Instructor assessment editing', function () {
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c + 1,
-          };
+          return { c: variant.true_answer.c + 1 };
         };
       });
     });
@@ -67,9 +65,7 @@ describe('Instructor assessment editing', function () {
           assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            c: variant.true_answer.c,
-          };
+          return { c: variant.true_answer.c };
         };
       });
     });
@@ -96,10 +92,7 @@ describe('Instructor assessment editing', function () {
           assessment_instance_score_perc: (14 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
-          return {
-            wx: variant.true_answer.wx,
-            wy: variant.true_answer.wy,
-          };
+          return { wx: variant.true_answer.wx, wy: variant.true_answer.wy };
         };
       });
     });

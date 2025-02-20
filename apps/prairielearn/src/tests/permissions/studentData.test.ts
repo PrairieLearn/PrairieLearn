@@ -56,10 +56,7 @@ describe('student data access', function () {
       course_role: 'Owner',
       authn_user_id: '1',
     });
-    await ensureEnrollment({
-      user_id: '3',
-      course_instance_id: '1',
-    });
+    await ensureEnrollment({ user_id: '3', course_instance_id: '1' });
   });
 
   after('shut down testing server', helperServer.after);
@@ -99,10 +96,7 @@ describe('student data access', function () {
     const headers = { cookie: 'pl_test_user=test_student; pl_test_mode=Exam' };
     const response = await helperClient.fetchCheerio(context.examAssessmentUrl, {
       method: 'POST',
-      body: new URLSearchParams({
-        __action: 'new_instance',
-        __csrf_token: context.__csrf_token,
-      }),
+      body: new URLSearchParams({ __action: 'new_instance', __csrf_token: context.__csrf_token }),
       headers,
     });
     assert.isTrue(response.ok);

@@ -112,18 +112,12 @@ router.post(
 
       if (planNames.includes('basic')) {
         const price = await getPriceForPlan('basic');
-        lineItems.push({
-          price: price.id,
-          quantity: 1,
-        });
+        lineItems.push({ price: price.id, quantity: 1 });
       }
 
       if (planNames.includes('compute')) {
         const price = await getPriceForPlan('compute');
-        lineItems.push({
-          price: price.id,
-          quantity: 1,
-        });
+        lineItems.push({ price: price.id, quantity: 1 });
       }
 
       // Validate that the plan names from the client are actually valid. We
@@ -145,9 +139,7 @@ router.post(
       const urlBase = `${host}/pl/course_instance/${course_instance.id}/upgrade`;
 
       const stripe = getStripeClient();
-      const customerId = await getOrCreateStripeCustomerId(user.user_id, {
-        name: user.name,
-      });
+      const customerId = await getOrCreateStripeCustomerId(user.user_id, { name: user.name });
       const metadata = {
         prairielearn_institution_id: institution.id,
         prairielearn_institution_name: `${institution.long_name} (${institution.short_name})`,
@@ -159,18 +151,13 @@ router.post(
       };
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
-        customer_update: {
-          name: 'auto',
-          address: 'auto',
-        },
+        customer_update: { name: 'auto', address: 'auto' },
         line_items: lineItems,
         mode: 'payment',
         success_url: `${urlBase}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: urlBase,
         metadata,
-        payment_intent_data: {
-          metadata,
-        },
+        payment_intent_data: { metadata },
       });
 
       await insertStripeCheckoutSessionForUserInCourseInstance({

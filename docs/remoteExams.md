@@ -9,14 +9,7 @@ _See the [Access control](accessControl/index.md) page for details on `allowAcce
 If you are using PrairieTest for remote proctoring then the access control should look like:
 
 ```json
-{
-  "allowAccess": [
-    {
-      "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
-      "credit": 100
-    }
-  ]
-}
+{ "allowAccess": [{ "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228", "credit": 100 }] }
 ```
 
 Some notes about this configuration:
@@ -31,10 +24,7 @@ Sometimes exams in a testing center ([see above](#exams-in-a-prairietest-managed
 ```json
 {
   "allowAccess": [
-    {
-      "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
-      "credit": 100
-    },
+    { "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228", "credit": 100 },
     {
       "uids": ["student1@example.com", "student2@example.com"],
       "credit": 100,
@@ -97,10 +87,7 @@ This configuration is good when:
       "timeLimitMin": 60,
       "showClosedAssessment": false
     },
-    {
-      "active": false,
-      "showClosedAssessment": false
-    }
+    { "active": false, "showClosedAssessment": false }
   ]
 }
 ```
@@ -150,10 +137,7 @@ This configuration is good when:
       "timeLimitMin": 60,
       "showClosedAssessment": false
     },
-    {
-      "active": false,
-      "showClosedAssessment": false
-    }
+    { "active": false, "showClosedAssessment": false }
   ]
 }
 ```
@@ -201,10 +185,7 @@ This configuration is good when:
       "timeLimitMin": 60,
       "showClosedAssessment": false
     },
-    {
-      "active": false,
-      "showClosedAssessment": false
-    }
+    { "active": false, "showClosedAssessment": false }
   ]
 }
 ```

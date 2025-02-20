@@ -21,10 +21,7 @@ router.get(
       questionId: id,
     }));
     const chunksToLoad: chunks.Chunk[] = [
-      {
-        type: 'question' as const,
-        questionId: question.id,
-      },
+      { type: 'question' as const, questionId: question.id },
     ].concat(templateQuestionChunks);
     await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 

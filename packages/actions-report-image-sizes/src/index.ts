@@ -11,19 +11,14 @@ interface ChangedImage {
   newSize: number;
 }
 
-const DockerApiTokenSchema = z.object({
-  token: z.string(),
-});
+const DockerApiTokenSchema = z.object({ token: z.string() });
 
 const DockerApiManifestListSchema = z.object({
   mediaType: z.literal('application/vnd.oci.image.index.v1+json'),
   manifests: z.array(
     z.object({
       digest: z.string(),
-      platform: z.object({
-        os: z.string(),
-        architecture: z.string(),
-      }),
+      platform: z.object({ os: z.string(), architecture: z.string() }),
     }),
   ),
 });
@@ -33,12 +28,7 @@ const DockerApiManifestSchema = z.object({
     z.literal('application/vnd.docker.distribution.manifest.v2+json'),
     z.literal('application/vnd.oci.image.manifest.v1+json'),
   ]),
-  layers: z.array(
-    z.object({
-      digest: z.string(),
-      size: z.number(),
-    }),
-  ),
+  layers: z.array(z.object({ digest: z.string(), size: z.number() })),
 });
 
 const DockerApiImageManifestSchema = z.union([
@@ -120,13 +110,7 @@ async function getAllImagesFromRegistry(
   // or a single manifest. Handle the latter, simpler case first.
   if (manifest.mediaType !== 'application/vnd.oci.image.index.v1+json') {
     const totalSize = manifest.layers.reduce((acc, layer) => acc + layer.size, 0);
-    return [
-      {
-        platform: null,
-        digest,
-        size: totalSize,
-      },
-    ];
+    return [{ platform: null, digest, size: totalSize }];
   }
 
   // This original manifest will have multiple manifests listed within it.
@@ -178,11 +162,7 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
   const octokit = github.getOctokit(token);
   const comments = await octokit.paginate(
     'GET /repos/{owner}/{repo}/issues/{issue_number}/comments',
-    {
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      issue_number: prNumber,
-    },
+    { owner: github.context.repo.owner, repo: github.context.repo.repo, issue_number: prNumber },
   );
 
   const existingComment = comments.find(

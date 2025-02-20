@@ -302,9 +302,7 @@ WHERE
 - To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
   ```javascript
-  await sqldb.queryAsync(sql.insert_assessment_question, {
-    points_list: [10, 5, 1],
-  });
+  await sqldb.queryAsync(sql.insert_assessment_question, { points_list: [10, 5, 1] });
   ```
 
   ```sql
@@ -342,9 +340,7 @@ WHERE
     { a: 5, b: 'foo' },
     { a: 9, b: 'bar' },
   ];
-  await sqldb.queryAsync(sql.insert_data, {
-    data: JSON.stringify(data),
-  });
+  await sqldb.queryAsync(sql.insert_data, { data: JSON.stringify(data) });
   ```
 
   ```sql

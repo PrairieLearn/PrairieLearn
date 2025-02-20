@@ -149,10 +149,6 @@ export async function initWithLock(directories: string[], project: string) {
     }
 
     // Record the migration.
-    await sqldb.queryAsync(sql.insert_migration, {
-      filename,
-      timestamp,
-      project,
-    });
+    await sqldb.queryAsync(sql.insert_migration, { filename, timestamp, project });
   }
 }

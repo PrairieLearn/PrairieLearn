@@ -42,18 +42,12 @@ router.get(
     const institution = await getInstitution(req.params.institution_id);
     const lti13Instances = await queryRows(
       sql.select_instances,
-      {
-        institution_id: req.params.institution_id,
-      },
+      { institution_id: req.params.institution_id },
       Lti13InstanceSchema,
     );
 
     const platform_defaults_hardcoded: LTI13InstancePlatforms = [
-      {
-        platform: 'Unknown',
-        display_order: 0,
-        issuer_params: {},
-      },
+      { platform: 'Unknown', display_order: 0, issuer_params: {} },
       {
         platform: 'Canvas Production',
         display_order: 10,
@@ -63,9 +57,7 @@ router.get(
           token_endpoint: 'https://sso.canvaslms.com/login/oauth2/token',
           authorization_endpoint: 'https://sso.canvaslms.com/api/lti/authorize_redirect',
         },
-        custom_fields: {
-          uin: '$Canvas.user.sisIntegrationId',
-        },
+        custom_fields: { uin: '$Canvas.user.sisIntegrationId' },
       },
     ];
 
@@ -121,11 +113,7 @@ router.post(
 
       const kid = new Date().toUTCString();
       // RSA256 minimum keysize of 2048 bits
-      await keystore.generate('RSA', 2048, {
-        alg: 'RS256',
-        use: 'sig',
-        kid,
-      });
+      await keystore.generate('RSA', 2048, { alg: 'RS256', use: 'sig', kid });
 
       await queryAsync(sql.update_keystore, {
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
@@ -192,10 +180,7 @@ router.post(
     } else if (req.body.__action === 'add_instance') {
       const new_li = await queryRows(
         sql.insert_instance,
-        {
-          ...lti13_instance_defaults,
-          institution_id: req.params.institution_id,
-        },
+        { ...lti13_instance_defaults, institution_id: req.params.institution_id },
         z.string(),
       );
       flash('success', `Instance #${new_li} added.`);

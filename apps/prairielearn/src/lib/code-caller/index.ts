@@ -84,10 +84,7 @@ export async function init() {
         codeCaller.done();
       },
     },
-    {
-      min: numWorkers,
-      max: numWorkers,
-    },
+    { min: numWorkers, max: numWorkers },
   );
 
   pool.on('factoryCreateError', (err) => {
@@ -165,10 +162,7 @@ export async function withCodeCaller<T>(
 
   try {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    await codeCaller.prepareForCourse({
-      coursePath,
-      forbiddenModules: [],
-    });
+    await codeCaller.prepareForCourse({ coursePath, forbiddenModules: [] });
   } catch (err) {
     // If we fail to prepare for a course, assume that the code caller is
     // broken and dispose of it.

@@ -3833,8 +3833,5 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
 
   /*****************************************************************************/
 
-  return {
-    PrairieDraw: PrairieDraw,
-    PrairieDrawAnim: PrairieDrawAnim,
-  };
+  return { PrairieDraw: PrairieDraw, PrairieDrawAnim: PrairieDrawAnim };
 });

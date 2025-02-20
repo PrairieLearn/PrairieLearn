@@ -24,10 +24,7 @@ function authDataExtractLogin(data: AuthorizationData): DockerAuth {
   const authString = buff.toString('ascii');
   const authArray = authString.split(':');
 
-  return {
-    username: authArray[0],
-    password: authArray[1],
-  };
+  return { username: authArray[0], password: authArray[1] };
 }
 
 export async function setupDockerAuth(ecr: ECRClient): Promise<DockerAuth> {

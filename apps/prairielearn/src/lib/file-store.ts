@@ -15,10 +15,7 @@ import { type File, FileSchema, IdSchema } from './db-types.js';
 const debug = debugfn('prairielearn:socket-server');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const StorageTypes = Object.freeze({
-  S3: 'S3',
-  FileSystem: 'FileSystem',
-});
+const StorageTypes = Object.freeze({ S3: 'S3', FileSystem: 'FileSystem' });
 
 interface UploadFileOptions {
   /** The display_filename of the file. */
@@ -143,18 +140,12 @@ export async function getStream(file_id: number | string): Promise<Stream> {
 export async function getFile(
   file_id: number | string,
   data_type: 'stream',
-): Promise<{
-  contents: Stream;
-  file: File;
-}>;
+): Promise<{ contents: Stream; file: File }>;
 
 export async function getFile(
   file_id: number | string,
   data_type?: 'buffer',
-): Promise<{
-  contents: Buffer;
-  file: File;
-}>;
+): Promise<{ contents: Buffer; file: File }>;
 /**
  * Get a file from the file store.
  *
@@ -164,10 +155,7 @@ export async function getFile(
 export async function getFile(
   file_id: number | string,
   data_type: 'stream' | 'buffer' = 'buffer',
-): Promise<{
-  contents: Buffer | Stream;
-  file: File;
-}> {
+): Promise<{ contents: Buffer | Stream; file: File }> {
   const file = await sqldb.queryOptionalRow(sql.select_file, { file_id }, FileSchema);
 
   if (!file) {
@@ -186,10 +174,7 @@ export async function getFile(
     const contents =
       data_type === 'buffer' ? await fsPromises.readFile(filename) : fs.createReadStream(filename);
 
-    return {
-      contents,
-      file,
-    };
+    return { contents, file };
   } else if (file.storage_type === StorageTypes.S3) {
     if (config.fileStoreS3Bucket == null) {
       throw new Error(
@@ -202,10 +187,7 @@ export async function getFile(
         ? await getFromS3(config.fileStoreS3Bucket, file.storage_filename, true)
         : await getFromS3(config.fileStoreS3Bucket, file.storage_filename, false);
 
-    return {
-      contents,
-      file,
-    };
+    return { contents, file };
   } else {
     throw new Error(`Unknown storage type: ${file.storage_type}`);
   }

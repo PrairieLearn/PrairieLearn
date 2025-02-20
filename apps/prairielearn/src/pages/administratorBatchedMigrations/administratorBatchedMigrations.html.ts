@@ -19,11 +19,7 @@ export function AdministratorBatchedMigrations({
   return PageLayout({
     resLocals,
     pageTitle: 'Batched migrations',
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'batchedMigrations',
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'batchedMigrations' },
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -65,11 +61,7 @@ export function AdministratorBatchedMigration({
   return PageLayout({
     resLocals,
     pageTitle: 'Batched migrations',
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'batchedMigrations',
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'batchedMigrations' },
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

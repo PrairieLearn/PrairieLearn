@@ -667,10 +667,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
         }
       }
     }
-    return {
-      minDist: minDist,
-      maxDist: maxDist,
-    };
+    return { minDist: minDist, maxDist: maxDist };
   };
 
   /** On which side of a line segment does another line segment lie in 2D?
@@ -1520,10 +1517,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
         @return {Object} The derivative object.
     */
   PrairieGeom.prototype.diffExp = function (exp) {
-    return {
-      coeff: exp.coeff * exp.exp,
-      exp: exp.exp,
-    };
+    return { coeff: exp.coeff * exp.exp, exp: exp.exp };
   };
 
   /** Integrate an exponential.
@@ -1532,10 +1526,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
         @return {Object} The integral object.
     */
   PrairieGeom.prototype.intExp = function (exp) {
-    return {
-      coeff: exp.coeff / exp.exp,
-      exp: exp.exp,
-    };
+    return { coeff: exp.coeff / exp.exp, exp: exp.exp };
   };
 
   /*****************************************************************************/
@@ -1561,17 +1552,9 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
     */
   PrairieGeom.prototype.diffTrig = function (trig) {
     if (trig.fcn === 'sin') {
-      return {
-        coeff: trig.coeff * trig.freq,
-        fcn: 'cos',
-        freq: trig.freq,
-      };
+      return { coeff: trig.coeff * trig.freq, fcn: 'cos', freq: trig.freq };
     } else {
-      return {
-        coeff: -trig.coeff * trig.freq,
-        fcn: 'sin',
-        freq: trig.freq,
-      };
+      return { coeff: -trig.coeff * trig.freq, fcn: 'sin', freq: trig.freq };
     }
   };
 
@@ -1582,17 +1565,9 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
     */
   PrairieGeom.prototype.intTrig = function (trig) {
     if (trig.fcn === 'sin') {
-      return {
-        coeff: -trig.coeff / trig.freq,
-        fcn: 'cos',
-        freq: trig.freq,
-      };
+      return { coeff: -trig.coeff / trig.freq, fcn: 'cos', freq: trig.freq };
     } else {
-      return {
-        coeff: trig.coeff / trig.freq,
-        fcn: 'sin',
-        freq: trig.freq,
-      };
+      return { coeff: trig.coeff / trig.freq, fcn: 'sin', freq: trig.freq };
     }
   };
 

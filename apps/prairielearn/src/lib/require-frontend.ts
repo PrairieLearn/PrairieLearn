@@ -19,10 +19,7 @@ requirejs.config({
 });
 
 requirejs.onError = function (err: Error) {
-  const data = {
-    errorMsg: err.toString(),
-    stack: err.stack,
-  };
+  const data = { errorMsg: err.toString(), stack: err.stack };
   for (const e in err) {
     if (Object.prototype.hasOwnProperty.call(err, e)) {
       data[e] = String(err[e]);

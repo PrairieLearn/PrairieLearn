@@ -97,8 +97,6 @@ export const DateFromISOString = z
       const date = new Date(s);
       return !Number.isNaN(date.getTime());
     },
-    {
-      message: 'must be a valid ISO date string',
-    },
+    { message: 'must be a valid ISO date string' },
   )
   .transform((s) => new Date(s));

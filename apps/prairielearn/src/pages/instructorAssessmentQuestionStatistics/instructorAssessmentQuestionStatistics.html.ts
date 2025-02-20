@@ -54,14 +54,8 @@ export function InstructorAssessmentQuestionStatistics({
   return PageLayout({
     resLocals,
     pageTitle: 'Question Statistics',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'question_statistics',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'question_statistics' },
+    options: { fullWidth: true },
     headContent: [compiledScriptTag('instructorAssessmentQuestionStatisticsClient.ts')],
     content: html`
       <h1 class="sr-only">
@@ -218,10 +212,7 @@ export function InstructorAssessmentQuestionStatistics({
                             <div
                               class="js-histmini"
                               data-data="${JSON.stringify(row.quintile_question_scores)}"
-                              data-options="${JSON.stringify({
-                                ...histminiOptions,
-                                ymax: 100,
-                              })}"
+                              data-options="${JSON.stringify({ ...histminiOptions, ymax: 100 })}"
                             ></div>
                           </td>
                         `

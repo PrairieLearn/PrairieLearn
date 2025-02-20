@@ -357,12 +357,7 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
     },
   ],
   administrator_institution: [
-    {
-      activeSubPage: 'general',
-      urlSuffix: '',
-      iconClasses: 'fa fa-gear',
-      tabLabel: 'General',
-    },
+    { activeSubPage: 'general', urlSuffix: '', iconClasses: 'fa fa-gear', tabLabel: 'General' },
     {
       activeSubPage: 'admins',
       urlSuffix: '/admins',
@@ -381,12 +376,7 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       iconClasses: 'fa fa-users',
       tabLabel: 'Single sign-on',
     },
-    {
-      activeSubPage: 'saml',
-      urlSuffix: '/saml',
-      iconClasses: 'fa fa-key',
-      tabLabel: 'SAML',
-    },
+    { activeSubPage: 'saml', urlSuffix: '/saml', iconClasses: 'fa fa-key', tabLabel: 'SAML' },
     {
       activeSubPage: 'lti13',
       urlSuffix: '/lti13',

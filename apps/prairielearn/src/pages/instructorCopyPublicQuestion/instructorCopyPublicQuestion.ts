@@ -34,10 +34,7 @@ router.post(
         // The ID of the course to copy the question from.
         course_id: req.body.course_id,
       },
-      z.object({
-        question: QuestionSchema,
-        course: CourseSchema,
-      }),
+      z.object({ question: QuestionSchema, course: CourseSchema }),
     );
 
     if (!result.course.template_course && !result.question.share_source_publicly) {

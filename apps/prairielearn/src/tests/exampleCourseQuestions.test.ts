@@ -54,9 +54,7 @@ const qidsExampleCourse = [
 
 // We hold all template questions to a high standard, so we will always test them all.
 const templateQuestionQids: string[] = fg
-  .globSync('template/**/info.json', {
-    cwd: path.join(EXAMPLE_COURSE_PATH, 'questions'),
-  })
+  .globSync('template/**/info.json', { cwd: path.join(EXAMPLE_COURSE_PATH, 'questions') })
   .map((p) => path.dirname(p));
 
 describe('Auto-test questions in exampleCourse', () => {

@@ -23,10 +23,7 @@ const InstitutionAuthnProviderSchema = z.object({
   short_name: z.string(),
   default_authn_provider_name: z.string(),
 });
-const InstitutionSupportedProvidersSchema = z.object({
-  name: z.string(),
-  is_default: z.boolean(),
-});
+const InstitutionSupportedProvidersSchema = z.object({ name: z.string(), is_default: z.boolean() });
 const ServiceSchema = z.string().nullable();
 const InstitutionIdSchema = z.string().nullable();
 
@@ -48,9 +45,7 @@ router.get(
       // Look up the supported providers for this institution.
       const supportedProviders = await queryRows(
         sql.select_supported_providers_for_institution,
-        {
-          institution_id: institutionId,
-        },
+        { institution_id: institutionId },
         InstitutionSupportedProvidersSchema,
       );
 
@@ -131,9 +126,7 @@ router.post(
         provider: 'dev',
       };
 
-      await authLib.loadUser(req, res, authnParams, {
-        redirect: true,
-      });
+      await authLib.loadUser(req, res, authnParams, { redirect: true });
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }

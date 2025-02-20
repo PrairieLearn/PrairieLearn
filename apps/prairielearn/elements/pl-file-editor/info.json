@@ -11,8 +11,6 @@
     "elementStyles": ["pl-file-editor.css"]
   },
   "dynamicDependencies": {
-    "nodeModulesScripts": {
-      "@viz-js/viz": "@viz-js/viz/lib/viz-standalone.mjs"
-    }
+    "nodeModulesScripts": { "@viz-js/viz": "@viz-js/viz/lib/viz-standalone.mjs" }
   }
 }

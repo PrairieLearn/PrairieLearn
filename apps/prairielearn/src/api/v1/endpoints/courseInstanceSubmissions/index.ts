@@ -18,9 +18,7 @@ router.get(
     });
     const data = result.rows[0].item;
     if (data.length === 0) {
-      res.status(404).send({
-        message: 'Not Found',
-      });
+      res.status(404).send({ message: 'Not Found' });
     } else {
       res.status(200).send(data[0]);
     }

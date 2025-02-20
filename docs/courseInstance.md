@@ -40,12 +40,7 @@ This file specifies basic information about the course instance:
 {
   "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
   "longName": "Spring 2015",
-  "allowAccess": [
-    {
-      "startDate": "2015-01-19T00:00:01",
-      "endDate": "2015-05-13T23:59:59"
-    }
-  ]
+  "allowAccess": [{ "startDate": "2015-01-19T00:00:01", "endDate": "2015-05-13T23:59:59" }]
 }
 ```
 
@@ -60,14 +55,7 @@ This file specifies basic information about the course instance:
 The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Course staff always have access. The simple example below gives students access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
 
 ```json title="infoCourseInstance.json"
-{
-  "allowAccess": [
-    {
-      "startDate": "2015-01-19T00:00:01",
-      "endDate": "2015-05-13T23:59:59"
-    }
-  ]
-}
+{ "allowAccess": [{ "startDate": "2015-01-19T00:00:01", "endDate": "2015-05-13T23:59:59" }] }
 ```
 
 See the [access control documentation](accessControl/index.md) for more details on `allowAccess` rules.
@@ -79,11 +67,7 @@ By default, only students that belong to the course's institution can access the
 ```json title="infoCourseInstance.json"
 {
   "allowAccess": [
-    {
-      "startDate": "2015-01-19T00:00:01",
-      "endDate": "2015-05-13T23:59:59",
-      "institution": "Any"
-    }
+    { "startDate": "2015-01-19T00:00:01", "endDate": "2015-05-13T23:59:59", "institution": "Any" }
   ]
 }
 ```
@@ -115,9 +99,7 @@ Students can enroll in a course instance through one of two ways:
 Some instructors may wish to hide their course from the list of available course instances. This may be done to provide a small level of control over which students get access to the course, or to avoid confusion in case of course instances that are not expected to be visible to students in general. For these instances, the following setting will hide the course instance from the list of instances on the add/remove courses page, even if the instance is available for enrollment.
 
 ```json title="infoCourseInstance.json"
-{
-  "hideInEnrollPage": true
-}
+{ "hideInEnrollPage": true }
 ```
 
 Note that _this is not a security setting_. Students may still enroll in the course instance if they get access to the URL, such as from a friend. Instructors that wish to actually restrict course enrollment to a specific list of students should instead use an access rule with an explicit list of UIDs, as described under ["Controlling access by UID"](#controlling-access-by-uid).
@@ -127,9 +109,7 @@ Note that _this is not a security setting_. Students may still enroll in the cou
 Instructors can group assessments by course modules (topics, sections or chapters in a course) or by assessment sets (homework, exam, etc). By default, all assessments in a course instance are grouped by `"Set"`. Setting the property `"groupAssessmentsBy"` to `"Module"` will group assessments together by module on the student assessments overview page.
 
 ```json title="infoCourseInstance.json"
-{
-  "groupAssessmentsBy": "Module"
-}
+{ "groupAssessmentsBy": "Module" }
 ```
 
 For more information about assessment modules, see [Course configuration](course/index.md#assessment-modules).
@@ -139,9 +119,7 @@ For more information about assessment modules, see [Course configuration](course
 The default timezone for course instances is the timezone of the course. This can be changed with the `timezone` property in `infoCourseInstance.json`. For example:
 
 ```json title="infoCourseInstance.json"
-{
-  "timezone": "America/New_York"
-}
+{ "timezone": "America/New_York" }
 ```
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).

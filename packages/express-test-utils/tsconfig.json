@@ -1,8 +1,4 @@
 {
   "extends": "@prairielearn/tsconfig/tsconfig.package.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "types": ["node"]
-  }
+  "compilerOptions": { "outDir": "./dist", "rootDir": "./src", "types": ["node"] }
 }

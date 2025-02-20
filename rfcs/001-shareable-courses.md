@@ -7,10 +7,7 @@ A mechanism for allowing course content to be shared with other courses.
 A course can be designated as shareable by setting the `shareable` flag in its `infoCourse.json` file:
 
 ```json
-{
-  "uuid": "754dac56-fc1f-4888-a74a-1b365fd48376",
-  "shareable": true
-}
+{ "uuid": "754dac56-fc1f-4888-a74a-1b365fd48376", "shareable": true }
 ```
 
 Shareable courses will have a globally unique, human readable ID, like `uiuc-data-structures`.
@@ -115,10 +112,7 @@ The following features are not necessary for an MVP version of this feature, but
 To ensure safety guarantees, once a question in a shareable course exists, it cannot be renamed or deleted. However, as shareable courses eveolve over the course of many years, certain questions may become outdated or broken and there may not be sufficient resources to update them. To make it easy for this to be communicated to consumers of questions, a "deprecated" flag could be added to a question's `info.json` file:
 
 ```json
-{
-  "uuid": "754dac56-fc1f-4888-a74a-1b365fd48376",
-  "deprecated": true
-}
+{ "uuid": "754dac56-fc1f-4888-a74a-1b365fd48376", "deprecated": true }
 ```
 
 Deprecated questions could render a warning in instructor views of the question, on a question's row in an assessment overview, or in other useful locations across PrairieLearn.

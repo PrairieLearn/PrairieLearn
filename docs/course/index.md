@@ -48,9 +48,7 @@ This file specifies basic information about the course:
   "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
   "name": "TAM 212",
   "title": "Introductory Dynamics",
-  "options": {
-    "useNewQuestionRenderer": true
-  },
+  "options": { "useNewQuestionRenderer": true },
   "assessmentSets": [],
   "assessmentModules": [],
   "topics": [],
@@ -177,18 +175,8 @@ You can add more assessment sets by listing them in the `infoCourse.json` file a
 ```json title="infoCourse.json"
 {
   "assessmentSets": [
-    {
-      "abbreviation": "HW",
-      "name": "Homework",
-      "heading": "Homeworks",
-      "color": "green1"
-    },
-    {
-      "abbreviation": "Q",
-      "name": "Quiz",
-      "heading": "Quizzes",
-      "color": "red1"
-    }
+    { "abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1" },
+    { "abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1" }
   ]
 }
 ```
@@ -198,18 +186,8 @@ The assessment set order in `infoCourse.json` is the order in which the assessme
 ```json title="infoCourse.json"
 {
   "assessmentSets": [
-    {
-      "abbreviation": "E",
-      "name": "Exam",
-      "heading": "Exams",
-      "color": "brown1"
-    },
-    {
-      "abbreviation": "Q",
-      "name": "Quiz",
-      "heading": "Quizzes",
-      "color": "red1"
-    },
+    { "abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "brown1" },
+    { "abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1" },
     {
       "abbreviation": "PE",
       "name": "Practice Exam",
@@ -222,30 +200,15 @@ The assessment set order in `infoCourse.json` is the order in which the assessme
       "heading": "Practice Quizzes",
       "color": "pink1"
     },
-    {
-      "abbreviation": "HW",
-      "name": "Homework",
-      "heading": "Homeworks",
-      "color": "green1"
-    },
-    {
-      "abbreviation": "P",
-      "name": "Prep",
-      "heading": "Question Preparation",
-      "color": "gray1"
-    },
+    { "abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1" },
+    { "abbreviation": "P", "name": "Prep", "heading": "Question Preparation", "color": "gray1" },
     {
       "abbreviation": "MP",
       "name": "Machine Problem",
       "heading": "Machine Problems",
       "color": "turquoise1"
     },
-    {
-      "abbreviation": "WS",
-      "name": "Worksheet",
-      "heading": "Worksheets",
-      "color": "purple1"
-    }
+    { "abbreviation": "WS", "name": "Worksheet", "heading": "Worksheets", "color": "purple1" }
   ]
 }
 ```
@@ -259,18 +222,9 @@ Modules are optional and do not affect any behavior by default. The order in whi
 ```json title="infoCourse.json"
 {
   "assessmentModules": [
-    {
-      "name": "intro",
-      "heading": "Unit 1: Introduction to XC 101"
-    },
-    {
-      "name": "physics",
-      "heading": "Unit 2: Physics"
-    },
-    {
-      "name": "math",
-      "heading": "Unit 3: Math"
-    }
+    { "name": "intro", "heading": "Unit 1: Introduction to XC 101" },
+    { "name": "physics", "heading": "Unit 2: Physics" },
+    { "name": "math", "heading": "Unit 3: Math" }
   ]
 }
 ```
@@ -303,11 +257,7 @@ For example, topics could be listed like:
 ```json title="infoCourse.json"
 {
   "topics": [
-    {
-      "name": "Vectors",
-      "color": "blue3",
-      "description": "Vector algebra in 3D."
-    },
+    { "name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D." },
     {
       "name": "Center of mass",
       "color": "green3",
@@ -399,14 +349,8 @@ You can add sharing sets to your course by listing them in the `infoCourse.json`
 ```json title="infoCourse.json"
 {
   "sharingSets": [
-    {
-      "name": "python-exercises",
-      "description": "Python exercises for sharing"
-    },
-    {
-      "name": "final-exam",
-      "description": "Questions that can be used on a final exam"
-    }
+    { "name": "python-exercises", "description": "Python exercises for sharing" },
+    { "name": "final-exam", "description": "Questions that can be used on a final exam" }
   ]
 }
 ```
@@ -418,9 +362,7 @@ At this time, sharing sets cannot be renamed or removed from `infoCourse.json` o
 The default timezone for courses is `America/Chicago` (U.S. Central Time). This can be changed with the `timezone` property in `infoCourse.json`. For example:
 
 ```json title="infoCourse.json"
-{
-  "timezone": "America/New_York"
-}
+{ "timezone": "America/New_York" }
 ```
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).

@@ -34,11 +34,7 @@ export function AdministratorWorkspaces({
   return PageLayout({
     resLocals,
     pageTitle: 'Workspaces',
-    navContext: {
-      type: 'plain',
-      page: 'admin',
-      subPage: 'workspaces',
-    },
+    navContext: { type: 'plain', page: 'admin', subPage: 'workspaces' },
     preContent: html`
       <script>
         $(() => {
@@ -86,10 +82,7 @@ export function AdministratorWorkspaces({
                       ${workspaceHostRow.workspace_host_time_in_state}
                     </span>
                   </div>
-                  ${Capacity({
-                    total: workspaceLoadHostCapacity,
-                    current: workspaces.length,
-                  })}
+                  ${Capacity({ total: workspaceLoadHostCapacity, current: workspaces.length })}
                 </div>
                 <div id="workspaces-${workspaceHost.id}" class="collapse">
                   ${workspaces.length === 0

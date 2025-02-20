@@ -19,11 +19,7 @@ router.use(
   '/:lti13_instance_id/',
   asyncHandler(async (req, res, next) => {
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
-    if (
-      await features.enabled('lti13', {
-        institution_id: lti13_instance.institution_id,
-      })
-    ) {
+    if (await features.enabled('lti13', { institution_id: lti13_instance.institution_id })) {
       next();
     } else {
       throw new error.HttpStatusError(403, 'Access denied. LTI 1.3 feature not enabled');

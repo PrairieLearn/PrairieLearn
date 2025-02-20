@@ -48,14 +48,8 @@ export function InstructorFileEditor({
   return PageLayout({
     resLocals,
     pageTitle: `Edit ${editorData.fileName}`,
-    navContext: {
-      type: resLocals.navbarType,
-      page: resLocals.navPage,
-      subPage: 'file_edit',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: resLocals.navbarType, page: resLocals.navPage, subPage: 'file_edit' },
+    options: { fullWidth: true },
     headContent: html`
       <meta
         name="ace-base-path"

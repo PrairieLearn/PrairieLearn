@@ -27,11 +27,7 @@ async function loadNewsItems() {
       schemas.infoNewsItem,
     );
 
-    news_items.push({
-      ...info,
-      directory: dir,
-      index: match[1],
-    });
+    news_items.push({ ...info, directory: dir, index: match[1] });
   }
 
   // Check for duplicate UUIDs

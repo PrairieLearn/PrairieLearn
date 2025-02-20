@@ -128,11 +128,7 @@ export async function pullAndUpdateCourse({
         } else {
           // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
 
-          startGitHash = await getOrUpdateCourseCommitHash({
-            id: courseId,
-            path,
-            commit_hash,
-          });
+          startGitHash = await getOrUpdateCourseCommitHash({ id: courseId, path, commit_hash });
 
           job.info('Updating to latest remote origin address');
           await job.exec('git', ['remote', 'set-url', 'origin', repository], gitOptions);

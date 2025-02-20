@@ -23,10 +23,7 @@ export async function sendMessage(msg: string): Promise<null | Response> {
 
   if (!response.ok) {
     throw new error.AugmentedError('Error sending message', {
-      data: {
-        responseCode: response.status,
-        responseText: await response.text(),
-      },
+      data: { responseCode: response.status, responseText: await response.text() },
     });
   }
 
@@ -53,19 +50,12 @@ export async function sendSlackMessage(
   const response = await fetch('https://slack.com/api/chat.postMessage', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      text: msg,
-      channel,
-      as_user: true,
-    }),
+    body: JSON.stringify({ text: msg, channel, as_user: true }),
   });
 
   if (!response.ok) {
     throw new error.AugmentedError(`Error sending message to ${channel}`, {
-      data: {
-        responseCode: response.status,
-        responseText: await response.text(),
-      },
+      data: { responseCode: response.status, responseText: await response.text() },
     });
   }
   return response;

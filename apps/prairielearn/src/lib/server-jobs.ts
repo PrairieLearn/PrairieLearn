@@ -127,10 +127,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
     const start = performance.now();
     let didOutput = false;
-    const proc2 = execa(file, args, {
-      ...options,
-      all: true,
-    });
+    const proc2 = execa(file, args, { ...options, all: true });
     proc2.all?.setEncoding('utf-8');
     proc2.all?.on('data', (data) => {
       didOutput = true;
@@ -289,10 +286,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
       type: options.type,
       description: options.description,
     },
-    z.object({
-      job_sequence_id: z.string(),
-      job_id: z.string(),
-    }),
+    z.object({ job_sequence_id: z.string(), job_id: z.string() }),
   );
 
   const serverJob = new ServerJobImpl(job_sequence_id, job_id);

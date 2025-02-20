@@ -24,94 +24,34 @@ async function getLoadStats(): Promise<WorkspaceLoadStats> {
 }
 
 const cloudwatch_definitions = {
-  workspace_jobs_capacity_desired: {
-    name: 'DesiredJobCapacity',
-    unit: 'Count',
-  },
-  workspace_hosts_desired: {
-    name: 'DesiredHosts',
-    unit: 'Count',
-  },
-  workspace_hosts_launching_count: {
-    name: 'HostsLaunching',
-    unit: 'Count',
-  },
-  workspace_hosts_ready_count: {
-    name: 'HostsReady',
-    unit: 'Count',
-  },
-  workspace_hosts_draining_count: {
-    name: 'HostsDraining',
-    unit: 'Count',
-  },
-  workspace_hosts_unhealthy_count: {
-    name: 'HostsUnhealthy',
-    unit: 'Count',
-  },
-  workspace_hosts_terminating_count: {
-    name: 'HostsTerminating',
-    unit: 'Count',
-  },
-  workspace_hosts_active_count: {
-    name: 'HostsActive',
-    unit: 'Count',
-  },
-  workspace_hosts_longest_launching_sec: {
-    name: 'MaxLaunchingHostAge',
-    unit: 'Seconds',
-  },
-  workspace_hosts_longest_ready_sec: {
-    name: 'MaxReadyHostAge',
-    unit: 'Seconds',
-  },
-  workspace_hosts_longest_draining_sec: {
-    name: 'MaxDrainingHostAge',
-    unit: 'Seconds',
-  },
-  workspace_hosts_longest_unhealthy_sec: {
-    name: 'MaxUnhealthyHostAge',
-    unit: 'Seconds',
-  },
-  workspace_hosts_longest_terminating_sec: {
-    name: 'MaxTerminatingHostAge',
-    unit: 'Seconds',
-  },
-  workspace_uninitialized_count: {
-    name: 'WorkspacesUninitialized',
-    unit: 'Count',
-  },
-  workspace_launching_count: {
-    name: 'WorkspacesLaunching',
-    unit: 'Count',
-  },
-  workspace_relaunching_count: {
-    name: 'WorkspacesRelaunching',
-    unit: 'Count',
-  },
-  workspace_running_count: {
-    name: 'WorkspacesRunning',
-    unit: 'Count',
-  },
+  workspace_jobs_capacity_desired: { name: 'DesiredJobCapacity', unit: 'Count' },
+  workspace_hosts_desired: { name: 'DesiredHosts', unit: 'Count' },
+  workspace_hosts_launching_count: { name: 'HostsLaunching', unit: 'Count' },
+  workspace_hosts_ready_count: { name: 'HostsReady', unit: 'Count' },
+  workspace_hosts_draining_count: { name: 'HostsDraining', unit: 'Count' },
+  workspace_hosts_unhealthy_count: { name: 'HostsUnhealthy', unit: 'Count' },
+  workspace_hosts_terminating_count: { name: 'HostsTerminating', unit: 'Count' },
+  workspace_hosts_active_count: { name: 'HostsActive', unit: 'Count' },
+  workspace_hosts_longest_launching_sec: { name: 'MaxLaunchingHostAge', unit: 'Seconds' },
+  workspace_hosts_longest_ready_sec: { name: 'MaxReadyHostAge', unit: 'Seconds' },
+  workspace_hosts_longest_draining_sec: { name: 'MaxDrainingHostAge', unit: 'Seconds' },
+  workspace_hosts_longest_unhealthy_sec: { name: 'MaxUnhealthyHostAge', unit: 'Seconds' },
+  workspace_hosts_longest_terminating_sec: { name: 'MaxTerminatingHostAge', unit: 'Seconds' },
+  workspace_uninitialized_count: { name: 'WorkspacesUninitialized', unit: 'Count' },
+  workspace_launching_count: { name: 'WorkspacesLaunching', unit: 'Count' },
+  workspace_relaunching_count: { name: 'WorkspacesRelaunching', unit: 'Count' },
+  workspace_running_count: { name: 'WorkspacesRunning', unit: 'Count' },
   workspace_running_on_healthy_hosts_count: {
     name: 'WorkspacesRunningOnHealthyHosts',
     unit: 'Count',
   },
-  workspace_active_count: {
-    name: 'WorkspacesActive',
-    unit: 'Count',
-  },
+  workspace_active_count: { name: 'WorkspacesActive', unit: 'Count' },
   workspace_active_on_healthy_hosts_count: {
     name: 'WorkspacesActiveOnHealthyHosts',
     unit: 'Count',
   },
-  workspace_longest_launching_sec: {
-    name: 'MaxLaunchingWorkspaceAge',
-    unit: 'Seconds',
-  },
-  workspace_longest_running_sec: {
-    name: 'MaxRunningWorkspaceAge',
-    unit: 'Seconds',
-  },
+  workspace_longest_launching_sec: { name: 'MaxLaunchingWorkspaceAge', unit: 'Seconds' },
+  workspace_longest_running_sec: { name: 'MaxRunningWorkspaceAge', unit: 'Seconds' },
 };
 
 async function sendStatsToCloudwatch(stats: WorkspaceLoadStats) {
@@ -159,9 +99,7 @@ async function handleWorkspaceAutoscaling(stats: WorkspaceLoadStats) {
       const data = await ec2.runInstances({
         MaxCount: needed,
         MinCount: 1,
-        LaunchTemplate: {
-          LaunchTemplateId: config.workspaceLoadLaunchTemplateId,
-        },
+        LaunchTemplate: { LaunchTemplateId: config.workspaceLoadLaunchTemplateId },
       });
       const instance_ids = (data.Instances ?? []).map((instance) => instance.InstanceId);
       await queryAsync(sql.insert_new_instances, { instance_ids });

@@ -89,10 +89,7 @@ describe('instructorInstanceAdminBilling', () => {
       const csrfToken = await getCsrfToken(pageUrl);
       const res = await fetch(pageUrl, {
         method: 'POST',
-        body: new URLSearchParams({
-          compute_enabled: '1',
-          __csrf_token: csrfToken,
-        }),
+        body: new URLSearchParams({ compute_enabled: '1', __csrf_token: csrfToken }),
       });
       assert.isFalse(res.ok);
       assert.equal(res.status, 400);
@@ -110,10 +107,7 @@ describe('instructorInstanceAdminBilling', () => {
       const csrfToken = await getCsrfToken(pageUrl);
       const res = await fetch(pageUrl, {
         method: 'POST',
-        body: new URLSearchParams({
-          compute_enabled: '1',
-          __csrf_token: csrfToken,
-        }),
+        body: new URLSearchParams({ compute_enabled: '1', __csrf_token: csrfToken }),
       });
       assert.isFalse(res.ok);
       assert.equal(res.status, 400);

@@ -9,12 +9,7 @@ const app = express();
 express_ws(app);
 
 const argument_option_defs = [
-  {
-    name: 'help',
-    alias: 'h',
-    type: Boolean,
-    description: 'display this usage guide',
-  },
+  { name: 'help', alias: 'h', type: Boolean, description: 'display this usage guide' },
   {
     name: 'port',
     alias: 'p',
@@ -44,9 +39,7 @@ if (options.help) {
   return;
 }
 
-const default_env = {
-  LC_CTYPE: 'C.UTF-8',
-};
+const default_env = { LC_CTYPE: 'C.UTF-8' };
 
 // Static files
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));

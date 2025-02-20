@@ -93,10 +93,7 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
 
   var QuestionModel = Backbone.Model.extend({
     initialize: function () {
-      this.set({
-        submittable: false,
-        showTrueAnswer: false,
-      });
+      this.set({ submittable: false, showTrueAnswer: false });
     },
   });
 
@@ -507,7 +504,5 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
     this.questionView.addOptionalAnswer(answer);
   };
 
-  return {
-    SimpleClient: SimpleClient,
-  };
+  return { SimpleClient: SimpleClient };
 });

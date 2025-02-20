@@ -6,11 +6,7 @@ const sql = loadSqlEquiv(import.meta.url);
 export default makeBatchedMigration({
   async getParameters() {
     const result = await queryOneRowAsync('SELECT MAX(group_id) as max from group_users;', {});
-    return {
-      min: 1n,
-      max: result.rows[0].max,
-      batchSize: 1000,
-    };
+    return { min: 1n, max: result.rows[0].max, batchSize: 1000 };
   },
   async execute(min: bigint, max: bigint): Promise<void> {
     await queryAsync(sql.update_group_users_group_config_id, { min, max });

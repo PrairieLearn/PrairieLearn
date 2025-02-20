@@ -10,11 +10,7 @@ describe('migrations', () => {
   describe('getMigrationsToExecute', () => {
     it('handles the case of no executed migrations', () => {
       const migrationFiles = [
-        {
-          directory: 'migrations',
-          filename: '001_testing.sql',
-          timestamp: '20220101010101',
-        },
+        { directory: 'migrations', filename: '001_testing.sql', timestamp: '20220101010101' },
       ];
       assert.deepEqual(getMigrationsToExecute(migrationFiles, []), migrationFiles);
     });
@@ -37,14 +33,7 @@ describe('migrations', () => {
           timestamp: '20220101010103',
         },
       ];
-      const executedMigrations = [
-        {
-          timestamp: '20220101010101',
-        },
-        {
-          timestamp: '20220101010102',
-        },
-      ];
+      const executedMigrations = [{ timestamp: '20220101010101' }, { timestamp: '20220101010102' }];
       assert.deepEqual(getMigrationsToExecute(migrationFiles, executedMigrations), [
         {
           directory: 'migrations',
@@ -56,9 +45,7 @@ describe('migrations', () => {
   });
 
   describe('initWithLock', () => {
-    const postgresTestUtils = makePostgresTestUtils({
-      database: 'prairielearn_migrations',
-    });
+    const postgresTestUtils = makePostgresTestUtils({ database: 'prairielearn_migrations' });
 
     before(async () => {
       await postgresTestUtils.createDatabase();

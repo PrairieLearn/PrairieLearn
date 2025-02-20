@@ -45,11 +45,7 @@ function smallestDate(first: Date | null, second: Date | null): Date | null {
 export default makeBatchedMigration({
   async getParameters() {
     const result = await queryOneRowAsync('SELECT MAX(id) as max from pl_courses;', {});
-    return {
-      min: 1n,
-      max: result.rows[0].max,
-      batchSize: 10,
-    };
+    return { min: 1n, max: result.rows[0].max, batchSize: 10 };
   },
 
   async execute(start: bigint, end: bigint): Promise<void> {

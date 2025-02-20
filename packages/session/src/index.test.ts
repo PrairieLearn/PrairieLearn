@@ -74,19 +74,13 @@ describe('session middleware', () => {
       createSessionMiddleware({
         secret: TEST_SECRET,
         store: new MemoryStore(),
-        cookie: {
-          secure: true,
-        },
+        cookie: { secure: true },
       }),
     );
     app.get('/', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
-      const res = await fetch(url, {
-        headers: {
-          'X-Forwarded-Proto': 'https',
-        },
-      });
+      const res = await fetch(url, { headers: { 'X-Forwarded-Proto': 'https' } });
       assert.equal(res.status, 200);
 
       const header = res.headers.get('set-cookie');
@@ -105,19 +99,13 @@ describe('session middleware', () => {
       createSessionMiddleware({
         secret: TEST_SECRET,
         store: new MemoryStore(),
-        cookie: {
-          secure: true,
-        },
+        cookie: { secure: true },
       }),
     );
     app.get('/', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
-      const res = await fetch(url, {
-        headers: {
-          'X-Forwarded-Proto': 'http',
-        },
-      });
+      const res = await fetch(url, { headers: { 'X-Forwarded-Proto': 'http' } });
       assert.equal(res.status, 200);
 
       const header = res.headers.get('set-cookie');
@@ -132,19 +120,13 @@ describe('session middleware', () => {
       createSessionMiddleware({
         secret: TEST_SECRET,
         store: new MemoryStore(),
-        cookie: {
-          secure: 'auto',
-        },
+        cookie: { secure: 'auto' },
       }),
     );
     app.get('/', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
-      const res = await fetch(url, {
-        headers: {
-          'X-Forwarded-Proto': 'https',
-        },
-      });
+      const res = await fetch(url, { headers: { 'X-Forwarded-Proto': 'https' } });
       assert.equal(res.status, 200);
 
       const header = res.headers.get('set-cookie');
@@ -163,19 +145,13 @@ describe('session middleware', () => {
       createSessionMiddleware({
         secret: TEST_SECRET,
         store: new MemoryStore(),
-        cookie: {
-          secure: 'auto',
-        },
+        cookie: { secure: 'auto' },
       }),
     );
     app.get('/', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
-      const res = await fetch(url, {
-        headers: {
-          'X-Forwarded-Proto': 'http',
-        },
-      });
+      const res = await fetch(url, { headers: { 'X-Forwarded-Proto': 'http' } });
       assert.equal(res.status, 200);
 
       const header = res.headers.get('set-cookie');
@@ -194,19 +170,14 @@ describe('session middleware', () => {
       createSessionMiddleware({
         secret: TEST_SECRET,
         store: new MemoryStore(),
-        cookie: {
-          secure: (req) => req.hostname === 'example.com',
-        },
+        cookie: { secure: (req) => req.hostname === 'example.com' },
       }),
     );
     app.get('/', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
       const insecureRes = await fetch(url, {
-        headers: {
-          'X-Forwarded-Host': 'subdomain.example.com',
-          'X-Forwarded-Proto': 'http',
-        },
+        headers: { 'X-Forwarded-Host': 'subdomain.example.com', 'X-Forwarded-Proto': 'http' },
       });
       assert.equal(insecureRes.status, 200);
 
@@ -218,10 +189,7 @@ describe('session middleware', () => {
       assert.isUndefined(insecureCookie[0].secure);
 
       const secureRes = await fetch(url, {
-        headers: {
-          'X-Forwarded-Host': 'example.com',
-          'X-Forwarded-Proto': 'https',
-        },
+        headers: { 'X-Forwarded-Host': 'example.com', 'X-Forwarded-Proto': 'https' },
       });
       assert.equal(secureRes.status, 200);
 
@@ -236,12 +204,7 @@ describe('session middleware', () => {
 
   it('persists session data across requests', async () => {
     const app = express();
-    app.use(
-      createSessionMiddleware({
-        store: new MemoryStore(),
-        secret: TEST_SECRET,
-      }),
-    );
+    app.use(createSessionMiddleware({ store: new MemoryStore(), secret: TEST_SECRET }));
     app.get('/', (req, res) => {
       req.session.count ??= 0;
       req.session.count += 1;
@@ -263,12 +226,7 @@ describe('session middleware', () => {
 
   it('commits the session before sending a redirect', async () => {
     const app = express();
-    app.use(
-      createSessionMiddleware({
-        store: new MemoryStore(),
-        secret: TEST_SECRET,
-      }),
-    );
+    app.use(createSessionMiddleware({ store: new MemoryStore(), secret: TEST_SECRET }));
     app.post('/', (req, res) => {
       req.session.test = 'test';
       res.redirect(req.originalUrl);
@@ -278,9 +236,7 @@ describe('session middleware', () => {
     });
 
     await withServer(app, async ({ url }) => {
-      const res = await fetchCookie(fetch)(url, {
-        method: 'POST',
-      });
+      const res = await fetchCookie(fetch)(url, { method: 'POST' });
       assert.equal(res.status, 200);
 
       const body = await res.text();
@@ -292,12 +248,7 @@ describe('session middleware', () => {
     const store = new MemoryStore();
 
     const app = express();
-    app.use(
-      createSessionMiddleware({
-        store,
-        secret: TEST_SECRET,
-      }),
-    );
+    app.use(createSessionMiddleware({ store, secret: TEST_SECRET }));
     app.get('/', (_req, res) => res.sendStatus(200));
     app.use(
       '/destroy',
@@ -338,12 +289,7 @@ describe('session middleware', () => {
     const store = new MemoryStore();
 
     const app = express();
-    app.use(
-      createSessionMiddleware({
-        store,
-        secret: TEST_SECRET,
-      }),
-    );
+    app.use(createSessionMiddleware({ store, secret: TEST_SECRET }));
     app.get('/', (req, res) => {
       res.send(req.session.regenerated ? 'true' : 'false');
     });
@@ -397,12 +343,7 @@ describe('session middleware', () => {
     const store = new MemoryStore();
 
     const app = express();
-    app.use(
-      createSessionMiddleware({
-        store,
-        secret: TEST_SECRET,
-      }),
-    );
+    app.use(createSessionMiddleware({ store, secret: TEST_SECRET }));
     app.get('/', (req, res) => res.send(req.session.id));
 
     await withServer(app, async ({ url }) => {
@@ -434,12 +375,7 @@ describe('session middleware', () => {
 
   it('does not re-set the cookie on subsequent requests', async () => {
     const app = express();
-    app.use(
-      createSessionMiddleware({
-        store: new MemoryStore(),
-        secret: TEST_SECRET,
-      }),
-    );
+    app.use(createSessionMiddleware({ store: new MemoryStore(), secret: TEST_SECRET }));
     app.get('/', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
@@ -463,15 +399,7 @@ describe('session middleware', () => {
     const store = new MemoryStore();
 
     const app = express();
-    app.use(
-      createSessionMiddleware({
-        store,
-        secret: TEST_SECRET,
-        cookie: {
-          maxAge: 1000,
-        },
-      }),
-    );
+    app.use(createSessionMiddleware({ store, secret: TEST_SECRET, cookie: { maxAge: 1000 } }));
     app.get('/', (_req, res) => res.sendStatus(200));
     app.get('/extend', (req, res) => {
       req.session.setExpiration(10000);
@@ -534,12 +462,7 @@ describe('session middleware', () => {
     };
 
     const app = express();
-    app.use(
-      createSessionMiddleware({
-        store,
-        secret: TEST_SECRET,
-      }),
-    );
+    app.use(createSessionMiddleware({ store, secret: TEST_SECRET }));
     app.get('/', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
@@ -569,13 +492,7 @@ describe('session middleware', () => {
     // Will create "legacy" sessions.
     const legacyApp = express();
     legacyApp.use(
-      createSessionMiddleware({
-        store,
-        secret: TEST_SECRET,
-        cookie: {
-          name: 'legacy_session',
-        },
-      }),
+      createSessionMiddleware({ store, secret: TEST_SECRET, cookie: { name: 'legacy_session' } }),
     );
     legacyApp.get('/', (req, res) => res.send(req.session.id.toString()));
 
@@ -629,12 +546,7 @@ describe('session middleware', () => {
     const store = new MemoryStore();
 
     const app = express();
-    app.use(
-      createSessionMiddleware({
-        store,
-        secret: TEST_SECRET,
-      }),
-    );
+    app.use(createSessionMiddleware({ store, secret: TEST_SECRET }));
     app.get(
       '/',
       asyncHandler(async (req, res) => {

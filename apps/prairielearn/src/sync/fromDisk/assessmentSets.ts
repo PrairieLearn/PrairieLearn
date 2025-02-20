@@ -53,15 +53,7 @@ export async function sync(courseId: string, courseData: CourseData) {
     // We only create this if we have invalid JSON somewhere. If all the JSON
     // is valid, we're guaranteed not to need this.
     extraEntities: !deleteUnused
-      ? [
-          {
-            name: 'Unknown',
-            abbreviation: 'U',
-            heading: 'Unknown',
-            color: 'red3',
-            implicit: true,
-          },
-        ]
+      ? [{ name: 'Unknown', abbreviation: 'U', heading: 'Unknown', color: 'red3', implicit: true }]
       : [],
     existingEntities: existingAssessmentSets,
     knownNames: knownAssessmentSetNames,

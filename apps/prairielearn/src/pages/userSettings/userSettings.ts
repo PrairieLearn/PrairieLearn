@@ -25,9 +25,7 @@ router.get(
 
     const accessTokens = await sqldb.queryRows(
       sql.select_access_tokens,
-      {
-        user_id: authn_user.user_id,
-      },
+      { user_id: authn_user.user_id },
       AccessTokenSchema,
     );
 
@@ -42,9 +40,7 @@ router.get(
 
     // Now that we've rendered these tokens, remove any tokens from the DB
     if (newAccessTokens.length > 0) {
-      await sqldb.queryAsync(sql.clear_tokens_for_user, {
-        user_id: authn_user.user_id,
-      });
+      await sqldb.queryAsync(sql.clear_tokens_for_user, { user_id: authn_user.user_id });
     }
 
     const purchases = isEnterprise() ? await getPurchasesForUser(authn_user.user_id) : [];

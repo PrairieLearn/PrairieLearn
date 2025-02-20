@@ -12,10 +12,7 @@ function authenticate(req: Request, res: Response): Promise<any> {
   return new Promise((resolve, reject) => {
     passport.authenticate(
       'azuread-openidconnect',
-      {
-        failureRedirect: '/pl',
-        session: false,
-      },
+      { failureRedirect: '/pl', session: false },
       (err: any, user: any) => {
         if (err) {
           reject(err);
@@ -47,9 +44,7 @@ router.post(
       provider: 'Azure',
     };
 
-    await authnLib.loadUser(req, res, authnParams, {
-      redirect: true,
-    });
+    await authnLib.loadUser(req, res, authnParams, { redirect: true });
   }),
 );
 

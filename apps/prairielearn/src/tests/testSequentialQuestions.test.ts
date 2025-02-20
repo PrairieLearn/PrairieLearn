@@ -64,10 +64,7 @@ describe('Assessment that forces students to complete questions in-order', funct
     helperClient.extractAndSaveCSRFToken(context, assessmentCreateResponse.$, 'form');
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
-      body: new URLSearchParams({
-        __action: 'new_instance',
-        __csrf_token: context.__csrf_token,
-      }),
+      body: new URLSearchParams({ __action: 'new_instance', __csrf_token: context.__csrf_token }),
     });
     assert.isTrue(response.ok);
 

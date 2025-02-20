@@ -10,21 +10,14 @@ const schema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   additionalProperties: false,
-  properties: {
-    foo: {
-      type: 'string',
-    },
-  },
+  properties: { foo: { type: 'string' } },
 };
 
 describe('JSON loading', () => {
   describe('readJSON', () => {
     it('reads a JSON file', async () => {
       const json = await jsonLoad.readJSON(testfile('basic.json'));
-      assert.deepEqual(json, {
-        hello: 'world',
-        testing: 1,
-      });
+      assert.deepEqual(json, { hello: 'world', testing: 1 });
     });
 
     it("errors on a JSON file that doesn't exist", async () => {
@@ -49,9 +42,7 @@ describe('JSON loading', () => {
   describe('readInfoJson', () => {
     it('reads JSON that matches a schema', async () => {
       const json = await jsonLoad.readInfoJSON(testfile('forSchemaValid.json'), schema);
-      assert.deepEqual(json, {
-        foo: 'bar',
-      });
+      assert.deepEqual(json, { foo: 'bar' });
     });
 
     it('errors for JSON that does not a schema', async () => {

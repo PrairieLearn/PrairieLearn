@@ -37,10 +37,7 @@ describe('Editing course settings', () => {
       env: process.env,
     });
 
-    await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-      cwd: '.',
-      env: process.env,
-    });
+    await execa('git', ['clone', courseOriginDir, courseLiveDir], { cwd: '.', env: process.env });
 
     // create course files
     await fs.copy(courseTemplateDir, courseLiveDir);

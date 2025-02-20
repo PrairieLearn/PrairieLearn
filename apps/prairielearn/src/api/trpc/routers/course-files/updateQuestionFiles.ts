@@ -53,14 +53,8 @@ export const updateQuestionFiles = privateProcedure
     try {
       await editor.executeWithServerJob(serverJob);
     } catch {
-      return {
-        status: 'error',
-        job_sequence_id: serverJob.jobSequenceId,
-      };
+      return { status: 'error', job_sequence_id: serverJob.jobSequenceId };
     }
 
-    return {
-      status: 'success',
-      job_sequence_id: serverJob.jobSequenceId,
-    };
+    return { status: 'success', job_sequence_id: serverJob.jobSequenceId };
   });

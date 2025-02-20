@@ -38,10 +38,7 @@ export async function getEnrollmentCountsForInstitution({
     EnrollmentCountsSchema,
   );
 
-  return {
-    paid: result?.paid ?? 0,
-    free: result?.free ?? 0,
-  };
+  return { paid: result?.paid ?? 0, free: result?.free ?? 0 };
 }
 
 /**
@@ -59,17 +56,11 @@ export async function getEnrollmentCountsForCourse({
 }): Promise<EnrollmentCounts> {
   const result = await queryOptionalRow(
     sql.select_enrollment_counts_for_course,
-    {
-      course_id,
-      created_since,
-    },
+    { course_id, created_since },
     EnrollmentCountsSchema,
   );
 
-  return {
-    paid: result?.paid ?? 0,
-    free: result?.free ?? 0,
-  };
+  return { paid: result?.paid ?? 0, free: result?.free ?? 0 };
 }
 
 /**
@@ -84,10 +75,7 @@ export async function getEnrollmentCountsForCourseInstance(
     EnrollmentCountsSchema,
   );
 
-  return {
-    paid: result?.paid ?? 0,
-    free: result?.free ?? 0,
-  };
+  return { paid: result?.paid ?? 0, free: result?.free ?? 0 };
 }
 
 export enum PotentialEnterpriseEnrollmentStatus {
@@ -118,11 +106,7 @@ export async function checkPotentialEnterpriseEnrollment({
   course_instance: CourseInstance;
   authz_data: any;
 }): Promise<PotentialEnterpriseEnrollmentStatus> {
-  const hasPlanGrants = await checkPlanGrants({
-    institution,
-    course_instance,
-    authz_data,
-  });
+  const hasPlanGrants = await checkPlanGrants({ institution, course_instance, authz_data });
 
   if (!hasPlanGrants) {
     return PotentialEnterpriseEnrollmentStatus.PLAN_GRANTS_REQUIRED;

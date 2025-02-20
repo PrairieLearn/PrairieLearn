@@ -44,10 +44,7 @@ export class PostgresSessionStore implements SessionStore {
       return null;
     }
 
-    return {
-      data: session.data,
-      expiresAt: session.expires_at,
-    };
+    return { data: session.data, expiresAt: session.expires_at };
   }
 
   async destroy(session_id: string) {

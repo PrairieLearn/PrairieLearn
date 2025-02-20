@@ -26,10 +26,7 @@ describe('server-jobs', () => {
 
   describe('execute', () => {
     it('runs a job', async () => {
-      const serverJob = await createServerJob({
-        type: 'test',
-        description: 'test server job',
-      });
+      const serverJob = await createServerJob({ type: 'test', description: 'test server job' });
 
       await serverJob.execute(async (job) => {
         job.info('testing info');
@@ -53,10 +50,7 @@ describe('server-jobs', () => {
     });
 
     it('runs a job with an error', async () => {
-      const serverJob = await createServerJob({
-        type: 'test',
-        description: 'test job sequence',
-      });
+      const serverJob = await createServerJob({ type: 'test', description: 'test job sequence' });
 
       await assert.isFulfilled(
         serverJob.execute(async (job) => {
@@ -77,10 +71,7 @@ describe('server-jobs', () => {
     });
 
     it('fails the job when fail() is called', async () => {
-      const serverJob = await createServerJob({
-        type: 'test',
-        description: 'test job sequence',
-      });
+      const serverJob = await createServerJob({ type: 'test', description: 'test job sequence' });
 
       await assert.isFulfilled(
         serverJob.execute(async (job) => {
@@ -105,10 +96,7 @@ describe('server-jobs', () => {
 
   describe('executeUnsafe', () => {
     it('propagates error to the caller', async () => {
-      const serverJob = await createServerJob({
-        type: 'test',
-        description: 'test job sequence',
-      });
+      const serverJob = await createServerJob({ type: 'test', description: 'test job sequence' });
 
       await assert.isRejected(
         serverJob.executeUnsafe(async (job) => {

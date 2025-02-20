@@ -41,6 +41,4 @@ class PrairieLearnLogo extends PLDrawingBaseElement {
   }
 }
 
-PLDrawingApi.registerElements('example-logo', {
-  'pl-prairielearn-logo': PrairieLearnLogo,
-});
+PLDrawingApi.registerElements('example-logo', { 'pl-prairielearn-logo': PrairieLearnLogo });

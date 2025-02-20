@@ -40,20 +40,12 @@ describe('config', () => {
 
   it('overrides deep objects', async () => {
     const schema = z.object({
-      features: z.record(z.string(), z.boolean()).default({
-        foo: true,
-        bar: false,
-      }),
+      features: z.record(z.string(), z.boolean()).default({ foo: true, bar: false }),
     });
     const loader = new ConfigLoader(schema);
 
     await loader.loadAndValidate([
-      makeLiteralConfigSource({
-        features: {
-          foo: false,
-          baz: true,
-        },
-      }),
+      makeLiteralConfigSource({ features: { foo: false, baz: true } }),
     ]);
 
     assert.equal(loader.config.features.foo, false);
@@ -70,9 +62,7 @@ describe('config', () => {
     const loader = new ConfigLoader(schema);
 
     await loader.loadAndValidate([
-      makeLiteralConfigSource({
-        courseDirs: ['testCourse', '/mycourse'],
-      }),
+      makeLiteralConfigSource({ courseDirs: ['testCourse', '/mycourse'] }),
     ]);
 
     assert.deepEqual(loader.config.courseDirs, ['testCourse', '/mycourse']);

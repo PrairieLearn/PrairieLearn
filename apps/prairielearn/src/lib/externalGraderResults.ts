@@ -77,10 +77,7 @@ export async function init() {
             await processMessage(parsedMessage);
 
             await sqs.send(
-              new DeleteMessageCommand({
-                QueueUrl: queueUrl,
-                ReceiptHandle: receiptHandle,
-              }),
+              new DeleteMessageCommand({ QueueUrl: queueUrl, ReceiptHandle: receiptHandle }),
             );
           } catch (err) {
             logger.error('Error processing external grader results', err);
@@ -131,9 +128,7 @@ async function loadQueueUrl(sqs: SQSClient): Promise<string> {
 async function processMessage(data: {
   jobId: string;
   event: string;
-  data: {
-    receivedTime: string;
-  };
+  data: { receivedTime: string };
 }) {
   let jobId: string;
   try {
@@ -155,9 +150,7 @@ async function processMessage(data: {
     return;
   } else if (data.event === 'grading_result') {
     // Figure out where we can fetch results from.
-    const jobDetails = await sqldb.queryOneRowAsync(sql.get_job_details, {
-      grading_job_id: jobId,
-    });
+    const jobDetails = await sqldb.queryOneRowAsync(sql.get_job_details, { grading_job_id: jobId });
     const s3Bucket = jobDetails.rows[0].s3_bucket;
     const s3RootKey = jobDetails.rows[0].s3_root_key;
 

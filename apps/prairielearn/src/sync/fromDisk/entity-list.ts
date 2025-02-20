@@ -10,9 +10,7 @@ type ExistingEntity<Entity> = Entity & {
   implicit: boolean;
 };
 
-type ExtraEntity<Entity> = Entity & {
-  implicit: boolean;
-};
+type ExtraEntity<Entity> = Entity & { implicit: boolean };
 
 type DesiredEntity<Entity> = Entity & { number: number; implicit: boolean };
 
@@ -78,10 +76,7 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
     }
   } else {
     for (const entity of existingEntities) {
-      desiredEntities.set(entity.name, {
-        ...entity,
-        number: desiredEntities.size + 1,
-      });
+      desiredEntities.set(entity.name, { ...entity, number: desiredEntities.size + 1 });
     }
   }
 
@@ -103,10 +98,7 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
       // Give precedence to user-provided entities if they have the same name.
       if (desiredEntities.has(entity.name)) continue;
 
-      desiredEntities.set(entity.name, {
-        ...entity,
-        number: desiredEntities.size + 1,
-      });
+      desiredEntities.set(entity.name, { ...entity, number: desiredEntities.size + 1 });
     }
   }
 

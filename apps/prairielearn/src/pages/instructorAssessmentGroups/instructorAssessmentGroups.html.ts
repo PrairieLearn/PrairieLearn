@@ -32,14 +32,8 @@ export function InstructorAssessmentGroups({
   return PageLayout({
     resLocals,
     pageTitle: 'Groups',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'groups',
-    },
-    options: {
-      fullWidth: true,
-    },
+    navContext: { type: 'instructor', page: 'assessment', subPage: 'groups' },
+    options: { fullWidth: true },
     headContent: html`
       <link
         href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
@@ -196,10 +190,7 @@ export function InstructorAssessmentGroups({
                                       data-placement="auto"
                                       title="Add members"
                                       data-content="${escapeHtml(
-                                        AddMembersForm({
-                                          row,
-                                          csrfToken: resLocals.__csrf_token,
-                                        }),
+                                        AddMembersForm({ row, csrfToken: resLocals.__csrf_token }),
                                       )}"
                                     >
                                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
@@ -231,10 +222,7 @@ export function InstructorAssessmentGroups({
                                       data-placement="auto"
                                       title="Delete group"
                                       data-content="${escapeHtml(
-                                        DeleteGroupForm({
-                                          row,
-                                          csrfToken: resLocals.__csrf_token,
-                                        }),
+                                        DeleteGroupForm({ row, csrfToken: resLocals.__csrf_token }),
                                       )}"
                                     >
                                       <i class="fa fa-times" aria-hidden="true"></i> Delete group
@@ -288,9 +276,7 @@ export function InstructorAssessmentGroups({
                     widthFixed: true,
                     headerTemplate: '{content} {icon}',
                     widgets: ['uitheme'],
-                    headers: {
-                      3: { sorter: false },
-                    },
+                    headers: { 3: { sorter: false } },
                   });
                 });
               </script>

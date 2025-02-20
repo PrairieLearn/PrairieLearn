@@ -28,10 +28,7 @@ describe('instrumentedWithMetrics', () => {
     const meterProvider = new MeterProvider();
     meter = meterProvider.getMeter('test');
     exporter = new InMemoryMetricExporter(AggregationTemporality.DELTA);
-    metricReader = new PeriodicExportingMetricReader({
-      exporter,
-      exportIntervalMillis: 50,
-    });
+    metricReader = new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 50 });
     meterProvider.addMetricReader(metricReader);
   });
 

@@ -69,14 +69,8 @@ async function accessSharedQuestionAssessment(course_id: string) {
 const baseDir = tmp.dirSync().name;
 const sharingCourseOriginDir = path.join(baseDir, 'courseOrigin');
 const sharingCourseLiveDir = path.join(baseDir, 'courseLive');
-const gitOptionsOrigin = {
-  cwd: sharingCourseOriginDir,
-  env: process.env,
-};
-const gitOptionsLive = {
-  cwd: sharingCourseLiveDir,
-  env: process.env,
-};
+const gitOptionsOrigin = { cwd: sharingCourseOriginDir, env: process.env };
+const gitOptionsLive = { cwd: sharingCourseLiveDir, env: process.env };
 async function commitAndPullSharingCourse() {
   await execa('git', ['add', '-A'], gitOptionsOrigin);
   await execa('git', ['commit', '-m', 'Add sharing set'], gitOptionsOrigin);
@@ -103,10 +97,7 @@ async function syncSharingCourse(course_id) {
 
   await fetch(syncUrl, {
     method: 'POST',
-    body: new URLSearchParams({
-      __action: 'pull',
-      __csrf_token: token,
-    }),
+    body: new URLSearchParams({ __action: 'pull', __csrf_token: token }),
   });
   const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
   return result.rows[0].id;
@@ -183,14 +174,8 @@ describe('Question Sharing', function () {
     ].zones = [
       {
         questions: [
-          {
-            id: `@${SHARING_COURSE_SHARING_NAME}/${SHARING_QUESTION_QID}`,
-            points: 1,
-          },
-          {
-            id: `@${SHARING_COURSE_SHARING_NAME}/${PUBLICLY_SHARED_QUESTION_QID}`,
-            points: 1,
-          },
+          { id: `@${SHARING_COURSE_SHARING_NAME}/${SHARING_QUESTION_QID}`, points: 1 },
+          { id: `@${SHARING_COURSE_SHARING_NAME}/${PUBLICLY_SHARED_QUESTION_QID}`, points: 1 },
         ],
       },
     ];
@@ -300,10 +285,7 @@ describe('Question Sharing', function () {
       const token = response.$('#test_csrf_token').text();
       await fetch(sharingUrl, {
         method: 'POST',
-        body: new URLSearchParams({
-          __action: 'sharing_token_regenerate',
-          __csrf_token: token,
-        }),
+        body: new URLSearchParams({ __action: 'sharing_token_regenerate', __csrf_token: token }),
       });
 
       response = await fetchCheerio(sharingUrl);
@@ -492,10 +474,7 @@ describe('Question Sharing', function () {
 
       const question_id = await sqldb.queryOptionalRow(
         sql.get_question_id,
-        {
-          course_id: sharingCourse.id,
-          qid: SHARING_QUESTION_QID,
-        },
+        { course_id: sharingCourse.id, qid: SHARING_QUESTION_QID },
         IdSchema,
       );
       assert(

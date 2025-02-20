@@ -310,16 +310,11 @@ export async function init(config: OpenTelemetryConfig) {
   }
 
   // Set up tracing instrumentation.
-  const nodeTracerProvider = new NodeTracerProvider({
-    sampler,
-    resource,
-  });
+  const nodeTracerProvider = new NodeTracerProvider({ sampler, resource });
   if (spanProcessor) {
     nodeTracerProvider.addSpanProcessor(spanProcessor);
   }
-  nodeTracerProvider.register({
-    contextManager: config.contextManager,
-  });
+  nodeTracerProvider.register({ contextManager: config.contextManager });
   instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
 
   // Save the provider so we can shut it down later.

@@ -17,10 +17,7 @@ const exampleRequest = {
   imsx_POXEnvelopeRequest: {
     $: { xmlns: 'http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0' },
     imsx_POXHeader: {
-      imsx_POXRequestHeaderInfo: {
-        imsx_version: 'V1.0',
-        imsx_messageIdentifier: '999999123',
-      },
+      imsx_POXRequestHeaderInfo: { imsx_version: 'V1.0', imsx_messageIdentifier: '999999123' },
     },
     imsx_POXBody: {
       replaceResultRequest: {
@@ -103,10 +100,7 @@ export async function updateScore(assessment_instance_id: string) {
 
   const res = await fetch(info.lis_outcome_service_url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/xml',
-      Authorization: `OAuth ${stringifiedParameters}`,
-    },
+    headers: { 'Content-Type': 'application/xml', Authorization: `OAuth ${stringifiedParameters}` },
     body,
   });
 

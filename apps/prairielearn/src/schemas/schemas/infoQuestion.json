@@ -30,18 +30,12 @@
     "tags": {
       "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken').",
       "type": "array",
-      "items": {
-        "description": "A tag associated with a question.",
-        "type": "string"
-      }
+      "items": { "description": "A tag associated with a question.", "type": "string" }
     },
     "clientFiles": {
       "description": "The list of question files accessible by the client (defaults to [\"client.js\"]).",
       "type": "array",
-      "items": {
-        "description": "A single file accessible by the client.",
-        "type": "string"
-      }
+      "items": { "description": "A single file accessible by the client.", "type": "string" }
     },
     "clientTemplates": {
       "description": "List of client-accessible templates to render server-side.",
@@ -141,42 +135,27 @@
           "description": "[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.",
           "deprecated": true,
           "type": "array",
-          "items": {
-            "description": "A .js file located in /public/javascripts.",
-            "type": "string"
-          }
+          "items": { "description": "A .js file located in /public/javascripts.", "type": "string" }
         },
         "nodeModulesStyles": {
           "description": "The styles required by this question from /node_modules.",
           "type": "array",
-          "items": {
-            "description": "A .css file located in /node_modules.",
-            "type": "string"
-          }
+          "items": { "description": "A .css file located in /node_modules.", "type": "string" }
         },
         "nodeModulesScripts": {
           "description": "The scripts required by this question from /node_modules.",
           "type": "array",
-          "items": {
-            "description": "A .js file located in /node_modules.",
-            "type": "string"
-          }
+          "items": { "description": "A .js file located in /node_modules.", "type": "string" }
         },
         "clientFilesCourseStyles": {
           "description": "The styles required by this question from clientFilesCourse.",
           "type": "array",
-          "items": {
-            "description": "A .css file located in clientFilesCourse.",
-            "type": "string"
-          }
+          "items": { "description": "A .css file located in clientFilesCourse.", "type": "string" }
         },
         "clientFilesCourseScripts": {
           "description": "The styles required by this question from clientFilesCourse.",
           "type": "array",
-          "items": {
-            "description": "A .js file located in clientFilesCourse.",
-            "type": "string"
-          }
+          "items": { "description": "A .js file located in clientFilesCourse.", "type": "string" }
         },
         "clientFilesQuestionStyles": {
           "description": "The styles required by this question from clientFilesQuestion.",
@@ -210,10 +189,7 @@
           "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",
           "type": "string"
         },
-        "port": {
-          "description": "The port number used in the Docker image.",
-          "type": "integer"
-        },
+        "port": { "description": "The port number used in the Docker image.", "type": "integer" },
         "home": {
           "description": "The home directory of the workspace container.",
           "type": "string"
@@ -255,10 +231,7 @@
     "sharingSets": {
       "description": "The list of sharing sets that this question belongs to.",
       "type": "array",
-      "items": {
-        "description": "The name of a sharing set",
-        "type": "string"
-      }
+      "items": { "description": "The name of a sharing set", "type": "string" }
     },
     "sharePublicly": {
       "description": "Whether this question is publicly shared.",

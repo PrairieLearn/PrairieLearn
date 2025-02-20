@@ -37,8 +37,5 @@ export function setCookie(
   options: Omit<CookieOptions, 'domain'> = {},
 ) {
   res.cookie(names[0], value, options);
-  res.cookie(names[1], value, {
-    domain: config.cookieDomain ?? undefined,
-    ...options,
-  });
+  res.cookie(names[1], value, { domain: config.cookieDomain ?? undefined, ...options });
 }

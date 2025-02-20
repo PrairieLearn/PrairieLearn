@@ -117,11 +117,7 @@ import { loadSqlEquiv, queryRows, queryRow, queryOptionalRow } from '@prairielea
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const User = z.object({
-  name: z.string(),
-  email: z.string(),
-  age: z.number(),
-});
+const User = z.object({ name: z.string(), email: z.string(), age: z.number() });
 
 // Get all users. Returns an array of objects.
 const users = await queryRows(sql.select_users, User);
@@ -211,10 +207,7 @@ You can optionally pass a Zod schema to parse and validate each row:
 import { z } from 'zod';
 import { queryValidatedCursor } from '@prairielearn/postgres';
 
-const UserSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-});
+const UserSchema = z.object({ id: z.string(), name: z.string() });
 
 const cursor = await queryValidatedCursor(sql.select_all_users, {}, UserSchema);
 for await (const users of cursor.iterate(100)) {

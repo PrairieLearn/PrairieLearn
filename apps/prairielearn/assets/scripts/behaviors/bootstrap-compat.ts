@@ -85,10 +85,7 @@ observe('[data-toggle="dropdown"][data-boundary="window"]', {
   add(el) {
     new window.bootstrap.Dropdown(el, {
       popperConfig(defaultConfig) {
-        return {
-          ...defaultConfig,
-          strategy: 'fixed',
-        };
+        return { ...defaultConfig, strategy: 'fixed' };
       },
     });
   },

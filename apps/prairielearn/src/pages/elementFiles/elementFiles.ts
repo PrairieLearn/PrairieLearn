@@ -45,10 +45,7 @@ export default function (options = { publicQuestionEndpoint: false, coreElements
       // As with `/assets/`, we assume that element files are likely to change
       // when running in dev mode, so we skip caching entirely in that case.
       const isCached = !!req.params.cachebuster && !config.devMode;
-      const sendFileOptions = {
-        immutable: isCached,
-        maxAge: isCached ? '31536000s' : 0,
-      };
+      const sendFileOptions = { immutable: isCached, maxAge: isCached ? '31536000s' : 0 };
 
       if (isCached) {
         // `middlewares/cors.js` disables caching for all routes by default.

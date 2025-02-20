@@ -39,10 +39,7 @@ router.get(
 
     const courseInstances = await queryRows(
       sql.select_course_instances,
-      {
-        user_id: res.locals.authn_user.user_id,
-        req_date: res.locals.req_date,
-      },
+      { user_id: res.locals.authn_user.user_id, req_date: res.locals.req_date },
       CourseInstanceRowSchema,
     );
     res.send(Enroll({ courseInstances, resLocals: res.locals }));
