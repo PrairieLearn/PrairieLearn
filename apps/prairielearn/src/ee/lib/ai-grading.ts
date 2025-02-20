@@ -157,29 +157,18 @@ async function generateGPTPrompt({
 }
 
 async function generateSubmissionEmbedding({
-  submission_id,
   course,
   question,
   instance_question,
   urlPrefix,
   openai,
 }: {
-  submission_id: string;
   question: Question;
   course: Course;
   instance_question: InstanceQuestion;
   urlPrefix: string;
   openai: OpenAI;
 }): Promise<SubmissionGradingContextEmbedding> {
-  const submission_embedding = await queryOptionalRow(
-    sql.select_embedding_for_submission,
-    { submission_id },
-    SubmissionGradingContextEmbeddingSchema,
-  );
-  // If the submission embedding already exists, return the embedding
-  if (submission_embedding) {
-    return submission_embedding;
-  }
   const question_course = await getQuestionCourse(question, course);
   const { variant, submission } = await queryRow(
     sql.select_last_variant_and_submission,
@@ -273,8 +262,6 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
-    job.info('Checking for embeddings for all submissions.');
-    let newEmbeddingsCount = 0;
     const instance_questions = await queryRows(
       sql.select_instance_questions_for_assessment_question,
       {
@@ -282,21 +269,30 @@ export async function aiGrade({
       },
       InstanceQuestionSchema,
     );
+
+    job.info('Checking for embeddings for all submissions.');
+    let newEmbeddingsCount = 0;
     for (const instance_question of instance_questions) {
       const submission_id = await queryRow(
         sql.select_last_submission_id,
         { instance_question_id: instance_question.id },
         IdSchema,
       );
-      await generateSubmissionEmbedding({
-        submission_id,
-        course,
-        question,
-        instance_question,
-        urlPrefix,
-        openai,
-      });
-      newEmbeddingsCount++;
+      const submission_embedding = await queryOptionalRow(
+        sql.select_embedding_for_submission,
+        { submission_id },
+        SubmissionGradingContextEmbeddingSchema,
+      );
+      if (!submission_embedding) {
+        await generateSubmissionEmbedding({
+          course,
+          question,
+          instance_question,
+          urlPrefix,
+          openai,
+        });
+        newEmbeddingsCount++;
+      }
     }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
@@ -358,7 +354,6 @@ export async function aiGrade({
       );
       if (!submission_embedding) {
         submission_embedding = await generateSubmissionEmbedding({
-          submission_id: submission.id,
           course,
           question,
           instance_question,
