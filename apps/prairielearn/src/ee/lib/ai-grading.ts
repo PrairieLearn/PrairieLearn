@@ -178,7 +178,7 @@ async function generateSubmissionEmbeddings({
       { instance_question_id: instance_question.id },
       IdSchema,
     );
-    await ensureSubmissionEmbedding({
+    const { created_new } = await ensureSubmissionEmbedding({
       submission_id,
       course,
       question,
@@ -186,7 +186,9 @@ async function generateSubmissionEmbeddings({
       urlPrefix,
       openai,
     });
-    newEmbeddingsCount++;
+    if (created_new) {
+      newEmbeddingsCount++;
+    }
   }
   return newEmbeddingsCount;
 }
@@ -205,7 +207,7 @@ async function ensureSubmissionEmbedding({
   instance_question: InstanceQuestion;
   urlPrefix: string;
   openai: OpenAI;
-}): Promise<SubmissionGradingContextEmbedding> {
+}): Promise<{ submission_embedding: SubmissionGradingContextEmbedding; created_new: boolean }> {
   const submission_embedding = await queryOptionalRow(
     sql.select_embedding_for_submission,
     { submission_id },
@@ -213,7 +215,7 @@ async function ensureSubmissionEmbedding({
   );
   // If the submission embedding already exists, return the embedding
   if (submission_embedding) {
-    return submission_embedding;
+    return { submission_embedding, created_new: false };
   }
   const question_course = await getQuestionCourse(question, course);
   const { variant, submission } = await queryRow(
@@ -247,7 +249,7 @@ async function ensureSubmissionEmbedding({
     },
     SubmissionGradingContextEmbeddingSchema,
   );
-  return new_submission_embedding;
+  return { submission_embedding: new_submission_embedding, created_new: true };
 }
 
 function assertRubricNotModified(
@@ -367,7 +369,7 @@ export async function aiGrade({
       $('script').remove();
       const questionPrompt = $.html();
 
-      const submission_embedding = await ensureSubmissionEmbedding({
+      const { submission_embedding } = await ensureSubmissionEmbedding({
         submission_id: submission.id,
         course,
         question,
