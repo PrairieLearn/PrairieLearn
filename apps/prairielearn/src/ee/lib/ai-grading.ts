@@ -331,7 +331,7 @@ export async function aiGrade({
       );
 
       const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
-
+      const locals = { ...urls, manualGradingInterface: true };
       // Get question html
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
@@ -341,7 +341,7 @@ export async function aiGrade({
         null,
         [],
         question_course,
-        urls, // https://github.com/PrairieLearn/PrairieLearn/blob/623bba7567903457d2f513800cb9e19b92267fda/apps/prairielearn/src/question-servers/freeform.js#L1163
+        locals,
       );
       if (render_question_results.courseIssues.length > 0) {
         job.info(render_question_results.courseIssues.toString());
