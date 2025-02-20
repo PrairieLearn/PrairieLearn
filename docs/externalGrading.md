@@ -143,7 +143,7 @@ When your container starts up, your `entrypoint` script will be executed. After 
 
 !!! note
 
-The `/grade/results` directory is not automatically created, so you must create it yourself before writing `results.json`.
+    The `/grade/results` directory is not automatically created, so you must create it yourself before writing `results.json`.
 
 ## Directory layout
 
