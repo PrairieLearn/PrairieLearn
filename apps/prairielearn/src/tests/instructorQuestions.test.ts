@@ -150,7 +150,7 @@ describe('Instructor questions', function () {
 
   describe('QID redirect routes', () => {
     it('redirects to the correct question from course route', async () => {
-      const res = await fetch(`${questionsUrlCourse}?qid=addNumbers&variant_seed=1234`);
+      const res = await fetch(`${questionsUrlCourse}/qid/addNumbers?variant_seed=1234`);
       assert.equal(res.status, 200);
       assert.equal(
         res.url,
@@ -159,7 +159,7 @@ describe('Instructor questions', function () {
     });
 
     it('redirects to the correct question from instance route', async () => {
-      const res = await fetch(`${questionsUrl}?qid=addNumbers&variant_seed=1234`);
+      const res = await fetch(`${questionsUrl}/qid/addNumbers?variant_seed=1234`);
       assert.equal(res.status, 200);
       assert.equal(
         res.url,
