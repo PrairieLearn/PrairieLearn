@@ -36,7 +36,7 @@ const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
-const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
+const GPTGradeSchema = z.object({ score: z.number(), feedback: z.string() });
 const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
@@ -94,7 +94,7 @@ async function generateGPTPrompt({
     messages.push({
       role: 'system',
       content:
-        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a JSON object with two properties: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You omit the feedback if the answer is correct. I will provide some example answers and their corresponding grades.',
+        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this score, or how to improve the answer. You omit the feedback if the answer is correct. I will provide some example answers and their corresponding scores.',
     });
   }
 
@@ -127,7 +127,7 @@ async function generateGPTPrompt({
       }
       messages.push({
         role: 'user',
-        content: `Example answer: \n${example.submission_text} \nRubric items to this example answer: \n${rubric_grading_info}`,
+        content: `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nRubric items to this example answer: \n${rubric_grading_info}`,
       });
     } else {
       if (rubric_items.length > 0 && !example.manual_rubric_grading_id) {
@@ -139,7 +139,7 @@ async function generateGPTPrompt({
       }
       messages.push({
         role: 'user',
-        content: `Example answer: \n${example.submission_text} \nGrade to this example answer: \n${example.score_perc}`,
+        content: `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nScore to this example answer: \n${example.score_perc}`,
       });
     }
   }
@@ -147,7 +147,7 @@ async function generateGPTPrompt({
   // Student answer
   messages.push({
     role: 'user',
-    content: `The student submitted the following answer: \n${submission_text} \nHow would you grade this? Please return the JSON object.`,
+    content: `The student submitted the following answer: \n<answer>\n${submission_text} \n<answer>\nHow would you grade this? Please return the JSON object.`,
   });
 
   if (warning) {
@@ -209,7 +209,7 @@ function assertRubricNotModified(
   new_rubric_items: RubricItem[],
 ): void {
   if (old_rubric_items.length !== new_rubric_items.length) {
-    throw new Error('rubric modified between rubric retrieval and grade insertion');
+    throw new Error('rubric modified between rubric retrieval and score insertion');
   }
   for (let i = 0; i < old_rubric_items.length; i++) {
     const old_item = old_rubric_items[i];
@@ -218,7 +218,7 @@ function assertRubricNotModified(
       old_item.description !== new_item.description ||
       old_item.explanation !== new_item.explanation
     ) {
-      throw new Error('rubric modified between rubric retrieval and grade insertion');
+      throw new Error('rubric modified between rubric retrieval and score insertion');
     }
   }
 }
@@ -408,13 +408,13 @@ export async function aiGrade({
         });
         try {
           job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
-          const grade_response = completion.choices[0].message;
-          job.info(`Raw ChatGPT response:\n${grade_response.content}`);
-          if (grade_response.parsed) {
+          const response = completion.choices[0].message;
+          job.info(`Raw ChatGPT response:\n${response.content}`);
+          if (response.parsed) {
             // Only care about the rubric numbers
             const gptRubricItems: number[] = [];
             for (let i = 0; i < rubric_items.length; i++) {
-              const item = grade_response.parsed.rubric_items[i];
+              const item = response.parsed.rubric_items[i];
               if (item.selected) {
                 gptRubricItems.push(i);
               }
@@ -440,15 +440,15 @@ export async function aiGrade({
               submission.id,
               null, // modified_at
               {
-                feedback: { manual: grade_response.parsed.feedback },
+                feedback: { manual: response.parsed.feedback },
                 manual_rubric_data,
               },
               user_id,
             );
             job.info(`AI rubric items: ${gptRubricItems.toString()}`);
-          } else if (grade_response.refusal) {
+          } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
-            job.error(grade_response.refusal);
+            job.error(response.refusal);
             error_count++;
           }
         } catch (err) {
@@ -469,24 +469,24 @@ export async function aiGrade({
         });
         try {
           job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
-          const grade_response = completion.choices[0].message;
-          job.info(`Raw ChatGPT response:\n${grade_response.content}`);
-          if (grade_response.parsed) {
+          const response = completion.choices[0].message;
+          job.info(`Raw ChatGPT response:\n${response.content}`);
+          if (response.parsed) {
             await manualGrading.updateInstanceQuestionScore(
               assessment_question.assessment_id,
               instance_question.id,
               submission.id,
               null, // modified_at
               {
-                score_perc: grade_response.parsed.grade,
-                feedback: { manual: grade_response.parsed.feedback },
+                score_perc: response.parsed.score,
+                feedback: { manual: response.parsed.feedback },
               },
               user_id,
             );
-            job.info(`\nAI grades: ${grade_response.parsed.grade}`);
-          } else if (grade_response.refusal) {
+            job.info(`AI score: ${response.parsed.score}`);
+          } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
-            job.error(grade_response.refusal);
+            job.error(response.refusal);
             error_count++;
           }
         } catch (err) {
