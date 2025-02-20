@@ -36,7 +36,7 @@ const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
-const GPTGradeSchema = z.object({ score: z.number(), feedback: z.string() });
+const GPTScoreSchema = z.object({ score: z.number(), feedback: z.string() });
 const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
@@ -84,7 +84,7 @@ async function generateGPTPrompt({
     messages.push({
       role: 'system',
       content:
-        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description, item explanation, and a grader note about the item. You must grade the assignment by using the rubric and returning an array of all rubric items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should always list all the rubric items, no matter if they are selected or not. You should also provide feedback on how to improve the answer by incorporating information from the rubric. I will provide some example answers and their corresponding grades.',
+        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description, item explanation, and a grader note about the item. You must grade the assignment by using the rubric and returning an array of all rubric items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should always list all the rubric items, no matter if they are selected or not. You should also provide feedback on how to improve the answer by incorporating information from the rubric. I will provide some example answers and their corresponding scores.',
     });
     messages.push({
       role: 'system',
@@ -396,7 +396,7 @@ export async function aiGrade({
             }),
           );
         }
-        const GPTRubricGradeSchema = z.object({
+        const GPTRubricScoreSchema = z.object({
           rubric_items: GPTRubricItemSchema,
           feedback: z.string(),
         });
@@ -404,7 +404,7 @@ export async function aiGrade({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
-          response_format: zodResponseFormat(GPTRubricGradeSchema, 'score'),
+          response_format: zodResponseFormat(GPTRubricScoreSchema, 'score'),
         });
         try {
           job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
@@ -465,7 +465,7 @@ export async function aiGrade({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
-          response_format: zodResponseFormat(GPTGradeSchema, 'score'),
+          response_format: zodResponseFormat(GPTScoreSchema, 'score'),
         });
         try {
           job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
