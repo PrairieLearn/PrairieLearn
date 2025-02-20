@@ -659,160 +659,6 @@ class CGrader:
                 self.result["partial_scores"][field]["max_points"] += max_points
         return test
 
-    def _parse_catch2_tags(
-        self, tags: list[str], test_name: str
-    ) -> tuple[float, list[str]]:
-        """Parse Catch2 tags to extract points and string tags."""
-        points = 1
-        str_tags = []
-        found = False
-        for tag in tags:
-            try:
-                points = float(tag)
-                if points <= 0:
-                    raise UngradableError(
-                        f"Points must be positive (found point value '{points}') in test case '{test_name}'"
-                    )
-                if found:
-                    raise UngradableError(
-                        f"Multiple numeric tags found in test case '{test_name}'"
-                    )
-                found = True
-            except ValueError:  # noqa: PERF203
-                str_tags.append(tag)
-        return points, str_tags
-
-    def run_catch2_suite(
-        self,
-        exec_file: str,
-        args: Iterable[str] = [],
-        name_formatter: Callable[[_Catch2TestCase, _Catch2TestGroup], str]
-        | None = None,
-        description_formatter: Callable[[_Catch2TestCase, _Catch2TestGroup], str]
-        | None = None,
-    ) -> None:
-        """
-        Runs a file compiled with catch2 and parses the results.
-
-        Uses the catch2 XML output format to parse the results. Points can be specified using a numeric tag: for example,
-
-        ```
-        TEST_CASE("My Test case", "[1.5]") {
-            ...
-        }
-        ```
-
-        Parameters:
-            exec_file: The path to the test suite executable, compiled with catch2.
-            args: Additional arguments to pass to the test suite executable.
-            name_formatter: A function that takes a test case and a test group and returns the name of the test case.
-            description_formatter: A function that takes a test case and a test group and returns the description of the test case.
-        """
-        if not os.path.isfile(exec_file):
-            raise UngradableError(f"Test suite executable not found: {exec_file}")
-
-        out = self.run_command([exec_file, "-r", "xml", *args], sandboxed=True)
-        try:
-            tree = et.fromstring(out.encode("utf-8"), parser=et.XMLParser())
-        except et.XMLSyntaxError as exc:
-            raise UngradableError("Error parsing test suite output") from exc
-
-        def default_name_formatter(
-            test_case: _Catch2TestCase, test_group: _Catch2TestGroup
-        ) -> str:
-            return f"[{test_group.name}] {test_case.name} [{', '.join(test_case.tags)}]"
-
-        def default_description_formatter(
-            test_case: _Catch2TestCase, _test_group: _Catch2TestGroup
-        ) -> str:
-            output = ""
-            if test_case.expression:
-                output += f"{test_case.expression.formatted}\n"
-            if test_case.stdout:
-                output += f"stdout:\n{test_case.stdout}"
-            return output
-
-        if name_formatter is None:
-            name_formatter = default_name_formatter
-
-        if description_formatter is None:
-            description_formatter = default_description_formatter
-
-        test_groups = []
-        for group in tree.findall(".//Group"):
-            name = group.get("name")
-            test_cases = []
-            for test in group.findall(".//TestCase"):
-                name = test.attrib.get("name", "")
-                raw_tags = test.attrib.get("tags", "")
-                filename = test.attrib.get("filename", "")
-                line = int(test.attrib.get("line", -1))
-
-                tags = re.findall(r"\[(.*?)\]", raw_tags)
-                points, str_tags = self._parse_catch2_tags(tags, name)
-                result = test.find(".//OverallResult")
-                if result is None:
-                    raise UngradableError(
-                        f"Missing 'OverallResult' element in test case '{name}'"
-                    )
-
-                success = result.attrib.get("success") == "true"
-
-                stdout_elem = result.find(".//StdOut")
-                stdout = stdout_elem.text if stdout_elem is not None else ""
-
-                expression_el = test.find(".//Expression")
-                expression = None
-                if expression_el is not None:
-                    original = expression_el.find(".//Original")
-                    expanded = expression_el.find(".//Expanded")
-                    original_text = original.text if original is not None else ""
-                    expanded_text = expanded.text if expanded is not None else ""
-                    expression_success = expression_el.attrib.get("success") == "true"
-                    expression_type = expression_el.attrib.get("type", "")
-                    expression_filename = expression_el.attrib.get("filename", "")
-                    expression_line = int(expression_el.attrib.get("line", -1))
-                    success_str = "PASSED" if expression_success else "FAILED"
-                    formatted_expression = (
-                        f"{expression_filename}:{expression_line}: {success_str}:\n"
-                        + f'\t{expression_type}( "{original_text}" )\n'
-                        + "with expansion:\n"
-                        + f"\t{expanded_text}"
-                    )
-                    expression = _Catch2Expression(
-                        expression_success,
-                        expression_type,
-                        expression_filename,
-                        expression_line,
-                        original_text,
-                        expanded_text,
-                        formatted_expression,
-                    )
-
-                test_cases.append(
-                    _Catch2TestCase(
-                        name,
-                        points,
-                        success,
-                        stdout,
-                        str_tags,
-                        filename,
-                        line,
-                        expression,
-                    )
-                )
-            test_groups.append(_Catch2TestGroup(name, test_cases))
-
-        for test_group in test_groups:
-            for test_case in test_group.test_cases:
-                self.add_test_result(
-                    name=name_formatter(test_case, test_group),
-                    description=description_formatter(test_case, test_group),
-                    points=test_case.points if test_case.success else 0,
-                    max_points=test_case.points,
-                    output=test_case.stdout,
-                )
-
     def run_check_suite(
         self,
         exec_file: str,
@@ -945,6 +791,163 @@ class CGrader:
 class CPPGrader(CGrader):
     def __init__(self, compiler: str = "g++") -> None:
         super().__init__(compiler)
+
+    def _parse_catch2_tags(
+        self, tags: list[str], test_name: str
+    ) -> tuple[float, list[str]]:
+        """Parse Catch2 tags to extract points and string tags."""
+        points = 1
+        str_tags = []
+        found = False
+        for tag in tags:
+            try:
+                points = float(tag)
+                if points <= 0:
+                    raise UngradableError(
+                        f"Points must be positive (found point value '{points}') in test case '{test_name}'"
+                    )
+                if found:
+                    raise UngradableError(
+                        f"Multiple numeric tags found in test case '{test_name}'"
+                    )
+                found = True
+            except ValueError:  # noqa: PERF203
+                str_tags.append(tag)
+        return points, str_tags
+
+    def run_catch2_suite(
+        self,
+        exec_file: str,
+        args: Iterable[str] = [],
+        name_formatter: Callable[[_Catch2TestCase, _Catch2TestGroup], str]
+        | None = None,
+        description_formatter: Callable[[_Catch2TestCase, _Catch2TestGroup], str]
+        | None = None,
+    ) -> None:
+        """
+        Runs a file compiled with [catch2](https://github.com/catchorg/Catch2) v3 and parses the results.
+
+        Uses the catch2 XML output format to parse the results. Points should be specified using a tag, and will otherwise default to one point
+
+        For example,
+
+        ```
+        TEST_CASE("My Test case", "[1.5]") {
+            ...
+        }
+        ```
+
+        Parameters:
+            exec_file: The path to the test suite executable, compiled with catch2.
+            args: Additional arguments to pass to the test suite executable.
+            name_formatter: A function that takes a test case and a test group and returns the name of the test case.
+            description_formatter: A function that takes a test case and a test group and returns the description of the test case.
+        """
+        if not os.path.isfile(exec_file):
+            raise UngradableError(f"Test suite executable not found: {exec_file}")
+
+        out = self.run_command([exec_file, "-r", "xml", *args], sandboxed=True)
+        try:
+            tree = et.fromstring(out.encode("utf-8"), parser=et.XMLParser())
+        except et.XMLSyntaxError as exc:
+            raise UngradableError("Error parsing test suite output") from exc
+
+        def default_name_formatter(
+            test_case: _Catch2TestCase, test_group: _Catch2TestGroup
+        ) -> str:
+            return f"[{test_group.name}] {test_case.name} [{', '.join(test_case.tags)}]"
+
+        def default_description_formatter(
+            test_case: _Catch2TestCase, _test_group: _Catch2TestGroup
+        ) -> str:
+            output = ""
+            if test_case.expression:
+                output += f"{test_case.expression.formatted}\n"
+            if test_case.stdout:
+                output += f"stdout:\n{test_case.stdout}"
+            return output
+
+        if name_formatter is None:
+            name_formatter = default_name_formatter
+
+        if description_formatter is None:
+            description_formatter = default_description_formatter
+
+        test_groups = []
+        for group in tree.findall(".//Group"):
+            name = group.get("name")
+            test_cases = []
+            for test in group.findall(".//TestCase"):
+                name = test.attrib.get("name", "")
+                raw_tags = test.attrib.get("tags", "")
+                filename = test.attrib.get("filename", "")
+                line = int(test.attrib.get("line", -1))
+
+                tags = re.findall(r"\[(.*?)\]", raw_tags)
+                points, str_tags = self._parse_catch2_tags(tags, name)
+                result = test.find(".//OverallResult")
+                if result is None:
+                    raise UngradableError(
+                        f"Missing 'OverallResult' element in test case '{name}'"
+                    )
+
+                success = result.attrib.get("success") == "true"
+
+                stdout_elem = result.find(".//StdOut")
+                stdout = stdout_elem.text if stdout_elem is not None else ""
+
+                expression_el = test.find(".//Expression")
+                expression = None
+                if expression_el is not None:
+                    original = expression_el.find(".//Original")
+                    expanded = expression_el.find(".//Expanded")
+                    original_text = original.text if original is not None else ""
+                    expanded_text = expanded.text if expanded is not None else ""
+                    expression_success = expression_el.attrib.get("success") == "true"
+                    expression_type = expression_el.attrib.get("type", "")
+                    expression_filename = expression_el.attrib.get("filename", "")
+                    expression_line = int(expression_el.attrib.get("line", -1))
+                    success_str = "PASSED" if expression_success else "FAILED"
+                    # This is a similar style to the Catch2 output
+                    formatted_expression = (
+                        f"{expression_filename}:{expression_line}: {success_str}:\n"
+                        + f'\t{expression_type}( "{original_text}" )\n'
+                        + "with expansion:\n"
+                        + f"\t{expanded_text}"
+                    )
+                    expression = _Catch2Expression(
+                        expression_success,
+                        expression_type,
+                        expression_filename,
+                        expression_line,
+                        original_text,
+                        expanded_text,
+                        formatted_expression,
+                    )
+
+                test_cases.append(
+                    _Catch2TestCase(
+                        name,
+                        points,
+                        success,
+                        stdout,
+                        str_tags,
+                        filename,
+                        line,
+                        expression,
+                    )
+                )
+            test_groups.append(_Catch2TestGroup(name, test_cases))
+
+        for test_group in test_groups:
+            for test_case in test_group.test_cases:
+                self.add_test_result(
+                    name=name_formatter(test_case, test_group),
+                    description=description_formatter(test_case, test_group),
+                    points=test_case.points if test_case.success else 0,
+                    max_points=test_case.points,
+                    output=test_case.stdout,
+                )
 
 
 if __name__ == "__main__":

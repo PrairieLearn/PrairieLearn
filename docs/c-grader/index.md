@@ -300,16 +300,16 @@ self.test_run("diff -q output.txt expected.txt", reject_output=["differ"],
 
 ### Running a Catch2 framework test suite
 
-For tests that involve more complex scenarios, particularly related to individual function calls and unit tests, the C autograder allows integration with the [Catch2 framework](https://github.com/catchorg/Catch2). This framework provides functionality to run multiple test groups and test cases with individual unit tests.
+For tests that involve more complex scenarios, particularly related to individual function calls and unit tests, the C autograder allows integration with the [Catch2 framework](https://github.com/catchorg/Catch2). This C++ framework provides functionality to run multiple test groups and test cases with individual unit tests, and is utilized by courses like [CS128](https://cs128.org) @ UIUC.
 
 To run a Catch2 suite, create a main C++ file containing the tests following the [Catch2 test case structure](https://github.com/catchorg/Catch2/blob/devel/docs/tutorial.md). The example course includes a basic test suite that can be used as an example.
 
 A typical `test.py` file for a Catch2-based suite will look something like this, assuming `tests.cpp` contains the Catch2 test harness:
 
 ```python title="test.py"
-import cgrader
+from cgrader import CPPGrader
 
-class DemoGrader(cgrader.CPPGrader):
+class ExampleGrader(CPPGrader):
     def tests(self):
         self.compile_file(
             "tests.cpp",
@@ -318,11 +318,11 @@ class DemoGrader(cgrader.CPPGrader):
         self.run_catch2_suite("./tests")
 
 if __name__ == "__main__":
-    g = DemoGrader()
+    g = ExampleGrader()
     g.start()
 ```
 
-Points for individual test cases can be specified using tags in the test case definition. For example:
+Points for individual test cases can be specified using tags in the test case definition. If a numerical tag is not found, the test will be worth a single point. For example:
 
 ```cpp title="tests.cpp"
 TEST_CASE("Addition test", "[1.5]") {  // This test is worth 1.5 points
@@ -330,7 +330,9 @@ TEST_CASE("Addition test", "[1.5]") {  // This test is worth 1.5 points
 }
 ```
 
-The `self.run_catch2_suite()` method will call the executable containing the Catch2 test suites and create one autograder test for each test case. By default, the name of each test will be taken from the test case name. You can customize how test names are formatted by providing a name formatter function:
+The `self.run_catch2_suite()` method will call the executable containing the Catch2 test suites and create one autograder test for each test case. By default, the name of each test will be taken from the test case name.
+
+You can customize how test names are formatted (and thus control how the external grader results look) by providing a custom name formatter:
 
 ```python title="test.py"
 def custom_name_formatter(test_case, test_group):
@@ -361,6 +363,8 @@ self.run_catch2_suite("./main", args=["--order", "rand"])
 # This will run only tests with the tag "[my_tag]"
 self.run_catch2_suite("./main", args=["[my_tag]"])
 ```
+
+You can view a more complete [example of using the catch2 autograder framework here](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/c/emailValidator/tests/test.py).
 
 ### Running a Check framework test suite
 
