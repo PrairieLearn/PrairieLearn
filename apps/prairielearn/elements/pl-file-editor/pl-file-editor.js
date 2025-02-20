@@ -297,6 +297,7 @@ window.PLFileEditor.prototype.preview = {
       if (marked == null) {
         marked = (await import('marked')).marked;
         const startMath = /(\$|\\\(|\\\[)/;
+        const mathjaxInput = MathJax.startup.getInputJax() ?? [];
         marked.use({
           extensions: [
             {
@@ -304,14 +305,28 @@ window.PLFileEditor.prototype.preview = {
               level: 'inline',
               start: (src) => src.match(startMath)?.index,
               tokenizer(src) {
+                // Check if the string starts with a math delimiter. If the
+                // delimiter is further in the string, start() will take care of
+                // calling the tokenizer again.
                 if (src.match(startMath)?.index !== 0) return false;
                 // Use MathJax API to retrieve the math content.
-                for (const inputJax of MathJax.startup.getInputJax() ?? []) {
-                  for (const foundMath of inputJax.findMath([src]) ?? []) {
-                    if (foundMath?.start?.n === 0) {
-                      const raw = src.substring(0, foundMath.end.n);
-                      return { type: 'escape', raw, text: raw };
-                    }
+                for (const inputJax of mathjaxInput) {
+                  const foundMath = inputJax.findMath([src])?.find((math) => math.start?.n === 0);
+                  if (foundMath) {
+                    const raw = src.substring(0, foundMath.end.n);
+                    // The escape type will take care of Markdown-specific
+                    // characters (e.g., `_` or `*`). However HTML-specific
+                    // encoding still needs to be manually handled.
+                    return {
+                      type: 'escape',
+                      raw,
+                      text: raw
+                        .replaceAll('&', '&amp;')
+                        .replaceAll('<', '&lt;')
+                        .replaceAll('>', '&gt;')
+                        .replaceAll('"', '&quot;')
+                        .replaceAll("'", '&#39;'),
+                    };
                   }
                 }
               },
