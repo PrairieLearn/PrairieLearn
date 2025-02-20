@@ -2248,7 +2248,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/plugin-paginate-rest@npm:^9.0.0, @octokit/plugin-paginate-rest@npm:^9.2.2":
+"@octokit/plugin-paginate-rest@npm:^9.0.0":
   version: 9.2.2
   resolution: "@octokit/plugin-paginate-rest@npm:9.2.2"
   dependencies:
@@ -13928,7 +13928,6 @@ __metadata:
   dependencies:
     "@changesets/cli": "npm:^2.27.12"
     "@eslint-react/eslint-plugin": "npm:^1.26.0"
-    "@octokit/plugin-paginate-rest": "npm:^9.2.2"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@typescript-eslint/eslint-plugin": "npm:^8.17.0"
     "@typescript-eslint/parser": "npm:^8.17.0"
