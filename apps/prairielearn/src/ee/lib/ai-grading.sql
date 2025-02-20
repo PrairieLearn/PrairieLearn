@@ -1,13 +1,3 @@
--- BLOCK select_instance_questions_manual_grading
-SELECT
-  iq.*
-FROM
-  instance_questions AS iq
-WHERE
-  iq.assessment_question_id = $assessment_question_id
-  AND iq.requires_manual_grading
-  AND iq.status != 'unanswered';
-
 -- BLOCK select_instance_questions_for_assessment_question
 SELECT
   *

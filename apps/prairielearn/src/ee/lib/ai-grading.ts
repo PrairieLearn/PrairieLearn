@@ -293,14 +293,13 @@ export async function aiGrade({
     }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
-    const instance_questions_manual_grading = await queryRows(
-      sql.select_instance_questions_manual_grading,
-      {
-        assessment_question_id: assessment_question.id,
-      },
-      InstanceQuestionSchema,
-    );
-    job.info(`Found ${instance_questions_manual_grading.length} submissions to grade!`);
+    let number_to_grade = 0;
+    for (const instance_question of instance_questions) {
+      if (instance_question.requires_manual_grading) {
+        number_to_grade++;
+      }
+    }
+    job.info(`Found ${number_to_grade} submissions to grade!`);
 
     let error_count = 0;
     let rubric_items = await queryRows(
@@ -313,7 +312,10 @@ export async function aiGrade({
     let new_rubric_items = rubric_items;
 
     // Grade each instance question
-    for (const instance_question of instance_questions_manual_grading) {
+    for (const instance_question of instance_questions) {
+      if (!instance_question.requires_manual_grading) {
+        continue;
+      }
       const { variant, submission } = await queryRow(
         sql.select_last_variant_and_submission,
         { instance_question_id: instance_question.id },
