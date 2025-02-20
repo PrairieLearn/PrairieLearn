@@ -16,6 +16,7 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
   formatted_start_date: z.string(),
   formatted_end_date: z.string(),
   has_course_instance_permission_view: z.boolean(),
+  has_course_instance_permission_edit: z.boolean(),
 });
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
