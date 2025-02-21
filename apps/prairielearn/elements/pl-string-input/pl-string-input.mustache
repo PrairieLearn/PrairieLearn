@@ -24,7 +24,7 @@
             {{#suffix}}<span class="input-group-text" id="pl-string-input-{{uuid}}-suffix">{{suffix}}</span>{{/suffix}}
 
             {{#show_info}}
-                <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-html="true" title="String" data-bs-content="{{info}}" data-placement="auto">
+                <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="String" data-bs-content="{{info}}" data-placement="auto">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </button>
             {{/show_info}}
@@ -49,7 +49,7 @@
                     type="button"
                     class="btn btn-light border d-flex align-items-center text-danger"
                     data-bs-toggle="popover"
-                    data-html="true"
+                    data-bs-html="true"
                     title="Format Error"
                     data-placement="auto"
                     data-bs-content="{{parse_error}}"
@@ -74,7 +74,7 @@
         class="badge text-danger badge-invalid btn btn-sm btn-secondary small border"
         data-placement="auto"
         data-bs-toggle="popover"
-        data-html="true"
+        data-bs-html="true"
         title="Format Error"
         data-bs-content="{{parse_error}}"
     >
@@ -84,7 +84,7 @@
 {{/parse_error}}
 {{#missing_input}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    <button type="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-bs-toggle="popover" data-html="true" title="Missing Input" data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
+    <button type="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-bs-toggle="popover" data-bs-html="true" title="Missing Input" data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/missing_input}}
 

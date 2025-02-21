@@ -154,7 +154,7 @@ export function SubmissionPanel({
                                           class="btn btn-xs btn-ghost"
                                           data-bs-toggle="popover"
                                           data-bs-content="${item.explanation_rendered}"
-                                          data-html="true"
+                                          data-bs-html="true"
                                           data-testid="rubric-item-explanation"
                                         >
                                           <i class="fas fa-circle-info"></i>

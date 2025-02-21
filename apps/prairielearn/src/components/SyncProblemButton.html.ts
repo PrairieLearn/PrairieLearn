@@ -22,7 +22,7 @@ ${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
       data-bs-toggle="popover"
       data-trigger="hover"
       data-bs-container="body"
-      data-html="true"
+      data-bs-html="true"
       title="${title}"
       data-bs-content="${escapeHtml(popoverContent)}"
       data-custom-class="popover-wide"

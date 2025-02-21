@@ -30,7 +30,7 @@ export function AdministratorAdmins({
             class="btn btn-sm btn-light ms-auto"
             data-bs-toggle="popover"
             data-bs-container="body"
-            data-html="true"
+            data-bs-html="true"
             data-placement="auto"
             title="Add new administrator"
             data-bs-content="${escapeHtml(
@@ -67,7 +67,7 @@ export function AdministratorAdmins({
                         class="btn btn-sm btn-danger float-right"
                         data-bs-toggle="popover"
                         data-bs-container="body"
-                        data-html="true"
+                        data-bs-html="true"
                         data-placement="auto"
                         title="Remove administrator access"
                         data-bs-content="${escapeHtml(

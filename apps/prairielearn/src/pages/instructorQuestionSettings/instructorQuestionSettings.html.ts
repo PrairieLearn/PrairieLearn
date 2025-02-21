@@ -326,7 +326,7 @@ export function InstructorQuestionSettings({
                           id="copyQuestionButton"
                           data-bs-toggle="popover"
                           data-bs-container="body"
-                          data-html="true"
+                          data-bs-html="true"
                           data-placement="auto"
                           title="Copy this question"
                           data-bs-content="${escapeHtml(

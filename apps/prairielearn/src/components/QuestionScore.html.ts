@@ -295,7 +295,7 @@ export function ExamQuestionStatus({
               class="grade-rate-limit-popover btn btn-xs"
               data-bs-toggle="popover"
               data-bs-container="body"
-              data-html="true"
+              data-bs-html="true"
               data-bs-content="This question limits the rate of submissions. Further grade allowed ${instance_question.allow_grade_interval} (as of the loading of this page)."
               data-placement="auto"
             >
@@ -472,7 +472,7 @@ export function ExamQuestionAvailablePoints({
       class="btn btn-xs btn-ghost js-available-points-popover"
       data-bs-toggle="popover"
       data-bs-container="body"
-      data-html="true"
+      data-bs-html="true"
       data-bs-content="${escapeHtml(popoverContent)}"
       data-placement="auto"
     >
@@ -577,7 +577,7 @@ function QuestionValue({
       class="btn btn-xs js-value-popover"
       data-bs-toggle="popover"
       data-bs-container="body"
-      data-html="true"
+      data-bs-html="true"
       data-bs-content="${escapeHtml(popoverContent)}"
       data-placement="auto"
     >

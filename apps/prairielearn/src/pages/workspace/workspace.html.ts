@@ -143,7 +143,7 @@ export function Workspace({
                     data-bs-toggle="popover"
                     data-bs-container="body"
                     data-placement="bottom"
-                    data-html="true"
+                    data-bs-html="true"
                     data-bs-content="${escapeHtml(HelpButtonContents())}"
                   >
                     <i class="fas fa-question-circle text-secondary" aria-hidden="true"></i>

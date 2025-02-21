@@ -88,7 +88,7 @@ export function CourseRequestsTable({
                             data-bs-toggle="popover"
                             data-bs-container="body"
                             data-boundary="window"
-                            data-html="true"
+                            data-bs-html="true"
                             data-placement="auto"
                             title="Deny course request"
                             data-bs-content="${escapeHtml(
@@ -106,7 +106,7 @@ export function CourseRequestsTable({
                             data-bs-toggle="popover"
                             data-bs-container="body"
                             data-boundary="window"
-                            data-html="true"
+                            data-bs-html="true"
                             data-placement="auto"
                             title="Approve course request"
                             data-bs-content="${escapeHtml(

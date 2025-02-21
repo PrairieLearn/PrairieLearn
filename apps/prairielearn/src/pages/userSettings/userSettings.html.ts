@@ -115,7 +115,7 @@ export function UserSettings({
                   class="btn btn-light btn-sm ms-auto"
                   data-bs-toggle="popover"
                   data-bs-container="body"
-                  data-html="true"
+                  data-bs-html="true"
                   data-placement="auto"
                   title="Generate new token"
                   data-bs-content="${TokenGenerateForm({
@@ -202,7 +202,7 @@ function TokenList({
           class="btn btn-outline-danger btn-sm ms-auto"
           data-bs-toggle="popover"
           data-bs-container="body"
-          data-html="true"
+          data-bs-html="true"
           data-placement="auto"
           title="Delete this token"
           data-bs-content="${TokenDeleteForm({

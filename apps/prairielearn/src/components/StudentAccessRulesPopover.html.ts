@@ -21,7 +21,7 @@ export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzA
       class="btn btn-xs btn-ghost"
       data-bs-toggle="popover"
       data-bs-container="body"
-      data-html="true"
+      data-bs-html="true"
       title="Access details"
       data-bs-content="${escapeHtml(StudentAccessRulesPopoverContent({ accessRules }))}"
       aria-label="Access details"

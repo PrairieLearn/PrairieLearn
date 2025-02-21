@@ -268,7 +268,7 @@ function IssueRow({
                     type="button"
                     class="badge text-bg-warning badge-sm"
                     data-bs-toggle="tooltip"
-                    data-html="true"
+                    data-bs-html="true"
                     title="This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page."
                   >
                     No student data access

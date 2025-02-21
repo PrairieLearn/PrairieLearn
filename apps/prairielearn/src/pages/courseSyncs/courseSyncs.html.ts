@@ -236,7 +236,7 @@ function ImageTable({
                           class="btn btn-xs btn-secondary"
                           data-bs-toggle="popover"
                           data-bs-container="body"
-                          data-html="true"
+                          data-bs-html="true"
                           title="Questions using ${image.image}"
                           data-bs-content="${escapeHtml(
                             ListQuestionsPopover({ image, urlPrefix }),
