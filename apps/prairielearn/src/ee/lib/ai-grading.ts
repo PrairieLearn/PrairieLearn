@@ -89,7 +89,7 @@ async function generateGPTPrompt({
     });
     messages.push({
       role: 'system',
-      content: `Here are the rubric items:\n${rubric_info}`,
+      content: `Here are the rubric items:\n\n${rubric_info}`,
     });
   } else {
     messages.push({
