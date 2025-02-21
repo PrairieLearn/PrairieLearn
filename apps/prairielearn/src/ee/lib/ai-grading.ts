@@ -85,11 +85,11 @@ async function generateGPTPrompt({
     messages.push({
       role: 'system',
       content:
-        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description, item explanation, and a grader note about the item. You must grade the assignment by using the rubric and returning an array of all rubric items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should always list all the rubric items, no matter if they are selected or not. You should also provide feedback on how to improve the answer by incorporating information from the rubric. I will provide some example answers and their corresponding scores.',
+        "You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description, item explanation, and a grader note about the item. You must grade the assignment by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's submission. If no rubric items apply, do not select any. I will provide some example answers and their corresponding selected rubric items.",
     });
     messages.push({
       role: 'system',
-      content: `Here is the rubric info:\n${rubric_info}`,
+      content: `Here are the rubric items:\n${rubric_info}`,
     });
   } else {
     messages.push({
@@ -128,7 +128,7 @@ async function generateGPTPrompt({
       }
       messages.push({
         role: 'user',
-        content: `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nRubric items to this example answer: \n${rubric_grading_info}`,
+        content: `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nSelected rubric items for this example answer: \n${rubric_grading_info}`,
       });
     } else {
       if (rubric_items.length > 0 && !example.manual_rubric_grading_id) {
@@ -141,9 +141,9 @@ async function generateGPTPrompt({
       messages.push({
         role: 'user',
         content:
-          `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nScore to this example answer: \n${example.score_perc}\n` +
+          `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nScore for this example answer: \n${example.score_perc}\n` +
           (example.feedback && example.feedback.manual
-            ? `Feedback to this example answer: \n${example.feedback.manual}\n`
+            ? `Feedback for this example answer: \n${example.feedback.manual}\n`
             : ''),
       });
     }
@@ -393,17 +393,16 @@ export async function aiGrade({
 
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the number of items
-        let GPTRubricItemSchema = z.object({});
-        for (let i = 0; i < rubric_items.length; i++) {
+        let GPTRubricItemSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
+        for (const item of rubric_items) {
           GPTRubricItemSchema = GPTRubricItemSchema.merge(
             z.object({
-              [i]: z.object({ description: z.string(), selected: z.boolean() }),
+              [item.description]: z.boolean(),
             }),
           );
         }
         const GPTRubricScoreSchema = z.object({
           rubric_items: GPTRubricItemSchema,
-          feedback: z.string(),
         });
         const completion = await openai.beta.chat.completions.parse({
           messages,
@@ -415,21 +414,23 @@ export async function aiGrade({
           job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
           const response = completion.choices[0].message;
           job.info(`Raw ChatGPT response:\n${response.content}`);
+
           if (response.parsed) {
-            // Only care about the rubric numbers
-            const gptRubricItems: number[] = [];
-            for (let i = 0; i < rubric_items.length; i++) {
-              const item = response.parsed.rubric_items[i];
-              if (item.selected) {
-                gptRubricItems.push(i);
+            // Compute the set of selected rubric descriptions.
+            const selectedRubricDescriptions = new Set<string>();
+            Object.entries(response.parsed.rubric_items).forEach(([description, selected]) => {
+              if (selected) {
+                selectedRubricDescriptions.add(description);
               }
+            });
+
+            // Build a lookup table for rubric items by description.
+            const rubricItemsByDescription: Record<string, RubricItem> = {};
+            for (const item of rubric_items) {
+              rubricItemsByDescription[item.description] = item;
             }
-            const manual_rubric_data = {
-              rubric_id: rubric_items[0].rubric_id,
-              applied_rubric_items: gptRubricItems.map((rubric_item_number) => ({
-                rubric_item_id: rubric_items[rubric_item_number].id,
-              })),
-            };
+
+            // Ensure that the rubric hasn't changed since we last fetched it.
             new_rubric_items = await queryRows(
               sql.select_rubric_for_grading,
               {
@@ -437,20 +438,31 @@ export async function aiGrade({
               },
               RubricItemSchema,
             );
-            // Check if rubric items has been modified
             assertRubricNotModified(rubric_items, new_rubric_items);
+
+            // Record the grading results.
+            const manual_rubric_data = {
+              rubric_id: rubric_items[0].rubric_id,
+              applied_rubric_items: Array.from(selectedRubricDescriptions).map((description) => ({
+                rubric_item_id: rubricItemsByDescription[description].id,
+              })),
+            };
             await manualGrading.updateInstanceQuestionScore(
               assessment_question.assessment_id,
               instance_question.id,
               submission.id,
               null, // modified_at
               {
-                // feedback: { manual: response.parsed.feedback },
+                // TODO: consider asking for and recording freeform feedback.
                 manual_rubric_data,
               },
               user_id,
             );
-            job.info(`AI rubric items: ${gptRubricItems.toString()}`);
+
+            job.info('Selected rubric items:');
+            for (const item of selectedRubricDescriptions) {
+              job.info(`- ${item}`);
+            }
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
             job.error(response.refusal);
