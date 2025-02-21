@@ -430,7 +430,7 @@ export function QuestionFooterContent({
                     type="button"
                     class="btn btn-xs btn-ghost me-1"
                     data-bs-toggle="popover"
-                    data-content="Your group role (${getRoleNamesForUser(group_info, user).join(
+                    data-bs-content="Your group role (${getRoleNamesForUser(group_info, user).join(
                       ', ',
                     )}) is not allowed to submit this question."
                     aria-label="Submission blocked"
@@ -472,7 +472,7 @@ export function QuestionFooterContent({
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-html="true"
-                        data-content="${escapeHtml(
+                        data-bs-content="${escapeHtml(
                           NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
                         )}"
                         data-placement="auto"
@@ -557,7 +557,7 @@ function SubmitRateFooter({
             data-bs-toggle="popover"
             data-bs-container="body"
             data-html="true"
-            data-content="${escapeHtml(popoverContent)}"
+            data-bs-content="${escapeHtml(popoverContent)}"
             data-placement="auto"
           >
             <i class="fa fa-question-circle" aria-hidden="true"></i>

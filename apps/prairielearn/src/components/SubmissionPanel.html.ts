@@ -153,7 +153,7 @@ export function SubmissionPanel({
                                           type="button"
                                           class="btn btn-xs btn-ghost"
                                           data-bs-toggle="popover"
-                                          data-content="${item.explanation_rendered}"
+                                          data-bs-content="${item.explanation_rendered}"
                                           data-html="true"
                                           data-testid="rubric-item-explanation"
                                         >

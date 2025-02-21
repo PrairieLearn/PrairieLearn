@@ -42,7 +42,7 @@ export function EditQuestionPointsScoreButton({
     data-html="true"
     data-placement="auto"
     aria-label="Change question ${findLabel(field)}"
-    data-content="${escapeHtml(editForm)}"
+    data-bs-content="${escapeHtml(editForm)}"
     data-testid="edit-question-points-score-button-${field}"
   >
     <i class="fa fa-edit" aria-hidden="true"></i>

@@ -256,7 +256,7 @@ export function InstructorCourseAdminSharing({
                             data-html="true"
                             data-placement="auto"
                             title="Add Course to Sharing Set"
-                            data-content="${escapeHtml(
+                            data-bs-content="${escapeHtml(
                               AddCourseToSharingSetPopover({
                                 resLocals,
                                 sharing_set,

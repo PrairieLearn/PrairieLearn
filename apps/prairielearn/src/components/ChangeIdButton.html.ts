@@ -26,7 +26,7 @@ export function ChangeIdButton({
       data-previous-value="${currentValue}"
       data-other-values="${JSON.stringify(otherValues)}"
       title="Change ${label}"
-      data-content="${escapeHtml(
+      data-bs-content="${escapeHtml(
         ChangeIdForm({ id, label, currentValue, extraHelpText, csrfToken, action }),
       )}"
     >

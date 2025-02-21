@@ -195,7 +195,7 @@ export function InstructorAssessmentGroups({
                                       data-html="true"
                                       data-placement="auto"
                                       title="Add members"
-                                      data-content="${escapeHtml(
+                                      data-bs-content="${escapeHtml(
                                         AddMembersForm({
                                           row,
                                           csrfToken: resLocals.__csrf_token,
@@ -212,7 +212,7 @@ export function InstructorAssessmentGroups({
                                             data-bs-toggle="popover" data-bs-container="body"
                                             data-html="true" data-placement="auto" title="Remove
                                             members"
-                                            data-content="${escapeHtml(
+                                            data-bs-content="${escapeHtml(
                                               RemoveMembersForm({
                                                 row,
                                                 csrfToken: resLocals.__csrf_token,
@@ -230,7 +230,7 @@ export function InstructorAssessmentGroups({
                                       data-html="true"
                                       data-placement="auto"
                                       title="Delete group"
-                                      data-content="${escapeHtml(
+                                      data-bs-content="${escapeHtml(
                                         DeleteGroupForm({
                                           row,
                                           csrfToken: resLocals.__csrf_token,

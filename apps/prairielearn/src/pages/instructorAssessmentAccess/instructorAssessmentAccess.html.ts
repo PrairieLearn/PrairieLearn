@@ -94,7 +94,7 @@ export function InstructorAssessmentAccess({
                               data-bs-container="body"
                               data-placement="auto"
                               title="Hidden UIDs"
-                              data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
+                              data-bs-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
                             >
                               Hidden
                             </button>

@@ -23,7 +23,7 @@ export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzA
       data-bs-container="body"
       data-html="true"
       title="Access details"
-      data-content="${escapeHtml(StudentAccessRulesPopoverContent({ accessRules }))}"
+      data-bs-content="${escapeHtml(StudentAccessRulesPopoverContent({ accessRules }))}"
       aria-label="Access details"
     >
       <i class="fa fa-question-circle"></i>

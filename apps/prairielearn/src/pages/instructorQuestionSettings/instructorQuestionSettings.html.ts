@@ -329,7 +329,7 @@ export function InstructorQuestionSettings({
                           data-html="true"
                           data-placement="auto"
                           title="Copy this question"
-                          data-content="${escapeHtml(
+                          data-bs-content="${escapeHtml(
                             CopyForm({
                               csrfToken: resLocals.__csrf_token,
                               editableCourses,

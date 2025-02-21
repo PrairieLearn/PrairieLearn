@@ -106,7 +106,7 @@ export function InstructorCourseAdminInstances({
                           data-placement="bottom"
                           data-html="true"
                           title="Earliest Access Date"
-                          data-content="${PopoverStartDate()}"
+                          data-bs-content="${PopoverStartDate()}"
                           aria-label="Information about Earliest Access Date"
                         >
                           <i class="far fa-question-circle" aria-hidden="true"></i>
@@ -121,7 +121,7 @@ export function InstructorCourseAdminInstances({
                           data-placement="bottom"
                           data-html="true"
                           title="Latest Access Date"
-                          data-content="${PopoverEndDate()}"
+                          data-bs-content="${PopoverEndDate()}"
                           aria-label="Information about Latest Access Date"
                         >
                           <i class="far fa-question-circle" aria-hidden="true"></i>

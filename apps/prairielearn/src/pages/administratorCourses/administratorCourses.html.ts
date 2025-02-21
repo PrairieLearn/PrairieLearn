@@ -59,7 +59,7 @@ export function AdministratorCourses({
             data-html="true"
             data-placement="auto"
             title="Add new course"
-            data-content="${escapeHtml(
+            data-bs-content="${escapeHtml(
               CourseInsertForm({
                 institutions,
                 csrfToken: resLocals.__csrf_token,
@@ -140,7 +140,7 @@ export function AdministratorCourses({
                         data-html="true"
                         data-placement="auto"
                         title="Really delete ${course.short_name}?"
-                        data-content="${escapeHtml(
+                        data-bs-content="${escapeHtml(
                           CourseDeleteForm({
                             id: `courseDeleteButton${course.id}`,
                             course,
@@ -318,7 +318,7 @@ function CourseUpdateColumn({
         data-html="true"
         data-placement="auto"
         title="Change ${label}"
-        data-content="${escapeHtml(
+        data-bs-content="${escapeHtml(
           CourseUpdateColumnForm({
             course,
             column_name,

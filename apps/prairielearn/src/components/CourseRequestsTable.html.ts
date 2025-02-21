@@ -91,7 +91,7 @@ export function CourseRequestsTable({
                             data-html="true"
                             data-placement="auto"
                             title="Deny course request"
-                            data-content="${escapeHtml(
+                            data-bs-content="${escapeHtml(
                               CourseRequestDenyForm({
                                 request: row,
                                 csrfToken,
@@ -109,7 +109,7 @@ export function CourseRequestsTable({
                             data-html="true"
                             data-placement="auto"
                             title="Approve course request"
-                            data-content="${escapeHtml(
+                            data-bs-content="${escapeHtml(
                               CourseRequestApproveForm({
                                 request: row,
                                 institutions,

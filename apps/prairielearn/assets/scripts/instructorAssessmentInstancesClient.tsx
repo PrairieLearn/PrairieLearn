@@ -754,7 +754,7 @@ onDocumentReady(() => {
                     data-bs-container="body"
                     data-title="Confirm close"
                     data-html="true"
-                    data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
+                    data-bs-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
                     data-placement="auto"
                   >
                     <i class="fas fa-ban me-2" aria-hidden="true"></i>
@@ -773,7 +773,7 @@ onDocumentReady(() => {
                     data-bs-container="body"
                     data-title="Confirm regrade"
                     data-html="true"
-                    data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
+                    data-bs-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
                     data-placement="auto"
                   >
                     <i class="fas fa-sync me-2" aria-hidden="true"></i>

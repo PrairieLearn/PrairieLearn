@@ -144,7 +144,7 @@ export function Workspace({
                     data-bs-container="body"
                     data-placement="bottom"
                     data-html="true"
-                    data-content="${escapeHtml(HelpButtonContents())}"
+                    data-bs-content="${escapeHtml(HelpButtonContents())}"
                   >
                     <i class="fas fa-question-circle text-secondary" aria-hidden="true"></i>
                   </button>

@@ -227,7 +227,7 @@ function DeletePersonalNoteButton({
       data-placement="auto"
       title="Confirm delete"
       aria-label="Delete personal note ${file.display_filename}"
-      data-content="${escapeHtml(popoverContent)}"
+      data-bs-content="${escapeHtml(popoverContent)}"
       data-testid="delete-personal-note-button"
     >
       <i class="far fa-trash-alt"></i>

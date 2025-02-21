@@ -728,7 +728,7 @@ function ZoneInfoPopover({ label, content }: { label: string; content: string })
       data-bs-toggle="popover"
       data-bs-container="body"
       data-html="true"
-      data-content="${content}"
+      data-bs-content="${content}"
     >
       ${label}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
     </button>
@@ -765,7 +765,7 @@ function RowLabel({
             data-bs-toggle="popover"
             data-bs-container="body"
             data-html="true"
-            data-content="${lockedPopoverText}"
+            data-bs-content="${lockedPopoverText}"
             data-test-id="locked-instance-question-row"
             aria-label="Locked"
           >
@@ -783,7 +783,7 @@ function RowLabel({
             data-bs-toggle="popover"
             data-bs-container="body"
             data-html="true"
-            data-content="Personal notes: ${instance_question_row.file_count}"
+            data-bs-content="Personal notes: ${instance_question_row.file_count}"
             aria-label="Has personal note attachments"
           >
             <i class="fas fa-paperclip"></i>
@@ -803,7 +803,7 @@ function ExamQuestionHelpAvailablePoints() {
       data-html="true"
       data-placement="auto"
       title="Available points"
-      data-content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
+      data-bs-content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
@@ -820,7 +820,7 @@ function ExamQuestionHelpAwardedPoints() {
       data-html="true"
       data-placement="auto"
       title="Awarded points"
-      data-content="The number of points already earned, as a fraction of the maximum possible points for the question."
+      data-bs-content="The number of points already earned, as a fraction of the maximum possible points for the question."
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>

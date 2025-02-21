@@ -89,7 +89,7 @@ export function QuestionNavSideButton({
         data-bs-toggle="popover"
         data-bs-container="body"
         data-html="true"
-        data-content="${disabledExplanation}"
+        data-bs-content="${disabledExplanation}"
       >
         ${buttonLabel}
         <i class="fas fa-lock ms-1" aria-label="Locked"></i>

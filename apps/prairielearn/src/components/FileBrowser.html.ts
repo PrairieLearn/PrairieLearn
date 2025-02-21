@@ -419,7 +419,7 @@ function FileBrowserActions({
             data-html="true"
             data-placement="auto"
             title="Upload file"
-            data-content="${escapeHtml(FileUploadForm({ file: fileInfo, csrfToken }))}"
+            data-bs-content="${escapeHtml(FileUploadForm({ file: fileInfo, csrfToken }))}"
             data-trigger="click"
             ${fileInfo.canUpload ? '' : 'disabled'}
           >
@@ -447,7 +447,7 @@ function FileBrowserActions({
             data-html="true"
             data-placement="auto"
             title="Rename file"
-            data-content="${escapeHtml(
+            data-bs-content="${escapeHtml(
               FileRenameForm({ file: fileInfo, csrfToken, isViewingFile: true }),
             )}"
             data-trigger="click"
@@ -464,7 +464,7 @@ function FileBrowserActions({
             data-html="true"
             data-placement="auto"
             title="Confirm delete"
-            data-content="${escapeHtml(FileDeleteForm({ file: fileInfo, csrfToken }))}"
+            data-bs-content="${escapeHtml(FileDeleteForm({ file: fileInfo, csrfToken }))}"
             data-trigger="click"
             ${fileInfo.canDelete ? '' : 'disabled'}
           >
@@ -494,7 +494,7 @@ function DirectoryBrowserActions({
           data-html="true"
           data-placement="auto"
           title="Upload file"
-          data-content="${escapeHtml(
+          data-bs-content="${escapeHtml(
             FileUploadForm({
               file: { id: `New${d.label}`, info: d.info, working_path: d.path },
               csrfToken,
@@ -517,7 +517,7 @@ function DirectoryBrowserActions({
       data-html="true"
       data-placement="auto"
       title="Upload file"
-      data-content="${escapeHtml(
+      data-bs-content="${escapeHtml(
         FileUploadForm({
           file: { id: 'New', working_path: paths.workingPath },
           csrfToken,
@@ -624,7 +624,7 @@ function DirectoryBrowserBody({
                         data-html="true"
                         data-placement="auto"
                         title="Upload file"
-                        data-content="
+                        data-bs-content="
                   ${escapeHtml(FileUploadForm({ file: f, csrfToken }))}"
                         data-trigger="click"
                         ${f.canUpload ? '' : 'disabled'}
@@ -653,7 +653,7 @@ function DirectoryBrowserBody({
                         data-html="true"
                         data-placement="auto"
                         title="Rename file"
-                        data-content="${escapeHtml(
+                        data-bs-content="${escapeHtml(
                           FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
                         )}"
                         data-trigger="click"
@@ -671,7 +671,7 @@ function DirectoryBrowserBody({
                         data-html="true"
                         data-placement="auto"
                         title="Confirm delete"
-                        data-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
+                        data-bs-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
                         data-trigger="click"
                         data-testid="delete-file-button"
                         ${f.canDelete ? '' : 'disabled'}

@@ -91,7 +91,7 @@ export function InstructorCourseAdminStaff({
               data-html="true"
               data-placement="auto"
               title="Remove all student data access"
-              data-content="${escapeHtml(
+              data-bs-content="${escapeHtml(
                 CoursePermissionsRemoveStudentDataAccessForm({
                   csrfToken: resLocals.__csrf_token,
                 }),
@@ -109,7 +109,7 @@ export function InstructorCourseAdminStaff({
               data-html="true"
               data-placement="auto"
               title="Delete users with no access"
-              data-content="${escapeHtml(
+              data-bs-content="${escapeHtml(
                 CoursePermissionsDeleteNoAccessForm({
                   csrfToken: resLocals.__csrf_token,
                 }),
@@ -127,7 +127,7 @@ export function InstructorCourseAdminStaff({
               data-html="true"
               data-placement="auto"
               title="Delete non-owners"
-              data-content="${escapeHtml(
+              data-bs-content="${escapeHtml(
                 CoursePermissionsDeleteNonOwnersForm({
                   csrfToken: resLocals.__csrf_token,
                 }),
@@ -145,7 +145,7 @@ export function InstructorCourseAdminStaff({
               data-html="true"
               data-placement="auto"
               title="Add users"
-              data-content="${escapeHtml(
+              data-bs-content="${escapeHtml(
                 CoursePermissionsInsertForm({
                   csrfToken: resLocals.__csrf_token,
                   uidsLimit,
