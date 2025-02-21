@@ -31,6 +31,7 @@ import { createEmbedding, vectorToString } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
+const api_temperature = 0.2;
 
 const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -385,7 +386,7 @@ export async function aiGrade({
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
           response_format: zodResponseFormat(RubricGradingResultSchema, 'score'),
-          temperature: 0.2,
+          temperature: api_temperature,
         });
         try {
           job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
@@ -456,7 +457,7 @@ export async function aiGrade({
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
           response_format: zodResponseFormat(GradingResultSchema, 'score'),
-          temperature: 0.2,
+          temperature: api_temperature,
         });
         try {
           job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
