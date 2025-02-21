@@ -82,7 +82,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
           value: navbarCompleteGettingStartedTasksCount,
           maxValue: navbarTotalGettingStartedTasksCount,
           options: {
-            pushedRight: true,
+            mlAuto: true,
           },
         }),
       renderCondition: ({ authz_data, course }) =>
