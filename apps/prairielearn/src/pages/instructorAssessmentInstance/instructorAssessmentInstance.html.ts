@@ -97,7 +97,7 @@ export function InstructorAssessmentInstance({
         )}"></script>
     `,
     content: html`
-      <h1 class="sr-only">
+      <h1 class="visually-hidden">
         ${resLocals.assessment_instance_label} instance for
         ${resLocals.instance_group
           ? html`${resLocals.instance_group.name}`

@@ -44,7 +44,7 @@ export function RequestCourse({
     },
     headContent: [compiledScriptTag('instructorRequestCourseClient.ts')],
     content: html`
-      <h1 class="sr-only">Request a Course</h1>
+      <h1 class="visually-hidden">Request a Course</h1>
       ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
       ${Modal({
         id: 'fill-course-request-lti13-modal',

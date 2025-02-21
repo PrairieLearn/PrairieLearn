@@ -294,8 +294,10 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
         >
           <i class="fas fa-arrows-up-down"></i>
         </button>
-        <button type="button" class="sr-only js-rubric-item-move-down-button">Move down</button>
-        <button type="button" class="sr-only js-rubric-item-move-up-button">Move up</button>
+        <button type="button" class="visually-hidden js-rubric-item-move-down-button">
+          Move down
+        </button>
+        <button type="button" class="visually-hidden js-rubric-item-move-up-button">Move up</button>
         <button
           type="button"
           class="btn btn-sm btn-ghost js-rubric-item-delete text-danger"

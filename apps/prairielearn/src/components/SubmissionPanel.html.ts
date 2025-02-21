@@ -158,7 +158,7 @@ export function SubmissionPanel({
                                           data-testid="rubric-item-explanation"
                                         >
                                           <i class="fas fa-circle-info"></i>
-                                          <span class="sr-only">Details</span>
+                                          <span class="visually-hidden">Details</span>
                                         </button>
                                       `
                                     : ''}
@@ -264,7 +264,7 @@ export function SubmissionPanel({
             ${submissionHtml == null
               ? html`
                   <div class="spinner-border" role="status">
-                    <span class="sr-only">Loading...</span>
+                    <span class="visually-hidden">Loading...</span>
                   </div>
                 `
               : unsafeHtml(submissionHtml)}

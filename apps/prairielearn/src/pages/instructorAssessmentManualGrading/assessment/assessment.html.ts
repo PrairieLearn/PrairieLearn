@@ -148,7 +148,7 @@ function AssessmentQuestionRow({
                 data-boundary="window"
                 title="This question uses a rubric"
               >
-                <i class="fas fa-list-check"></i><span class="sr-only">(uses rubric)</span>
+                <i class="fas fa-list-check"></i><span class="visually-hidden">(uses rubric)</span>
               </a>
             `}
       </td>
@@ -185,7 +185,8 @@ function AssessmentQuestionRow({
                       data-target="#grader-assignment-modal"
                       data-assessment-question-id="${question.id}"
                     >
-                      <i class="fas fa-pencil"></i><span class="sr-only">Assign to&hellip;</span>
+                      <i class="fas fa-pencil"></i
+                      ><span class="visually-hidden">Assign to&hellip;</span>
                     </button>
                   `
                 : ''}

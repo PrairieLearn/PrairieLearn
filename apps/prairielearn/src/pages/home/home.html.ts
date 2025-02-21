@@ -52,7 +52,7 @@ export function Home({
       fullHeight: true,
     },
     content: html`
-      <h1 class="sr-only">PrairieLearn Homepage</h1>
+      <h1 class="visually-hidden">PrairieLearn Homepage</h1>
       ${ActionsHeader()}
 
       <div id="content" class="container py-5">

@@ -205,7 +205,7 @@ onDocumentReady(() => {
     return [
       {
         field: 'assessment_instance_id',
-        title: '<span class="sr-only">Assessment Instance</span>',
+        title: '<span class="visually-hidden">Assessment Instance</span>',
         sortable: true,
         sorter: detailsLinkSorter,
         formatter: detailsLinkFormatter,

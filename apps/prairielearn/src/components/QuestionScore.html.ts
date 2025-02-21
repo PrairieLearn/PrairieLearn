@@ -352,7 +352,7 @@ export function QuestionVariantHistory({
         >
           ${variant.open ? 'Open' : `${Math.floor(variant.max_submission_score * 100)}%`}
           ${currentVariantId != null && idsEqual(variant.id, currentVariantId)
-            ? html`<span class="sr-only">(current)</span>`
+            ? html`<span class="visually-hidden">(current)</span>`
             : ''}
         </a>
       `,

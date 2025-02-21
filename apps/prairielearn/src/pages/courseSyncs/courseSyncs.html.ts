@@ -55,7 +55,7 @@ export function CourseSyncs({
       fullWidth: true,
     },
     content: html`
-      <h1 class="sr-only">Course Sync</h1>
+      <h1 class="visually-hidden">Course Sync</h1>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h2>Repository status</h2>

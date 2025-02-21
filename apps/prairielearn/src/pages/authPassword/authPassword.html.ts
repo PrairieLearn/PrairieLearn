@@ -17,7 +17,7 @@ export function AuthPassword({
       page: 'password',
     },
     content: html`
-      <h1 class="sr-only">Assessment Password</h1>
+      <h1 class="visually-hidden">Assessment Password</h1>
       <div class="card mb-4">
         <div class="card-body">
           <p class="text-center">A password is required to access this assessment.</p>

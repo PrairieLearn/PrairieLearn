@@ -160,7 +160,7 @@ export function Workspace({
             class="d-flex h-100 flex-grow justify-content-center align-items-center"
           >
             <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info" aria-hidden="true"></i>
-            <span class="sr-only">Loading workspace &hellip;</span>
+            <span class="visually-hidden">Loading workspace &hellip;</span>
           </div>
           <div
             id="stopped"

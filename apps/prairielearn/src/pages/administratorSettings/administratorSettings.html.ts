@@ -19,7 +19,7 @@ export function AdministratorSettings({ resLocals }) {
       fullWidth: true,
     },
     content: html`
-      <h1 class="sr-only">Administrator Settings</h1>
+      <h1 class="visually-hidden">Administrator Settings</h1>
       <!-- Chunk generation -->
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">

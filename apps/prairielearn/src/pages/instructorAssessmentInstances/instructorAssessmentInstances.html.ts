@@ -173,7 +173,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
         ></table>
 
         <div class="spinning-wheel card-body spinner-border">
-          <span class="sr-only">Loading...</span>
+          <span class="visually-hidden">Loading...</span>
         </div>
 
         ${RoleHelpModal()} ${FingerprintChangesHelpModal()} ${DurationHelpModal()}

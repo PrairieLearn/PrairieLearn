@@ -91,7 +91,7 @@ export function InstructorGradebook({
               <table id="gradebook-table" aria-label="Gradebook"></table>
 
               <div class="spinning-wheel card-body spinner-border">
-                <span class="sr-only">Loading...</span>
+                <span class="visually-hidden">Loading...</span>
               </div>
             </div>
             ${RoleDescriptionModal()}

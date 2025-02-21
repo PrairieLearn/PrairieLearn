@@ -61,7 +61,7 @@ export function InstructorEffectiveUser({
       fullWidth: true,
     },
     content: html`
-      <h1 class="sr-only">Effective User</h1>
+      <h1 class="visually-hidden">Effective User</h1>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h2>Authenticated user</h2>

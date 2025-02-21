@@ -155,7 +155,7 @@ function AssessmentQuestionsTable({
       <table class="table table-sm table-hover" aria-label="Assessment questions">
         <thead>
           <tr>
-            <th><span class="sr-only">Name</span></th>
+            <th><span class="visually-hidden">Name</span></th>
             <th>QID</th>
             <th>Topic</th>
             <th>Tags</th>

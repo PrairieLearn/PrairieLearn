@@ -38,7 +38,7 @@ export function AdministratorCourses({
       fullWidth: true,
     },
     content: html`
-      <h1 class="sr-only">Courses</h1>
+      <h1 class="visually-hidden">Courses</h1>
       ${CourseRequestsTable({
         rows: course_requests,
         institutions,

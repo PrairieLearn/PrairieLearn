@@ -96,7 +96,7 @@ export function InstructorFileEditor({
             </div>
           `
         : ''}
-      <h1 class="sr-only">File editor</h1>
+      <h1 class="visually-hidden">File editor</h1>
 
       <form name="editor-form" method="POST">
         <input type="hidden" name="__csrf_token" value="${__csrf_token}" />

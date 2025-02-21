@@ -346,7 +346,7 @@ export function FileBrowser({
     `,
     content: html`
       ${syncErrorsAndWarnings}
-      <h1 class="sr-only">Files</h1>
+      <h1 class="visually-hidden">Files</h1>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <div class="row align-items-center justify-content-between">
@@ -577,7 +577,7 @@ function DirectoryBrowserBody({
 }) {
   return html`
     <table class="table table-sm table-hover" aria-label="Directories and files">
-      <thead class="sr-only">
+      <thead class="visually-hidden">
         <tr>
           <th>File</th>
           <th>Actions</th>

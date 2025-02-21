@@ -511,7 +511,7 @@ function AuthnOverrides({
     <h6 class="dropdown-header">Effective user</h6>
 
     <form class="form-inline dropdown-item-text d-flex flex-nowrap js-effective-uid-form">
-      <label class="sr-only" for="effective-uid">UID</label>
+      <label class="visually-hidden" for="effective-uid">UID</label>
       <input
         id="effective-uid"
         type="email"
@@ -672,7 +672,7 @@ function NavbarInstructor({
           : html`
               <div class="d-flex justify-content-center">
                 <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="sr-only">Loading courses...</span>
+                  <span class="visually-hidden">Loading courses...</span>
                 </div>
               </div>
             `}
@@ -755,7 +755,7 @@ function NavbarInstructor({
             >
               <div class="d-flex justify-content-center">
                 <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="sr-only">Loading course instances...</span>
+                  <span class="visually-hidden">Loading course instances...</span>
                 </div>
               </div>
             </div>
@@ -852,7 +852,7 @@ function NavbarInstructor({
             >
               <div class="d-flex justify-content-center">
                 <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="sr-only">Loading course instances...</span>
+                  <span class="visually-hidden">Loading course instances...</span>
                 </div>
               </div>
             </div>

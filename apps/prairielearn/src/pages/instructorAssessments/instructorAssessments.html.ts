@@ -102,8 +102,8 @@ export function InstructorAssessments({
                 <table class="table table-sm table-hover" aria-label="Assessments">
                   <thead>
                     <tr>
-                      <th style="width: 1%"><span class="sr-only">Label</span></th>
-                      <th><span class="sr-only">Title</span></th>
+                      <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                      <th><span class="visually-hidden">Title</span></th>
                       <th>AID</th>
                       <th class="text-center">Students</th>
                       <th class="text-center">Scores</th>
@@ -215,7 +215,7 @@ export function InstructorAssessments({
 export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
   const spinner = html`
     <div class="spinner-border spinner-border-sm" role="status">
-      <span class="sr-only">Loading...</span>
+      <span class="visually-hidden">Loading...</span>
     </div>
   `;
   return html`

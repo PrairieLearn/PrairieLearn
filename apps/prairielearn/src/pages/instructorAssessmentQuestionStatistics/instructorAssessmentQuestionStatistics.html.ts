@@ -64,7 +64,7 @@ export function InstructorAssessmentQuestionStatistics({
     },
     headContent: [compiledScriptTag('instructorAssessmentQuestionStatisticsClient.ts')],
     content: html`
-      <h1 class="sr-only">
+      <h1 class="visually-hidden">
         ${resLocals.assessment_set.name} ${resLocals.assessment.number} Question Statistics
       </h1>
       ${AssessmentSyncErrorsAndWarnings({

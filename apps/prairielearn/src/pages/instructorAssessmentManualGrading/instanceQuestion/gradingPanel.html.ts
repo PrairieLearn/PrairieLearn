@@ -178,7 +178,7 @@ ${submission.feedback?.manual}</textarea
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
-                      <span class="sr-only">Change assigned grader</span>
+                      <span class="visually-hidden">Change assigned grader</span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-right">
                       ${(graders || []).map(

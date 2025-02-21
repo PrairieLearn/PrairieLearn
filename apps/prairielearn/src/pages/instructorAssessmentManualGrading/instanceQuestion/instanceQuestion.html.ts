@@ -75,7 +75,7 @@ export function InstanceQuestion({
       </div>
     `,
     content: html`
-      <h1 class="sr-only">Instance Question Manual Grading</h1>
+      <h1 class="visually-hidden">Instance Question Manual Grading</h1>
       ${resLocals.assessment_instance.open
         ? html`
             <div class="alert alert-danger" role="alert">
