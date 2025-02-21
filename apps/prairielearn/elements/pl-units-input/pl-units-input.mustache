@@ -38,17 +38,17 @@
 
             {{#correct}}
                 <span class="input-group-text">
-                    <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                    <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
                 </span>
             {{/correct}}
             {{#partial}}
                 <span class="input-group-text">
-                    <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+                    <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
                 </span>
             {{/partial}}
             {{#incorrect}}
                 <span class="input-group-text">
-                    <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                    <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
                 </span>
             {{/incorrect}}
             {{#parse_error}}
@@ -129,17 +129,17 @@
 {{/feedback}}
 
 {{#correct}}
-<span class="me-1 badge badge-success">
+<span class="me-1 badge text-bg-success">
     <i class="fa fa-check" aria-hidden="true"></i> 100%
 </span>
 {{/correct}}
 {{#partial}}
-<span class="me-1 badge badge-warning">
+<span class="me-1 badge text-bg-warning">
     <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
 </span>
 {{/partial}}
 {{#incorrect}}
-<span class="me-1 badge badge-danger">
+<span class="me-1 badge text-bg-danger">
     <i class="fa fa-times" aria-hidden="true"></i> 0%
 </span>
 {{/incorrect}}

@@ -266,7 +266,7 @@ function IssueRow({
                   >)
                   <button
                     type="button"
-                    class="badge badge-warning badge-sm"
+                    class="badge text-bg-warning badge-sm"
                     data-toggle="tooltip"
                     data-html="true"
                     title="This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page."
@@ -295,8 +295,8 @@ function IssueRow({
             : ''}
         </small>
         ${issue.manually_reported
-          ? html`<span class="badge badge-info">Manually reported</span>`
-          : html`<span class="badge badge-warning">Automatically reported</span>`}
+          ? html`<span class="badge text-bg-info">Manually reported</span>`
+          : html`<span class="badge text-bg-warning">Automatically reported</span>`}
         ${issue.assessment && issue.course_instance_id
           ? AssessmentBadge({
               plainUrlPrefix,
@@ -306,7 +306,7 @@ function IssueRow({
             })
           : ''}
         ${issue.course_instance_short_name
-          ? html`<span class="badge badge-dark">${issue.course_instance_short_name}</span>`
+          ? html`<span class="badge text-bg-dark">${issue.course_instance_short_name}</span>`
           : ''}
       </div>
       ${authz_data.has_course_permission_edit

@@ -186,8 +186,8 @@ export function StudentAssessmentInstance({
                     <div class="alert alert-warning">
                       This assessment will only be graded after it is finished. You should save
                       answers for all questions and your exam will be graded later. You can use the
-                      <span class="badge badge-outline badge-light">Finish assessment</span> button
-                      below to finish and calculate your final grade.
+                      <span class="badge badge-outline text-bg-light">Finish assessment</span>
+                      button below to finish and calculate your final grade.
                     </div>
                   `
                 : ''}

@@ -82,7 +82,7 @@ export function AdministratorWorkspaces({
                       ? html`<span class="text-muted me-2">(${instanceId})</span>`
                       : null}
                     ${WorkspaceHostState({ state: workspaceHost.state })}
-                    <span class="badge badge-secondary">
+                    <span class="badge text-bg-secondary">
                       ${workspaceHostRow.workspace_host_time_in_state}
                     </span>
                   </div>
@@ -113,7 +113,7 @@ export function AdministratorWorkspaces({
                                     ${workspace.id}
                                   </span>
                                   ${WorkspaceState({ state: workspace.state })}
-                                  <span class="badge badge-secondary">
+                                  <span class="badge text-bg-secondary">
                                     ${workspace.time_in_state}
                                   </span>
                                 </div>

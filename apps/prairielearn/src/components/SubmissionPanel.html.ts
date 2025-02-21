@@ -310,11 +310,11 @@ function SubmissionStatusBadge({
       if (!instance_question || instance_question.requires_manual_grading) {
         if (!submission.gradable && !assessment_question?.max_auto_points) {
           manualGradingBadge = html`
-            <span class="badge badge-danger">invalid, not gradable</span><br />
+            <span class="badge text-bg-danger">invalid, not gradable</span><br />
           `;
         } else {
           manualGradingBadge = html`
-            <span class="badge badge-secondary">manual grading: waiting for grading</span><br />
+            <span class="badge text-bg-secondary">manual grading: waiting for grading</span><br />
           `;
         }
       } else {
@@ -351,62 +351,62 @@ function SubmissionStatusBadge({
       if (submission.grading_requested_at == null) {
         if (submission.gradable) {
           autoGradingBadge = html`
-            <span class="badge badge-info">${autoStatusPrefix} saved, not graded</span>
+            <span class="badge text-bg-info">${autoStatusPrefix} saved, not graded</span>
           `;
         } else {
           autoGradingBadge = html`
-            <span class="badge badge-danger">${autoStatusPrefix} invalid, not gradable</span>
+            <span class="badge text-bg-danger">${autoStatusPrefix} invalid, not gradable</span>
           `;
         }
       } else if (question.grading_method === 'External') {
         if (submission.gradable) {
           autoGradingBadge = html`
-            <span class="badge badge-secondary">
+            <span class="badge text-bg-secondary">
               ${autoStatusPrefix}
               <span id="grading-status-${submission.id}"></span>
             </span>
           `;
         } else {
           autoGradingBadge = html`
-            <span class="badge badge-danger">${autoStatusPrefix} invalid, not gradable</span>
+            <span class="badge text-bg-danger">${autoStatusPrefix} invalid, not gradable</span>
           `;
         }
       } else {
         autoGradingBadge = html`
-          <span class="badge badge-secondary">${autoStatusPrefix} waiting for grading</span>
+          <span class="badge text-bg-secondary">${autoStatusPrefix} waiting for grading</span>
         `;
       }
     } else if (!submission.gradable) {
       // If an error ocurred during grading, there will be a `graded_at` timestamp but the submission will be marked ungradable.
       autoGradingBadge = html`
-        <span class="badge badge-danger">${autoStatusPrefix} invalid, not gradable</span>
+        <span class="badge text-bg-danger">${autoStatusPrefix} invalid, not gradable</span>
       `;
     } else if (submission.score === 1) {
       if (submission.v2_score != null && submission.v2_score < 1) {
         autoGradingBadge = html`
-          <span class="badge badge-success">
+          <span class="badge text-bg-success">
             ${autoStatusPrefix} 100% (rounded up from ${Math.floor(submission.v2_score * 100)}%)
           </span>
         `;
       } else {
         autoGradingBadge = html`
-          <span class="badge badge-success">${autoStatusPrefix} 100%</span>
+          <span class="badge text-bg-success">${autoStatusPrefix} 100%</span>
         `;
       }
     } else if (submission.score != null && submission.score > 0) {
       autoGradingBadge = html`
-        <span class="badge badge-warning">
+        <span class="badge text-bg-warning">
           ${autoStatusPrefix} ${Math.floor(submission.score * 100)}%
         </span>
       `;
     } else if (submission.v2_score != null && submission.v2_score >= 0.01) {
       autoGradingBadge = html`
-        <span class="badge badge-danger">
+        <span class="badge text-bg-danger">
           ${autoStatusPrefix} 0% (rounded down from ${Math.floor(submission.v2_score * 100)}%)
         </span>
       `;
     } else {
-      autoGradingBadge = html`<span class="badge badge-danger">${autoStatusPrefix} 0%</span>`;
+      autoGradingBadge = html`<span class="badge text-bg-danger">${autoStatusPrefix} 0%</span>`;
     }
   }
 

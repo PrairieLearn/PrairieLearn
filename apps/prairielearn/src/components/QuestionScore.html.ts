@@ -267,7 +267,7 @@ export function ExamQuestionStatus({
   ) {
     return html`
       <span class="align-middle">
-        <span class="badge badge-success">saved for manual grading</span>
+        <span class="badge text-bg-success">saved for manual grading</span>
       </span>
     `;
   }
@@ -407,7 +407,7 @@ export function InstanceQuestionPoints({
       ${instance_question.status === 'unanswered'
         ? html`&mdash;`
         : pointsPending
-          ? html`<span class="badge badge-info">pending</span>`
+          ? html`<span class="badge text-bg-info">pending</span>`
           : !points && !maxPoints
             ? html`&mdash;`
             : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`}

@@ -155,7 +155,7 @@ onDocumentReady(() => {
                 ? html`
                     <a
                       href="#"
-                      class="badge badge-pill badge-danger"
+                      class="badge badge-pill text-bg-danger"
                       title="Instance question has ${row.open_issue_count} open ${row.open_issue_count >
                       1
                         ? 'issues'

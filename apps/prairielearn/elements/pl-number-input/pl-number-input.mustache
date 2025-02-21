@@ -46,17 +46,17 @@
             {{#show_score}}
                 {{#correct}}
                     <span class="input-group-text">
-                        <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                        <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
                     </span>
                 {{/correct}}
                 {{#partial}}
                     <span class="input-group-text">
-                        <span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
+                        <span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
                     </span>
                 {{/partial}}
                 {{#incorrect}}
                     <span class="input-group-text">
-                        <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                        <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
                     </span>
                 {{/incorrect}}
             {{/show_score}}
@@ -105,14 +105,14 @@
 
     {{#correct}}
     <span id="pl-number-input-correct-{{uuid}}">
-        <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+        <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
     </span>
     {{/correct}}
     {{#partial}}
-    <span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
+    <span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
     {{/partial}}
     {{#incorrect}}
-    <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+    <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
     {{/incorrect}}
 {{/show_score}}
 

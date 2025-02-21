@@ -142,19 +142,19 @@ export function AdministratorBatchedMigration({
 function MigrationStatusBadge(status: BatchedMigrationStatus) {
   switch (status) {
     case 'pending':
-      return html`<span class="badge badge-secondary">Pending</span>`;
+      return html`<span class="badge text-bg-secondary">Pending</span>`;
     case 'paused':
-      return html`<span class="badge badge-secondary">Paused</span>`;
+      return html`<span class="badge text-bg-secondary">Paused</span>`;
     case 'running':
-      return html`<span class="badge badge-primary">Running</span>`;
+      return html`<span class="badge text-bg-primary">Running</span>`;
     case 'finalizing':
-      return html`<span class="badge badge-primary">Finalizing</span>`;
+      return html`<span class="badge text-bg-primary">Finalizing</span>`;
     case 'failed':
-      return html`<span class="badge badge-danger">Failed</span>`;
+      return html`<span class="badge text-bg-danger">Failed</span>`;
     case 'succeeded':
-      return html`<span class="badge badge-success">Succeeded</span>`;
+      return html`<span class="badge text-bg-success">Succeeded</span>`;
     default:
-      return html`<span class="badge badge-warning">Unknown (${status})</span>`;
+      return html`<span class="badge text-bg-warning">Unknown (${status})</span>`;
   }
 }
 

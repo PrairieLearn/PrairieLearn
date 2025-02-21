@@ -307,10 +307,10 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
 
 function ApprovalStatusIcon({ status }: { status: CourseRequest['approved_status'] }) {
   if (status === 'pending' || status === 'creating' || status === 'failed') {
-    return html`<span class="badge badge-secondary"> <i class="fa fa-clock"></i> Pending</span>`;
+    return html`<span class="badge text-bg-secondary"> <i class="fa fa-clock"></i> Pending</span>`;
   } else if (status === 'approved') {
-    return html`<span class="badge badge-success"> <i class="fa fa-check"></i> Approved</span>`;
+    return html`<span class="badge text-bg-success"> <i class="fa fa-check"></i> Approved</span>`;
   } else if (status === 'denied') {
-    return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Denied</span>`;
+    return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
   }
 }

@@ -18,9 +18,9 @@ $(function() {
         <div class="card-body">
             <span>
                 The error in position must be no greater than <strong>{{tol_translation}} units</strong> and error in orientation must be no greater than <strong>{{tol_rotation}} degrees</strong> in order for your answer to be marked correct. The error in orientation is the smallest angle through which the submitted orientation would have to rotate in order to be aligned with the correct orientation.
-                {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-                {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-                {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+                {{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+                {{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+                {{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
             </span>
         </div>
     </div>
@@ -31,9 +31,9 @@ $(function() {
         <div class="card-body">
             <span>
                 The error in position is <strong>{{error_in_translation}} units</strong> and the error in orientation is <strong>{{error_in_rotation}} degrees</strong>. The error in orientation is the smallest angle through which the submitted orientation would have to rotate in order to be aligned with the correct orientation.
-                {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-                {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-                {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+                {{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+                {{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+                {{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
             </span>
         </div>
     </div>

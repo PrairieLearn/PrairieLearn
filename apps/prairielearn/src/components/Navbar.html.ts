@@ -175,11 +175,11 @@ function UserDropdownMenu({
     (authz_data.authn_has_course_permission_preview ||
       authz_data.authn_has_course_instance_permission_view)
   ) {
-    displayedName = html`${displayedName} <span class="badge badge-warning">student</span>`;
+    displayedName = html`${displayedName} <span class="badge text-bg-warning">student</span>`;
   } else if (authz_data?.overrides) {
-    displayedName = html`${displayedName} <span class="badge badge-warning">modified</span>`;
+    displayedName = html`${displayedName} <span class="badge text-bg-warning">modified</span>`;
   } else if (navbarType === 'instructor') {
-    displayedName = html`${displayedName} <span class="badge badge-success">staff</span>`;
+    displayedName = html`${displayedName} <span class="badge text-bg-success">staff</span>`;
   }
 
   return html`
@@ -204,7 +204,9 @@ function UserDropdownMenu({
         >
           ${displayedName}
           ${newsCount
-            ? html`<span class="badge badge-pill badge-primary news-item-count">${newsCount}</span>`
+            ? html`<span class="badge badge-pill text-bg-primary news-item-count"
+                >${newsCount}</span
+              >`
             : ''}
         </a>
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
@@ -247,7 +249,7 @@ function UserDropdownMenu({
             News
             ${newsCount
               ? html`
-                  <span class="badge badge-pill badge-primary news-item-link-count">
+                  <span class="badge badge-pill text-bg-primary news-item-link-count">
                     ${newsCount}
                   </span>
                 `
@@ -405,7 +407,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
       ? html`
           <a class="dropdown-item" href="${instructorLink}" id="navbar-reset-view">
             Reset to default staff view
-            <span class="badge badge-success">staff</span>
+            <span class="badge text-bg-success">staff</span>
           </a>
 
           <div class="dropdown-divider"></div>
@@ -420,13 +422,13 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
         ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
           ? 'Modified staff'
           : 'Staff'}
-        view <span class="badge badge-success">staff</span>
+        view <span class="badge text-bg-success">staff</span>
       </span>
     </a>
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student">
       <span class="${authnViewTypeMenuChecked !== 'student' ? 'invisible' : ''}">&check;</span>
-      <span class="ps-3">Student view <span class="badge badge-warning">student</span></span>
+      <span class="ps-3">Student view <span class="badge text-bg-warning">student</span></span>
     </a>
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student-no-rules">
@@ -435,7 +437,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
       </span>
       <span class="ps-3">
         Student view without access restrictions
-        <span class="badge badge-warning">student</span>
+        <span class="badge text-bg-warning">student</span>
       </span>
     </a>
 

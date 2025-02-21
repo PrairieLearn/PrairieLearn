@@ -42,7 +42,7 @@ export function RubricInputSection({
               data-rubric-item-points="${item.points}"
               data-key-binding="${item.key_binding}"
             />
-            <span class="badge badge-info">${item.key_binding}</span>
+            <span class="badge text-bg-info">${item.key_binding}</span>
             <span class="float-right text-${item.points >= 0 ? 'success' : 'danger'}">
               <strong>
                 <span class="js-manual-grading-points" data-testid="rubric-item-points">

@@ -50,7 +50,7 @@ export function Enroll({
                   ${course_instance.instructor_access
                     ? html`
                         <td class="align-middle text-center" colspan="2">
-                          <span class="badge badge-info">instructor access</span>
+                          <span class="badge text-bg-info">instructor access</span>
                         </td>
                       `
                     : html`

@@ -7,10 +7,10 @@
         </select>
         {{#has_submission}}
             {{#correct}}
-                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
             {{/correct}}
             {{^correct}}
-                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
             {{/correct}}
         {{/has_submission}}
     </span>
@@ -24,10 +24,10 @@
 
             {{#display-score-badge}}
                 {{#correct}}
-                    <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                    <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
                 {{/correct}}
                 {{^correct}}
-                    <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                    <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
                 {{/correct}}
             {{/display-score-badge}}
         {{/parse-error}}

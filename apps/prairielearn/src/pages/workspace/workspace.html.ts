@@ -73,12 +73,12 @@ export function Workspace({
             </div>
 
             <div class="d-flex flex-row me-auto align-items-center">
-              <span id="state" class="badge badge-dark badge-workspace text-uppercase">
+              <span id="state" class="badge text-bg-dark badge-workspace text-uppercase">
                 <i class="fas fa-spinner fa-pulse"></i>
               </span>
               <span
                 id="message"
-                class="badge badge-dark badge-workspace badge-append font-weight-normal"
+                class="badge text-bg-dark badge-workspace badge-append font-weight-normal"
               ></span>
             </div>
             <button
@@ -252,7 +252,7 @@ function HelpButtonContents() {
           <div class="col col-3 font-weight-bold d-flex align-items-center">Rebooting</div>
           <div class="col col-9">
             The
-            <span class="badge badge-outline badge-light">
+            <span class="badge badge-outline text-bg-light">
               <i class="fas fa-sync" aria-hidden="true"></i> Reboot
             </span>
             button will restart the virtual machine. Your files will remain intact.
@@ -264,7 +264,7 @@ function HelpButtonContents() {
           <div class="col col-3 font-weight-bold d-flex align-items-center">Resetting</div>
           <div class="col col-9">
             The
-            <span class="badge badge-outline badge-light">
+            <span class="badge badge-outline text-bg-light">
               <i class="fas fa-trash text-secondary" aria-hidden="true"></i> Reset
             </span>
             button will delete all of your file edits and revert the virtual machine to its original
@@ -276,8 +276,8 @@ function HelpButtonContents() {
         <div class="row">
           <div class="col col-3 font-weight-bold d-flex align-items-center">Grading</div>
           <div class="col col-9">
-            Use the <span class="badge badge-outline badge-light">Save &amp; Grade</span> button on
-            the PrairieLearn question page to submit your files for grading.
+            Use the <span class="badge badge-outline text-bg-light">Save &amp; Grade</span> button
+            on the PrairieLearn question page to submit your files for grading.
           </div>
         </div>
       </li>

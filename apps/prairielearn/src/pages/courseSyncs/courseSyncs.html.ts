@@ -193,7 +193,7 @@ function ImageTable({
                   <div class="d-flex flex-row align-items-center">
                     <span class="me-2">${image.image}</span>
                     ${image.invalid
-                      ? html`<span class="badge badge-danger">Invalid image name</span>`
+                      ? html`<span class="badge text-bg-danger">Invalid image name</span>`
                       : ''}
                   </div>
                 </td>

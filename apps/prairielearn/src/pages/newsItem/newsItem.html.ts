@@ -45,7 +45,7 @@ export function NewsItem({
               ${newsItem.author ? html`by ${unsafeHtml(newsItem.author)}` : ''}
             </i>
             ${userIsInstructor && newsItem.visible_to_students
-              ? html`<span class="badge badge-secondary">Visible to students</span>`
+              ? html`<span class="badge text-bg-secondary">Visible to students</span>`
               : ''}
           </p>
         </header>

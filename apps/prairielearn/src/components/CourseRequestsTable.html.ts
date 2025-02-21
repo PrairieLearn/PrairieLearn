@@ -325,14 +325,16 @@ function CourseRequestDenyForm({
 function CourseRequestStatusIcon({ status }: { status: CourseRequestRow['approved_status'] }) {
   switch (status) {
     case 'pending':
-      return html`<span class="badge badge-secondary"><i class="fa fa-clock"></i> Pending</span>`;
+      return html`<span class="badge text-bg-secondary"><i class="fa fa-clock"></i> Pending</span>`;
     case 'creating':
-      return html`<span class="badge badge-info"><i class="fa fa-sync"></i> Job in progress</span>`;
+      return html`<span class="badge text-bg-info"
+        ><i class="fa fa-sync"></i> Job in progress</span
+      >`;
     case 'failed':
-      return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Job failed</span>`;
+      return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Job failed</span>`;
     case 'approved':
-      return html`<span class="badge badge-success"><i class="fa fa-check"></i> Approved</span>`;
+      return html`<span class="badge text-bg-success"><i class="fa fa-check"></i> Approved</span>`;
     case 'denied':
-      return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Denied</span>`;
+      return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
   }
 }
