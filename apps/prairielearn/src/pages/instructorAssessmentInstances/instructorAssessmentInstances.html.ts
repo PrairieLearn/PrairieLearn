@@ -88,7 +88,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                     >
                       Action for all instances <span class="caret"></span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-menu dropdown-menu-end">
                       ${resLocals.authz_data.has_course_instance_permission_edit
                         ? html`
                             <button

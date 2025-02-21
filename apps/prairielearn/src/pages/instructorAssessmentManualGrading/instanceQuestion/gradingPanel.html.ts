@@ -180,7 +180,7 @@ ${submission.feedback?.manual}</textarea
                     >
                       <span class="visually-hidden">Change assigned grader</span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-menu dropdown-menu-end">
                       ${(graders || []).map(
                         (grader) => html`
                           <button

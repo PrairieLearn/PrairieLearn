@@ -209,7 +209,7 @@ function UserDropdownMenu({
               >`
             : ''}
         </a>
-        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
           ${authn_is_administrator
             ? html`
                 <button type="button" class="dropdown-item" id="navbar-administrator-toggle">
