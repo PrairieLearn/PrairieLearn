@@ -480,7 +480,7 @@ export function StudentAssessmentInstance({
                 ? html`
                     ${resLocals.assessment.allow_real_time_grading
                       ? html`
-                          <form name="grade-form" method="POST" class="form-inline">
+                          <form name="grade-form" method="POST">
                             <input type="hidden" name="__action" value="grade" />
                             <input
                               type="hidden"
