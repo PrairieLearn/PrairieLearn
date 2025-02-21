@@ -4,13 +4,7 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import {
-  loadSqlEquiv,
-  queryOneRowAsync,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import {
@@ -23,6 +17,8 @@ import {
   type AssessmentQuestion,
   type SubmissionGradingContextEmbedding,
   IdSchema,
+  RubricItemSchema,
+  type RubricItem,
   type InstanceQuestion,
 } from '../../lib/db-types.js';
 import * as manualGrading from '../../lib/manualGrading.js';
@@ -34,165 +30,150 @@ import * as questionServers from '../../question-servers/index.js';
 import { createEmbedding, vectorToString } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+const OPEN_AI_MODEL = 'gpt-4o-2024-08-06';
 
 const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
-const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
+const GPTScoreSchema = z.object({ score: z.number(), feedback: z.string() });
 const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
+  feedback: z.record(z.string(), z.any()).nullable(),
   instance_question_id: z.string(),
+  manual_rubric_grading_id: z.string().nullable(),
 });
 type GradedExample = z.infer<typeof GradedExampleSchema>;
 
-async function generateGPTPromptWithExamples({
-  question_prompt,
-  student_answer,
+async function generateGPTPrompt({
+  questionPrompt,
+  submission_text,
   example_submissions,
+  rubric_items,
 }: {
-  question_prompt: string;
-  student_answer: string;
+  questionPrompt: string;
+  submission_text: string;
   example_submissions: GradedExample[];
-}): Promise<
-  {
+  rubric_items: RubricItem[];
+}): Promise<{
+  messages: {
     role: 'system' | 'user';
     content: string;
-  }[]
-> {
+  }[];
+  warning: string;
+}> {
   const messages: {
     role: 'system' | 'user';
     content: string;
   }[] = [];
+  let warning = '';
 
   // Instructions for grading
-  messages.push({
-    role: 'system',
-    content:
-      'You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. I will provide some example answers and their corresponding grades.',
-  });
+  if (rubric_items.length > 0) {
+    let rubric_info = '';
+    for (const item of rubric_items) {
+      rubric_info += `description: ${item.description}\n`;
+      if (item.explanation) {
+        rubric_info += `explanation: ${item.explanation}\n`;
+      }
+      if (item.grader_note) {
+        rubric_info += `grader note: ${item.grader_note}\n`;
+      }
+      rubric_info += '\n';
+    }
+    messages.push({
+      role: 'system',
+      content:
+        "You are an instructor for a course, and you are grading assignments. You are provided several rubric items with a description, explanation, and grader note. You must grade the assignment by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's submission. If no rubric items apply, do not select any. I will provide some example answers and their corresponding selected rubric items.",
+    });
+    messages.push({
+      role: 'system',
+      content: `Here are the rubric items:\n\n${rubric_info}`,
+    });
+  } else {
+    messages.push({
+      role: 'system',
+      content:
+        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The feedback should explain why you give this score. Follow any special instructions given by the instructor in the question. Omit the feedback if the answer is correct. I will provide some example answers and their corresponding scores and feedback.',
+    });
+  }
 
   // Question prompt
   messages.push({
     role: 'user',
-    content: `Question: \n${question_prompt}`,
+    content: `Question: \n${questionPrompt}`,
   });
 
   // Examples
   for (const example of example_submissions) {
-    messages.push({
-      role: 'user',
-      content: `Example answer: \n${example.submission_text} \nGrade to this example answer: \n${example.score_perc}`,
-    });
+    if (rubric_items.length > 0 && example.manual_rubric_grading_id) {
+      const rubric_grading_items = await queryRows(
+        sql.select_rubric_grading_items,
+        {
+          manual_rubric_grading_id: example.manual_rubric_grading_id,
+        },
+        RubricItemSchema,
+      );
+      // Warning when graded rubric item does not match current rubric item
+      if (
+        rubric_grading_items.length > 0 &&
+        rubric_grading_items[0].rubric_id !== rubric_items[0].rubric_id
+      ) {
+        warning += `Instance question ${example.instance_question_id}: example rubric id is different from the current rubric id.\n`;
+      }
+      let rubric_grading_info = '';
+      for (const item of rubric_grading_items) {
+        rubric_grading_info += `description: ${item.description}\n`;
+      }
+      messages.push({
+        role: 'user',
+        content: `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nSelected rubric items for this example answer: \n${rubric_grading_info}`,
+      });
+    } else {
+      if (rubric_items.length > 0 && !example.manual_rubric_grading_id) {
+        // Warning when example is not graded on the rubric but there is a rubric in use
+        warning += `Instance question ${example.instance_question_id}: example is not graded on a rubric, but there is a rubric in use.\n`;
+      } else if (rubric_items.length === 0 && example.manual_rubric_grading_id) {
+        // Warning when example is graded on a rubric but there is no rubric in use
+        warning += `Instance question ${example.instance_question_id}: example is graded on a rubric, but there is not a rubric in use.\n`;
+      }
+      messages.push({
+        role: 'user',
+        content:
+          `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nScore for this example answer: \n${example.score_perc}\n` +
+          (example.feedback?.manual
+            ? `Feedback for this example answer: \n${example.feedback.manual}\n`
+            : ''),
+      });
+    }
   }
 
   // Student answer
   messages.push({
     role: 'user',
-    content: `Answer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
+    content: `The student submitted the following answer: \n<answer>\n${submission_text} \n<answer>\nHow would you grade this? Please return the JSON object.`,
   });
-  return messages;
-}
 
-async function generateSubmissionEmbeddings({
-  course,
-  question,
-  assessment_question,
-  urlPrefix,
-  openai,
-}: {
-  question: Question;
-  course: Course;
-  assessment_question: AssessmentQuestion;
-  urlPrefix: string;
-  openai: OpenAI;
-}): Promise<number> {
-  const question_course = await getQuestionCourse(question, course);
-
-  const result = await queryRows(
-    sql.select_instance_questions_for_assessment_question,
-    {
-      assessment_question_id: assessment_question.id,
-    },
-    InstanceQuestionSchema,
-  );
-
-  let newEmbeddingsCount = 0;
-
-  for (const instance_question of result) {
-    const submission_id = await queryRow(
-      sql.select_last_submission_id,
-      { instance_question_id: instance_question.id },
-      IdSchema,
-    );
-    const submission_embedding = await queryOptionalRow(
-      sql.select_embedding_for_submission,
-      { submission_id },
-      SubmissionGradingContextEmbeddingSchema,
-    );
-
-    // Only recalculate embedding if it doesn't exist or if it requires a force update
-    if (submission_embedding) {
-      continue;
-    }
-    const { variant, submission } = await queryRow(
-      sql.select_last_variant_and_submission,
-      { instance_question_id: instance_question.id },
-      SubmissionVariantSchema,
-    );
-    const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
-    const questionModule = questionServers.getModule(question.type);
-    const render_submission_results = await questionModule.render(
-      { question: false, submissions: true, answer: false },
-      variant,
-      question,
-      submission,
-      [submission],
-      question_course,
-      urls,
-    );
-    const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
-    $('script').remove();
-    const student_answer = $.html();
-    const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
-
-    await queryOneRowAsync(sql.create_embedding_for_submission, {
-      embedding: vectorToString(embedding),
-      submission_id: submission.id,
-      submission_text: student_answer,
-      assessment_question_id: assessment_question.id,
-    });
-
-    newEmbeddingsCount++;
+  if (warning) {
+    warning = `Warning:\n${warning}Warning: accuracy may be lower due to inconsistent rubrics.`;
   }
-  return newEmbeddingsCount;
+  return { messages, warning };
 }
 
-async function ensureSubmissionEmbedding({
-  submission_id,
+async function generateSubmissionEmbedding({
   course,
   question,
   instance_question,
   urlPrefix,
   openai,
 }: {
-  submission_id: string;
   question: Question;
   course: Course;
   instance_question: InstanceQuestion;
   urlPrefix: string;
   openai: OpenAI;
 }): Promise<SubmissionGradingContextEmbedding> {
-  const submission_embedding = await queryOptionalRow(
-    sql.select_embedding_for_submission,
-    { submission_id },
-    SubmissionGradingContextEmbeddingSchema,
-  );
-  // if the submission embedding already exists, return the embedding
-  if (submission_embedding) {
-    return submission_embedding;
-  }
   const question_course = await getQuestionCourse(question, course);
   const { variant, submission } = await queryRow(
     sql.select_last_variant_and_submission,
@@ -212,20 +193,39 @@ async function ensureSubmissionEmbedding({
   );
   const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
   $('script').remove();
-  const student_answer = $.html();
-  const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
-  // insert new embedding into the table and return the new embedding
+  const submission_text = $.html();
+  const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
+  // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
     sql.create_embedding_for_submission,
     {
       embedding: vectorToString(embedding),
       submission_id: submission.id,
-      submission_text: student_answer,
+      submission_text,
       assessment_question_id: instance_question.assessment_question_id,
     },
     SubmissionGradingContextEmbeddingSchema,
   );
   return new_submission_embedding;
+}
+
+function assertRubricNotModified(
+  old_rubric_items: RubricItem[],
+  new_rubric_items: RubricItem[],
+): void {
+  if (old_rubric_items.length !== new_rubric_items.length) {
+    throw new Error('rubric modified between rubric retrieval and score insertion');
+  }
+  for (let i = 0; i < old_rubric_items.length; i++) {
+    const old_item = old_rubric_items[i];
+    const new_item = new_rubric_items[i];
+    if (
+      old_item.description !== new_item.description ||
+      old_item.explanation !== new_item.explanation
+    ) {
+      throw new Error('rubric modified between rubric retrieval and score insertion');
+    }
+  }
 }
 
 export async function aiGrade({
@@ -245,7 +245,7 @@ export async function aiGrade({
   authn_user_id: string;
   user_id: string;
 }): Promise<string> {
-  // if OpenAI API Key and Organization are not provided, throw error
+  // If OpenAI API Key and Organization are not provided, throw error
   if (!config.openAiApiKey || !config.openAiOrganization) {
     throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
   }
@@ -267,8 +267,8 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
-    const result = await queryRows(
-      sql.select_instance_questions_manual_grading,
+    const instance_questions = await queryRows(
+      sql.select_instance_questions_for_assessment_question,
       {
         assessment_question_id: assessment_question.id,
       },
@@ -276,20 +276,54 @@ export async function aiGrade({
     );
 
     job.info('Checking for embeddings for all submissions.');
-    const newEmbeddingsCount = await generateSubmissionEmbeddings({
-      course,
-      question,
-      assessment_question,
-      urlPrefix,
-      openai,
-    });
+    let newEmbeddingsCount = 0;
+    for (const instance_question of instance_questions) {
+      const submission_id = await queryRow(
+        sql.select_last_submission_id,
+        { instance_question_id: instance_question.id },
+        IdSchema,
+      );
+      const submission_embedding = await queryOptionalRow(
+        sql.select_embedding_for_submission,
+        { submission_id },
+        SubmissionGradingContextEmbeddingSchema,
+      );
+      if (!submission_embedding) {
+        await generateSubmissionEmbedding({
+          course,
+          question,
+          instance_question,
+          urlPrefix,
+          openai,
+        });
+        newEmbeddingsCount++;
+      }
+    }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
-    job.info(`Found ${result.length} submissions to grade!`);
+
+    let number_to_grade = 0;
+    for (const instance_question of instance_questions) {
+      if (instance_question.requires_manual_grading) {
+        number_to_grade++;
+      }
+    }
+    job.info(`Found ${number_to_grade} submissions to grade!`);
 
     let error_count = 0;
+    let rubric_items = await queryRows(
+      sql.select_rubric_for_grading,
+      {
+        assessment_question_id: assessment_question.id,
+      },
+      RubricItemSchema,
+    );
+    let new_rubric_items = rubric_items;
 
-    // Grade each instance question.
-    for (const instance_question of result) {
+    // Grade each instance question
+    for (const instance_question of instance_questions) {
+      if (!instance_question.requires_manual_grading) {
+        continue;
+      }
       const { variant, submission } = await queryRow(
         sql.select_last_variant_and_submission,
         { instance_question_id: instance_question.id },
@@ -297,8 +331,8 @@ export async function aiGrade({
       );
 
       const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
-
-      // get question html
+      const locals = { ...urls, manualGradingInterface: true };
+      // Get question html
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
         { question: true, submissions: false, answer: false },
@@ -307,29 +341,35 @@ export async function aiGrade({
         null,
         [],
         question_course,
-        urls,
+        locals,
       );
-      if (render_question_results.courseIssues.length) {
+      if (render_question_results.courseIssues.length > 0) {
         job.info(render_question_results.courseIssues.toString());
         job.error('Error occurred');
         job.fail('Errors occurred while AI grading, see output for details');
       }
       const $ = cheerio.load(render_question_results.data.questionHtml, null, false);
       $('script').remove();
-      const question_prompt = $.html();
+      const questionPrompt = $.html();
 
-      const submission_embedding = await ensureSubmissionEmbedding({
-        submission_id: submission.id,
-        course,
-        question,
-        instance_question,
-        urlPrefix,
-        openai,
-      });
-      const student_answer = submission_embedding.submission_text;
+      let submission_embedding = await queryOptionalRow(
+        sql.select_embedding_for_submission,
+        { submission_id: submission.id },
+        SubmissionGradingContextEmbeddingSchema,
+      );
+      if (!submission_embedding) {
+        submission_embedding = await generateSubmissionEmbedding({
+          course,
+          question,
+          instance_question,
+          urlPrefix,
+          openai,
+        });
+      }
+      const submission_text = submission_embedding.submission_text;
 
       const example_submissions = await queryRows(
-        sql.select_closest_embeddings,
+        sql.select_closest_submission_info,
         {
           submission_id: submission.id,
           assessment_question_id: assessment_question.id,
@@ -338,54 +378,143 @@ export async function aiGrade({
         },
         GradedExampleSchema,
       );
-      let msg = `\nInstance question ${instance_question.id}\nGraded examples:`;
+      let gradedExampleInfo = `\nInstance question ${instance_question.id}\nGraded examples:`;
       for (const example of example_submissions) {
-        msg += ` ${example.instance_question_id}`;
+        gradedExampleInfo += ` ${example.instance_question_id}`;
       }
-      msg += '\n';
+      job.info(gradedExampleInfo);
 
-      const messages = await generateGPTPromptWithExamples({
-        question_prompt,
-        student_answer,
+      const { messages, warning } = await generateGPTPrompt({
+        questionPrompt,
+        submission_text,
         example_submissions,
+        rubric_items,
       });
 
-      const completion = await openai.beta.chat.completions.parse({
-        messages,
-        model: 'gpt-4o-2024-08-06',
-        user: `course_${course.id}`,
-        response_format: zodResponseFormat(GPTGradeSchema, 'grades'),
-      });
-
-      try {
-        msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
-        const grade_response = completion.choices[0].message;
-        msg += `Raw ChatGPT response:\n${grade_response.content}`;
-        if (grade_response.parsed) {
-          await manualGrading.updateInstanceQuestionScore(
-            assessment_question.assessment_id,
-            instance_question.id,
-            submission.id,
-            null, // modified_at
-            {
-              score_perc: grade_response.parsed.grade,
-              feedback: { manual: grade_response.parsed.feedback },
-              // NEXT STEPS: rubrics
-            },
-            user_id,
+      if (rubric_items.length > 0) {
+        // Dynamically generate the rubric schema based on the rubric items.
+        let GPTRubricItemSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
+        for (const item of rubric_items) {
+          GPTRubricItemSchema = GPTRubricItemSchema.merge(
+            z.object({
+              [item.description]: z.boolean(),
+            }),
           );
-          msg += `\nAI grades: ${grade_response.parsed.grade}`;
-        } else if (grade_response.refusal) {
+        }
+        const GPTRubricScoreSchema = z.object({
+          rubric_items: GPTRubricItemSchema,
+        });
+        const completion = await openai.beta.chat.completions.parse({
+          messages,
+          model: OPEN_AI_MODEL,
+          user: `course_${course.id}`,
+          response_format: zodResponseFormat(GPTRubricScoreSchema, 'score'),
+        });
+        try {
+          job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
+          const response = completion.choices[0].message;
+          job.info(`Raw ChatGPT response:\n${response.content}`);
+
+          if (response.parsed) {
+            // Compute the set of selected rubric descriptions.
+            const selectedRubricDescriptions = new Set<string>();
+            Object.entries(response.parsed.rubric_items).forEach(([description, selected]) => {
+              if (selected) {
+                selectedRubricDescriptions.add(description);
+              }
+            });
+
+            // Build a lookup table for rubric items by description.
+            const rubricItemsByDescription: Record<string, RubricItem> = {};
+            for (const item of rubric_items) {
+              rubricItemsByDescription[item.description] = item;
+            }
+
+            // Ensure that the rubric hasn't changed since we last fetched it.
+            new_rubric_items = await queryRows(
+              sql.select_rubric_for_grading,
+              {
+                assessment_question_id: assessment_question.id,
+              },
+              RubricItemSchema,
+            );
+            assertRubricNotModified(rubric_items, new_rubric_items);
+
+            // Record the grading results.
+            const manual_rubric_data = {
+              rubric_id: rubric_items[0].rubric_id,
+              applied_rubric_items: Array.from(selectedRubricDescriptions).map((description) => ({
+                rubric_item_id: rubricItemsByDescription[description].id,
+              })),
+            };
+            await manualGrading.updateInstanceQuestionScore(
+              assessment_question.assessment_id,
+              instance_question.id,
+              submission.id,
+              null, // check_modified_at
+              {
+                // TODO: consider asking for and recording freeform feedback.
+                manual_rubric_data,
+              },
+              user_id,
+            );
+
+            job.info('Selected rubric items:');
+            for (const item of selectedRubricDescriptions) {
+              job.info(`- ${item}`);
+            }
+          } else if (response.refusal) {
+            job.error(`ERROR AI grading for ${instance_question.id}`);
+            job.error(response.refusal);
+            error_count++;
+          }
+        } catch (err) {
           job.error(`ERROR AI grading for ${instance_question.id}`);
-          job.error(grade_response.refusal);
+          job.error(err);
           error_count++;
         }
-      } catch (err) {
-        job.error(`ERROR AI grading for ${instance_question.id}`);
-        job.error(err);
-        error_count++;
+        if (warning) {
+          job.warn(warning);
+        }
+        rubric_items = new_rubric_items;
+      } else {
+        const completion = await openai.beta.chat.completions.parse({
+          messages,
+          model: OPEN_AI_MODEL,
+          user: `course_${course.id}`,
+          response_format: zodResponseFormat(GPTScoreSchema, 'score'),
+        });
+        try {
+          job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
+          const response = completion.choices[0].message;
+          job.info(`Raw ChatGPT response:\n${response.content}`);
+          if (response.parsed) {
+            await manualGrading.updateInstanceQuestionScore(
+              assessment_question.assessment_id,
+              instance_question.id,
+              submission.id,
+              null, // check_modified_at
+              {
+                score_perc: response.parsed.score,
+                feedback: { manual: response.parsed.feedback },
+              },
+              user_id,
+            );
+            job.info(`AI score: ${response.parsed.score}`);
+          } else if (response.refusal) {
+            job.error(`ERROR AI grading for ${instance_question.id}`);
+            job.error(response.refusal);
+            error_count++;
+          }
+        } catch (err) {
+          job.error(`ERROR AI grading for ${instance_question.id}`);
+          job.error(err);
+          error_count++;
+        }
+        if (warning) {
+          job.warn(warning);
+        }
       }
-      job.info(msg);
     }
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
