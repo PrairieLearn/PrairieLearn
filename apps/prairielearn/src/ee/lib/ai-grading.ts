@@ -409,6 +409,7 @@ export async function aiGrade({
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
           response_format: zodResponseFormat(GPTRubricScoreSchema, 'score'),
+          temperature: 0.2,
         });
         try {
           job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
@@ -483,6 +484,7 @@ export async function aiGrade({
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
           response_format: zodResponseFormat(GPTScoreSchema, 'score'),
+          temperature: 0.2,
         });
         try {
           job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
