@@ -241,7 +241,7 @@ function HelpButtonContents() {
     <ul class="list-group list-group-flush">
       <li class="list-group-item p-2">
         <div class="row">
-          <div class="col col-3 font-weight-bold d-flex align-items-center">Reloading</div>
+          <div class="col col-3 fw-bold d-flex align-items-center">Reloading</div>
           <div class="col col-9">
             Use your browser reload button on this tab at any time, or close and re-open the tab.
           </div>
@@ -249,7 +249,7 @@ function HelpButtonContents() {
       </li>
       <li class="list-group-item p-2">
         <div class="row">
-          <div class="col col-3 font-weight-bold d-flex align-items-center">Rebooting</div>
+          <div class="col col-3 fw-bold d-flex align-items-center">Rebooting</div>
           <div class="col col-9">
             The
             <span class="badge badge-outline text-bg-light">
@@ -261,7 +261,7 @@ function HelpButtonContents() {
       </li>
       <li class="list-group-item p-2">
         <div class="row">
-          <div class="col col-3 font-weight-bold d-flex align-items-center">Resetting</div>
+          <div class="col col-3 fw-bold d-flex align-items-center">Resetting</div>
           <div class="col col-9">
             The
             <span class="badge badge-outline text-bg-light">
@@ -274,7 +274,7 @@ function HelpButtonContents() {
       </li>
       <li class="list-group-item p-2">
         <div class="row">
-          <div class="col col-3 font-weight-bold d-flex align-items-center">Grading</div>
+          <div class="col col-3 fw-bold d-flex align-items-center">Grading</div>
           <div class="col col-9">
             Use the <span class="badge badge-outline text-bg-light">Save &amp; Grade</span> button
             on the PrairieLearn question page to submit your files for grading.

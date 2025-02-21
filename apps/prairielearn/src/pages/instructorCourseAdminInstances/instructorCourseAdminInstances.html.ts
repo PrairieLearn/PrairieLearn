@@ -164,7 +164,7 @@ export function InstructorCourseAdminInstances({
             `
           : html`
               <div class="my-4 card-body text-center" style="text-wrap: balance;">
-                <p class="font-weight-bold">No course instances found.</p>
+                <p class="fw-bold">No course instances found.</p>
                 <p class="mb-0">
                   A course instance contains the assessments and other configuration for a single
                   offering of a course.

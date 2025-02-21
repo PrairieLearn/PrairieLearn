@@ -92,9 +92,7 @@ function ActionsHeader() {
                 <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                 <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
               </span>
-              <h2 class="small p-2 font-weight-bold text-uppercase text-secondary mb-0">
-                Students
-              </h2>
+              <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Students</h2>
               <a href="${config.urlPrefix}/enroll" class="btn btn-xs btn-outline-primary">
                 Add or remove courses
               </a>
@@ -108,9 +106,7 @@ function ActionsHeader() {
                 <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                 <i class="fas fa-user-tie fa-stack-1x text-light"></i>
               </span>
-              <h2 class="small p-2 font-weight-bold text-uppercase text-secondary mb-0">
-                Instructors
-              </h2>
+              <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Instructors</h2>
               <a href="${config.urlPrefix}/request_course" class="btn btn-xs btn-outline-primary">
                 Request course
               </a>

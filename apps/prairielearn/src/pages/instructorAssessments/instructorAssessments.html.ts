@@ -165,7 +165,7 @@ export function InstructorAssessments({
             `
           : html`
               <div class="my-4 card-body text-center" style="text-wrap: balance;">
-                <p class="font-weight-bold">No assessments found.</p>
+                <p class="fw-bold">No assessments found.</p>
                 <p class="mb-0">
                   An assessment is a collection of questions to build or assess a student's
                   knowledge.

@@ -126,7 +126,7 @@ function HonorPledge({ user, groupWork }: { user: User; groupWork: boolean }) {
       <div class="card-footer d-flex justify-content-center">
         <span class="form-check">
           <input type="checkbox" class="form-check-input" id="certify-pledge" />
-          <label class="form-check-label font-weight-bold" for="certify-pledge">
+          <label class="form-check-label fw-bold" for="certify-pledge">
             I certify and pledge the above.
           </label>
         </span>

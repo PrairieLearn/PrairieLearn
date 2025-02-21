@@ -537,7 +537,7 @@ function AuthnOverrides({
                     <div class="d-flex flex-row justify-content-between align-items-center">
                       <div class="p-0 me-4">
                         <ul class="list-unstyled">
-                          <li class="font-weight-bold">${override.name}</li>
+                          <li class="fw-bold">${override.name}</li>
                           <li>${override.value}</li>
                         </ul>
                       </div>

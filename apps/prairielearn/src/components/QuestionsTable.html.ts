@@ -223,7 +223,7 @@ export function QuestionsTable({
           `
         : html`
             <div class="my-4 card-body text-center" style="text-wrap: balance;">
-              <p class="font-weight-bold">No questions found.</p>
+              <p class="fw-bold">No questions found.</p>
               <p class="mb-0">
                 A question is a problem or task that tests a student's understanding of a specific
                 concept.
