@@ -240,7 +240,7 @@ export function QuestionsTable({
                       <button
                         type="button"
                         class="btn btn-sm btn-primary"
-                        data-toggle="modal"
+                        data-bs-toggle="modal"
                         data-target="#createQuestionModal"
                       >
                         <i class="fa fa-plus" aria-hidden="true"></i>

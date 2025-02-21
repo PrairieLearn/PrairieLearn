@@ -209,7 +209,7 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
     <button
       class="btn btn-xs btn-secondary"
       type="button"
-      data-toggle="collapse"
+      data-bs-toggle="collapse"
       data-target="#issueCollapse"
       aria-expanded="false"
       aria-controls="issueCollapse"
@@ -293,7 +293,7 @@ export function ExamQuestionStatus({
             <button
               type="button"
               class="grade-rate-limit-popover btn btn-xs"
-              data-toggle="popover"
+              data-bs-toggle="popover"
               data-container="body"
               data-html="true"
               data-content="This question limits the rate of submissions. Further grade allowed ${instance_question.allow_grade_interval} (as of the loading of this page)."
@@ -470,7 +470,7 @@ export function ExamQuestionAvailablePoints({
     <button
       type="button"
       class="btn btn-xs btn-ghost js-available-points-popover"
-      data-toggle="popover"
+      data-bs-toggle="popover"
       data-container="body"
       data-html="true"
       data-content="${escapeHtml(popoverContent)}"
@@ -575,7 +575,7 @@ function QuestionValue({
     <button
       type="button"
       class="btn btn-xs js-value-popover"
-      data-toggle="popover"
+      data-bs-toggle="popover"
       data-container="body"
       data-html="true"
       data-content="${escapeHtml(popoverContent)}"

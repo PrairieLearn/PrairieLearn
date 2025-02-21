@@ -24,7 +24,7 @@
             <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-suffix">{{suffix}}</span>
             {{/suffix}}
             {{#show_info}}
-            <button type="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Symbolic" data-content="{{info}}" data-placement="auto">
+            <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-html="true" title="Symbolic" data-content="{{info}}" data-placement="auto">
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
             </button>
             {{/show_info}}
@@ -47,7 +47,7 @@
                 <button
                     type="button"
                     class="btn btn-light border d-flex align-items-center text-danger"
-                    data-toggle="popover"
+                    data-bs-toggle="popover"
                     data-html="true"
                     title="Format Error"
                     data-placement="auto"
@@ -76,7 +76,7 @@
         type="button"
         class="badge text-danger badge-invalid btn btn-sm btn-secondary small border"
         data-placement="auto"
-        data-toggle="popover"
+        data-bs-toggle="popover"
         data-html="true"
         title="Format Error"
         data-content="{{parse_error}}"
@@ -89,7 +89,7 @@
 
     <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
 
-    <button type="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-toggle="popover" data-html="true" title="Missing Input" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
+    <button type="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-bs-toggle="popover" data-html="true" title="Missing Input" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
 
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/missing_input}}
@@ -103,7 +103,7 @@ ${{a_sub}}$
 
 <!-- Show submitted answer submission was parsed from -->
 <button type="button" class="ms-1 btn btn-sm btn-secondary small border"
-    data-placement="auto" data-toggle="popover" data-html="true"
+    data-placement="auto" data-bs-toggle="popover" data-html="true"
     title="Original Input" 
     data-content="Parsed from <samp class=user-output>{{raw_submitted_answer}}</samp>"
 >

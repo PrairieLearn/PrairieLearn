@@ -169,7 +169,7 @@ function LtiCredentialsCard({
                         <button
                           type="button"
                           class="btn btn-sm btn-danger"
-                          data-toggle="popover"
+                          data-bs-toggle="popover"
                           data-container="body"
                           data-html="true"
                           data-placement="auto"

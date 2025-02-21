@@ -295,7 +295,7 @@ function AssessmentQuestionsTable({
                     <button
                       type="button"
                       class="btn btn-secondary btn-xs dropdown-toggle"
-                      data-toggle="dropdown"
+                      data-bs-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
@@ -307,7 +307,7 @@ function AssessmentQuestionsTable({
                         ? html`
                             <button
                               class="dropdown-item"
-                              data-toggle="modal"
+                              data-bs-toggle="modal"
                               data-target="#resetQuestionVariantsModal"
                               data-assessment-question-id="${question.id}"
                             >

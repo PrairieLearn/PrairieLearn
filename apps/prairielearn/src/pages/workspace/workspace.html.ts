@@ -84,7 +84,7 @@ export function Workspace({
             <button
               class="navbar-toggler ms-2"
               type="button"
-              data-toggle="collapse"
+              data-bs-toggle="collapse"
               data-target="#workspace-nav"
             >
               <span class="navbar-toggler-icon"></span>
@@ -104,7 +104,7 @@ export function Workspace({
                   <button
                     id="reboot"
                     class="nav-item btn btn-light"
-                    data-toggle="modal"
+                    data-bs-toggle="modal"
                     data-target="#rebootModal"
                   >
                     <i class="fas fa-sync text-info" aria-hidden="true"></i>
@@ -115,7 +115,7 @@ export function Workspace({
                   <button
                     id="reset"
                     class="nav-item btn btn-light"
-                    data-toggle="modal"
+                    data-bs-toggle="modal"
                     data-target="#resetModal"
                   >
                     <i class="fas fa-trash text-danger" aria-hidden="true"></i>
@@ -140,7 +140,7 @@ export function Workspace({
                   <button
                     type="button"
                     class="nav-item btn btn-light"
-                    data-toggle="popover"
+                    data-bs-toggle="popover"
                     data-container="body"
                     data-placement="bottom"
                     data-html="true"

@@ -104,7 +104,7 @@ export function SubmissionPanel({
                   class="expand-icon-container btn btn-outline-light btn-sm ${!expanded
                     ? 'collapsed'
                     : ''}"
-                  data-toggle="collapse"
+                  data-bs-toggle="collapse"
                   data-target="#submission-feedback-${submission.id}-body"
                   aria-expanded="${expanded ? 'true' : 'false'}"
                   aria-controls="submission-feedback-${submission.id}-body"
@@ -152,7 +152,7 @@ export function SubmissionPanel({
                                         <button
                                           type="button"
                                           class="btn btn-xs btn-ghost"
-                                          data-toggle="popover"
+                                          data-bs-toggle="popover"
                                           data-content="${item.explanation_rendered}"
                                           data-html="true"
                                           data-testid="rubric-item-explanation"
@@ -227,7 +227,7 @@ export function SubmissionPanel({
             type="button"
             class="btn btn-outline-dark btn-sm ms-2 me-2"
             data-submission-id="${submission.id}"
-            data-toggle="modal"
+            data-bs-toggle="modal"
             data-target="#submissionInfoModal-${submission.id}"
             aria-label="Submission info"
           >
@@ -238,7 +238,7 @@ export function SubmissionPanel({
             class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap ${!expanded
               ? 'collapsed'
               : ''}"
-            data-toggle="collapse"
+            data-bs-toggle="collapse"
             data-target="#submission-${submission.id}-body"
             aria-expanded="${expanded ? 'true' : 'false'}"
             aria-controls="submission-${submission.id}-body"

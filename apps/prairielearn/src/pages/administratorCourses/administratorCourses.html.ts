@@ -54,7 +54,7 @@ export function AdministratorCourses({
           <button
             type="button"
             class="btn btn-sm btn-light ms-auto"
-            data-toggle="popover"
+            data-bs-toggle="popover"
             data-container="body"
             data-html="true"
             data-placement="auto"
@@ -135,7 +135,7 @@ export function AdministratorCourses({
                         type="button"
                         class="btn btn-sm btn-danger text-nowrap"
                         id="courseDeleteButton${course.id}"
-                        data-toggle="popover"
+                        data-bs-toggle="popover"
                         data-container="body"
                         data-html="true"
                         data-placement="auto"
@@ -311,7 +311,7 @@ function CourseUpdateColumn({
       <button
         type="button"
         class="btn btn-xs btn-secondary"
-        data-toggle="popover"
+        data-bs-toggle="popover"
         data-container="body"
         data-html="true"
         data-placement="auto"

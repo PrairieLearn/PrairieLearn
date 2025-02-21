@@ -47,7 +47,7 @@ export function EditError({
               <button
                 type="button"
                 class="btn btn-light btn-sm ms-auto"
-                data-toggle="collapse"
+                data-bs-toggle="collapse"
                 data-target="#job-sequence-results"
                 id="job-sequence-results-button"
               >

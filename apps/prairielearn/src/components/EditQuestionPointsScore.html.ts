@@ -37,7 +37,7 @@ export function EditQuestionPointsScoreButton({
   return html`<button
     type="button"
     class="btn btn-xs btn-secondary"
-    data-toggle="popover"
+    data-bs-toggle="popover"
     data-container="body"
     data-html="true"
     data-placement="auto"

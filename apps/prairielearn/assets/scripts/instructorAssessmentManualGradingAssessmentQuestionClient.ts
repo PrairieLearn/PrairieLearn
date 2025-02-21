@@ -126,11 +126,11 @@ onDocumentReady(() => {
       });
     },
     onPreBody: () => {
-      $('#grading-table [data-toggle="popover"]').popover('dispose');
+      $('#grading-table [data-bs-toggle="popover"]').popover('dispose');
     },
     onPostBody: () => {
       updateGradingTagButton();
-      $('#grading-table [data-toggle="popover"]').on(
+      $('#grading-table [data-bs-toggle="popover"]').on(
         'shown.bs.popover',
         updatePointsPopoverHandlers,
       );
@@ -160,7 +160,7 @@ onDocumentReady(() => {
                       1
                         ? 'issues'
                         : 'issue'}"
-                      data-toggle="tooltip"
+                      data-bs-toggle="tooltip"
                     >
                       ${row.open_issue_count}
                     </a>
@@ -168,7 +168,7 @@ onDocumentReady(() => {
                 : ''}
               ${row.assessment_open
                 ? html`
-                    <a href="#" title="Assessment instance is still open" data-toggle="tooltip">
+                    <a href="#" title="Assessment instance is still open" data-bs-toggle="tooltip">
                       <i class="fas fa-exclamation-triangle text-warning"></i>
                     </a>
                   `
@@ -317,7 +317,7 @@ function gradingTagDropdown(courseStaff: User[]) {
       <button
         type="button"
         class="btn btn-secondary dropdown-toggle grading-tag-button"
-        data-toggle="dropdown"
+        data-bs-toggle="dropdown"
         name="status"
         disabled
       >

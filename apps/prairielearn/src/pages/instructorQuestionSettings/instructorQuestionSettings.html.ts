@@ -324,7 +324,7 @@ export function InstructorQuestionSettings({
                           type="button"
                           class="btn btn-sm btn-primary"
                           id="copyQuestionButton"
-                          data-toggle="popover"
+                          data-bs-toggle="popover"
                           data-container="body"
                           data-html="true"
                           data-placement="auto"
@@ -350,7 +350,7 @@ export function InstructorQuestionSettings({
                           class="btn btn-sm btn-primary"
                           id
                           href="#"
-                          data-toggle="modal"
+                          data-bs-toggle="modal"
                           data-target="#deleteQuestionModal"
                         >
                           <i class="fa fa-times" aria-hidden="true"></i> Delete this question

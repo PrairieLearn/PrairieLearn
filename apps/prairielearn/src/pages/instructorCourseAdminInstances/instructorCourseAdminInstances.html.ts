@@ -77,7 +77,7 @@ export function InstructorCourseAdminInstances({
             ? html`
                 <button
                   class="btn btn-sm btn-light"
-                  data-toggle="modal"
+                  data-bs-toggle="modal"
                   data-target="#createCourseInstanceModal"
                 >
                   <i class="fa fa-plus" aria-hidden="true"></i>
@@ -101,7 +101,7 @@ export function InstructorCourseAdminInstances({
                         Earliest Access Date
                         <button
                           class="btn btn-xs btn-light"
-                          data-toggle="popover"
+                          data-bs-toggle="popover"
                           data-container="body"
                           data-placement="bottom"
                           data-html="true"
@@ -116,7 +116,7 @@ export function InstructorCourseAdminInstances({
                         Latest Access Date
                         <button
                           class="btn btn-xs btn-light"
-                          data-toggle="popover"
+                          data-bs-toggle="popover"
                           data-container="body"
                           data-placement="bottom"
                           data-html="true"
@@ -196,7 +196,7 @@ export function InstructorCourseAdminInstances({
                   return html`
                     <button
                       class="btn btn-sm btn-primary"
-                      data-toggle="modal"
+                      data-bs-toggle="modal"
                       data-target="#createCourseInstanceModal"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>

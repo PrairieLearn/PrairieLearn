@@ -67,7 +67,7 @@ export function InstructorInstanceAdminLti13({
                 <button
                   type="button"
                   class="btn dropdown-toggle border border-gray"
-                  data-toggle="dropdown"
+                  data-bs-toggle="dropdown"
                   aria-haspopup="true"
                   aria-expanded="false"
                   data-boundary="window"
@@ -247,7 +247,7 @@ function LinkedAssessments({
                         <button
                           class="btn btn-sm btn-secondary ms-2"
                           type="button"
-                          data-toggle="modal"
+                          data-bs-toggle="modal"
                           data-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
                         >
                           Bulk actions
@@ -325,7 +325,7 @@ function LinkedAssessments({
                           <button
                             class="btn btn-med-light"
                             type="button"
-                            data-toggle="modal"
+                            data-bs-toggle="modal"
                             data-target="#assignment-${row.id}"
                           >
                             Link assignment

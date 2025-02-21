@@ -105,7 +105,7 @@ export function InstructorAssessmentQuestionStatistics({
             <button
               type="button"
               class="btn btn-sm btn-light"
-              data-toggle="modal"
+              data-bs-toggle="modal"
               data-target="#refreshAssessmentQuestionStatsModal"
             >
               <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
@@ -168,7 +168,7 @@ export function InstructorAssessmentQuestionStatistics({
             <button
               type="button"
               class="btn btn-sm btn-light"
-              data-toggle="modal"
+              data-bs-toggle="modal"
               data-target="#refreshAssessmentQuestionStatsModal"
             >
               <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
@@ -300,7 +300,7 @@ export function InstructorAssessmentQuestionStatistics({
             <button
               type="button"
               class="btn btn-sm btn-light"
-              data-toggle="modal"
+              data-bs-toggle="modal"
               data-target="#refreshAssessmentQuestionStatsModal"
             >
               <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics

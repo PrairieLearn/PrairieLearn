@@ -108,7 +108,7 @@ export function AdministratorFeature({
           <span class="text-monospace">${feature}</span>
           <button
             class="btn btn-light ms-auto"
-            data-toggle="modal"
+            data-bs-toggle="modal"
             data-target="#add-feature-grant-modal"
           >
             Grant feature

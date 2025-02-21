@@ -144,7 +144,7 @@ function AssessmentQuestionRow({
               <a
                 href="#"
                 class="ms-2 text-info"
-                data-toggle="tooltip"
+                data-bs-toggle="tooltip"
                 data-boundary="window"
                 title="This question uses a rubric"
               >
@@ -181,7 +181,7 @@ function AssessmentQuestionRow({
                     <button
                       type="button"
                       class="btn btn-sm btn-ghost"
-                      data-toggle="modal"
+                      data-bs-toggle="modal"
                       data-target="#grader-assignment-modal"
                       data-assessment-question-id="${question.id}"
                     >

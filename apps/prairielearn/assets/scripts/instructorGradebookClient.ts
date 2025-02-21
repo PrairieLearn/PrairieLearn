@@ -107,7 +107,7 @@ onDocumentReady(() => {
             class="btn btn-xs btn-ghost"
             type="button"
             title="Show roles help"
-            data-toggle="modal"
+            data-bs-toggle="modal"
             data-target="#role-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
@@ -164,7 +164,7 @@ onDocumentReady(() => {
     }
   });
 
-  $('[data-toggle="modal"]').click(function (e) {
+  $('[data-bs-toggle="modal"]').click(function (e) {
     e.stopPropagation(); // Keep click from changing sort
     $($(e.currentTarget).data('target')).modal('show');
   });

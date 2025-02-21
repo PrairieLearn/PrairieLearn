@@ -174,7 +174,7 @@ ${submission.feedback?.manual}</textarea
                     <button
                       type="button"
                       class="btn btn-secondary dropdown-toggle dropdown-toggle-split"
-                      data-toggle="dropdown"
+                      data-bs-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >

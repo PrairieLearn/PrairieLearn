@@ -82,7 +82,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                     <button
                       type="button"
                       class="btn btn-light dropdown-toggle"
-                      data-toggle="dropdown"
+                      data-bs-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
@@ -93,7 +93,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                         ? html`
                             <button
                               class="dropdown-item"
-                              data-toggle="modal"
+                              data-bs-toggle="modal"
                               data-target="#deleteAllAssessmentInstancesModal"
                             >
                               <i class="fas fa-times" aria-hidden="true"></i> Delete all instances
@@ -108,7 +108,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                             </button>
                             <button
                               class="dropdown-item"
-                              data-toggle="modal"
+                              data-bs-toggle="modal"
                               data-target="#grade-all-form"
                             >
                               <i class="fas fa-clipboard-check" aria-hidden="true"></i> Grade all
@@ -116,7 +116,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                             </button>
                             <button
                               class="dropdown-item"
-                              data-toggle="modal"
+                              data-bs-toggle="modal"
                               data-target="#closeAllAssessmentInstancesModal"
                             >
                               <i class="fas fa-ban" aria-hidden="true"></i> Grade and close all

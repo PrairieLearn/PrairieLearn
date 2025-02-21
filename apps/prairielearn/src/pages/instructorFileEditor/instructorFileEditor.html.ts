@@ -128,7 +128,7 @@ export function InstructorFileEditor({
                   type="button"
                   id="help-button"
                   class="btn btn-light btn-sm"
-                  data-toggle="collapse"
+                  data-bs-toggle="collapse"
                   data-target="#help"
                   aria-expanded="false"
                 >
@@ -198,7 +198,7 @@ export function InstructorFileEditor({
                                 <button
                                   type="button"
                                   class="btn btn-secondary btn-sm"
-                                  data-toggle="collapse"
+                                  data-bs-toggle="collapse"
                                   data-target="#job-sequence-results"
                                   id="job-sequence-results-button"
                                 >

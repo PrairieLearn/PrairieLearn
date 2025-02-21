@@ -113,7 +113,7 @@ export function InstructorAiGenerateDraftEditor({
                   <li class="nav-item">
                     <a
                       class="nav-link active"
-                      data-toggle="tab"
+                      data-bs-toggle="tab"
                       aria-current="page"
                       href="#question-preview"
                     >
@@ -121,17 +121,17 @@ export function InstructorAiGenerateDraftEditor({
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a a class="nav-link" data-toggle="tab" href="#question-code">Files</a>
+                    <a a class="nav-link" data-bs-toggle="tab" href="#question-code">Files</a>
                   </li>
                 </ul>
                 <div
                   class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2"
                 >
-                  <span data-toggle="modal" data-target="#finalizeModal">
+                  <span data-bs-toggle="modal" data-target="#finalizeModal">
                     <button
                       type="button"
                       class="btn btn-sm btn-primary"
-                      data-toggle="tooltip"
+                      data-bs-toggle="tooltip"
                       title="Finalize a question to use it on assessments and make manual edits"
                     >
                       <i class="fa fa-check" aria-hidden="true"></i>
@@ -233,7 +233,7 @@ function PromptHistory({
                 type="submit"
                 class="btn btn-sm btn-ghost revert-to-revision-button"
                 aria-label="Revert to this revision"
-                data-toggle="tooltip"
+                data-bs-toggle="tooltip"
                 title="Revert to this revision"
               >
                 <i class="fa fa-undo" aria-hidden="true"></i>

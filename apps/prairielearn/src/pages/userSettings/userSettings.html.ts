@@ -113,7 +113,7 @@ export function UserSettings({
                 <button
                   type="button"
                   class="btn btn-light btn-sm ms-auto"
-                  data-toggle="popover"
+                  data-bs-toggle="popover"
                   data-container="body"
                   data-html="true"
                   data-placement="auto"
@@ -200,7 +200,7 @@ function TokenList({
         <button
           type="button"
           class="btn btn-outline-danger btn-sm ms-auto"
-          data-toggle="popover"
+          data-bs-toggle="popover"
           data-container="body"
           data-html="true"
           data-placement="auto"

@@ -55,7 +55,7 @@ $(function() {
         </div>
         {{/show_reset}}
         {{#show_toggle}}
-        <div class="btn-group btn-group-sm btn-group-toggle me-2 mb-2" data-toggle="buttons" role="group" id="toggle-type-of-motion-{{uuid}}">
+        <div class="btn-group btn-group-sm btn-group-toggle me-2 mb-2" data-bs-toggle="buttons" role="group" id="toggle-type-of-motion-{{uuid}}">
             <label class="btn btn-secondary active">
                 <input type="radio" autocomplete="off" name="motion-{{uuid}}" checked>translate object</input>
             </label>
@@ -94,10 +94,10 @@ $(function() {
         </div>
         {{/show_bodybuttons}}
         <div class="btn-group btn-group-sm me-2 mb-2" role="group">
-            <button id="pl-threejs-button-bodyobjectsvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">body objects visible</button>
-            <button id="pl-threejs-button-spaceobjectsvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">space objects visible</button>
-            <button id="pl-threejs-button-framevisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">frames visible</button>
-            <button id="pl-threejs-button-shadowvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">shadows visible</button>
+            <button id="pl-threejs-button-bodyobjectsvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-bs-toggle="button" aria-pressed="true">body objects visible</button>
+            <button id="pl-threejs-button-spaceobjectsvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-bs-toggle="button" aria-pressed="true">space objects visible</button>
+            <button id="pl-threejs-button-framevisible-{{uuid}}" type="button" class="btn btn-secondary active" data-bs-toggle="button" aria-pressed="true">frames visible</button>
+            <button id="pl-threejs-button-shadowvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-bs-toggle="button" aria-pressed="true">shadows visible</button>
         </div>
     </div>
 
@@ -106,8 +106,8 @@ $(function() {
     <div id="pl-threejs-output-{{uuid}}" class="card mb-4">
         <div class="card-header">
             <ul class="nav nav-tabs card-header-tabs" role="tablist">
-                <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_matlab}} active{{/default_is_matlab}}" href="#matlab-{{uuid}}" aria-controls="matlab-{{uuid}}" role="tab" data-toggle="pill">matlab</a></li>
-                <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_python}} active{{/default_is_python}}" href="#python-{{uuid}}" aria-controls="python-{{uuid}}" role="tab" data-toggle="pill">python</a></li>
+                <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_matlab}} active{{/default_is_matlab}}" href="#matlab-{{uuid}}" aria-controls="matlab-{{uuid}}" role="tab" data-bs-toggle="pill">matlab</a></li>
+                <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_python}} active{{/default_is_python}}" href="#python-{{uuid}}" aria-controls="python-{{uuid}}" role="tab" data-bs-toggle="pill">python</a></li>
             </ul>
         </div>
         <div class="card-body">

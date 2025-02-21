@@ -118,7 +118,7 @@ export function InstructorIssues({
               ? html`
                   <button
                     class="btn btn-sm btn-danger ms-auto"
-                    data-toggle="modal"
+                    data-bs-toggle="modal"
                     data-target="#closeMatchingIssuesModal"
                   >
                     <i class="fa fa-times" aria-hidden="true"></i> Close matching issues
@@ -132,7 +132,7 @@ export function InstructorIssues({
                 <button
                   class="btn btn-med-light dropdown-toggle"
                   type="button"
-                  data-toggle="dropdown"
+                  data-bs-toggle="dropdown"
                   aria-haspopup="true"
                   aria-expanded="false"
                 >
@@ -178,7 +178,7 @@ export function InstructorIssues({
                   class="btn btn-med-light"
                   type="button"
                   title="Show filter help"
-                  data-toggle="modal"
+                  data-bs-toggle="modal"
                   data-target="#filterHelpModal"
                   aria-label="Show filter help"
                 >
@@ -267,7 +267,7 @@ function IssueRow({
                   <button
                     type="button"
                     class="badge text-bg-warning badge-sm"
-                    data-toggle="tooltip"
+                    data-bs-toggle="tooltip"
                     data-html="true"
                     title="This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page."
                   >

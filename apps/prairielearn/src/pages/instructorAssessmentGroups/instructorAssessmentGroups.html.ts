@@ -98,7 +98,7 @@ export function InstructorAssessmentGroups({
                         <button
                           type="button"
                           class="btn btn-sm btn-light"
-                          data-toggle="modal"
+                          data-bs-toggle="modal"
                           data-target="#addGroupModal"
                         >
                           <i class="fa fa-plus" aria-hidden="true"></i> Add a group
@@ -106,7 +106,7 @@ export function InstructorAssessmentGroups({
                         <button
                           type="button"
                           class="btn btn-sm btn-danger"
-                          data-toggle="modal"
+                          data-bs-toggle="modal"
                           data-target="#deleteAllGroupsModal"
                         >
                           <i class="fa fa-times" aria-hidden="true"></i> Delete all groups
@@ -123,7 +123,7 @@ export function InstructorAssessmentGroups({
                           <button
                             type="button"
                             class="btn btn-primary text-nowrap"
-                            data-toggle="modal"
+                            data-bs-toggle="modal"
                             data-target="#uploadAssessmentGroupsModal"
                           >
                             <i class="fas fa-upload" aria-hidden="true"></i> Upload
@@ -134,7 +134,7 @@ export function InstructorAssessmentGroups({
                           <button
                             type="button"
                             class="btn btn-primary text-nowrap"
-                            data-toggle="modal"
+                            data-bs-toggle="modal"
                             data-target="#randomAssessmentGroupsModal"
                           >
                             <i class="fas fa-shuffle" aria-hidden="true"></i> Random
@@ -180,7 +180,7 @@ export function InstructorAssessmentGroups({
                                   <button
                                     type="button"
                                     class="btn btn-xs btn-ghost dropdown-toggle"
-                                    data-toggle="dropdown"
+                                    data-bs-toggle="dropdown"
                                     data-boundary="window"
                                     aria-haspopup="true"
                                     aria-expanded="false"
@@ -190,7 +190,7 @@ export function InstructorAssessmentGroups({
                                   <div class="dropdown-menu">
                                     <button
                                       class="dropdown-item js-group-action"
-                                      data-toggle="popover"
+                                      data-bs-toggle="popover"
                                       data-container="body"
                                       data-html="true"
                                       data-placement="auto"
@@ -209,7 +209,7 @@ export function InstructorAssessmentGroups({
                                       ${row.users.length === 0
                                         ? 'disabled'
                                         : html`
-                                            data-toggle="popover" data-container="body"
+                                            data-bs-toggle="popover" data-container="body"
                                             data-html="true" data-placement="auto" title="Remove
                                             members"
                                             data-content="${escapeHtml(
@@ -225,7 +225,7 @@ export function InstructorAssessmentGroups({
                                     </button>
                                     <button
                                       class="dropdown-item js-group-action"
-                                      data-toggle="popover"
+                                      data-bs-toggle="popover"
                                       data-container="body"
                                       data-html="true"
                                       data-placement="auto"

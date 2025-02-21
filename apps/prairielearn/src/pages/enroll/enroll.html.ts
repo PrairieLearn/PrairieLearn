@@ -60,7 +60,7 @@ export function Enroll({
                                 <button
                                   type="button"
                                   class="btn btn-sm btn-info"
-                                  data-toggle="modal"
+                                  data-bs-toggle="modal"
                                   data-target="#add-course-modal"
                                   data-course-instance-id="${course_instance.course_instance_id}"
                                   data-course-instance-short-label="${course_instance.short_label}"
@@ -76,7 +76,7 @@ export function Enroll({
                                 <button
                                   type="button"
                                   class="btn btn-sm btn-danger"
-                                  data-toggle="modal"
+                                  data-bs-toggle="modal"
                                   data-target="#remove-course-modal"
                                   data-course-instance-id="${course_instance.course_instance_id}"
                                   data-course-instance-short-label="${course_instance.short_label}"

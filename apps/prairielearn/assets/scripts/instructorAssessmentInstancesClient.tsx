@@ -196,7 +196,7 @@ onDocumentReady(() => {
     });
   });
 
-  $('[data-toggle="modal"]').on('click', function (e) {
+  $('[data-bs-toggle="modal"]').on('click', function (e) {
     e.stopPropagation(); // Keep click from changing sort
     $($(e.currentTarget).data('target')).modal('show');
   });
@@ -248,7 +248,7 @@ onDocumentReady(() => {
                   class="btn btn-xs btn-ghost"
                   type="button"
                   title="Show roles help"
-                  data-toggle="modal"
+                  data-bs-toggle="modal"
                   data-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
@@ -286,7 +286,7 @@ onDocumentReady(() => {
                   class="btn btn-xs btn-ghost"
                   type="button"
                   title="Show roles help"
-                  data-toggle="modal"
+                  data-bs-toggle="modal"
                   data-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
@@ -329,7 +329,7 @@ onDocumentReady(() => {
             class="btn btn-xs btn-ghost"
             type="button"
             title="Show duration help"
-            data-toggle="modal"
+            data-bs-toggle="modal"
             data-target="#duration-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
@@ -348,7 +348,7 @@ onDocumentReady(() => {
             class="btn btn-xs btn-ghost"
             type="button"
             title="Show remaining time help"
-            data-toggle="modal"
+            data-bs-toggle="modal"
             data-target="#time-remaining-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
@@ -379,7 +379,7 @@ onDocumentReady(() => {
             class="btn btn-xs btn-ghost"
             type="button"
             title="Show fingerprint changes help"
-            data-toggle="modal"
+            data-bs-toggle="modal"
             data-target="#fingerprint-changes-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
@@ -722,7 +722,7 @@ onDocumentReady(() => {
           <button
             type="button"
             class="btn btn-secondary btn-xs dropdown-toggle"
-            data-toggle="dropdown"
+            data-bs-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false"
             data-boundary="window"
@@ -734,7 +734,7 @@ onDocumentReady(() => {
               ? html`
                   <button
                     class="dropdown-item"
-                    data-toggle="modal"
+                    data-bs-toggle="modal"
                     data-target="#deleteAssessmentInstanceModal"
                     data-uid="${row.uid}"
                     data-name="${row.name}"
@@ -750,7 +750,7 @@ onDocumentReady(() => {
                   </button>
                   <button
                     class="dropdown-item ${row.open ? '' : 'disabled'}"
-                    data-toggle="popover"
+                    data-bs-toggle="popover"
                     data-container="body"
                     data-title="Confirm close"
                     data-html="true"
@@ -769,7 +769,7 @@ onDocumentReady(() => {
                   </button>
                   <button
                     class="dropdown-item"
-                    data-toggle="popover"
+                    data-bs-toggle="popover"
                     data-container="body"
                     data-title="Confirm regrade"
                     data-html="true"

@@ -89,7 +89,7 @@ function AccessRuleRow({
                 <button
                   type="button"
                   class="btn btn-xs btn-warning"
-                  data-toggle="popover"
+                  data-bs-toggle="popover"
                   data-container="body"
                   data-placement="auto"
                   title="Hidden UIDs"

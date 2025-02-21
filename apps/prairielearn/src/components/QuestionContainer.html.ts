@@ -86,7 +86,7 @@ export function QuestionContainer({
                     <button
                       class="show-hide-btn btn btn-outline-secondary btn-sm collapsed"
                       type="button"
-                      data-toggle="collapse"
+                      data-bs-toggle="collapse"
                       data-target="#more-submissions-collapser"
                       aria-expanded="false"
                       aria-controls="more-submissions-collapser"
@@ -225,7 +225,7 @@ ${issue.system_data.courseErrData.outputBoth}</pre
                 <button
                   type="button"
                   class="btn btn-xs btn-secondary"
-                  data-toggle="collapse"
+                  data-bs-toggle="collapse"
                   href="#issue-course-data-${issue.id}"
                   aria-expanded="false"
                   aria-controls="#issue-course-data-${issue.id}"
@@ -245,7 +245,7 @@ ${JSON.stringify(issue.course_data, null, '    ')}</pre
                       <button
                         type="button"
                         class="btn btn-xs btn-secondary"
-                        data-toggle="collapse"
+                        data-bs-toggle="collapse"
                         href="#issue-system-data-${issue.id}"
                         aria-expanded="false"
                         aria-controls="#issue-system-data-${issue.id}"
@@ -429,7 +429,7 @@ export function QuestionFooterContent({
                   <button
                     type="button"
                     class="btn btn-xs btn-ghost me-1"
-                    data-toggle="popover"
+                    data-bs-toggle="popover"
                     data-content="Your group role (${getRoleNamesForUser(group_info, user).join(
                       ', ',
                     )}) is not allowed to submit this question."
@@ -469,7 +469,7 @@ export function QuestionFooterContent({
                       <button
                         type="button"
                         class="btn btn-xs btn-ghost align-self-center ms-1"
-                        data-toggle="popover"
+                        data-bs-toggle="popover"
                         data-container="body"
                         data-html="true"
                         data-content="${escapeHtml(
@@ -554,7 +554,7 @@ function SubmitRateFooter({
           <button
             type="button"
             class="btn btn-xs btn-ghost"
-            data-toggle="popover"
+            data-bs-toggle="popover"
             data-container="body"
             data-html="true"
             data-content="${escapeHtml(popoverContent)}"
@@ -656,7 +656,7 @@ function QuestionPanel({
               <button
                 class="btn btn-light btn-sm ms-auto"
                 type="button"
-                data-toggle="modal"
+                data-bs-toggle="modal"
                 data-target="#copyQuestionModal"
               >
                 <i class="fa fa-clone"></i>

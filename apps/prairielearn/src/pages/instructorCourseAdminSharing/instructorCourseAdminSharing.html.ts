@@ -167,7 +167,7 @@ export function InstructorCourseAdminSharing({
                         class="btn btn-xs btn-secondary mx-2"
                         id="chooseSharingName"
                         title="Choose Sharing Name"
-                        data-toggle="modal"
+                        data-bs-toggle="modal"
                         data-target="#chooseSharingNameModal"
                       >
                         <i class="fas fa-share-nodes" aria-hidden="true"></i>
@@ -251,7 +251,7 @@ export function InstructorCourseAdminSharing({
                           <button
                             type="button"
                             class="btn btn-sm btn-outline-dark"
-                            data-toggle="popover"
+                            data-bs-toggle="popover"
                             data-container="body"
                             data-html="true"
                             data-placement="auto"

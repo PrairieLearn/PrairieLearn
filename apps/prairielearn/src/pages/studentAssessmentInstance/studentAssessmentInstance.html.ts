@@ -544,7 +544,7 @@ export function StudentAssessmentInstance({
                                     here:
                                     <button
                                       class="btn btn-danger"
-                                      data-toggle="modal"
+                                      data-bs-toggle="modal"
                                       data-target="#confirmFinishModal"
                                       ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                                     >
@@ -572,7 +572,7 @@ export function StudentAssessmentInstance({
                               After you have answered all the questions completely, click here:
                               <button
                                 class="btn btn-danger"
-                                data-toggle="modal"
+                                data-bs-toggle="modal"
                                 data-target="#confirmFinishModal"
                                 ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                               >
@@ -725,7 +725,7 @@ function ZoneInfoPopover({ label, content }: { label: string; content: string })
     <button
       type="button"
       class="btn btn-xs btn-secondary"
-      data-toggle="popover"
+      data-bs-toggle="popover"
       data-container="body"
       data-html="true"
       data-content="${content}"
@@ -762,7 +762,7 @@ function RowLabel({
           <button
             type="button"
             class="btn btn-xs border text-secondary ms-1"
-            data-toggle="popover"
+            data-bs-toggle="popover"
             data-container="body"
             data-html="true"
             data-content="${lockedPopoverText}"
@@ -780,7 +780,7 @@ function RowLabel({
           <button
             type="button"
             class="btn btn-xs border text-secondary ms-1"
-            data-toggle="popover"
+            data-bs-toggle="popover"
             data-container="body"
             data-html="true"
             data-content="Personal notes: ${instance_question_row.file_count}"
@@ -798,7 +798,7 @@ function ExamQuestionHelpAvailablePoints() {
     <button
       type="button"
       class="btn btn-xs btn-ghost"
-      data-toggle="popover"
+      data-bs-toggle="popover"
       data-container="body"
       data-html="true"
       data-placement="auto"
@@ -815,7 +815,7 @@ function ExamQuestionHelpAwardedPoints() {
     <button
       type="button"
       class="btn btn-xs btn-ghost"
-      data-toggle="popover"
+      data-bs-toggle="popover"
       data-container="body"
       data-html="true"
       data-placement="auto"

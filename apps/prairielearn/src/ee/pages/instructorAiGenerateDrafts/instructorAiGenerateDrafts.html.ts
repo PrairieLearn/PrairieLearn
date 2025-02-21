@@ -231,7 +231,7 @@ export function InstructorAIGenerateDrafts({
               <h1 class="h5 mb-0">Continue working on a draft question</h1>
               <button
                 class="btn btn-sm btn-outline-danger ms-2"
-                data-toggle="modal"
+                data-bs-toggle="modal"
                 data-target="#deleteModal"
               >
                 <i class="fa fa-trash" aria-hidden="true"></i>

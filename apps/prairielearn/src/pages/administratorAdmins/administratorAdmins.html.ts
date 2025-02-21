@@ -28,7 +28,7 @@ export function AdministratorAdmins({
           <button
             type="button"
             class="btn btn-sm btn-light ms-auto"
-            data-toggle="popover"
+            data-bs-toggle="popover"
             data-container="body"
             data-html="true"
             data-placement="auto"
@@ -65,7 +65,7 @@ export function AdministratorAdmins({
                       <button
                         type="button"
                         class="btn btn-sm btn-danger float-right"
-                        data-toggle="popover"
+                        data-bs-toggle="popover"
                         data-container="body"
                         data-html="true"
                         data-placement="auto"

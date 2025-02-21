@@ -86,7 +86,7 @@ function AssessmentUploadCard({
                     <button
                       type="button"
                       class="btn btn-primary text-nowrap"
-                      data-toggle="modal"
+                      data-bs-toggle="modal"
                       data-target="#upload-instance-question-scores-form"
                     >
                       <i class="fas fa-upload"></i> Upload new question scores
@@ -95,7 +95,7 @@ function AssessmentUploadCard({
                   <td>
                     <p>
                       Upload a CSV file to set per-question scores for individual students.
-                      <a data-toggle="collapse" href="#uploadInstanceQuestionScoresHelp">
+                      <a data-bs-toggle="collapse" href="#uploadInstanceQuestionScoresHelp">
                         Show details...
                       </a>
                     </p>
@@ -109,7 +109,7 @@ function AssessmentUploadCard({
                     <button
                       type="button"
                       class="btn btn-primary text-nowrap"
-                      data-toggle="modal"
+                      data-bs-toggle="modal"
                       data-target="#upload-assessment-instance-scores-form"
                     >
                       <i class="fas fa-upload"></i> Upload new total scores
@@ -118,7 +118,7 @@ function AssessmentUploadCard({
                   <td>
                     <p>
                       Upload a CSV file to set the total assessment score for individual students.
-                      <a data-toggle="collapse" href="#uploadAssessmentScoresHelp"
+                      <a data-bs-toggle="collapse" href="#uploadAssessmentScoresHelp"
                         >Show details...</a
                       >
                     </p>

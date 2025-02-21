@@ -377,7 +377,7 @@ function IssueReportButton({
     <button
       class="btn btn-sm btn-primary"
       type="button"
-      data-toggle="collapse"
+      data-bs-toggle="collapse"
       data-target="#issueCollapse"
       aria-expanded="false"
       aria-controls="issueCollapse"

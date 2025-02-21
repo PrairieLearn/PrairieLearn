@@ -174,7 +174,7 @@ export function InstructorAssessmentInstance({
                         type="button"
                         class="btn btn-xs btn-ghost"
                         id="fingerprintDescriptionPopover"
-                        data-toggle="popover"
+                        data-bs-toggle="popover"
                         data-container="body"
                         data-html="false"
                         title="Client Fingerprint Changes"
@@ -205,7 +205,7 @@ export function InstructorAssessmentInstance({
                         type="button"
                         class="btn btn-xs btn-secondary"
                         id="editTotalPointsButton"
-                        data-toggle="popover"
+                        data-bs-toggle="popover"
                         data-container="body"
                         data-html="true"
                         data-placement="auto"
@@ -235,7 +235,7 @@ export function InstructorAssessmentInstance({
                         type="button"
                         class="btn btn-xs btn-secondary"
                         id="editTotalScorePercButton"
-                        data-toggle="popover"
+                        data-bs-toggle="popover"
                         data-container="body"
                         data-html="true"
                         data-placement="auto"
@@ -262,7 +262,7 @@ export function InstructorAssessmentInstance({
                       <button
                         type="button"
                         class="btn btn-xs btn-ghost"
-                        data-toggle="popover"
+                        data-bs-toggle="popover"
                         data-container="body"
                         data-html="true"
                         title="Included in statistics"
@@ -276,7 +276,7 @@ export function InstructorAssessmentInstance({
                       <button
                         type="button"
                         class="btn btn-xs btn-ghost"
-                        data-toggle="popover"
+                        data-bs-toggle="popover"
                         data-container="body"
                         data-html="true"
                         title="Not included in statistics"
@@ -443,7 +443,7 @@ export function InstructorAssessmentInstance({
                       <button
                         type="button"
                         class="btn btn-secondary btn-xs dropdown-toggle"
-                        data-toggle="dropdown"
+                        data-bs-toggle="dropdown"
                         aria-haspopup="true"
                         aria-expanded="false"
                       >
@@ -454,7 +454,7 @@ export function InstructorAssessmentInstance({
                           ? html`
                               <button
                                 class="dropdown-item"
-                                data-toggle="modal"
+                                data-bs-toggle="modal"
                                 data-target="#resetQuestionVariantsModal"
                                 data-instance-question-id="${instance_question.id}"
                               >
@@ -597,7 +597,7 @@ export function InstructorAssessmentInstance({
                                 row.client_fingerprint_number % 6
                               ]}"
                               id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
-                              data-toggle="popover"
+                              data-bs-toggle="popover"
                               data-container="body"
                               data-html="true"
                               data-placement="auto"

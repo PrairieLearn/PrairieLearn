@@ -41,7 +41,7 @@ export function AdministratorInstitutions({
           <button
             type="button"
             class="btn btn-sm btn-light ms-auto"
-            data-toggle="modal"
+            data-bs-toggle="modal"
             data-target="#add-institution-modal"
           >
             <i class="fas fa-plus"></i>

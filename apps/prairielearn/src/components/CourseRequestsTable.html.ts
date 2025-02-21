@@ -85,7 +85,7 @@ export function CourseRequestsTable({
                           <button
                             type="button"
                             class="btn btn-sm btn-danger text-nowrap me-2"
-                            data-toggle="popover"
+                            data-bs-toggle="popover"
                             data-container="body"
                             data-boundary="window"
                             data-html="true"
@@ -103,7 +103,7 @@ export function CourseRequestsTable({
                           <button
                             type="button"
                             class="btn btn-sm btn-success text-nowrap"
-                            data-toggle="popover"
+                            data-bs-toggle="popover"
                             data-container="body"
                             data-boundary="window"
                             data-html="true"
@@ -128,7 +128,7 @@ export function CourseRequestsTable({
                       ? html`
                           <button
                             class="show-hide-btn btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
-                            data-toggle="collapse"
+                            data-bs-toggle="collapse"
                             data-target="#course-requests-job-list-${row.id}"
                             aria-expanded="false"
                             aria-controls="course-requests-job-list-${row.id}"

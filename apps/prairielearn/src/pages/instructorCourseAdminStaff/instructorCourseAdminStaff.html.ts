@@ -86,7 +86,7 @@ export function InstructorCourseAdminStaff({
             <button
               type="button"
               class="btn btn-light btn-sm ms-auto"
-              data-toggle="popover"
+              data-bs-toggle="popover"
               data-container="body"
               data-html="true"
               data-placement="auto"
@@ -104,7 +104,7 @@ export function InstructorCourseAdminStaff({
             <button
               type="button"
               class="btn btn-light btn-sm ms-auto"
-              data-toggle="popover"
+              data-bs-toggle="popover"
               data-container="body"
               data-html="true"
               data-placement="auto"
@@ -122,7 +122,7 @@ export function InstructorCourseAdminStaff({
             <button
               type="button"
               class="btn btn-light btn-sm ms-auto"
-              data-toggle="popover"
+              data-bs-toggle="popover"
               data-container="body"
               data-html="true"
               data-placement="auto"
@@ -140,7 +140,7 @@ export function InstructorCourseAdminStaff({
             <button
               type="button"
               class="btn btn-light btn-sm ms-auto"
-              data-toggle="popover"
+              data-bs-toggle="popover"
               data-container="body"
               data-html="true"
               data-placement="auto"
@@ -418,7 +418,7 @@ function StaffTable({
                             id="courseContentDropdown-${courseUser.user.user_id}"
                             type="button"
                             class="btn btn-sm btn-outline-primary dropdown-toggle"
-                            data-toggle="dropdown"
+                            data-bs-toggle="dropdown"
                             aria-haspopup="true"
                             aria-expanded="false"
                           >
@@ -547,7 +547,7 @@ function StaffTable({
                                 id="changeCIPDrop-${courseUser.user.user_id}-${cir.id}"
                                 type="button"
                                 class="btn btn-sm btn-outline-primary dropdown-toggle"
-                                data-toggle="dropdown"
+                                data-bs-toggle="dropdown"
                                 aria-haspopup="true"
                                 aria-expanded="false"
                               >
@@ -632,7 +632,7 @@ function StaffTable({
                             id="addCIPDrop-${courseUser.user.user_id}"
                             type="button"
                             class="btn btn-sm btn-outline-dark dropdown-toggle"
-                            data-toggle="dropdown"
+                            data-bs-toggle="dropdown"
                             aria-haspopup="true"
                             aria-expanded="false"
                           >
