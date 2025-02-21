@@ -68,7 +68,7 @@ export function Home({
     postContent: html`
       ${config.homepageFooterText && config.homepageFooterTextHref
         ? html`
-            <footer class="footer font-weight-light text-light text-center small">
+            <footer class="footer fw-light text-light text-center small">
               <div class="bg-secondary p-1">
                 <a class="text-light" href="${config.homepageFooterTextHref}">
                   ${config.homepageFooterText}
