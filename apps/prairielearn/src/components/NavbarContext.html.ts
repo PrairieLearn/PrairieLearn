@@ -296,7 +296,7 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       iconClasses: 'fas fa-bug',
       tabLabel: 'Issues',
       htmlSuffix: (resLocals) =>
-        IssueBadge({ count: resLocals.open_issue_count, suppressLink: true, className: 'ml-2' }),
+        IssueBadge({ count: resLocals.open_issue_count, suppressLink: true, className: 'ms-2' }),
       renderCondition: ({ course, question }) => question.course_id === course.id,
     },
   ],
