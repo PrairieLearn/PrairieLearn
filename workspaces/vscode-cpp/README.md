@@ -21,7 +21,7 @@ In order to give instructors some flexibility in specifying what is provided to 
 
   If compilation is expected to be done without `make` (e.g., with a longer `gcc` or `g++` command), the `"command"` argument should be replaced with the appropriate command.
 
-- `.vscode/launch.json`: This file allows the interface to provide a Run and Debug interface to the user. To use the provided codelldb extension, the content of this file can be configured as follows (assuming the compilation process creates an executable file named `main` in the workspace root directory):
+- `.vscode/launch.json`: This file configures the Run and Debug options in the user interface. To use the provided codelldb extension, the content of this file can be configured as follows (assuming the compilation process creates an executable file named `main` in the workspace root directory):
 
   ```json
   {
