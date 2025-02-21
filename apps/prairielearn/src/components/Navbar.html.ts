@@ -65,6 +65,9 @@ export function Navbar({
           ? html`
               <button
                 id="side-nav-toggler"
+                hx-put="/pl/side-nav"
+                hx-target="#side-nav"
+                hx-swap="outerHTML"
                 class="navbar-toggler d-none d-md-inline-block side-nav-toggler"
                 type="button"
                 aria-expanded="false"

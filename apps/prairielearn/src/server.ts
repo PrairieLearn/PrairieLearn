@@ -594,6 +594,7 @@ export async function initExpress(): Promise<Express> {
   // route handler will only ever display courses for which the user has staff
   // access; the course ID in the URL is only used to determine which course
   // is the currently selected one.
+
   app.use(
     '/pl/navbar/course/:course_id(\\d+)/switcher',
     (await import('./pages/navbarCourseSwitcher/navbarCourseSwitcher.js')).default,
@@ -754,6 +755,13 @@ export async function initExpress(): Promise<Express> {
       next();
     },
   ]);
+
+  // TODO: move this
+  app.use(
+    '/pl/side-nav',
+    [(await import('./middlewares/authzCourseOrInstance.js')).default],
+    (await import('./pages/sideNav/sideNav.js')).default,
+  );
 
   // Serve element statics. As with core PrairieLearn assets and files served
   // from `node_modules`, we include a cachebuster in the URL. This allows

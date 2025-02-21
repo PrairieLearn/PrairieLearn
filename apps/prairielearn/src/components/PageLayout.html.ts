@@ -1,7 +1,6 @@
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 
-import { compiledScriptTag } from '../lib/assets.js';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.html.js';
@@ -58,7 +57,7 @@ export function PageLayout({
     // page within a course or course instance.
     const sideNavAvailable =
       navContext.type !== 'student' && navContext.type !== 'public' && resLocals.course;
-    const showSideNav = reqSession?.show_side_nav ?? true;
+    const showSideNav = reqSession?.req.session.sideNavOpen ?? true;
 
     let showContextNavigation = true;
 
@@ -92,7 +91,7 @@ export function PageLayout({
         showContextNavigation = false;
       }
     }
-
+    // ${sideNavAvailable ? compiledScriptTag('pageLayoutClient.ts') : ''}
     return html`
       <!doctype html>
       <html lang="en">
@@ -102,7 +101,6 @@ export function PageLayout({
             pageTitle,
             pageNote: options.pageNote,
           })}
-          ${sideNavAvailable ? compiledScriptTag('pageLayoutClient.ts') : ''}
           ${compiledStylesheetTag('pageLayout.css')} ${headContent}
         </head>
         <body
