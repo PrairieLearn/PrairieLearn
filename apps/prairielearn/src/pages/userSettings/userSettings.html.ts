@@ -112,7 +112,7 @@ export function UserSettings({
             ? html`
                 <button
                   type="button"
-                  class="btn btn-light btn-sm ml-auto"
+                  class="btn btn-light btn-sm ms-auto"
                   data-toggle="popover"
                   data-container="body"
                   data-html="true"
@@ -190,7 +190,7 @@ function TokenList({
   return accessTokens.map(
     (token) => html`
       <li class="list-group-item d-flex align-items-center">
-        <div class="d-flex flex-column mr-3">
+        <div class="d-flex flex-column me-3">
           <strong>${token.name}</strong>
           <span class="text-muted">Created at ${token.created_at}</span>
           <span class="text-muted">
@@ -199,7 +199,7 @@ function TokenList({
         </div>
         <button
           type="button"
-          class="btn btn-outline-danger btn-sm ml-auto"
+          class="btn btn-outline-danger btn-sm ms-auto"
           data-toggle="popover"
           data-container="body"
           data-html="true"

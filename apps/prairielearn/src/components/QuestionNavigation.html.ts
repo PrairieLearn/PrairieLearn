@@ -92,7 +92,7 @@ export function QuestionNavSideButton({
         data-content="${disabledExplanation}"
       >
         ${buttonLabel}
-        <i class="fas fa-lock ml-1" aria-label="Locked"></i>
+        <i class="fas fa-lock ms-1" aria-label="Locked"></i>
       </button>
     `;
   }

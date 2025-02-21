@@ -43,7 +43,7 @@ export function PlanGrantsEditor({
                 <div>
                   ${planFeatures.map(
                     (feature) => html`
-                      <span class="badge badge-pill badge-secondary text-monospace mr-1">
+                      <span class="badge badge-pill badge-secondary text-monospace me-1">
                         ${feature}
                       </span>
                     `,

@@ -118,11 +118,11 @@ export function InstructorEffectiveUser({
           <div class="alert alert-secondary mb-0">
             <form id="changeUidForm" class="form-inline" method="POST">
               <div class="form-group">
-                <label class="mr-2" for="changeEffectiveUid">Change effective UID to:</label>
+                <label class="me-2" for="changeEffectiveUid">Change effective UID to:</label>
                 <input
                   list="userList"
                   type="text"
-                  class="form-control mr-2"
+                  class="form-control me-2"
                   style="width: 20em;"
                   name="pl_requested_uid"
                   id="changeEffectiveUid"
@@ -163,11 +163,11 @@ export function InstructorEffectiveUser({
           <div class="alert alert-secondary mb-0">
             <form class="form-inline" id="changeCourseRoleForm" method="POST">
               <div class="form-group">
-                <label class="mr-2" for="changeEffectiveCourseRole"
+                <label class="me-2" for="changeEffectiveCourseRole"
                   >Change effective course role to:</label
                 >
                 <select
-                  class="custom-select mr-2"
+                  class="custom-select me-2"
                   id="changeEffectiveCourseRole"
                   name="pl_requested_course_role"
                 >
@@ -220,11 +220,11 @@ export function InstructorEffectiveUser({
                 <div class="alert alert-secondary mb-0">
                   <form class="form-inline" id="changeCourseInstanceRoleForm" method="POST">
                     <div class="form-group">
-                      <label class="mr-2" for="changeEffectiveCourseInstanceRole">
+                      <label class="me-2" for="changeEffectiveCourseInstanceRole">
                         Change effective course instance role to:
                       </label>
                       <select
-                        class="custom-select mr-2"
+                        class="custom-select me-2"
                         id="changeEffectiveCourseInstanceRole"
                         name="pl_requested_course_instance_role"
                       >
@@ -277,10 +277,10 @@ export function InstructorEffectiveUser({
           <div class="alert alert-secondary mb-0">
             <form class="form-inline" id="changeDateForm" method="POST">
               <div class="form-group">
-                <label class="mr-2" for="changeDate">Change effective date to:</label>
+                <label class="me-2" for="changeDate">Change effective date to:</label>
                 <input
                   type="text"
-                  class="form-control mr-2"
+                  class="form-control me-2"
                   style="width:30em;"
                   id="changeDate"
                   name="pl_requested_date"

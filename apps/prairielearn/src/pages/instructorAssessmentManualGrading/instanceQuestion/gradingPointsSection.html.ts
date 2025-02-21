@@ -67,7 +67,7 @@ export function TotalPointsSection({
   return html`
     ${context === 'main' && resLocals.rubric_data?.replace_auto_points && !disable
       ? html`
-          <span class="float-right btn-group btn-group-sm ml-1" role="group">
+          <span class="float-right btn-group btn-group-sm ms-1" role="group">
             <button type="button" class="btn btn-outline-secondary js-show-rubric-settings-button">
               <i class="fas fa-list-check"></i> Rubric
             </button>

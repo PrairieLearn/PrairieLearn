@@ -92,7 +92,7 @@ export function QuestionContainer({
                       aria-controls="more-submissions-collapser"
                     >
                       Show/hide older submissions
-                      <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+                      <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
                     </button>
                   </div>
 
@@ -401,7 +401,7 @@ export function QuestionFooterContent({
             ${showGradeButton
               ? html`
                   <button
-                    class="btn btn-primary question-grade disable-on-submit order-1 mr-1"
+                    class="btn btn-primary question-grade disable-on-submit order-1 me-1"
                     ${disableGradeButton ? 'disabled' : ''}
                     ${question.type === 'Freeform' ? html`name="__action" value="grade"` : ''}
                   >
@@ -409,17 +409,17 @@ export function QuestionFooterContent({
                     ${variantAttemptsTotal > 0
                       ? variantAttemptsLeft > 1
                         ? html`
-                            <small class="font-italic ml-2">
+                            <small class="font-italic ms-2">
                               ${variantAttemptsLeft} attempts left
                             </small>
                           `
                         : variantAttemptsLeft === 1 && variantAttemptsTotal > 1
-                          ? html`<small class="font-italic ml-2">Last attempt</small>`
+                          ? html`<small class="font-italic ms-2">Last attempt</small>`
                           : variantAttemptsLeft === 1
-                            ? html`<small class="font-italic ml-2">Single attempt</small>`
+                            ? html`<small class="font-italic ms-2">Single attempt</small>`
                             : ''
                       : questionContext === 'student_homework'
-                        ? html`<small class="font-italic ml-2">Unlimited attempts</small>`
+                        ? html`<small class="font-italic ms-2">Unlimited attempts</small>`
                         : ''}
                   </button>
                 `
@@ -428,7 +428,7 @@ export function QuestionFooterContent({
               ? html`
                   <button
                     type="button"
-                    class="btn btn-xs btn-ghost mr-1"
+                    class="btn btn-xs btn-ghost me-1"
                     data-toggle="popover"
                     data-content="Your group role (${getRoleNamesForUser(group_info, user).join(
                       ', ',
@@ -449,13 +449,13 @@ export function QuestionFooterContent({
                 `}
             ${showNewVariantButton
               ? html`
-                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ml-1">
+                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ms-1">
                     New variant
                   </a>
                 `
               : showTryAgainButton
                 ? html`
-                    <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ml-1">
+                    <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
                       ${instance_question_info.previous_variants?.some((variant) => variant.open)
                         ? 'Go to latest variant'
                         : 'Try a new variant'}
@@ -468,7 +468,7 @@ export function QuestionFooterContent({
                       </small>
                       <button
                         type="button"
-                        class="btn btn-xs btn-ghost align-self-center ml-1"
+                        class="btn btn-xs btn-ghost align-self-center ms-1"
                         data-toggle="popover"
                         data-container="body"
                         data-html="true"
@@ -532,7 +532,7 @@ function SubmitRateFooter({
         <span class="d-flex">
           ${disableGradeButton
             ? html`
-                <small class="font-italic ml-2 mt-1 submission-suspended-msg">
+                <small class="font-italic ms-2 mt-1 submission-suspended-msg">
                   Grading possible in <span id="submission-suspended-display"></span>
                   <div id="submission-suspended-progress" class="border border-info"></div>
                 </small>
@@ -654,7 +654,7 @@ function QuestionPanel({
         ${showCopyQuestionButton
           ? html`
               <button
-                class="btn btn-light btn-sm ml-auto"
+                class="btn btn-light btn-sm ms-auto"
                 type="button"
                 data-toggle="modal"
                 data-target="#copyQuestionModal"

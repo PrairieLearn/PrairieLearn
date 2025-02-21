@@ -230,7 +230,7 @@ export function InstructorAIGenerateDrafts({
             <div class="d-flex flex-row align-items-center justify-content-between mb-2">
               <h1 class="h5 mb-0">Continue working on a draft question</h1>
               <button
-                class="btn btn-sm btn-outline-danger ml-2"
+                class="btn btn-sm btn-outline-danger ms-2"
                 data-toggle="modal"
                 data-target="#deleteModal"
               >
@@ -308,7 +308,7 @@ function DeleteQuestionsModal({ csrfToken }: { csrfToken: string }) {
     title: 'Delete all draft questions',
     body: 'Are you sure you want to permanently delete all draft questions?',
     footer: html`
-      <form method="POST" class="mr-2">
+      <form method="POST" class="me-2">
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
         <button class="btn btn-danger" name="__action" value="delete_drafts">
           <i class="fa fa-trash" aria-hidden="true"></i>

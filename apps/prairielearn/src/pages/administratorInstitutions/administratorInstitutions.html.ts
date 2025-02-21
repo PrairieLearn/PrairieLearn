@@ -40,7 +40,7 @@ export function AdministratorInstitutions({
           <h1>Institutions</h1>
           <button
             type="button"
-            class="btn btn-sm btn-light ml-auto"
+            class="btn btn-sm btn-light ms-auto"
             data-toggle="modal"
             data-target="#add-institution-modal"
           >

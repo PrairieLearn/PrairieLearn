@@ -66,10 +66,10 @@ export function NewsItems({
                             <a href="${urlPrefix}/news_item/${newsItem.id}/">
                               ${newsItem.title}
                               ${newsItem.unread
-                                ? html`<span class="badge badge-primary ml-2">Unread</span>`
+                                ? html`<span class="badge badge-primary ms-2">Unread</span>`
                                 : ''}
                               ${newsItem.visible_to_students && userIsInstructor
-                                ? html`<span class="badge badge-secondary ml-2">
+                                ? html`<span class="badge badge-secondary ms-2">
                                     Visible to students
                                   </span>`
                                 : ''}

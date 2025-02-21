@@ -106,7 +106,7 @@ export function InstructorIssues({
             <div class="d-flex flex-column">
               <h1 class="h6 font-weight-normal mb-0">Issues</h1>
               <small>
-                <a href="${formattedCommonQueries.allOpenQuery}" class="mr-3 text-white">
+                <a href="${formattedCommonQueries.allOpenQuery}" class="me-3 text-white">
                   <i class="fa fa-exclamation-circle"></i> ${openCount} open
                 </a>
                 <a href="${formattedCommonQueries.allClosedQuery}" class="text-white">
@@ -117,7 +117,7 @@ export function InstructorIssues({
             ${authz_data.has_course_permission_edit && openFilteredIssuesCount > 0
               ? html`
                   <button
-                    class="btn btn-sm btn-danger ml-auto"
+                    class="btn btn-sm btn-danger ms-auto"
                     data-toggle="modal"
                     data-target="#closeMatchingIssuesModal"
                   >
@@ -276,7 +276,7 @@ function IssueRow({
                 `}
         </div>
         <p class="mb-0">${getFormattedMessage(issue)}</p>
-        <small class="text-muted mr-2">
+        <small class="text-muted me-2">
           #${issue.id} reported
           ${issue.date
             ? html`
@@ -310,7 +310,7 @@ function IssueRow({
           : ''}
       </div>
       ${authz_data.has_course_permission_edit
-        ? html`<div class="ml-auto pl-4">${IssueActionButton({ issue, csrfToken })}</div>`
+        ? html`<div class="ms-auto ps-4">${IssueActionButton({ issue, csrfToken })}</div>`
         : ''}
     </div>
   `;

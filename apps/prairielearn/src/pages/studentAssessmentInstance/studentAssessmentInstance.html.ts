@@ -297,7 +297,7 @@ export function StudentAssessmentInstance({
                           <tr>
                             <th colspan="${zoneTitleColspan}">
                               <div class="d-flex align-items-center">
-                                <span class="mr-2">${instance_question_row.zone_title}</span>
+                                <span class="me-2">${instance_question_row.zone_title}</span>
                                 ${instance_question_row.zone_has_max_points
                                   ? ZoneInfoPopover({
                                       label: `Maximum ${instance_question_row.zone_max_points} points`,
@@ -761,7 +761,7 @@ function RowLabel({
           <span class="text-muted">${rowLabelText}</span>
           <button
             type="button"
-            class="btn btn-xs border text-secondary ml-1"
+            class="btn btn-xs border text-secondary ms-1"
             data-toggle="popover"
             data-container="body"
             data-html="true"
@@ -779,7 +779,7 @@ function RowLabel({
       ? html`
           <button
             type="button"
-            class="btn btn-xs border text-secondary ml-1"
+            class="btn btn-xs border text-secondary ms-1"
             data-toggle="popover"
             data-container="body"
             data-html="true"

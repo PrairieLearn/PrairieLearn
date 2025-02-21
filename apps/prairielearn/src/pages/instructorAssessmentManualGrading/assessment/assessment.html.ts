@@ -143,7 +143,7 @@ function AssessmentQuestionRow({
           : html`
               <a
                 href="#"
-                class="ml-2 text-info"
+                class="ms-2 text-info"
                 data-toggle="tooltip"
                 data-boundary="window"
                 title="This question uses a rubric"

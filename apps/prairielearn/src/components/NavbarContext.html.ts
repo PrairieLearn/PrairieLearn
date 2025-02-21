@@ -462,7 +462,7 @@ function NavbarTab({
         class="nav-link d-flex align-items-center ${activeClasses}"
         href="${urlPrefix}${urlSuffix}"
       >
-        <i class="mr-1 ${iconClasses}"></i>${tabLabel}${htmlSuffix?.(resLocals) || ''}
+        <i class="me-1 ${iconClasses}"></i>${tabLabel}${htmlSuffix?.(resLocals) || ''}
       </a>
     </li>
   `;

@@ -75,7 +75,7 @@ export function Navbar({
           <span class="navbar-toggler-icon"></span>
         </button>
         <div id="course-nav" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav mr-auto" id="main-nav">
+          <ul class="nav navbar-nav me-auto" id="main-nav">
             ${NavbarByType({ resLocals, navPage, navSubPage, navbarType })}
           </ul>
 
@@ -192,7 +192,7 @@ function UserDropdownMenu({
       data-authn-course-instance-role="${authz_data?.authn_course_instance_role}"
       data-has-instructor-access="${authz_data?.user_with_requested_uid_has_instructor_access_to_course_instance?.toString()}"
     >
-      <li class="nav-item dropdown mb-2 mb-md-0 mr-2 ${navPage === 'effective' ? 'active' : ''}">
+      <li class="nav-item dropdown mb-2 mb-md-0 me-2 ${navPage === 'effective' ? 'active' : ''}">
         <a
           class="nav-link dropdown-toggle"
           id="navbarDropdown"
@@ -416,7 +416,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
 
     <a class="dropdown-item" href="${instructorLink}" id="navbar-user-view-authn-instructor">
       <span class="${authnViewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">&check;</span>
-      <span class="pl-3">
+      <span class="ps-3">
         ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
           ? 'Modified staff'
           : 'Staff'}
@@ -426,14 +426,14 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student">
       <span class="${authnViewTypeMenuChecked !== 'student' ? 'invisible' : ''}">&check;</span>
-      <span class="pl-3">Student view <span class="badge badge-warning">student</span></span>
+      <span class="ps-3">Student view <span class="badge badge-warning">student</span></span>
     </a>
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student-no-rules">
       <span class="${authnViewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
         &check;
       </span>
-      <span class="pl-3">
+      <span class="ps-3">
         Student view without access restrictions
         <span class="badge badge-warning">student</span>
       </span>
@@ -450,21 +450,21 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
                   <span class="${viewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">
                     &check;
                   </span>
-                  <span class="pl-3">Staff view</span>
+                  <span class="ps-3">Staff view</span>
                 </a>
               `
             : ''}
 
           <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student">
             <span class="${viewTypeMenuChecked !== 'student' ? 'invisible' : ''}"> &check; </span>
-            <span class="pl-3">Student view</span>
+            <span class="ps-3">Student view</span>
           </a>
 
           <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student-no-rules">
             <span class="${viewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
               &check;
             </span>
-            <span class="pl-3">Student view without access restrictions</span>
+            <span class="ps-3">Student view without access restrictions</span>
           </a>
         `
       : ''}
@@ -516,7 +516,7 @@ function AuthnOverrides({
         id="effective-uid"
         type="email"
         placeholder="student@example.com"
-        class="form-control form-control-sm mr-2 flex-grow-1 js-effective-uid-input"
+        class="form-control form-control-sm me-2 flex-grow-1 js-effective-uid-input"
       />
       <button
         type="submit"
@@ -535,7 +535,7 @@ function AuthnOverrides({
                 (override) => html`
                   <div class="list-group-item list-group-item-warning small p-2">
                     <div class="d-flex flex-row justify-content-between align-items-center">
-                      <div class="p-0 mr-4">
+                      <div class="p-0 me-4">
                         <ul class="list-unstyled">
                           <li class="font-weight-bold">${override.name}</li>
                           <li>${override.value}</li>
@@ -547,7 +547,7 @@ function AuthnOverrides({
                           type="button"
                           data-override-cookie="${override.cookie}"
                         >
-                          <i class="fas fa-times mr-1"></i>
+                          <i class="fas fa-times me-1"></i>
                           Remove
                         </button>
                       </div>
@@ -586,7 +586,7 @@ function NavbarStudent({
     resLocals;
 
   return html`
-    <li class="nav-item navbar-text mr-4">
+    <li class="nav-item navbar-text me-4">
       ${course?.short_name ?? ''}, ${course_instance?.short_name ?? ''}
     </li>
 
@@ -684,7 +684,7 @@ function NavbarInstructor({
           <li class="nav-item d-flex align-items-center">
             <a
               style="display: inline-flex; align-items: center;"
-              class="nav-link pr-0"
+              class="nav-link pe-0"
               href="${urlPrefix}/course_admin/getting_started"
             >
               Getting Started

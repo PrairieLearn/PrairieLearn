@@ -81,11 +81,11 @@ export function InstructorCourseAdminStaff({
       })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex flex-wrap align-items-center">
-          <h1 class="mr-2">Staff</h1>
-          <div class="ml-auto">
+          <h1 class="me-2">Staff</h1>
+          <div class="ms-auto">
             <button
               type="button"
-              class="btn btn-light btn-sm ml-auto"
+              class="btn btn-light btn-sm ms-auto"
               data-toggle="popover"
               data-container="body"
               data-html="true"
@@ -103,7 +103,7 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ml-auto"
+              class="btn btn-light btn-sm ms-auto"
               data-toggle="popover"
               data-container="body"
               data-html="true"
@@ -121,7 +121,7 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ml-auto"
+              class="btn btn-light btn-sm ms-auto"
               data-toggle="popover"
               data-container="body"
               data-html="true"
@@ -139,7 +139,7 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ml-auto"
+              class="btn btn-light btn-sm ms-auto"
               data-toggle="popover"
               data-container="body"
               data-html="true"

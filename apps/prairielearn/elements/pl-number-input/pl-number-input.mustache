@@ -1,5 +1,5 @@
 {{#question}}
-{{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
+{{#inline}}<span class="form-inline d-inline-block ms-2">{{/inline}}
     <span class="input-group pl-number-input">
         {{#label}}
         <span class="input-group-prepend">
@@ -40,7 +40,7 @@
                     data-placement="auto"
                     data-content="{{parse_error}}"
                 >
-                    <span class="mr-1">Invalid </span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                    <span class="me-1">Invalid </span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
                 </button>
             {{/parse_error}}
             {{#show_score}}
@@ -154,8 +154,8 @@ number {{#relabs}}(rtol={{rtol}}, atol={{atol}}){{/relabs}}{{#sigfig}}({{digits}
         {{/format_error_message}}
         {{#allow_fractions}} You may express your answer as a fraction.{{/allow_fractions}} No symbolic inputs {{^allow_fractions}} or fractions {{/allow_fractions}} are allowed.
     </p>
-    <p> Example <i>valid</i> inputs: <code class="user-output">5</code><code class="user-output ml-3">-17</code><code class="user-output ml-3">4.25e7</code> {{#complex}}<code class="user-output ml-3">3.6i</code>{{/complex}} {{#allow_fractions}} <code class="user-output ml-3">3/7</code> {{/allow_fractions}} </p>
-    <p> Example <i>invalid</i> inputs: <code class="user-output">6+9</code> <code class="user-output ml-3">4*10^7</code> <code class="user-output ml-3">3*pi</code> {{^complex}} <code class="user-output ml-3">3.6i</code>{{/complex}} {{^allow_fractions}} <code class="user-output ml-3">3/7</code> {{/allow_fractions}} </p>
+    <p> Example <i>valid</i> inputs: <code class="user-output">5</code><code class="user-output ml-3">-17</code><code class="user-output ml-3">4.25e7</code> {{#complex}}<code class="user-output ml-3">3.6i</code>{{/complex}} {{#allow_fractions}} <code class="user-output ms-3">3/7</code> {{/allow_fractions}} </p>
+    <p> Example <i>invalid</i> inputs: <code class="user-output">6+9</code> <code class="user-output ml-3">4*10^7</code> <code class="user-output ml-3">3*pi</code> {{^complex}} <code class="user-output ml-3">3.6i</code>{{/complex}} {{^allow_fractions}} <code class="user-output ms-3">3/7</code> {{/allow_fractions}} </p>
     <hr>
     <small>
         <p> The submitted answer must be formatted as a <i>double-precision floating-point</i> {{#complex}}or complex{{/complex}} number.  These numbers {{#complex}}(both real and complex parts){{/complex}} lie roughly in the range of -1.79 &times; 10<sup>308</sup> to 1.79 &times; 10<sup>308</sup>.</p>

@@ -54,7 +54,7 @@ export function AdministratorFeatures({
                     <div class="list-group-item d-flex align-items-center">
                       <a
                         href="${resLocals.urlPrefix}/administrator/features/${feature}"
-                        class="mr-auto text-monospace"
+                        class="me-auto text-monospace"
                       >
                         ${feature}
                       </a>
@@ -107,7 +107,7 @@ export function AdministratorFeature({
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <span class="text-monospace">${feature}</span>
           <button
-            class="btn btn-light ml-auto"
+            class="btn btn-light ms-auto"
             data-toggle="modal"
             data-target="#add-feature-grant-modal"
           >
@@ -121,7 +121,7 @@ export function AdministratorFeature({
                   ? html`
                       <div class="list-group-item">
                         <i
-                          class="fa-solid mr-1 ${featureInConfig
+                          class="fa-solid me-1 ${featureInConfig
                             ? 'fa-check text-success'
                             : 'fa-times text-danger'}"
                         ></i>
@@ -168,7 +168,7 @@ function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantR
       ${
         isGlobal
           ? html`<li class="list-inline-item inline-flex">
-              <i class="fa-solid fa-globe mr-1"></i>
+              <i class="fa-solid fa-globe me-1"></i>
               Global
             </li>`
           : null
@@ -224,10 +224,10 @@ function FeatureGrant({
         : ''}"
     >
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
-      <div class="ml-auto d-flex flex-row flex-nowrap flex-shrink-0">
+      <div class="ms-auto d-flex flex-row flex-nowrap flex-shrink-0">
         <form
           method="POST"
-          class="mr-2"
+          class="me-2"
           hx-boost="true"
           hx-trigger="change"
           hx-ext="morphdom-swap"

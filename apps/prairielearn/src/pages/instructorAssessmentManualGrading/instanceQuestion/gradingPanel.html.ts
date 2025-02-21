@@ -148,7 +148,7 @@ ${submission.feedback?.manual}</textarea
                 </a>
               `
             : ''}
-          <span class="ml-auto">
+          <span class="ms-auto">
             ${!disable
               ? html`
                   <button

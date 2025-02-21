@@ -9,7 +9,7 @@
       {{#files}}
       <div class="list-group-item js-file-preview-item" data-file="{{name}}">
         <div class="d-flex flex-row collapsed file-status-container">
-          <div class="flex-grow-1 mr-2">
+          <div class="flex-grow-1 me-2">
             <i class="fa fa-check-circle" style="color: {{check_icon_color}}" aria-hidden="true"></i>
             {{name}}
             <p class="file-status">uploaded</p>
@@ -19,7 +19,7 @@
               Download
             </button>
             <button type="button" class="btn btn-outline-secondary btn-sm collapsed" data-toggle="collapse" data-target="#file-preview-contents-{{uuid}}-{{index}}" aria-expanded="false" aria-controls="file-preview-contents-{{uuid}}-{{index}}">
-              <span class="mr-2 js-toggle-show-preview-text">Show preview</span>
+              <span class="me-2 js-toggle-show-preview-text">Show preview</span>
               <i class="file-preview-icon fa fa-angle-down"></i>
             </button>
           </div>

@@ -87,8 +87,8 @@ export function AdministratorQuery({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Query: <span class="text-monospace">${queryFilename}</span></h1>
-          <span class="ml-3">&mdash;</span>
-          <span class="ml-3">${info.description}</span>
+          <span class="ms-3">&mdash;</span>
+          <span class="ms-3">${info.description}</span>
         </div>
 
         <div class="card-body">
@@ -131,8 +131,8 @@ export function AdministratorQuery({
                 Query ran at: ${query_run.date ? formatDate(query_run.date, 'UTC') : 'unknown'}
                 ${query_run?.result != null
                   ? html`
-                      <div class="ml-auto">
-                        <span class="mr-2" data-testid="row-count">
+                      <div class="ms-auto">
+                        <span class="me-2" data-testid="row-count">
                           ${query_run.result.rows?.length ?? 0}
                           ${query_run.result.rows?.length === 1 ? 'row' : 'rows'}
                         </span>

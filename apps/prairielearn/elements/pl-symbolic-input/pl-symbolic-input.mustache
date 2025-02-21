@@ -1,5 +1,5 @@
 {{#question}}
-{{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
+{{#inline}}<span class="form-inline d-inline-block ms-2">{{/inline}}
     <span class="input-group pl-symbolic-input">
         {{#label}}
         <span class="input-group-prepend">
@@ -53,7 +53,7 @@
                     data-placement="auto"
                     data-content="{{parse_error}}"
                 >
-                    <span class="mr-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                    <span class="me-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
                 </button>
             {{/parse_error}}
         </span>
@@ -102,7 +102,7 @@
 ${{a_sub}}$
 
 <!-- Show submitted answer submission was parsed from -->
-<button type="button" class="ml-1 btn btn-sm btn-secondary small border"
+<button type="button" class="ms-1 btn btn-sm btn-secondary small border"
     data-placement="auto" data-toggle="popover" data-html="true"
     title="Original Input" 
     data-content="Parsed from <samp class=user-output>{{raw_submitted_answer}}</samp>"

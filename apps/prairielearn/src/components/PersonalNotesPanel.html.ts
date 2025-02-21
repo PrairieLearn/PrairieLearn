@@ -38,7 +38,7 @@ export function PersonalNotesPanel({
                 (file) => html`
                   <li class="list-group-item d-flex align-items-center">
                     <a
-                      class="text-break mr-2"
+                      class="text-break me-2"
                       href="${config.urlPrefix}/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}"
                       data-testid="attached-file"
                     >
@@ -50,7 +50,7 @@ export function PersonalNotesPanel({
                     allowNewUploads &&
                     file.type === 'student_upload'
                       ? html`
-                          <div class="ml-auto">
+                          <div class="ms-auto">
                             ${DeletePersonalNoteButton({ file, variantId, csrfToken })}
                           </div>
                         `

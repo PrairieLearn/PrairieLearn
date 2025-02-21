@@ -98,9 +98,9 @@ export function InstructorAssessmentQuestionStatistics({
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question difficulty vs
             discrimination
           </h2>
-          <div class="ml-auto">
+          <div class="ms-auto">
             <small>
-              <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
+              <span class="text-light me-2">Last calculated: ${statsLastUpdated}</span>
             </small>
             <button
               type="button"
@@ -161,9 +161,9 @@ export function InstructorAssessmentQuestionStatistics({
           <h2>
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question statistics
           </h2>
-          <div class="ml-auto">
+          <div class="ms-auto">
             <small>
-              <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
+              <span class="text-light me-2">Last calculated: ${statsLastUpdated}</span>
             </small>
             <button
               type="button"
@@ -293,9 +293,9 @@ export function InstructorAssessmentQuestionStatistics({
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Detailed question
             statistics
           </h2>
-          <div class="ml-auto">
+          <div class="ms-auto">
             <small>
-              <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
+              <span class="text-light me-2">Last calculated: ${statsLastUpdated}</span>
             </small>
             <button
               type="button"

@@ -249,7 +249,7 @@
           var download =
             '<a download="' +
             fileName +
-            '" class="btn btn-outline-secondary btn-sm mr-1" href="data:application/octet-stream;base64,' +
+            '" class="btn btn-outline-secondary btn-sm me-1" href="data:application/octet-stream;base64,' +
             fileData +
             '">Download</a>';
 

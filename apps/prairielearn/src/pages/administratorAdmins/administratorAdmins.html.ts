@@ -27,7 +27,7 @@ export function AdministratorAdmins({
           <h1>Administrators</h1>
           <button
             type="button"
-            class="btn btn-sm btn-light ml-auto"
+            class="btn btn-sm btn-light ms-auto"
             data-toggle="popover"
             data-container="body"
             data-html="true"

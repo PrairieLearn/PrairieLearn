@@ -58,7 +58,7 @@ onDocumentReady(() => {
         `.toString();
       },
       item(data: Tag) {
-        return html`<span class="badge color-${data.color} mr-1">${data.name}</span>`.toString();
+        return html`<span class="badge color-${data.color} me-1">${data.name}</span>`.toString();
       },
     },
   });

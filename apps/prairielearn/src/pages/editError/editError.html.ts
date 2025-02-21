@@ -46,7 +46,7 @@ export function EditError({
               <h1>Edit Failure</h1>
               <button
                 type="button"
-                class="btn btn-light btn-sm ml-auto"
+                class="btn btn-light btn-sm ms-auto"
                 data-toggle="collapse"
                 data-target="#job-sequence-results"
                 id="job-sequence-results-button"

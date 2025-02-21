@@ -88,7 +88,7 @@ function ActionsHeader() {
         <div class="col-md-6">
           <div class="card rounded-pill my-1">
             <div class="card-body d-flex align-items-center p-2">
-              <span class="fa-stack fa-1x mr-1" aria-hidden="true">
+              <span class="fa-stack fa-1x me-1" aria-hidden="true">
                 <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                 <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
               </span>
@@ -104,7 +104,7 @@ function ActionsHeader() {
         <div class="col-md-6">
           <div class="card rounded-pill my-1">
             <div class="card-body d-flex align-items-center p-2">
-              <span class="fa-stack fa-1x mr-1" aria-hidden="true">
+              <span class="fa-stack fa-1x me-1" aria-hidden="true">
                 <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                 <i class="fas fa-user-tie fa-stack-1x text-light"></i>
               </span>
@@ -116,7 +116,7 @@ function ActionsHeader() {
               </a>
               <a
                 href="https://prairielearn.readthedocs.io/en/latest"
-                class="btn btn-xs btn-outline-primary ml-2"
+                class="btn btn-xs btn-outline-primary ms-2"
               >
                 View docs
               </a>
@@ -240,7 +240,7 @@ function StudentCoursesCard({
         <h2>${heading}</h2>
         ${canAddCourses
           ? html`
-              <a href="${config.urlPrefix}/enroll" class="btn btn-light btn-sm ml-auto">
+              <a href="${config.urlPrefix}/enroll" class="btn btn-light btn-sm ms-auto">
                 <i class="fa fa-edit" aria-hidden="true"></i>
                 <span class="d-none d-sm-inline">Add or remove courses</span>
               </a>

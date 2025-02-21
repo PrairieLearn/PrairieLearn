@@ -36,7 +36,7 @@ export function AdministratorBatchedMigrations({
                   <div class="list-group-item d-flex align-items-center">
                     <a
                       href="${resLocals.urlPrefix}/administrator/batchedMigrations/${migration.id}"
-                      class="mr-auto"
+                      class="me-auto"
                     >
                       ${migration.filename}
                     </a>
@@ -170,7 +170,7 @@ function MigrationJobsCard({
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        <span class="mr-auto">${title}</span>
+        <span class="me-auto">${title}</span>
       </div>
       ${jobs.length > 0
         ? html`<div class="list-group list-group-flush">

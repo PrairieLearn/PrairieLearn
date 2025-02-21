@@ -94,7 +94,7 @@ export function InstructorAiGenerateDraftEditor({
                     ></textarea>
                     <button type="submit" class="btn btn-dark w-100">
                       <span
-                        class="spinner-grow spinner-grow-sm d-none mr-1"
+                        class="spinner-grow spinner-grow-sm d-none me-1"
                         role="status"
                         aria-hidden="true"
                         data-loading-class-remove="d-none"
@@ -109,7 +109,7 @@ export function InstructorAiGenerateDraftEditor({
               </div>
 
               <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs">
-                <ul class="nav nav-tabs mr-auto pl-2 pt-2">
+                <ul class="nav nav-tabs me-auto ps-2 pt-2">
                   <li class="nav-item">
                     <a
                       class="nav-link active"
@@ -125,7 +125,7 @@ export function InstructorAiGenerateDraftEditor({
                   </li>
                 </ul>
                 <div
-                  class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pr-2"
+                  class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2"
                 >
                   <span data-toggle="modal" data-target="#finalizeModal">
                     <button
@@ -190,7 +190,7 @@ function PromptHistory({
         </div>
       </div>
       <div
-        class="d-flex flex-row justify-content-start align-items-start py-3 pl-3 mb-2 prompt-response"
+        class="d-flex flex-row justify-content-start align-items-start py-3 ps-3 mb-2 prompt-response"
       >
         <div>
           ${run(() => {
@@ -284,7 +284,7 @@ function QuestionCodeEditors({
     <div class="editor-panes p-2 gap-2">
       <!-- TODO: Move this to a more sensible location -->
       <div class="editor-pane-status">
-        <div class="d-flex flex-row align-items-center justify-content-between pl-2">
+        <div class="d-flex flex-row align-items-center justify-content-between ps-2">
           <span class="js-editor-status">No unsaved changes.</span>
           <form method="post" class="js-editor-form">
             <input type="hidden" name="__action" value="submit_manual_revision" />

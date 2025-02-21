@@ -611,7 +611,7 @@ onDocumentReady(() => {
           ) : null}
         </p>
         <div class="btn-toolbar justify-content-end">
-          <button type="button" class="btn btn-secondary mr-2" data-dismiss="popover">
+          <button type="button" class="btn btn-secondary me-2" data-dismiss="popover">
             Cancel
           </button>
           <button type="submit" class="btn btn-primary">
@@ -650,7 +650,7 @@ onDocumentReady(() => {
       ${value}
       <span>
         <button
-          class="btn btn-secondary btn-xs ml-1 time-limit-edit-button"
+          class="btn btn-secondary btn-xs ms-1 time-limit-edit-button"
           id="row${row.assessment_instance_id}PopoverTimeLimit"
           aria-label="Change time limit"
           data-row="${JSON.stringify(row)}"
@@ -745,7 +745,7 @@ onDocumentReady(() => {
                     data-score-perc="${Math.floor(row.score_perc ?? 0)}"
                     data-assessment-instance-id="${row.assessment_instance_id}"
                   >
-                    <i class="fas fa-times mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-times me-2" aria-hidden="true"></i>
                     Delete
                   </button>
                   <button
@@ -757,14 +757,14 @@ onDocumentReady(() => {
                     data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
                     data-placement="auto"
                   >
-                    <i class="fas fa-ban mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-ban me-2" aria-hidden="true"></i>
                     Grade &amp; Close
                   </button>
                   <button
                     class="dropdown-item ${!row.open ? '' : 'disabled'}"
                     onclick="$('#row${ai_id}PopoverTimeLimit').popover('show')"
                   >
-                    <i class="fas fa-clock mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-clock me-2" aria-hidden="true"></i>
                     Re-open
                   </button>
                   <button
@@ -776,7 +776,7 @@ onDocumentReady(() => {
                     data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
                     data-placement="auto"
                   >
-                    <i class="fas fa-sync mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-sync me-2" aria-hidden="true"></i>
                     Regrade
                   </button>
                 `

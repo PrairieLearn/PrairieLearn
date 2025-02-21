@@ -54,7 +54,7 @@ function AdminsCard({ rows }: { rows: InstitutionAdminAdminsRow[] }) {
         Administrators
         <button
           type="button"
-          class="btn btn-sm btn-light ml-auto"
+          class="btn btn-sm btn-light ms-auto"
           data-toggle="modal"
           data-target="#addAdminsModal"
         >
@@ -80,7 +80,7 @@ function AdminsCard({ rows }: { rows: InstitutionAdminAdminsRow[] }) {
                     </div>
 
                     <button
-                      class="btn btn-sm btn-outline-danger ml-auto js-remove-admin"
+                      class="btn btn-sm btn-outline-danger ms-auto js-remove-admin"
                       data-toggle="modal"
                       data-target="#removeAdminModal"
                       type="button"

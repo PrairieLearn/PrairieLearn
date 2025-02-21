@@ -290,7 +290,7 @@ export function InstructorFileEditor({
                         </div>
                         <button
                           type="button"
-                          class="mr-2 m-auto btn-close-white close"
+                          class="me-2 m-auto btn-close-white close"
                           data-dismiss="toast"
                           aria-label="Close"
                         >

@@ -1,5 +1,5 @@
 {{#question}}
-{{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
+{{#inline}}<span class="form-inline d-inline-block ms-2">{{/inline}}
     <span class="input-group pl-units-input">
         {{#label}}
         <span class="input-group-prepend">
@@ -61,7 +61,7 @@
                     data-placement="auto"
                     data-content="{{parse_error}}"
                 >
-                    <span class="mr-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                    <span class="me-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
                 </button>
             {{/parse_error}}
         </span>
@@ -129,17 +129,17 @@
 {{/feedback}}
 
 {{#correct}}
-<span class="mr-1 badge badge-success">
+<span class="me-1 badge badge-success">
     <i class="fa fa-check" aria-hidden="true"></i> 100%
 </span>
 {{/correct}}
 {{#partial}}
-<span class="mr-1 badge badge-warning">
+<span class="me-1 badge badge-warning">
     <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
 </span>
 {{/partial}}
 {{#incorrect}}
-<span class="mr-1 badge badge-danger">
+<span class="me-1 badge badge-danger">
     <i class="fa fa-times" aria-hidden="true"></i> 0%
 </span>
 {{/incorrect}}

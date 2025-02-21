@@ -10,7 +10,7 @@
 
         <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
             {{^hide_letter_keys}}<div class="pl-checkbox-key-label">({{key}})</div>{{/hide_letter_keys}}
-            <div class="ml-1 mr-1 pl-checkbox-answer">{{{html}}}</div>
+            <div class="ms-1 me-1 pl-checkbox-answer">{{{html}}}</div>
         </label>
 
         {{#display_feedback}}
@@ -59,7 +59,7 @@
 {{^inline}}<div class="d-block">{{/inline}}
     <span >
         <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-        <button type="button" class="btn btn-sm btn-secondary small border ml-1" data-placement="auto" data-toggle="popover" data-html="true" title="Format Error" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
+        <button type="button" class="btn btn-sm btn-secondary small border ms-1" data-placement="auto" data-toggle="popover" data-html="true" title="Format Error" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
     </span>
 </div>
 {{#inline}}</span>{{/inline}}

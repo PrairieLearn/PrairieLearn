@@ -245,7 +245,7 @@ function LinkedAssessments({
                         })}
                         ${row.assessment_group_heading}
                         <button
-                          class="btn btn-sm btn-secondary ml-2"
+                          class="btn btn-sm btn-secondary ms-2"
                           type="button"
                           data-toggle="modal"
                           data-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"

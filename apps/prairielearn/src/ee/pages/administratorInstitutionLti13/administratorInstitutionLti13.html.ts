@@ -131,7 +131,7 @@ function LTI13Instance(
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_name" />
         <div class="form-group my-2">
-          <label for="name" class="mr-2">Branded platform name: </label>
+          <label for="name" class="me-2">Branded platform name: </label>
           <input
             id="name"
             class="form-control"
@@ -161,7 +161,7 @@ function LTI13Instance(
 
         <div class="form-group">
           <label for="choosePlatform">Platform type: </label>
-          <div class="form-check form-check-inline ml-2">
+          <div class="form-check form-check-inline ms-2">
             <label class="form-check-label">
               <input
                 id="update_params"

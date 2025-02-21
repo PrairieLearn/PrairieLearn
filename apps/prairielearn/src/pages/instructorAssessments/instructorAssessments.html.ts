@@ -86,7 +86,7 @@ export function InstructorAssessments({
           ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
             ? html`
                 <button
-                  class="btn btn-sm btn-light ml-auto"
+                  class="btn btn-sm btn-light ms-auto"
                   data-toggle="modal"
                   data-target="#createAssessmentModal"
                 >

@@ -209,7 +209,7 @@ function CopyCourseInstanceForm({
 }) {
   return html`
     <div class="card-footer d-flex flex-wrap align-items-center">
-      <form name="copy-course-instance-form" class="form-inline mr-2" method="POST">
+      <form name="copy-course-instance-form" class="form-inline me-2" method="POST">
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
         <button name="__action" value="copy_course_instance" class="btn btn-sm btn-primary">
           <i class="fa fa-clone"></i> Make a copy of this course instance

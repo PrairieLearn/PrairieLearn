@@ -496,7 +496,7 @@ function QuestionSharing({
   if (question.shared_publicly) {
     details.push(html`
       <p>
-        <span class="badge color-green3 mr-1">Public</span>
+        <span class="badge color-green3 me-1">Public</span>
         This question is publicly shared and can be imported by other courses.
       </p>
     `);
@@ -505,7 +505,7 @@ function QuestionSharing({
   if (question.share_source_publicly) {
     details.push(html`
       <p>
-        <span class="badge color-green3 mr-1">Public source</span>
+        <span class="badge color-green3 me-1">Public source</span>
         This question's source is publicly shared.
       </p>
     `);

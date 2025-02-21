@@ -251,7 +251,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                       ? html`
                           <button
                             type="button"
-                            class="btn btn-link btn-sm js-disable-rubric-button mr-auto"
+                            class="btn btn-link btn-sm js-disable-rubric-button me-auto"
                           >
                             Disable rubric
                           </button>

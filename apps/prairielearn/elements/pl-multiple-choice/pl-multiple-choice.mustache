@@ -19,7 +19,7 @@
 
             <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
                 {{^hide_letter_keys}}<div class="pl-multiple-choice-key-label">({{key}})</div>{{/hide_letter_keys}}
-                <div class="ml-1 mr-1 pl-multiple-choice-answer">{{{html}}}</div>
+                <div class="ms-1 me-1 pl-multiple-choice-answer">{{{html}}}</div>
             </label>
 
             {{#display_feedback}}
@@ -94,13 +94,13 @@
 
     {{#display_score_badge}}
         {{#correct}}
-            <span class="ml-1 badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+            <span class="ms-1 badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
         {{#incorrect}}
-            <span class="ml-1 badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+            <span class="ms-1 badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
         {{/incorrect}}
         {{#partial}}
-            <span class="ml-1 badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+            <span class="ms-1 badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
         {{/partial}}
     {{/display_score_badge}}
 </span>
@@ -138,13 +138,13 @@
 
     {{#display_score_badge}}
         {{#correct}}
-            <span class="ml-1 badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+            <span class="ms-1 badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
         {{#incorrect}}
-            <span class="ml-1 badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+            <span class="ms-1 badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
         {{/incorrect}}
         {{#partial}}
-            <span class="ml-1 badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+            <span class="ms-1 badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
         {{/partial}}
     {{/display_score_badge}}
 

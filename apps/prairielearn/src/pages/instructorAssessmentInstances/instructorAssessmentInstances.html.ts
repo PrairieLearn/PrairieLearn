@@ -77,7 +77,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students</h1>
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
-                <div class="ml-auto">
+                <div class="ms-auto">
                   <div class="dropdown d-flex flex-row">
                     <button
                       type="button"

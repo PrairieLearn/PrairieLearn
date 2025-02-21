@@ -93,7 +93,7 @@ export function SubmissionPanel({
                   ? ' collapsed'
                   : ''}"
               >
-                <div class="mr-auto">
+                <div class="me-auto">
                   Feedback from the Course Staff
                   ${submissionCount > 1
                     ? `(for submitted answer ${submission.submission_number})`
@@ -109,7 +109,7 @@ export function SubmissionPanel({
                   aria-expanded="${expanded ? 'true' : 'false'}"
                   aria-controls="submission-feedback-${submission.id}-body"
                 >
-                  <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+                  <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
                 </button>
               </div>
               <div
@@ -200,9 +200,9 @@ export function SubmissionPanel({
 
       <div class="card mb-4" data-testid="submission-block">
         <div class="card-header bg-light text-dark d-flex align-items-center submission-header">
-          <div class="mr-2">
+          <div class="me-2">
             <div>
-              <span class="mr-2 d-flex align-items-center">
+              <span class="me-2 d-flex align-items-center">
                 <h2 class="h6 font-weight-normal mb-0">
                   Submitted answer ${submissionCount > 1 ? submission.submission_number : ''}
                 </h2>
@@ -214,7 +214,7 @@ export function SubmissionPanel({
                 : `${submission.user_uid} submitted at ${submission.formatted_date}`}
             </span>
           </div>
-          <div class="mr-auto" data-testid="submission-status">
+          <div class="me-auto" data-testid="submission-status">
             ${SubmissionStatusBadge({
               submission,
               question,
@@ -225,7 +225,7 @@ export function SubmissionPanel({
           </div>
           <button
             type="button"
-            class="btn btn-outline-dark btn-sm ml-2 mr-2"
+            class="btn btn-outline-dark btn-sm ms-2 me-2"
             data-submission-id="${submission.id}"
             data-toggle="modal"
             data-target="#submissionInfoModal-${submission.id}"
@@ -243,7 +243,7 @@ export function SubmissionPanel({
             aria-expanded="${expanded ? 'true' : 'false'}"
             aria-controls="submission-${submission.id}-body"
           >
-            <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+            <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
           </button>
         </div>
 
@@ -443,23 +443,23 @@ function SubmissionInfoModal({
               ${question.grading_method === 'External'
                 ? html`
                     <tr>
-                      <th><span class="text-dark mr-2">&bull;</span>Submit duration</th>
+                      <th><span class="text-dark me-2">&bull;</span>Submit duration</th>
                       <td>${gradingJobStats.submitDuration}</td>
                     </tr>
                     <tr>
-                      <th><span class="text-warning mr-2">&bull;</span>Queue duration</th>
+                      <th><span class="text-warning me-2">&bull;</span>Queue duration</th>
                       <td>${gradingJobStats.queueDuration}</td>
                     </tr>
                     <tr>
-                      <th><span class="text-primary mr-2">&bull;</span>Prepare duration</th>
+                      <th><span class="text-primary me-2">&bull;</span>Prepare duration</th>
                       <td>${gradingJobStats.prepareDuration}</td>
                     </tr>
                     <tr>
-                      <th><span class="text-success mr-2">&bull;</span>Run duration</th>
+                      <th><span class="text-success me-2">&bull;</span>Run duration</th>
                       <td>${gradingJobStats.runDuration}</td>
                     </tr>
                     <tr>
-                      <th><span class="text-danger mr-2">&bull;</span>Report duration</th>
+                      <th><span class="text-danger me-2">&bull;</span>Report duration</th>
                       <td>${gradingJobStats.reportDuration}</td>
                     </tr>
                     <tr>

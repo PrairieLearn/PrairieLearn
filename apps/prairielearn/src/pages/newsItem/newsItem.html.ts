@@ -40,7 +40,7 @@ export function NewsItem({
           <h1>${newsItem.title}</h1>
 
           <p>
-            <i class="mr-2 text-muted">
+            <i class="me-2 text-muted">
               Posted on ${formattedDate}
               ${newsItem.author ? html`by ${unsafeHtml(newsItem.author)}` : ''}
             </i>

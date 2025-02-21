@@ -53,7 +53,7 @@ export function AdministratorCourses({
           <h2>Courses</h2>
           <button
             type="button"
-            class="btn btn-sm btn-light ml-auto"
+            class="btn btn-sm btn-light ms-auto"
             data-toggle="popover"
             data-container="body"
             data-html="true"

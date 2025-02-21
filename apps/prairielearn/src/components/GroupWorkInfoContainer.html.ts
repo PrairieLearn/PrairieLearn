@@ -170,7 +170,7 @@ function GroupRoleTable({
                       ${rolesInfo.groupRoles.map(
                         (role) => html`
                           <label
-                            class="ml-2 ${rolesInfo.disabledRoles.includes(role.role_name)
+                            class="ms-2 ${rolesInfo.disabledRoles.includes(role.role_name)
                               ? 'text-muted'
                               : ''}"
                           >

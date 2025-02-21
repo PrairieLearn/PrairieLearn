@@ -29,7 +29,7 @@ export function CourseRequestsTable({
           ? ''
           : html`
               <a
-                class="btn btn-sm btn-light ml-auto"
+                class="btn btn-sm btn-light ms-auto"
                 href="${urlPrefix}/administrator/courseRequests"
               >
                 <i class="fa fa-search" aria-hidden="true"></i>
@@ -84,7 +84,7 @@ export function CourseRequestsTable({
                       ? html`
                           <button
                             type="button"
-                            class="btn btn-sm btn-danger text-nowrap mr-2"
+                            class="btn btn-sm btn-danger text-nowrap me-2"
                             data-toggle="popover"
                             data-container="body"
                             data-boundary="window"

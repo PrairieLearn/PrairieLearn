@@ -62,7 +62,7 @@ export function Workspace({
 
         <nav class="navbar navbar-light navbar-expand-lg bg-info align-items-center">
           <div class="container-fluid">
-            <div class="d-flex flex-column mr-3">
+            <div class="d-flex flex-column me-3">
               <h1 class="h6 font-weight-normal mb-0">
                 <a href="${navTitleHref}" target="_blank" style="color: #000;">${navTitle}</a>
               </h1>
@@ -72,7 +72,7 @@ export function Workspace({
               </span>
             </div>
 
-            <div class="d-flex flex-row mr-auto align-items-center">
+            <div class="d-flex flex-row me-auto align-items-center">
               <span id="state" class="badge badge-dark badge-workspace text-uppercase">
                 <i class="fas fa-spinner fa-pulse"></i>
               </span>
@@ -82,7 +82,7 @@ export function Workspace({
               ></span>
             </div>
             <button
-              class="navbar-toggler ml-2"
+              class="navbar-toggler ms-2"
               type="button"
               data-toggle="collapse"
               data-target="#workspace-nav"
@@ -90,17 +90,17 @@ export function Workspace({
               <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="workspace-nav">
-              <ul class="navbar-nav ml-auto">
+              <ul class="navbar-nav ms-auto">
                 ${resLocals.assessment?.type === 'Exam' &&
                 resLocals.assessment_instance_remaining_ms
-                  ? html` <li class="nav-item ml-2 my-1">
+                  ? html` <li class="nav-item ms-2 my-1">
                       <div id="countdownProgress"></div>
                       <div class="text-white small">
                         Time remaining: <span id="countdownDisplay"></span>
                       </div>
                     </li>`
                   : ''}
-                <li class="nav-item ml-2 my-1">
+                <li class="nav-item ms-2 my-1">
                   <button
                     id="reboot"
                     class="nav-item btn btn-light"
@@ -111,7 +111,7 @@ export function Workspace({
                     Reboot
                   </button>
                 </li>
-                <li class="nav-item ml-2 my-1">
+                <li class="nav-item ms-2 my-1">
                   <button
                     id="reset"
                     class="nav-item btn btn-light"
@@ -124,7 +124,7 @@ export function Workspace({
                 </li>
                 ${showLogs
                   ? html`
-                      <li class="nav-item ml-2 my-1">
+                      <li class="nav-item ms-2 my-1">
                         <a
                           class="nav-item btn btn-light"
                           href="${urlPrefix}/workspace/${workspace_id}/logs"
@@ -136,7 +136,7 @@ export function Workspace({
                       </li>
                     `
                   : null}
-                <li class="nav-item ml-2 ml-md-3 my-1">
+                <li class="nav-item ms-2 ml-md-3 my-1">
                   <button
                     type="button"
                     class="nav-item btn btn-light"

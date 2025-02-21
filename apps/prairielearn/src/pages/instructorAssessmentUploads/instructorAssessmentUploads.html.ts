@@ -187,7 +187,7 @@ function CsvHelpInstanceQuestionScores() {
       >.
     </p>
     <p>Alternatively, the CSV file can be in the format:</p>
-    <pre class="ml-4">
+    <pre class="ms-4">
 uid,instance,qid,score_perc,feedback
 student1@example.com,1,addTwoNumbers,34.5,The second step was wrong
 student2@example.com,1,addTwoNumbers,78.92,
@@ -213,7 +213,7 @@ student2@example.com,1,matrixMultiply,100,Great job!</pre
 function CsvHelpAssessmentInstanceScores() {
   return html`
     <p>Upload a CSV file like this:</p>
-    <pre class="ml-4">
+    <pre class="ms-4">
 uid,instance,score_perc
 student1@example.com,1,63.5
 student2@example.com,1,100</pre
@@ -228,13 +228,13 @@ student2@example.com,1,100</pre
       Alternatively, the total assessment points can be changed with a CSV containing a
       <code>points</code> column, like:
     </p>
-    <pre class="ml-4">
+    <pre class="ms-4">
 uid,instance,points
 student1@example.com,1,120
 student2@example.com,1,130.27</pre
     >
     <p>For assessments using group work, use the <code>group_name</code> column instead:</p>
-    <pre class="ml-4">
+    <pre class="ms-4">
 group_name,instance,score_perc
 myhappygroup,1,95
 greatgroup,1,85</pre

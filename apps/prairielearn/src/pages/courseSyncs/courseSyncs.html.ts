@@ -191,7 +191,7 @@ function ImageTable({
               <tr>
                 <td>
                   <div class="d-flex flex-row align-items-center">
-                    <span class="mr-2">${image.image}</span>
+                    <span class="me-2">${image.image}</span>
                     ${image.invalid
                       ? html`<span class="badge badge-danger">Invalid image name</span>`
                       : ''}

@@ -94,7 +94,7 @@ export function InstructorAssessmentGroups({
                 <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups</h1>
                 ${resLocals.authz_data.has_course_instance_permission_edit
                   ? html`
-                      <div class="ml-auto">
+                      <div class="ms-auto">
                         <button
                           type="button"
                           class="btn btn-sm btn-light"

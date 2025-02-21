@@ -131,7 +131,7 @@ onDocumentReady(() => {
             ? html`
                 <button
                   type="button"
-                  class="btn btn-xs btn-secondary edit-score ml-1"
+                  class="btn btn-xs btn-secondary edit-score ms-1"
                   aria-label="Edit score"
                   data-assessment-instance-id="${assessment_instance_id}"
                   data-score="${score}"
@@ -219,7 +219,7 @@ function setupEditScorePopovers(csrfToken: string) {
                   This change will be overwritten if further questions are answered by the student.
                 </small>
               </p>
-              <button type="button" class="btn btn-secondary mr-2 js-popover-cancel-button">
+              <button type="button" class="btn btn-secondary me-2 js-popover-cancel-button">
                 Cancel
               </button>
               <button type="submit" class="btn btn-primary">Change</button>
