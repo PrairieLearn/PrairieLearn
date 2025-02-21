@@ -2,6 +2,7 @@ import os
 from collections.abc import Generator, Iterable, Iterator
 from functools import cache
 from html import escape, unescape
+from textwrap import dedent
 from typing import Any
 
 import chevron
@@ -27,6 +28,7 @@ HIGHLIGHT_LINES_COLOR_DEFAULT = None
 DIRECTORY_DEFAULT = "."
 COPY_CODE_BUTTON_DEFAULT = False
 SHOW_LINE_NUMBERS_DEFAULT = False
+NORMALIZE_WHITESPACE_DEFAULT = False
 
 # These are the same colors used in pl-external-grader-result
 ANSI_COLORS = {
@@ -198,6 +200,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "copy-code-button",
         "style",
         "show-line-numbers",
+        "normalize-whitespace",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -257,6 +260,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "show-line-numbers", SHOW_LINE_NUMBERS_DEFAULT
     )
 
+    normalize_whitespace = pl.get_boolean_attrib(
+        element, "normalize-whitespace", NORMALIZE_WHITESPACE_DEFAULT
+    )
+
     # The no-highlight option is deprecated, but supported for backwards compatibility
     if pl.get_boolean_attrib(element, "no-highlight", NO_HIGHLIGHT_DEFAULT):
         language = None
@@ -302,6 +309,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
 
     code = pygments.highlight(unescape(code), lexer, formatter)
+
+    if normalize_whitespace:
+        code = dedent(code.strip())
 
     html_params = {
         "uuid": pl.get_uuid(),
