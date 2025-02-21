@@ -248,7 +248,7 @@ function LinkedAssessments({
                           class="btn btn-sm btn-secondary ms-2"
                           type="button"
                           data-bs-toggle="modal"
-                          data-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
+                          data-bs-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
                         >
                           Bulk actions
                         </button>
@@ -326,7 +326,7 @@ function LinkedAssessments({
                             class="btn btn-med-light"
                             type="button"
                             data-bs-toggle="modal"
-                            data-target="#assignment-${row.id}"
+                            data-bs-target="#assignment-${row.id}"
                           >
                             Link assignment
                           </button>

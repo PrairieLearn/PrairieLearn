@@ -232,7 +232,7 @@ export function InstructorAIGenerateDrafts({
               <button
                 class="btn btn-sm btn-outline-danger ms-2"
                 data-bs-toggle="modal"
-                data-target="#deleteModal"
+                data-bs-target="#deleteModal"
               >
                 <i class="fa fa-trash" aria-hidden="true"></i>
                 <span class="d-none d-sm-inline">Delete all drafts</span>

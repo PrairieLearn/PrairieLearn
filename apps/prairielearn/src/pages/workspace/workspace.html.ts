@@ -85,7 +85,7 @@ export function Workspace({
               class="navbar-toggler ms-2"
               type="button"
               data-bs-toggle="collapse"
-              data-target="#workspace-nav"
+              data-bs-target="#workspace-nav"
             >
               <span class="navbar-toggler-icon"></span>
             </button>
@@ -105,7 +105,7 @@ export function Workspace({
                     id="reboot"
                     class="nav-item btn btn-light"
                     data-bs-toggle="modal"
-                    data-target="#rebootModal"
+                    data-bs-target="#rebootModal"
                   >
                     <i class="fas fa-sync text-info" aria-hidden="true"></i>
                     Reboot
@@ -116,7 +116,7 @@ export function Workspace({
                     id="reset"
                     class="nav-item btn btn-light"
                     data-bs-toggle="modal"
-                    data-target="#resetModal"
+                    data-bs-target="#resetModal"
                   >
                     <i class="fas fa-trash text-danger" aria-hidden="true"></i>
                     Reset

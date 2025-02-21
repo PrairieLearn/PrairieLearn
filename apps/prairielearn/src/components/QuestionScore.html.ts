@@ -210,7 +210,7 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
       class="btn btn-xs btn-secondary"
       type="button"
       data-bs-toggle="collapse"
-      data-target="#issueCollapse"
+      data-bs-target="#issueCollapse"
       aria-expanded="false"
       aria-controls="issueCollapse"
     >

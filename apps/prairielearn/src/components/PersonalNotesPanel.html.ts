@@ -94,7 +94,7 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
         class="btn btn-xs btn-secondary"
         type="button"
         data-bs-toggle="collapse"
-        data-target="#attachFileCollapse"
+        data-bs-target="#attachFileCollapse"
         aria-expanded="false"
         aria-controls="attachFileCollapse"
       >
@@ -153,7 +153,7 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
         class="btn btn-xs btn-secondary"
         type="button"
         data-bs-toggle="collapse"
-        data-target="#attachTextCollapse"
+        data-bs-target="#attachTextCollapse"
         aria-expanded="false"
         aria-controls="attachTextCollapse"
       >

@@ -48,7 +48,7 @@ export function EditError({
                 type="button"
                 class="btn btn-light btn-sm ms-auto"
                 data-bs-toggle="collapse"
-                data-target="#job-sequence-results"
+                data-bs-target="#job-sequence-results"
                 id="job-sequence-results-button"
               >
                 Show detail

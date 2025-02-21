@@ -29,7 +29,7 @@ export function RegenerateInstanceAlert() {
   return html`
     <div class="alert alert-warning border-warning alert-dismissible fade show">
       Course staff:
-      <a href="#" role="button" data-bs-toggle="modal" data-target="#regenerateInstanceModal">
+      <a href="#" role="button" data-bs-toggle="modal" data-bs-target="#regenerateInstanceModal">
         Regenerate your assessment instance</a
       >
       to pick up changes to the assessment or to get a fresh set of questions.

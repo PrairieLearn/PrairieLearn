@@ -89,7 +89,7 @@ function LTI13Instance(
           class="btn btn-sm btn-secondary"
           type="button"
           data-bs-toggle="modal"
-          data-target="#instanceData"
+          data-bs-target="#instanceData"
         >
           <i class="fa-solid fa-screwdriver-wrench"></i> Show details
         </button>

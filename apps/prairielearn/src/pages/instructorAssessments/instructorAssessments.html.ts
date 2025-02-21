@@ -88,7 +88,7 @@ export function InstructorAssessments({
                 <button
                   class="btn btn-sm btn-light ms-auto"
                   data-bs-toggle="modal"
-                  data-target="#createAssessmentModal"
+                  data-bs-target="#createAssessmentModal"
                 >
                   <i class="fa fa-plus" aria-hidden="true"></i>
                   <span class="d-none d-sm-inline">Add assessment</span>
@@ -189,7 +189,7 @@ export function InstructorAssessments({
                     <button
                       class="btn btn-sm btn-primary"
                       data-bs-toggle="modal"
-                      data-target="#createAssessmentModal"
+                      data-bs-target="#createAssessmentModal"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>
                       <span class="d-none d-sm-inline">Add assessment</span>

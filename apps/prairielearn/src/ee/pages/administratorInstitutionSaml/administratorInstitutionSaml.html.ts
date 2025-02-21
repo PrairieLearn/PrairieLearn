@@ -326,7 +326,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
                 class="btn btn-danger"
                 type="button"
                 data-bs-toggle="modal"
-                data-target="#deleteModal"
+                data-bs-target="#deleteModal"
               >
                 Delete SAML configuration
               </button>

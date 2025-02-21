@@ -105,7 +105,7 @@ export function SubmissionPanel({
                     ? 'collapsed'
                     : ''}"
                   data-bs-toggle="collapse"
-                  data-target="#submission-feedback-${submission.id}-body"
+                  data-bs-target="#submission-feedback-${submission.id}-body"
                   aria-expanded="${expanded ? 'true' : 'false'}"
                   aria-controls="submission-feedback-${submission.id}-body"
                 >
@@ -228,7 +228,7 @@ export function SubmissionPanel({
             class="btn btn-outline-dark btn-sm ms-2 me-2"
             data-submission-id="${submission.id}"
             data-bs-toggle="modal"
-            data-target="#submissionInfoModal-${submission.id}"
+            data-bs-target="#submissionInfoModal-${submission.id}"
             aria-label="Submission info"
           >
             <i class="fa fa-info-circle fa-fw"></i>
@@ -239,7 +239,7 @@ export function SubmissionPanel({
               ? 'collapsed'
               : ''}"
             data-bs-toggle="collapse"
-            data-target="#submission-${submission.id}-body"
+            data-bs-target="#submission-${submission.id}-body"
             aria-expanded="${expanded ? 'true' : 'false'}"
             aria-controls="submission-${submission.id}-body"
           >

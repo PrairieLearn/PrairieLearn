@@ -109,7 +109,7 @@ export function AdministratorFeature({
           <button
             class="btn btn-light ms-auto"
             data-bs-toggle="modal"
-            data-target="#add-feature-grant-modal"
+            data-bs-target="#add-feature-grant-modal"
           >
             Grant feature
           </button>

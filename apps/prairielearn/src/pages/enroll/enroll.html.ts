@@ -61,7 +61,7 @@ export function Enroll({
                                   type="button"
                                   class="btn btn-sm btn-info"
                                   data-bs-toggle="modal"
-                                  data-target="#add-course-modal"
+                                  data-bs-target="#add-course-modal"
                                   data-course-instance-id="${course_instance.course_instance_id}"
                                   data-course-instance-short-label="${course_instance.short_label}"
                                 >
@@ -77,7 +77,7 @@ export function Enroll({
                                   type="button"
                                   class="btn btn-sm btn-danger"
                                   data-bs-toggle="modal"
-                                  data-target="#remove-course-modal"
+                                  data-bs-target="#remove-course-modal"
                                   data-course-instance-id="${course_instance.course_instance_id}"
                                   data-course-instance-short-label="${course_instance.short_label}"
                                 >

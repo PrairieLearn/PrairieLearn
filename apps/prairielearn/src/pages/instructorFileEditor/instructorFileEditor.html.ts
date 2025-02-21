@@ -129,7 +129,7 @@ export function InstructorFileEditor({
                   id="help-button"
                   class="btn btn-light btn-sm"
                   data-bs-toggle="collapse"
-                  data-target="#help"
+                  data-bs-target="#help"
                   aria-expanded="false"
                 >
                   <i class="far fa-question-circle" aria-hidden="true"></i>
@@ -199,7 +199,7 @@ export function InstructorFileEditor({
                                   type="button"
                                   class="btn btn-secondary btn-sm"
                                   data-bs-toggle="collapse"
-                                  data-target="#job-sequence-results"
+                                  data-bs-target="#job-sequence-results"
                                   id="job-sequence-results-button"
                                 >
                                   Show detail

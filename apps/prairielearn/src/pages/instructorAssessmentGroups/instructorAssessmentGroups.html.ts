@@ -99,7 +99,7 @@ export function InstructorAssessmentGroups({
                           type="button"
                           class="btn btn-sm btn-light"
                           data-bs-toggle="modal"
-                          data-target="#addGroupModal"
+                          data-bs-target="#addGroupModal"
                         >
                           <i class="fa fa-plus" aria-hidden="true"></i> Add a group
                         </button>
@@ -107,7 +107,7 @@ export function InstructorAssessmentGroups({
                           type="button"
                           class="btn btn-sm btn-danger"
                           data-bs-toggle="modal"
-                          data-target="#deleteAllGroupsModal"
+                          data-bs-target="#deleteAllGroupsModal"
                         >
                           <i class="fa fa-times" aria-hidden="true"></i> Delete all groups
                         </button>
@@ -124,7 +124,7 @@ export function InstructorAssessmentGroups({
                             type="button"
                             class="btn btn-primary text-nowrap"
                             data-bs-toggle="modal"
-                            data-target="#uploadAssessmentGroupsModal"
+                            data-bs-target="#uploadAssessmentGroupsModal"
                           >
                             <i class="fas fa-upload" aria-hidden="true"></i> Upload
                           </button>
@@ -135,7 +135,7 @@ export function InstructorAssessmentGroups({
                             type="button"
                             class="btn btn-primary text-nowrap"
                             data-bs-toggle="modal"
-                            data-target="#randomAssessmentGroupsModal"
+                            data-bs-target="#randomAssessmentGroupsModal"
                           >
                             <i class="fas fa-shuffle" aria-hidden="true"></i> Random
                           </button>

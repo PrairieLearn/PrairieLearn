@@ -219,7 +219,7 @@ function CopyCourseInstanceForm({
         class="btn btn-sm btn-primary"
         href="#"
         data-bs-toggle="modal"
-        data-target="#deleteCourseInstanceModal"
+        data-bs-target="#deleteCourseInstanceModal"
       >
         <i class="fa fa-times" aria-hidden="true"></i> Delete this course instance
       </button>

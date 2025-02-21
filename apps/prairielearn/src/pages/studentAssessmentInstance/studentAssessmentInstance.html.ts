@@ -545,7 +545,7 @@ export function StudentAssessmentInstance({
                                     <button
                                       class="btn btn-danger"
                                       data-bs-toggle="modal"
-                                      data-target="#confirmFinishModal"
+                                      data-bs-target="#confirmFinishModal"
                                       ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                                     >
                                       Finish assessment
@@ -573,7 +573,7 @@ export function StudentAssessmentInstance({
                               <button
                                 class="btn btn-danger"
                                 data-bs-toggle="modal"
-                                data-target="#confirmFinishModal"
+                                data-bs-target="#confirmFinishModal"
                                 ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                               >
                                 Finish assessment

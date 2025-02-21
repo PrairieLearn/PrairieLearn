@@ -87,7 +87,7 @@ function AssessmentUploadCard({
                       type="button"
                       class="btn btn-primary text-nowrap"
                       data-bs-toggle="modal"
-                      data-target="#upload-instance-question-scores-form"
+                      data-bs-target="#upload-instance-question-scores-form"
                     >
                       <i class="fas fa-upload"></i> Upload new question scores
                     </button>
@@ -110,7 +110,7 @@ function AssessmentUploadCard({
                       type="button"
                       class="btn btn-primary text-nowrap"
                       data-bs-toggle="modal"
-                      data-target="#upload-assessment-instance-scores-form"
+                      data-bs-target="#upload-assessment-instance-scores-form"
                     >
                       <i class="fas fa-upload"></i> Upload new total scores
                     </button>

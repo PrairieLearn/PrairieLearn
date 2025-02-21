@@ -68,7 +68,7 @@ export function Navbar({
           class="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
-          data-target=".navbar-collapse"
+          data-bs-target=".navbar-collapse"
           aria-expanded="false"
           aria-label="Toggle navigation"
         >

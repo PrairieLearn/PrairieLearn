@@ -351,7 +351,7 @@ export function InstructorQuestionSettings({
                           id
                           href="#"
                           data-bs-toggle="modal"
-                          data-target="#deleteQuestionModal"
+                          data-bs-target="#deleteQuestionModal"
                         >
                           <i class="fa fa-times" aria-hidden="true"></i> Delete this question
                         </button>

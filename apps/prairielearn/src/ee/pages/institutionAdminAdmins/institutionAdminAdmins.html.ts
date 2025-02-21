@@ -56,7 +56,7 @@ function AdminsCard({ rows }: { rows: InstitutionAdminAdminsRow[] }) {
           type="button"
           class="btn btn-sm btn-light ms-auto"
           data-bs-toggle="modal"
-          data-target="#addAdminsModal"
+          data-bs-target="#addAdminsModal"
         >
           <i class="fa fa-user-plus" aria-hidden="true"></i>
           Add administrators
@@ -82,7 +82,7 @@ function AdminsCard({ rows }: { rows: InstitutionAdminAdminsRow[] }) {
                     <button
                       class="btn btn-sm btn-outline-danger ms-auto js-remove-admin"
                       data-bs-toggle="modal"
-                      data-target="#removeAdminModal"
+                      data-bs-target="#removeAdminModal"
                       type="button"
                       data-name-and-uid="${row.user.name} (${row.user.uid})"
                       data-institution-administrator-id="${row.institution_administrator.id}"

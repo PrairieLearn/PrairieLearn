@@ -60,7 +60,7 @@ export function GroupWorkInfoContainer({
                     type="button"
                     class="btn btn-danger"
                     data-bs-toggle="modal"
-                    data-target="#leaveGroupModal"
+                    data-bs-target="#leaveGroupModal"
                   >
                     Leave the Group
                   </button>

@@ -72,7 +72,7 @@ export function AdministratorWorkspaces({
                     <a
                       href="workspaces-${workspaceHost.id}"
                       class="me-2"
-                      data-target="#workspaces-${workspaceHost.id}"
+                      data-bs-target="#workspaces-${workspaceHost.id}"
                       data-bs-toggle="collapse"
                       aria-expanded="false"
                       aria-controls="workspaces-${workspaceHost.id}"

@@ -127,7 +127,7 @@ export function InstructorAiGenerateDraftEditor({
                 <div
                   class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2"
                 >
-                  <span data-bs-toggle="modal" data-target="#finalizeModal">
+                  <span data-bs-toggle="modal" data-bs-target="#finalizeModal">
                     <button
                       type="button"
                       class="btn btn-sm btn-primary"

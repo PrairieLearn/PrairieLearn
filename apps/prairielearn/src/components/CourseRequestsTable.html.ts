@@ -129,7 +129,7 @@ export function CourseRequestsTable({
                           <button
                             class="show-hide-btn btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
                             data-bs-toggle="collapse"
-                            data-target="#course-requests-job-list-${row.id}"
+                            data-bs-target="#course-requests-job-list-${row.id}"
                             aria-expanded="false"
                             aria-controls="course-requests-job-list-${row.id}"
                           >

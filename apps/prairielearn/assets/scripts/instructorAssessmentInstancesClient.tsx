@@ -249,7 +249,7 @@ onDocumentReady(() => {
                   type="button"
                   title="Show roles help"
                   data-bs-toggle="modal"
-                  data-target="#role-help"
+                  data-bs-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
                 </button>
@@ -287,7 +287,7 @@ onDocumentReady(() => {
                   type="button"
                   title="Show roles help"
                   data-bs-toggle="modal"
-                  data-target="#role-help"
+                  data-bs-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
                 </button>
@@ -330,7 +330,7 @@ onDocumentReady(() => {
             type="button"
             title="Show duration help"
             data-bs-toggle="modal"
-            data-target="#duration-help"
+            data-bs-target="#duration-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
           </button>
@@ -349,7 +349,7 @@ onDocumentReady(() => {
             type="button"
             title="Show remaining time help"
             data-bs-toggle="modal"
-            data-target="#time-remaining-help"
+            data-bs-target="#time-remaining-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
           </button>
@@ -380,7 +380,7 @@ onDocumentReady(() => {
             type="button"
             title="Show fingerprint changes help"
             data-bs-toggle="modal"
-            data-target="#fingerprint-changes-help"
+            data-bs-target="#fingerprint-changes-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
           </button>
@@ -735,7 +735,7 @@ onDocumentReady(() => {
                   <button
                     class="dropdown-item"
                     data-bs-toggle="modal"
-                    data-target="#deleteAssessmentInstanceModal"
+                    data-bs-target="#deleteAssessmentInstanceModal"
                     data-uid="${row.uid}"
                     data-name="${row.name}"
                     data-number="${row.number}"

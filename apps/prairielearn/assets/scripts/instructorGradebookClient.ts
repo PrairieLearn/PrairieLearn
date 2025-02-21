@@ -108,7 +108,7 @@ onDocumentReady(() => {
             type="button"
             title="Show roles help"
             data-bs-toggle="modal"
-            data-target="#role-help"
+            data-bs-target="#role-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
           </button>`.toString(),

@@ -64,7 +64,7 @@ export function InstructorAssessmentRegrading({
                     type="button"
                     class="btn btn-primary"
                     data-bs-toggle="modal"
-                    data-target="#regrade-all-form"
+                    data-bs-target="#regrade-all-form"
                   >
                     <i class="fa fa-sync" aria-hidden="true"></i>
                     Regrade all assessment instances

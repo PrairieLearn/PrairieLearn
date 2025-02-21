@@ -119,7 +119,7 @@ export function InstructorIssues({
                   <button
                     class="btn btn-sm btn-danger ms-auto"
                     data-bs-toggle="modal"
-                    data-target="#closeMatchingIssuesModal"
+                    data-bs-target="#closeMatchingIssuesModal"
                   >
                     <i class="fa fa-times" aria-hidden="true"></i> Close matching issues
                   </button>
@@ -179,7 +179,7 @@ export function InstructorIssues({
                   type="button"
                   title="Show filter help"
                   data-bs-toggle="modal"
-                  data-target="#filterHelpModal"
+                  data-bs-target="#filterHelpModal"
                   aria-label="Show filter help"
                 >
                   <i class="fa fa-question-circle" aria-hidden="true"></i>

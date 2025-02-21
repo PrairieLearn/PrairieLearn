@@ -241,7 +241,7 @@ export function QuestionsTable({
                         type="button"
                         class="btn btn-sm btn-primary"
                         data-bs-toggle="modal"
-                        data-target="#createQuestionModal"
+                        data-bs-target="#createQuestionModal"
                       >
                         <i class="fa fa-plus" aria-hidden="true"></i>
                         Add question

@@ -455,7 +455,7 @@ export function InstructorAssessmentInstance({
                               <button
                                 class="dropdown-item"
                                 data-bs-toggle="modal"
-                                data-target="#resetQuestionVariantsModal"
+                                data-bs-target="#resetQuestionVariantsModal"
                                 data-instance-question-id="${instance_question.id}"
                               >
                                 Reset question variants

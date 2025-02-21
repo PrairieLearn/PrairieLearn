@@ -87,7 +87,7 @@ export function QuestionContainer({
                       class="show-hide-btn btn btn-outline-secondary btn-sm collapsed"
                       type="button"
                       data-bs-toggle="collapse"
-                      data-target="#more-submissions-collapser"
+                      data-bs-target="#more-submissions-collapser"
                       aria-expanded="false"
                       aria-controls="more-submissions-collapser"
                     >
@@ -657,7 +657,7 @@ function QuestionPanel({
                 class="btn btn-light btn-sm ms-auto"
                 type="button"
                 data-bs-toggle="modal"
-                data-target="#copyQuestionModal"
+                data-bs-target="#copyQuestionModal"
               >
                 <i class="fa fa-clone"></i>
                 Copy question

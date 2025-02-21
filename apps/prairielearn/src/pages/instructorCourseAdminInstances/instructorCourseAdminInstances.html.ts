@@ -78,7 +78,7 @@ export function InstructorCourseAdminInstances({
                 <button
                   class="btn btn-sm btn-light"
                   data-bs-toggle="modal"
-                  data-target="#createCourseInstanceModal"
+                  data-bs-target="#createCourseInstanceModal"
                 >
                   <i class="fa fa-plus" aria-hidden="true"></i>
                   <span class="d-none d-sm-inline">Add course instance</span>
@@ -197,7 +197,7 @@ export function InstructorCourseAdminInstances({
                     <button
                       class="btn btn-sm btn-primary"
                       data-bs-toggle="modal"
-                      data-target="#createCourseInstanceModal"
+                      data-bs-target="#createCourseInstanceModal"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>
                       <span class="d-none d-sm-inline">Add course instance</span>

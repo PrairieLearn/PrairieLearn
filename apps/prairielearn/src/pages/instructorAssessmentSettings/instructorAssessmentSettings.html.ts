@@ -237,7 +237,7 @@ export function InstructorAssessmentSettings({
                   class="btn btn-sm btn-primary"
                   href="#"
                   data-bs-toggle="modal"
-                  data-target="#deleteAssessmentModal"
+                  data-bs-target="#deleteAssessmentModal"
                 >
                   <i class="fa fa-times" aria-hidden="true"></i> Delete this assessment
                 </button>
