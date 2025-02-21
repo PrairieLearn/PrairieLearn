@@ -34,7 +34,6 @@ export function InstructorAssessmentsCard({
   assessmentsGroupBy: 'Set' | 'Module';
 }) {
   const [createAssessmentModalOpen, setCreateAssessmentModalOpen] = useState(false);
-  console.log('modal open?', createAssessmentModalOpen);
 
   return (
     <Fragment>

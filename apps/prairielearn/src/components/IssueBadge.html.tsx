@@ -1,3 +1,5 @@
+import { clsx } from 'clsx';
+
 import { renderHtml } from '../lib/preact-html.js';
 
 export function IssueBadgePreact({
@@ -25,12 +27,12 @@ export function IssueBadgePreact({
   if (Number(count) === 0) return '';
 
   if (suppressLink) {
-    return <span class={`badge badge-pill badge-danger ${className ?? ''}`}>${count}</span>;
+    return <span class={clsx('badge badge-pill badge-danger', className)}>{count}</span>;
   }
 
   return (
     <a
-      class={`badge badge-pill badge-danger ${className ?? ''}`}
+      class={clsx('badge badge-pill badge-danger', className)}
       href={`${urlPrefix}/course_admin/issues${
         issueQid ? `?q=is%3Aopen+qid%3A${encodeURIComponent(issueQid)}` : ''
       }`}
