@@ -469,7 +469,7 @@ class CGrader:
                 t.strip(),
                 re.compile(
                     (
-                        "\\s+".join(map(re.escape, re.split("\\s+", t)))
+                        r"\s+".join(map(re.escape, re.split(r"\s+", t)))
                         if ignore_consec_spaces
                         else re.escape(t)
                     ),

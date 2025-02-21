@@ -52,7 +52,8 @@ ignore = [
     "DOC501", # docstring-missing-exception
     "FURB101", # read-whole-file
     "FURB103", # write-whole-file
-    "FURB118", # reimplemented-operator
+    "FURB118", # reimplemented-operator (confusing)
+    "FURB140", # reimplemented-starmap (confusing)
     "ISC003", # explicit-string-concatenation
     "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
     "PD901", # pandas-df-variable-name (we use `df` in many places)
@@ -69,6 +70,7 @@ ignore = [
     "PLR0917", # too-many-positional-arguments
     "PLR6201", # literal-membership (pyright doesn't understand assert_never with sets)
     "PLR2004", # magic-value-comparison
+    "PLR6301", # no-self-use
     "PLW1514", # unspecified-encoding
     "RET503", # implicit-return
     "RET504", # unnecessary-assign
@@ -86,13 +88,12 @@ ignore = [
     "D103", # undocumented-public-function
     "D104", # undocumented-public-package
     "D107", # undocumented-public-init
-    "PLW1508",
-    "RUF039",
-    "RUF036",
-    "FURB140",
-    "FURB152",
-    "PLR6301",
 ]
+
+[tool.ruff.lint.pydocstyle]
+# Default for mkdocstrings (https://mkdocstrings.github.io/python/usage/configuration/docstrings)
+convention = "google"
+
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
 # broken in isolation. We'll allow specific errors in these files to
@@ -132,7 +133,7 @@ ignore = [
     "FBT002",
     "D",
     # Avoid future changes to graders
-    "C419", "PYI061"
+    "C419", "PYI061", "RUF036"
 ]
 
 # Directories we don't want strict annotation linting or docstring linting on
@@ -150,6 +151,8 @@ ignore = [
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
 "apps/prairielearn/python/test/**/*.py" = ["D", "ANN"]
+# Issues rebuilding workspace
+"workspaces/jupyterlab-python/jupyter_server_config.py" = ["PLW1508"]
 
 [tool.ruff.format]
 exclude = [
