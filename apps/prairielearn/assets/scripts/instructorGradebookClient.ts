@@ -197,7 +197,7 @@ function setupEditScorePopovers(csrfToken: string) {
                     value="${score}"
                     aria-label="Score percentage"
                   />
-                  <div class="input-group-append"><span class="input-group-text">%</span></div>
+                  <span class="input-group-text">%</span>
                 </div>
               </div>
               ${parsedOtherUsers?.length

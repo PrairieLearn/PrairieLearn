@@ -158,25 +158,23 @@ export function InstructorAssessmentSettings({
                   value="${studentLink}"
                   disabled
                 />
-                <div class="input-group-append">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary btn-copy"
-                    data-clipboard-text="${studentLink}"
-                    aria-label="Copy student link"
-                  >
-                    <i class="far fa-clipboard"></i>
-                  </button>
-                  <button
-                    type="button"
-                    title="Student Link QR Code"
-                    aria-label="Student Link QR Code"
-                    class="btn btn-sm btn-outline-secondary js-qrcode-button"
-                    data-qr-code-content="${studentLink}"
-                  >
-                    <i class="fas fa-qrcode"></i>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary btn-copy"
+                  data-clipboard-text="${studentLink}"
+                  aria-label="Copy student link"
+                >
+                  <i class="far fa-clipboard"></i>
+                </button>
+                <button
+                  type="button"
+                  title="Student Link QR Code"
+                  aria-label="Student Link QR Code"
+                  class="btn btn-sm btn-outline-secondary js-qrcode-button"
+                  data-qr-code-content="${studentLink}"
+                >
+                  <i class="fas fa-qrcode"></i>
+                </button>
               </span>
               <small class="form-text text-muted">
                 The link that students will use to access this assessment.

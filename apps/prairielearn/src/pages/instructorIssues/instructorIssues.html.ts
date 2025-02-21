@@ -128,36 +128,31 @@ export function InstructorIssues({
           </div>
           <form name="query-form" method="GET">
             <div class="input-group">
-              <div class="input-group-prepend">
-                <button
-                  class="btn btn-med-light dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                  aria-haspopup="true"
-                  aria-expanded="false"
+              <button
+                class="btn btn-med-light dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                Filters
+              </button>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="${formattedCommonQueries.allOpenQuery}">
+                  Open issues
+                </a>
+                <a class="dropdown-item" href="${formattedCommonQueries.allClosedQuery}">
+                  Closed issues
+                </a>
+                <a class="dropdown-item" href="${formattedCommonQueries.allManuallyReportedQuery}">
+                  Manually-reported issues
+                </a>
+                <a
+                  class="dropdown-item"
+                  href="${formattedCommonQueries.allAutomaticallyReportedQuery}"
                 >
-                  Filters
-                </button>
-                <div class="dropdown-menu">
-                  <a class="dropdown-item" href="${formattedCommonQueries.allOpenQuery}">
-                    Open issues
-                  </a>
-                  <a class="dropdown-item" href="${formattedCommonQueries.allClosedQuery}">
-                    Closed issues
-                  </a>
-                  <a
-                    class="dropdown-item"
-                    href="${formattedCommonQueries.allManuallyReportedQuery}"
-                  >
-                    Manually-reported issues
-                  </a>
-                  <a
-                    class="dropdown-item"
-                    href="${formattedCommonQueries.allAutomaticallyReportedQuery}"
-                  >
-                    Automatically-reported issues
-                  </a>
-                </div>
+                  Automatically-reported issues
+                </a>
               </div>
               <input
                 type="text"
@@ -166,25 +161,23 @@ export function InstructorIssues({
                 value="${filterQuery}"
                 aria-label="Search all issues"
               />
-              <div class="input-group-append">
-                <a
-                  class="btn btn-med-light"
-                  href="${urlPrefix}/course_admin/issues?q="
-                  title="Clear filters"
-                >
-                  <i class="fa fa-times" aria-hidden="true"></i>
-                </a>
-                <button
-                  class="btn btn-med-light"
-                  type="button"
-                  title="Show filter help"
-                  data-bs-toggle="modal"
-                  data-bs-target="#filterHelpModal"
-                  aria-label="Show filter help"
-                >
-                  <i class="fa fa-question-circle" aria-hidden="true"></i>
-                </button>
-              </div>
+              <a
+                class="btn btn-med-light"
+                href="${urlPrefix}/course_admin/issues?q="
+                title="Clear filters"
+              >
+                <i class="fa fa-times" aria-hidden="true"></i>
+              </a>
+              <button
+                class="btn btn-med-light"
+                type="button"
+                title="Show filter help"
+                data-bs-toggle="modal"
+                data-bs-target="#filterHelpModal"
+                aria-label="Show filter help"
+              >
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+              </button>
             </div>
           </form>
         </div>

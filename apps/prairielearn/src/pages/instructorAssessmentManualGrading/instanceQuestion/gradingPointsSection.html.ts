@@ -191,9 +191,7 @@ export function GradingPointsSection({
             value="${Math.round(points * 100) / 100}"
             ${disable ? 'disabled' : ''}
           />
-          <span class="input-group-append">
-            <span class="input-group-text">/ ${max_points}</span>
-          </span>
+          <span class="input-group-text">/ ${max_points}</span>
         </div>
       </div>
       ${show_percentage
@@ -209,9 +207,7 @@ export function GradingPointsSection({
                   name="score_${type}_percent"
                   ${disable ? 'disabled' : ''}
                 />
-                <span class="input-group-append">
-                  <span class="input-group-text">%</span>
-                </span>
+                <span class="input-group-text">%</span>
               </div>
             </div>
           `

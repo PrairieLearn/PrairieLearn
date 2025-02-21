@@ -1,31 +1,27 @@
 {{#question}}
 <div class="input-group">
     {{#label}}
-    <span class="input-group-prepend">
-        <label class="input-group-text" id="pl-matrix-input-{{uuid}}-label">{{{label}}}</label>
-    </span>
+    <label class="input-group-text" id="pl-matrix-input-{{uuid}}-label">{{{label}}}</label>
     {{/label}}
-    <input name="{{name}}" type="text" class="form-control pl-matrix-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{shortinfo}}" aria-labelledby="pl-matrix-input-{{uuid}}-label" />
-    <div class="input-group-append">
-        {{#show_info}}
-        <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="Matrix" data-bs-content="{{info}}" data-bs-placement="auto">
-        <i class="fa fa-question-circle" aria-hidden="true"></i>
-        {{/show_info}}
-        {{^show_info}}
-        <span class="d-flex align-items-center">
-        {{/show_info}}
+    <input name="{{name}}" type="text" class="form-control pl-matrix-input-input" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{shortinfo}}" aria-labelledby="pl-matrix-input-{{uuid}}-label" />
+    {{#show_info}}
+    <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="Matrix" data-bs-content="{{info}}" data-bs-placement="auto">
+    <i class="fa fa-question-circle" aria-hidden="true"></i>
+    {{/show_info}}
+    {{^show_info}}
+    <span class="d-flex align-items-center">
+    {{/show_info}}
 
-        {{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-        {{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-        {{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+    {{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+    {{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+    {{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 
-        {{#show_info}}
-        </button>
-        {{/show_info}}
-        {{#show_info}}
-        </span>
-        {{/show_info}}
-    </div>
+    {{#show_info}}
+    </button>
+    {{/show_info}}
+    {{#show_info}}
+    </span>
+    {{/show_info}}
 </div>
 {{/question}}
 

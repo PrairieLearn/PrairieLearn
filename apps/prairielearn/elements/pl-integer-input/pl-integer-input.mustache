@@ -2,9 +2,7 @@
 {{#inline}}<span class="d-inline-block ms-2">{{/inline}}
     <span class="input-group pl-integer-input">
         {{#label}}
-        <span class="input-group-prepend">
-            <span class="input-group-text" id="pl-integer-input-{{uuid}}-label">{{{label}}}</span>
-        </span>
+        <span class="input-group-text" id="pl-integer-input-{{uuid}}-label">{{{label}}}</span>
         {{/label}}
         <input
             name="{{name}}"
@@ -20,45 +18,43 @@
             placeholder="{{placeholder}}"
             aria-labelledby="pl-integer-input-{{uuid}}-label"
         />
-        <span class="input-group-append">
-            {{#suffix}}
-            <span class="input-group-text" id="pl-integer-input-{{uuid}}-suffix">{{suffix}}</span>
-            {{/suffix}}
+        {{#suffix}}
+        <span class="input-group-text" id="pl-integer-input-{{uuid}}-suffix">{{suffix}}</span>
+        {{/suffix}}
 
-            {{#show_info}}
-            <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="Integer" data-bs-content="{{info}}" data-bs-placement="auto">
-                <i class="fa fa-question-circle" aria-hidden="true"></i>
+        {{#show_info}}
+        <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="Integer" data-bs-content="{{info}}" data-bs-placement="auto">
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+        </button>
+        {{/show_info}}
+        {{#correct}}
+            <span class="input-group-text">
+                <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+            </span>
+        {{/correct}}
+        {{#partial}}
+            <span class="input-group-text">
+                <span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
+            </span>
+        {{/partial}}
+        {{#incorrect}}
+            <span class="input-group-text">
+                <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+            </span>
+        {{/incorrect}}
+        {{#parse_error}}
+            <button
+                type="button"
+                class="btn btn-light border d-flex align-items-center text-danger"
+                data-bs-toggle="popover"
+                data-bs-html="true"
+                title="Format Error"
+                data-bs-placement="auto"
+                data-bs-content="{{parse_error}}"
+            >
+                <span class="me-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
             </button>
-            {{/show_info}}
-            {{#correct}}
-                <span class="input-group-text">
-                    <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
-                </span>
-            {{/correct}}
-            {{#partial}}
-                <span class="input-group-text">
-                    <span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
-                </span>
-            {{/partial}}
-            {{#incorrect}}
-                <span class="input-group-text">
-                    <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
-                </span>
-            {{/incorrect}}
-            {{#parse_error}}
-                <button
-                    type="button"
-                    class="btn btn-light border d-flex align-items-center text-danger"
-                    data-bs-toggle="popover"
-                    data-bs-html="true"
-                    title="Format Error"
-                    data-bs-placement="auto"
-                    data-bs-content="{{parse_error}}"
-                >
-                    <span class="me-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-                </button>
-            {{/parse_error}}
-        </span>
+        {{/parse_error}}
     </span>
 {{#inline}}</span>{{/inline}}
 {{/question}}

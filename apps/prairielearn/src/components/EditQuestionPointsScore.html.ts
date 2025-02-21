@@ -103,11 +103,9 @@ function EditQuestionPointsScoreForm({
             value="${pointsOrScore}"
             aria-label="${findLabel(field)}"
           />
-          <div class="input-group-append">
-            <span class="input-group-text">
-              ${field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}
-            </span>
-          </div>
+          <span class="input-group-text">
+            ${field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}
+          </span>
         </div>
       </div>
       <p>

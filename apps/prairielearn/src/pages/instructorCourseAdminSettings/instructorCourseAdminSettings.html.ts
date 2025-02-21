@@ -155,17 +155,15 @@ export function InstructorCourseAdminSettings({
                   value="${resLocals.course.repository}"
                   disabled
                 />
-                <div class="input-group-append">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary btn-copy"
-                    data-clipboard-text="${resLocals.course.repository}"
-                    aria-label="Copy repository"
-                    ${resLocals.course.repository ? '' : 'disabled'}
-                  >
-                    <i class="far fa-clipboard"></i>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary btn-copy"
+                  data-clipboard-text="${resLocals.course.repository}"
+                  aria-label="Copy repository"
+                  ${resLocals.course.repository ? '' : 'disabled'}
+                >
+                  <i class="far fa-clipboard"></i>
+                </button>
               </span>
               <small class="form-text text-muted">
                 The Github repository that can be used to sync course files.

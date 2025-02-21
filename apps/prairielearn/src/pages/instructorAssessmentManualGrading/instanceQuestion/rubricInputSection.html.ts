@@ -127,9 +127,7 @@ export function RubricInputSection({
                       ) / 100 || ''}"
                       ${disable ? 'disabled' : ''}
                     />
-                    <span class="input-group-append">
-                      <span class="input-group-text">%</span>
-                    </span>
+                    <span class="input-group-text">%</span>
                   </div>
                 </div>
               `
