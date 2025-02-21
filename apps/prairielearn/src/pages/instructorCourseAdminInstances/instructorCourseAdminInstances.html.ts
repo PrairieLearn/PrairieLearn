@@ -270,7 +270,7 @@ function CreateCourseInstanceModal({
     formMethod: 'POST',
     body: html`
       <div class="form-group">
-        <label for="long_name">Long name</label>
+        <label class="form-label" for="long_name">Long name</label>
         <input
           type="text"
           class="form-control"
@@ -285,7 +285,7 @@ function CreateCourseInstanceModal({
         </small>
       </div>
       <div class="form-group">
-        <label for="short_name">Short name</label>
+        <label class="form-label" for="short_name">Short name</label>
         <input
           type="text"
           class="form-control"
@@ -319,7 +319,7 @@ function CreateCourseInstanceModal({
       </div>
       <div id="accessDates" hidden="true">
         <div class="form-group">
-          <label for="start_access_date">Access start date</label>
+          <label class="form-label" for="start_access_date">Access start date</label>
           <div class="input-group date-picker">
             <input
               class="form-control date-picker"
@@ -336,7 +336,7 @@ function CreateCourseInstanceModal({
           </small>
         </div>
         <div class="form-group">
-          <label for="end_access_date">Access end date</label>
+          <label class="form-label" for="end_access_date">Access end date</label>
           <div class="input-group date-picker">
             <input
               class="form-control date-picker"

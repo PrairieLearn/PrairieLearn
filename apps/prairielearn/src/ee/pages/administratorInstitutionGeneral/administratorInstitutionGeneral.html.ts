@@ -68,7 +68,7 @@ export function AdministratorInstitutionGeneral({
       <h2 class="h4">General Information</h2>
       <form method="POST" class="mb-3">
         <div class="form-group">
-          <label for="short_name">Short name</label>
+          <label class="form-label" for="short_name">Short name</label>
           <input
             type="text"
             class="form-control"
@@ -81,7 +81,7 @@ export function AdministratorInstitutionGeneral({
           </small>
         </div>
         <div class="form-group">
-          <label for="long_name">Long name</label>
+          <label class="form-label" for="long_name">Long name</label>
           <input
             type="text"
             class="form-control"
@@ -94,7 +94,7 @@ export function AdministratorInstitutionGeneral({
           </small>
         </div>
         <div class="form-group">
-          <label for="display_timezone">Timezone</label>
+          <label class="form-label" for="display_timezone">Timezone</label>
           <select
             class="custom-select"
             id="display_timezone"
@@ -121,7 +121,7 @@ export function AdministratorInstitutionGeneral({
           </small>
         </div>
         <div class="form-group">
-          <label for="uid_regexp">UID regexp</label>
+          <label class="form-label" for="uid_regexp">UID regexp</label>
           <input
             type="text"
             class="form-control"
@@ -135,7 +135,9 @@ export function AdministratorInstitutionGeneral({
         </div>
         <h2 class="h4">Limits</h2>
         <div class="form-group">
-          <label for="course_instance_enrollment_limit">Course instance enrollment limit</label>
+          <label class="form-label" for="course_instance_enrollment_limit"
+            >Course instance enrollment limit</label
+          >
           <input
             type="number"
             class="form-control"
@@ -151,7 +153,7 @@ export function AdministratorInstitutionGeneral({
           </small>
         </div>
         <div class="form-group">
-          <label for="yearly_enrollment_limit">Yearly enrollment limit</label>
+          <label class="form-label" for="yearly_enrollment_limit">Yearly enrollment limit</label>
           <input
             type="number"
             class="form-control"

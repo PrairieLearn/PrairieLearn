@@ -97,7 +97,7 @@ export function AdministratorQuery({
               ? info.params.map(
                   (param) => html`
                     <div class="form-group">
-                      <label for="param-${param.name}">${param.name}</label>
+                      <label class="form-label" for="param-${param.name}">${param.name}</label>
                       <input
                         class="form-control"
                         type="text"

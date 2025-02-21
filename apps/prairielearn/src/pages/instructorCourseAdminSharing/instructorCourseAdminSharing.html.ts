@@ -34,7 +34,7 @@ function AddCourseToSharingSetPopover({
         </div>
       </div>
       <div class="form-group">
-        <label for="course_sharing_token">Course sharing token</label>
+        <label class="form-label" for="course_sharing_token">Course sharing token</label>
         <input
           class="form-control form-control-sm"
           type="text"
@@ -66,7 +66,7 @@ function ChooseSharingNameModal({
     body = html`
       <p class="form-text">Enter the sharing name you would like for your course.</p>
       <div class="form-group">
-        <label for="course_sharing_name">Sharing name</label>
+        <label class="form-label" for="course_sharing_name">Sharing name</label>
         <input
           class="form-control"
           type="text"

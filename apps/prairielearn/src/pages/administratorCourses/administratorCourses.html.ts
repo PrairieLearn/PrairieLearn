@@ -186,7 +186,9 @@ function CourseDeleteForm({
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="course_id" value="${course.id}" />
       <div class="form-group">
-        <label for="inputConfirm${id}">Type "${course.short_name}" to confirm:</label>
+        <label class="form-label" for="inputConfirm${id}">
+          Type "${course.short_name}" to confirm:
+        </label>
         <input type="text" class="form-control" id="inputConfirm${id}" name="confirm_short_name" />
       </div>
       <div class="text-right">
@@ -209,7 +211,7 @@ function CourseInsertForm({
       <input type="hidden" name="__action" value="courses_insert" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <div class="form-group">
-        <label>Institution:</label>
+        <label class="form-label">Institution:</label>
         <select
           name="institution_id"
           class="custom-select"
@@ -223,7 +225,7 @@ function CourseInsertForm({
         </select>
       </div>
       <div class="form-group">
-        <label for="courseAddInputShortName">Short name:</label>
+        <label class="form-label" for="courseAddInputShortName">Short name:</label>
         <input
           type="text"
           class="form-control"
@@ -233,7 +235,7 @@ function CourseInsertForm({
         />
       </div>
       <div class="form-group">
-        <label for="courseAddInputTitle">Title:</label>
+        <label class="form-label" for="courseAddInputTitle">Title:</label>
         <input
           type="text"
           class="form-control"
@@ -243,7 +245,7 @@ function CourseInsertForm({
         />
       </div>
       <div class="form-group">
-        <label for="courseAddInputTimezone">Timezone:</label>
+        <label class="form-label" for="courseAddInputTimezone">Timezone:</label>
         <input
           type="text"
           class="form-control"
@@ -253,7 +255,7 @@ function CourseInsertForm({
         />
       </div>
       <div class="form-group">
-        <label for="courseAddInputPath">Path:</label>
+        <label class="form-label" for="courseAddInputPath">Path:</label>
         <input
           type="text"
           class="form-control"
@@ -263,7 +265,7 @@ function CourseInsertForm({
         />
       </div>
       <div class="form-group">
-        <label for="courseAddInputRepository">Repository:</label>
+        <label class="form-label" for="courseAddInputRepository">Repository:</label>
         <input
           type="text"
           class="form-control"
@@ -273,7 +275,7 @@ function CourseInsertForm({
         />
       </div>
       <div class="form-group">
-        <label for="courseAddInputBranch">Branch:</label>
+        <label class="form-label" for="courseAddInputBranch">Branch:</label>
         <input
           type="text"
           class="form-control"

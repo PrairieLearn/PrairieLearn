@@ -50,7 +50,7 @@ export function InstructorCourseAdminSettings({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="form-group">
-              <label for="short_name">Short Name</label>
+              <label class="form-label" for="short_name">Short Name</label>
               <input
                 type="text"
                 class="form-control"
@@ -70,7 +70,7 @@ export function InstructorCourseAdminSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="title">Title</label>
+              <label class="form-label" for="title">Title</label>
               <input
                 type="text"
                 class="form-control"
@@ -89,7 +89,7 @@ export function InstructorCourseAdminSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="display_timezone">Timezone</label>
+              <label class="form-label" for="display_timezone">Timezone</label>
               <select
                 class="custom-select"
                 id="display_timezone"
@@ -117,7 +117,7 @@ export function InstructorCourseAdminSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="institution">Institution</label>
+              <label class="form-label" for="institution">Institution</label>
               <input
                 type="text"
                 class="form-control"
@@ -131,7 +131,7 @@ export function InstructorCourseAdminSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="path">Path</label>
+              <label class="form-label" for="path">Path</label>
               <input
                 type="text"
                 class="form-control"
@@ -145,7 +145,7 @@ export function InstructorCourseAdminSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="repository">Repository</label>
+              <label class="form-label" for="repository">Repository</label>
               <span class="input-group">
                 <input
                   type="text"

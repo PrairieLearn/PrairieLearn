@@ -304,7 +304,7 @@ function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: str
   return html`
     <form name="add-member-form" method="POST">
       <div class="form-group">
-        <label for="add_member_uids">UIDs</label>
+        <label class="form-label" for="add_member_uids">UIDs</label>
         <input
           type="text"
           class="form-control"
@@ -342,7 +342,7 @@ function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: 
   return html`
     <form name="delete-member-form" method="POST">
       <div class="form-group">
-        <label for="delete-member-form-${row.group_id}">UID:</label>
+        <label class="form-label" for="delete-member-form-${row.group_id}">UID:</label>
         <select class="custom-select" name="user_id" id="delete-member-form-${row.group_id}">
           ${row.users.map((user) => {
             return html` <option value="${user.user_id}">${user.uid}</option> `;
@@ -417,7 +417,7 @@ function RandomAssessmentGroupsModal({
     title: 'Random group assignments',
     body: html`
       <div class="form-group">
-        <label for="formMin">Min number of members in a group</label>
+        <label class="form-label" for="formMin">Min number of members in a group</label>
         <input
           type="number"
           required
@@ -429,7 +429,7 @@ function RandomAssessmentGroupsModal({
         />
       </div>
       <div class="form-group">
-        <label for="formMax">Max number of members in a group</label>
+        <label class="form-label" for="formMax">Max number of members in a group</label>
         <input
           type="number"
           required
@@ -456,11 +456,11 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
     title: 'Add a group',
     body: html`
       <div class="form-group">
-        <label for="formName">Group Name</label>
+        <label class="form-label" for="formName">Group Name</label>
         <input type="text" class="form-control" id="formName" name="group_name" />
       </div>
       <div class="form-group">
-        <label for="addGroupUids">UIDs</label>
+        <label class="form-label" for="addGroupUids">UIDs</label>
         <input
           type="text"
           class="form-control"

@@ -104,7 +104,7 @@ function AddAdminsModal({ uidsLimit, csrfToken }: { uidsLimit: number; csrfToken
     title: 'Add administrators',
     body: html`
       <div class="form-group">
-        <label for="addAdminsModalUid" class="form-label"> UIDs </label>
+        <label class="form-label" for="addAdminsModalUid"> UIDs </label>
         <textarea
           name="uids"
           class="form-control"

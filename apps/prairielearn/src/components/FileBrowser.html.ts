@@ -786,7 +786,7 @@ function FileRenameForm({
         "<code>..</code>".
       </div>
       <div class="form-group">
-        <label for="renameFileInput${file.id}">Path:</label>
+        <label class="form-label" for="renameFileInput${file.id}">Path:</label>
         <input
           type="text"
           class="form-control js-rename-input"

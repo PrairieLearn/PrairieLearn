@@ -138,7 +138,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
 
           <div class="form-row">
             <div class="form-group col-md-6">
-              <label for="cr-firstname">First name</label>
+              <label class="form-label" for="cr-firstname">First name</label>
               <input
                 type="text"
                 class="form-control"
@@ -149,7 +149,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               />
             </div>
             <div class="form-group col-md-6">
-              <label for="cr-lastname">Last name</label>
+              <label class="form-label" for="cr-lastname">Last name</label>
               <input
                 type="text"
                 class="form-control"
@@ -162,7 +162,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
           </div>
           <div class="form-row">
             <div class="form-group col-md-6">
-              <label for="cr-institution">Institution</label>
+              <label class="form-label" for="cr-institution">Institution</label>
               <input
                 type="text"
                 class="form-control"
@@ -176,7 +176,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               </small>
             </div>
             <div class="form-group col-md-6">
-              <label for="cr-email">Email</label>
+              <label class="form-label" for="cr-email">Email</label>
               <input
                 type="email"
                 class="form-control"
@@ -190,7 +190,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </div>
           </div>
           <div class="form-group">
-            <label for="cr-shortname">Course Rubric and Number</label>
+            <label class="form-label" for="cr-shortname">Course Rubric and Number</label>
             <input
               type="text"
               class="form-control"
@@ -204,7 +204,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             <small class="form-text text-muted"> Examples: MATH 101, PHYS 440. </small>
           </div>
           <div class="form-group">
-            <label for="cr-title">Course Title</label>
+            <label class="form-label" for="cr-title">Course Title</label>
             <input
               type="text"
               class="form-control"
@@ -219,7 +219,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </small>
           </div>
           <div class="form-group">
-            <label for="cr-ghuser">GitHub Username (optional)</label>
+            <label class="form-label" for="cr-ghuser">GitHub Username (optional)</label>
             <input type="text" class="form-control" name="cr-ghuser" id="cr-ghuser" />
             <small class="form-text text-muted">
               Providing your GitHub username will allow you to edit course content offline. You do
@@ -227,7 +227,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </small>
           </div>
           <div class="form-group">
-            <label id="cr-referral-source-label" for="cr-referral-source">
+            <label class="form-label" id="cr-referral-source-label" for="cr-referral-source">
               How did you hear about PrairieLearn?
             </label>
             <select
@@ -258,7 +258,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </small>
           </div>
           <div class="form-group">
-            <label for="role-instructor">Your Role in the Course</label>
+            <label class="form-label" for="role-instructor">Your Role in the Course</label>
             <ul class="list-group">
               <li class="list-group-item">
                 <input type="radio" id="role-instructor" name="cr-role" value="instructor" />

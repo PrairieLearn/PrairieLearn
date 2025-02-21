@@ -223,7 +223,7 @@ function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
       <input type="hidden" name="__action" value="token_generate" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <div class="form-group">
-        <label for="token_name">Name:</label>
+        <label class="form-label" for="token_name">Name:</label>
         <input
           type="text"
           class="form-control"

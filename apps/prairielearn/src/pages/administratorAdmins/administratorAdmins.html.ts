@@ -106,7 +106,7 @@ function AdministratorInsertForm({ csrfToken }: { csrfToken: string }) {
       <input type="hidden" name="__action" value="administrators_insert_by_user_uid" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <div class="form-group">
-        <label for="administratorInsertFormUid">UID:</label>
+        <label class="form-label" for="administratorInsertFormUid">UID:</label>
         <input
           type="text"
           class="form-control"
@@ -137,10 +137,7 @@ function AdministratorDeleteForm({
       <input type="hidden" name="__action" value="administrators_delete_by_user_id" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="user_id" value="${userId}" />
-      <div class="form-group">
-        <label>UID:</label>
-        <p class="form-control-static">${uid}</p>
-      </div>
+      <div class="mb-3"><strong>UID:</strong> ${uid}</div>
       <div class="text-right">
         <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Remove access</button>

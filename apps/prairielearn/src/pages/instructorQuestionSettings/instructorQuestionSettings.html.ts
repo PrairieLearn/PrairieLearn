@@ -125,7 +125,7 @@ export function InstructorQuestionSettings({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="form-group">
-              <label for="qid">QID</label>
+              <label class="form-label" for="qid">QID</label>
               ${questionGHLink
                 ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
                 : ''}
@@ -386,7 +386,7 @@ function CopyForm({
       <input type="hidden" name="__action" value="copy_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <div class="form-group">
-        <label for="to-course-id-select">
+        <label class="form-label" for="to-course-id-select">
           The copied question will be added to the following course:
         </label>
         <select class="custom-select" id="to-course-id-select" name="to_course_id" required>

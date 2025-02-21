@@ -348,7 +348,7 @@ export function AddFeatureGrantModalBody({
       <hr />
 
       <div class="form-group">
-        <label for="feature-grant-institution">
+        <label class="form-label" for="feature-grant-institution">
           Institution
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
@@ -368,7 +368,7 @@ export function AddFeatureGrantModalBody({
       </div>
 
       <div class="form-group">
-        <label for="feature-grant-course">
+        <label class="form-label" for="feature-grant-course">
           Course
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
@@ -390,7 +390,7 @@ export function AddFeatureGrantModalBody({
       </div>
 
       <div class="form-group">
-        <label for="feature-grant-course-instance">
+        <label class="form-label" for="feature-grant-course-instance">
           Course instance
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>

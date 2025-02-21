@@ -51,7 +51,7 @@ export function InstructorAssessmentSettings({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="form-group">
-              <label for="aid">AID</label>
+              <label class="form-label" for="aid">AID</label>
               <input
                 type="text"
                 class="form-control text-monospace"
@@ -69,7 +69,7 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="title">Title</label>
+              <label class="form-label" for="title">Title</label>
               <input
                 type="text"
                 class="form-control"
@@ -81,7 +81,7 @@ export function InstructorAssessmentSettings({
               <small class="form-text text-muted"> The title of the assessment. </small>
             </div>
             <div class="form-group">
-              <label for="type">Type</label>
+              <label class="form-label" for="type">Type</label>
               <input
                 type="text"
                 class="form-control"
@@ -95,7 +95,7 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="set">Set</label>
+              <label class="form-label" for="set">Set</label>
               <select class="form-select" id="set" name="set" ${canEdit ? '' : 'disabled'}>
                 ${assessmentSets.map(
                   (set) => html`
@@ -115,7 +115,7 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="number">Number</label>
+              <label class="form-label" for="number">Number</label>
               <input
                 type="text"
                 class="form-control"
@@ -129,7 +129,7 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="module">Module</label>
+              <label class="form-label" for="module">Module</label>
               <select class="form-select" id="module" name="module" ${canEdit ? '' : 'disabled'}>
                 ${assessmentModules.map(
                   (module) => html`
@@ -148,7 +148,7 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="studentLink">Student Link</label>
+              <label class="form-label" for="studentLink">Student Link</label>
               <span class="input-group">
                 <input
                   type="text"

@@ -279,7 +279,7 @@ function CreateQuestionModal({
     formMethod: 'POST',
     body: html`
       <div class="form-group">
-        <label for="title">Title</label>
+        <label class="form-label" for="title">Title</label>
         <input
           type="text"
           class="form-control"
@@ -293,7 +293,7 @@ function CreateQuestionModal({
         </small>
       </div>
       <div class="form-group">
-        <label for="qid">Question identifier (QID)</label>
+        <label class="form-label" for="qid">Question identifier (QID)</label>
         <input
           type="text"
           class="form-control"
@@ -309,7 +309,7 @@ function CreateQuestionModal({
         </small>
       </div>
       <div class="form-group">
-        <label for="start_from">Start from</label>
+        <label class="form-label" for="start_from">Start from</label>
         <select
           class="form-select"
           id="start_from"
@@ -326,7 +326,7 @@ function CreateQuestionModal({
       </div>
 
       <div id="templateContainer" class="form-group" hidden>
-        <label for="template_qid">Template</label>
+        <label class="form-label" for="template_qid">Template</label>
         <select
           class="form-select"
           id="template_qid"

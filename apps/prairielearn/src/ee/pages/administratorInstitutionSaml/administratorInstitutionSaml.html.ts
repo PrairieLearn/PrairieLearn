@@ -106,7 +106,7 @@ export function AdministratorInstitutionSaml({
       <h2 class="h4">Identity Provider configuration</h2>
       <form method="POST" class="mb-3 js-configure-form" ${!hasSamlProvider ? 'hidden' : ''}>
         <div class="form-group">
-          <label for="issuer">Issuer / Entity ID</label>
+          <label class="form-label" for="issuer">Issuer / Entity ID</label>
           <input
             type="text"
             class="form-control"
@@ -122,7 +122,7 @@ export function AdministratorInstitutionSaml({
         </div>
 
         <div class="form-group">
-          <label for="sso_login_url">SSO Login URL</label>
+          <label class="form-label" for="sso_login_url">SSO Login URL</label>
           <input
             type="text"
             class="form-control"
@@ -138,7 +138,7 @@ export function AdministratorInstitutionSaml({
         </div>
 
         <div class="form-group">
-          <label for="certificate">Public Certificate</label>
+          <label class="form-label" for="certificate">Public Certificate</label>
           <textarea
             class="form-control"
             name="certificate"
@@ -226,7 +226,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
           : ''}
 
         <div class="form-group">
-          <label for="name_attribute">Name attribute</label>
+          <label class="form-label" for="name_attribute">Name attribute</label>
           <input
             type="text"
             class="form-control"
@@ -241,7 +241,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
         </div>
 
         <div class="form-group">
-          <label for="uid_attribute">UID attribute</label>
+          <label class="form-label" for="uid_attribute">UID attribute</label>
           <input
             type="text"
             class="form-control"
@@ -259,7 +259,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
         </div>
 
         <div class="form-group">
-          <label for="uin_attribute">UIN attribute</label>
+          <label class="form-label" for="uin_attribute">UIN attribute</label>
           <input
             type="text"
             class="form-control"
@@ -276,7 +276,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
         </div>
 
         <div class="form-group">
-          <label for="email_attribute">Email attribute</label>
+          <label class="form-label" for="email_attribute">Email attribute</label>
           <input
             type="text"
             class="form-control"
@@ -336,7 +336,7 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
 
             <form method="POST">
               <div class="form-group">
-                <label for="encodedAssertion">Encoded assertion</label>
+                <label class="form-label" for="encodedAssertion">Encoded assertion</label>
                 <textarea
                   class="form-control"
                   id="encodedAssertion"

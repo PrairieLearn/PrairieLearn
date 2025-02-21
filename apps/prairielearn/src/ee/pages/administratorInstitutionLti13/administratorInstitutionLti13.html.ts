@@ -131,7 +131,7 @@ function LTI13Instance(
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_name" />
         <div class="form-group my-2">
-          <label for="name" class="me-2">Branded platform name: </label>
+          <label for="name" class="form-label">Branded platform name: </label>
           <input
             id="name"
             class="form-control"
@@ -160,8 +160,16 @@ function LTI13Instance(
         <input type="hidden" name="__action" value="update_platform" />
 
         <div class="form-group">
-          <label for="choosePlatform">Platform type: </label>
-          <div class="form-check form-check-inline ms-2">
+          <label class="form-label" for="choosePlatform">Platform type: </label>
+          <select class="custom-select mb-2" id="choosePlatform" name="platform">
+            ${platform_defaults.map((d) => {
+              return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
+                ${d.platform}
+              </option>`;
+            })}
+          </select>
+
+          <div class="form-check form-check-inline">
             <label class="form-check-label">
               <input
                 id="update_params"
@@ -174,14 +182,6 @@ function LTI13Instance(
               On change, load defaults into form&nbsp;<em>(remember to edit and save!)</em>
             </label>
           </div>
-
-          <select class="custom-select" id="choosePlatform" name="platform">
-            ${platform_defaults.map((d) => {
-              return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
-                ${d.platform}
-              </option>`;
-            })}
-          </select>
         </div>
 
         <div class="form-group mt-2">
@@ -290,7 +290,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
 
         <h6>Which attributes from the LTI 1.3 user claim should be mapped to PL identities?</h6>
         <div class="form-group">
-          <label for="name_attribute">Name attribute</label>
+          <label class="form-label" for="name_attribute">Name attribute</label>
           <input
             type="text"
             class="form-control"
@@ -305,7 +305,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="form-group">
-          <label for="name_attribute">UID attribute</label>
+          <label class="form-label" for="name_attribute">UID attribute</label>
           <input
             type="text"
             class="form-control"
@@ -323,7 +323,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="form-group">
-          <label for="name_attribute">UIN attribute</label>
+          <label class="form-label" for="name_attribute">UIN attribute</label>
           <input
             type="text"
             class="form-control"
@@ -342,7 +342,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="form-group">
-          <label for="name_attribute">Email attribute</label>
+          <label class="form-label" for="name_attribute">Email attribute</label>
           <input
             type="text"
             class="form-control"

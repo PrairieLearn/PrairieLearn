@@ -60,7 +60,7 @@ function ChangeIdForm({
         slashes to separate directories. ${extraHelpText ?? ''}
       </div>
       <div class="form-group">
-        <label for="input-${id}">${label}:</label>
+        <label class="form-label" for="input-${id}">${label}:</label>
         <input
           type="text"
           class="form-control"

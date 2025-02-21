@@ -55,7 +55,7 @@ export function AdministratorInstitutions({
             <input type="hidden" name="__action" value="add_institution" />
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <div class="form-group">
-              <label for="short_name">Short name</label>
+              <label class="form-label" for="short_name">Short name</label>
               <input
                 type="text"
                 class="form-control"
@@ -68,7 +68,7 @@ export function AdministratorInstitutions({
               </small>
             </div>
             <div class="form-group">
-              <label for="long_name">Long name</label>
+              <label class="form-label" for="long_name">Long name</label>
               <input
                 type="text"
                 class="form-control"
@@ -82,7 +82,7 @@ export function AdministratorInstitutions({
               </small>
             </div>
             <div class="form-group">
-              <label for="display_timezone">Timezone</label>
+              <label class="form-label" for="display_timezone">Timezone</label>
               <select class="custom-select" id="display_timezone" name="display_timezone">
                 <option value="" selected disabled hidden>Timezone</option>
                 ${availableTimezones.map(
@@ -102,7 +102,7 @@ export function AdministratorInstitutions({
               </small>
             </div>
             <div class="form-group">
-              <label for="uid_regexp">UID regexp</label>
+              <label class="form-label" for="uid_regexp">UID regexp</label>
               <input
                 type="text"
                 class="form-control"

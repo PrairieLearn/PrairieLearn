@@ -44,7 +44,7 @@ export function InstructorInstanceAdminSettings({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="form-group">
-              <label for="long_name">Long Name</label>
+              <label class="form-label" for="long_name">Long Name</label>
               <input
                 type="text"
                 class="form-control"
@@ -62,7 +62,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="ciid">CIID</label>
+              <label class="form-label" for="ciid">CIID</label>
               <input
                 type="text"
                 class="form-control"
@@ -85,7 +85,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div class="form-group">
-              <label for="student_link">Student Link</label>
+              <label class="form-label" for="student_link">Student Link</label>
               <span class="input-group">
                 <input
                   type="text"

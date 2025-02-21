@@ -219,7 +219,7 @@ function CourseRequestApproveForm({
       <input type="hidden" name="request_id" value="${request.id}" />
 
       <div class="form-group">
-        <label>Institution:</label>
+        <label class="form-label">Institution:</label>
         <select
           name="institution_id"
           class="custom-select"
@@ -233,7 +233,7 @@ function CourseRequestApproveForm({
         </select>
       </div>
       <div class="form-group">
-        <label for="courseRequestAddInputShortName">Short name:</label>
+        <label class="form-label" for="courseRequestAddInputShortName">Short name:</label>
         <input
           type="text"
           class="form-control"
@@ -244,7 +244,7 @@ function CourseRequestApproveForm({
         />
       </div>
       <div class="form-group">
-        <label for="courseRequestAddInputTitle">Title:</label>
+        <label class="form-label" for="courseRequestAddInputTitle">Title:</label>
         <input
           type="text"
           class="form-control"
@@ -255,7 +255,7 @@ function CourseRequestApproveForm({
         />
       </div>
       <div class="form-group">
-        <label for="courseRequestAddInputTimezone">Timezone:</label>
+        <label class="form-label" for="courseRequestAddInputTimezone">Timezone:</label>
         <input
           type="text"
           class="form-control"
@@ -265,7 +265,7 @@ function CourseRequestApproveForm({
         />
       </div>
       <div class="form-group">
-        <label for="courseRequestAddInputPath">Path:</label>
+        <label class="form-label" for="courseRequestAddInputPath">Path:</label>
         <input
           type="text"
           class="form-control"
@@ -275,7 +275,7 @@ function CourseRequestApproveForm({
         />
       </div>
       <div class="form-group">
-        <label for="courseRequestAddInputRepositoryName">Repository Name:</label>
+        <label class="form-label" for="courseRequestAddInputRepositoryName">Repository Name:</label>
         <input
           type="text"
           class="form-control"

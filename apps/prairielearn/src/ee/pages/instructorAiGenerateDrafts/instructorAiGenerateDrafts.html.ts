@@ -112,7 +112,7 @@ export function InstructorAIGenerateDrafts({
             <input type="hidden" name="__action" value="generate_question" />
 
             <div class="form-group">
-              <label for="user-prompt-llm">
+              <label class="form-label" for="user-prompt-llm">
                 Give a high-level overview of the question. What internal parameters need to be
                 generated and what information should be provided to students?
               </label>
@@ -134,7 +134,7 @@ export function InstructorAIGenerateDrafts({
 
             <div class="js-hidden-inputs-container ${hasDrafts ? 'd-none' : ''}">
               <div class="form-group">
-                <label for="user-prompt-llm-user-input">
+                <label class="form-label" for="user-prompt-llm-user-input">
                   How should students input their solution? What choices or input boxes are they
                   given?
                 </label>
@@ -153,7 +153,9 @@ export function InstructorAIGenerateDrafts({
               </div>
 
               <div class="form-group">
-                <label for="user-prompt-llm-grading"> How is the correct answer determined? </label>
+                <label class="form-label" for="user-prompt-llm-grading">
+                  How is the correct answer determined?
+                </label>
                 <textarea
                   name="prompt_grading"
                   id="user-prompt-llm-grading"

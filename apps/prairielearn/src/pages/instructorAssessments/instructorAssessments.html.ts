@@ -278,7 +278,7 @@ function CreateAssessmentModal({
     formMethod: 'POST',
     body: html`
       <div class="form-group">
-        <label for="title">Title</label>
+        <label class="form-label" for="title">Title</label>
         <input
           type="text"
           class="form-control"
@@ -292,7 +292,7 @@ function CreateAssessmentModal({
         </small>
       </div>
       <div class="form-group">
-        <label for="aid">Assessment identifier (AID)</label>
+        <label class="form-label" for="aid">Assessment identifier (AID)</label>
         <input
           type="text"
           class="form-control"
@@ -308,7 +308,7 @@ function CreateAssessmentModal({
         </small>
       </div>
       <div class="form-group">
-        <label for="type">Type</label>
+        <label class="form-label" for="type">Type</label>
         <select class="form-select" id="type" name="type" aria-describedby="type_help" required>
           <option value="Homework">Homework</option>
           <option value="Exam">Exam</option>
@@ -318,7 +318,7 @@ function CreateAssessmentModal({
         </small>
       </div>
       <div class="form-group">
-        <label for="set">Set</label>
+        <label class="form-label" for="set">Set</label>
         <select class="form-select" id="set" name="set" aria-describedby="set_help" required>
           ${assessmentSets.map((set) => html`<option value="${set.name}">${set.name}</option>`)}
         </select>
@@ -330,7 +330,7 @@ function CreateAssessmentModal({
       ${assessmentsGroupBy === 'Module'
         ? html`
             <div class="form-group">
-              <label for="module">Module</label>
+              <label class="form-label" for="module">Module</label>
               <select
                 class="form-select"
                 id="module"

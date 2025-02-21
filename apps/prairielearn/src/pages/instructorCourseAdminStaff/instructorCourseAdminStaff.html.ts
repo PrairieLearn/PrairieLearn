@@ -262,7 +262,7 @@ function CoursePermissionsInsertForm({
       </div>
 
       <div class="form-group">
-        <label for="addUsersInputUid">UIDs:</label>
+        <label class="form-label" for="addUsersInputUid">UIDs:</label>
         <textarea
           class="form-control"
           id="addUsersInputUid"
@@ -277,7 +277,9 @@ function CoursePermissionsInsertForm({
       </div>
 
       <div class="form-group">
-        <label for="addUsersInputCourseRole">Course content access for all new users:</label>
+        <label class="form-label" for="addUsersInputCourseRole">
+          Course content access for all new users:
+        </label>
         <select
           class="custom-select custom-select-sm"
           id="addUsersInputCourseRole"
@@ -295,9 +297,9 @@ function CoursePermissionsInsertForm({
       ${courseInstances?.length > 0
         ? html`
             <div class="form-group">
-              <label for="addUsersInputCourseInstance"
-                >Student data access for all new users:</label
-              >
+              <label class="form-label" for="addUsersInputCourseInstance">
+                Student data access for all new users:
+              </label>
               <div class="input-group">
                 <select
                   class="custom-select custom-select-sm"
