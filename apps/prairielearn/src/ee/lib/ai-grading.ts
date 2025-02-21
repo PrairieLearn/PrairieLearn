@@ -61,13 +61,11 @@ async function generatePrompt({
     role: 'system' | 'user';
     content: string;
   }[];
-  warning: string;
 }> {
   const messages: {
     role: 'system' | 'user';
     content: string;
   }[] = [];
-  let warning = '';
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -85,7 +83,10 @@ async function generatePrompt({
     messages.push({
       role: 'system',
       content:
-        "You are an instructor for a course, and you are grading assignments. You are provided several rubric items with a description, explanation, and grader note. You must grade the assignment by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's submission. If no rubric items apply, do not select any. I will provide some example responses and their corresponding selected rubric items.",
+        "You are an instructor for a course, and you are grading assignments. You are provided several rubric items with a description, explanation, and grader note. You must grade the assignment by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's submission. If no rubric items apply, do not select any." +
+        (example_submissions.length
+          ? ' I will provide some example responses and their corresponding selected rubric items.'
+          : ''),
     });
     messages.push({
       role: 'system',
@@ -95,7 +96,10 @@ async function generatePrompt({
     messages.push({
       role: 'system',
       content:
-        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The feedback should explain why you give this score. Follow any special instructions given by the instructor in the question. Omit the feedback if the response is correct. I will provide some example responses and their corresponding scores and feedback.',
+        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The feedback should explain why you give this score. Follow any special instructions given by the instructor in the question. Omit the feedback if the response is correct.' +
+        (example_submissions.length
+          ? ' I will provide some example responses and their corresponding scores and feedback.'
+          : ''),
     });
   }
 
@@ -108,6 +112,10 @@ async function generatePrompt({
   // Examples
   for (const example of example_submissions) {
     if (rubric_items.length > 0 && example.manual_rubric_grading_id) {
+      // Note that the example may have been graded with a different rubric,
+      // or the rubric may have changed significantly since the example was graded.
+      // We'll show whatever items were selected anyways, since it'll likely
+      // still be useful context to the LLM.
       const rubric_grading_items = await queryRows(
         sql.select_rubric_grading_items,
         {
@@ -115,13 +123,6 @@ async function generatePrompt({
         },
         RubricItemSchema,
       );
-      // Warning when graded rubric item does not match current rubric item
-      if (
-        rubric_grading_items.length > 0 &&
-        rubric_grading_items[0].rubric_id !== rubric_items[0].rubric_id
-      ) {
-        warning += `Instance question ${example.instance_question_id}: example rubric id is different from the current rubric id.\n`;
-      }
       let rubric_grading_info = '';
       for (const item of rubric_grading_items) {
         rubric_grading_info += `description: ${item.description}\n`;
@@ -131,13 +132,6 @@ async function generatePrompt({
         content: `Example response: \n<response>\n${example.submission_text} \n<response>\nSelected rubric items for this example response: \n${rubric_grading_info}`,
       });
     } else {
-      if (rubric_items.length > 0 && !example.manual_rubric_grading_id) {
-        // Warning when example is not graded on the rubric but there is a rubric in use
-        warning += `Instance question ${example.instance_question_id}: example is not graded on a rubric, but there is a rubric in use.\n`;
-      } else if (rubric_items.length === 0 && example.manual_rubric_grading_id) {
-        // Warning when example is graded on a rubric but there is no rubric in use
-        warning += `Instance question ${example.instance_question_id}: example is graded on a rubric, but there is not a rubric in use.\n`;
-      }
       messages.push({
         role: 'user',
         content:
@@ -155,10 +149,7 @@ async function generatePrompt({
     content: `The student submitted the following response: \n<response>\n${submission_text} \n<response>\nHow would you grade this? Please return the JSON object.`,
   });
 
-  if (warning) {
-    warning = `Warning:\n${warning}Warning: accuracy may be lower due to inconsistent rubrics.`;
-  }
-  return { messages, warning };
+  return { messages };
 }
 
 async function generateSubmissionEmbedding({
@@ -369,7 +360,7 @@ export async function aiGrade({
         RubricItemSchema,
       );
 
-      const { messages, warning } = await generatePrompt({
+      const { messages } = await generatePrompt({
         questionPrompt,
         submission_text,
         example_submissions,
@@ -458,9 +449,6 @@ export async function aiGrade({
           job.error(err);
           error_count++;
         }
-        if (warning) {
-          job.warn(warning);
-        }
       } else {
         const completion = await openai.beta.chat.completions.parse({
           messages,
@@ -496,9 +484,6 @@ export async function aiGrade({
           job.error(`ERROR AI grading for ${instance_question.id}`);
           job.error(err);
           error_count++;
-        }
-        if (warning) {
-          job.warn(warning);
         }
       }
     }
