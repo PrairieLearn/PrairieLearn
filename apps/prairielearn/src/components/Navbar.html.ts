@@ -41,7 +41,7 @@ export function Navbar({
       : ''}
 
     <div class="container-fluid bg-primary">
-      <a href="#content" class="sr-only sr-only-focusable d-inline-flex p-2 m-2 text-white">
+      <a href="#content" class="visually-hidden-focusable d-inline-flex p-2 m-2 text-white">
         Skip to main content
       </a>
     </div>
