@@ -54,7 +54,7 @@ export function AdministratorFeatures({
                     <div class="list-group-item d-flex align-items-center">
                       <a
                         href="${resLocals.urlPrefix}/administrator/features/${feature}"
-                        class="me-auto text-monospace"
+                        class="me-auto font-monospace"
                       >
                         ${feature}
                       </a>
@@ -105,7 +105,7 @@ export function AdministratorFeature({
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <span class="text-monospace">${feature}</span>
+          <span class="font-monospace">${feature}</span>
           <button
             class="btn btn-light ms-auto"
             data-bs-toggle="modal"

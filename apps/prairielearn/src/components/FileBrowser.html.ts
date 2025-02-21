@@ -350,7 +350,7 @@ export function FileBrowser({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <div class="row align-items-center justify-content-between">
-            <div class="col-auto text-monospace d-flex">
+            <div class="col-auto font-monospace d-flex">
               ${joinHtml(
                 breadcrumbPaths.map(
                   (dir) => html`

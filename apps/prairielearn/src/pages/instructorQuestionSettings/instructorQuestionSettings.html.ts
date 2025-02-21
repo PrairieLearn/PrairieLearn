@@ -131,7 +131,7 @@ export function InstructorQuestionSettings({
                 : ''}
               <input
                 type="text"
-                class="form-control text-monospace"
+                class="form-control font-monospace"
                 id="qid"
                 name="qid"
                 value="${resLocals.question.qid}"

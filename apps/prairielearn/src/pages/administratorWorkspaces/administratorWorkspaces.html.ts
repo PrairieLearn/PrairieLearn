@@ -68,7 +68,7 @@ export function AdministratorWorkspaces({
             return html`
               <div class="list-group-item">
                 <div class="d-flex flex-row flex-wrap align-items-center">
-                  <div class="d-flex align-items-center me-auto pe-2 text-monospace">
+                  <div class="d-flex align-items-center me-auto pe-2 font-monospace">
                     <a
                       href="workspaces-${workspaceHost.id}"
                       class="me-2"
@@ -118,7 +118,7 @@ export function AdministratorWorkspaces({
                                   </span>
                                 </div>
                                 <div class="text-muted text-small">
-                                  <span class="text-monospace" title="Question"
+                                  <span class="font-monospace" title="Question"
                                     >${workspace.question_name}</span
                                   >
                                   &bull;

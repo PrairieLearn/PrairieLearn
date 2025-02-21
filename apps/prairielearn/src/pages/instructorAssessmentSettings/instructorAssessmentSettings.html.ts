@@ -54,7 +54,7 @@ export function InstructorAssessmentSettings({
               <label class="form-label" for="aid">AID</label>
               <input
                 type="text"
-                class="form-control text-monospace"
+                class="form-control font-monospace"
                 id="aid"
                 name="aid"
                 value="${resLocals.assessment.tid}"

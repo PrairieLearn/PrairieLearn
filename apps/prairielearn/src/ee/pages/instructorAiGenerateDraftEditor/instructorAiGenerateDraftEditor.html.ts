@@ -306,7 +306,7 @@ function QuestionCodeEditors({
         </div>
       </div>
       <div class="editor-pane-html d-flex flex-column border rounded" style="overflow: hidden">
-        <div class="py-2 px-3 text-monospace bg-light">question.html</div>
+        <div class="py-2 px-3 font-monospace bg-light">question.html</div>
         <div
           class="js-file-editor flex-grow-1"
           data-ace-mode="ace/mode/html"
@@ -314,7 +314,7 @@ function QuestionCodeEditors({
         ></div>
       </div>
       <div class="editor-pane-python d-flex flex-column border rounded" style="overflow: hidden">
-        <div class="py-2 px-3 text-monospace bg-light">server.py</div>
+        <div class="py-2 px-3 font-monospace bg-light">server.py</div>
         <div
           class="js-file-editor flex-grow-1"
           data-ace-mode="ace/mode/python"

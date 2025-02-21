@@ -37,13 +37,13 @@ export function PlanGrantsEditor({
                   value="1"
                   id="plan_${planName}"
                 />
-                <label class="form-check-label text-monospace" for="plan_${planName}">
+                <label class="form-check-label font-monospace" for="plan_${planName}">
                   ${planName}
                 </label>
                 <div>
                   ${planFeatures.map(
                     (feature) => html`
-                      <span class="badge badge-pill text-bg-secondary text-monospace me-1">
+                      <span class="badge badge-pill text-bg-secondary font-monospace me-1">
                         ${feature}
                       </span>
                     `,

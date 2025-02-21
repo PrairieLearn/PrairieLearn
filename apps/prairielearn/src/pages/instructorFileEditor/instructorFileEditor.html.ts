@@ -105,7 +105,7 @@ export function InstructorFileEditor({
           <div class="card-header bg-primary">
             <div class="row align-items-center justify-content-between">
               <div class="col-auto">
-                <span class="text-monospace text-white d-flex">
+                <span class="font-monospace text-white d-flex">
                   ${joinHtml(
                     paths.branch.map((dir) =>
                       dir.canView
