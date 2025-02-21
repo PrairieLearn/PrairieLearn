@@ -2238,13 +2238,13 @@ __metadata:
   linkType: hard
 
 "@octokit/plugin-paginate-rest@npm:^11.4.0":
-  version: 11.4.0
-  resolution: "@octokit/plugin-paginate-rest@npm:11.4.0"
+  version: 11.4.1
+  resolution: "@octokit/plugin-paginate-rest@npm:11.4.1"
   dependencies:
     "@octokit/types": "npm:^13.7.0"
   peerDependencies:
     "@octokit/core": ">=6"
-  checksum: 10c0/b211f2491ddb941dfe6ae0b8fa752c617c74a1bb3086a9e2e23e77430682d30863ed8ccc6180dd12d4f6f0e0c7af4489863dd63804e2cc9f3fab12c1f04f8dd2
+  checksum: 10c0/d21b5f61a678e99fdf5afdfd08360d16a7be1469aa6c65184131d864d64be34fd6108ebc49052c17433d149cff09186908ada2a8ad0083e4063aa290d8aebf60
   languageName: node
   linkType: hard
 
