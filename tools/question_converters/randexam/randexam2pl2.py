@@ -48,7 +48,7 @@ log_file = None
 
 
 def init_logging(output_filename):
-    global log_file
+    global log_file  # noqa: PLW0603
     try:
         print(f"Logging information to file: {output_filename}")
         if log_file is not None:
@@ -60,7 +60,6 @@ def init_logging(output_filename):
 
 
 def log(msg):
-    global log_file
     try:
         if log_file is None:
             raise RuntimeError("logging not initialized")
@@ -87,7 +86,7 @@ def log_array(arr, arr_name, dim_names):
         "{} array: ({})".format(
             arr_name,
             ", ".join(
-                [f"{dim_names[i]} = {arr.shape[i]}" for i in range(len(arr.shape))]
+                f"{dim_names[i]} = {arr.shape[i]}" for i in range(len(arr.shape))
             ),
         )
     )
@@ -162,7 +161,7 @@ class LibraryRegexp:
     no_tail indicates whether trailing text after the regexp is permitted
     """
 
-    def __init__(self, name, regexp, no_tail=False):
+    def __init__(self, name, regexp, *, no_tail=False):
         self.name = name
         self.regexp = regexp
         self.no_tail = no_tail
@@ -535,9 +534,7 @@ def check_library(library):
                         f"question {question_i + 1}, variant {i_variant + 1} (line {variant.line_number}): more than one correct answer"
                     )
                 if len(variant.answers) > 0:
-                    answer_letters = "".join(
-                        [ind2chr(i) for i in correct_answer_indexes]
-                    )
+                    answer_letters = "".join(ind2chr(i) for i in correct_answer_indexes)
                 else:
                     answer_letters = "*"
                 variant_infos.append(
@@ -559,18 +556,18 @@ def check_library(library):
 
 
 ######################################################################
-def mkdir_or_die(dir):
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+def mkdir_or_die(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-    if not os.path.isdir(dir):
-        print(f"Could not create directory ({dir})")
+    if not os.path.isdir(directory):
+        print(f"Could not create directory ({directory})")
         sys.exit(1)
 
 
 ######################################################################
 def escape_json_string(s):
-    s = s.replace("\n", "").replace("\[", "$$").replace("\]", "$$")  # Harry modified
+    s = s.replace("\n", "").replace("[", "$$").replace("]", "$$")  # Harry modified
     return s.replace("\\", "\\\\").replace('"', '\\"')  # Harry modified
 
 
@@ -639,7 +636,7 @@ def export_one_question(
             latex_f.write("\n")
             latex_f.write("\\endpgfgraphicnamed\n")
             latex_f.write("\\end{document}\n")
-        nofig = nofig - 1
+        nofig -= 1
         log_and_print(f"generating figure for question {question_name}")
         os.system(
             "pdflatex -jobname="
@@ -733,7 +730,7 @@ def export_library(output_directory, library, topic, tags):
                 )
 
             total_points += question.points
-            qi = qi + 1
+            qi += 1
 
     write_qids(output_directory, topic, qids)
     log_and_print(f"Total points: {total_points:g}")

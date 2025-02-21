@@ -1,7 +1,6 @@
-import { html, escapeHtml } from '@prairielearn/html';
+import { escapeHtml, html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { type User } from '../../lib/db-types.js';
 
 export function AdministratorAdmins({
@@ -11,93 +10,94 @@ export function AdministratorAdmins({
   admins: User[];
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Administrators' })}
-      </head>
-      <body>
-        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'administrators' })}
-        <main id="content" class="container-fluid">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h1>Administrators</h1>
-              <button
-                type="button"
-                class="btn btn-sm btn-light ml-auto"
-                data-toggle="popover"
-                data-container="body"
-                data-html="true"
-                data-placement="auto"
-                title="Add new administrator"
-                data-content="${escapeHtml(
-                  AdministratorInsertForm({
-                    csrfToken: resLocals.__csrf_token,
-                  }),
-                )}"
-                data-testid="administrator-insert-button"
-              >
-                <i class="fa fa-user-plus" aria-hidden="true"></i>
-                <span class="d-none d-sm-inline">Add administrator</span>
-              </button>
-            </div>
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Administrators',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'administrators',
+    },
+    options: {
+      fullWidth: true,
+    },
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h1>Administrators</h1>
+          <button
+            type="button"
+            class="btn btn-sm btn-light ml-auto"
+            data-toggle="popover"
+            data-container="body"
+            data-html="true"
+            data-placement="auto"
+            title="Add new administrator"
+            data-content="${escapeHtml(
+              AdministratorInsertForm({
+                csrfToken: resLocals.__csrf_token,
+              }),
+            )}"
+            data-testid="administrator-insert-button"
+          >
+            <i class="fa fa-user-plus" aria-hidden="true"></i>
+            <span class="d-none d-sm-inline">Add administrator</span>
+          </button>
+        </div>
 
-            <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped" aria-label="Administrators">
-                <thead>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped" aria-label="Administrators">
+            <thead>
+              <tr>
+                <th>UID</th>
+                <th>Name</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${admins.map(
+                (admin) => html`
                   <tr>
-                    <th>UID</th>
-                    <th>Name</th>
-                    <th>Actions</th>
+                    <td class="align-middle">${admin.uid}</td>
+                    <td class="align-middle">${admin.name}</td>
+                    <td class="align-middle">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-danger float-right"
+                        data-toggle="popover"
+                        data-container="body"
+                        data-html="true"
+                        data-placement="auto"
+                        title="Remove administrator access"
+                        data-content="${escapeHtml(
+                          AdministratorDeleteForm({
+                            csrfToken: resLocals.__csrf_token,
+                            uid: admin.uid,
+                            userId: admin.user_id,
+                          }),
+                        )}"
+                      >
+                        <i class="fa fa-times" aria-hidden="true"></i> Remove
+                      </button>
+                    </td>
                   </tr>
-                </thead>
+                `,
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                <tbody>
-                  ${admins.map(
-                    (admin) => html`
-                      <tr>
-                        <td class="align-middle">${admin.uid}</td>
-                        <td class="align-middle">${admin.name}</td>
-                        <td class="align-middle">
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-danger float-right"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Remove administrator access"
-                            data-content="${escapeHtml(
-                              AdministratorDeleteForm({
-                                csrfToken: resLocals.__csrf_token,
-                                uid: admin.uid,
-                                userId: admin.user_id,
-                              }),
-                            )}"
-                          >
-                            <i class="fa fa-times" aria-hidden="true"></i> Remove
-                          </button>
-                        </td>
-                      </tr>
-                    `,
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div class="card-footer">
-              <small>
-                Administrators have full access to every course and course instance. They are
-                automatically Owners of every course and Instructors of every course instance. They
-                can add and remove other administrators.
-              </small>
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+        <div class="card-footer">
+          <small>
+            Administrators have full access to every course and course instance. They are
+            automatically Owners of every course and Instructors of every course instance. They can
+            add and remove other administrators.
+          </small>
+        </div>
+      </div>
+    `,
+  });
 }
 
 function AdministratorInsertForm({ csrfToken }: { csrfToken: string }) {

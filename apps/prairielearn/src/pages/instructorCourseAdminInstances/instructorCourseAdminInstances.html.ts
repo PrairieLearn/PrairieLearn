@@ -4,9 +4,8 @@ import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -41,174 +40,175 @@ export function InstructorCourseAdminInstances({
     resLocals.course.time_zone,
   );
 
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Course Instances' })}
-        ${compiledScriptTag('instructorCourseAdminInstancesClient.ts')}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
-          ${CourseSyncErrorsAndWarnings({
-            authz_data: resLocals.authz_data,
-            course: resLocals.course,
-            urlPrefix: resLocals.urlPrefix,
-          })}
-          ${CreateCourseInstanceModal({
-            courseShortName: resLocals.course.short_name,
-            csrfToken: resLocals.__csrf_token,
-            initialStartDateFormatted,
-            initialEndDateFormatted,
-            timezone: resLocals.course.display_timezone,
-          })}
-          <div class="card mb-4">
-            <div
-              class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
-            >
-              <h1>Course instances</h1>
-              ${resLocals.authz_data.has_course_permission_edit &&
-              !resLocals.course.example_course &&
-              !resLocals.needToSync &&
-              courseInstances.length > 0
-                ? html`
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Course Instances',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'instances',
+    },
+    options: {
+      fullWidth: true,
+    },
+    headContent: [compiledScriptTag('instructorCourseAdminInstancesClient.ts')],
+    content: html`
+      ${CourseSyncErrorsAndWarnings({
+        authz_data: resLocals.authz_data,
+        course: resLocals.course,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+      ${CreateCourseInstanceModal({
+        courseShortName: resLocals.course.short_name,
+        csrfToken: resLocals.__csrf_token,
+        initialStartDateFormatted,
+        initialEndDateFormatted,
+        timezone: resLocals.course.display_timezone,
+      })}
+      <div class="card mb-4">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
+          <h1>Course instances</h1>
+          ${resLocals.authz_data.has_course_permission_edit &&
+          !resLocals.course.example_course &&
+          !resLocals.needToSync &&
+          courseInstances.length > 0
+            ? html`
+                <button
+                  class="btn btn-sm btn-light"
+                  data-toggle="modal"
+                  data-target="#createCourseInstanceModal"
+                >
+                  <i class="fa fa-plus" aria-hidden="true"></i>
+                  <span class="d-none d-sm-inline">Add course instance</span>
+                </button>
+              `
+            : ''}
+        </div>
+        ${courseInstances.length > 0
+          ? html`
+              <div class="table-responsive">
+                <table
+                  class="table table-sm table-hover table-striped"
+                  aria-label="Course instances"
+                >
+                  <thead>
+                    <tr>
+                      <th>Long Name</th>
+                      <th>CIID</th>
+                      <th id="earliest-access-date">
+                        Earliest Access Date
+                        <button
+                          class="btn btn-xs btn-light"
+                          data-toggle="popover"
+                          data-container="body"
+                          data-placement="bottom"
+                          data-html="true"
+                          title="Earliest Access Date"
+                          data-content="${PopoverStartDate()}"
+                          aria-label="Information about Earliest Access Date"
+                        >
+                          <i class="far fa-question-circle" aria-hidden="true"></i>
+                        </button>
+                      </th>
+                      <th id="latest-access-date">
+                        Latest Access Date
+                        <button
+                          class="btn btn-xs btn-light"
+                          data-toggle="popover"
+                          data-container="body"
+                          data-placement="bottom"
+                          data-html="true"
+                          title="Latest Access Date"
+                          data-content="${PopoverEndDate()}"
+                          aria-label="Information about Latest Access Date"
+                        >
+                          <i class="far fa-question-circle" aria-hidden="true"></i>
+                        </button>
+                      </th>
+                      <th>Students</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${courseInstances.map((row) => {
+                      return html`
+                        <tr>
+                          <td class="align-left">
+                            ${row.sync_errors
+                              ? SyncProblemButton({
+                                  type: 'error',
+                                  output: row.sync_errors,
+                                })
+                              : row.sync_warnings
+                                ? SyncProblemButton({
+                                    type: 'warning',
+                                    output: row.sync_warnings,
+                                  })
+                                : ''}
+                            <a
+                              href="${resLocals.plainUrlPrefix}/course_instance/${row.id}/instructor/instance_admin"
+                              >${row.long_name}</a
+                            >
+                          </td>
+                          <td class="align-left">${row.short_name}</td>
+                          <td class="align-left">${row.formatted_start_date}</td>
+                          <td class="align-left">${row.formatted_end_date}</td>
+                          <td class="align-middle">${row.enrollment_count}</td>
+                        </tr>
+                      `;
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            `
+          : html`
+              <div class="my-4 card-body text-center" style="text-wrap: balance;">
+                <p class="font-weight-bold">No course instances found.</p>
+                <p class="mb-0">
+                  A course instance contains the assessments and other configuration for a single
+                  offering of a course.
+                </p>
+                <p>
+                  Learn more in the
+                  <a
+                    href="https://prairielearn.readthedocs.io/en/latest/courseInstance/"
+                    target="_blank"
+                    >course instance documentation</a
+                  >.
+                </p>
+                ${run(() => {
+                  if (resLocals.course.example_course) {
+                    return html`<p>You can't add course instances to the example course.</p>`;
+                  }
+                  if (!resLocals.authz_data.has_course_permission_edit) {
+                    return html`<p>Course Editors can create new course instances.</p>`;
+                  }
+                  if (resLocals.needToSync) {
+                    return html`
+                      <p>
+                        You must
+                        <a href="${resLocals.urlPrefix}/course_admin/syncs">sync this course</a>
+                        before creating a new course instance.
+                      </p>
+                    `;
+                  }
+                  return html`
                     <button
-                      class="btn btn-sm btn-light"
+                      class="btn btn-sm btn-primary"
                       data-toggle="modal"
                       data-target="#createCourseInstanceModal"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>
                       <span class="d-none d-sm-inline">Add course instance</span>
                     </button>
-                  `
-                : ''}
-            </div>
-            ${courseInstances.length > 0
-              ? html`
-                  <div class="table-responsive">
-                    <table
-                      class="table table-sm table-hover table-striped"
-                      aria-label="Course instances"
-                    >
-                      <thead>
-                        <tr>
-                          <th>Long Name</th>
-                          <th>CIID</th>
-                          <th id="earliest-access-date">
-                            Earliest Access Date
-                            <button
-                              class="btn btn-xs btn-light"
-                              data-toggle="popover"
-                              data-container="body"
-                              data-placement="bottom"
-                              data-html="true"
-                              title="Earliest Access Date"
-                              data-content="${PopoverStartDate()}"
-                              aria-label="Information about Earliest Access Date"
-                            >
-                              <i class="far fa-question-circle" aria-hidden="true"></i>
-                            </button>
-                          </th>
-                          <th id="latest-access-date">
-                            Latest Access Date
-                            <button
-                              class="btn btn-xs btn-light"
-                              data-toggle="popover"
-                              data-container="body"
-                              data-placement="bottom"
-                              data-html="true"
-                              title="Latest Access Date"
-                              data-content="${PopoverEndDate()}"
-                              aria-label="Information about Latest Access Date"
-                            >
-                              <i class="far fa-question-circle" aria-hidden="true"></i>
-                            </button>
-                          </th>
-                          <th>Students</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${courseInstances.map((row) => {
-                          return html`
-                            <tr>
-                              <td class="align-left">
-                                ${row.sync_errors
-                                  ? SyncProblemButton({
-                                      type: 'error',
-                                      output: row.sync_errors,
-                                    })
-                                  : row.sync_warnings
-                                    ? SyncProblemButton({
-                                        type: 'warning',
-                                        output: row.sync_warnings,
-                                      })
-                                    : ''}
-                                <a
-                                  href="${resLocals.plainUrlPrefix}/course_instance/${row.id}/instructor/instance_admin"
-                                  >${row.long_name}</a
-                                >
-                              </td>
-                              <td class="align-left">${row.short_name}</td>
-                              <td class="align-left">${row.formatted_start_date}</td>
-                              <td class="align-left">${row.formatted_end_date}</td>
-                              <td class="align-middle">${row.enrollment_count}</td>
-                            </tr>
-                          `;
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                `
-              : html`
-                  <div class="my-4 card-body text-center" style="text-wrap: balance;">
-                    <p class="font-weight-bold">No course instances found.</p>
-                    <p class="mb-0">
-                      A course instance contains the assessments and other configuration for a
-                      single offering of a course.
-                    </p>
-                    <p>
-                      Learn more in the
-                      <a
-                        href="https://prairielearn.readthedocs.io/en/latest/courseInstance/"
-                        target="_blank"
-                        >course instance documentation</a
-                      >.
-                    </p>
-                    ${run(() => {
-                      if (resLocals.course.example_course) {
-                        return html`<p>You can't add course instances to the example course.</p>`;
-                      }
-                      if (!resLocals.authz_data.has_course_permission_edit) {
-                        return html`<p>Course Editors can create new course instances.</p>`;
-                      }
-                      if (resLocals.needToSync) {
-                        return html`
-                          <p>
-                            You must
-                            <a href="${resLocals.urlPrefix}/course_admin/syncs">sync this course</a>
-                            before creating a new course instance.
-                          </p>
-                        `;
-                      }
-                      return html`
-                        <button
-                          class="btn btn-sm btn-primary"
-                          data-toggle="modal"
-                          data-target="#createCourseInstanceModal"
-                        >
-                          <i class="fa fa-plus" aria-hidden="true"></i>
-                          <span class="d-none d-sm-inline">Add course instance</span>
-                        </button>
-                      `;
-                    })}
-                  </div>
-                `}
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+                  `;
+                })}
+              </div>
+            `}
+      </div>
+    `,
+  });
 }
 
 function PopoverStartDate() {

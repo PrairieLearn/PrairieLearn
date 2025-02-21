@@ -27,7 +27,7 @@ class Canvas:
         self.token_header = {"Authorization": f"Bearer {self.token}"}
 
     @staticmethod
-    def add_arguments(parser, course=True, quiz=False, assignment=False):
+    def add_arguments(parser, *, course=True, quiz=False, assignment=False):
         """docstring"""
 
         parser.add_argument(
@@ -40,7 +40,7 @@ class Canvas:
         if assignment:
             parser.add_argument("-a", "--assignment", type=int, help="Assignment ID")
 
-    def request(self, request, stop_at_first=False):
+    def request(self, request, *, stop_at_first=False):
         """docstring"""
         retval = []
         response = requests.get(self.api_url + request, headers=self.token_header)
@@ -96,7 +96,7 @@ class Canvas:
             courses.extend(result)
         return courses
 
-    def course(self, course_id, prompt_if_needed=False):
+    def course(self, course_id, *, prompt_if_needed=False):
         """docstring"""
         if course_id:
             for course in self.request(f"/courses/{course_id}?include[]=term"):
@@ -158,7 +158,7 @@ class Course(Canvas):
             ]
         return quizzes
 
-    def quiz(self, quiz_id, prompt_if_needed=False):
+    def quiz(self, quiz_id, *, prompt_if_needed=False):
         """docstring"""
         if quiz_id:
             for quiz in self.request(f"{self.url_prefix}/quizzes/{quiz_id}"):
@@ -182,7 +182,7 @@ class Course(Canvas):
             ]
         return assignments
 
-    def assignment(self, assignment_id, prompt_if_needed=False):
+    def assignment(self, assignment_id, *, prompt_if_needed=False):
         """docstring"""
         if assignment_id:
             for assignment in self.request(
@@ -209,7 +209,7 @@ class Course(Canvas):
         students = {}
         for result in self.request(f"{self.url_prefix}/users?enrollment_type=student"):
             for student in result:
-                sis_user_id = student["sis_user_id"] if student["sis_user_id"] else "0"
+                sis_user_id = student["sis_user_id"] or "0"
                 students[sis_user_id] = student
         return students
 
@@ -317,8 +317,7 @@ class Quiz(CourseSubObject):
                     i += 1
                 if not qfilter or qfilter(question["id"]):
                     questions[question["id"]] = question
-        if None in groups:
-            del groups[None]
+        groups.pop(None, None)
         for grp in groups.values():
             for question in [
                 q
@@ -366,6 +365,7 @@ class Quiz(CourseSubObject):
 
     def submissions(
         self,
+        *,
         include_user=True,
         include_submission=True,
         include_history=True,
@@ -374,13 +374,11 @@ class Quiz(CourseSubObject):
         """docstring"""
         submissions = {}
         quiz_submissions = []
-        include = "".join(
-            [
-                "include[]=user&" if include_user else "",
-                "include[]=submission&" if include_submission else "",
-                "include[]=submission_history&" if include_history else "",
-            ]
-        )
+        include = "".join([
+            "include[]=user&" if include_user else "",
+            "include[]=submission&" if include_submission else "",
+            "include[]=submission_history&" if include_history else "",
+        ])
         for response in self.request(f"{self.url_prefix}/submissions?{include}"):
             quiz_submissions += [
                 qs

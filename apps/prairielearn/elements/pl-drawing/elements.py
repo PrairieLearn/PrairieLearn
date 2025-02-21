@@ -10,7 +10,7 @@ def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Get the position of the anchor point of the vector
     rpos = np.array([x1, y1])
     # Defining the direction of the vector
-    dir = np.array([math.cos(theta), math.sin(theta)])
+    direction = np.array([math.cos(theta), math.sin(theta)])
     # Defining the error box limit in the direction of the vector
     max_forward = offset_forward + tol
     max_backward = offset_backward + tol
@@ -18,7 +18,7 @@ def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Defining the error box limit in the direction perpendicular to the vector
     max_perp = tol
     hbox = 2 * max_perp
-    pc = rpos - (wbox / 2 - max_forward) * dir
+    pc = rpos - (wbox / 2 - max_forward) * direction
     return (pc, hbox, wbox, max_forward, max_backward)
 
 
@@ -52,9 +52,7 @@ class BaseElement:
         return True
 
     def get_attributes():
-        """
-        Returns a list of attributes that the element may contain.
-        """
+        """Return a list of attributes that the element may contain."""
         return []
 
 
@@ -747,12 +745,10 @@ class Vector(BaseElement):
             return False
 
         # Get position of student answer relative to reference answer
-        basis = np.array(
-            [
-                [np.cos(rang_rad), -np.sin(rang_rad)],
-                [np.sin(rang_rad), np.cos(rang_rad)],
-            ]
-        ).T
+        basis = np.array([
+            [np.cos(rang_rad), -np.sin(rang_rad)],
+            [np.sin(rang_rad), np.cos(rang_rad)],
+        ]).T
         epos_rel = basis @ (epos - rpos)
         rely, relx = epos_rel
 
@@ -1193,12 +1189,10 @@ class DistributedLoad(BaseElement):
             return False
 
         # Get position of student answer relative to reference answer
-        basis = np.array(
-            [
-                [-np.sin(rang_rad), -np.cos(rang_rad)],
-                [np.cos(rang_rad), -np.sin(rang_rad)],
-            ]
-        ).T
+        basis = np.array([
+            [-np.sin(rang_rad), -np.cos(rang_rad)],
+            [np.cos(rang_rad), -np.sin(rang_rad)],
+        ]).T
         epos_rel = basis @ (epos - rpos)
         rely, relx = epos_rel
         if relx > tol or relx < -tol or rely > max_forward or rely < -max_backward:
@@ -2034,15 +2028,13 @@ class GraphLine(BaseElement):
         if not curved_line:
             obj.update({"x2": x0 + x2, "y2": y0 - y2, "type": "pl-controlled-line"})
         else:
-            obj.update(
-                {
-                    "x3": x0 + x2,
-                    "y3": y0 - y2,
-                    "x2": x0 + x3,
-                    "y2": y0 - y3,
-                    "type": "pl-controlled-curved-line",
-                }
-            )
+            obj.update({
+                "x3": x0 + x2,
+                "y3": y0 - y2,
+                "x2": x0 + x3,
+                "y2": y0 - y3,
+                "type": "pl-controlled-curved-line",
+            })
         return obj
 
     def grading_name(element):

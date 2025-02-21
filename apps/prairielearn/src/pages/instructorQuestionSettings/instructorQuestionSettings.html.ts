@@ -3,9 +3,8 @@ import { z } from 'zod';
 import { escapeHtml, html, type HtmlValue } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
@@ -16,10 +15,11 @@ import {
   AssessmentSetSchema,
   IdSchema,
   type Question,
-  type Topic,
   type Tag,
+  type Topic,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
@@ -80,283 +80,296 @@ export function InstructorQuestionSettings({
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageNote: resLocals.question.qid })}
-        ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
-        <style>
-          .popover {
-            max-width: 50%;
-          }
 
-          .ts-wrapper.multi .ts-control > span {
-            cursor: pointer;
-          }
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Settings',
+    navContext: {
+      type: 'instructor',
+      page: 'question',
+      subPage: 'settings',
+    },
+    options: {
+      pageNote: resLocals.question.qid,
+    },
+    headContent: html`
+      ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
+      <style>
+        .ts-wrapper.multi .ts-control > span {
+          cursor: pointer;
+        }
 
-          .ts-wrapper.multi .ts-control > span.active {
-            /* Fallback for Bootstrap 4; we can remove when we drop support for it. */
-            background-color: var(--bs-primary, #0d6efd) !important;
-            color: white !important;
-          }
-        </style>
-        <link
-          href="${nodeModulesAssetPath('tom-select/dist/css/tom-select.bootstrap5.css')}"
-          rel="stylesheet"
-        />
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container">
-          ${QuestionSyncErrorsAndWarnings({
-            authz_data: resLocals.authz_data,
-            question: resLocals.question,
-            course: resLocals.course,
-            urlPrefix: resLocals.urlPrefix,
-          })}
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">
-              <h1>Question Settings</h1>
+        .ts-wrapper.multi .ts-control > span.active {
+          background-color: var(--bs-primary) !important;
+          color: white !important;
+        }
+      </style>
+      <link
+        href="${nodeModulesAssetPath('tom-select/dist/css/tom-select.bootstrap5.css')}"
+        rel="stylesheet"
+      />
+    `,
+    content: html`
+      ${QuestionSyncErrorsAndWarnings({
+        authz_data: resLocals.authz_data,
+        question: resLocals.question,
+        course: resLocals.course,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex">
+          <h1>Question Settings</h1>
+        </div>
+        <div class="card-body">
+          <form name="edit-question-settings-form" method="POST">
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="orig_hash" value="${origHash}" />
+            <div class="form-group">
+              <label for="qid">QID</label>
+              ${questionGHLink
+                ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
+                : ''}
+              <input
+                type="text"
+                class="form-control text-monospace"
+                id="qid"
+                name="qid"
+                value="${resLocals.question.qid}"
+                pattern="[\\-A-Za-z0-9_\\/]+"
+                data-other-values="${qids.join(',')}"
+                ${canEdit ? '' : 'disabled'}
+              />
+              <small class="form-text text-muted">
+                This is a unique identifier for the question, e.g. "addNumbers". Use only letters,
+                numbers, dashes, and underscores, with no spaces. You may use forward slashes to
+                separate directories.
+              </small>
             </div>
-            <div class="card-body">
-              <form name="edit-question-settings-form" method="POST">
-                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                <input type="hidden" name="orig_hash" value="${origHash}" />
-                <div class="form-group">
-                  <h2 class="h4">General</h2>
-                  <label for="title">Title</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="title"
-                    name="title"
-                    value="${resLocals.question.title}"
-                    ${canEdit ? '' : 'disabled'}
-                  />
-                  <small class="form-text text-muted">
-                    The title of the question (e.g., "Add two numbers").
-                  </small>
-                </div>
-                <div class="form-group">
-                  <label for="qid">QID</label>
-                  ${questionGHLink
-                    ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
-                    : ''}
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="qid"
-                    name="qid"
-                    value="${resLocals.question.qid}"
-                    pattern="[\\-A-Za-z0-9_\\/]+"
-                    data-other-values="${qids.join(',')}"
-                    ${canEdit ? '' : 'disabled'}
-                  />
-                  <small class="form-text text-muted">
-                    This is a unique identifier for the question, e.g. "addNumbers". Use only
-                    letters, numbers, dashes, and underscores, with no spaces. You may use forward
-                    slashes to separate directories.
-                  </small>
-                </div>
-                <div class="table-responsive card mb-3 overflow-visible">
-                  <table
-                    class="table two-column-description"
-                    aria-label="Question topic, tags, and assessments"
-                  >
-                    <tr>
-                      <th class="align-middle">Topic</th>
-                      <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
-                      <!-- This is used by tom-select to style the active item in the dropdown -->
-                      <td style="--bs-tertiary-bg: #f8f9fa">
-                        ${canEdit
-                          ? html`
-                              <select id="topic" name="topic" placeholder="Select a topic">
-                                ${courseTopics.map((topic) => {
+            <div class="form-group">
+              <h2 class="h4">General</h2>
+              <label for="title">Title</label>
+              <input
+                type="text"
+                class="form-control"
+                id="title"
+                name="title"
+                value="${resLocals.question.title}"
+                ${canEdit ? '' : 'disabled'}
+              />
+              <small class="form-text text-muted">
+                The title of the question (e.g., "Add two numbers").
+              </small>
+            </div>
+            <div class="table-responsive card mb-3 overflow-visible">
+              <table
+                class="table two-column-description"
+                aria-label="Question topic, tags, and assessments"
+              >
+                <tr>
+                  <th class="align-middle">
+                    <label id="topic-label" for="topic">Topic</label>
+                  </th>
+                  <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
+                  <!-- This is used by tom-select to style the active item in the dropdown -->
+                  <td style="--bs-tertiary-bg: #f8f9fa">
+                    ${canEdit
+                      ? html`
+                          <select
+                            id="topic"
+                            name="topic"
+                            placeholder="Select a topic"
+                            aria-labelledby="topic-label"
+                          >
+                            ${courseTopics.map((topic) => {
+                              return html`
+                                <option
+                                  value="${topic.name}"
+                                  data-color="${topic.color}"
+                                  data-name="${topic.name}"
+                                  data-description="${topic.description}"
+                                  ${topic.name === resLocals.topic.name ? 'selected' : ''}
+                                ></option>
+                              `;
+                            })}
+                          </select>
+                        `
+                      : TopicBadge(resLocals.topic)}
+                  </td>
+                </tr>
+                <tr>
+                  <th class="align-middle">
+                    <label id="tags-label" for="tags">Tags</label>
+                  </th>
+                  <td>
+                    ${canEdit
+                      ? html`
+                          <select
+                            id="tags"
+                            name="tags"
+                            placeholder="Select tags"
+                            aria-labelledby="tags-label"
+                            multiple
+                          >
+                            ${courseTags.length > 0
+                              ? courseTags.map((tag) => {
                                   return html`
                                     <option
-                                      value="${topic.name}"
-                                      data-color="${topic.color}"
-                                      data-name="${topic.name}"
-                                      data-description="${topic.description}"
-                                      ${topic.name === resLocals.topic.name ? 'selected' : ''}
+                                      value="${tag.name}"
+                                      data-color="${tag.color}"
+                                      data-name="${tag.name}"
+                                      data-description="${tag.description}"
+                                      ${selectedTags.has(tag.name) ? 'selected' : ''}
                                     ></option>
                                   `;
-                                })}
-                              </select>
-                            `
-                          : TopicBadge(resLocals.topic)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <th class="align-middle">Tags</th>
-                      <td>
-                        ${canEdit
-                          ? html`
-                              <select id="tags" name="tags" placeholder="Select tags" multiple>
-                                ${courseTags.length > 0
-                                  ? courseTags.map((tag) => {
-                                      return html`
-                                        <option
-                                          value="${tag.name}"
-                                          data-color="${tag.color}"
-                                          data-name="${tag.name}"
-                                          data-description="${tag.description}"
-                                          ${selectedTags.has(tag.name) ? 'selected' : ''}
-                                        ></option>
-                                      `;
-                                    })
-                                  : ''}
-                              </select>
-                            `
-                          : TagBadgeList(resLocals.tags)}
-                      </td>
-                    </tr>
-                    ${shouldShowAssessmentsList
-                      ? html`<tr>
-                          <th class="align-middle">Assessments</th>
-                          <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
-                        </tr>`
-                      : ''}
-                  </table>
-                </div>
-                ${canEdit
-                  ? html`
-                      <button
-                        id="save-button"
-                        type="submit"
-                        class="btn btn-primary mb-2"
-                        name="__action"
-                        value="update_question"
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-secondary mb-2"
-                        onclick="window.location.reload()"
-                      >
-                        Cancel
-                      </button>
-                    `
+                                })
+                              : ''}
+                          </select>
+                        `
+                      : TagBadgeList(resLocals.tags)}
+                  </td>
+                </tr>
+                ${shouldShowAssessmentsList
+                  ? html`<tr>
+                      <th class="align-middle">Assessments</th>
+                      <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
+                    </tr>`
                   : ''}
-              </form>
-              ${sharingEnabled
-                ? html`
-                    <hr />
-                    <div>
-                      <h2 class="h4">Sharing</h2>
-                      <div data-testid="shared-with">
-                        ${QuestionSharing({
-                          question: resLocals.question,
-                          sharingSetsIn,
-                        })}
-                      </div>
-                    </div>
-                  `
-                : ''}
-              ${resLocals.question.type === 'Freeform' &&
-              resLocals.question.grading_method !== 'External' &&
-              resLocals.authz_data.has_course_permission_view
-                ? html`
-                    <hr />
-                    <div>
-                      <h2 class="h4">Tests</h2>
-                      <div>
-                        ${QuestionTestsForm({
-                          questionTestPath,
-                          questionTestCsrfToken,
-                        })}
-                      </div>
-                    </div>
-                  `
-                : ''}
-              ${resLocals.authz_data.has_course_permission_view
-                ? canEdit
-                  ? html`
-                      <hr />
-                      <a
-                        data-testid="edit-question-configuration-link"
-                        href="${resLocals.urlPrefix}/question/${resLocals.question
-                          .id}/file_edit/${infoPath}"
-                      >
-                        Edit question configuration
-                      </a>
-                      in <code>info.json</code>
-                    `
-                  : html`
-                      <hr />
-                      <a
-                        href="${resLocals.urlPrefix}/question/${resLocals.question
-                          .id}/file_view/${infoPath}"
-                      >
-                        View question configuration
-                      </a>
-                      in <code>info.json</code>
-                    `
-                : ''}
+              </table>
             </div>
-            ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) ||
-            canEdit
+            ${canEdit
               ? html`
-                  <div class="card-footer">
-                      ${
-                        editableCourses.length > 0 &&
-                        resLocals.authz_data.has_course_permission_view &&
-                        resLocals.question.course_id === resLocals.course.id
-                          ? html`
-                              <button
-                                type="button"
-                                class="btn btn-sm btn-primary"
-                                id="copyQuestionButton"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Copy this question"
-                                data-content="${escapeHtml(
-                                  CopyForm({
-                                    csrfToken: resLocals.__csrf_token,
-                                    editableCourses,
-                                    courseId: resLocals.course.id,
-                                  }),
-                                )}"
-                              >
-                                <i class="fa fa-clone"></i>
-                                <span>Make a copy of this question</span>
-                              </button>
-                            `
-                          : ''
-                      }
-                      ${
-                        canEdit
-                          ? html`
-                              <button
-                                class="btn btn-sm btn-primary"
-                                id
-                                href="#"
-                                data-toggle="modal"
-                                data-target="#deleteQuestionModal"
-                              >
-                                <i class="fa fa-times" aria-hidden="true"></i> Delete this question
-                              </button>
-                              ${DeleteQuestionModal({
-                                qid: resLocals.question.qid,
-                                assessmentsWithQuestion,
-                                csrfToken: resLocals.__csrf_token,
-                              })}
-                            `
-                          : ''
-                      }
-                    </div>
-                  </div>
+                  <button
+                    id="save-button"
+                    type="submit"
+                    class="btn btn-primary mb-2"
+                    name="__action"
+                    value="update_question"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-secondary mb-2"
+                    onclick="window.location.reload()"
+                  >
+                    Cancel
+                  </button>
                 `
               : ''}
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+          </form>
+          ${sharingEnabled
+            ? html`
+                <hr />
+                <div>
+                  <h2 class="h4">Sharing</h2>
+                  <div data-testid="shared-with">
+                    ${QuestionSharing({
+                      question: resLocals.question,
+                      sharingSetsIn,
+                    })}
+                  </div>
+                </div>
+              `
+            : ''}
+          ${resLocals.question.type === 'Freeform' &&
+          resLocals.question.grading_method !== 'External' &&
+          resLocals.authz_data.has_course_permission_view
+            ? html`
+                <hr />
+                <div>
+                  <h2 class="h4">Tests</h2>
+                  <div>
+                    ${QuestionTestsForm({
+                      questionTestPath,
+                      questionTestCsrfToken,
+                    })}
+                  </div>
+                </div>
+              `
+            : ''}
+          ${resLocals.authz_data.has_course_permission_view
+            ? canEdit
+              ? html`
+                  <hr />
+                  <a
+                    data-testid="edit-question-configuration-link"
+                    href="${resLocals.urlPrefix}/question/${resLocals.question
+                      .id}/file_edit/${encodePath(infoPath)}"
+                  >
+                    Edit question configuration
+                  </a>
+                  in <code>info.json</code>
+                `
+              : html`
+                  <hr />
+                  <a
+                    href="${resLocals.urlPrefix}/question/${resLocals.question
+                      .id}/file_view/${encodePath(infoPath)}"
+                  >
+                    View question configuration
+                  </a>
+                  in <code>info.json</code>
+                `
+            : ''}
+        </div>
+        ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) || canEdit
+          ? html`
+            <div class="card-footer">
+                ${
+                  editableCourses.length > 0 &&
+                  resLocals.authz_data.has_course_permission_view &&
+                  resLocals.question.course_id === resLocals.course.id
+                    ? html`
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-primary"
+                          id="copyQuestionButton"
+                          data-toggle="popover"
+                          data-container="body"
+                          data-html="true"
+                          data-placement="auto"
+                          title="Copy this question"
+                          data-content="${escapeHtml(
+                            CopyForm({
+                              csrfToken: resLocals.__csrf_token,
+                              editableCourses,
+                              courseId: resLocals.course.id,
+                            }),
+                          )}"
+                        >
+                          <i class="fa fa-clone"></i>
+                          <span>Make a copy of this question</span>
+                        </button>
+                      `
+                    : ''
+                }
+                ${
+                  canEdit
+                    ? html`
+                        <button
+                          class="btn btn-sm btn-primary"
+                          id
+                          href="#"
+                          data-toggle="modal"
+                          data-target="#deleteQuestionModal"
+                        >
+                          <i class="fa fa-times" aria-hidden="true"></i> Delete this question
+                        </button>
+                        ${DeleteQuestionModal({
+                          qid: resLocals.question.qid,
+                          assessmentsWithQuestion,
+                          csrfToken: resLocals.__csrf_token,
+                        })}
+                      `
+                    : ''
+                }
+              </div>
+            </div>
+          `
+          : ''}
+      </div>
+    `,
+  });
 }
 
 function CopyForm({
@@ -418,7 +431,7 @@ function DeleteQuestionModal({
               ${assessmentsWithQuestion.map((a_with_q) => {
                 return html`
                   <li class="list-group-item">
-                    <h6>${a_with_q.short_name} (${a_with_q.long_name})</h6>
+                    <div class="h6">${a_with_q.short_name} (${a_with_q.long_name})</div>
                     ${a_with_q.assessments.map((assessment) =>
                       AssessmentBadge({
                         plainUrlPrefix: config.urlPrefix,

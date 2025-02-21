@@ -26,7 +26,7 @@ If you copy questions or assessments from a different course and don't give them
 
 If you incorrectly change the UUID in a `infoCourseInstance.json` file when you didn't mean to, then you will get a sync error like:
 
-```
+```text
 Error: UUID 0339b989-d1f2-4f96-bcba-8717c68a64a9 from assessment exam1 in Sp18 already in use in different course instance (possibly in a different course)
 ```
 

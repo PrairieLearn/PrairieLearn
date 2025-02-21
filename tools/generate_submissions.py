@@ -83,8 +83,7 @@ def main():
                     for i in root.cssselect("input")
                     if i.get("name")
                 }
-                with requests.post(url, cookies=cookies, data=data) as response:
-                    pass
+                requests.post(url, cookies=cookies, data=data)
 
         with requests.get(url, cookies=cookies) as response:
             assert response.status_code == 200
@@ -93,17 +92,16 @@ def main():
                 f'a[href^="/pl/course_instance/{args.course_instance}/instance_question/"]'
             ):
                 url = f"http://{args.host}" + iq.get("href")
-                with requests.get(url, cookies=cookies) as response:
-                    assert response.status_code == 200
-                    root = html.document_fromstring(response.text)
+                with requests.get(url, cookies=cookies) as response2:
+                    assert response2.status_code == 200
+                    root = html.document_fromstring(response2.text)
                     data = {
                         i.get("name"): i.get("value")
                         for i in root.cssselect("input")
                         if i.get("name")
                     }
                     data["__action"] = "save"
-                    with requests.post(url, cookies=cookies, data=data) as response:
-                        pass
+                    requests.post(url, cookies=cookies, data=data)
 
 
 if __name__ == "__main__":

@@ -6,12 +6,12 @@ import prairielearn as pl
 DIGITS_DEFAULT = 2
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=[], optional_attribs=["digits"])
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
 
@@ -39,6 +39,7 @@ def render(element_html, data):
             var_data = pl.from_json(var_data)
 
             if np.isscalar(var_data):
+                assert not isinstance(var_data, memoryview | str | bytes)
                 prefix = ""
                 suffix = ""
             else:
@@ -57,14 +58,14 @@ def render(element_html, data):
             matlab_data += (
                 pl.inner_html(child)
                 + " = "
-                + pl.string_from_2darray(var_data, language="matlab", digits=digits)
+                + pl.string_from_numpy(var_data, language="matlab", digits=digits)
                 + ";\n"
             )
             python_data += (
                 pl.inner_html(child)
                 + " = "
                 + prefix
-                + pl.string_from_2darray(var_data, language="python", digits=digits)
+                + pl.string_from_numpy(var_data, language="python", digits=digits)
                 + suffix
                 + "\n"
             )

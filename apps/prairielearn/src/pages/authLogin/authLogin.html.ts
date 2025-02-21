@@ -53,7 +53,7 @@ function LoginPageContainer({
           @media (min-width: 576px) {
             html,
             body {
-              background-color: var(--bs-dark, #212529);
+              background-color: var(--bs-dark);
             }
 
             .login-container-wrapper {

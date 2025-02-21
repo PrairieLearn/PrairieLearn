@@ -69,10 +69,10 @@ def generate(data):
 
 def make_pl_polygon_input(*arg):
     npoints = len(arg)
-    input = "[ "
+    polygon_input = "[ "
     for i, point in enumerate(arg):
-        input += '{"x":' + str(point[0]) + ', "y":' + str(point[1]) + "}"
+        polygon_input += '{"x":' + str(point[0]) + ', "y":' + str(point[1]) + "}"
         if i < npoints - 1:
-            input += ","
-    input += " ] "
-    return input
+            polygon_input += ","
+    polygon_input += " ] "
+    return polygon_input

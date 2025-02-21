@@ -6,7 +6,7 @@ import prairielearn as pl
 use_pl_variable_score = False
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     if not use_pl_variable_score:
         return
 
@@ -14,7 +14,7 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs=["answers-name"], optional_attribs=[])
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     if not use_pl_variable_score:
         return ""
 
@@ -27,6 +27,8 @@ def render(element_html, data):
     partial_score = data["partial_scores"].get(name, {"score": None, "feedback": None})
     score = partial_score.get("score", None)
     feedback = partial_score.get("feedback", None)
+    if isinstance(feedback, dict):
+        raise TypeError(f"feedback cannot be of type {type(feedback)}")
 
     if score is None:
         return ""
@@ -36,7 +38,7 @@ def render(element_html, data):
     except ValueError:
         return (
             '<span class="badge badge-danger">ERROR: invalid score: '
-            + score
+            + str(score)
             + "</span>"
         )
 

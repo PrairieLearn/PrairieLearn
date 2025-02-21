@@ -7,17 +7,20 @@ import { config } from '../lib/config.js';
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
+import { ProgressCircle } from './ProgressCircle.html.js';
 
 export function Navbar({
   resLocals,
   navPage,
   navSubPage,
   navbarType,
+  marginBottom = true,
 }: {
   resLocals: Record<string, any>;
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
+  marginBottom?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix } = resLocals;
   navPage ??= resLocals.navPage;
@@ -99,7 +102,9 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
+    <div class="${marginBottom ? 'mb-3' : ''}">
+      ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
+    </div>
   `;
 }
 
@@ -188,10 +193,11 @@ function UserDropdownMenu({
       data-has-instructor-access="${authz_data?.user_with_requested_uid_has_instructor_access_to_course_instance?.toString()}"
     >
       <li class="nav-item dropdown mb-2 mb-md-0 mr-2 ${navPage === 'effective' ? 'active' : ''}">
-        <button
-          class="btn nav-link dropdown-toggle"
+        <a
+          class="nav-link dropdown-toggle"
           id="navbarDropdown"
-          type="button"
+          href="#"
+          role="button"
           data-toggle="dropdown"
           aria-haspopup="true"
           aria-expanded="false"
@@ -200,7 +206,7 @@ function UserDropdownMenu({
           ${newsCount
             ? html`<span class="badge badge-pill badge-primary news-item-count">${newsCount}</span>`
             : ''}
-        </button>
+        </a>
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
           ${authn_is_administrator
             ? html`
@@ -274,25 +280,21 @@ function FlashMessages() {
     }
   });
 
-  return html`
-    <div class="mb-3">
-      ${flashMessages.map(
-        ({ type, message }) => html`
-          <div
-            class="alert alert-${globalFlashColors[
-              type
-            ]} border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
-            role="alert"
-          >
-            ${unsafeHtml(message)}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-        `,
-      )}
-    </div>
-  `;
+  return flashMessages.map(
+    ({ type, message }) => html`
+      <div
+        class="alert alert-${globalFlashColors[
+          type
+        ]} border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
+        role="alert"
+      >
+        ${unsafeHtml(message)}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    `,
+  );
 }
 
 function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
@@ -623,6 +625,8 @@ function NavbarInstructor({
     assessment_label,
     assessments,
     navbarOpenIssueCount,
+    navbarCompleteGettingStartedTasksCount,
+    navbarTotalGettingStartedTasksCount,
     authz_data,
     urlPrefix,
   } = resLocals;
@@ -638,21 +642,22 @@ function NavbarInstructor({
       >
         ${course.short_name}
       </a>
-      <button
-        class="btn nav-link dropdown-toggle dropdown-toggle-split"
+      <a
+        class="nav-link dropdown-toggle dropdown-toggle-split"
         id="navbarDropdownMenuCourseAdminLink"
-        type="button"
+        href="#"
+        role="button"
         data-toggle="dropdown"
         aria-label="Change course"
         aria-haspopup="true"
         aria-expanded="false"
         ${!authz_data.overrides
           ? html`
-              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show-course-switcher once
+              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show.bs.dropdown once
               delay:200ms" hx-target="#navbarDropdownMenuCourseAdmin"
             `
           : ''}
-      ></button>
+      ></a>
       <div
         class="dropdown-menu"
         aria-labelledby="navbarDropdownMenuCourseAdminLink"
@@ -673,6 +678,24 @@ function NavbarInstructor({
             `}
       </div>
     </li>
+
+    ${authz_data.has_course_permission_edit && course.show_getting_started
+      ? html`
+          <li class="nav-item d-flex align-items-center">
+            <a
+              style="display: inline-flex; align-items: center;"
+              class="nav-link pr-0"
+              href="${urlPrefix}/course_admin/getting_started"
+            >
+              Getting Started
+              ${ProgressCircle({
+                value: navbarCompleteGettingStartedTasksCount,
+                maxValue: navbarTotalGettingStartedTasksCount,
+              })}
+            </a>
+          </li>
+        `
+      : ''}
 
     <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'issues' ? 'active' : ''}">
       <a class="nav-link" href="${urlPrefix}/course_admin/issues">
@@ -712,18 +735,19 @@ function NavbarInstructor({
             >
               ${course_instance.short_name}
             </a>
-            <button
-              class="btn nav-link dropdown-toggle dropdown-toggle-split"
+            <a
+              class="nav-link dropdown-toggle dropdown-toggle-split"
               id="navbarDropdownMenuInstanceAdminLink"
-              type="button"
+              href="#"
+              role="button"
               data-toggle="dropdown"
               aria-label="Change course instance"
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher/${course_instance.id}"
-              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-trigger="show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceAdmin"
-            ></button>
+            ></a>
             <div
               class="dropdown-menu"
               aria-labelledby="navbarDropdownMenuInstanceAdminLink"
@@ -765,15 +789,16 @@ function NavbarInstructor({
                   </a>
                   ${assessments != null
                     ? html`
-                        <button
-                          class="btn nav-link dropdown-toggle dropdown-toggle-split"
+                        <a
+                          class="nav-link dropdown-toggle dropdown-toggle-split"
                           id="navbarDropdownMenuLink"
-                          type="button"
+                          href="#"
+                          role="button"
                           data-toggle="dropdown"
                           aria-haspopup="true"
                           aria-expanded="false"
                           aria-label="Change assessment"
-                        ></button>
+                        ></a>
                         <div
                           class="dropdown-menu"
                           aria-labelledby="navbarDropdownMenuLink"
@@ -806,19 +831,20 @@ function NavbarInstructor({
           <li class="navbar-text mx-2 no-select">/</li>
 
           <li class="nav-item dropdown" id="navbar-course-instance-switcher">
-            <button
-              class="btn nav-link dropdown-toggle"
+            <a
+              class="nav-link dropdown-toggle"
               id="navbarDropdownMenuInstanceChooseLink"
-              type="button"
+              href="#"
+              role="button"
               data-toggle="dropdown"
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher"
-              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-trigger="show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceChoose"
             >
               Choose course instance...
-            </button>
+            </a>
             <div
               class="dropdown-menu"
               aria-labelledby="navbarDropdownMenuInstanceChooseLink"

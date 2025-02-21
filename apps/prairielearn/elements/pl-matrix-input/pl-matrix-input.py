@@ -1,4 +1,3 @@
-import math
 import random
 
 import chevron
@@ -16,7 +15,7 @@ ALLOW_COMPLEX_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
     optional_attribs = [
@@ -34,7 +33,7 @@ def prepare(element_html, data):
     pl.check_answers_names(data, name)
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
@@ -99,7 +98,7 @@ def render(element_html, data):
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
 
-        html_params = {
+        html_params: dict[str, bool | str | float | None] = {
             "question": True,
             "name": name,
             "label": label,
@@ -115,16 +114,8 @@ def render(element_html, data):
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception as exc:
-                raise ValueError("invalid score" + score) from exc
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
@@ -171,16 +162,8 @@ def render(element_html, data):
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception as exc:
-                raise ValueError("invalid score" + score) from exc
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
@@ -251,13 +234,13 @@ def render(element_html, data):
     return html
 
 
-def get_format_string(message):
+def get_format_string(message: str) -> str:
     params = {"format_error": True, "format_error_message": message}
     with open("pl-matrix-input.mustache", encoding="utf-8") as f:
         return chevron.render(f, params).strip()
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     # By convention, this function returns at the first error found
 
     element = lxml.html.fragment_fromstring(element_html)
@@ -289,7 +272,7 @@ def parse(element_html, data):
     data["submitted_answers"]["_pl_matrix_input_format"][name] = info["format_type"]
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
@@ -346,7 +329,7 @@ def grade(element_html, data):
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)

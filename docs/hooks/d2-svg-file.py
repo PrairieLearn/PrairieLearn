@@ -20,7 +20,7 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     original_render = plugin.renderer
     plugin.keys = set()
 
-    def new_render(source, opts, alt):
+    def new_render(source, opts, alt):  # noqa: ANN001, ANN202
         """
         Hook into the renderer to provide a link to the rendered SVG.
         This only hooks into the renderer for superfences, not for images.
@@ -48,31 +48,28 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     return config
 
 
-def on_page_content(html: str, page: Page, config, files):
+def on_page_content(html: str, page: Page, config, files) -> str:  # noqa: ANN001, ARG001
     relative_route = page.url.count("/") * "../" + "assets/svg/"
     # Replace data-svg-file with a href to the svg file.
     # This has to be done after we check for missing file references
     return re.sub(
         r'<svg(.*?)data-svg-file="([a-f0-9]+)"(.*?)><svg([\s\S]*?)<\/svg><\/svg>',
-        r'<a href="{relative_route}\2.svg"><svg\1 data-svg-file="\2"\3><svg\4</svg></svg></a>'.format(
-            relative_route=relative_route
-        ),
+        rf'<a href="{relative_route}\2.svg"><svg\1 data-svg-file="\2"\3><svg\4</svg></svg></a>',
         html,
     )
 
 
-def on_post_build(config: MkDocsConfig):
-    cache = dbm.open(
+def on_post_build(config: MkDocsConfig) -> None:
+    with dbm.open(
         Path(config["plugins"]["d2"].config.cache_dir, "db").as_posix(), "c"
-    )
-    plugin = next(
-        x["validator"]
-        for x in config["mdx_configs"]["pymdownx.superfences"]["custom_fences"]
-        if x["name"] == "d2"
-    ).__self__
-    svg_path = Path(config["site_dir"]) / "assets" / "svg"
-    for key in plugin.keys:
-        write_file(cache[key], str(svg_path / f"{key.hex()}.svg"))
+    ) as cache:
+        plugin = next(
+            x["validator"]
+            for x in config["mdx_configs"]["pymdownx.superfences"]["custom_fences"]
+            if x["name"] == "d2"
+        ).__self__
+        svg_path = Path(config["site_dir"]) / "assets" / "svg"
+        for key in plugin.keys:
+            write_file(cache[key], str(svg_path / f"{key.hex()}.svg"))
 
-    get_plugin_logger(__name__).info(f"Wrote {len(plugin.keys)} svg files")
-    cache.close()
+        get_plugin_logger(__name__).info(f"Wrote {len(plugin.keys)} svg files")

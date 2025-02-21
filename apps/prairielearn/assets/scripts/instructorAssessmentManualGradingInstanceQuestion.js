@@ -458,19 +458,19 @@ function computePointsFromRubric(sourceInput = null) {
 }
 
 function enableRubricItemLongTextField(event) {
-  if (!(event.target instanceof HTMLElement)) return;
-  const container = event.target.closest('td');
-  const label = container.querySelector('label');
+  if (!(event.currentTarget instanceof HTMLElement)) return;
+  const container = event.currentTarget.closest('td');
+  const label = container.querySelector('label'); // May be null
   const button = container.querySelector('button');
-  if (!container || !label || !button) return;
+  if (!container || !button) return;
   const input = document.createElement('textarea');
   input.classList.add('form-control');
   input.name = button.dataset.inputName;
   input.setAttribute('maxlength', 10000);
   input.textContent = button.dataset.currentValue || '';
 
-  container.insertBefore(input, label);
-  label.remove();
+  container.insertBefore(input, button);
+  label?.remove();
   button.remove();
   input.focus();
   input.addEventListener('input', () => adjustHeightFromContent(input));
@@ -484,8 +484,8 @@ function updateRubricItemOrderField() {
 }
 
 function moveRowDown(event) {
-  if (!(event.target instanceof HTMLElement)) return;
-  const row = event.target.closest('tr');
+  if (!(event.currentTarget instanceof HTMLElement)) return;
+  const row = event.currentTarget.closest('tr');
   if (!row || !row.parentNode || !row.nextElementSibling) {
     return;
   }
@@ -494,17 +494,17 @@ function moveRowDown(event) {
 }
 
 function moveRowUp(event) {
-  if (!(event.target instanceof HTMLElement)) return;
-  const row = event.target.closest('tr');
+  if (!(event.currentTarget instanceof HTMLElement)) return;
+  const row = event.currentTarget.closest('tr');
   if (!row || !row.parentNode || !row.nextElementSibling || !row.previousElementSibling) return;
   row.parentNode.insertBefore(row.previousElementSibling, row.nextElementSibling);
   updateRubricItemOrderField();
 }
 
 function deleteRow(event) {
-  if (!(event.target instanceof HTMLElement)) return;
-  const table = event.target.closest('table');
-  event.target.closest('tr')?.remove();
+  if (!(event.currentTarget instanceof HTMLElement)) return;
+  const table = event.currentTarget.closest('table');
+  event.currentTarget.closest('tr')?.remove();
   if (!table?.querySelectorAll('.js-rubric-item-row-order')?.length) {
     table.querySelector('.js-no-rubric-item-note')?.classList.remove('d-none');
   }
@@ -513,16 +513,16 @@ function deleteRow(event) {
 }
 
 function rowDragStart(event) {
-  if (!(event.target instanceof HTMLElement)) return;
-  window.rubricItemRowDragging = event.target.closest('tr');
+  if (!(event.currentTarget instanceof HTMLElement)) return;
+  window.rubricItemRowDragging = event.currentTarget.closest('tr');
   if (event.originalEvent?.dataTransfer) {
     event.originalEvent.dataTransfer.effectAllowed = 'move';
   }
 }
 
 function rowDragOver(event) {
-  if (!(event.target instanceof HTMLElement)) return;
-  const row = event.target.closest('tr');
+  if (!(event.currentTarget instanceof HTMLElement)) return;
+  const row = event.currentTarget.closest('tr');
   // Rows in different tables don't count
   if (!row || row.parent !== window.rubricItemRowDragging.parent) return;
   const rowList = Array.from(row.parentNode?.childNodes ?? []);

@@ -2,6 +2,7 @@ import { html, type HtmlValue } from '@prairielearn/html';
 
 import { IssueBadge } from './IssueBadge.html.js';
 import { type NavPage, type NavSubPage } from './Navbar.types.js';
+import { ProgressCircle } from './ProgressCircle.html.js';
 
 interface TabInfo {
   activeSubPage: NavSubPage | NavSubPage[];
@@ -14,6 +15,21 @@ interface TabInfo {
 
 // Mapping navPage to navtab sets
 const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
+  public_question: [
+    {
+      activeSubPage: 'file_view',
+      urlSuffix: ({ question }) => `/question/${question.id}/file_view`,
+      iconClasses: 'fa fa-edit',
+      tabLabel: 'Files',
+      renderCondition: ({ question }) => question.share_source_publicly,
+    },
+    {
+      activeSubPage: 'preview',
+      urlSuffix: ({ question }) => `/question/${question.id}/preview`,
+      iconClasses: 'fas fa-tv',
+      tabLabel: 'Preview',
+    },
+  ],
   instance_admin: [
     {
       activeSubPage: 'access',
@@ -69,6 +85,22 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
     },
   ],
   course_admin: [
+    {
+      activeSubPage: 'getting_started',
+      urlSuffix: '/course_admin/getting_started',
+      iconClasses: 'fa fa-tasks',
+      tabLabel: 'Getting Started',
+      htmlSuffix: ({
+        navbarCompleteGettingStartedTasksCount,
+        navbarTotalGettingStartedTasksCount,
+      }) =>
+        ProgressCircle({
+          value: navbarCompleteGettingStartedTasksCount,
+          maxValue: navbarTotalGettingStartedTasksCount,
+        }),
+      renderCondition: ({ authz_data, course }) =>
+        authz_data.has_course_permission_edit && course.show_getting_started,
+    },
     {
       activeSubPage: 'sets',
       urlSuffix: '/course_admin/sets',

@@ -5,28 +5,28 @@ import sys
 import uuid
 import xml.etree.ElementTree as ET
 
-## # Top-level elements
-## root.findall(".")
-##
-## # All 'neighbor' grand-children of 'country' children of the top-level
-## # elements
-## root.findall("./country/neighbor")
-##
-## # Nodes with name='Singapore' that have a 'year' child
-## root.findall(".//year/..[@name='Singapore']")
-##
-## # 'year' nodes that are children of nodes with name='Singapore'
-## root.findall(".//*[@name='Singapore']/year")
-##
-## # All 'neighbor' nodes that are the second child of their parent
-## root.findall(".//neighbor[2]")
+# # Top-level elements
+# root.findall(".")
+#
+# # All 'neighbor' grand-children of 'country' children of the top-level
+# # elements
+# root.findall("./country/neighbor")
+#
+# # Nodes with name='Singapore' that have a 'year' child
+# root.findall(".//year/..[@name='Singapore']")
+#
+# # 'year' nodes that are children of nodes with name='Singapore'
+# root.findall(".//*[@name='Singapore']/year")
+#
+# # All 'neighbor' nodes that are the second child of their parent
+# root.findall(".//neighbor[2]")
 
-## really annoying namespace attached to every xml type; using 'nm' as a shorthand
+# really annoying namespace attached to every xml type; using 'nm' as a shorthand
 nm = "{http://www.imsglobal.org/xsd/imscp_v1p1}"
 client_file_path = "clientFilesQuestion"
 
 
-## use the questions directory in the current directory or recursively search parent directories
+# use the questions directory in the current directory or recursively search parent directories
 def find_questions():
     questions = "questions"
     while not os.path.isdir(questions):
@@ -61,15 +61,15 @@ def translate_variables(token):
     if token[0] != "$":
         return token
 
-    str = token.replace("$", "").replace("[", "_").replace("]", "_")
+    str_token = token.replace("$", "").replace("[", "_").replace("]", "_")
     punct = ""
 
     # we don't want to include punctuation in the variable
-    if str[-1] in ".?,;!;:=+-":
-        punct = str[-1]
-        str = str[:-1]
+    if str_token[-1] in ".?,;!;:=+-":
+        punct = str_token[-1]
+        str_token = str_token[:-1]
 
-    return "{{ params." + str + " }}" + punct
+    return "{{ params." + str_token + " }}" + punct
 
 
 def translate_variables_line(line):
@@ -170,8 +170,8 @@ def generate_server_py(script, question_dir):
     tab = "    "
     with open(question_dir + "/server.py", "w") as out_file:
         out_file.write("import random\nimport math\n\ndef generate(data):\n")
-        for statement in script.split(";"):
-            statement = statement.replace("\n", " ").strip()
+        for raw_statement in script.split(";"):
+            statement = raw_statement.replace("\n", " ").strip()
             if len(statement) == 0:
                 continue
             out_file.write(tab + "# " + statement + "\n")
@@ -257,7 +257,7 @@ def remove_unmatched_item_close_tags(xml_filename):
         out_file.write(new_lines)
 
 
-## the manifest tells us about the questions
+# the manifest tells us about the questions
 def read_manifest(file, questions):
     remove_unmatched_item_close_tags(file)
 

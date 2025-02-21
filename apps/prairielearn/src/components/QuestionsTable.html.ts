@@ -78,11 +78,6 @@ export function QuestionsTable({
 
       ${questions.length > 0
         ? html`
-            <form class="ml-1 btn-group" name="add-question-form" method="POST">
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-              <input type="hidden" name="__action" value="add_question" />
-            </form>
-
             <table
               id="questionsTable"
               aria-label="Questions"
@@ -239,12 +234,32 @@ export function QuestionsTable({
                   >question documentation</a
                 >.
               </p>
-              <form class="ml-1 btn-group" method="POST">
-                <button class="btn btn-sm btn-primary">
-                  <i class="fa fa-plus" aria-hidden="true"></i>
-                  <span>Add question</span>
-                </button>
-              </form>
+              ${showAddQuestionButton
+                ? html`
+                    <div class="d-flex flex-row flex-wrap justify-content-center gap-3">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        data-toggle="modal"
+                        data-target="#createQuestionModal"
+                      >
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        Add question
+                      </button>
+                      ${showAiGenerateQuestionButton
+                        ? html`
+                            <a
+                              class="btn btn-sm btn-primary"
+                              href="${urlPrefix}/ai_generate_question_drafts"
+                            >
+                              <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+                              Generate question with AI
+                            </a>
+                          `
+                        : ''}
+                    </div>
+                  `
+                : ''}
             </div>
           `}
     </div>

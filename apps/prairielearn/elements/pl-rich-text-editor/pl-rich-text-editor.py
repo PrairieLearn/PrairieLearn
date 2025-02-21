@@ -25,21 +25,22 @@ ALLOW_BLANK_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
 DIRECTORY_DEFAULT = "."
 MARKDOWN_SHORTCUTS_DEFAULT = True
+CLIPBOARD_ENABLED_DEFAULT = True
 
 
-def get_answer_name(file_name):
+def get_answer_name(file_name: str) -> str:
     return "_rich_text_editor_{}".format(
         hashlib.sha1(file_name.encode("utf-8")).hexdigest()
     )
 
 
-def element_inner_html(element):
-    return (element.text or "") + "".join(
-        [str(lxml.html.tostring(c), "utf-8") for c in element.iterchildren()]
-    )
+def element_inner_html(element: lxml.html.HtmlElement) -> str:
+    return (element.text or "") + "".join([
+        str(lxml.html.tostring(c), "utf-8") for c in element.iterchildren()
+    ])
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file-name"]
     optional_attribs = [
@@ -51,6 +52,7 @@ def prepare(element_html, data):
         "format",
         "markdown-shortcuts",
         "counter",
+        "clipboard-enabled",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(
@@ -77,7 +79,7 @@ def prepare(element_html, data):
         )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name", "")
     answer_name = get_answer_name(file_name)
@@ -95,6 +97,9 @@ def render(element_html, data):
         element, "markdown-shortcuts", MARKDOWN_SHORTCUTS_DEFAULT
     )
     counter = pl.get_enum_attrib(element, "counter", Counter, Counter.NONE)
+    clipboard_enabled = pl.get_boolean_attrib(
+        element, "clipboard-enabled", CLIPBOARD_ENABLED_DEFAULT
+    )
     element_text = element_inner_html(element)
 
     if data["panel"] == "question" or data["panel"] == "submission":
@@ -115,6 +120,7 @@ def render(element_html, data):
             "markdown_shortcuts": "true" if markdown_shortcuts else "false",
             "counter": counter.value,
             "counter_enabled": counter != Counter.NONE,
+            "clipboard_enabled": clipboard_enabled,
         }
 
         if source_file_name is not None:
@@ -127,10 +133,8 @@ def render(element_html, data):
             file_path = os.path.join(directory, source_file_name)
             with open(file_path) as f:
                 text_display = f.read()
-        elif element_text is not None:
-            text_display = str(element_text)
         else:
-            text_display = ""
+            text_display = element_text
 
         html_params["original_file_contents"] = base64.b64encode(
             text_display.encode("UTF-8").strip()
@@ -159,7 +163,7 @@ def render(element_html, data):
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     file_name = pl.get_string_attrib(element, "file-name", "")

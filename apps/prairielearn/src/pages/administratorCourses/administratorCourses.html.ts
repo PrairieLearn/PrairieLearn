@@ -3,8 +3,7 @@ import { type z } from 'zod';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { config } from '../../lib/config.js';
 import { type CourseRequestRow } from '../../lib/course-request.js';
 import { CourseSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
@@ -27,148 +26,149 @@ export function AdministratorCourses({
   coursesRoot: string;
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Courses' })}
-      </head>
-      <body>
-        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'courses' })}
-        <main id="content" class="container-fluid">
-          <h1 class="sr-only">Courses</h1>
-          ${CourseRequestsTable({
-            rows: course_requests,
-            institutions,
-            coursesRoot,
-            csrfToken: resLocals.__csrf_token,
-            urlPrefix: resLocals.urlPrefix,
-            showAll: false,
-          })}
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Courses',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'courses',
+    },
+    options: {
+      fullWidth: true,
+    },
+    content: html`
+      <h1 class="sr-only">Courses</h1>
+      ${CourseRequestsTable({
+        rows: course_requests,
+        institutions,
+        coursesRoot,
+        csrfToken: resLocals.__csrf_token,
+        urlPrefix: resLocals.urlPrefix,
+        showAll: false,
+      })}
 
-          <div id="courses" class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h2>Courses</h2>
-              <button
-                type="button"
-                class="btn btn-sm btn-light ml-auto"
-                data-toggle="popover"
-                data-container="body"
-                data-html="true"
-                data-placement="auto"
-                title="Add new course"
-                data-content="${escapeHtml(
-                  CourseInsertForm({
-                    institutions,
-                    csrfToken: resLocals.__csrf_token,
-                  }),
-                )}"
-              >
-                <i class="fa fa-plus" aria-hidden="true"></i>
-                <span class="d-none d-sm-inline">Add course</span>
-              </button>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped" aria-label="Courses">
-                <thead>
+      <div id="courses" class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h2>Courses</h2>
+          <button
+            type="button"
+            class="btn btn-sm btn-light ml-auto"
+            data-toggle="popover"
+            data-container="body"
+            data-html="true"
+            data-placement="auto"
+            title="Add new course"
+            data-content="${escapeHtml(
+              CourseInsertForm({
+                institutions,
+                csrfToken: resLocals.__csrf_token,
+              }),
+            )}"
+          >
+            <i class="fa fa-plus" aria-hidden="true"></i>
+            <span class="d-none d-sm-inline">Add course</span>
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped" aria-label="Courses">
+            <thead>
+              <tr>
+                <th>Institution</th>
+                <th>Short name</th>
+                <th>Title</th>
+                <th>Timezone</th>
+                <th>Path</th>
+                <th>Repository</th>
+                <th>Branch</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${courses.map((course) => {
+                return html`
                   <tr>
-                    <th>Institution</th>
-                    <th>Short name</th>
-                    <th>Title</th>
-                    <th>Timezone</th>
-                    <th>Path</th>
-                    <th>Repository</th>
-                    <th>Branch</th>
-                    <th>Actions</th>
+                    <td>
+                      <a href="/pl/administrator/institution/${course.institution.id}">
+                        ${course.institution.short_name}
+                      </a>
+                    </td>
+                    ${CourseUpdateColumn({
+                      course,
+                      column_name: 'short_name',
+                      label: 'short name',
+                      href: `/pl/course/${course.id}`,
+                      csrfToken: resLocals.__csrf_token,
+                    })}
+                    ${CourseUpdateColumn({
+                      course,
+                      column_name: 'title',
+                      label: 'title',
+                      csrfToken: resLocals.__csrf_token,
+                    })}
+                    ${CourseUpdateColumn({
+                      course,
+                      column_name: 'display_timezone',
+                      label: 'timezone',
+                      csrfToken: resLocals.__csrf_token,
+                    })}
+                    ${CourseUpdateColumn({
+                      course,
+                      column_name: 'path',
+                      label: 'path',
+                      csrfToken: resLocals.__csrf_token,
+                    })}
+                    ${CourseUpdateColumn({
+                      course,
+                      column_name: 'repository',
+                      label: 'repository',
+                      csrfToken: resLocals.__csrf_token,
+                    })}
+                    ${CourseUpdateColumn({
+                      course,
+                      column_name: 'branch',
+                      label: 'branch',
+                      csrfToken: resLocals.__csrf_token,
+                    })}
+                    <td class="align-middle">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-danger text-nowrap"
+                        id="courseDeleteButton${course.id}"
+                        data-toggle="popover"
+                        data-container="body"
+                        data-html="true"
+                        data-placement="auto"
+                        title="Really delete ${course.short_name}?"
+                        data-content="${escapeHtml(
+                          CourseDeleteForm({
+                            id: `courseDeleteButton${course.id}`,
+                            course,
+                            csrfToken: resLocals.__csrf_token,
+                          }),
+                        )}"
+                      >
+                        <i class="fa fa-times" aria-hidden="true"></i> Delete course
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  ${courses.map((course) => {
-                    return html`
-                      <tr>
-                        <td>
-                          <a href="/pl/administrator/institution/${course.institution.id}">
-                            ${course.institution.short_name}
-                          </a>
-                        </td>
-                        ${CourseUpdateColumn({
-                          course,
-                          column_name: 'short_name',
-                          label: 'short name',
-                          href: `/pl/course/${course.id}`,
-                          csrfToken: resLocals.__csrf_token,
-                        })}
-                        ${CourseUpdateColumn({
-                          course,
-                          column_name: 'title',
-                          label: 'title',
-                          csrfToken: resLocals.__csrf_token,
-                        })}
-                        ${CourseUpdateColumn({
-                          course,
-                          column_name: 'display_timezone',
-                          label: 'timezone',
-                          csrfToken: resLocals.__csrf_token,
-                        })}
-                        ${CourseUpdateColumn({
-                          course,
-                          column_name: 'path',
-                          label: 'path',
-                          csrfToken: resLocals.__csrf_token,
-                        })}
-                        ${CourseUpdateColumn({
-                          course,
-                          column_name: 'repository',
-                          label: 'repository',
-                          csrfToken: resLocals.__csrf_token,
-                        })}
-                        ${CourseUpdateColumn({
-                          course,
-                          column_name: 'branch',
-                          label: 'branch',
-                          csrfToken: resLocals.__csrf_token,
-                        })}
-                        <td class="align-middle">
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-danger text-nowrap"
-                            id="courseDeleteButton${course.id}"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Really delete ${course.short_name}?"
-                            data-content="${escapeHtml(
-                              CourseDeleteForm({
-                                id: `courseDeleteButton${course.id}`,
-                                course,
-                                csrfToken: resLocals.__csrf_token,
-                              }),
-                            )}"
-                          >
-                            <i class="fa fa-times" aria-hidden="true"></i> Delete course
-                          </button>
-                        </td>
-                      </tr>
-                    `;
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div class="card-footer">
-              <small>
-                When a course is synced, if the <strong>path</strong> does not exist on disk then a
-                <code>git clone</code> is performed from the <strong>repository</strong>, otherwise
-                a <code>git pull</code> is run in the <strong>path</strong> directory. The
-                <strong>short name</strong> and <strong>title</strong> are updated from the JSON
-                configuration file in the repository during the sync.
-              </small>
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+                `;
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer">
+          <small>
+            When a course is synced, if the <strong>path</strong> does not exist on disk then a
+            <code>git clone</code> is performed from the <strong>repository</strong>, otherwise a
+            <code>git pull</code> is run in the <strong>path</strong> directory. The
+            <strong>short name</strong> and <strong>title</strong> are updated from the JSON
+            configuration file in the repository during the sync.
+          </small>
+        </div>
+      </div>
+    `,
+  });
 }
 
 function CourseDeleteForm({

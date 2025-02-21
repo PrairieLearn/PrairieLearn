@@ -6,25 +6,26 @@ import sys
 from copy import deepcopy
 from os import path
 from types import ModuleType
+from typing import Any
 
 import numpy as np
-import pl_helpers
 from faker import Faker
+from pl_helpers import extract_ipynb_contents
 
 
 class UserCodeFailedError(Exception):
-    def __init__(self, err, *args):
+    def __init__(self, err: Any, *args: Any) -> None:
         self.err = err
         super().__init__(err, *args)
 
 
-def set_random_seed(seed=None):
+def set_random_seed(seed: int | None = None) -> None:
     np.random.seed(seed)
     random.seed(seed)
     Faker.seed(seed)
 
 
-def try_read(fname):
+def try_read(fname: str) -> str:
     try:
         with open(fname, encoding="utf-8") as f:
             contents = f.read()
@@ -34,13 +35,13 @@ def try_read(fname):
 
 
 def execute_code(
-    fname_ref,
-    fname_student,
-    include_plt=False,
-    console_output_fname=None,
-    test_iter_num=0,
-    ipynb_key="#grade",
-):
+    fname_ref: str,
+    fname_student: str,
+    include_plt: bool = False,  # noqa: FBT001
+    console_output_fname: str | None = None,
+    test_iter_num: int = 0,
+    ipynb_key: str = "#grade",
+) -> tuple[dict[str, Any], dict[str, Any], ModuleType | None]:
     """
     execute_code(fname_ref, fname_student)
 
@@ -59,6 +60,8 @@ def execute_code(
     """
 
     filenames_dir = os.environ.get("FILENAMES_DIR")
+    if filenames_dir is None:
+        raise ValueError("FILENAMES_DIR not set in environment variables")
 
     with open(path.join(filenames_dir, "data.json"), encoding="utf-8") as f:
         data = json.load(f)
@@ -73,9 +76,9 @@ def execute_code(
 
     # Read student code (and transform if necessary) and append leading/trailing code
     with open(fname_student, encoding="utf-8") as f:
-        filename, extension = path.splitext(fname_student)
+        _, extension = path.splitext(fname_student)
         if extension == ".ipynb":
-            str_student = pl_helpers.extract_ipynb_contents(f, ipynb_key)
+            str_student = extract_ipynb_contents(f, ipynb_key)
         else:
             str_student = f.read()
     str_student = str_leading + "\n" + str_student + "\n" + str_trailing
@@ -205,13 +208,14 @@ def execute_code(
                 and student_code[key].__dict__["__name__"] == "matplotlib.pyplot"
             ):
                 plot_value = student_code[key]
+
         if not plot_value:
             import matplotlib as mpl
+            import matplotlib.pyplot as plt
 
             mpl.use("Agg")
-            import matplotlib as mpl
 
-            plot_value = mpl.pyplot
+            plot_value = plt
 
     # Re-seed before running tests
     set_random_seed()

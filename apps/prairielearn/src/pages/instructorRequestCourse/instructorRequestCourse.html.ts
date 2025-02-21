@@ -3,9 +3,8 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlValue, html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
@@ -36,42 +35,37 @@ export function RequestCourse({
   lti13Info: Lti13CourseRequestInput;
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Request a Course' })}
-        ${compiledScriptTag('instructorRequestCourseClient.ts')}
-      </head>
-      <body>
-        ${Navbar({ resLocals, navPage: 'request_course' })}
-        <main id="content" class="container">
-          <h1 class="sr-only">Request a Course</h1>
-          ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
-          ${Modal({
-            id: 'fill-course-request-lti13-modal',
-            title: `Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`,
-            body: html`
-              <p>
-                You appear to be coming from a course in another learning system. Should we
-                partially fill in this request form with information from that course?
-              </p>
-              <p>(You can edit it after it's auto-filled.)</p>
-            `,
-            footer: html`
-              <button type="button" class="btn btn-success" id="fill-course-request-lti13-info">
-                Fill from LMS data
-              </button>
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                Don't fill
-              </button>
-            `,
-          })}
-          ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    pageTitle: 'Request a Course',
+    resLocals,
+    navContext: {
+      type: 'plain',
+      page: 'request_course',
+    },
+    headContent: [compiledScriptTag('instructorRequestCourseClient.ts')],
+    content: html`
+      <h1 class="sr-only">Request a Course</h1>
+      ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
+      ${Modal({
+        id: 'fill-course-request-lti13-modal',
+        title: `Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`,
+        body: html`
+          <p>
+            You appear to be coming from a course in another learning system. Should we partially
+            fill in this request form with information from that course?
+          </p>
+          <p>(You can edit it after it's auto-filled.)</p>
+        `,
+        footer: html`
+          <button type="button" class="btn btn-success" id="fill-course-request-lti13-info">
+            Fill from LMS data
+          </button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Don't fill</button>
+        `,
+      })}
+      ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
+    `,
+  });
 }
 
 function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
@@ -136,9 +130,10 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
         <div class="card-body">
           <p>
             This form is for instructors who want to create a new course on PrairieLearn. Students
-            should <strong>not</strong> submit this form and should instead use the "Enroll course"
-            button on the PrairieLearn homepage. Teaching assistants and course staff are granted
-            access by the owner of their course and should <strong>not</strong> submit this form.
+            should <strong>not</strong> submit this form and should instead use the "Add or remove
+            courses" button on the PrairieLearn homepage. Teaching assistants and course staff are
+            granted access by the owner of their course and should <strong>not</strong> submit this
+            form.
           </p>
 
           <div class="form-row">

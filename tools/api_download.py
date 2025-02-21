@@ -115,25 +115,23 @@ def get_and_save_json(endpoint, filename, args, logfile):
         r = requests.get(url, headers=headers)
         if r.status_code == 200:
             break
-        elif r.status_code == 502:
+        if r.status_code == 502:
             retry_502_i += 1
             if retry_502_i >= retry_502_max:
                 raise ValueError(
                     f"Maximum number of retries reached on 502 Bad Gateway Error for {url}"
                 )
-            else:
-                log(
-                    logfile,
-                    f"Bad Gateway Error encountered for {url}, retrying in 10 seconds",
-                )
-                time.sleep(10)
-                continue
-        else:
-            raise ValueError(f"Invalid status returned for {url}: {r.status_code}")
+            log(
+                logfile,
+                f"Bad Gateway Error encountered for {url}, retrying in 10 seconds",
+            )
+            time.sleep(10)
+            continue
+        raise ValueError(f"Invalid status returned for {url}: {r.status_code}")
     end_time = time.time()
     log(
         logfile,
-        f"successfully downloaded {r.headers['content-length']} bytes in {end_time - start_time} seconds",
+        f"successfully downloaded {len(r.text)} bytes in {end_time - start_time} seconds",
     )
 
     full_filename = os.path.join(args.output_dir, filename + ".json")

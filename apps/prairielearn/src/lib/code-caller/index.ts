@@ -227,4 +227,4 @@ export async function withCodeCaller<T>(
   }
 }
 
-export { FunctionMissingError, CodeCaller };
+export { FunctionMissingError, type CodeCaller };

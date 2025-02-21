@@ -9,13 +9,13 @@ Command line usage:
 
 smartphysics-to-pl.py [xml file] [PrairieLearn question name]
 
-This converts multiple choice questions from smart.physics XML format to 
-the PrairieLearn directory structure. A new UUID is assigned automatically. 
+This converts multiple choice questions from smart.physics XML format to
+the PrairieLearn directory structure. A new UUID is assigned automatically.
 
-If you want to convert free-answer questions (ex. homeworks), the main difference would be to change 
+If you want to convert free-answer questions (ex. homeworks), the main difference would be to change
 write_question().
 
-The question may require some cleanup. Known problems include '{' characters in LaTeX formulas (which 
+The question may require some cleanup. Known problems include '{' characters in LaTeX formulas (which
 get replaced indiscriminantly), and images, which are just ignored.
 """
 
@@ -100,7 +100,7 @@ def write_question(xml_root, f):
             """
 <div class="card my-2">
   <div class="card-header">
-      
+
   </div>
 
   <div class="card-body">

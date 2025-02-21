@@ -5,8 +5,7 @@ WITH
       course_permissions AS cp (user_id, course_id, course_role)
     VALUES
       ($user_id, $course_id, $course_role)
-    ON CONFLICT (user_id, course_id) DO
-    UPDATE
+    ON CONFLICT (user_id, course_id) DO UPDATE
     SET
       course_role = EXCLUDED.course_role
     WHERE
@@ -197,8 +196,7 @@ WITH
       JOIN course_instances AS ci ON (ci.course_id = cp.course_id)
     WHERE
       ci.id = $course_instance_id
-    ON CONFLICT (course_instance_id, course_permission_id) DO
-    UPDATE
+    ON CONFLICT (course_instance_id, course_permission_id) DO UPDATE
     SET
       course_instance_role = EXCLUDED.course_instance_role
     WHERE
