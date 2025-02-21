@@ -63,7 +63,7 @@ export function Workspace({
         <nav class="navbar navbar-light navbar-expand-lg bg-info align-items-center">
           <div class="container-fluid">
             <div class="d-flex flex-column me-3">
-              <h1 class="h6 font-weight-normal mb-0">
+              <h1 class="h6 fw-normal mb-0">
                 <a href="${navTitleHref}" target="_blank" style="color: #000;">${navTitle}</a>
               </h1>
               <span class="small" style="color: #000;">
@@ -78,7 +78,7 @@ export function Workspace({
               </span>
               <span
                 id="message"
-                class="badge text-bg-dark badge-workspace badge-append font-weight-normal"
+                class="badge text-bg-dark badge-workspace badge-append fw-normal"
               ></span>
             </div>
             <button

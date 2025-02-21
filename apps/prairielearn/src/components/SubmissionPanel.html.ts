@@ -203,7 +203,7 @@ export function SubmissionPanel({
           <div class="me-2">
             <div>
               <span class="me-2 d-flex align-items-center">
-                <h2 class="h6 font-weight-normal mb-0">
+                <h2 class="h6 fw-normal mb-0">
                   Submitted answer ${submissionCount > 1 ? submission.submission_number : ''}
                 </h2>
               </span>

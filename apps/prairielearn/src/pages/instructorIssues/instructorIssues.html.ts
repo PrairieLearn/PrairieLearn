@@ -104,7 +104,7 @@ export function InstructorIssues({
         <div class="card-header bg-primary text-white">
           <div class="d-flex flex-row align-items-center mb-2">
             <div class="d-flex flex-column">
-              <h1 class="h6 font-weight-normal mb-0">Issues</h1>
+              <h1 class="h6 fw-normal mb-0">Issues</h1>
               <small>
                 <a href="${formattedCommonQueries.allOpenQuery}" class="me-3 text-white">
                   <i class="fa fa-exclamation-circle"></i> ${openCount} open
