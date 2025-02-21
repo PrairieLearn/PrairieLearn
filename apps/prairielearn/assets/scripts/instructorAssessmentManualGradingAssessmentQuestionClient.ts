@@ -56,7 +56,7 @@ onDocumentReady(() => {
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
     buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'aiGrade'],
-    theadClasses: 'thead-light',
+    theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),

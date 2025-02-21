@@ -83,7 +83,7 @@ export function QuestionsTable({
               aria-label="Questions"
               data-data="${JSON.stringify(questions)}"
               data-classes="table table-sm table-hover table-bordered"
-              data-thead-classes="thead-light"
+              data-thead-classes="table-light"
               data-filter-control="true"
               data-show-columns="true"
               data-show-columns-toggle-all="true"

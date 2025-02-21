@@ -25,7 +25,7 @@ onDocumentReady(() => {
     url: `${urlPrefix}/instance_admin/gradebook/raw_data.json`,
     uniqueId: 'user_id',
     classes: 'table table-sm table-hover table-bordered',
-    theadClasses: 'thead-light',
+    theadClasses: 'table-light',
     showButtonText: true,
     minimumCountColumns: 0,
     search: true,

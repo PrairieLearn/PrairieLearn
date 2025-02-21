@@ -150,7 +150,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
           data-auto-refresh-status="false"
           data-auto-refresh-interval="30"
           data-buttons-order="['refresh', 'autoRefresh', 'columns']"
-          data-thead-classes="thead-light"
+          data-thead-classes="table-light"
           data-pagination="true"
           data-pagination-v-align="both"
           data-pagination-h-align="left"
