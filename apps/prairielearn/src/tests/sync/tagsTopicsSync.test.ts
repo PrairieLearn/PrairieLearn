@@ -1,5 +1,6 @@
 import { assert } from 'chai';
 
+import type { TagJsonInput, TopicJsonInput } from '../../schemas/infoCourse.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -12,7 +13,7 @@ import * as util from './util.js';
 /**
  * Makes a new tag/topic to test with.
  */
-function makeEntity(): util.Tag | util.Topic {
+function makeEntity(): TagJsonInput | TopicJsonInput {
   return {
     name: 'a new entity',
     color: 'green1',

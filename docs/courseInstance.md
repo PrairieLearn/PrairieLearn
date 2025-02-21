@@ -49,12 +49,6 @@ This file specifies basic information about the course instance:
 }
 ```
 
-??? note "Format specification for `infoCourseInstance.json`"
-
-    ```json
-    --8<-- "apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
-    ```
-
 ## Access controls
 
 The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Course staff always have access. The simple example below gives students access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
