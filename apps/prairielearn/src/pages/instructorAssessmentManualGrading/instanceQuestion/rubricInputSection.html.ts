@@ -43,7 +43,7 @@ export function RubricInputSection({
               data-key-binding="${item.key_binding}"
             />
             <span class="badge text-bg-info">${item.key_binding}</span>
-            <span class="float-right text-${item.points >= 0 ? 'success' : 'danger'}">
+            <span class="float-end text-${item.points >= 0 ? 'success' : 'danger'}">
               <strong>
                 <span class="js-manual-grading-points" data-testid="rubric-item-points">
                   [${(item.points >= 0 ? '+' : '') + Math.round(item.points * 100) / 100}]

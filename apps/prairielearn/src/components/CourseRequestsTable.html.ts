@@ -171,7 +171,7 @@ export function CourseRequestsTable({
                                       <td>
                                         <a
                                           href="${urlPrefix}/administrator/jobSequence/${job.id}"
-                                          class="btn btn-xs btn-info float-right"
+                                          class="btn btn-xs btn-info float-end"
                                         >
                                           Details
                                         </a>

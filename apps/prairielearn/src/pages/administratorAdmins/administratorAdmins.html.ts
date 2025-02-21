@@ -64,7 +64,7 @@ export function AdministratorAdmins({
                     <td class="align-middle">
                       <button
                         type="button"
-                        class="btn btn-sm btn-danger float-right"
+                        class="btn btn-sm btn-danger float-end"
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-bs-html="true"
