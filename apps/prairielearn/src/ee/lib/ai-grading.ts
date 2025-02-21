@@ -36,7 +36,7 @@ const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
-const GPTScoreSchema = z.object({ score: z.number(), feedback: z.string() });
+const GradingResultSchema = z.object({ score: z.number(), feedback: z.string() });
 const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
@@ -46,7 +46,7 @@ const GradedExampleSchema = z.object({
 });
 type GradedExample = z.infer<typeof GradedExampleSchema>;
 
-async function generateGPTPrompt({
+async function generatePrompt({
   questionPrompt,
   submission_text,
   example_submissions,
@@ -384,7 +384,7 @@ export async function aiGrade({
       }
       job.info(gradedExampleInfo);
 
-      const { messages, warning } = await generateGPTPrompt({
+      const { messages, warning } = await generatePrompt({
         questionPrompt,
         submission_text,
         example_submissions,
@@ -393,27 +393,27 @@ export async function aiGrade({
 
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
-        let GPTRubricItemSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
+        let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
         for (const item of rubric_items) {
-          GPTRubricItemSchema = GPTRubricItemSchema.merge(
+          RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
             z.object({
               [item.description]: z.boolean(),
             }),
           );
         }
-        const GPTRubricScoreSchema = z.object({
-          rubric_items: GPTRubricItemSchema,
+        const RubricGradingResultSchema = z.object({
+          rubric_items: RubricGradingItemsSchema,
         });
         const completion = await openai.beta.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
-          response_format: zodResponseFormat(GPTRubricScoreSchema, 'score'),
+          response_format: zodResponseFormat(RubricGradingResultSchema, 'score'),
         });
         try {
           job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
           const response = completion.choices[0].message;
-          job.info(`Raw ChatGPT response:\n${response.content}`);
+          job.info(`Raw response:\n${response.content}`);
 
           if (response.parsed) {
             // Compute the set of selected rubric descriptions.
@@ -482,12 +482,12 @@ export async function aiGrade({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
-          response_format: zodResponseFormat(GPTScoreSchema, 'score'),
+          response_format: zodResponseFormat(GradingResultSchema, 'score'),
         });
         try {
           job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
           const response = completion.choices[0].message;
-          job.info(`Raw ChatGPT response:\n${response.content}`);
+          job.info(`Raw response:\n${response.content}`);
           if (response.parsed) {
             await manualGrading.updateInstanceQuestionScore(
               assessment_question.assessment_id,
