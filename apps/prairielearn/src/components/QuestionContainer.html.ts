@@ -470,7 +470,7 @@ export function QuestionFooterContent({
                         type="button"
                         class="btn btn-xs btn-ghost align-self-center ms-1"
                         data-bs-toggle="popover"
-                        data-container="body"
+                        data-bs-container="body"
                         data-html="true"
                         data-content="${escapeHtml(
                           NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
@@ -555,7 +555,7 @@ function SubmitRateFooter({
             type="button"
             class="btn btn-xs btn-ghost"
             data-bs-toggle="popover"
-            data-container="body"
+            data-bs-container="body"
             data-html="true"
             data-content="${escapeHtml(popoverContent)}"
             data-placement="auto"

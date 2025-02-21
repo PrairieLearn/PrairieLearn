@@ -170,7 +170,7 @@ function LtiCredentialsCard({
                           type="button"
                           class="btn btn-sm btn-danger"
                           data-bs-toggle="popover"
-                          data-container="body"
+                          data-bs-container="body"
                           data-html="true"
                           data-placement="auto"
                           title="Confirm delete"

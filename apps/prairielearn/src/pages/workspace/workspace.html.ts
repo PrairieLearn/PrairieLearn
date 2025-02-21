@@ -141,7 +141,7 @@ export function Workspace({
                     type="button"
                     class="nav-item btn btn-light"
                     data-bs-toggle="popover"
-                    data-container="body"
+                    data-bs-container="body"
                     data-placement="bottom"
                     data-html="true"
                     data-content="${escapeHtml(HelpButtonContents())}"

@@ -102,7 +102,7 @@ export function InstructorCourseAdminInstances({
                         <button
                           class="btn btn-xs btn-light"
                           data-bs-toggle="popover"
-                          data-container="body"
+                          data-bs-container="body"
                           data-placement="bottom"
                           data-html="true"
                           title="Earliest Access Date"
@@ -117,7 +117,7 @@ export function InstructorCourseAdminInstances({
                         <button
                           class="btn btn-xs btn-light"
                           data-bs-toggle="popover"
-                          data-container="body"
+                          data-bs-container="body"
                           data-placement="bottom"
                           data-html="true"
                           title="Latest Access Date"

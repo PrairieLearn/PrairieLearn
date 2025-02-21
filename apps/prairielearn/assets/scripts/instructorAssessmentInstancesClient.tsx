@@ -751,7 +751,7 @@ onDocumentReady(() => {
                   <button
                     class="dropdown-item ${row.open ? '' : 'disabled'}"
                     data-bs-toggle="popover"
-                    data-container="body"
+                    data-bs-container="body"
                     data-title="Confirm close"
                     data-html="true"
                     data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
@@ -770,7 +770,7 @@ onDocumentReady(() => {
                   <button
                     class="dropdown-item"
                     data-bs-toggle="popover"
-                    data-container="body"
+                    data-bs-container="body"
                     data-title="Confirm regrade"
                     data-html="true"
                     data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"

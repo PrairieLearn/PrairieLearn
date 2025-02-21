@@ -21,7 +21,7 @@ ${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
       class="btn btn-xs btn-ghost me-1"
       data-bs-toggle="popover"
       data-trigger="hover"
-      data-container="body"
+      data-bs-container="body"
       data-html="true"
       title="${title}"
       data-content="${escapeHtml(popoverContent)}"

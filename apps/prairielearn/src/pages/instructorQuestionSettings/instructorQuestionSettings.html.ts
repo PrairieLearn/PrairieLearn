@@ -325,7 +325,7 @@ export function InstructorQuestionSettings({
                           class="btn btn-sm btn-primary"
                           id="copyQuestionButton"
                           data-bs-toggle="popover"
-                          data-container="body"
+                          data-bs-container="body"
                           data-html="true"
                           data-placement="auto"
                           title="Copy this question"

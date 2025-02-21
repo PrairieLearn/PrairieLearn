@@ -191,7 +191,7 @@ export function InstructorAssessmentGroups({
                                     <button
                                       class="dropdown-item js-group-action"
                                       data-bs-toggle="popover"
-                                      data-container="body"
+                                      data-bs-container="body"
                                       data-html="true"
                                       data-placement="auto"
                                       title="Add members"
@@ -209,7 +209,7 @@ export function InstructorAssessmentGroups({
                                       ${row.users.length === 0
                                         ? 'disabled'
                                         : html`
-                                            data-bs-toggle="popover" data-container="body"
+                                            data-bs-toggle="popover" data-bs-container="body"
                                             data-html="true" data-placement="auto" title="Remove
                                             members"
                                             data-content="${escapeHtml(
@@ -226,7 +226,7 @@ export function InstructorAssessmentGroups({
                                     <button
                                       class="dropdown-item js-group-action"
                                       data-bs-toggle="popover"
-                                      data-container="body"
+                                      data-bs-container="body"
                                       data-html="true"
                                       data-placement="auto"
                                       title="Delete group"

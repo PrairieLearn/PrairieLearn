@@ -222,7 +222,7 @@ function DeletePersonalNoteButton({
     <button
       class="btn btn-xs btn-secondary"
       data-bs-toggle="popover"
-      data-container="body"
+      data-bs-container="body"
       data-html="true"
       data-placement="auto"
       title="Confirm delete"

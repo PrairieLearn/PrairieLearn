@@ -252,7 +252,7 @@ export function InstructorCourseAdminSharing({
                             type="button"
                             class="btn btn-sm btn-outline-dark"
                             data-bs-toggle="popover"
-                            data-container="body"
+                            data-bs-container="body"
                             data-html="true"
                             data-placement="auto"
                             title="Add Course to Sharing Set"

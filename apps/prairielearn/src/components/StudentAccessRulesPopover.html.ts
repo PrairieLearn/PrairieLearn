@@ -20,7 +20,7 @@ export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzA
       type="button"
       class="btn btn-xs btn-ghost"
       data-bs-toggle="popover"
-      data-container="body"
+      data-bs-container="body"
       data-html="true"
       title="Access details"
       data-content="${escapeHtml(StudentAccessRulesPopoverContent({ accessRules }))}"

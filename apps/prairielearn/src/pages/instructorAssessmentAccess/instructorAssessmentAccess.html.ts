@@ -91,7 +91,7 @@ export function InstructorAssessmentAccess({
                               type="button"
                               class="btn btn-xs btn-warning"
                               data-bs-toggle="popover"
-                              data-container="body"
+                              data-bs-container="body"
                               data-placement="auto"
                               title="Hidden UIDs"
                               data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
