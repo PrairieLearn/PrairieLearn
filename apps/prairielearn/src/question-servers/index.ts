@@ -67,6 +67,7 @@ export interface QuestionServer {
     question: Question,
     course: Course,
     variant_seed: string,
+    zoneInformation?: Record<string, any>,
   ) => QuestionServerReturnValue<Partial<GenerateResultData>>;
   prepare: (
     question: Question,
@@ -87,6 +88,7 @@ export interface QuestionServer {
     submissions: Submission[],
     course: Course,
     locals: Record<string, any>,
+    zoneInformation: any
   ) => QuestionServerReturnValue<RenderResultData>;
   parse: (
     submission: Pick<

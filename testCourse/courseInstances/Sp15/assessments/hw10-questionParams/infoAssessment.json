@@ -25,15 +25,14 @@
     },
     {
       "title": "Parameters inherited from zone",
-
+      "questionParams": {
+        "lower_bound": 5,
+        "upper_bound": 15
+      },
       "questions": [
         {
           "id": "addNumbersParameterized/2",
-          "points": 1,
-          "params": {
-            "lower_bound": 5,
-            "upper_bound": 15
-          }
+          "points": 1
         }
       ]
     }
