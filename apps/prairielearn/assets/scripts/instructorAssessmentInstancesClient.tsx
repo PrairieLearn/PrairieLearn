@@ -855,7 +855,7 @@ function CloseForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number }) {
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-      <button type="submit" class="btn btn-danger">Grade and close</button>
+      <button type="submit" class="btn-close</button>
     </form>
   `;
 }

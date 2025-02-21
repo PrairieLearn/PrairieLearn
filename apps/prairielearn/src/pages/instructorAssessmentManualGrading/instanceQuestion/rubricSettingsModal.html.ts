@@ -21,9 +21,12 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           <div class="modal-content">
             <div class="modal-header bg-info">
               <h5 class="modal-title">Rubric settings</h5>
-              <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
             <div class="modal-body">
               ${resLocals.assessment_question.max_auto_points

@@ -34,9 +34,7 @@ export function RegenerateInstanceAlert() {
       >
       to pick up changes to the assessment or to get a fresh set of questions.
 
-      <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   `;
 }

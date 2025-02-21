@@ -529,11 +529,7 @@ def create_table_for_html_display(
     if format_type == "output-invalid":
         display_array = "<table>"
         display_array += "<tr>"
-        display_array += (
-            '<td class="pl-matrix-component-input-close-left" rowspan="'
-            + str(m)
-            + '"></td>'
-        )
+        display_array += '<td class="btn-close-left" rowspan="' + str(m) + '"></td>'
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         # First row of array
         for j in range(n):
@@ -551,11 +547,7 @@ def create_table_for_html_display(
             display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
             display_array += "</code></td> "
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
-        display_array += (
-            '<td class="pl-matrix-component-input-close-right" rowspan="'
-            + str(m)
-            + '"></td>'
-        )
+        display_array += '<td class="btn-close-right" rowspan="' + str(m) + '"></td>'
         # Add the other rows
         for i in range(1, m):
             display_array += " <tr>"
@@ -601,11 +593,7 @@ def create_table_for_html_display(
         # Add the prefix
         if label is not None:
             display_array += '<td rowspan="0">' + label + "&nbsp;</td>"
-        display_array += (
-            '<td class="pl-matrix-component-input-close-left" rowspan="'
-            + str(m)
-            + '"></td>'
-        )
+        display_array += '<td class="btn-close-left" rowspan="' + str(m) + '"></td>'
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         # First row of array
         for j in range(n):
@@ -630,11 +618,7 @@ def create_table_for_html_display(
             display_array += "</td> "
         # Add the suffix
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
-        display_array += (
-            '<td class="pl-matrix-component-input-close-right" rowspan="'
-            + str(m)
-            + '"></td>'
-        )
+        display_array += '<td class="btn-close-right" rowspan="' + str(m) + '"></td>'
         if score_message:
             display_array += '<td rowspan="0">&nbsp;' + score_message + "</td>"
         display_array += "</tr>"
@@ -668,11 +652,7 @@ def create_table_for_html_display(
         display_array = "<table>"
         display_array += "<tr>"
         # Add first row
-        display_array += (
-            '<td class="pl-matrix-component-input-close-left" rowspan="'
-            + str(m)
-            + '"></td>'
-        )
+        display_array += '<td class="btn-close-left" rowspan="' + str(m) + '"></td>'
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         for j in range(n):
             each_entry_name = name + str(j + 1)
@@ -689,11 +669,7 @@ def create_table_for_html_display(
                 display_array += escape(raw_submitted_answer)
             display_array += '" /> </td>'
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
-        display_array += (
-            '<td class="pl-matrix-component-input-close-right" rowspan="'
-            + str(m)
-            + '"></td>'
-        )
+        display_array += '<td class="btn-close-right" rowspan="' + str(m) + '"></td>'
         # Add other rows
         for i in range(1, m):
             display_array += " <tr>"

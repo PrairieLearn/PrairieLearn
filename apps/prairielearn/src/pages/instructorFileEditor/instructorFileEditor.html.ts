@@ -209,12 +209,10 @@ export function InstructorFileEditor({
                           : ''}
                         <button
                           type="button"
-                          class="close"
+                          class="btn-close"
                           data-bs-dismiss="alert"
                           aria-label="Close"
-                        >
-                          <span aria-hidden="true">&times;</span>
-                        </button>
+                        ></button>
                       </div>
                       ${draftEdit.jobSequence != null
                         ? html`
@@ -248,12 +246,10 @@ export function InstructorFileEditor({
                       any changes you have made to this file will be lost.
                       <button
                         type="button"
-                        class="close"
+                        class="btn-close"
                         data-bs-dismiss="alert"
                         aria-label="Close"
-                      >
-                        <span aria-hidden="true">&times;</span>
-                      </button>
+                      ></button>
                     </div>
                   `
                 : ''}
@@ -300,12 +296,10 @@ export function InstructorFileEditor({
                         </div>
                         <button
                           type="button"
-                          class="me-2 m-auto btn-close-white close"
+                          class="btn-close"
                           data-bs-dismiss="toast"
                           aria-label="Close"
-                        >
-                          <span aria-hidden="true">&times;</span>
-                        </button>
+                        ></button>
                       </div>
                     </div>
                   </div>

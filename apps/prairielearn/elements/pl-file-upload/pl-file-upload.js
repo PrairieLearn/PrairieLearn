@@ -331,7 +331,7 @@
 
     addWarningMessage(message) {
       var $alert = $(
-        '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>',
+        '<div class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>',
       );
       $alert.append(message);
       this.element.find('.messages').append($alert);
