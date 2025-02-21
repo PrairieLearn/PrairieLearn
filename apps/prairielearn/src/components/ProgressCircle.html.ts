@@ -8,11 +8,11 @@ export function ProgressCircle({
   value: number;
   maxValue: number;
   options?: {
-    pushedRight?: boolean;
+    mlAuto?: boolean;
   };
 }) {
-  // Whether or not the ProgressCircle should be pushed to the right.
-  const pushedRight = options.pushedRight ?? false;
+  // Whether or not the ProgressCircle should have ml-auto (margin-left: auto) applied to it.
+  const mlAuto = options.mlAuto ?? false;
 
   // The progress circle has radius of 8px, so its circumference is 2 * PI * 8px.
   const progressCircleCircumference = 2 * Math.PI * 8;
@@ -48,7 +48,7 @@ export function ProgressCircle({
     width="20px"
     height="20px"
     viewBox="0 0 20px 20px"
-    class="mx-1 ${pushedRight ? 'ml-auto' : ''}"
+    class="mx-1 ${mlAuto ? 'ml-auto' : ''}"
   >
     <circle
       cx="10px"

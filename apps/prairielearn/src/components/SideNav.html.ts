@@ -57,7 +57,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       urlSuffix: '/instance_admin/lti13_instance',
       iconClasses: 'fas fa-school-flag fa-fw',
       tabLabel: 'LTI 1.3',
-      // renderCondition: (resLocals) => resLocals.lti13_enabled,
+      renderCondition: (resLocals) => resLocals.lti13_enabled,
     },
     {
       activePages: ['instance_admin'],
@@ -82,7 +82,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
           value: navbarCompleteGettingStartedTasksCount,
           maxValue: navbarTotalGettingStartedTasksCount,
           options: {
-            pushedRight: true,
+            mlAuto: true,
           },
         }),
       renderCondition: ({ authz_data, course }) =>
