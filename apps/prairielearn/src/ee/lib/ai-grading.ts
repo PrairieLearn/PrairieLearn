@@ -85,7 +85,7 @@ async function generatePrompt({
     messages.push({
       role: 'system',
       content:
-        "You are an instructor for a course, and you are grading assignments. You are provided several rubric items with a description, explanation, and grader note. You must grade the assignment by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's submission. If no rubric items apply, do not select any. I will provide some example answers and their corresponding selected rubric items.",
+        "You are an instructor for a course, and you are grading assignments. You are provided several rubric items with a description, explanation, and grader note. You must grade the assignment by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's submission. If no rubric items apply, do not select any. I will provide some example responses and their corresponding selected rubric items.",
     });
     messages.push({
       role: 'system',
@@ -95,7 +95,7 @@ async function generatePrompt({
     messages.push({
       role: 'system',
       content:
-        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The feedback should explain why you give this score. Follow any special instructions given by the instructor in the question. Omit the feedback if the answer is correct. I will provide some example answers and their corresponding scores and feedback.',
+        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The feedback should explain why you give this score. Follow any special instructions given by the instructor in the question. Omit the feedback if the response is correct. I will provide some example responses and their corresponding scores and feedback.',
     });
   }
 
@@ -128,7 +128,7 @@ async function generatePrompt({
       }
       messages.push({
         role: 'user',
-        content: `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nSelected rubric items for this example answer: \n${rubric_grading_info}`,
+        content: `Example response: \n<response>\n${example.submission_text} \n<response>\nSelected rubric items for this example response: \n${rubric_grading_info}`,
       });
     } else {
       if (rubric_items.length > 0 && !example.manual_rubric_grading_id) {
@@ -141,18 +141,18 @@ async function generatePrompt({
       messages.push({
         role: 'user',
         content:
-          `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nScore for this example answer: \n${example.score_perc}\n` +
+          `Example response: \n<response>\n${example.submission_text} \n<response>\nScore for this example response: \n${example.score_perc}\n` +
           (example.feedback?.manual
-            ? `Feedback for this example answer: \n${example.feedback.manual}\n`
+            ? `Feedback for this example response: \n${example.feedback.manual}\n`
             : ''),
       });
     }
   }
 
-  // Student answer
+  // Student response
   messages.push({
     role: 'user',
-    content: `The student submitted the following answer: \n<answer>\n${submission_text} \n<answer>\nHow would you grade this? Please return the JSON object.`,
+    content: `The student submitted the following response: \n<response>\n${submission_text} \n<response>\nHow would you grade this? Please return the JSON object.`,
   });
 
   if (warning) {
@@ -418,7 +418,7 @@ export async function aiGrade({
             }
 
             // It's possible that the rubric could have changed since we last
-            // fetched it. We'll opportunistically apply all the rubric items
+            // fetched it. We'll optimistically apply all the rubric items
             // that were selected. If an item was deleted, we'll allow the
             // grading to fail; the user can then try again.
             const appliedRubricItems = Array.from(selectedRubricDescriptions).map(
