@@ -296,6 +296,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # don't want a blank line at the start of the code block.
         code = pl.inner_html(element).removeprefix("\r").removeprefix("\n")
 
+    if normalize_whitespace:
+        code = dedent(code).rstrip()
+
     lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
 
     pygments_style = get_style_by_name(style)
@@ -309,9 +312,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
 
     code = pygments.highlight(unescape(code), lexer, formatter)
-
-    if normalize_whitespace:
-        code = dedent(code.strip())
 
     html_params = {
         "uuid": pl.get_uuid(),
