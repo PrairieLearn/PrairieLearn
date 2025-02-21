@@ -189,6 +189,10 @@ async function generateSubmissionEmbedding({
     submission,
     [submission],
     question_course,
+    // We deliberately do not set `manualGradingInterface: true` when rendering
+    // the submission. The expectation is that instructors will use elements lik
+    // `<pl-manual-grading-only>` to provide extra instructions to the LLM. We
+    // don't want to mix in instructions like that with the student's response.
     urls,
   );
   const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
@@ -207,25 +211,6 @@ async function generateSubmissionEmbedding({
     SubmissionGradingContextEmbeddingSchema,
   );
   return new_submission_embedding;
-}
-
-function assertRubricNotModified(
-  old_rubric_items: RubricItem[],
-  new_rubric_items: RubricItem[],
-): void {
-  if (old_rubric_items.length !== new_rubric_items.length) {
-    throw new Error('rubric modified between rubric retrieval and score insertion');
-  }
-  for (let i = 0; i < old_rubric_items.length; i++) {
-    const old_item = old_rubric_items[i];
-    const new_item = new_rubric_items[i];
-    if (
-      old_item.description !== new_item.description ||
-      old_item.explanation !== new_item.explanation
-    ) {
-      throw new Error('rubric modified between rubric retrieval and score insertion');
-    }
-  }
 }
 
 export async function aiGrade({
@@ -310,14 +295,6 @@ export async function aiGrade({
     job.info(`Found ${number_to_grade} submissions to grade!`);
 
     let error_count = 0;
-    let rubric_items = await queryRows(
-      sql.select_rubric_for_grading,
-      {
-        assessment_question_id: assessment_question.id,
-      },
-      RubricItemSchema,
-    );
-    let new_rubric_items = rubric_items;
 
     // Grade each instance question
     for (const instance_question of instance_questions) {
@@ -384,6 +361,14 @@ export async function aiGrade({
       }
       job.info(gradedExampleInfo);
 
+      const rubric_items = await queryRows(
+        sql.select_rubric_for_grading,
+        {
+          assessment_question_id: assessment_question.id,
+        },
+        RubricItemSchema,
+      );
+
       const { messages, warning } = await generatePrompt({
         questionPrompt,
         submission_text,
@@ -411,7 +396,9 @@ export async function aiGrade({
           response_format: zodResponseFormat(RubricGradingResultSchema, 'score'),
         });
         try {
-          job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
+          job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
+          job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
+          job.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
           const response = completion.choices[0].message;
           job.info(`Raw response:\n${response.content}`);
 
@@ -430,22 +417,20 @@ export async function aiGrade({
               rubricItemsByDescription[item.description] = item;
             }
 
-            // Ensure that the rubric hasn't changed since we last fetched it.
-            new_rubric_items = await queryRows(
-              sql.select_rubric_for_grading,
-              {
-                assessment_question_id: assessment_question.id,
-              },
-              RubricItemSchema,
+            // It's possible that the rubric could have changed since we last
+            // fetched it. We'll opportunistically apply all the rubric items
+            // that were selected. If an item was deleted, we'll allow the
+            // grading to fail; the user can then try again.
+            const appliedRubricItems = Array.from(selectedRubricDescriptions).map(
+              (description) => ({
+                rubric_item_id: rubricItemsByDescription[description].id,
+              }),
             );
-            assertRubricNotModified(rubric_items, new_rubric_items);
 
             // Record the grading results.
             const manual_rubric_data = {
               rubric_id: rubric_items[0].rubric_id,
-              applied_rubric_items: Array.from(selectedRubricDescriptions).map((description) => ({
-                rubric_item_id: rubricItemsByDescription[description].id,
-              })),
+              applied_rubric_items: appliedRubricItems,
             };
             await manualGrading.updateInstanceQuestionScore(
               assessment_question.assessment_id,
@@ -476,7 +461,6 @@ export async function aiGrade({
         if (warning) {
           job.warn(warning);
         }
-        rubric_items = new_rubric_items;
       } else {
         const completion = await openai.beta.chat.completions.parse({
           messages,
@@ -485,7 +469,9 @@ export async function aiGrade({
           response_format: zodResponseFormat(GradingResultSchema, 'score'),
         });
         try {
-          job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
+          job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
+          job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
+          job.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
           const response = completion.choices[0].message;
           job.info(`Raw response:\n${response.content}`);
           if (response.parsed) {
