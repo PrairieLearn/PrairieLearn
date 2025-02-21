@@ -260,7 +260,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             activeSubPage: 'settings',
             urlSuffix: '/course_admin/settings',
             iconClasses: 'fas fa-cog',
-            tabLabel: 'Settings',
+            tabLabel: 'General',
           },
           {
             activeSubPage: 'sets',
@@ -390,7 +390,34 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
           },
         ],
     instance_admin: hasEnhancedNavigation
-      ? []
+      ? [
+          {
+            activeSubPage: 'settings',
+            urlSuffix: '/instance_admin/settings',
+            iconClasses: 'fas fa-cog',
+            tabLabel: 'General',
+          },
+          {
+            activeSubPage: 'access',
+            urlSuffix: '/instance_admin/access',
+            iconClasses: 'far fa-calendar-alt',
+            tabLabel: 'Access',
+          },
+          {
+            activeSubPage: 'lti',
+            urlSuffix: '/instance_admin/lti',
+            iconClasses: 'fas fa-graduation-cap',
+            tabLabel: 'LTI',
+            renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
+          },
+          {
+            activeSubPage: 'billing',
+            urlSuffix: '/instance_admin/billing',
+            iconClasses: 'fas fa-credit-card',
+            tabLabel: 'Billing',
+            renderCondition: (resLocals) => resLocals.billing_enabled,
+          },
+        ]
       : [
           {
             activeSubPage: 'access',

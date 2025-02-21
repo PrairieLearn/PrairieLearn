@@ -73,7 +73,18 @@ export function PageLayout({
         showContextNavigation = false;
       }
     } else if (navContext.page === 'instance_admin') {
-      showContextNavigation = false;
+      const navPageTabs = getNavPageTabs(true);
+
+      const instanceAdminSettingsNavSubPages = navPageTabs.instance_admin
+        ?.map((tab) => tab.activeSubPage)
+        .flat();
+
+      // If the user is on a instance admin settings subpage, show ContextNavigation
+      if (navContext.subPage && instanceAdminSettingsNavSubPages?.includes(navContext.subPage)) {
+        showContextNavigation = true;
+      } else {
+        showContextNavigation = false;
+      }
     }
 
     return html`
