@@ -420,7 +420,7 @@ function FileBrowserActions({
             data-bs-placement="auto"
             title="Upload file"
             data-bs-content="${escapeHtml(FileUploadForm({ file: fileInfo, csrfToken }))}"
-            data-trigger="click"
+            data-bs-trigger="click"
             ${fileInfo.canUpload ? '' : 'disabled'}
           >
             <i class="fa fa-arrow-up"></i>
@@ -450,7 +450,7 @@ function FileBrowserActions({
             data-bs-content="${escapeHtml(
               FileRenameForm({ file: fileInfo, csrfToken, isViewingFile: true }),
             )}"
-            data-trigger="click"
+            data-bs-trigger="click"
             ${fileInfo.canRename ? '' : 'disabled'}
           >
             <i class="fa fa-i-cursor"></i>
@@ -465,7 +465,7 @@ function FileBrowserActions({
             data-bs-placement="auto"
             title="Confirm delete"
             data-bs-content="${escapeHtml(FileDeleteForm({ file: fileInfo, csrfToken }))}"
-            data-trigger="click"
+            data-bs-trigger="click"
             ${fileInfo.canDelete ? '' : 'disabled'}
           >
             <i class="far fa-trash-alt"></i>
@@ -501,7 +501,7 @@ function DirectoryBrowserActions({
             }),
           )}
           "
-          data-trigger="click"
+          data-bs-trigger="click"
         >
           <i class="fa fa-plus"></i>
           <span>Add new ${d.label.toLowerCase()} file</span>
@@ -523,7 +523,7 @@ function DirectoryBrowserActions({
           csrfToken,
         }),
       )}"
-      data-trigger="click"
+      data-bs-trigger="click"
     >
       <i class="fa fa-plus"></i>
       <span>Add new file</span>
@@ -626,7 +626,7 @@ function DirectoryBrowserBody({
                         title="Upload file"
                         data-bs-content="
                   ${escapeHtml(FileUploadForm({ file: f, csrfToken }))}"
-                        data-trigger="click"
+                        data-bs-trigger="click"
                         ${f.canUpload ? '' : 'disabled'}
                       >
                         <i class="fa fa-arrow-up"></i>
@@ -656,7 +656,7 @@ function DirectoryBrowserBody({
                         data-bs-content="${escapeHtml(
                           FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
                         )}"
-                        data-trigger="click"
+                        data-bs-trigger="click"
                         data-testid="rename-file-button"
                         ${f.canRename ? '' : 'disabled'}
                       >
@@ -672,7 +672,7 @@ function DirectoryBrowserBody({
                         data-bs-placement="auto"
                         title="Confirm delete"
                         data-bs-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
-                        data-trigger="click"
+                        data-bs-trigger="click"
                         data-testid="delete-file-button"
                         ${f.canDelete ? '' : 'disabled'}
                       >

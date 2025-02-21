@@ -20,7 +20,7 @@ ${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
     <button
       class="btn btn-xs btn-ghost me-1"
       data-bs-toggle="popover"
-      data-trigger="hover"
+      data-bs-trigger="hover"
       data-bs-container="body"
       data-bs-html="true"
       title="${title}"
