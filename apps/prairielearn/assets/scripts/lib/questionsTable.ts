@@ -98,7 +98,7 @@ onDocumentReady(() => {
     `;
     if (question.open_issue_count > 0) {
       text += html`<a
-        class="badge badge-pill text-bg-danger ms-1"
+        class="badge rounded-pill text-bg-danger ms-1"
         href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
           question.qid ?? '',
         )}"

@@ -25,12 +25,12 @@ export function IssueBadge({
   if (Number(count) === 0) return '';
 
   if (suppressLink) {
-    return html`<span class="badge badge-pill text-bg-danger ${className ?? ''}">${count}</span>`;
+    return html`<span class="badge rounded-pill text-bg-danger ${className ?? ''}">${count}</span>`;
   }
 
   return html`
     <a
-      class="badge badge-pill text-bg-danger ${className ?? ''}"
+      class="badge rounded-pill text-bg-danger ${className ?? ''}"
       href="${urlPrefix}/course_admin/issues${issueQid
         ? `?q=is%3Aopen+qid%3A${encodeURIComponent(issueQid)}`
         : ''}"

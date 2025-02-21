@@ -140,7 +140,7 @@ function GroupRoleTable({
       <summary class="card-header bg-secondary text-light">
         ${userCanAssignRoles ? 'Manage group roles' : 'View group roles'}
         ${roleConfigProblems > 0
-          ? html`<span class="badge badge-pill text-bg-danger">${roleConfigProblems}</span>`
+          ? html`<span class="badge rounded-pill text-bg-danger">${roleConfigProblems}</span>`
           : ''}
       </summary>
       <div class="card-body">

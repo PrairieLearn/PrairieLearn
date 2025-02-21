@@ -204,7 +204,7 @@ function UserDropdownMenu({
         >
           ${displayedName}
           ${newsCount
-            ? html`<span class="badge badge-pill text-bg-primary news-item-count"
+            ? html`<span class="badge rounded-pill text-bg-primary news-item-count"
                 >${newsCount}</span
               >`
             : ''}
@@ -249,7 +249,7 @@ function UserDropdownMenu({
             News
             ${newsCount
               ? html`
-                  <span class="badge badge-pill text-bg-primary news-item-link-count">
+                  <span class="badge rounded-pill text-bg-primary news-item-link-count">
                     ${newsCount}
                   </span>
                 `
