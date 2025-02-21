@@ -73,7 +73,7 @@ async function generateGPTPrompt({
   if (rubric_items.length > 0) {
     let rubric_info = '';
     for (const item of rubric_items) {
-      rubric_info += `number: ${item.number}\ndescription: ${item.description}\n`;
+      rubric_info += `description: ${item.description}\n`;
       if (item.explanation) {
         rubric_info += `explanation: ${item.explanation}\n`;
       }
@@ -85,7 +85,7 @@ async function generateGPTPrompt({
     messages.push({
       role: 'system',
       content:
-        "You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description, item explanation, and a grader note about the item. You must grade the assignment by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's submission. If no rubric items apply, do not select any. I will provide some example answers and their corresponding selected rubric items.",
+        "You are an instructor for a course, and you are grading assignments. You are provided several rubric items with a description, explanation, and grader note. You must grade the assignment by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's submission. If no rubric items apply, do not select any. I will provide some example answers and their corresponding selected rubric items.",
     });
     messages.push({
       role: 'system',
@@ -95,7 +95,7 @@ async function generateGPTPrompt({
     messages.push({
       role: 'system',
       content:
-        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this score, or how to improve the answer. You omit the feedback if the answer is correct. I will provide some example answers and their corresponding scores.',
+        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The feedback should explain why you give this score. Omit the feedback if the answer is correct. I will provide some example answers and their corresponding scores and feedback.',
     });
   }
 
@@ -142,7 +142,7 @@ async function generateGPTPrompt({
         role: 'user',
         content:
           `Example answer: \n<answer>\n${example.submission_text} \n<answer>\nScore for this example answer: \n${example.score_perc}\n` +
-          (example.feedback && example.feedback.manual
+          (example.feedback?.manual
             ? `Feedback for this example answer: \n${example.feedback.manual}\n`
             : ''),
       });
@@ -392,7 +392,7 @@ export async function aiGrade({
       });
 
       if (rubric_items.length > 0) {
-        // Dynamically generate the rubric schema based on the number of items
+        // Dynamically generate the rubric schema based on the rubric items.
         let GPTRubricItemSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
         for (const item of rubric_items) {
           GPTRubricItemSchema = GPTRubricItemSchema.merge(
@@ -451,7 +451,7 @@ export async function aiGrade({
               assessment_question.assessment_id,
               instance_question.id,
               submission.id,
-              null, // modified_at
+              null, // check_modified_at
               {
                 // TODO: consider asking for and recording freeform feedback.
                 manual_rubric_data,
@@ -493,7 +493,7 @@ export async function aiGrade({
               assessment_question.assessment_id,
               instance_question.id,
               submission.id,
-              null, // modified_at
+              null, // check_modified_at
               {
                 score_perc: response.parsed.score,
                 feedback: { manual: response.parsed.feedback },
