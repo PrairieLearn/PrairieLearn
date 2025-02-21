@@ -142,7 +142,7 @@ export function Workspace({
                     class="nav-item btn btn-light"
                     data-bs-toggle="popover"
                     data-bs-container="body"
-                    data-placement="bottom"
+                    data-bs-placement="bottom"
                     data-bs-html="true"
                     data-bs-content="${escapeHtml(HelpButtonContents())}"
                   >

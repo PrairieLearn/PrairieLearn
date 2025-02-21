@@ -172,7 +172,7 @@ function LtiCredentialsCard({
                           data-bs-toggle="popover"
                           data-bs-container="body"
                           data-bs-html="true"
-                          data-placement="auto"
+                          data-bs-placement="auto"
                           title="Confirm delete"
                           data-bs-content="${escapeHtml(html`
                             <form method="post">

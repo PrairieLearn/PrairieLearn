@@ -89,7 +89,7 @@ export function InstructorCourseAdminStaff({
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
-              data-placement="auto"
+              data-bs-placement="auto"
               title="Remove all student data access"
               data-bs-content="${escapeHtml(
                 CoursePermissionsRemoveStudentDataAccessForm({
@@ -107,7 +107,7 @@ export function InstructorCourseAdminStaff({
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
-              data-placement="auto"
+              data-bs-placement="auto"
               title="Delete users with no access"
               data-bs-content="${escapeHtml(
                 CoursePermissionsDeleteNoAccessForm({
@@ -125,7 +125,7 @@ export function InstructorCourseAdminStaff({
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
-              data-placement="auto"
+              data-bs-placement="auto"
               title="Delete non-owners"
               data-bs-content="${escapeHtml(
                 CoursePermissionsDeleteNonOwnersForm({
@@ -143,7 +143,7 @@ export function InstructorCourseAdminStaff({
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
-              data-placement="auto"
+              data-bs-placement="auto"
               title="Add users"
               data-bs-content="${escapeHtml(
                 CoursePermissionsInsertForm({

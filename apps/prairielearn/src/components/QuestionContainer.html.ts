@@ -475,7 +475,7 @@ export function QuestionFooterContent({
                         data-bs-content="${escapeHtml(
                           NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
                         )}"
-                        data-placement="auto"
+                        data-bs-placement="auto"
                       >
                         <i class="fa fa-question-circle" aria-hidden="true"></i>
                       </button>
@@ -558,7 +558,7 @@ function SubmitRateFooter({
             data-bs-container="body"
             data-bs-html="true"
             data-bs-content="${escapeHtml(popoverContent)}"
-            data-placement="auto"
+            data-bs-placement="auto"
           >
             <i class="fa fa-question-circle" aria-hidden="true"></i>
           </button>

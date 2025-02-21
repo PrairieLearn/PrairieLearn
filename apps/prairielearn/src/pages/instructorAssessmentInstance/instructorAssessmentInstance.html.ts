@@ -208,7 +208,7 @@ export function InstructorAssessmentInstance({
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-bs-html="true"
-                        data-placement="auto"
+                        data-bs-placement="auto"
                         title="Change total points"
                         aria-label="Change total points"
                         data-bs-content="${escapeHtml(
@@ -238,7 +238,7 @@ export function InstructorAssessmentInstance({
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-bs-html="true"
-                        data-placement="auto"
+                        data-bs-placement="auto"
                         title="Change total percentage score"
                         aria-label="Change total percentage score"
                         data-bs-content="${escapeHtml(
@@ -600,7 +600,7 @@ export function InstructorAssessmentInstance({
                               data-bs-toggle="popover"
                               data-bs-container="body"
                               data-bs-html="true"
-                              data-placement="auto"
+                              data-bs-placement="auto"
                               title="Fingerprint ${row.client_fingerprint_number}"
                               data-bs-content="${escapeHtml(html`
                                 <div>

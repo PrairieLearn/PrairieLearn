@@ -116,7 +116,7 @@ export function UserSettings({
                   data-bs-toggle="popover"
                   data-bs-container="body"
                   data-bs-html="true"
-                  data-placement="auto"
+                  data-bs-placement="auto"
                   title="Generate new token"
                   data-bs-content="${TokenGenerateForm({
                     csrfToken: resLocals.__csrf_token,
@@ -203,7 +203,7 @@ function TokenList({
           data-bs-toggle="popover"
           data-bs-container="body"
           data-bs-html="true"
-          data-placement="auto"
+          data-bs-placement="auto"
           title="Delete this token"
           data-bs-content="${TokenDeleteForm({
             token_id: token.id,

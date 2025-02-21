@@ -57,7 +57,7 @@ export function AdministratorCourses({
             data-bs-toggle="popover"
             data-bs-container="body"
             data-bs-html="true"
-            data-placement="auto"
+            data-bs-placement="auto"
             title="Add new course"
             data-bs-content="${escapeHtml(
               CourseInsertForm({
@@ -138,7 +138,7 @@ export function AdministratorCourses({
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-bs-html="true"
-                        data-placement="auto"
+                        data-bs-placement="auto"
                         title="Really delete ${course.short_name}?"
                         data-bs-content="${escapeHtml(
                           CourseDeleteForm({
@@ -316,7 +316,7 @@ function CourseUpdateColumn({
         data-bs-toggle="popover"
         data-bs-container="body"
         data-bs-html="true"
-        data-placement="auto"
+        data-bs-placement="auto"
         title="Change ${label}"
         data-bs-content="${escapeHtml(
           CourseUpdateColumnForm({

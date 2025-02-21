@@ -40,7 +40,7 @@ export function EditQuestionPointsScoreButton({
     data-bs-toggle="popover"
     data-bs-container="body"
     data-bs-html="true"
-    data-placement="auto"
+    data-bs-placement="auto"
     aria-label="Change question ${findLabel(field)}"
     data-bs-content="${escapeHtml(editForm)}"
     data-testid="edit-question-points-score-button-${field}"

@@ -654,7 +654,7 @@ onDocumentReady(() => {
           id="row${row.assessment_instance_id}PopoverTimeLimit"
           aria-label="Change time limit"
           data-row="${JSON.stringify(row)}"
-          data-placement="bottom"
+          data-bs-placement="bottom"
           data-boundary="window"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
@@ -755,7 +755,7 @@ onDocumentReady(() => {
                     data-title="Confirm close"
                     data-bs-html="true"
                     data-bs-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
-                    data-placement="auto"
+                    data-bs-placement="auto"
                   >
                     <i class="fas fa-ban me-2" aria-hidden="true"></i>
                     Grade &amp; Close
@@ -774,7 +774,7 @@ onDocumentReady(() => {
                     data-title="Confirm regrade"
                     data-bs-html="true"
                     data-bs-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
-                    data-placement="auto"
+                    data-bs-placement="auto"
                   >
                     <i class="fas fa-sync me-2" aria-hidden="true"></i>
                     Regrade

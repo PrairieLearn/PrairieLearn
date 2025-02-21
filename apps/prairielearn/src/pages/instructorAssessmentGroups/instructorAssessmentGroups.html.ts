@@ -193,7 +193,7 @@ export function InstructorAssessmentGroups({
                                       data-bs-toggle="popover"
                                       data-bs-container="body"
                                       data-bs-html="true"
-                                      data-placement="auto"
+                                      data-bs-placement="auto"
                                       title="Add members"
                                       data-bs-content="${escapeHtml(
                                         AddMembersForm({
@@ -210,8 +210,8 @@ export function InstructorAssessmentGroups({
                                         ? 'disabled'
                                         : html`
                                             data-bs-toggle="popover" data-bs-container="body"
-                                            data-bs-html="true" data-placement="auto" title="Remove
-                                            members"
+                                            data-bs-html="true" data-bs-placement="auto"
+                                            title="Remove members"
                                             data-bs-content="${escapeHtml(
                                               RemoveMembersForm({
                                                 row,
@@ -228,7 +228,7 @@ export function InstructorAssessmentGroups({
                                       data-bs-toggle="popover"
                                       data-bs-container="body"
                                       data-bs-html="true"
-                                      data-placement="auto"
+                                      data-bs-placement="auto"
                                       title="Delete group"
                                       data-bs-content="${escapeHtml(
                                         DeleteGroupForm({

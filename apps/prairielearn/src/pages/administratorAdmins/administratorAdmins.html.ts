@@ -31,7 +31,7 @@ export function AdministratorAdmins({
             data-bs-toggle="popover"
             data-bs-container="body"
             data-bs-html="true"
-            data-placement="auto"
+            data-bs-placement="auto"
             title="Add new administrator"
             data-bs-content="${escapeHtml(
               AdministratorInsertForm({
@@ -68,7 +68,7 @@ export function AdministratorAdmins({
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-bs-html="true"
-                        data-placement="auto"
+                        data-bs-placement="auto"
                         title="Remove administrator access"
                         data-bs-content="${escapeHtml(
                           AdministratorDeleteForm({

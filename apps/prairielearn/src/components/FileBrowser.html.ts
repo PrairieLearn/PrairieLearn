@@ -417,7 +417,7 @@ function FileBrowserActions({
             data-bs-toggle="popover"
             data-bs-container="body"
             data-bs-html="true"
-            data-placement="auto"
+            data-bs-placement="auto"
             title="Upload file"
             data-bs-content="${escapeHtml(FileUploadForm({ file: fileInfo, csrfToken }))}"
             data-trigger="click"
@@ -445,7 +445,7 @@ function FileBrowserActions({
             data-bs-toggle="popover"
             data-bs-container="body"
             data-bs-html="true"
-            data-placement="auto"
+            data-bs-placement="auto"
             title="Rename file"
             data-bs-content="${escapeHtml(
               FileRenameForm({ file: fileInfo, csrfToken, isViewingFile: true }),
@@ -462,7 +462,7 @@ function FileBrowserActions({
             data-bs-toggle="popover"
             data-bs-container="body"
             data-bs-html="true"
-            data-placement="auto"
+            data-bs-placement="auto"
             title="Confirm delete"
             data-bs-content="${escapeHtml(FileDeleteForm({ file: fileInfo, csrfToken }))}"
             data-trigger="click"
@@ -492,7 +492,7 @@ function DirectoryBrowserActions({
           data-bs-toggle="popover"
           data-bs-container="body"
           data-bs-html="true"
-          data-placement="auto"
+          data-bs-placement="auto"
           title="Upload file"
           data-bs-content="${escapeHtml(
             FileUploadForm({
@@ -515,7 +515,7 @@ function DirectoryBrowserActions({
       data-bs-toggle="popover"
       data-bs-container="body"
       data-bs-html="true"
-      data-placement="auto"
+      data-bs-placement="auto"
       title="Upload file"
       data-bs-content="${escapeHtml(
         FileUploadForm({
@@ -622,7 +622,7 @@ function DirectoryBrowserBody({
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-bs-html="true"
-                        data-placement="auto"
+                        data-bs-placement="auto"
                         title="Upload file"
                         data-bs-content="
                   ${escapeHtml(FileUploadForm({ file: f, csrfToken }))}"
@@ -651,7 +651,7 @@ function DirectoryBrowserBody({
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-bs-html="true"
-                        data-placement="auto"
+                        data-bs-placement="auto"
                         title="Rename file"
                         data-bs-content="${escapeHtml(
                           FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
@@ -669,7 +669,7 @@ function DirectoryBrowserBody({
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-bs-html="true"
-                        data-placement="auto"
+                        data-bs-placement="auto"
                         title="Confirm delete"
                         data-bs-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
                         data-trigger="click"

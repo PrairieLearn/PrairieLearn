@@ -100,7 +100,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                             </button>
                             <button
                               class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
-                              data-placement="left"
+                              data-bs-placement="left"
                               data-bs-toggle-popover
                             >
                               <i class="far fa-clock" aria-hidden="true"></i> Change time limit for
