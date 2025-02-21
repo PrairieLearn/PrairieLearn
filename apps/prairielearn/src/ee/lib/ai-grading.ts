@@ -30,7 +30,7 @@ import * as questionServers from '../../question-servers/index.js';
 import { createEmbedding, vectorToString } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-const OPEN_AI_MODEL = 'gpt-4o-2024-08-06';
+const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
 
 const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
