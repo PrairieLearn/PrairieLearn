@@ -1,9 +1,10 @@
 <pl-question-panel>
-  <markdown>Questions below were designed to showcase the different features of
-    [`pl-code`](http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element).
-    The goal of [`pl-code`](http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element)
+  <p>Questions below were designed to showcase the different features of
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element"><code>pl-code</code></a>.
+    The goal of <a
+      href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element"><code>pl-code</code></a>
     is to display different programming languages with appropriate syntax highlighting and code line emphasis.
-  </markdown>
+  </p>
 </pl-question-panel>
 
 <pl-card>
@@ -11,11 +12,12 @@
     The most common use of <code>pl-code</code> is to display pre-written code with appropriate syntax highlighting.
     The language must be specified with the <code>language</code> attribute. In this case, we are requesting
     python with <code>language="python"</code>. We also enable the copy code button by setting
-    <code>copy-code-button="True"</code>. Additionally, we ensure the code is indented to the start of the line by setting
+    <code>copy-code-button="True"</code>. Additionally, we ensure the code is indented to the start of the line by
+    setting
     <code>normalize-whitespace="true"</code>.
     <pl-code language="python" copy-code-button="True" normalize-whitespace="true">
       def square(x):
-          return x * x
+      return x * x
     </pl-code>
   </pl-question-panel>
 </pl-card>
@@ -27,13 +29,13 @@
     adding <code>prevent-select="true"</code>.
     <pl-code language="python" highlight-lines="4-5" prevent-select="true" normalize-whitespace="true">
       def foo():
-          return 'foo'
+      return 'foo'
 
       def square(x):
-          return x * x
+      return x * x
 
       def bar(x):
-          return 'bar'
+      return 'bar'
     </pl-code>
   </pl-question-panel>
 </pl-card>
