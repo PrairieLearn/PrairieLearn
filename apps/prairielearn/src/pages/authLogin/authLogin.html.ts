@@ -236,7 +236,7 @@ export function AuthLogin({
             <div class="login-methods">
               ${institutionAuthnProviders.map(
                 (provider) => html`
-                  <a href="${provider.url}" class="btn btn-outline-dark btn-block">
+                  <a href="${provider.url}" class="btn btn-outline-dark d-block w-100">
                     <span class="font-weight-bold">${provider.name}</span>
                   </a>
                 `,
@@ -366,7 +366,7 @@ function DevModeLogin({ csrfToken }: { csrfToken: string }) {
         </small>
       </div>
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="submit" class="btn btn-primary btn-block" name="__action" value="dev_login">
+      <button type="submit" class="btn btn-primary d-block w-100" name="__action" value="dev_login">
         <span class="font-weight-bold">Dev Mode Login</span>
       </button>
     </form>

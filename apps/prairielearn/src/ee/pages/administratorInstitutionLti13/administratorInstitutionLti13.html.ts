@@ -56,7 +56,7 @@ export function AdministratorInstitutionLti13({
           <form method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <button
-              class="btn btn-outline-success btn-block my-4"
+              class="btn btn-outline-success d-block w-100 my-4"
               type="submit"
               name="__action"
               value="add_instance"

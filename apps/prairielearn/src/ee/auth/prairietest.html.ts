@@ -28,7 +28,7 @@ export const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
                   </div>
                   <h1 class="h4">PrairieTest authentication</h1>
                   <p>Signing in to PrairieTest...</p>
-                  <button class="btn btn-success btn-block" type="submit" id="continue">
+                  <button class="btn btn-success d-block w-100" type="submit" id="continue">
                     Continue
                   </button>
                 </div>
