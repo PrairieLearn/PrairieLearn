@@ -103,7 +103,7 @@ function AddAdminsModal({ uidsLimit, csrfToken }: { uidsLimit: number; csrfToken
     id: 'addAdminsModal',
     title: 'Add administrators',
     body: html`
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="addAdminsModalUid"> UIDs </label>
         <textarea
           name="uids"

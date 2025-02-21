@@ -50,7 +50,7 @@ export function InstructorAssessmentSettings({
           <form name="edit-assessment-settings-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="aid">AID</label>
               <input
                 type="text"
@@ -68,7 +68,7 @@ export function InstructorAssessmentSettings({
                 directories.
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="title">Title</label>
               <input
                 type="text"
@@ -80,7 +80,7 @@ export function InstructorAssessmentSettings({
               />
               <small class="form-text text-muted"> The title of the assessment. </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="type">Type</label>
               <input
                 type="text"
@@ -94,7 +94,7 @@ export function InstructorAssessmentSettings({
                 The type of the assessment. This can be either Homework or Exam.
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="set">Set</label>
               <select class="form-select" id="set" name="set" ${canEdit ? '' : 'disabled'}>
                 ${assessmentSets.map(
@@ -114,7 +114,7 @@ export function InstructorAssessmentSettings({
                 this assessment belongs to.
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="number">Number</label>
               <input
                 type="text"
@@ -128,7 +128,7 @@ export function InstructorAssessmentSettings({
                 The number of the assessment within the set.
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="module">Module</label>
               <select class="form-select" id="module" name="module" ${canEdit ? '' : 'disabled'}>
                 ${assessmentModules.map(
@@ -147,7 +147,7 @@ export function InstructorAssessmentSettings({
                 belongs to.
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="studentLink">Student Link</label>
               <span class="input-group">
                 <input

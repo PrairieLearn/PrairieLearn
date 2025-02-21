@@ -137,7 +137,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
           </p>
 
           <div class="form-row">
-            <div class="form-group col-md-6">
+            <div class="mb-3 col-md-6">
               <label class="form-label" for="cr-firstname">First name</label>
               <input
                 type="text"
@@ -148,7 +148,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
                 required
               />
             </div>
-            <div class="form-group col-md-6">
+            <div class="mb-3 col-md-6">
               <label class="form-label" for="cr-lastname">Last name</label>
               <input
                 type="text"
@@ -161,7 +161,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </div>
           </div>
           <div class="form-row">
-            <div class="form-group col-md-6">
+            <div class="mb-3 col-md-6">
               <label class="form-label" for="cr-institution">Institution</label>
               <input
                 type="text"
@@ -175,7 +175,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
                 This is your academic institution (e.g., "University of Illinois").
               </small>
             </div>
-            <div class="form-group col-md-6">
+            <div class="mb-3 col-md-6">
               <label class="form-label" for="cr-email">Email</label>
               <input
                 type="email"
@@ -189,7 +189,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               <small class="form-text text-muted"> Use your official work email address. </small>
             </div>
           </div>
-          <div class="form-group">
+          <div class="mb-3">
             <label class="form-label" for="cr-shortname">Course Rubric and Number</label>
             <input
               type="text"
@@ -203,7 +203,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             />
             <small class="form-text text-muted"> Examples: MATH 101, PHYS 440. </small>
           </div>
-          <div class="form-group">
+          <div class="mb-3">
             <label class="form-label" for="cr-title">Course Title</label>
             <input
               type="text"
@@ -218,7 +218,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               This is the official title of the course, as given in the course catalog.
             </small>
           </div>
-          <div class="form-group">
+          <div class="mb-3">
             <label class="form-label" for="cr-ghuser">GitHub Username (optional)</label>
             <input type="text" class="form-control" name="cr-ghuser" id="cr-ghuser" />
             <small class="form-text text-muted">
@@ -226,7 +226,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               not need to provide this if you would like to use the online web editor.
             </small>
           </div>
-          <div class="form-group">
+          <div class="mb-3">
             <label class="form-label" id="cr-referral-source-label" for="cr-referral-source">
               How did you hear about PrairieLearn?
             </label>
@@ -257,7 +257,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               for sharing!
             </small>
           </div>
-          <div class="form-group">
+          <div class="mb-3">
             <label class="form-label" for="role-instructor">Your Role in the Course</label>
             <ul class="list-group">
               <li class="list-group-item">

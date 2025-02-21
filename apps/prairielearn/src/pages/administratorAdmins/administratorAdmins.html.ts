@@ -105,7 +105,7 @@ function AdministratorInsertForm({ csrfToken }: { csrfToken: string }) {
     <form name="add-user-form" method="POST">
       <input type="hidden" name="__action" value="administrators_insert_by_user_uid" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="administratorInsertFormUid">UID:</label>
         <input
           type="text"

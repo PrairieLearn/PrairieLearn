@@ -277,7 +277,7 @@ function CreateAssessmentModal({
     title: 'Create assessment',
     formMethod: 'POST',
     body: html`
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="title">Title</label>
         <input
           type="text"
@@ -291,7 +291,7 @@ function CreateAssessmentModal({
           The full name of the assessment, visible to users.
         </small>
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="aid">Assessment identifier (AID)</label>
         <input
           type="text"
@@ -307,7 +307,7 @@ function CreateAssessmentModal({
           "hw2-derivatives". Use only letters, numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="type">Type</label>
         <select class="form-select" id="type" name="type" aria-describedby="type_help" required>
           <option value="Homework">Homework</option>
@@ -317,7 +317,7 @@ function CreateAssessmentModal({
           The type of the assessment. This can be either Homework or Exam.
         </small>
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="set">Set</label>
         <select class="form-select" id="set" name="set" aria-describedby="set_help" required>
           ${assessmentSets.map((set) => html`<option value="${set.name}">${set.name}</option>`)}
@@ -329,7 +329,7 @@ function CreateAssessmentModal({
       </div>
       ${assessmentsGroupBy === 'Module'
         ? html`
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="module">Module</label>
               <select
                 class="form-select"

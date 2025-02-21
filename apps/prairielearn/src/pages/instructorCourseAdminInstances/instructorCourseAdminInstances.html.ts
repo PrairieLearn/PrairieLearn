@@ -269,7 +269,7 @@ function CreateCourseInstanceModal({
     title: 'Create course instance',
     formMethod: 'POST',
     body: html`
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="long_name">Long name</label>
         <input
           type="text"
@@ -284,7 +284,7 @@ function CreateCourseInstanceModal({
           name, e.g. "${courseShortName} Fall 2025".
         </small>
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="short_name">Short name</label>
         <input
           type="text"
@@ -318,7 +318,7 @@ function CreateCourseInstanceModal({
         </label>
       </div>
       <div id="accessDates" hidden="true">
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="start_access_date">Access start date</label>
           <div class="input-group date-picker">
             <input
@@ -335,7 +335,7 @@ function CreateCourseInstanceModal({
             The date when students can access the course instance. Can be edited later.
           </small>
         </div>
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="end_access_date">Access end date</label>
           <div class="input-group date-picker">
             <input

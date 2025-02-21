@@ -188,7 +188,7 @@ function setupEditScorePopovers(csrfToken: string) {
               <input type="hidden" name="__action" value="edit_total_score_perc" />
               <input type="hidden" name="__csrf_token" value="${csrfToken}" />
               <input type="hidden" name="assessment_instance_id" value="${assessmentInstanceId}" />
-              <div class="form-group">
+              <div class="mb-3">
                 <div class="input-group">
                   <input
                     type="text"

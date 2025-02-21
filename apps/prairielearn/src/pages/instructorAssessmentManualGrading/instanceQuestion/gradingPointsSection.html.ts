@@ -74,7 +74,7 @@ export function TotalPointsSection({
           </span>
         `
       : ''}
-    <div class="form-group js-manual-grading-points w-100">
+    <div class="mb-3 js-manual-grading-points w-100">
       Total Points:
       <span class="float-right">
         <span class="js-value-total-points">${Math.round(100 * points) / 100}</span>
@@ -83,7 +83,7 @@ export function TotalPointsSection({
     </div>
     ${resLocals.assessment_question.max_points
       ? html`
-          <div class="form-group js-manual-grading-percentage w-100">
+          <div class="mb-3 js-manual-grading-percentage w-100">
             Total Score:
             <span class="float-right"> <span class="js-value-total-percentage"></span>% </span>
           </div>
@@ -116,7 +116,7 @@ export function GradingPointsSection({
   show_rubric_button: boolean;
 }) {
   return html`
-    <div class="form-group">
+    <div class="mb-3">
       <span class="w-100">
         <label
           for="js-${type}-score-value-input-points-${context}"

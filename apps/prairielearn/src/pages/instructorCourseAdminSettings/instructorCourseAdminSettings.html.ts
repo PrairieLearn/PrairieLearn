@@ -49,7 +49,7 @@ export function InstructorCourseAdminSettings({
           <form name="edit-course-settings-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="short_name">Short Name</label>
               <input
                 type="text"
@@ -69,7 +69,7 @@ export function InstructorCourseAdminSettings({
                 "MATH 101" or "PHYS 440").
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="title">Title</label>
               <input
                 type="text"
@@ -88,7 +88,7 @@ export function InstructorCourseAdminSettings({
                 This is the official title of the course, as given in the course catalog.
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="display_timezone">Timezone</label>
               <select
                 class="custom-select"
@@ -116,7 +116,7 @@ export function InstructorCourseAdminSettings({
                 timezone that has the same times as you.
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="institution">Institution</label>
               <input
                 type="text"
@@ -130,7 +130,7 @@ export function InstructorCourseAdminSettings({
                 This is your academic institution (e.g., "University of Illinois").
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="path">Path</label>
               <input
                 type="text"
@@ -144,7 +144,7 @@ export function InstructorCourseAdminSettings({
                 The path where course files can be found.
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="repository">Repository</label>
               <span class="input-group">
                 <input

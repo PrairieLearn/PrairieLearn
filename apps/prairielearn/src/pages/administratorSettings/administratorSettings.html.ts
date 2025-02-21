@@ -29,7 +29,7 @@ export function AdministratorSettings({ resLocals }) {
           <form name="generate_chunks_form" method="POST">
             <input type="hidden" name="__action" value="generate_chunks" />
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="generateChunksCourseIds">Course IDs:</label>
               <input
                 type="text"

@@ -130,7 +130,7 @@ function LTI13Instance(
       <form class="form" method="POST">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_name" />
-        <div class="form-group my-2">
+        <div class="mb-3 my-2">
           <label for="name" class="form-label">Branded platform name: </label>
           <input
             id="name"
@@ -159,7 +159,7 @@ function LTI13Instance(
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_platform" />
 
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="choosePlatform">Platform type: </label>
           <select class="custom-select mb-2" id="choosePlatform" name="platform">
             ${platform_defaults.map((d) => {
@@ -184,7 +184,7 @@ function LTI13Instance(
           </div>
         </div>
 
-        <div class="form-group mt-2">
+        <div class="mb-3 mt-2">
           <label for="issuer_params"> Issuer params: </label>
           <textarea
             class="form-control"
@@ -197,7 +197,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
           >
         </div>
 
-        <div class="form-group mt-2">
+        <div class="mb-3 mt-2">
           <label for="client_id">Client ID: </label>
           <input
             id="client_id"
@@ -213,7 +213,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group mt-2">
+        <div class="mb-3 mt-2">
           <label for="custom_fields">Custom fields suggestions: </label>
           <textarea
             class="form-control"
@@ -235,7 +235,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
           <button class="btn btn-info">Save platform options</button>
           <input type="reset" class="btn btn-secondary" value="Reset options" />
         </div>
@@ -289,7 +289,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         <input type="hidden" name="__action" value="save_pl_config" />
 
         <h6>Which attributes from the LTI 1.3 user claim should be mapped to PL identities?</h6>
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="name_attribute">Name attribute</label>
           <input
             type="text"
@@ -304,7 +304,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="name_attribute">UID attribute</label>
           <input
             type="text"
@@ -322,7 +322,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="name_attribute">UIN attribute</label>
           <input
             type="text"
@@ -341,7 +341,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="name_attribute">Email attribute</label>
           <input
             type="text"

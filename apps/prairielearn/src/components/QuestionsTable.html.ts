@@ -278,7 +278,7 @@ function CreateQuestionModal({
     title: 'Create question',
     formMethod: 'POST',
     body: html`
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="title">Title</label>
         <input
           type="text"
@@ -292,7 +292,7 @@ function CreateQuestionModal({
           The full name of the question, visible to users.
         </small>
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="qid">Question identifier (QID)</label>
         <input
           type="text"
@@ -308,7 +308,7 @@ function CreateQuestionModal({
           Use only letters, numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="start_from">Start from</label>
         <select
           class="form-select"
@@ -325,7 +325,7 @@ function CreateQuestionModal({
         </small>
       </div>
 
-      <div id="templateContainer" class="form-group" hidden>
+      <div id="templateContainer" class="mb-3" hidden>
         <label class="form-label" for="template_qid">Template</label>
         <select
           class="form-select"

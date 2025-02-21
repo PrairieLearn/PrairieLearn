@@ -32,7 +32,7 @@ export function AuthPassword({
 
           <form method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="password">Password</label>
               <input type="password" class="form-control" id="password" name="password" />
             </div>

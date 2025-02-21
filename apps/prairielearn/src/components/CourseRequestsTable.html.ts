@@ -218,7 +218,7 @@ function CourseRequestApproveForm({
       <input type="hidden" name="__action" value="create_course_from_request" />
       <input type="hidden" name="request_id" value="${request.id}" />
 
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label">Institution:</label>
         <select
           name="institution_id"
@@ -232,7 +232,7 @@ function CourseRequestApproveForm({
           })}
         </select>
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="courseRequestAddInputShortName">Short name:</label>
         <input
           type="text"
@@ -243,7 +243,7 @@ function CourseRequestApproveForm({
           value="${request.short_name}"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="courseRequestAddInputTitle">Title:</label>
         <input
           type="text"
@@ -254,7 +254,7 @@ function CourseRequestApproveForm({
           value="${request.title}"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="courseRequestAddInputTimezone">Timezone:</label>
         <input
           type="text"
@@ -264,7 +264,7 @@ function CourseRequestApproveForm({
           value="${institutions[0]?.display_timezone}"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="courseRequestAddInputPath">Path:</label>
         <input
           type="text"
@@ -274,7 +274,7 @@ function CourseRequestApproveForm({
           value="${coursesRoot + '/' + repo_name}"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="courseRequestAddInputRepositoryName">Repository Name:</label>
         <input
           type="text"
@@ -284,7 +284,7 @@ function CourseRequestApproveForm({
           value="${repo_name}"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label for="courseRequestAddInputGithubUser">GitHub Username:</label>
         <input
           type="text"

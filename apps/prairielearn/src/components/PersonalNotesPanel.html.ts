@@ -111,7 +111,7 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             Attached files will be saved here for your reference. These files act as personal notes
             and can be used for your own review purposes. They are not used for grading.
           </p>
-          <div class="form-group">
+          <div class="mb-3">
             <div class="custom-file">
               <input type="file" name="file" class="custom-file-input" id="attachFileInput" />
               <label class="custom-file-label" for="attachFileInput">Choose file</label>
@@ -120,7 +120,7 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
               </small>
             </div>
           </div>
-          <div class="form-group mb-0">
+          <div class="mb-3 mb-0">
             <input type="hidden" name="__action" value="attach_file" />
             ${variantId != null
               ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
@@ -171,7 +171,7 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             name="filename"
             value="notes.txt"
           />
-          <div class="form-group">
+          <div class="mb-3">
             <textarea
               class="form-control"
               rows="5"

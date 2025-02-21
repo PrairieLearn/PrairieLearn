@@ -43,7 +43,7 @@ export function InstructorInstanceAdminSettings({
           <form name="edit-course-instance-settings-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="long_name">Long Name</label>
               <input
                 type="text"
@@ -61,7 +61,7 @@ export function InstructorInstanceAdminSettings({
                 The long name of this course instance (e.g., 'Spring 2015').
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="ciid">CIID</label>
               <input
                 type="text"
@@ -84,7 +84,7 @@ export function InstructorInstanceAdminSettings({
                 versions, like <code>Fa19honors</code>.
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="student_link">Student Link</label>
               <span class="input-group">
                 <input

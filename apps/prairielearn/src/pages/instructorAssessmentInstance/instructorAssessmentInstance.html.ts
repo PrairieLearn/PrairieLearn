@@ -708,7 +708,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
         name="assessment_instance_id"
         value="${resLocals.assessment_instance.id}"
       />
-      <div class="form-group">
+      <div class="mb-3">
         <div class="input-group">
           <input
             type="text"
@@ -743,7 +743,7 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
         name="assessment_instance_id"
         value="${resLocals.assessment_instance.id}"
       />
-      <div class="form-group">
+      <div class="mb-3">
         <div class="input-group">
           <input
             type="text"

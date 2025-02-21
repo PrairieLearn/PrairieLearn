@@ -25,7 +25,7 @@ function AddCourseToSharingSetPopover({
       <input type="hidden" name="__action" value="course_sharing_set_add" />
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       <input type="hidden" name="unsafe_sharing_set_id" value="${sharing_set.id}" />
-      <div class="form-group mb-4">
+      <div class="mb-3 mb-4">
         <div class="form-text text-wrap">
           <p>
             To allow another course to access questions in the sharing set "${sharing_set.name}",
@@ -33,7 +33,7 @@ function AddCourseToSharingSetPopover({
           </p>
         </div>
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="course_sharing_token">Course sharing token</label>
         <input
           class="form-control form-control-sm"
@@ -65,7 +65,7 @@ function ChooseSharingNameModal({
   if (canChooseSharingName) {
     body = html`
       <p class="form-text">Enter the sharing name you would like for your course.</p>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="course_sharing_name">Sharing name</label>
         <input
           class="form-control"

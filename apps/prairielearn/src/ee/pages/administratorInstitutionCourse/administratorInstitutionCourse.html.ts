@@ -47,7 +47,7 @@ export function AdministratorInstitutionCourse({
 
       <h2 class="h4">Limits</h2>
       <form method="POST" class="mb-3">
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="institution_course_instance_enrollment_limit">
             Course instance enrollment limit for institution
           </label>
@@ -63,7 +63,7 @@ export function AdministratorInstitutionCourse({
           </small>
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="institution_yearly_enrollment_limit">
             Yearly enrollment limit for institution
           </label>
@@ -79,7 +79,7 @@ export function AdministratorInstitutionCourse({
           </small>
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="course_instance_enrollment_limit">
             Course instance enrollment limit override
           </label>
@@ -96,7 +96,7 @@ export function AdministratorInstitutionCourse({
           </small>
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="yearly_enrollment_limit">
             Yearly enrollment limit for course
           </label>

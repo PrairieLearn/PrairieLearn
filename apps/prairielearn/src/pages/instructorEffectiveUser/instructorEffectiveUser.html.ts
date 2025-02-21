@@ -117,7 +117,7 @@ export function InstructorEffectiveUser({
 
           <div class="alert alert-secondary mb-0">
             <form id="changeUidForm" method="POST">
-              <div class="form-group">
+              <div class="mb-3">
                 <label class="form-label" for="changeEffectiveUid">Change effective UID to:</label>
                 <input
                   list="userList"
@@ -162,7 +162,7 @@ export function InstructorEffectiveUser({
 
           <div class="alert alert-secondary mb-0">
             <form id="changeCourseRoleForm" method="POST">
-              <div class="form-group">
+              <div class="mb-3">
                 <label class="form-label" for="changeEffectiveCourseRole">
                   Change effective course role to:
                 </label>
@@ -219,7 +219,7 @@ export function InstructorEffectiveUser({
 
                 <div class="alert alert-secondary mb-0">
                   <form id="changeCourseInstanceRoleForm" method="POST">
-                    <div class="form-group">
+                    <div class="mb-3">
                       <label class="form-label" for="changeEffectiveCourseInstanceRole">
                         Change effective course instance role to:
                       </label>
@@ -276,7 +276,7 @@ export function InstructorEffectiveUser({
 
           <div class="alert alert-secondary mb-0">
             <form id="changeDateForm" method="POST">
-              <div class="form-group">
+              <div class="mb-3">
                 <label class="form-label" for="changeDate">Change effective date to:</label>
                 <input
                   type="text"

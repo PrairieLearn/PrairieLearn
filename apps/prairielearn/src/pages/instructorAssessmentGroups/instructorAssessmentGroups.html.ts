@@ -303,7 +303,7 @@ export function InstructorAssessmentGroups({
 function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
   return html`
     <form name="add-member-form" method="POST">
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="add_member_uids">UIDs</label>
         <input
           type="text"
@@ -341,7 +341,7 @@ function DeleteGroupForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: st
 function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
   return html`
     <form name="delete-member-form" method="POST">
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="delete-member-form-${row.group_id}">UID:</label>
         <select class="custom-select" name="user_id" id="delete-member-form-${row.group_id}">
           ${row.users.map((user) => {
@@ -379,7 +379,7 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
         The <code>groupname</code> column should be a unique identifier for each group. To change
         the grouping, link uids to the groupname.
       </p>
-      <div class="form-group">
+      <div class="mb-3">
         <div class="custom-file">
           <input
             type="file"
@@ -416,7 +416,7 @@ function RandomAssessmentGroupsModal({
     id: 'randomAssessmentGroupsModal',
     title: 'Random group assignments',
     body: html`
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="formMin">Min number of members in a group</label>
         <input
           type="number"
@@ -428,7 +428,7 @@ function RandomAssessmentGroupsModal({
           name="min_group_size"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="formMax">Max number of members in a group</label>
         <input
           type="number"
@@ -455,11 +455,11 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
     id: 'addGroupModal',
     title: 'Add a group',
     body: html`
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="formName">Group Name</label>
         <input type="text" class="form-control" id="formName" name="group_name" />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="addGroupUids">UIDs</label>
         <input
           type="text"

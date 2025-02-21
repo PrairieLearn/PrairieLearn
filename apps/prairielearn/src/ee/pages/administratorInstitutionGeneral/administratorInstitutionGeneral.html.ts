@@ -67,7 +67,7 @@ export function AdministratorInstitutionGeneral({
       </div>
       <h2 class="h4">General Information</h2>
       <form method="POST" class="mb-3">
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="short_name">Short name</label>
           <input
             type="text"
@@ -80,7 +80,7 @@ export function AdministratorInstitutionGeneral({
             Use an abbreviation or short name. E.g., "UIUC" or "Berkeley".
           </small>
         </div>
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="long_name">Long name</label>
           <input
             type="text"
@@ -93,7 +93,7 @@ export function AdministratorInstitutionGeneral({
             Use the full name of the university. E.g., "University of Illinois Urbana-Champaign".
           </small>
         </div>
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="display_timezone">Timezone</label>
           <select
             class="custom-select"
@@ -120,7 +120,7 @@ export function AdministratorInstitutionGeneral({
             "America/Chicago".
           </small>
         </div>
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="uid_regexp">UID regexp</label>
           <input
             type="text"
@@ -134,7 +134,7 @@ export function AdministratorInstitutionGeneral({
           </small>
         </div>
         <h2 class="h4">Limits</h2>
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="course_instance_enrollment_limit"
             >Course instance enrollment limit</label
           >
@@ -152,7 +152,7 @@ export function AdministratorInstitutionGeneral({
             be overridden on individual courses and course instances.
           </small>
         </div>
-        <div class="form-group">
+        <div class="mb-3">
           <label class="form-label" for="yearly_enrollment_limit">Yearly enrollment limit</label>
           <input
             type="number"

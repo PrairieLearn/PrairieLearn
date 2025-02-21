@@ -249,7 +249,7 @@ function UploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string })
     formEncType: 'multipart/form-data',
     body: html`
       ${CsvHelpInstanceQuestionScores()}
-      <div class="form-group">
+      <div class="mb-3">
         <div class="custom-file">
           <input
             type="file"
@@ -279,7 +279,7 @@ function UploadAssessmentInstanceScoresModal({ csrfToken }: { csrfToken: string 
     formEncType: 'multipart/form-data',
     body: html`
       ${CsvHelpAssessmentInstanceScores()}
-      <div class="form-group">
+      <div class="mb-3">
         <div class="custom-file">
           <input
             type="file"

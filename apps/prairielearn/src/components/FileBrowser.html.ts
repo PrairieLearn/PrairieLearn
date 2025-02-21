@@ -710,9 +710,9 @@ function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: 
       enctype="multipart/form-data"
       novalidate
     >
-      ${file.info ? html`<div class="form-group">${file.info}</div>` : ''}
+      ${file.info ? html`<div class="mb-3">${file.info}</div>` : ''}
 
-      <div class="form-group">
+      <div class="mb-3">
         <div class="custom-file">
           <input
             type="file"
@@ -728,7 +728,7 @@ function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: 
         </div>
       </div>
 
-      <div class="form-group">
+      <div class="mb-3">
         <input type="hidden" name="__action" value="upload_file" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
         ${file.path != null
@@ -785,7 +785,7 @@ function FileRenameForm({
         you can specify a relative path that is delimited by a forward slash and that includes
         "<code>..</code>".
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="renameFileInput${file.id}">Path:</label>
         <input
           type="text"

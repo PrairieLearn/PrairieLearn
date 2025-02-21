@@ -386,7 +386,7 @@ function IssueReportButton({
     </button>
     <div class="collapse" id="issueCollapse">
       <form method="POST" class="mt-3">
-        <div class="form-group">
+        <div class="mb-3">
           <textarea
             class="form-control"
             rows="5"

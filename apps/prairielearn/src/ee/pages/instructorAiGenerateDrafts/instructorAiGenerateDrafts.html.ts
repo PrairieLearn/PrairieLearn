@@ -111,7 +111,7 @@ export function InstructorAIGenerateDrafts({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="generate_question" />
 
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
                 Give a high-level overview of the question. What internal parameters need to be
                 generated and what information should be provided to students?
@@ -133,7 +133,7 @@ export function InstructorAIGenerateDrafts({
             </div>
 
             <div class="js-hidden-inputs-container ${hasDrafts ? 'd-none' : ''}">
-              <div class="form-group">
+              <div class="mb-3">
                 <label class="form-label" for="user-prompt-llm-user-input">
                   How should students input their solution? What choices or input boxes are they
                   given?
@@ -152,7 +152,7 @@ export function InstructorAIGenerateDrafts({
                 </div>
               </div>
 
-              <div class="form-group">
+              <div class="mb-3">
                 <label class="form-label" for="user-prompt-llm-grading">
                   How is the correct answer determined?
                 </label>

@@ -131,7 +131,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     </button>
                   </div>
                 </div>
-                <div class="form-group col-6 col-lg-3">
+                <div class="mb-3 col-6 col-lg-3">
                   <label class="form-label">
                     Minimum rubric score
                     <button
@@ -152,7 +152,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     />
                   </label>
                 </div>
-                <div class="form-group col-6 col-lg-3">
+                <div class="mb-3 col-6 col-lg-3">
                   <label class="form-label">
                     Maximum extra credit
                     <button

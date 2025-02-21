@@ -222,7 +222,7 @@ function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
     <form name="generate-token-form" method="post">
       <input type="hidden" name="__action" value="token_generate" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="token_name">Name:</label>
         <input
           type="text"

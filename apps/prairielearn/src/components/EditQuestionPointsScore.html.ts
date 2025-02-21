@@ -92,7 +92,7 @@ function EditQuestionPointsScoreForm({
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="instance_question_id" value="${instance_question.id}" />
       <input type="hidden" name="modified_at" value="${instance_question.modified_at.toString()}" />
-      <div class="form-group">
+      <div class="mb-3">
         <div class="input-group">
           <input
             type="number"

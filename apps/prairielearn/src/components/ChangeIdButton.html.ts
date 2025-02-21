@@ -59,7 +59,7 @@ function ChangeIdForm({
         Use only letters, numbers, dashes, and underscores, with no spaces. You may use forward
         slashes to separate directories. ${extraHelpText ?? ''}
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="input-${id}">${label}:</label>
         <input
           type="text"

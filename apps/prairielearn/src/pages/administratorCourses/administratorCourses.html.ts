@@ -185,7 +185,7 @@ function CourseDeleteForm({
       <input type="hidden" name="__action" value="courses_delete" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="course_id" value="${course.id}" />
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="inputConfirm${id}">
           Type "${course.short_name}" to confirm:
         </label>
@@ -210,7 +210,7 @@ function CourseInsertForm({
     <form name="add-course-form" method="POST">
       <input type="hidden" name="__action" value="courses_insert" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label">Institution:</label>
         <select
           name="institution_id"
@@ -224,7 +224,7 @@ function CourseInsertForm({
           })}
         </select>
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="courseAddInputShortName">Short name:</label>
         <input
           type="text"
@@ -234,7 +234,7 @@ function CourseInsertForm({
           placeholder="XC 101"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="courseAddInputTitle">Title:</label>
         <input
           type="text"
@@ -244,7 +244,7 @@ function CourseInsertForm({
           placeholder="Template course title"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="courseAddInputTimezone">Timezone:</label>
         <input
           type="text"
@@ -254,7 +254,7 @@ function CourseInsertForm({
           value="${institutions[0]?.display_timezone}"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="courseAddInputPath">Path:</label>
         <input
           type="text"
@@ -264,7 +264,7 @@ function CourseInsertForm({
           value="/data1/courses/pl-XXX"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="courseAddInputRepository">Repository:</label>
         <input
           type="text"
@@ -274,7 +274,7 @@ function CourseInsertForm({
           value="git@github.com:PrairieLearn/pl-XXX.git"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="courseAddInputBranch">Branch:</label>
         <input
           type="text"
@@ -350,7 +350,7 @@ function CourseUpdateColumnForm({
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="course_id" value="${course.id}" />
       <input type="hidden" name="column_name" value="${column_name}" />
-      <div class="form-group">
+      <div class="mb-3">
         <input
           type="text"
           class="form-control"

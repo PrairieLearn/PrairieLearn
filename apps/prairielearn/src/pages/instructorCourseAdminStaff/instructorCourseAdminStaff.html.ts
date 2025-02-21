@@ -202,7 +202,7 @@ function CoursePermissionsRemoveStudentDataAccessForm({ csrfToken }: { csrfToken
       <input type="hidden" name="__action" value="remove_all_student_data_access" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
 
-      <div class="form-group mb-4">
+      <div class="mb-3 mb-4">
         <p class="form-text">
           Taking this action will remove all student data access from all users (but will leave
           these users on the course staff).
@@ -223,7 +223,7 @@ function CoursePermissionsDeleteNoAccessForm({ csrfToken }: { csrfToken: string 
       <input type="hidden" name="__action" value="delete_no_access" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
 
-      <div class="form-group mb-4">
+      <div class="mb-3 mb-4">
         <p class="form-text">
           Taking this action will remove every user from course staff who has neither course content
           access nor student data access.
@@ -252,7 +252,7 @@ function CoursePermissionsInsertForm({
       <input type="hidden" name="__action" value="course_permissions_insert_by_user_uids" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
 
-      <div class="form-group mb-4">
+      <div class="mb-3 mb-4">
         <p class="form-text">
           Use this form to add users to the course staff. Any UIDs of users who are already on the
           course staff will have their permissions updated only if the new permissions are higher
@@ -261,7 +261,7 @@ function CoursePermissionsInsertForm({
         </p>
       </div>
 
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="addUsersInputUid">UIDs:</label>
         <textarea
           class="form-control"
@@ -276,7 +276,7 @@ function CoursePermissionsInsertForm({
         </small>
       </div>
 
-      <div class="form-group">
+      <div class="mb-3">
         <label class="form-label" for="addUsersInputCourseRole">
           Course content access for all new users:
         </label>
@@ -296,7 +296,7 @@ function CoursePermissionsInsertForm({
 
       ${courseInstances?.length > 0
         ? html`
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="addUsersInputCourseInstance">
                 Student data access for all new users:
               </label>
@@ -338,7 +338,7 @@ function CoursePermissionsDeleteNonOwnersForm({ csrfToken }: { csrfToken: string
       <input type="hidden" name="__action" value="delete_non_owners" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
 
-      <div class="form-group mb-4">
+      <div class="mb-3 mb-4">
         <p class="form-text">
           Taking this action will remove every user from course staff who is not a course content
           Owner.

@@ -222,7 +222,7 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
           This form is only for reporting errors in the question itself. Do not use this form if you
           just don't know how to answer the question.
         </p>
-        <div class="form-group">
+        <div class="mb-3">
           <textarea
             class="form-control"
             rows="5"
@@ -233,7 +233,7 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
         </div>
         <input type="hidden" name="__variant_id" value="${variant.id}" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <div class="form-group text-right">
+        <div class="mb-3 text-right">
           <button class="btn btn-small btn-warning" name="__action" value="report_issue">
             Report error
           </button>

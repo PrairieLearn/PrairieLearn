@@ -54,7 +54,7 @@ export function AdministratorInstitutions({
           body: html`
             <input type="hidden" name="__action" value="add_institution" />
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="short_name">Short name</label>
               <input
                 type="text"
@@ -67,7 +67,7 @@ export function AdministratorInstitutions({
                 Use an abbreviation or short name. E.g., "UIUC" or "Berkeley".
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="long_name">Long name</label>
               <input
                 type="text"
@@ -81,7 +81,7 @@ export function AdministratorInstitutions({
                 Urbana-Champaign".
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="display_timezone">Timezone</label>
               <select class="custom-select" id="display_timezone" name="display_timezone">
                 <option value="" selected disabled hidden>Timezone</option>
@@ -101,7 +101,7 @@ export function AdministratorInstitutions({
                 "America/Chicago".
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="uid_regexp">UID regexp</label>
               <input
                 type="text"
