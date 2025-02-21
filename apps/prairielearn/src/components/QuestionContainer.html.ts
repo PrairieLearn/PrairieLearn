@@ -749,7 +749,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
       />
       <input type="hidden" name="question_id" value="${question.id}" />
       <input type="hidden" name="course_id" value="${course.id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       ${question_copy_targets?.length > 0
         ? html`
             <button type="submit" name="__action" value="copy_question" class="btn btn-primary">

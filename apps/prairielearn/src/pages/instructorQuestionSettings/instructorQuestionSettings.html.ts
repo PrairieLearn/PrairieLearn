@@ -400,7 +400,7 @@ function CopyForm({
         </select>
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Submit</button>
       </div>
     </form>
@@ -454,7 +454,7 @@ function DeleteQuestionModal({
     footer: html`
       <input type="hidden" name="__action" value="delete_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     `,
   });

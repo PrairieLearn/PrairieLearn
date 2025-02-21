@@ -60,7 +60,9 @@ export function RequestCourse({
           <button type="button" class="btn btn-success" id="fill-course-request-lti13-info">
             Fill from LMS data
           </button>
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Don't fill</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Don't fill
+          </button>
         `,
       })}
       ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}

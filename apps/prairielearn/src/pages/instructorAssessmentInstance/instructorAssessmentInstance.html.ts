@@ -726,7 +726,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>
@@ -761,7 +761,7 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>
@@ -793,7 +793,7 @@ function ResetQuestionVariantsModal({
       <input type="hidden" name="__action" value="reset_question_variants" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="unsafe_instance_question_id" class="js-instance-question-id" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Reset question variants</button>
     `,
   });

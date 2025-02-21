@@ -150,7 +150,7 @@ function ConflictGradingJobModal({
         <div class="modal-content">
           <div class="modal-header bg-danger text-light">
             <div class="modal-title">Grading conflict identified</div>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
           </div>

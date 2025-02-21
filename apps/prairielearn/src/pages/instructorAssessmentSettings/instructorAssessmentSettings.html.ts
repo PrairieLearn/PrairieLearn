@@ -253,7 +253,7 @@ export function InstructorAssessmentSettings({
                   footer: html`
                     <input type="hidden" name="__action" value="delete_assessment" />
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                       Cancel
                     </button>
                     <button type="submit" class="btn btn-danger">Delete</button>

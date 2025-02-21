@@ -234,7 +234,7 @@ function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Generate token</button>
       </div>
     </form>
@@ -252,7 +252,7 @@ function TokenDeleteForm({ token_id, csrfToken }: { token_id: string; csrfToken:
         API. You cannot undo this action.
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete token</button>
       </div>
     </form>

@@ -199,7 +199,7 @@ function ResetModal({ __csrf_token }: { __csrf_token: string }) {
     `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button name="__action" value="reset" class="btn btn-danger">
         <i class="fas fa-trash" aria-hidden="true"></i>
         Reset
@@ -227,7 +227,7 @@ function RebootModal({ __csrf_token }: { __csrf_token: string }) {
     `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button name="__action" value="reboot" class="btn btn-info">
         <i class="fas fa-sync" aria-hidden="true"></i>
         Reboot

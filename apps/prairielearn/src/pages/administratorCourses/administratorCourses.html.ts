@@ -192,7 +192,7 @@ function CourseDeleteForm({
         <input type="text" class="form-control" id="inputConfirm${id}" name="confirm_short_name" />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete course</button>
       </div>
     </form>
@@ -285,7 +285,7 @@ function CourseInsertForm({
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Add course</button>
       </div>
     </form>
@@ -360,7 +360,7 @@ function CourseUpdateColumnForm({
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

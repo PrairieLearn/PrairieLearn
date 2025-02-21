@@ -74,7 +74,7 @@ function EditQuestionPointsScoreForm({
           <a href="${manualGradingUrl}">the manual grading page</a>.
         </p>
         <div class="text-right">
-          <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         </div>
       </div>
     `;
@@ -121,7 +121,7 @@ function EditQuestionPointsScoreForm({
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

@@ -51,10 +51,10 @@ onDocumentReady(() => {
     },
   });
 
-  // Bootstrap supports `data-dismiss="alert"` and `data-dismiss="modal"`, but not
-  // `data-dismiss="popover"`. This behavior adds support for dismissing popovers
+  // Bootstrap supports `data-bs-dismiss="alert"` and `data-bs-dismiss="modal"`, but not
+  // `data-bs-dismiss="popover"`. This behavior adds support for dismissing popovers
   // in such a declarative way.
-  on('click', '[data-dismiss="popover"]', (event) => {
+  on('click', '[data-bs-dismiss="popover"]', (event) => {
     const popoverContainer = event.currentTarget.closest('.popover');
     if (!popoverContainer || !(popoverContainer instanceof HTMLElement)) return;
 

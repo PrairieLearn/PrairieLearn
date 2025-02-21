@@ -110,7 +110,7 @@ export function InstructorAssessmentQuestions({
             class="js-assessment-question-id"
             value=""
           />
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-danger">Reset question variants</button>
         `,
       })}

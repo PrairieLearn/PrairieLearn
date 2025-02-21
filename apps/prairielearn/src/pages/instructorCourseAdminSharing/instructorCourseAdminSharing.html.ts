@@ -44,7 +44,7 @@ function AddCourseToSharingSetPopover({
         />
       </div>
       <div>
-        <button type="button" class="btn btn-sm btn-secondary" data-dismiss="popover">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="popover">
           Cancel
         </button>
         <button class="btn btn-sm btn-primary" type="Submit">Add Course</button>
@@ -102,7 +102,7 @@ function ChooseSharingNameModal({
       imported your questions.
     </p>`;
     footer = html`
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
     `;
   }
   return Modal({

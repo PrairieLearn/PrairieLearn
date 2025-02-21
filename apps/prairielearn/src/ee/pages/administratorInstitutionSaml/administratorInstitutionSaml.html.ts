@@ -411,7 +411,7 @@ function DeleteSamlConfigurationModal({ csrfToken }: { csrfToken: string }) {
     `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       <button class="btn btn-danger" type="submit" name="__action" value="delete">
         Delete SAML configuration
       </button>

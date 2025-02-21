@@ -361,7 +361,7 @@ function FinalizeModal({ csrfToken }: { csrfToken: string }) {
     footer: html`
       <input type="hidden" name="__action" value="save_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       <button class="btn btn-primary">Finalize question</button>
     `,
   });

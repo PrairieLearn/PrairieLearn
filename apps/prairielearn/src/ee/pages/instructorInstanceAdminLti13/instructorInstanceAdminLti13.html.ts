@@ -238,7 +238,7 @@ function LinkedAssessments({
                           footer: html`<button
                             type="button"
                             class="btn btn-secondary"
-                            data-dismiss="modal"
+                            data-bs-dismiss="modal"
                           >
                             Close
                           </button>`,
@@ -309,7 +309,7 @@ function LinkedAssessments({
                     footer: html`<button
                       type="button"
                       class="btn btn-secondary"
-                      data-dismiss="modal"
+                      data-bs-dismiss="modal"
                     >
                       Close
                     </button>`,

@@ -116,7 +116,7 @@ function AdministratorInsertForm({ csrfToken }: { csrfToken: string }) {
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Add administrator</button>
       </div>
     </form>
@@ -139,7 +139,7 @@ function AdministratorDeleteForm({
       <input type="hidden" name="user_id" value="${userId}" />
       <div class="mb-3"><strong>UID:</strong> ${uid}</div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Remove access</button>
       </div>
     </form>

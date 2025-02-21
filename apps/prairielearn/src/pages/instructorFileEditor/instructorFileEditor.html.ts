@@ -207,7 +207,12 @@ export function InstructorFileEditor({
                               </div>
                             `
                           : ''}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <button
+                          type="button"
+                          class="close"
+                          data-bs-dismiss="alert"
+                          aria-label="Close"
+                        >
                           <span aria-hidden="true">&times;</span>
                         </button>
                       </div>
@@ -241,7 +246,12 @@ export function InstructorFileEditor({
                       <strong>Save and sync</strong>, you will overwrite the version of this file
                       that is on disk. If you instead click <strong>Choose their version</strong>,
                       any changes you have made to this file will be lost.
-                      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                      <button
+                        type="button"
+                        class="close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close"
+                      >
                         <span aria-hidden="true">&times;</span>
                       </button>
                     </div>
@@ -291,7 +301,7 @@ export function InstructorFileEditor({
                         <button
                           type="button"
                           class="me-2 m-auto btn-close-white close"
-                          data-dismiss="toast"
+                          data-bs-dismiss="toast"
                           aria-label="Close"
                         >
                           <span aria-hidden="true">&times;</span>

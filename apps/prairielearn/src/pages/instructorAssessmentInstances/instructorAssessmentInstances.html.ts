@@ -206,7 +206,7 @@ function RoleHelpModal() {
       </ul>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }
@@ -230,7 +230,7 @@ function FingerprintChangesHelpModal() {
       </p>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }
@@ -273,7 +273,7 @@ function DurationHelpModal() {
       </p>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }
@@ -309,7 +309,7 @@ function TimeRemainingHelpModal() {
       </ul>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }
@@ -355,7 +355,7 @@ function DeleteAssessmentInstanceModal({
         class="modal-assessment-instance-id"
         value=""
       />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     `,
   });
@@ -381,7 +381,7 @@ function DeleteAllAssessmentInstancesModal({
     footer: html`
       <input type="hidden" name="__action" value="delete_all" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete all</button>
     `,
   });
@@ -406,7 +406,7 @@ function GradeAllAssessmentInstancesModal({
     footer: html`
       <input type="hidden" name="__action" value="grade_all" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Grade all</button>
     `,
   });
@@ -431,7 +431,7 @@ function CloseAllAssessmentInstancesModal({
     footer: html`
       <input type="hidden" name="__action" value="close_all" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Grade and Close all</button>
     `,
   });

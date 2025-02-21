@@ -611,7 +611,7 @@ onDocumentReady(() => {
           ) : null}
         </p>
         <div class="btn-toolbar justify-content-end">
-          <button type="button" class="btn btn-secondary me-2" data-dismiss="popover">
+          <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="popover">
             Cancel
           </button>
           <button type="submit" class="btn btn-primary">
@@ -854,7 +854,7 @@ function CloseForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number }) {
       <input type="hidden" name="__action" value="close" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Grade and close</button>
     </form>
   `;
@@ -866,7 +866,7 @@ function RegradeForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number })
       <input type="hidden" name="__action" value="regrade" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-primary">Regrade</button>
     </form>
   `;

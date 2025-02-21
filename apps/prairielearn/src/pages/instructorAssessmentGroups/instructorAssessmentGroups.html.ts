@@ -319,7 +319,7 @@ function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: str
       <input type="hidden" name="__action" value="add_member" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-primary">Add</button>
     </form>
   `;
@@ -332,7 +332,7 @@ function DeleteGroupForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: st
       <input type="hidden" name="__action" value="delete_group" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     </form>
   `;
@@ -352,7 +352,7 @@ function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: 
       <input type="hidden" name="__action" value="delete_member" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger" ${row.users.length > 0 ? '' : 'disabled'}>
         Delete
       </button>
@@ -397,7 +397,7 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
     footer: html`
       <input type="hidden" name="__action" value="upload_assessment_groups" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Upload</button>
     `,
   });
@@ -444,7 +444,7 @@ function RandomAssessmentGroupsModal({
     footer: html`
       <input type="hidden" name="__action" value="random_assessment_groups" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Group</button>
     `,
   });
@@ -477,7 +477,7 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
     footer: html`
       <input type="hidden" name="__action" value="add_group" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Add</button>
     `,
   });
@@ -504,7 +504,7 @@ function DeleteAllGroupsModal({
     footer: html`
       <input type="hidden" name="__action" value="delete_all" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete all</button>
     `,
   });

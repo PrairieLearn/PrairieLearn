@@ -347,7 +347,7 @@ function CreateQuestionModal({
     footer: html`
       <input type="hidden" name="__action" value="add_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Create</button>
     `,
   });

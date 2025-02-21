@@ -86,7 +86,9 @@ export function InstructorAssessmentQuestionStatistics({
             footer: html`
               <input type="hidden" name="__action" value="refresh_stats" />
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancel
+              </button>
               <button type="submit" class="btn btn-danger">Submit</button>
             `,
           })

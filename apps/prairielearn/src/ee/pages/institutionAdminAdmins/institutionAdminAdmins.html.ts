@@ -127,7 +127,7 @@ function AddAdminsModal({ uidsLimit, csrfToken }: { uidsLimit: number; csrfToken
     footer: html`
       <input type="hidden" name="__action" value="addAdmins" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       <button type="submit" class="btn btn-primary">Add administrators</button>
     `,
   });
@@ -152,7 +152,7 @@ function RemoveAdminModal({ csrfToken }: { csrfToken: string }) {
         name="unsafe_institution_administrator_id"
         class="js-institution-administrator-id"
       />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Remove administrator</button>
     `,
   });

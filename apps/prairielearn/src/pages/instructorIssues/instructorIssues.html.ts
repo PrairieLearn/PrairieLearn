@@ -350,7 +350,7 @@ function CloseMatchingIssuesModal({
         name="unsafe_issue_ids"
         value="${issues.map((issue) => issue.id).join(',')}"
       />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Close issues</button>
     `,
   });
@@ -432,7 +432,9 @@ function FilterHelpModal() {
         text like "answer is wrong".
       </p>
     `,
-    footer: html`<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>`,
+    footer: html`<button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+      Close
+    </button>`,
   });
 }
 

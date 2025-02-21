@@ -288,7 +288,7 @@ function AddFeatureGrantModal(props: FeatureGrantModalProps) {
     body: AddFeatureGrantModalBody(props),
     footer: html`
       <input type="hidden" name="__csrf_token" value="${props.csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" name="__action" value="add_feature_grant" class="btn btn-primary">
         Grant feature
       </button>

@@ -296,7 +296,7 @@ function CourseRequestApproveForm({
       </div>
 
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Create course</button>
       </div>
     </form>
@@ -316,7 +316,7 @@ function CourseRequestDenyForm({
       <input type="hidden" name="__action" value="approve_deny_course_request" />
       <input type="hidden" name="approve_deny_action" value="deny" />
       <input type="hidden" name="request_id" value="${request.id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Deny</button>
     </form>
   `;

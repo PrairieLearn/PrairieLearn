@@ -178,7 +178,7 @@ function AddCourseModal({ csrfToken }: { csrfToken: string }) {
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="course_instance_id" class="js-course-instance-id" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-info" name="__action" value="enroll">
         Add <span class="js-course-instance-short-label"></span>
       </button>
@@ -200,7 +200,7 @@ function RemoveCourseModal({ csrfToken }: { csrfToken: string }) {
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="course_instance_id" class="js-course-instance-id" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger" name="__action" value="unenroll">
         Remove <span class="js-course-instance-short-label"></span>
       </button>
