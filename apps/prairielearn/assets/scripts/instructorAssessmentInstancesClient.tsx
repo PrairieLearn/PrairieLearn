@@ -525,7 +525,7 @@ onDocumentReady(() => {
         {showTimeLimitOptions ? (
           <p>
             <select
-              class="custom-select select-time-limit"
+              class="form-select select-time-limit"
               name="action"
               aria-label="Time limit options"
               onChange={(e) => updateFormState('action', e.currentTarget.value as TimeLimitAction)}

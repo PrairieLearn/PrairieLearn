@@ -352,7 +352,7 @@ export function AddFeatureGrantModalBody({
           Institution
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
-        <select class="custom-select" id="feature-grant-institution" name="institution_id">
+        <select class="form-select" id="feature-grant-institution" name="institution_id">
           <option value="">All institutions</option>
           ${institutions.map((institution) => {
             return html`
@@ -373,7 +373,7 @@ export function AddFeatureGrantModalBody({
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
         <select
-          class="custom-select"
+          class="form-select"
           id="feature-grant-course"
           name="course_id"
           ${!institution_id ? 'disabled' : ''}
@@ -395,7 +395,7 @@ export function AddFeatureGrantModalBody({
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
         <select
-          class="custom-select"
+          class="form-select"
           id="feature-grant-course-instance"
           name="course_instance_id"
           ${!course_id ? 'disabled' : ''}

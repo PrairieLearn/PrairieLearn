@@ -83,7 +83,7 @@ export function AdministratorInstitutions({
             </div>
             <div class="mb-3">
               <label class="form-label" for="display_timezone">Timezone</label>
-              <select class="custom-select" id="display_timezone" name="display_timezone">
+              <select class="form-select" id="display_timezone" name="display_timezone">
                 <option value="" selected disabled hidden>Timezone</option>
                 ${availableTimezones.map(
                   (tz, i) => html`

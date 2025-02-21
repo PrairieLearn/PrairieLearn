@@ -726,7 +726,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
               This question can be copied to any course for which you have editor permissions.
               Select one of your courses to copy this question.
             </p>
-            <select class="custom-select" name="to_course_id" required>
+            <select class="form-select" name="to_course_id" required>
               ${question_copy_targets.map(
                 (course, index) => html`
                   <option

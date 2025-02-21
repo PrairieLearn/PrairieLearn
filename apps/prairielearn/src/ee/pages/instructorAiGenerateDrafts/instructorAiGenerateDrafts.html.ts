@@ -180,7 +180,7 @@ export function InstructorAIGenerateDrafts({
                         <label for="user-prompt-example" class="form-label">
                           Or choose an example prompt:
                         </label>
-                        <select id="user-prompt-example" class="custom-select">
+                        <select id="user-prompt-example" class="form-select">
                           <option value=""></option>
                           ${examplePrompts.map(
                             (question) =>

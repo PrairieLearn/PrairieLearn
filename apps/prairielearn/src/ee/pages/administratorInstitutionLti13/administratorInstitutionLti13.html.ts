@@ -161,7 +161,7 @@ function LTI13Instance(
 
         <div class="mb-3">
           <label class="form-label" for="choosePlatform">Platform type: </label>
-          <select class="custom-select mb-2" id="choosePlatform" name="platform">
+          <select class="form-select mb-2" id="choosePlatform" name="platform">
             ${platform_defaults.map((d) => {
               return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
                 ${d.platform}

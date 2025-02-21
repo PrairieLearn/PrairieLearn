@@ -69,7 +69,7 @@ export const AdministratorInstitutionSso = ({
             provider. Note that LTI cannot be set as the default provider.
           </small>
           <select
-            class="custom-select js-default-authentication-provider"
+            class="form-select js-default-authentication-provider"
             id="defaultProvider"
             name="default_authn_provider_id"
             aria-labelledby="defaultProviderLabel"

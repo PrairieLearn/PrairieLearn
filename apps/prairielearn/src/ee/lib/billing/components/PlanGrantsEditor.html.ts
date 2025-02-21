@@ -52,7 +52,7 @@ export function PlanGrantsEditor({
               </div>
 
               <select
-                class="custom-select w-auto js-plan-type"
+                class="form-select w-auto js-plan-type"
                 name="plan_${planName}_grant_type"
                 ${!hasPlanGrant ? 'disabled' : null}
               >

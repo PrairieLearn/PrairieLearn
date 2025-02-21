@@ -231,7 +231,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               How did you hear about PrairieLearn?
             </label>
             <select
-              class="custom-select"
+              class="form-select"
               name="cr-referral-source"
               id="cr-referral-source"
               aria-labelledby="cr-referral-source-label"

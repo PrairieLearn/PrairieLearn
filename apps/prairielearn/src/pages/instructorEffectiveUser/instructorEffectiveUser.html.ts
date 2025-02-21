@@ -167,7 +167,7 @@ export function InstructorEffectiveUser({
                   Change effective course role to:
                 </label>
                 <select
-                  class="custom-select me-2"
+                  class="form-select me-2"
                   id="changeEffectiveCourseRole"
                   name="pl_requested_course_role"
                 >
@@ -224,7 +224,7 @@ export function InstructorEffectiveUser({
                         Change effective course instance role to:
                       </label>
                       <select
-                        class="custom-select me-2"
+                        class="form-select me-2"
                         id="changeEffectiveCourseInstanceRole"
                         name="pl_requested_course_instance_role"
                       >

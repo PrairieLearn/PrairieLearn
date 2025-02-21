@@ -264,7 +264,7 @@ function LtiLinkTargetsCard({
                         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
                         <input type="hidden" name="lti_link_id" value="${link.id}" />
                         <select
-                          class="custom-select"
+                          class="form-select"
                           onChange="this.form.submit();"
                           name="newAssessment"
                         >

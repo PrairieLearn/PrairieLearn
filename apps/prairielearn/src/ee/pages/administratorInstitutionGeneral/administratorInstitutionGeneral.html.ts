@@ -96,7 +96,7 @@ export function AdministratorInstitutionGeneral({
         <div class="mb-3">
           <label class="form-label" for="display_timezone">Timezone</label>
           <select
-            class="custom-select"
+            class="form-select"
             id="display_timezone"
             name="display_timezone"
             value="${institution.display_timezone}"
