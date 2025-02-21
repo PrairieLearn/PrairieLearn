@@ -1,6 +1,19 @@
 import { html } from '@prairielearn/html';
 
-export function ProgressCircle({ value, maxValue }: { value: number; maxValue: number }) {
+export function ProgressCircle({
+  value,
+  maxValue,
+  options = {},
+}: {
+  value: number;
+  maxValue: number;
+  options?: {
+    pushedRight?: boolean;
+  };
+}) {
+  // Whether or not the ProgressCircle should be pushed to the right.
+  const pushedRight = options.pushedRight ?? false;
+
   // The progress circle has radius of 8px, so its circumference is 2 * PI * 8px.
   const progressCircleCircumference = 2 * Math.PI * 8;
 
@@ -35,7 +48,7 @@ export function ProgressCircle({ value, maxValue }: { value: number; maxValue: n
     width="20px"
     height="20px"
     viewBox="0 0 20px 20px"
-    class="mx-1"
+    class="mx-1 ${pushedRight ? 'ml-auto' : ''}"
   >
     <circle
       cx="10px"

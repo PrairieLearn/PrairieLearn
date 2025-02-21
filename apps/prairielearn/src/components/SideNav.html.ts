@@ -29,26 +29,12 @@ interface SideNavTabInfo {
 const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabInfo[]>> = {
   instance_admin: [
     {
-      activePages: ['instance_admin'],
-      activeSubPages: ['access'],
-      urlSuffix: '/instance_admin/access',
-      iconClasses: 'far fa-calendar-alt fa-fw',
-      tabLabel: 'Access',
-    },
-    {
       activePages: ['instance_admin', 'assessments', 'assessment', 'assessment_instance'],
       checkActiveSubPageForPages: ['instance_admin'],
       activeSubPages: ['assessments'],
       urlSuffix: '/instance_admin/assessments',
       iconClasses: 'fa fa-list fa-fw',
       tabLabel: 'Assessments',
-    },
-    {
-      activePages: ['instance_admin'],
-      activeSubPages: ['file_view', 'file_edit'],
-      urlSuffix: '/instance_admin/file_view',
-      iconClasses: 'fa fa-edit fa-fw',
-      tabLabel: 'Files',
     },
     {
       activePages: ['instance_admin'],
@@ -60,11 +46,10 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['lti'],
-      urlSuffix: '/instance_admin/lti',
-      iconClasses: 'fas fa-graduation-cap fa-fw',
-      tabLabel: 'LTI',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
+      activeSubPages: ['file_view', 'file_edit'],
+      urlSuffix: '/instance_admin/file_view',
+      iconClasses: 'fa fa-edit fa-fw',
+      tabLabel: 'Files',
     },
     {
       activePages: ['instance_admin'],
@@ -72,19 +57,11 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       urlSuffix: '/instance_admin/lti13_instance',
       iconClasses: 'fas fa-school-flag fa-fw',
       tabLabel: 'LTI 1.3',
-      renderCondition: (resLocals) => resLocals.lti13_enabled,
+      // renderCondition: (resLocals) => resLocals.lti13_enabled,
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['billing'],
-      urlSuffix: '/instance_admin/billing',
-      iconClasses: 'fas fa-credit-card fa-fw',
-      tabLabel: 'Billing',
-      renderCondition: (resLocals) => resLocals.billing_enabled,
-    },
-    {
-      activePages: ['instance_admin'],
-      activeSubPages: ['settings'],
+      activeSubPages: ['settings', 'access', 'lti', 'billing'],
       urlSuffix: '/instance_admin/settings',
       iconClasses: 'fas fa-cog fa-fw',
       tabLabel: 'Settings',
@@ -104,6 +81,9 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
         ProgressCircle({
           value: navbarCompleteGettingStartedTasksCount,
           maxValue: navbarTotalGettingStartedTasksCount,
+          options: {
+            pushedRight: true,
+          },
         }),
       renderCondition: ({ authz_data, course }) =>
         authz_data.has_course_permission_edit && course.show_getting_started,
