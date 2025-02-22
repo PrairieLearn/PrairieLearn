@@ -422,16 +422,22 @@ For exams and other summative assessments where students may have been negativel
 
 ## When I open some of the CSV downloads, some of the data is in the wrong columns
 
-When loading some assessment download files, such as `*_all_submissions.csv`, in Excel, you may see that some data appears to be in the wrong column and some lines wrap incorrectly. This is caused by the fact that these files contain JSON data in the `Params` that requires complex escaping to be written to a CSV file, and Excel does not correctly support this. To read these files you can use Pandas in Python. You can then save it to a new CSV without the `Params` JSON data for processing in Excel, save it in JSON format, or process it directly in Python. For example:
+When loading some assessment download files, such as `*_all_submissions.csv`, in Excel, you may notice that some data appears to be in the wrong column or that some lines wrap incorrectly. This can happen for two reasons:
+
+1. **Cell Size Limit:** Excel has a maximum cell size of 32,767 characters. If a column, such as `Params`, contains values exceeding this limit, Excel will truncate or fail to display the data correctly.
+2. **CSV Parsing and Escaping Issues:** The `Params` column often contains JSON data, which includes special characters like quotes, commas, and newlines. Even when properly escaped in the CSV file, Excel’s parser may not handle these cases correctly, leading to data misalignment or unexpected formatting.
+
+To work with these files, you can use Pandas in Python. This allows you to either save a new CSV without the `Params` column for easier processing in Excel, export the data in JSON format, or process it directly in Python. For example:
 
 ```python
 import pandas as pd
-df = pd.read_csv(r'PREFIX_all_submissions.csv')
+df = pd.read_csv("PREFIX_all_submissions.csv")
 
 # Strip the JSON Params data and save to a new CSV
-df2 = df.drop(columns=['Params'])
-df2.to_csv(r'PREFIX_all_submissions_no_params.csv', index=False)
+df2 = df.drop(columns=["Params"])
+df2.to_csv("PREFIX_all_submissions_no_params.csv", index=False)
 
-# Write all the data (including Params) to a JSON file
-df.to_json(r'PREFIX_all_submissions.json', orient='records')
+# Write all the data (including Params) to an Excel file,
+# while trimming the values in Params that are above the Excel limit
+df.to_excel("PREFIX_all_submissions.xlsx", index=False)
 ```
