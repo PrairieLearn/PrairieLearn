@@ -130,10 +130,17 @@ class Feedback:
     @classmethod
     def finish_test(cls, fb_text: str) -> NoReturn:
         """
-        Feedback.finish(fb_text)
-
         Complete grading the current test case immediately, additionally
         outputting the message in fb_text.
+
+        Unlike Feedback.finish(), this method only halts the current test case
+        while allowing subsequent test cases to continue executing.
+
+        Parameters:
+            fb_text: Message to output before halting the test case.
+
+        Examples:
+            >>> Feedback.finish_test("Invalid format")
         """
         cls.add_feedback(fb_text)
         raise GradingTestFailedError
