@@ -510,6 +510,9 @@ class Feedback:
         If the student code raises an exception, this will be caught and user feedback will be given.
         If the function call succeeds, the user return value will be returned from this function.
 
+        Note that the keyword argument stop_on_exception will *not* be passed to the
+        student defined function f, but all other keyword arguments will.
+
         Parameters:
             f: Student defined function to be called.
             *args: Arbitrary positional arguments to be passed to the student function.
