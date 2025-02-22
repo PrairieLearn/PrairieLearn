@@ -422,12 +422,7 @@ For exams and other summative assessments where students may have been negativel
 
 ## When I open some of the CSV downloads, some of the data is in the wrong columns
 
-When loading some assessment download files, such as `*_all_submissions.csv`, in Excel, you may notice that some data appears to be in the wrong column or that some lines wrap incorrectly. This can happen for two reasons:
-
-1. **Cell Size Limit:** Excel has a maximum cell size of 32,767 characters. If a column, such as `Params`, contains values exceeding this limit, Excel will truncate or fail to display the data correctly.
-2. **CSV Parsing and Escaping Issues:** The `Params` column often contains JSON data, which includes special characters like quotes, commas, and newlines. Even when properly escaped in the CSV file, Excel’s parser may not handle these cases correctly, leading to data misalignment or unexpected formatting.
-
-To work with these files, you can use Pandas in Python. This allows you to either save a new CSV without the `Params` column for easier processing in Excel, export the data in JSON format, or process it directly in Python. For example:
+When loading some assessment download files, such as `*_all_submissions.csv`, in Excel, you may notice data appearing in the wrong column or wrapping incorrectly. This typically happens because Excel has a maximum cell size of 32,767 characters and does not always correctly parse complex CSV data, particularly when fields contain JSON or special characters. While the `Params` column is the most likely culprit, other columns such as true answers, submitted answers, or feedback may also be affected. To work with these files, you can use Pandas in Python to clean or restructure the data for easier processing in Excel. For example:
 
 ```python
 import pandas as pd
