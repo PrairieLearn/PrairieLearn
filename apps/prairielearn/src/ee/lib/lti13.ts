@@ -821,6 +821,8 @@ export async function updateLti13Scores(
 
         // Handle the special cases
 
+        /*
+
         // Unprocessable Entity
         // {"errors":{"type":"unprocessable_entity","message":"User not found in course or is not a student"}}
         if (results?.errors?.type === 'unprocessable_entity') {
@@ -828,6 +830,7 @@ export async function updateLti13Scores(
           job.info(`\t${res.statusText}: ${results?.errors?.message}`);
           continue;
         }
+          */
 
         // Default to showing the whole error
         job.info(`\t${res.statusText}`);
