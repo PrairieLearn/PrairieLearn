@@ -95,10 +95,6 @@ export function InstructorQuestionSettings({
     headContent: html`
       ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
       <style>
-        .popover {
-          max-width: 50%;
-        }
-
         .ts-wrapper.multi .ts-control > span {
           cursor: pointer;
         }
@@ -171,14 +167,19 @@ export function InstructorQuestionSettings({
               >
                 <tr>
                   <th class="align-middle">
-                    <label for="topic">Topic</label>
+                    <label id="topic-label" for="topic">Topic</label>
                   </th>
                   <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
                   <!-- This is used by tom-select to style the active item in the dropdown -->
                   <td style="--bs-tertiary-bg: #f8f9fa">
                     ${canEdit
                       ? html`
-                          <select id="topic" name="topic" placeholder="Select a topic">
+                          <select
+                            id="topic"
+                            name="topic"
+                            placeholder="Select a topic"
+                            aria-labelledby="topic-label"
+                          >
                             ${courseTopics.map((topic) => {
                               return html`
                                 <option
@@ -197,12 +198,18 @@ export function InstructorQuestionSettings({
                 </tr>
                 <tr>
                   <th class="align-middle">
-                    <label for="tags">Tags</label>
+                    <label id="tags-label" for="tags">Tags</label>
                   </th>
                   <td>
                     ${canEdit
                       ? html`
-                          <select id="tags" name="tags" placeholder="Select tags" multiple>
+                          <select
+                            id="tags"
+                            name="tags"
+                            placeholder="Select tags"
+                            aria-labelledby="tags-label"
+                            multiple
+                          >
                             ${courseTags.length > 0
                               ? courseTags.map((tag) => {
                                   return html`

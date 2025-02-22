@@ -106,13 +106,13 @@ Main repository topology:
 No problem, assuming that you have not made any commits yet.
 First, create and checkout a new branch in which to keep your changes, leaving the current branch as is.
 
-```
+```sh
 git checkout -b <new-branch>
 ```
 
 Then, make a commit as you normally would:
 
-```
+```sh
 git add <files>
 git commit -m "<Brief description of this commit>"
 ```

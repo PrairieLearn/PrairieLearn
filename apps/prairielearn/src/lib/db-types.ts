@@ -160,7 +160,7 @@ export const AssessmentModuleSchema = z.object({
   id: IdSchema,
   course_id: IdSchema,
   name: z.string(),
-  heading: z.string().nullable(),
+  heading: z.string(),
   number: z.number().nullable(),
   implicit: z.boolean(),
 });
@@ -382,7 +382,7 @@ export type DraftQuestionMetadata = z.infer<typeof DraftQuestionMetadataSchema>;
 
 export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
-  created_at: DateFromISOString,
+  created_at: DateFromISOString.nullable(),
   id: IdSchema,
   user_id: IdSchema,
 });
@@ -427,7 +427,13 @@ export const AiQuestionGenerationPromptSchema = z.object({
   errors: z.array(z.string()),
   html: z.string().nullable(),
   id: z.string(),
-  prompt_type: z.enum(['initial', 'human_revision', 'auto_revision']),
+  prompt_type: z.enum([
+    'initial',
+    'human_revision',
+    'auto_revision',
+    'manual_change',
+    'manual_revert',
+  ]),
   prompting_user_id: z.string(),
   python: z.string().nullable(),
   question_id: z.string(),
@@ -947,23 +953,23 @@ export const SubmissionSchema = z.object({
 export type Submission = z.infer<typeof SubmissionSchema>;
 
 export const TagSchema = z.object({
-  color: z.string().nullable(),
+  color: z.string(),
   course_id: IdSchema,
-  description: z.string().nullable(),
+  description: z.string(),
   id: IdSchema,
   implicit: z.boolean(),
-  name: z.string().nullable(),
+  name: z.string(),
   number: z.number().nullable(),
 });
 export type Tag = z.infer<typeof TagSchema>;
 
 export const TopicSchema = z.object({
-  color: z.string().nullable(),
+  color: z.string(),
   course_id: IdSchema,
-  description: z.string().nullable(),
+  description: z.string(),
   id: IdSchema,
   implicit: z.boolean(),
-  name: z.string().nullable(),
+  name: z.string(),
   number: z.number().nullable(),
 });
 export type Topic = z.infer<typeof TopicSchema>;
@@ -996,7 +1002,7 @@ export const UserSessionSchema = z.object({
 export type UserSession = z.infer<typeof UserSessionSchema>;
 
 export const VariantSchema = z.object({
-  authn_user_id: IdSchema.nullable(),
+  authn_user_id: IdSchema,
   broken: z.boolean().nullable(),
   broken_at: DateFromISOString.nullable(),
   broken_by: IdSchema.nullable(),

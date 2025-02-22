@@ -217,6 +217,7 @@ router.post(
     } else if (req.body.__action === 'delete_question') {
       const editor = new QuestionDeleteEditor({
         locals: res.locals as any,
+        questions: res.locals.question,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -241,7 +242,7 @@ router.get(
     // `originalUrl` so that this router doesn't have to be aware of where it's
     // mounted.
     const host = getCanonicalHost(req);
-    let questionTestPath = new URL(`${host}${req.originalUrl}`).pathname;
+    let questionTestPath = new URL(req.originalUrl, host).pathname;
     if (!questionTestPath.endsWith('/')) {
       questionTestPath += '/';
     }

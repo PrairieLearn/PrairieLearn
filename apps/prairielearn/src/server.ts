@@ -73,6 +73,7 @@ import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
+import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
@@ -1111,7 +1112,7 @@ export async function initExpress(): Promise<Express> {
       res.redirect(
         url.format({
           pathname: `${req.params[0]}/preview`,
-          search: url.parse(req.originalUrl).search,
+          search: getSearchParams(req).toString(),
         }),
       );
     },
@@ -1283,43 +1284,28 @@ export async function initExpress(): Promise<Express> {
       next();
     }),
   );
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/settings', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'settings';
-      next();
-    },
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/settings',
     (await import('./pages/instructorInstanceAdminSettings/instructorInstanceAdminSettings.js'))
       .default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/access', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'access';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/access',
     (await import('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess.js'))
       .default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'assessments';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'gradebook';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook',
     (await import('./pages/instructorGradebook/instructorGradebook.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/lti', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'lti';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/lti',
     (await import('./pages/instructorInstanceAdminLti/instructorInstanceAdminLti.js')).default,
-  ]);
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_edit',
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
@@ -1333,14 +1319,11 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
   );
   if (isEnterprise()) {
-    app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/billing', [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'billing';
-        next();
-      },
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/billing',
       (await import('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling.js'))
         .default,
-    ]);
+    );
     app.use(
       '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13_instance',
       (await import('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13.js'))
@@ -1601,7 +1584,7 @@ export async function initExpress(): Promise<Express> {
     res.redirect(
       url.format({
         pathname: `${req.params[0]}/preview`,
-        search: new URL(req.originalUrl, `${req.protocol}://${req.headers.host}/`).search,
+        search: getSearchParams(req).toString(),
       }),
     );
   });

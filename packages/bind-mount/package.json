@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/bind-mount",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,7 +21,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/bindings": "^1.5.5",
-    "@types/node": "^20.17.9",
-    "typescript": "^5.7.2"
+    "@types/node": "^20.17.16",
+    "typescript": "^5.7.3"
   }
 }

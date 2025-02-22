@@ -1,3 +1,5 @@
+SH_FILES := $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
+
 build:
 	@yarn turbo run build
 build-sequential:
@@ -20,6 +22,8 @@ refresh-workspace-hosts-dev:
 
 dev: start-support
 	@yarn dev
+dev-bun:
+	@yarn dev-bun
 dev-workspace-host: start-support
 	@yarn dev-workspace-host
 dev-all: start-support
@@ -58,7 +62,10 @@ test-prairielearn: start-support
 check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
-lint: lint-js lint-python lint-html lint-links lint-docker
+# Runs additional third-party linters
+lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell
+
+lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
 	@yarn prettier --check "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
@@ -67,10 +74,16 @@ lint-python:
 	@python3 -m ruff format --check ./
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+lint-markdown:
+	@yarn markdownlint "docs/**/*.md"
 lint-links:
 	@node tools/validate-links.mjs
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
+lint-shell:
+	@shellcheck -S error $(SH_FILES)
+lint-actions:
+	@actionlint
 
 format: format-js format-python
 format-js:
@@ -96,10 +109,21 @@ changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
 
+lint-docs: lint-d2 lint-links lint-markdown
+
 build-docs:
 	@python3 -m venv /tmp/pldocs/venv
-	@d2 --version >/dev/null
 	@/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt
 	@/tmp/pldocs/venv/bin/python3 -m mkdocs build --strict
+
+preview-docs:
+	@mkdocs serve
+
+format-d2:
+	@d2 fmt docs/**/*.d2
+
+lint-d2:
+	@d2 fmt --check docs/**/*.d2
+
 
 ci: lint typecheck check-dependencies test

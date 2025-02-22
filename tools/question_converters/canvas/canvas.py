@@ -209,7 +209,7 @@ class Course(Canvas):
         students = {}
         for result in self.request(f"{self.url_prefix}/users?enrollment_type=student"):
             for student in result:
-                sis_user_id = student["sis_user_id"] if student["sis_user_id"] else "0"
+                sis_user_id = student["sis_user_id"] or "0"
                 students[sis_user_id] = student
         return students
 
@@ -317,8 +317,7 @@ class Quiz(CourseSubObject):
                     i += 1
                 if not qfilter or qfilter(question["id"]):
                     questions[question["id"]] = question
-        if None in groups:
-            del groups[None]
+        groups.pop(None, None)
         for grp in groups.values():
             for question in [
                 q
@@ -375,13 +374,11 @@ class Quiz(CourseSubObject):
         """docstring"""
         submissions = {}
         quiz_submissions = []
-        include = "".join(
-            [
-                "include[]=user&" if include_user else "",
-                "include[]=submission&" if include_submission else "",
-                "include[]=submission_history&" if include_history else "",
-            ]
-        )
+        include = "".join([
+            "include[]=user&" if include_user else "",
+            "include[]=submission&" if include_submission else "",
+            "include[]=submission_history&" if include_history else "",
+        ])
         for response in self.request(f"{self.url_prefix}/submissions?{include}"):
             quiz_submissions += [
                 qs
