@@ -46,21 +46,33 @@ drop_privileges = int(os.environ.get("DROP_PRIVILEGES", "0")) == 1
 #
 # To work around this, we'll set `$XDG_CONFIG_HOME` and `$XDG_CACHE_HOME` to
 # directories created in `/tmp` that are world-writable. matplotlib and
-# fontconfig should respect these environment variables; other tools should as
-# well. If they don't, special cases can be added below.
+# fontconfig should respect these environment variables; other tools should too.
+#
+# Note that `mktexfmt` does _not_ respect those environment variables, so we'll
+# also set `$TEXMFCONFIG`, `$TEXMFVAR`, and `$TEXMFHOME` to directories created
+# in `/tmp` that are world-writable. This allows LaTeX to run properly.
 if drop_privileges:
     config_home_path = "/tmp/xdg_config"
     cache_home_path = "/tmp/xdg_cache"
+    texmf_config_path = "/tmp/texmf-config"
+    texmf_var_path = "/tmp/texmf-var"
+    texmf_home_path = "/tmp/texmf-home"
 
     oldmask = os.umask(000)
 
     os.makedirs(config_home_path, mode=0o777, exist_ok=True)
     os.makedirs(cache_home_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_config_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_var_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_home_path, mode=0o777, exist_ok=True)
 
     os.umask(oldmask)
 
     os.environ["XDG_CONFIG_HOME"] = config_home_path
     os.environ["XDG_CACHE_HOME"] = cache_home_path
+    os.environ["TEXMFCONFIG"] = texmf_config_path
+    os.environ["TEXMFVAR"] = texmf_var_path
+    os.environ["TEXMFHOME"] = texmf_home_path
 
 # Silence matplotlib's FontManager logs; these can cause trouble with our
 # expectation that code execution doesn't log anything to stdout/stderr.
