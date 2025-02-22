@@ -157,7 +157,7 @@ as checkboxes.
 
 #### Sample element
 
-![](elements/pl-checkbox.png)
+![Screenshot of the pl-checkbox element](elements/pl-checkbox.png)
 
 ```html title="question.html"
 <pl-checkbox answers-name="vpos" weight="1">
@@ -247,7 +247,7 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 
 Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidraw). Only manual grading is supported.
 
-![](elements/pl-excalidraw.png)
+![Screenshot of the pl-excalidraw element](elements/pl-excalidraw.png)
 
 ```html title="question.html"
 <p>Draw something else, with a starter diagram</p>
@@ -288,7 +288,7 @@ and external grading system.
 
 #### Sample element
 
-![](elements/pl-file-editor.png)
+![Screenshot of the pl-file-editor element](elements/pl-file-editor.png)
 
 <!-- prettier-ignore -->
 ```html title="question.html"
@@ -357,7 +357,7 @@ potentially misleading error messages for large file uploads, we recommend not u
 
 #### Sample element
 
-![](elements/pl-file-upload.png)
+![Screenshot of the pl-file-upload element](elements/pl-file-upload.png)
 
 ```html title="question.html"
 <pl-file-upload
@@ -414,7 +414,7 @@ Fill in the blank field that requires an **integer** input.
 
 #### Sample element
 
-![](elements/pl-integer-input.png)
+![Screenshot of the pl-integer-input element](elements/pl-integer-input.png)
 
 ```html title="question.html"
 <pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
@@ -484,7 +484,7 @@ Given a list of statements, select a matching option for each entry from a dropd
 
 #### Sample element
 
-![](elements/pl-matching.png)
+![Screenshot of the pl-matching element](elements/pl-matching.png)
 
 ```html title="question.html"
 <pl-matching answers-name="string_value">
@@ -552,7 +552,7 @@ the same shape of the variable stored in `answers-name`
 
 #### Sample element
 
-![](elements/pl-matrix-component-input.png)
+![Screenshot of the pl-matrix-component-input element](elements/pl-matrix-component-input.png)
 
 ```html title="question.html"
 <pl-matrix-component-input answers-name="matrixA" label="$A=$"></pl-matrix-component-input>
@@ -612,7 +612,7 @@ format (either MATLAB or Python's numpy).
 
 #### Sample element
 
-![](elements/pl-matrix-input.png)
+![Screenshot of the pl-matrix-input element](elements/pl-matrix-input.png)
 
 ```html title="question.html"
 <pl-matrix-input answers-name="matrixB" label="$B=$"></pl-matrix-input>
@@ -689,7 +689,7 @@ generation if two (or more) choices are identical.
 
 #### Sample element
 
-![](elements/pl-multiple-choice.png)
+![Screenshot of the pl-multiple-choice element](elements/pl-multiple-choice.png)
 
 ```html title="question.html"
 <pl-multiple-choice answers-name="acc" weight="1">
@@ -754,7 +754,7 @@ tolerances.
 
 #### Sample element
 
-![](elements/pl-number-input-rtol.png)
+![Screenshot of the pl-number-input element with relative tolerance](elements/pl-number-input-rtol.png)
 
 ```html title="question.html"
 <pl-number-input answers-name="ans_rtol" label="$x =$"> </pl-number-input>
@@ -774,7 +774,7 @@ def generate(data):
 
 ---
 
-![](elements/pl-number-input-sigfig.png)
+![Screenshot of the pl-number-input element with sigfigs](elements/pl-number-input-sigfig.png)
 
 ```html title="question.html"
 <pl-number-input answers-name="ans_sig" comparison="sigfig" digits="2" label="$x =$">
@@ -837,7 +837,7 @@ Element to arrange given blocks of code or text that are displayed initially in 
 
 #### Sample element
 
-![](elements/pl-order-blocks.png)
+![Screenshot of the pl-order-blocks element](elements/pl-order-blocks.png)
 
 ```html title="question.html"
 <p>List all the even numbers in order:</p>
@@ -915,7 +915,7 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 
 #### Sample element
 
-![](elements/pl-rich-text-editor.png)
+![Screenshot of the pl-rich-text-editor element](elements/pl-rich-text-editor.png)
 
 ```html title="question.html"
 <pl-rich-text-editor file-name="answer.html"> </pl-rich-text-editor>
@@ -954,7 +954,7 @@ Fill in the blank field that allows for **string** value input.
 
 #### Sample element
 
-![](elements/pl-string-input.png)
+![Screenshot of the pl-string-input element](elements/pl-string-input.png)
 
 ```html title="question.html"
 <pl-string-input answers-name="string_value" label="Prairie"></pl-string-input>
@@ -1004,7 +1004,7 @@ Fill in the blank field that allows for mathematical symbol input.
 
 #### Sample element
 
-![](elements/pl-symbolic-input.png)
+![Screenshot of the pl-symbolic-input element](elements/pl-symbolic-input.png)
 
 ```html title="question.html"
 <pl-symbolic-input answers-name="symbolic_math" variables="x, y" label="$z =$"></pl-symbolic-input>
@@ -1169,7 +1169,7 @@ line callouts.
 
 #### Sample element
 
-![](elements/pl-code.png)
+![Screenshot of the pl-code input](elements/pl-code.png)
 
 <!-- prettier-ignore -->
 ```html title="question.html"
@@ -1192,6 +1192,7 @@ def square(x):
 | `highlight-lines-color` | text    | `"#b3d7ff"`     | Specifies the color of highlighted lines of code.                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `copy-code-button`      | boolean | false           | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                                   |
 | `show-line-numbers`     | boolean | false           | Whether to show line numbers in code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                                           |
+| `normalize-whitespace`  | boolean | false           | Whether to strip trailing whitespace and remove extra indentation of the contents. Recommended for cases where the code is inline in the question file.                                                                                                                                                                                                                                                                                                   |
 
 #### Details
 
@@ -1296,7 +1297,7 @@ data["params"]["names_from_user"] = [
 
 #### Sample element
 
-![](elements/pl-external-grader-variables.png)
+![Screenshot of the pl-external-grader-variables element](elements/pl-external-grader-variables.png)
 
 ```html title="question.html"
 <p>The setup code gives the following variables:</p>
@@ -1360,7 +1361,7 @@ Display a statically or dynamically generated image. Supports many image file fo
 
 #### Sample element
 
-![](elements/pl-figure.png)
+![Screenshot of the pl-figure element](elements/pl-figure.png)
 
 ```html title="question.html"
 <!-- show a figure from an existing file -->
@@ -1415,7 +1416,7 @@ Provide a download link to a static or dynamically generated file.
 
 #### Sample element
 
-![](elements/pl-file-download.png)
+![Screenshot of the pl-file-download element](elements/pl-file-download.png)
 
 ```html title="question.html"
 <!-- allow students to download an existing file -->
@@ -1496,7 +1497,7 @@ Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz D
 
 #### Sample elements
 
-![](elements/pl-graph1.png)
+![Screenshot of the pl-graph element using graphviz syntax](elements/pl-graph1.png)
 
 ```html title="question.html"
 <pl-graph> digraph G { A -> B } </pl-graph>
@@ -1504,7 +1505,7 @@ Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz D
 
 ---
 
-![](elements/pl-graph2.png)
+![Screenshot of the pl-graph element using a matrix](elements/pl-graph2.png)
 
 ```html title="question.html"
 <pl-graph params-name="matrix" params-name-labels="labels"></pl-graph>
@@ -1600,7 +1601,7 @@ Displays a scalar or 2D numpy array of numbers in LaTeX using mathjax.
 
 #### Sample element
 
-![](elements/pl-matrix-latex.png)
+![Screenshot of the pl-matrix-latex element](elements/pl-matrix-latex.png)
 
 ```html title="question.html"
 $$C = <pl-matrix-latex params-name="matrixC"></pl-matrix-latex>$$
@@ -1676,7 +1677,7 @@ The overlay element allows existing PrairieLearn and HTML elements to be layered
 
 #### Sample element
 
-![](elements/pl-overlay.png)
+![Screenshot of the pl-overlay element](elements/pl-overlay.png)
 
 ```html title="question.html"
 <pl-overlay width="400" height="400" clip="false">
@@ -1743,7 +1744,7 @@ Displays the value of a Python variable. Uses options similar to the [pprint](ht
 
 #### Sample elements
 
-![](elements/pl-python-variable.png)
+![Screenshot of the pl-python-variable element](elements/pl-python-variable.png)
 
 ```html title="question.html"
 <pl-python-variable params-name="variable"></pl-python-variable>
@@ -1873,7 +1874,7 @@ supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
 
 #### Sample element
 
-![](elements/pl-variable-output.png)
+![Screenshot of the pl-variable-output element](elements/pl-variable-output.png)
 
 ```html title="question.html"
 <pl-variable-output digits="3">
@@ -2311,7 +2312,7 @@ Select the correct answer from a drop-down **select** menu list of potential ans
 
 #### Sample element
 
-![](elements/pl-dropdown.png)
+![Screenshot of the pl-dropdown element](elements/pl-dropdown.png)
 
 ```html title="question.html"
 <p>Select the correct word in the following quotes:</p>
@@ -2413,7 +2414,7 @@ This element displays a 3D scene with objects that the student can (optionally) 
 
 #### Sample element
 
-![](elements/pl-threejs.png)
+![Screenshot of the pl-threejs element](elements/pl-threejs.png)
 
 ```html title="question.html"
 <pl-threejs answer-name="a">

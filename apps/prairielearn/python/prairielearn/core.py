@@ -19,7 +19,6 @@ import os
 import random
 import re
 import string
-import unicodedata
 import uuid
 from collections import namedtuple
 from collections.abc import Callable, Generator, Iterable
@@ -46,7 +45,7 @@ from prairielearn.sympy_utils import (
     sympy_to_json,
 )
 from prairielearn.to_precision import to_precision
-from prairielearn.unicode_utils import full_unidecode
+from prairielearn.unicode_utils import escape_unicode_string, full_unidecode
 
 if TYPE_CHECKING:
     from numpy.core.arrayprint import _FormatDict
@@ -862,6 +861,7 @@ def numpy_to_matlab(
     np_object: _NumericScalarType | npt.NDArray[Any],
     ndigits: int = 2,
     wtype: str = "f",
+    style: Literal["legacy", "space", "comma"] = "legacy",
 ) -> str:
     """
     Return np_object as a MATLAB-formatted string in which each number has "ndigits"
@@ -880,6 +880,8 @@ def numpy_to_matlab(
 
     assert isinstance(np_object, np.ndarray)
 
+    sep_1d = ", " if style in ["comma", "legacy"] else " "
+    sep_2d = ", " if style == "comma" else " "
     if np_object.ndim == 1:
         s = np_object.shape
         m = s[0]
@@ -889,7 +891,7 @@ def numpy_to_matlab(
                 np_object[i], indigits=ndigits, iwtype=wtype
             )
             if i < m - 1:
-                vector_str += ", "
+                vector_str += sep_1d
         vector_str += "]"
         return vector_str
     else:
@@ -908,7 +910,7 @@ def numpy_to_matlab(
                     else:
                         matrix_str += "; "
                 else:
-                    matrix_str += " "
+                    matrix_str += sep_2d
         return matrix_str
 
 
@@ -1087,7 +1089,9 @@ def _string_from_complex_sigfig(
 
 
 def numpy_to_matlab_sf(
-    A: _NumericScalarType | npt.NDArray[Any], ndigits: int = 2
+    A: _NumericScalarType | npt.NDArray[Any],
+    ndigits: int = 2,
+    style: Literal["legacy", "comma", "space"] = "legacy",
 ) -> str:
     """
     Return A as a MATLAB-formatted string in which each number has
@@ -1097,6 +1101,11 @@ def numpy_to_matlab_sf(
 
         - a number (float or complex)
         - a 2D ndarray (float or complex)
+
+    The style argument must be one of three values:
+    - legacy: formats 1d arrays with commas and 2d arrays with spaces
+    - comma: formats all arrays with commas
+    - space: formats all arrays with spaces
     """
     if np.isscalar(A):
         assert not isinstance(A, memoryview | str | bytes)
@@ -1108,6 +1117,8 @@ def numpy_to_matlab_sf(
             scalar_str = to_precision(A, ndigits)
         return scalar_str
     assert isinstance(A, np.ndarray)
+    sep_1d = ", " if style in ["comma", "legacy"] else " "
+    sep_2d = ", " if style == "comma" else " "
     if A.ndim == 1:
         s = A.shape
         m = s[0]
@@ -1118,7 +1129,7 @@ def numpy_to_matlab_sf(
             else:
                 vector_str += to_precision(A[i], ndigits)
             if i < m - 1:
-                vector_str += ", "
+                vector_str += sep_1d
         vector_str += "]"
         return vector_str
     else:
@@ -1138,7 +1149,7 @@ def numpy_to_matlab_sf(
                     else:
                         matrix_str += "; "
                 else:
-                    matrix_str += " "
+                    matrix_str += sep_2d
         return matrix_str
 
 
@@ -1773,6 +1784,10 @@ def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
         imag_comp = is_correct_scalar_dd(a_sub.imag, a_tru.imag, digits=digits)  # type: ignore
         return real_comp and imag_comp
 
+    if np.abs(a_tru) == math.inf:
+        return a_sub == a_tru
+    elif np.isnan(a_tru):
+        return np.isnan(a_sub)  # type: ignore
     # Get bounds on submitted answer
     eps = 0.51 * (10**-digits)
     lower_bound = a_tru - eps
@@ -1793,6 +1808,10 @@ def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
     # Get bounds on submitted answer
     if a_tru == 0:
         n = digits - 1
+    elif np.abs(a_tru) == math.inf:
+        return a_sub == a_tru
+    elif np.isnan(a_tru):
+        return np.isnan(a_sub)  # type: ignore
     else:
         n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
     eps = 0.51 * (10**-n)
@@ -1816,28 +1835,6 @@ def get_uuid() -> str:
     random_char = random.choice("abcdef")
 
     return random_char + uuid_string[1:]
-
-
-def escape_unicode_string(string: str) -> str:
-    """
-    Replace invisible/unprintable characters with a
-    text representation of their hex id: <U+xxxx>
-
-    A character is considered invisible if its category is "control" or "format", as
-    reported by the 'unicodedata' library.
-
-    More info on unicode categories:
-    https://en.wikipedia.org/wiki/Unicode_character_property#General_Category
-    """
-
-    def escape_unprintable(x: str) -> str:
-        category = unicodedata.category(x)
-        if category in ("Cc", "Cf"):
-            return f"<U+{ord(x):x}>"
-        else:
-            return x
-
-    return "".join(map(escape_unprintable, string))
 
 
 def escape_invalid_string(string: str) -> str:
