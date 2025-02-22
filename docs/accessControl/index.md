@@ -51,7 +51,7 @@ Each access rule will only grant access if all of the restrictions are satisfied
 
 In summary, `allowAccess` uses the algorithm:
 
-```
+```text
 each accessRule is True if (restriction1 AND restriction2 AND restriction3)
 allowAccess is True if (accessRule1 OR accessRule2 OR accessRule3)
 ```

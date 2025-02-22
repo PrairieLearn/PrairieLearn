@@ -97,6 +97,14 @@ def format_true_ans(
             element, "comparison", ComparisonType, COMPARISON_DEFAULT
         )
 
+        # Correct answers may be specified as strings, so we need to convert them
+        # to numbers for formatting. See the note in `grade()` for why we cast to
+        # these specific types.
+        if np.iscomplexobj(correct_answer):
+            correct_answer = np.complex128(correct_answer)
+        else:
+            correct_answer = np.float64(correct_answer)
+
         if custom_format is not None:
             correct_answer = ("{:" + custom_format + "}").format(correct_answer)
         elif comparison is ComparisonType.RELABS:

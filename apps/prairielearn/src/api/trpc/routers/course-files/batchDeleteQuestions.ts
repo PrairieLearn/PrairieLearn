@@ -1,12 +1,15 @@
 import { z } from 'zod';
 
-import { IdSchema } from '../../../../lib/db-types.js';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+
+import { IdSchema, QuestionSchema } from '../../../../lib/db-types.js';
 import { QuestionDeleteEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
-import { selectQuestionById } from '../../../../models/question.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';
 
-export const deleteQuestion = privateProcedure
+const sql = loadSqlEquiv(import.meta.url);
+
+export const batchDeleteQuestions = privateProcedure
   .input(
     z.object({
       // Context.
@@ -16,7 +19,7 @@ export const deleteQuestion = privateProcedure
       has_course_permission_edit: z.boolean(),
 
       // Question data.
-      question_id: z.string(),
+      question_ids: z.array(IdSchema),
     }),
   )
   .output(
@@ -38,7 +41,14 @@ export const deleteQuestion = privateProcedure
       authn_user_id: opts.input.authn_user_id,
     });
 
-    const question = await selectQuestionById(opts.input.question_id);
+    const questions = await queryRows(
+      sql.select_questions_by_ids_and_course_id,
+      {
+        question_ids: opts.input.question_ids,
+        course_id: opts.input.course_id,
+      },
+      QuestionSchema,
+    );
 
     const editor = new QuestionDeleteEditor({
       locals: {
@@ -48,8 +58,8 @@ export const deleteQuestion = privateProcedure
         },
         course,
         user,
-        question,
       },
+      questions,
     });
 
     const serverJob = await editor.prepareServerJob();
