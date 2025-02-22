@@ -15,15 +15,16 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.17.11",
-    "typescript": "^5.7.2",
+    "@types/node": "^20.17.16",
+    "typescript": "^5.7.3",
     "typescript-cp": "^0.1.9"
   },
   "dependencies": {
     "@prairielearn/path-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/zod": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
-    "fast-glob": "^3.3.2",
+    "fast-glob": "^3.3.3",
     "filesize": "^10.1.6",
     "socket.io": "^4.8.1"
   }

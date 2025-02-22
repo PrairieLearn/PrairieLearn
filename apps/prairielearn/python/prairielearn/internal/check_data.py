@@ -4,17 +4,15 @@ Phase = Literal["generate", "prepare", "render", "parse", "grade", "test", "file
 
 ValueType = Literal["boolean", "integer", "number", "string", "object"]
 
-all_phases: frozenset[Phase] = frozenset(
-    {
-        "generate",
-        "prepare",
-        "render",
-        "parse",
-        "grade",
-        "test",
-        "file",
-    }
-)
+all_phases: frozenset[Phase] = frozenset({
+    "generate",
+    "prepare",
+    "render",
+    "parse",
+    "grade",
+    "test",
+    "file",
+})
 
 
 class PropInfo(TypedDict):

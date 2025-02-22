@@ -55,7 +55,7 @@ def file(data):
         yp = func(xp, a, b, c)
 
         # Generate the plot
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
         ax.plot(xp, yp)
         plt.xlabel(r"$x$")
         plt.ylabel(r"$f(x)$")

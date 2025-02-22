@@ -1,6 +1,6 @@
 # Running natively
 
-This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS. PrairieLearn supports native execution on macOS, Linux, and Windows inside [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install).
+This page describes the procedure to install and run PrairieLearn fully natively without using Docker. Certain features, such as external graders and workspaces, still require Docker. PrairieLearn supports native execution on macOS, Linux, and Windows inside [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install).
 
 - Install the prerequisites:
 
@@ -12,6 +12,7 @@ This page describes the procedure to install and run PrairieLearn without any us
   - [Redis 6](https://redis.io)
   - [Graphviz](https://graphviz.org)
   - [d2](https://d2lang.com)
+  - [pgvector](https://github.com/pgvector/pgvector)
 
 Most of these prerequisites can be installed using the package manager of your OS:
 
@@ -20,7 +21,7 @@ Most of these prerequisites can be installed using the package manager of your O
     On Ubuntu, use `apt` for the main prerequisites:
 
     ```sh
-    sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql postgresql-contrib
+    sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql postgresql-contrib postgresql-server-dev-all
     ```
 
     Make sure you start Postgres:
@@ -28,6 +29,12 @@ Most of these prerequisites can be installed using the package manager of your O
     ```sh
     sudo systemctl start postgresql.service
     ```
+
+    > If the command above shows an error like `System has not been booted with systemd as init system` or `Failed to connect to bus`, the command above can be replaced with:
+    >
+    > ```sh
+    > sudo service postgresql start
+    > ```
 
     Python 3.10 is not available in the default Ubuntu repositories -- you can install it through the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
 
@@ -63,6 +70,16 @@ Most of these prerequisites can be installed using the package manager of your O
     curl -fsSL https://d2lang.com/install.sh | sh -s --
     ```
 
+    The pgvector Postgres extension can be installed with the following script:
+
+    ```sh
+    cd /tmp
+    git clone --branch v0.8.0 https://github.com/pgvector/pgvector.git
+    cd pgvector
+    make
+    sudo make install
+    ```
+
 === "macOS"
 
     On macOS, ensure you have installed the XCode command line tools:
@@ -74,7 +91,7 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql redis uv d2 node npm
+    brew install git graphviz postgresql redis uv d2 node npm pgvector
     ```
 
     Enable `corepack` to make `yarn` available:
@@ -109,7 +126,7 @@ Most of these prerequisites can be installed using the package manager of your O
     mise use -g python@3.10
     ```
 
-    Or you can install it through [uv](https://github.com/astral-sh/uv) (reccomended):
+    Or you can install it through [uv](https://github.com/astral-sh/uv) (recommended):
 
     ```sh
     mise use -g uv
@@ -126,7 +143,7 @@ Most of these prerequisites can be installed using the package manager of your O
   cd PrairieLearn
   ```
 
-- Set up a Python virtual environment:
+- Set up a Python virtual environment in the root of the cloned repository:
 
   === "uv"
 
@@ -163,7 +180,7 @@ Most of these prerequisites can be installed using the package manager of your O
 
   The above command installs everything. Alternatively, you can run each step individually:
 
-  ```
+  ```sh
   yarn
   make build
   make python-deps
@@ -172,12 +189,31 @@ Most of these prerequisites can be installed using the package manager of your O
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):
 
   ```sh
-  psql -c "CREATE USER postgres;"
-  psql -c "ALTER USER postgres WITH SUPERUSER;"
-  createdb postgres
+  sudo -u postgres psql -c "CREATE USER postgres;"
+  sudo -u postgres psql -c "ALTER USER postgres WITH SUPERUSER;"
+  sudo -u postgres createdb postgres
   ```
 
-- Run the test suite:
+- Ensure that your local `postgres` installation allows for local connections to bypass password authentication. First find the authentication configuration file with the command:
+
+  ```sh
+  sudo -u postgres psql -c "SHOW hba_file;"
+  ```
+
+  The command above will list the path to a file named `pg_hba.conf` or something equivalent. As either root or the `postgres` user, edit the file listed by the command above, such that lines that correspond to localhost connections are set up with the `trust` method (do not change the other lines). This will typically be shown as:
+
+  ```text
+  # TYPE  DATABASE        USER            ADDRESS                 METHOD
+  ...
+  # IPv4 local connections:
+  host    all             all             127.0.0.1/32            trust
+  # IPv6 local connections:
+  host    all             all             ::1/128                 trust
+  ```
+
+  You may need to restart the PostgreSQL server after changing the file above.
+
+- Run the test suite (Docker must be installed and running):
 
   ```sh
   make test
@@ -194,7 +230,9 @@ Most of these prerequisites can be installed using the package manager of your O
   ```json title="config.json"
   {
     "courseDirs": ["/Users/mwest/git/pl-tam212", "exampleCourse"],
-    "filesRoot": "../filesRoot"
+    "filesRoot": "../filesRoot",
+    "workspaceHostHomeDirRoot": "/tmp/workspace",
+    "workspaceHomeDirRoot": "/tmp/workspace"
   }
   ```
 
@@ -209,6 +247,12 @@ Most of these prerequisites can be installed using the package manager of your O
   ```sh
   make build
   make start
+  ```
+
+- If you need support for [workspaces](workspaces/index.md), ensure Docker is installed and running, and then in a separate terminal run:
+
+  ```sh
+  sudo make dev-workspace-host # or sudo make start-workspace-host
   ```
 
 - In a web-browser go to [http://localhost:3000](http://localhost:3000).

@@ -21,9 +21,13 @@ td:not(.code) code {
 .md-nav__item--section > .md-nav__link[for],
 .md-nav__title {
   text-transform: uppercase;
-  color: var(--md-primary-fg-color);
+  color: var(--md-typeset-color);
 }
 
+.md-nav__item--section > div.md-nav__link {
+  text-transform: uppercase;
+  color: var(--md-primary-fg-color);
+}
 /* CSS for width selection */
 @media (max-width: 1220px) {
   .width-icon {
@@ -115,4 +119,14 @@ foreignObject .md pre {
 .tabbed-set > .tabbed-content > .tabbed-block > pre:only-child {
   margin-top: 0;
   margin-bottom: 0;
+}
+
+/* .doc-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+} */
+
+.doc-heading > .md-content__button {
+  margin: 0;
 }

@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import parsePostgresInterval from 'postgres-interval';
 
-import { IdSchema, IntervalSchema } from './db-types.js';
+import { IdSchema, IntervalSchema } from './index.js';
 
 describe('IdSchema', () => {
   it('parses a valid id', () => {
