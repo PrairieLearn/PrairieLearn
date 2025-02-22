@@ -15,10 +15,14 @@ body:has(div.app-container) {
   grid-template:
     'top-nav top-nav' auto
     'side-nav content' 1fr / 300px 1fr;
+  transition: 300ms;
 }
 
 .app-container.no-sidebar {
-  display: block;
+  /* display: block; */
+  grid-template:
+    'top-nav top-nav' auto
+    'side-nav content' 1fr / 0 1fr;
 }
 
 .app-top-nav {
@@ -32,7 +36,12 @@ body:has(div.app-container) {
 
   /* --bs-primary-bg-subtle from Bootstrap 5.3 */
   background-color: #cfe2ff;
-  transition: all 0.2s ease-in-out;
+  transition: 300ms;
+}
+
+.app-container.no-sidebar .app-side-nav {
+  padding: 0.75rem 0;
+  overflow: hidden;
 }
 
 .app-main {
@@ -67,6 +76,7 @@ body:has(div.app-container) {
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
   position: relative;
+  white-space: nowrap;
 }
 
 .side-nav-link:hover,
@@ -96,4 +106,5 @@ body:has(div.app-container) {
   font-weight: bold;
   border-bottom: 1px solid var(--bs-body-color);
   margin-bottom: 0.5rem;
+  white-space: nowrap;
 }

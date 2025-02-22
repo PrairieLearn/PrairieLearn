@@ -22,13 +22,14 @@ export function Navbar({
   navbarType?: NavbarType;
   isInPageLayout?: boolean;
 }) {
-  const { __csrf_token, course, urlPrefix } = resLocals;
+  const { __csrf_token, course, course_instance, urlPrefix } = resLocals;
 
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
 
   const sideNavAvailable = navbarType !== 'student' && navbarType !== 'public' && resLocals.course;
+  const showSideNav = resLocals.show_side_nav ?? true;
 
   return html`
     ${config.devMode && __csrf_token
@@ -65,11 +66,14 @@ export function Navbar({
           ? html`
               <button
                 id="side-nav-toggler"
-                hx-put="/pl/side-nav"
+                class="navbar-toggler d-none d-md-inline-block side-nav-toggler"
+                hx-put="${course_instance
+                  ? `/pl/course_instance/${course_instance.id}/instructor/side_nav`
+                  : `/pl/course/${course.id}/side_nav`}"
                 hx-target="#side-nav"
                 hx-swap="outerHTML"
-                class="navbar-toggler d-none d-md-inline-block side-nav-toggler"
-                type="button"
+                hx-trigger="click"
+                hx-vals='{"navPage": "${navPage}", "navSubPage": "${navSubPage}"}'
                 aria-expanded="false"
                 aria-label="Toggle side nav"
               >

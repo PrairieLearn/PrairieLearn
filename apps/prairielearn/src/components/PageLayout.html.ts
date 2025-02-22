@@ -1,4 +1,4 @@
-import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
+import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
@@ -57,7 +57,7 @@ export function PageLayout({
     // page within a course or course instance.
     const sideNavAvailable =
       navContext.type !== 'student' && navContext.type !== 'public' && resLocals.course;
-    const showSideNav = reqSession?.req.session.sideNavOpen ?? true;
+    const showSideNav = reqSession?.show_side_nav ?? true;
 
     let showContextNavigation = true;
 
@@ -91,7 +91,7 @@ export function PageLayout({
         showContextNavigation = false;
       }
     }
-    // ${sideNavAvailable ? compiledScriptTag('pageLayoutClient.ts') : ''}
+
     return html`
       <!doctype html>
       <html lang="en">
@@ -102,19 +102,17 @@ export function PageLayout({
             pageNote: options.pageNote,
           })}
           ${compiledStylesheetTag('pageLayout.css')} ${headContent}
+          ${sideNavAvailable ? compiledScriptTag('pageLayoutClient.ts') : ''}
         </head>
         <body
           ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
         >
-          <div
-            id="app-container"
-            class="app-container ${!sideNavAvailable || !showSideNav ? 'no-sidebar' : ''}"
-          >
+          <div id="app-container" class="app-container ${showSideNav ? '' : 'no-sidebar'}">
             <div class="app-top-nav">
               ${Navbar({
                 resLocals,
-                navPage: navContext.page,
+                navPage: navContext.page, 
                 navSubPage: navContext.subPage,
                 navbarType: navContext.type,
                 isInPageLayout: true,

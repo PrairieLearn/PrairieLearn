@@ -715,6 +715,11 @@ export async function initExpress(): Promise<Express> {
     },
   ]);
 
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/side_nav',
+    (await import('./pages/sideNav/sideNav.js')).default,
+  );
+
   // Some course instance instructor pages only require the authn user to have permissions (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/effectiveUser',
@@ -755,13 +760,6 @@ export async function initExpress(): Promise<Express> {
       next();
     },
   ]);
-
-  // TODO: move this
-  app.use(
-    '/pl/side-nav',
-    [(await import('./middlewares/authzCourseOrInstance.js')).default],
-    (await import('./pages/sideNav/sideNav.js')).default,
-  );
 
   // Serve element statics. As with core PrairieLearn assets and files served
   // from `node_modules`, we include a cachebuster in the URL. This allows
@@ -1558,6 +1556,12 @@ export async function initExpress(): Promise<Express> {
   app.use(/^\/pl\/course\/[0-9]+\/?$/, function (req, res, _next) {
     res.redirect(res.locals.urlPrefix + '/course_admin');
   }); // redirect plain course URL to overview page
+
+  // TODO: Comment
+  app.use(
+    '/pl/course/:course_id(\\d+)/side_nav',
+    (await import('./pages/sideNav/sideNav.js')).default,
+  );
 
   // Some course pages only require the authn user to have permission (already checked)
   app.use(
