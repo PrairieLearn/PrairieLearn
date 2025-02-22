@@ -747,7 +747,7 @@ export async function updateLti13Scores(
     throw new HttpStatusError(403, 'Invalid assessment.id');
   }
 
-  job.info(`Sending grade data for ${assessment.tid} ${assessment.title}`);
+  job.info(`Working on assessment ${assessment.title} (${assessment.tid}):`);
 
   const token = await getAccessToken(instance.lti13_instance.id);
 
@@ -766,13 +766,26 @@ export async function updateLti13Scores(
   const memberships = await Lti13ContextMembership.loadForInstance(instance);
   const timestamp = new Date();
 
+  const missingUsers: UsersWithLti13Sub[] = [];
+  let postedCount = 0;
+
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
-      job.info(`ai=${assessment_instance.id}, ${assessment_instance.score_perc}% for ${user.name}`);
+      // Grading assessment instance #333 for mussulma@illinois.edu
+      //job.info(`ai=${assessment_instance.id}, ${assessment_instance.score_perc}% for ${user.name}`);
+      job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}`);
 
       const userId = await memberships.lookup(user);
+      console.log(userId);
       if (userId === null) {
-        job.warn(`* Could not find LTI user information for ${user.name} ${user.uid}, skipping...`);
+        //job.warn(`* Could not find LTI user information for ${user.name} ${user.uid}, skipping...`);
+        job.warn(
+          `\tCould not find ${user.name} as a student in the linked ` +
+            `${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label} ` +
+            `(UID ${user.uid}${user.email ? ` email ${user.email}` : ''})`,
+        );
+        // Log the fail to report later
+        missingUsers.push(user);
         continue;
       }
 
@@ -800,10 +813,40 @@ export async function updateLti13Scores(
         body: JSON.stringify(score),
       });
 
-      job.info(`\t${res.statusText}`);
-      if (!res.ok) {
-        job.warn(`\t${await res.text()}`);
+      if (res.ok) {
+        postedCount++;
+      } else {
+        const results = await res.json();
+        console.log(results);
+
+        // Handle the special cases
+
+        // Unprocessable Entity
+        // {"errors":{"type":"unprocessable_entity","message":"User not found in course or is not a student"}}
+        if (results?.errors?.type === 'unprocessable_entity') {
+          missingUsers.push(user);
+          job.info(`\t${res.statusText}: ${results?.errors?.message}`);
+          continue;
+        }
+
+        // Default to showing the whole error
+        job.info(`\t${res.statusText}`);
+        job.warn(`\t${JSON.stringify(results)}`);
       }
     }
+  }
+  job.info('Done.\n\nSummary:');
+  job.info(`${postedCount} score${postedCount === 1 ? '' : 's'} successfully posted.`);
+
+  if (missingUsers) {
+    job.info(
+      'PrairieLearn users who do not exist as students in ' +
+        `${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}:`,
+    );
+    missingUsers.forEach((user) => {
+      job.info(
+        `\t${user.name} PrairieLearn UID: ${user.uid} UIN: ${user.uin} email: ${user.email}`,
+      );
+    });
   }
 }
