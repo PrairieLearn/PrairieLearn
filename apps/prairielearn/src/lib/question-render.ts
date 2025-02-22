@@ -131,6 +131,7 @@ async function render(
   submissions: Submission[],
   question_course: Course,
   locals: Record<string, any>,
+  zoneInformation,
 ): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
@@ -142,6 +143,7 @@ async function render(
     submissions,
     question_course,
     locals,
+    zoneInformation,
   );
 
   const studentMessage = 'Error rendering question';
@@ -444,6 +446,7 @@ export async function getAndRenderVariant(
       const instance_question_id = locals.instance_question?.id ?? null;
       const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
       const options = { variant_seed };
+      console.log('LOCALS: ', locals);
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
@@ -566,6 +569,12 @@ export async function getAndRenderVariant(
     submissions.slice(0, MAX_RECENT_SUBMISSIONS) as Submission[],
     question_course,
     locals,
+    {
+      question_params: {
+        upper_bound: 10,
+        lower_bound: 5,
+      },
+    },
   );
   resultLocals.extraHeadersHtml = htmls.extraHeadersHtml;
   resultLocals.questionHtml = htmls.questionHtml;
@@ -716,6 +725,12 @@ export async function renderPanelsForSubmission({
         submissions,
         question_course,
         locals,
+        {
+          question_params: {
+            upper_bound: 10,
+            lower_bound: 5,
+          },
+        },
       );
 
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;

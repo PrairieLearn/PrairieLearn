@@ -48,10 +48,12 @@ interface VariantCreationData {
  * @param course - The course for the question.
  * @param options - Options controlling the creation: options = {variant_seed}
  */
+
 async function makeVariant(
   question: Question,
   course: Course,
   options: { variant_seed?: string | null },
+  // assessmentConfig: any,
 ): Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   variant: VariantCreationData;
@@ -63,8 +65,25 @@ async function makeVariant(
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
   }
 
+
+
+
   const questionModule = questionServers.getModule(question.type);
-  const { courseIssues, data } = await questionModule.generate(question, course, variant_seed);
+  const zoneInformation = {
+
+      question_params: {
+        upper_bound: 5,
+        lower_bound: 1,
+      }
+
+
+  };
+  const { courseIssues, data } = await questionModule.generate(
+    question,
+    course,
+    variant_seed,
+    zoneInformation,
+  );
   const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
   let variant: VariantCreationData = {
     variant_seed,
@@ -220,12 +239,14 @@ async function makeAndInsertVariant(
   options: { variant_seed?: string | null },
   require_open: boolean,
   client_fingerprint_id: string | null,
+  // assessmentConfig: any
 ): Promise<VariantWithFormattedDate> {
   const question = await selectQuestion(question_id, instance_question_id);
   const { courseIssues, variant: variantData } = await makeVariant(
     question,
     question_course,
     options,
+    // assessmentConfig
   );
 
   const variant = await sqldb.runInTransactionAsync(async () => {
@@ -355,6 +376,9 @@ export async function ensureVariant(
   require_open: boolean,
   client_fingerprint_id: string | null,
 ): Promise<VariantWithFormattedDate> {
+  console.log('Variant Course:', variant_course);
+  console.log('Question Course:', question_course);
+  console.log('Options:', options);
   if (instance_question_id != null) {
     // See if we have a useable existing variant, otherwise make a new one. This
     // test is also performed in makeAndInsertVariant inside a transaction to
