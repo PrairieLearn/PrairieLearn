@@ -107,9 +107,11 @@ export function PageLayout({
         >
           <div
             id="app-container"
-            class="app-container ${sideNavCanShow ? 'side-nav-can-show' : ''} ${showSideNav
-              ? ''
-              : 'no-sidebar'}"
+            class="
+              app-container 
+              ${sideNavCanShow ? 'side-nav-can-show' : ''} 
+              ${showSideNav ? 'show-side-nav' : ''}
+            "
           >
             <div class="app-top-nav">
               ${Navbar({
