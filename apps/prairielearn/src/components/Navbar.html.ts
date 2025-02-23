@@ -22,13 +22,17 @@ export function Navbar({
   navbarType?: NavbarType;
   isInPageLayout?: boolean;
 }) {
-  const { __csrf_token, course, course_instance, urlPrefix } = resLocals;
+  const { __csrf_token, course, course_instance, urlPrefix, has_enhanced_navigation } = resLocals;
 
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
 
-  const sideNavAvailable = navbarType !== 'student' && navbarType !== 'public' && resLocals.course;
+  const sideNavAvailable =
+    has_enhanced_navigation &&
+    navbarType !== 'student' &&
+    navbarType !== 'public' &&
+    resLocals.course;
 
   return html`
     ${config.devMode && __csrf_token
