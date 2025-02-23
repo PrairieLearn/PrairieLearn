@@ -29,7 +29,6 @@ export function Navbar({
   navbarType ??= resLocals.navbarType;
 
   const sideNavAvailable = navbarType !== 'student' && navbarType !== 'public' && resLocals.course;
-  const showSideNav = resLocals.show_side_nav ?? true;
 
   return html`
     ${config.devMode && __csrf_token

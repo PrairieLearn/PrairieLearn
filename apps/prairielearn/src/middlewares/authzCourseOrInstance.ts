@@ -86,6 +86,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   });
   res.locals.has_enhanced_navigation = hasEnhancedNavigation;
 
+  res.locals.show_side_nav = req.session?.show_side_nav ?? true;
+
   const permissions_course = result.rows[0].permissions_course;
   res.locals.authz_data = {
     authn_user: _.cloneDeep(res.locals.authn_user),

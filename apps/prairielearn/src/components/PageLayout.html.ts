@@ -12,7 +12,6 @@ import { SideNav } from './SideNav.html.js';
 
 export function PageLayout({
   resLocals,
-  reqSession,
   pageTitle,
   navContext,
   options = {},
@@ -23,8 +22,6 @@ export function PageLayout({
 }: {
   /** The locals object from the Express response. */
   resLocals: Record<string, any>;
-  /** The session object from the Express request */
-  reqSession?: Record<string, any>; // TODO: make this not optional
   /** The title of the page in the browser. */
   pageTitle: string;
   /** The information used to configure the navbar. */
@@ -55,9 +52,9 @@ export function PageLayout({
   if (resLocals.has_enhanced_navigation) {
     // The left navbar is only shown if the user is in a
     // page within a course or course instance.
-    const sideNavAvailable =
+    const sideNavCanShow =
       navContext.type !== 'student' && navContext.type !== 'public' && resLocals.course;
-    const showSideNav = reqSession?.show_side_nav ?? true;
+    const showSideNav = resLocals.show_side_nav;
 
     let showContextNavigation = true;
 
@@ -102,13 +99,18 @@ export function PageLayout({
             pageNote: options.pageNote,
           })}
           ${compiledStylesheetTag('pageLayout.css')} ${headContent}
-          ${sideNavAvailable ? compiledScriptTag('pageLayoutClient.ts') : ''}
+          ${sideNavCanShow ? compiledScriptTag('pageLayoutClient.ts') : ''}
         </head>
         <body
           ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
         >
-          <div id="app-container" class="app-container ${showSideNav ? '' : 'no-sidebar'}">
+          <div
+            id="app-container"
+            class="app-container ${sideNavCanShow ? 'side-nav-can-show' : ''} ${showSideNav
+              ? ''
+              : 'no-sidebar'}"
+          >
             <div class="app-top-nav">
               ${Navbar({
                 resLocals,
@@ -118,13 +120,9 @@ export function PageLayout({
                 isInPageLayout: true,
               })}
             </div>
-            ${sideNavAvailable
+            ${sideNavCanShow
               ? html`
-                  <div
-                    id="side-nav"
-                    class="app-side-nav"
-                    style="${showSideNav ? '' : 'display: none;'}"
-                  >
+                  <div id="side-nav" class="app-side-nav">
                     ${SideNav({
                       resLocals,
                       page: navContext.page,
@@ -133,8 +131,8 @@ export function PageLayout({
                   </div>
                 `
               : ''}
-            <div class="${sideNavAvailable ? 'app-main' : ''}">
-              <div class="${sideNavAvailable ? 'app-main-container' : ''}">
+            <div class="${sideNavCanShow ? 'app-main' : ''}">
+              <div class="${sideNavCanShow ? 'app-main-container' : ''}">
                 ${resLocals.assessment &&
                 resLocals.assessments &&
                 AssessmentNavigation({
@@ -156,7 +154,7 @@ export function PageLayout({
                     ${options.fullWidth ? 'container-fluid' : 'container'} 
                     ${marginBottom ? 'mb-4' : ''}
                     ${options.fullHeight ? 'flex-grow-1' : ''}
-                    pt-3 ${sideNavAvailable ? 'px-3' : ''}
+                    pt-3 ${sideNavCanShow ? 'px-3' : ''}
                   "
                 >
                   ${content}
