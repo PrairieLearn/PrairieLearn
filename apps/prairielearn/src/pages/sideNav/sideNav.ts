@@ -9,9 +9,6 @@ const router = Router();
 router.put('/', async (req, res) => {
   req.session.show_side_nav = !(req.session.show_side_nav ?? true);
 
-  console.log('req.session.show_side_nav', req.session.show_side_nav);
-  console.log('body', req.body);
-
   if (req.session.show_side_nav) {
     res.send(
       html`
