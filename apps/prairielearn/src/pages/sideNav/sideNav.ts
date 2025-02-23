@@ -7,7 +7,7 @@ import { SideNav } from '../../components/SideNav.html.js';
 const router = Router();
 
 router.put('/', async (req, res) => {
-  // The side nav is shown by default, so we toggle the value with the ?? true.
+  // The side nav is shown by default, which is why we use the ?? true here.
   req.session.show_side_nav = !(req.session.show_side_nav ?? true);
 
   if (req.session.show_side_nav) {
