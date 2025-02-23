@@ -86,6 +86,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   });
   res.locals.has_enhanced_navigation = hasEnhancedNavigation;
 
+  // Show the side nav unless the user intentionally toggles it off.
   res.locals.show_side_nav = req.session?.show_side_nav ?? true;
 
   const permissions_course = result.rows[0].permissions_course;

@@ -96,7 +96,6 @@ router.get(
     res.send(
       QuestionsPage({
         questions,
-
         templateQuestions,
         course_instances: courseInstances,
         showAddQuestionButton:

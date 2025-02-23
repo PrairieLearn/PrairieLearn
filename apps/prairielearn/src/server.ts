@@ -716,11 +716,6 @@ export async function initExpress(): Promise<Express> {
     },
   ]);
 
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/side_nav',
-    (await import('./pages/sideNav/sideNav.js')).default,
-  );
-
   // Some course instance instructor pages only require the authn user to have permissions (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/effectiveUser',
@@ -1427,6 +1422,12 @@ export async function initExpress(): Promise<Express> {
     ],
   );
 
+  // Handles side nav toggling if the user is on a course instance page.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/side_nav',
+    (await import('./pages/sideNav/sideNav.js')).default,
+  );
+
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1557,12 +1558,6 @@ export async function initExpress(): Promise<Express> {
   app.use(/^\/pl\/course\/[0-9]+\/?$/, function (req, res, _next) {
     res.redirect(res.locals.urlPrefix + '/course_admin');
   }); // redirect plain course URL to overview page
-
-  // TODO: Comment
-  app.use(
-    '/pl/course/:course_id(\\d+)/side_nav',
-    (await import('./pages/sideNav/sideNav.js')).default,
-  );
 
   // Some course pages only require the authn user to have permission (already checked)
   app.use(
@@ -1733,6 +1728,12 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/grading_job',
     (await import('./pages/instructorGradingJob/instructorGradingJob.js')).default,
+  );
+
+  // Handles side nav toggling if the user is on a course page.
+  app.use(
+    '/pl/course/:course_id(\\d+)/side_nav',
+    (await import('./pages/sideNav/sideNav.js')).default,
   );
 
   // This route is used to initiate a copy of a question with publicly shared source

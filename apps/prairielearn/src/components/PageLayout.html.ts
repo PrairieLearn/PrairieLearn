@@ -50,11 +50,11 @@ export function PageLayout({
   const marginBottom = options.marginBottom ?? true;
 
   if (resLocals.has_enhanced_navigation) {
-    // The left navbar is only shown if the user is in a
-    // page within a course or course instance.
-    const sideNavCanShow =
-      navContext.type !== 'student' && navContext.type !== 'public' && resLocals.course;
-    const showSideNav = resLocals.show_side_nav;
+    const canShowSideNav =
+      resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
+
+    // Whether the side nav is actually shown.
+    const showSideNav = canShowSideNav && resLocals.show_side_nav;
 
     let showContextNavigation = true;
 
@@ -99,7 +99,7 @@ export function PageLayout({
             pageNote: options.pageNote,
           })}
           ${compiledStylesheetTag('pageLayout.css')} ${headContent}
-          ${sideNavCanShow ? compiledScriptTag('pageLayoutClient.ts') : ''}
+          ${canShowSideNav ? compiledScriptTag('pageLayoutClient.ts') : ''}
         </head>
         <body
           ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
@@ -109,7 +109,7 @@ export function PageLayout({
             id="app-container"
             class="
               app-container 
-              ${sideNavCanShow ? 'side-nav-can-show' : ''} 
+              ${canShowSideNav ? 'side-nav-can-show' : ''} 
               ${showSideNav ? 'show-side-nav' : ''}
             "
           >
@@ -122,7 +122,7 @@ export function PageLayout({
                 isInPageLayout: true,
               })}
             </div>
-            ${sideNavCanShow
+            ${canShowSideNav
               ? html`
                   <div id="side-nav" class="app-side-nav">
                     ${SideNav({
@@ -133,8 +133,8 @@ export function PageLayout({
                   </div>
                 `
               : ''}
-            <div class="${sideNavCanShow ? 'app-main' : ''}">
-              <div class="${sideNavCanShow ? 'app-main-container' : ''}">
+            <div class="${canShowSideNav ? 'app-main' : ''}">
+              <div class="${canShowSideNav ? 'app-main-container' : ''}">
                 ${resLocals.assessment &&
                 resLocals.assessments &&
                 AssessmentNavigation({
@@ -156,7 +156,7 @@ export function PageLayout({
                     ${options.fullWidth ? 'container-fluid' : 'container'} 
                     ${marginBottom ? 'mb-4' : ''}
                     ${options.fullHeight ? 'flex-grow-1' : ''}
-                    pt-3 ${sideNavCanShow ? 'px-3' : ''}
+                    pt-3 ${canShowSideNav ? 'px-3' : ''}
                   "
                 >
                   ${content}

@@ -32,7 +32,7 @@ export function Navbar({
     has_enhanced_navigation &&
     navbarType !== 'student' &&
     navbarType !== 'public' &&
-    resLocals.course;
+    course;
 
   return html`
     ${config.devMode && __csrf_token
