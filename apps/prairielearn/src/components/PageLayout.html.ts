@@ -112,7 +112,7 @@ export function PageLayout({
             <div class="app-top-nav">
               ${Navbar({
                 resLocals,
-                navPage: navContext.page, 
+                navPage: navContext.page,
                 navSubPage: navContext.subPage,
                 navbarType: navContext.type,
                 isInPageLayout: true,

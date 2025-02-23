@@ -25,7 +25,7 @@ router.put('/', async (req, res) => {
       `.toString(),
     );
   } else {
-    res.send(html` <div id="side-nav" style="display: none;"></div> `.toString());
+    res.send(html` <div id="side-nav" class="app-side-nav"></div> `.toString());
   }
 });
 
