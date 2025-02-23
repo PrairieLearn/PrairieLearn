@@ -114,3 +114,6 @@ packages/*/coverage
 
 ## v8 crash reports
 isolate-*-v8.log
+
+## Codecov
+coverage.xml
