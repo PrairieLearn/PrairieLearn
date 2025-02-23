@@ -28,11 +28,8 @@ export function Navbar({
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
 
-  const sideNavAvailable =
-    has_enhanced_navigation &&
-    navbarType !== 'student' &&
-    navbarType !== 'public' &&
-    course;
+  const canShowSideNav =
+    has_enhanced_navigation && navbarType !== 'student' && navbarType !== 'public' && course;
 
   return html`
     ${config.devMode && __csrf_token
@@ -65,7 +62,7 @@ export function Navbar({
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid">
-        ${sideNavAvailable
+        ${canShowSideNav
           ? html`
               <button
                 id="side-nav-toggler"
