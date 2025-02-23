@@ -13,6 +13,7 @@ export const QuestionsPage = ({
   showAddQuestionButton,
   showAiGenerateQuestionButton,
   resLocals,
+  reqSession,
 }: {
   questions: QuestionsPageData[];
   templateQuestions?: { qid: string; title: string }[];
@@ -20,9 +21,11 @@ export const QuestionsPage = ({
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;
   resLocals: Record<string, any>;
+  reqSession: Record<string, any>;
 }) => {
   return PageLayout({
     resLocals,
+    reqSession,
     pageTitle: 'Questions',
     navContext: {
       type: 'instructor',

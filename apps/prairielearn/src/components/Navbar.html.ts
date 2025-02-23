@@ -22,10 +22,17 @@ export function Navbar({
   navbarType?: NavbarType;
   isInPageLayout?: boolean;
 }) {
-  const { __csrf_token, course, urlPrefix } = resLocals;
+  const { __csrf_token, course, course_instance, urlPrefix, has_enhanced_navigation } = resLocals;
+
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
+
+  const sideNavAvailable =
+    has_enhanced_navigation &&
+    navbarType !== 'student' &&
+    navbarType !== 'public' &&
+    resLocals.course;
 
   return html`
     ${config.devMode && __csrf_token
@@ -58,6 +65,25 @@ export function Navbar({
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid">
+        ${sideNavAvailable
+          ? html`
+              <button
+                id="side-nav-toggler"
+                class="navbar-toggler d-none d-md-inline-block side-nav-toggler"
+                hx-put="${course_instance
+                  ? `/pl/course_instance/${course_instance.id}/instructor/side_nav`
+                  : `/pl/course/${course.id}/side_nav`}"
+                hx-target="#side-nav"
+                hx-swap="outerHTML"
+                hx-trigger="click"
+                hx-vals='{"navPage": "${navPage}", "navSubPage": "${navSubPage}"}'
+                aria-expanded="false"
+                aria-label="Toggle side nav"
+              >
+                <span class="navbar-toggler-icon side-nav-toggle-icon"></span>
+              </button>
+            `
+          : ''}
         <a class="navbar-brand" href="${config.homeUrl}" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
@@ -74,6 +100,7 @@ export function Navbar({
         >
           <span class="navbar-toggler-icon"></span>
         </button>
+
         <div id="course-nav" class="collapse navbar-collapse">
           <ul class="nav navbar-nav mr-auto" id="main-nav">
             ${NavbarByType({

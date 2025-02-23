@@ -595,6 +595,7 @@ export async function initExpress(): Promise<Express> {
   // route handler will only ever display courses for which the user has staff
   // access; the course ID in the URL is only used to determine which course
   // is the currently selected one.
+
   app.use(
     '/pl/navbar/course/:course_id(\\d+)/switcher',
     (await import('./pages/navbarCourseSwitcher/navbarCourseSwitcher.js')).default,
@@ -714,6 +715,11 @@ export async function initExpress(): Promise<Express> {
       next();
     },
   ]);
+
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/side_nav',
+    (await import('./pages/sideNav/sideNav.js')).default,
+  );
 
   // Some course instance instructor pages only require the authn user to have permissions (already checked)
   app.use(
@@ -1551,6 +1557,12 @@ export async function initExpress(): Promise<Express> {
   app.use(/^\/pl\/course\/[0-9]+\/?$/, function (req, res, _next) {
     res.redirect(res.locals.urlPrefix + '/course_admin');
   }); // redirect plain course URL to overview page
+
+  // TODO: Comment
+  app.use(
+    '/pl/course/:course_id(\\d+)/side_nav',
+    (await import('./pages/sideNav/sideNav.js')).default,
+  );
 
   // Some course pages only require the authn user to have permission (already checked)
   app.use(
