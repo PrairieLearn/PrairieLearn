@@ -369,22 +369,6 @@ small .user-output-invalid {
   background: #fff;
 }
 
-/* Styling for the side nav toggle button */
-/* .side-nav-toggler {
-  margin-right: 0.5rem;
-  padding: 0.25rem 0.5rem;
-}
-
-.side-nav-toggle-icon {
-  width: 1em;
-  height: 1em;
-} */
-
-.side-nav-toggler {
-  margin-right: 0.75rem;
-  padding: 0.25rem 0.5rem;
-}
-
 /**
  * We use red text in light buttons to indicate errors on many elements.
  * By default, this has insufficient contrast. We override the color in

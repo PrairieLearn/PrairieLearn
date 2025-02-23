@@ -69,7 +69,7 @@ export function Navbar({
           ? html`
               <button
                 id="side-nav-toggler"
-                class="navbar-toggler d-none d-md-inline-block side-nav-toggler"
+                class="navbar-toggler d-none d-md-inline-block mr-3 px-2 py-1"
                 hx-put="${course_instance
                   ? `/pl/course_instance/${course_instance.id}/instructor/side_nav`
                   : `/pl/course/${course.id}/side_nav`}"
