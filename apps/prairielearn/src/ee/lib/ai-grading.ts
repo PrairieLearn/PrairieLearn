@@ -433,6 +433,7 @@ export async function aiGrade({
               {
                 // TODO: consider asking for and recording freeform feedback.
                 manual_rubric_data,
+                feedback: { manual: '' },
               },
               user_id,
             );
