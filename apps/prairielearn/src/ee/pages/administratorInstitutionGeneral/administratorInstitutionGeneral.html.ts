@@ -135,9 +135,9 @@ export function AdministratorInstitutionGeneral({
         </div>
         <h2 class="h4">Limits</h2>
         <div class="mb-3">
-          <label class="form-label" for="course_instance_enrollment_limit"
-            >Course instance enrollment limit</label
-          >
+          <label class="form-label" for="course_instance_enrollment_limit">
+            Course instance enrollment limit
+          </label>
           <input
             type="number"
             class="form-control"
