@@ -112,13 +112,11 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             and can be used for your own review purposes. They are not used for grading.
           </p>
           <div class="mb-3">
-            <div class="custom-file">
-              <input type="file" name="file" class="custom-file-input" id="attachFileInput" />
-              <label class="custom-file-label" for="attachFileInput">Choose file</label>
-              <small class="form-text text-muted">
-                Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
-              </small>
-            </div>
+            <label class="form-label" for="attachFileInput">Choose file</label>
+            <input type="file" name="file" class="form-control" id="attachFileInput" />
+            <small class="form-text text-muted">
+              Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
+            </small>
           </div>
           <div class="mb-3 mb-0">
             <input type="hidden" name="__action" value="attach_file" />

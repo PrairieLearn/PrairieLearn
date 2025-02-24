@@ -250,17 +250,15 @@ function UploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string })
     body: html`
       ${CsvHelpInstanceQuestionScores()}
       <div class="mb-3">
-        <div class="custom-file">
-          <input
-            type="file"
-            name="file"
-            class="custom-file-input"
-            id="uploadInstanceQuestionScoresFileInput"
-          />
-          <label class="custom-file-label" for="uploadInstanceQuestionScoresFileInput">
-            Choose CSV file
-          </label>
-        </div>
+        <label class="form-label" for="uploadInstanceQuestionScoresFileInput">
+          Choose CSV file
+        </label>
+        <input
+          type="file"
+          name="file"
+          class="form-control"
+          id="uploadInstanceQuestionScoresFileInput"
+        />
       </div>
     `,
     footer: html`
@@ -280,17 +278,15 @@ function UploadAssessmentInstanceScoresModal({ csrfToken }: { csrfToken: string 
     body: html`
       ${CsvHelpAssessmentInstanceScores()}
       <div class="mb-3">
-        <div class="custom-file">
-          <input
-            type="file"
-            name="file"
-            class="custom-file-input"
-            id="uploadAssessmentInstanceScoresFileInput"
-          />
-          <label class="custom-file-label" for="uploadAssessmentInstanceScoresFileInput"
-            >Choose CSV file</label
-          >
-        </div>
+        <label class="form-label" for="uploadAssessmentInstanceScoresFileInput">
+          Choose CSV file
+        </label>
+        <input
+          type="file"
+          name="file"
+          class="form-control"
+          id="uploadAssessmentInstanceScoresFileInput"
+        />
       </div>
     `,
     footer: html`

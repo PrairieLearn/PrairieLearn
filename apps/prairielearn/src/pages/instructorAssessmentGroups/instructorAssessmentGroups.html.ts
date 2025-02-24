@@ -380,18 +380,14 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
         the grouping, link uids to the groupname.
       </p>
       <div class="mb-3">
-        <div class="custom-file">
-          <input
-            type="file"
-            accept=".csv"
-            name="file"
-            class="custom-file-input"
-            id="uploadAssessmentGroupsFileInput"
-          />
-          <label class="custom-file-label" for="uploadAssessmentGroupsFileInput">
-            Choose CSV file
-          </label>
-        </div>
+        <label class="form-label" for="uploadAssessmentGroupsFileInput"> Choose CSV file </label>
+        <input
+          type="file"
+          accept=".csv"
+          name="file"
+          class="form-control"
+          id="uploadAssessmentGroupsFileInput"
+        />
       </div>
     `,
     footer: html`
