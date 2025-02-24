@@ -166,7 +166,7 @@ onDocumentReady(() => {
 
   $('[data-bs-toggle="modal"]').click(function (e) {
     e.stopPropagation(); // Keep click from changing sort
-    $($(e.currentTarget).data('target')).modal('show');
+    $($(e.currentTarget).data('bs-target')).modal('show');
   });
 });
 
