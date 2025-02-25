@@ -95,8 +95,12 @@ export function trapFocus(element: Element): FocusTrap {
 
   return {
     deactivate() {
-      document.removeEventListener('keydown', keyDown);
-      (previousActiveElement as HTMLElement)?.focus({ preventScroll: true });
+      // Restore focus to the previously active element, but only if focus is
+      // currently inside the trap container.
+      if (element.contains(document.activeElement)) {
+        document.removeEventListener('keydown', keyDown);
+        (previousActiveElement as HTMLElement)?.focus({ preventScroll: true });
+      }
     },
   };
 }
