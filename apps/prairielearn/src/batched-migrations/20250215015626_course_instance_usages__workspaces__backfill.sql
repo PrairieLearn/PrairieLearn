@@ -29,7 +29,8 @@ INSERT INTO
   )
 SELECT
   'Workspace',
-  i.id,
+  -- There will only be one institution, so we can use `any_value()`
+  any_value (i.id),
   c.id,
   ci.id,
   date_trunc('day', w.state_updated_at, 'UTC'),
@@ -37,8 +38,10 @@ SELECT
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
   v.authn_user_id,
-  coalesce(ai.include_in_statistics, false),
-  w.launching_duration + w.running_duration,
+  -- It's possible that there are different values of `include_in_statistics`
+  -- but we aren't worried about tracking this accurately.
+  any_value (coalesce(ai.include_in_statistics, false)),
+  sum(w.launching_duration + w.running_duration)
 FROM
   workspaces AS w
   JOIN variants AS v ON (v.workspace_id = w.id)
@@ -52,7 +55,16 @@ FROM
 WHERE
   w.id >= $start
   AND w.id <= $end
+GROUP BY
+  -- We need to aggregate by all columns in the unique constraint because INSERT
+  -- ... ON CONFLICT DO UPDATE can't update a row multiple times.
+  c.id,
+  ci.id,
+  date_trunc('day', w.state_updated_at, 'UTC'),
+  v.authn_user_id
 ON CONFLICT (
+  -- Conflicts will only occur with pre-existing rows, not from rows inserted by
+  -- the current execution of this query.
   type,
   course_id,
   course_instance_id,
