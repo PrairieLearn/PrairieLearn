@@ -96,7 +96,7 @@ export function trapFocus(element: Element): FocusTrap {
   return {
     deactivate() {
       document.removeEventListener('keydown', keyDown);
-      (previousActiveElement as HTMLElement)?.focus();
+      (previousActiveElement as HTMLElement)?.focus({ preventScroll: true });
     },
   };
 }
