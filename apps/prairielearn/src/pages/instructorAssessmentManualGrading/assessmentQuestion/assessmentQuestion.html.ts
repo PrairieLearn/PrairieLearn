@@ -54,14 +54,13 @@ export function AssessmentQuestion({
         from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
       <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
       <script src="${nodeModulesAssetPath(
-          'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-        )}"></script>
-      <script src="${nodeModulesAssetPath(
           'bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js',
         )}"></script>
       <script src="${nodeModulesAssetPath(
           'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js',
         )}"></script>
+
+      ${compiledScriptTag('bootstrap-table-sticky-header.js')}
       ${compiledScriptTag('instructorAssessmentManualGradingAssessmentQuestionClient.ts')}
       ${compiledStylesheetTag('instructorAssessmentManualGradingAssessmentQuestion.css')}
       ${EncodedData<InstanceQuestionTableData>(

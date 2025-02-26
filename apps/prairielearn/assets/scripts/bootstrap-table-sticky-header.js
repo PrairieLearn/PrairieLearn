@@ -1,3 +1,9 @@
+// Modified version of bootstrap-table-sticky-header.js in bootstrap-table
+// Link: https://github.com/wenzhixin/bootstrap-table/blob/develop/src/extensions/sticky-header/bootstrap-table-sticky-header.js
+//
+// This version makes the sticky header aware of non-window scrolling containers, necessary for
+// the side nav component when enhanced navigation is enabled.
+
 /**
  * @author vincent loh <vincent.ml@gmail.com>
  * @update J Manuel Corona <jmcg92@gmail.com>
@@ -36,22 +42,23 @@ $.BootstrapTable = class extends $.BootstrapTable {
     this.$stickyEnd = this.$tableBody.find('.sticky_anchor_end');
     this.$stickyHeader = this.$header.clone(true, true);
 
-    // TODO: pass this down?
-
-    let $overflowAutoAncestor = this.$tableBody
+    let $nonBodyScrollableAncestor = this.$tableBody
       .parents()
       .filter(function () {
         return (
           ($(this).css('overflow') === 'auto' || $(this).css('overflow-y') === 'auto') &&
           !$(this).is('body')
+          // Exclude the body tag, since we will handle scrolling
+          // with the whole window differently.
         );
       })
       .first();
 
-    // render sticky on window scroll or resize
-    if ($overflowAutoAncestor.length === 0) {
-      const resizeEvent = Utils.getEventName('resize.sticky-header-table', this.$el.attr('id'));
-      const scrollEvent = Utils.getEventName('scroll.sticky-header-table', this.$el.attr('id'));
+    const resizeEvent = Utils.getEventName('resize.sticky-header-table', this.$el.attr('id'));
+    const scrollEvent = Utils.getEventName('scroll.sticky-header-table', this.$el.attr('id'));
+
+    if ($nonBodyScrollableAncestor.length === 0) {
+      // Handle resize and scroll events based on the whole window
       $(window)
         .off(resizeEvent)
         .on(resizeEvent, () => this.renderStickyHeader());
@@ -59,10 +66,11 @@ $.BootstrapTable = class extends $.BootstrapTable {
         .off(scrollEvent)
         .on(scrollEvent, () => this.renderStickyHeader());
     } else {
-      $overflowAutoAncestor.off('resize').on('resize', () => this.renderStickyHeader());
-      $overflowAutoAncestor.off('scroll').on('scroll', () => this.renderStickyHeader());
-      this.$tableBody.off('scroll').on('scroll', () => this.matchPositionX());
+      // Handle resize and scroll events based on the scrollable ancestor
+      $nonBodyScrollableAncestor.off(resizeEvent).on(resizeEvent, () => this.renderStickyHeader());
+      $nonBodyScrollableAncestor.off().on(scrollEvent, () => this.renderStickyHeader());
     }
+    this.$tableBody.off('scroll').on('scroll', () => this.matchPositionX());
   }
 
   onColumnSearch({ currentTarget, keyCode }) {
@@ -110,8 +118,6 @@ $.BootstrapTable = class extends $.BootstrapTable {
   }
 
   renderStickyHeader() {
-    const that = this;
-
     this.$stickyHeader = this.$header.clone(true, true);
 
     if (this.options.filterControl) {
@@ -121,7 +127,7 @@ $.BootstrapTable = class extends $.BootstrapTable {
           const $target = $(e.target);
           const value = $target.val();
           const field = $target.parents('th').data('field');
-          const $coreTh = that.$header.find(`th[data-field="${field}"]`);
+          const $coreTh = this.$header.find(`th[data-field="${field}"]`);
 
           if ($target.is('input')) {
             $coreTh.find('input').val(value);
@@ -132,42 +138,61 @@ $.BootstrapTable = class extends $.BootstrapTable {
             $select.find(`option[value="${value}"]`).attr('selected', true);
           }
 
-          that.triggerSearch();
+          this.triggerSearch();
         });
     }
 
-    let $overflowAutoAncestor = this.$tableBody
+    let $nonBodyScrollableAncestor = this.$tableBody
       .parents()
       .filter(function () {
         return (
           ($(this).css('overflow') === 'auto' || $(this).css('overflow-y') === 'auto') &&
           !$(this).is('body')
+          // Exclude the body tag, since we will handle scrolling
+          // with the whole window differently.
         );
       })
       .first();
 
-    let top;
-    let offsetTop;
-    let start;
-    let end;
+    // Amount of pixels scrolled down from top edge of the window/overflow container
+    let scrollTop;
 
-    if ($overflowAutoAncestor.length === 0) {
-      top = $(window).scrollTop();
+    // Distance from top of the window/overflow container to the top of the document
+    // Zero for window, generally non-zero for overflow containers
+    let offsetTop;
+
+    // Distance from the top of the document to the top of the sticky header
+    let stickyBegin;
+
+    // Distance from the top of the document to the bottom of the sticky header
+    let stickyEnd;
+
+    if ($nonBodyScrollableAncestor.length === 0) {
+      scrollTop = $(window).scrollTop();
+
+      // Zero, since the top of the window is the top of the document
       offsetTop = 0;
 
-      start = this.$stickyBegin.offset().top - this.options.stickyHeaderOffsetY;
-      end = this.$stickyEnd.offset().top - this.options.stickyHeaderOffsetY;
+      stickyBegin = this.$stickyBegin.offset().top - this.options.stickyHeaderOffsetY;
+      stickyEnd = this.$stickyEnd.offset().top - this.options.stickyHeaderOffsetY;
     } else {
-      top = $overflowAutoAncestor.scrollTop();
-      offsetTop = $overflowAutoAncestor.offset().top;
-      // top anchor scroll position, minus overflow auto ancestor top
-      start = this.$stickyBegin.offset().top + top - this.options.stickyHeaderOffsetY;
-      // bottom anchor scroll position, minus header height, minus sticky height
-      end = this.$stickyEnd.offset().top + top - this.options.stickyHeaderOffsetY;
+      scrollTop = $nonBodyScrollableAncestor.scrollTop();
+
+      // Distance from the top of the overflow container to the top of the document
+      offsetTop = $nonBodyScrollableAncestor.offset().top;
+
+      stickyBegin = this.$stickyBegin.offset().top + scrollTop - this.options.stickyHeaderOffsetY;
+      stickyEnd = this.$stickyEnd.offset().top + scrollTop - this.options.stickyHeaderOffsetY;
     }
 
-    // show sticky when top anchor touches header, and when bottom anchor not exceeded
-    if (top + offsetTop > start && top <= end) {
+    console.log(scrollTop, offsetTop, stickyBegin, stickyEnd);
+
+    // Show sticky when top anchor touches header, and when bottom anchor not exceeded
+
+    // We add offsetTop to scrollTop to account for the distance from the top of the
+    // overflow container/window to the top of the document. Especially important for
+    // non-window scrolling containers.
+    if (scrollTop + offsetTop > stickyBegin && scrollTop <= stickyEnd) {
       // ensure clone and source column widths are the same
       this.$stickyHeader.find('tr').each((indexRows, rows) => {
         $(rows)
