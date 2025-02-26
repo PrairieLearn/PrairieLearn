@@ -25,7 +25,6 @@ export function InstructorAssessmentSettings({
   assessmentModules: AssessmentModule[];
   canEdit: boolean;
 }) {
-  console.log(resLocals.assessment);
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
