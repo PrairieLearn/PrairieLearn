@@ -34,26 +34,38 @@ $(function () {
   });
   const loadingFrame = document.getElementById('loading') as HTMLDivElement;
   const stoppedFrame = document.getElementById('stopped') as HTMLDivElement;
+  const failedFrame = document.getElementById('failed') as HTMLDivElement;
   const workspaceFrame = document.getElementById('workspace') as HTMLIFrameElement;
   const stateBadge = document.getElementById('state') as HTMLSpanElement;
   const messageBadge = document.getElementById('message') as HTMLSpanElement;
+  const failedMessageParagraph = document.getElementById('failed-message') as HTMLElement;
   const reloadButton = document.getElementById('reload') as HTMLButtonElement;
 
   const showStoppedFrame = () => {
     loadingFrame.style.setProperty('display', 'none', 'important');
     stoppedFrame.style.setProperty('display', 'flex', 'important');
+    failedFrame.style.setProperty('display', 'none', 'important');
+    workspaceFrame.style.setProperty('display', 'none', 'important');
+  };
+
+  const showFailedFrame = () => {
+    loadingFrame.style.setProperty('display', 'none', 'important');
+    stoppedFrame.style.setProperty('display', 'none', 'important');
+    failedFrame.style.setProperty('display', 'flex', 'important');
     workspaceFrame.style.setProperty('display', 'none', 'important');
   };
 
   const showWorkspaceFrame = () => {
     loadingFrame.style.setProperty('display', 'none', 'important');
     stoppedFrame.style.setProperty('display', 'none', 'important');
+    failedFrame.style.setProperty('display', 'none', 'important');
     workspaceFrame.style.setProperty('display', 'flex', 'important');
   };
 
   function setMessage(message: string) {
     console.log('message', message);
     messageBadge.textContent = message;
+    failedMessageParagraph.textContent = message;
     if (message) {
       stateBadge.classList.add('badge-prepend');
     } else {
@@ -77,6 +89,8 @@ $(function () {
       workspaceFrame.src = 'about:blank';
       if (previousState === 'running') {
         showStoppedFrame();
+      } else if (previousState === 'launching') {
+        showFailedFrame();
       }
     }
     stateBadge.textContent = state;

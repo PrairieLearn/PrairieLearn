@@ -170,6 +170,14 @@ export function Workspace({
             <p>Your data was automatically saved. Reload the page to restart the workspace.</p>
             <button id="reload" class="btn btn-primary">Reload</button>
           </div>
+          <div
+            id="failed"
+            class="d-none h-100 flex-grow flex-column justify-content-center align-items-center"
+          >
+            <i class="d-block fa fa-10x fa-xmark text-danger" aria-hidden="true"></i>
+            <h2>Workspace failed to load</h2>
+            <p id="failed-message"></p>
+          </div>
           <iframe id="workspace" class="d-none flex-grow h-100 border-0"></iframe>
         </main>
       </body>
