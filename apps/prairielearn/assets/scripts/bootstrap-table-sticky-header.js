@@ -154,11 +154,11 @@ $.BootstrapTable = class extends $.BootstrapTable {
       })
       .first();
 
-    // Amount of pixels scrolled down from top edge of the window/overflow container
+    // Amount of pixels scrolled down from top edge of the window/scrollable container
     let scrollTop;
 
-    // Distance from top of the window/overflow container to the top of the document
-    // Zero for window, generally non-zero for overflow containers
+    // Distance from top of the window/scrollable container to the top of the document
+    // Zero for window, generally non-zero for window containers
     let offsetTop;
 
     // Distance from the top of the document to the top of the sticky header
@@ -170,7 +170,7 @@ $.BootstrapTable = class extends $.BootstrapTable {
     if ($nonBodyScrollableAncestor.length === 0) {
       scrollTop = $(window).scrollTop();
 
-      // Zero, since the top of the window is the top of the document
+      // The window’s top is aligned with the document’s top.
       offsetTop = 0;
 
       stickyBegin = this.$stickyBegin.offset().top - this.options.stickyHeaderOffsetY;
@@ -178,7 +178,7 @@ $.BootstrapTable = class extends $.BootstrapTable {
     } else {
       scrollTop = $nonBodyScrollableAncestor.scrollTop();
 
-      // Distance from the top of the overflow container to the top of the document
+      // Distance from the top of the scrollable container to the top of the document
       offsetTop = $nonBodyScrollableAncestor.offset().top;
 
       stickyBegin = this.$stickyBegin.offset().top + scrollTop - this.options.stickyHeaderOffsetY;
@@ -187,9 +187,9 @@ $.BootstrapTable = class extends $.BootstrapTable {
 
     // Show sticky when top anchor touches header, and when bottom anchor not exceeded
 
-    // We add offsetTop to scrollTop to account for the distance from the top of the
-    // overflow container/window to the top of the document. Especially important for
-    // non-window scrolling containers.
+    // Add offsetTop to scrollTop to account for the distance from the top of the
+    // scrollable container to the top of the document.
+
     if (scrollTop + offsetTop > stickyBegin && scrollTop <= stickyEnd) {
       // ensure clone and source column widths are the same
       this.$stickyHeader.find('tr').each((indexRows, rows) => {
