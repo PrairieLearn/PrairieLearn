@@ -48,8 +48,8 @@ $.BootstrapTable = class extends $.BootstrapTable {
         return (
           ($(this).css('overflow') === 'auto' || $(this).css('overflow-y') === 'auto') &&
           !$(this).is('body')
-          // Exclude the body tag, since we will handle scrolling
-          // with the whole window differently.
+          // Exclude the body tag, since we will handle scrolling differently if
+          // the body is the scrollable ancestor.
         );
       })
       .first();
@@ -58,7 +58,7 @@ $.BootstrapTable = class extends $.BootstrapTable {
     const scrollEvent = Utils.getEventName('scroll.sticky-header-table', this.$el.attr('id'));
 
     if ($nonBodyScrollableAncestor.length === 0) {
-      // Handle resize and scroll events based on the whole window
+      // Handle resize and scroll events based on the window
       $(window)
         .off(resizeEvent)
         .on(resizeEvent, () => this.renderStickyHeader());
@@ -148,17 +148,16 @@ $.BootstrapTable = class extends $.BootstrapTable {
         return (
           ($(this).css('overflow') === 'auto' || $(this).css('overflow-y') === 'auto') &&
           !$(this).is('body')
-          // Exclude the body tag, since we will handle scrolling
-          // with the whole window differently.
+          // Exclude the body tag, since we will handle scrolling differently if
+          // the body is the scrollable ancestor.
         );
       })
       .first();
 
-    // Amount of pixels scrolled down from top edge of the window/scrollable container
+    // Amount of pixels scrolled down from the top edge of the scrollable container
     let scrollTop;
 
-    // Distance from top of the window/scrollable container to the top of the document
-    // Zero for window, generally non-zero for window containers
+    // Distance from top of the scrollable container to the top of the document
     let offsetTop;
 
     // Distance from the top of the document to the top of the sticky header
