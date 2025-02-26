@@ -185,8 +185,6 @@ $.BootstrapTable = class extends $.BootstrapTable {
       stickyEnd = this.$stickyEnd.offset().top + scrollTop - this.options.stickyHeaderOffsetY;
     }
 
-    console.log(scrollTop, offsetTop, stickyBegin, stickyEnd);
-
     // Show sticky when top anchor touches header, and when bottom anchor not exceeded
 
     // We add offsetTop to scrollTop to account for the distance from the top of the
