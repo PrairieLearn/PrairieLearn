@@ -16,7 +16,7 @@ A trusted group of core developers are responsible for maintaining the PrairieLe
 - **Merging responsibilities**
 
   - If a maintainer opens a PR, that person is responsible for merging it after it has been approved.
-  - For PRs from non-maintainers, the primary reviewer of the PR is responsible for merging it. If there are outstanding nitpicks or unresolved discussions, container checking with the author before merging.
+  - For PRs from non-maintainers, the primary reviewer is responsible for merging the PR. If there are outstanding nitpicks or unresolved discussions, consult with the author before merging.
 
 - **Taking over abandoned PRs**
   - If a PR appears abandoned, another maintainer may choose to take it over.
