@@ -194,11 +194,6 @@ router.post(
         req.body.auto_close === 'on',
         true,
       );
-      assessmentInfo.allowRealTimeGrading = propertyValueWithDefault(
-        assessmentInfo.allowRealTimeGrading,
-        req.body.allow_real_time_grading === 'on',
-        true,
-      );
       assessmentInfo.requireHonorCode = propertyValueWithDefault(
         assessmentInfo.requireHonorCode,
         req.body.require_honor_code === 'on',

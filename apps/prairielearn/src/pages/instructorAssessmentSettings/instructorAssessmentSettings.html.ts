@@ -175,22 +175,26 @@ ${resLocals.assessment.text}</textarea
                 </div>
               </div>
             </div>
-            <div class="form-group">
-              <div class="form-group form-check">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="multiple_instance"
-                  name="multiple_instance"
-                  ${canEdit ? '' : 'disabled'}
-                  ${resLocals.assessment.multiple_instance ? 'checked' : ''}
-                />
-                <label class="form-check-label" for="multiple_instance">Multiple Instances</label>
-                <div class="form-text small text-muted">
-                  Whether to allow students to create additional instances of the assessment.
-                </div>
-              </div>
-            </div>
+            ${resLocals.assessment.type !== 'Homework'
+              ? html` <div class="form-group">
+                  <div class="form-group form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="multiple_instance"
+                      name="multiple_instance"
+                      ${canEdit ? '' : 'disabled'}
+                      ${resLocals.assessment.multiple_instance ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="multiple_instance"
+                      >Multiple Instances</label
+                    >
+                    <div class="form-text small text-muted">
+                      Whether to allow students to create additional instances of the assessment.
+                    </div>
+                  </div>
+                </div>`
+              : ''}
             <div class="form-group">
               <div class="form-group form-check">
                 <input
@@ -222,25 +226,6 @@ ${resLocals.assessment.text}</textarea
                 <label class="form-check-label" for="auto_close">Auto close</label>
                 <div class="form-text small text-muted">
                   Whether to automatically close the assessment after a period of inactivity.
-                </div>
-              </div>
-            </div>
-            <div class="form-group">
-              <div class="form-group form-check">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="allow_real_time_grading"
-                  name="allow_real_time_grading"
-                  ${canEdit ? '' : 'disabled'}
-                  ${resLocals.assessment.allow_real_time_grading ? 'checked' : ''}
-                />
-                <label class="form-check-label" for="allow_real_time_grading"
-                  >Allow real time grading</label
-                >
-                <div class="form-text small text-muted">
-                  If unchecked, the student "Grade" buttons are removed to prevent real-time grading
-                  while the assessment is being taken.
                 </div>
               </div>
             </div>
