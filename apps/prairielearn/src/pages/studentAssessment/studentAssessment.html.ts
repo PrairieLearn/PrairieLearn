@@ -228,7 +228,7 @@ function GroupCreationJoinForm({
                     characters.
                   </small>
                   <div class="mt-4 d-flex justify-content-center">
-                    <div class="mb-3 mb-0">
+                    <div class="mb-3">
                       <input type="hidden" name="__action" value="create_group" />
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                       <button type="submit" class="btn btn-primary">Create new group</button>
@@ -251,7 +251,7 @@ function GroupCreationJoinForm({
                     placeholder="abcd-1234"
                   />
                   <div class="mt-4 d-flex justify-content-center">
-                    <div class="mb-3 mb-0">
+                    <div class="mb-3">
                       <input type="hidden" name="__action" value="join_group" />
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                       <button type="submit" class="btn btn-primary">Join group</button>

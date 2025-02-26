@@ -118,7 +118,7 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
               Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
             </small>
           </div>
-          <div class="mb-3 mb-0">
+          <div class="mb-3">
             <input type="hidden" name="__action" value="attach_file" />
             ${variantId != null
               ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
