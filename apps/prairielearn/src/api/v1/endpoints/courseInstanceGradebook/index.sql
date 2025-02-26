@@ -48,8 +48,7 @@ WITH
       aig.points,
       format_date_iso8601 (aig.date, ci.display_timezone) AS start_date,
       DATE_PART('epoch', aig.duration) AS duration_seconds,
-      aig.id AS assessment_instance_id,
-      aig.group_id
+      aig.id AS assessment_instance_id
     FROM
       assessment_instances_with_groups AS aig
       JOIN course_instances AS ci ON (ci.id = $course_instance_id)
