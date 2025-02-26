@@ -32,8 +32,8 @@ The `token` is your personal access token described above. The `course-instance-
 
 All API endpoints are located at `/pl/api/v1/`. If you're running on
 production PrairieLearn, that means the API is at
-https://us.prairielearn.com/pl/api/v1. If you're running it locally
-at port 3000, the API is accessible via http://localhost:3000/pl/api/v1/.
+<https://us.prairielearn.com/pl/api/v1>. If you're running it locally
+at port 3000, the API is accessible via <http://localhost:3000/pl/api/v1/>.
 
 In the endpoint list below, path components starting with a colon like
 `:course_instance_id` should be replaced with the integer IDs.
