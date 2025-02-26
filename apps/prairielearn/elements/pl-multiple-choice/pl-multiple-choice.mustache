@@ -75,12 +75,12 @@
         {{^editable}}disabled{{/editable}}
         aria-label="Multiple choice options"
     >
-        <option value="" disabled selected data-bs-content="{{placeholder}}"></option>
+        <option value="" disabled selected data-content="{{placeholder}}"></option>
         {{#answers}}
             <option
                 value="{{key}}"
                 style="white-space:normal;"
-                data-bs-content="{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{html}}"
+                data-content="{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{html}}"
                 {{#selected}}selected{{/selected}}
             ></option>
         {{/answers}}
