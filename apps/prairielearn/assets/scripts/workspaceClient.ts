@@ -89,7 +89,7 @@ $(function () {
       workspaceFrame.src = 'about:blank';
       if (previousState === 'running') {
         showStoppedFrame();
-      } else if (previousState === 'launching') {
+      } else {
         showFailedFrame();
       }
     }
