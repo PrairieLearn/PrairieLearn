@@ -47,6 +47,14 @@ export const AdministratorSchema = z.object({
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
 
+export const AiGradingPromptSchema = z.object({
+  id: IdSchema,
+  prompt: z.any(),
+  response: z.any(),
+  submission_id: IdSchema,
+});
+export type AiGradingPrompt = z.infer<typeof AiGradingPromptSchema>;
+
 export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
   assessment_id: IdSchema,

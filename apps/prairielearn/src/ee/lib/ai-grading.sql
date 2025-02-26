@@ -123,3 +123,13 @@ FROM
   JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
 WHERE
   rgi.rubric_grading_id = $manual_rubric_grading_id;
+
+-- BLOCK insert_ai_grading_prompt
+INSERT INTO
+  ai_grading_prompts (submission_id, prompt, completion)
+VALUES
+  (
+    $submission_id,
+    to_jsonb($prompt::text[]),
+    $completion
+  );

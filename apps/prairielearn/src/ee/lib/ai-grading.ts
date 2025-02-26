@@ -4,7 +4,13 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import {
@@ -410,6 +416,11 @@ export async function aiGrade({
           user: `course_${course.id}`,
           response_format: zodResponseFormat(GPTRubricScoreSchema, 'score'),
         });
+        await queryAsync(sql.insert_ai_grading_prompt, {
+          submission_id: submission.id,
+          prompt: messages,
+          completion,
+        });
         try {
           job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);
           const response = completion.choices[0].message;
@@ -483,6 +494,11 @@ export async function aiGrade({
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
           response_format: zodResponseFormat(GPTScoreSchema, 'score'),
+        });
+        await queryAsync(sql.insert_ai_grading_prompt, {
+          submission_id: submission.id,
+          prompt: messages,
+          completion,
         });
         try {
           job.info(`Number of tokens used: ${completion.usage?.total_tokens ?? 0}`);

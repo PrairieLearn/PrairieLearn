@@ -1,0 +1,12 @@
+columns
+    completion: jsonb not null
+    id: bigint not null default nextval('ai_grading_prompts_id_seq'::regclass)
+    prompt: jsonb not null
+    submission_id: bigint
+
+indexes
+    ai_grading_prompts_pkey: PRIMARY KEY (id) USING btree (id)
+    ai_grading_prompts_submission_id_idx: USING btree (submission_id)
+
+foreign-key constraints
+    ai_grading_prompts_submission_id_fkey: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE SET NULL
