@@ -32,7 +32,7 @@
     "chai-as-promised": "^8.0.1",
     "mocha": "^10.8.2",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.19.2",
+    "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "typescript-cp": "^0.1.9"
   },
