@@ -36,27 +36,33 @@ $.BootstrapTable = class extends $.BootstrapTable {
     this.$stickyEnd = this.$tableBody.find('.sticky_anchor_end');
     this.$stickyHeader = this.$header.clone(true, true);
 
+    // TODO: pass this down?
+
+    let $overflowAutoAncestor = this.$tableBody
+      .parents()
+      .filter(function () {
+        return (
+          ($(this).css('overflow') === 'auto' || $(this).css('overflow-y') === 'auto') &&
+          !$(this).is('body')
+        );
+      })
+      .first();
+
     // render sticky on window scroll or resize
-    const resizeEvent = Utils.getEventName('resize.sticky-header-table', this.$el.attr('id'));
-    const scrollEvent = Utils.getEventName('scroll.sticky-header-table', this.$el.attr('id'));
-
-    // let firstScrollableAncestor = $tableBody.parentElement;
-    // while (parent) {
-    //   const style = window.getComputedStyle(parent);
-    //   // Check if any of the overflow properties are set to 'auto' or 'scroll'
-    //   if (/(auto|scroll)/.test(style.overflow + style.overflowY + style.overflowX)) {
-    //     return parent;
-    //   }
-    //   firstScrollableAncestor = parent.parentElement;
-    // }
-
-    $(window)
-      .off(resizeEvent)
-      .on(resizeEvent, () => this.renderStickyHeader());
-    $(window)
-      .off(scrollEvent)
-      .on(scrollEvent, () => this.renderStickyHeader());
-    this.$tableBody.off('scroll').on('scroll', () => this.matchPositionX());
+    if ($overflowAutoAncestor.length === 0) {
+      const resizeEvent = Utils.getEventName('resize.sticky-header-table', this.$el.attr('id'));
+      const scrollEvent = Utils.getEventName('scroll.sticky-header-table', this.$el.attr('id'));
+      $(window)
+        .off(resizeEvent)
+        .on(resizeEvent, () => this.renderStickyHeader());
+      $(window)
+        .off(scrollEvent)
+        .on(scrollEvent, () => this.renderStickyHeader());
+    } else {
+      $overflowAutoAncestor.off('resize').on('resize', () => this.renderStickyHeader());
+      $overflowAutoAncestor.off('scroll').on('scroll', () => this.renderStickyHeader());
+      this.$tableBody.off('scroll').on('scroll', () => this.matchPositionX());
+    }
   }
 
   onColumnSearch({ currentTarget, keyCode }) {
@@ -133,54 +139,35 @@ $.BootstrapTable = class extends $.BootstrapTable {
     let $overflowAutoAncestor = this.$tableBody
       .parents()
       .filter(function () {
-        return $(this).css('overflow') === 'auto' || $(this).css('overflow-y') === 'auto';
+        return (
+          ($(this).css('overflow') === 'auto' || $(this).css('overflow-y') === 'auto') &&
+          !$(this).is('body')
+        );
       })
       .first();
 
-    if (!$overflowAutoAncestor) {
-      $overflowAutoAncestor = window;
+    let top;
+    let offsetTop;
+    let start;
+    let end;
+
+    if ($overflowAutoAncestor.length === 0) {
+      top = $(window).scrollTop();
+      offsetTop = 0;
+
+      start = this.$stickyBegin.offset().top - this.options.stickyHeaderOffsetY;
+      end = this.$stickyEnd.offset().top - this.options.stickyHeaderOffsetY;
+    } else {
+      top = $overflowAutoAncestor.scrollTop();
+      offsetTop = $overflowAutoAncestor.offset().top;
+      // top anchor scroll position, minus overflow auto ancestor top
+      start = this.$stickyBegin.offset().top + top - this.options.stickyHeaderOffsetY;
+      // bottom anchor scroll position, minus header height, minus sticky height
+      end = this.$stickyEnd.offset().top + top - this.options.stickyHeaderOffsetY;
     }
 
-    console.log('overflowAutoAncestor', $overflowAutoAncestor);
-
-    // let i = 0;
-    // while (firstScrollableAncestor) {
-    //   //   const style = window.getComputedStyle(firstScrollableAncestor);
-    //   //   // Check if any of the overflow properties are set to 'auto' or 'scroll'
-    //   //   console.log('Style', style.overflow, firstScrollableAncestor);
-    //   //   if (/(auto|scroll)/.test(style.overflow + style.overflowY + style.overflowX)) {
-    //   //     break;
-    //   //   }
-    //   firstScrollableAncestor = firstScrollableAncestor.parent();
-    //   console.log('firstScrollableAncestor (found)', firstScrollableAncestor);
-    //   i++;
-    //   if (i < 100) {
-    //     break;
-    //   }
-    // }
-
-    // console.log('firstScrollableAncestor (found)', firstScrollableAncestor);
-
-    const top = $overflowAutoAncestor.scrollTop();
-    console.log('top', top);
-    const offsetTop = $overflowAutoAncestor.offset().top;
-    console.log('offset top', offsetTop);
-
-    // top anchor scroll position, minus header height and overflow auto ancestor top
-    const start = this.$stickyBegin.offset().top - offsetTop - this.options.stickyHeaderOffsetY;
-    console.log('start', start);
-
-    // bottom anchor scroll position, minus header height, minus sticky height
-    const end =
-      this.$stickyEnd.offset().top -
-      offsetTop -
-      this.options.stickyHeaderOffsetY -
-      this.$header.height();
-
-    console.log('end', end);
-
     // show sticky when top anchor touches header, and when bottom anchor not exceeded
-    if (top > start && top <= end) {
+    if (top + offsetTop > start && top <= end) {
       // ensure clone and source column widths are the same
       this.$stickyHeader.find('tr').each((indexRows, rows) => {
         $(rows)
