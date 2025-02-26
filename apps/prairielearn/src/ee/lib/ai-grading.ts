@@ -473,7 +473,7 @@ export async function aiGrade({
               submission.id,
               null, // check_modified_at
               {
-                score_perc: response.parsed.score,
+                manual_score_perc: response.parsed.score,
                 feedback: { manual: response.parsed.feedback },
               },
               user_id,
