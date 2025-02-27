@@ -326,7 +326,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
           flags: python
-          disable_search: true
 
   native-checks:
     runs-on: ubuntu-latest
