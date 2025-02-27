@@ -554,9 +554,9 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       );
 
       // Check that the errors no longer show
-      assertAlert($, 'role configuration is currently invalid', 0);
-      errorNotification = $('#role-config-errors');
+      errorNotification = $('[data-testid="group-role-config-problems"]');
       assert.lengthOf(errorNotification, 0, 'no error notification should appear');
+      assertAlert($, 'role configuration is currently invalid', 0);
       assertAlert($, 'too many roles', 0);
       assertAlert($, '1 less student needs to be assigned to the role "Recorder"', 0);
     });

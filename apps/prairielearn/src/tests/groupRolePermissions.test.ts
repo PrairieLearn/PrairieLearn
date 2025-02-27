@@ -505,7 +505,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Assert the correct errors show up on screen
-      let errorNotification = $('span.badge-danger:contains(2)');
+      let errorNotification = $('[data-testid="group-role-config-problems"]:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
@@ -525,7 +525,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       $ = assessmentInstanceSecondUserPage;
 
       // Assert that the same errors still show
-      errorNotification = $('span.badge-danger:contains(2)');
+      errorNotification = $('[data-testid="group-role-config-problems"]:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
@@ -549,7 +549,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Check that the errors no longer show
-      errorNotification = $('span.badge-danger');
+      errorNotification = $('[data-testid="group-role-config-problems"]');
       assert.lengthOf(errorNotification, 0, 'no error notification should appear');
       assertAlert($, 'role configuration is currently invalid', 0);
       assertAlert($, 'too many roles', 0);
