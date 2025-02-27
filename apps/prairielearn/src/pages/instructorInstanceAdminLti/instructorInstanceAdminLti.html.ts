@@ -169,12 +169,12 @@ function LtiCredentialsCard({
                         <button
                           type="button"
                           class="btn btn-sm btn-danger"
-                          data-toggle="popover"
-                          data-container="body"
-                          data-html="true"
-                          data-placement="auto"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
                           title="Confirm delete"
-                          data-content="${escapeHtml(html`
+                          data-bs-content="${escapeHtml(html`
                             <form method="post">
                               <input type="hidden" name="__action" value="lti_del_cred" />
                               <input type="hidden" name="__csrf_token" value="${csrfToken}" />
@@ -264,7 +264,7 @@ function LtiLinkTargetsCard({
                         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
                         <input type="hidden" name="lti_link_id" value="${link.id}" />
                         <select
-                          class="custom-select"
+                          class="form-select"
                           onChange="this.form.submit();"
                           name="newAssessment"
                         >
