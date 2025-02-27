@@ -45,6 +45,17 @@ onDocumentReady(() => {
     constructor: HTMLElement,
     add(el) {
       new window.bootstrap.Popover(el, { sanitize: false });
+
+      // Bootstrap will byt default copy the `title` attribute to `aria-label`,
+      // but it won't do that for `data-bs-title`. We do that here in the interest
+      // of making things maximally accessible by default. If an `aria-label`
+      // attribute is already present, we leave it alone.
+      if (!el.hasAttribute('aria-label')) {
+        const title = el.dataset.bsTitle;
+        if (title && !el.textContent?.trim()) {
+          el.setAttribute('aria-label', title);
+        }
+      }
     },
     remove(el) {
       window.bootstrap.Popover.getInstance(el)?.dispose();

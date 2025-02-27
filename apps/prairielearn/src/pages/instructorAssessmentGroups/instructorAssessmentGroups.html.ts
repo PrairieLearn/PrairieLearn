@@ -190,12 +190,12 @@ export function InstructorAssessmentGroups({
                                   <div class="dropdown-menu">
                                     <button
                                       class="dropdown-item js-group-action"
-                                      data-toggle="popover"
-                                      data-container="body"
-                                      data-html="true"
-                                      data-placement="auto"
-                                      title="Add members"
-                                      data-content="${escapeHtml(
+                                      data-bs-toggle="popover"
+                                      data-bs-container="body"
+                                      data-bs-html="true"
+                                      data-bs-placement="auto"
+                                      data-bs-title="Add members"
+                                      data-bs-content="${escapeHtml(
                                         AddMembersForm({
                                           row,
                                           csrfToken: resLocals.__csrf_token,
@@ -204,33 +204,40 @@ export function InstructorAssessmentGroups({
                                     >
                                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                                     </button>
-                                    <button
-                                      class="dropdown-item js-group-action"
-                                      ${row.users.length === 0
-                                        ? 'disabled'
-                                        : html`
-                                            data-toggle="popover" data-container="body"
-                                            data-html="true" data-placement="auto" title="Remove
-                                            members"
-                                            data-content="${escapeHtml(
+                                    ${row.users.length > 0
+                                      ? html`
+                                          <button
+                                            class="dropdown-item js-group-action"
+                                            data-bs-toggle="popover"
+                                            data-bs-container="body"
+                                            data-bs-html="true"
+                                            data-bs-placement="auto"
+                                            data-bs-title="Remove members"
+                                            data-bs-content="${escapeHtml(
                                               RemoveMembersForm({
                                                 row,
                                                 csrfToken: resLocals.__csrf_token,
                                               }),
                                             )}"
-                                          `}
-                                    >
-                                      <i class="fa fa-user-minus" aria-hidden="true"></i> Remove
-                                      members
-                                    </button>
+                                          >
+                                            <i class="fa fa-user-minus" aria-hidden="true"></i>
+                                            Remove members
+                                          </button>
+                                        `
+                                      : html`
+                                          <button class="dropdown-item js-group-action" disabled>
+                                            <i class="fa fa-user-minus" aria-hidden="true"></i>
+                                            Remove members
+                                          </button>
+                                        `}
                                     <button
                                       class="dropdown-item js-group-action"
-                                      data-toggle="popover"
-                                      data-container="body"
-                                      data-html="true"
-                                      data-placement="auto"
-                                      title="Delete group"
-                                      data-content="${escapeHtml(
+                                      data-bs-toggle="popover"
+                                      data-bs-container="body"
+                                      data-bs-html="true"
+                                      data-bs-placement="auto"
+                                      data-bs-title="Delete group"
+                                      data-bs-content="${escapeHtml(
                                         DeleteGroupForm({
                                           row,
                                           csrfToken: resLocals.__csrf_token,

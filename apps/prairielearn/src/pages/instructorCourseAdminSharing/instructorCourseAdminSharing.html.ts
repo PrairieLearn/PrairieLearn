@@ -165,8 +165,7 @@ export function InstructorCourseAdminSharing({
                       <button
                         type="button"
                         class="btn btn-xs btn-secondary mx-2"
-                        id="chooseSharingName"
-                        title="Choose Sharing Name"
+                        aria-label="Choose Sharing Name"
                         data-toggle="modal"
                         data-target="#chooseSharingNameModal"
                       >
@@ -251,12 +250,13 @@ export function InstructorCourseAdminSharing({
                           <button
                             type="button"
                             class="btn btn-sm btn-outline-dark"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Add Course to Sharing Set"
-                            data-content="${escapeHtml(
+                            aria-label="Add course to sharing set"
+                            data-bs-toggle="popover"
+                            data-bs-container="body"
+                            data-bs-html="true"
+                            data-bs-placement="auto"
+                            data-bs-title="Add Course to Sharing Set"
+                            data-bs-content="${escapeHtml(
                               AddCourseToSharingSetPopover({
                                 resLocals,
                                 sharing_set,

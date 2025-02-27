@@ -50,9 +50,9 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                           <button
                             type="button"
                             class="btn btn-sm btn-ghost"
-                            data-toggle="tooltip"
-                            data-placement="bottom"
-                            title="If the rubric is applied to manual points only, then a student's auto points are kept, and the rubric items will be added to (or subtracted from) the autograder results."
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            data-bs-title="If the rubric is applied to manual points only, then a student's auto points are kept, and the rubric items will be added to (or subtracted from) the autograder results."
                           >
                             <i class="fas fa-circle-info"></i>
                           </button>
@@ -79,9 +79,9 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                           <button
                             type="button"
                             class="btn btn-sm btn-ghost"
-                            data-toggle="tooltip"
-                            data-placement="bottom"
-                            title="If the rubric is applied to total points, then a student's auto points will be ignored, and the rubric items will be based on the total points of the question (${resLocals
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            data-bs-title="If the rubric is applied to total points, then a student's auto points will be ignored, and the rubric items will be based on the total points of the question (${resLocals
                               .assessment_question.max_points} points)."
                           >
                             <i class="fas fa-circle-info"></i>
@@ -123,9 +123,9 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     <button
                       type="button"
                       class="btn btn-sm btn-ghost"
-                      data-toggle="tooltip"
-                      data-placement="bottom"
-                      title="This setting only affects starting points. Rubric items may always be added with positive or negative points."
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="bottom"
+                      data-bs-title="This setting only affects starting points. Rubric items may always be added with positive or negative points."
                     >
                       <i class="fas fa-circle-info"></i>
                     </button>
@@ -137,9 +137,9 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     <button
                       type="button"
                       class="btn btn-sm btn-ghost"
-                      data-toggle="tooltip"
-                      data-placement="bottom"
-                      title="By default, penalties applied by rubric items cannot cause the rubric to have negative points. This value overrides this limit, e.g., for penalties that affect auto points or the assessment as a whole."
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="bottom"
+                      data-bs-title="By default, penalties applied by rubric items cannot cause the rubric to have negative points. This value overrides this limit, e.g., for penalties that affect auto points or the assessment as a whole."
                     >
                       <i class="fas fa-circle-info"></i>
                     </button>
@@ -158,9 +158,9 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     <button
                       type="button"
                       class="btn btn-sm btn-ghost"
-                      data-toggle="tooltip"
-                      data-placement="bottom"
-                      title="By default, points are limited to the maximum points assigned to the question, and credit assigned by rubric items do not violate this limit. This value allows rubric points to extend beyond this limit, e.g., for bonus credit."
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="bottom"
+                      data-bs-title="By default, points are limited to the maximum points assigned to the question, and credit assigned by rubric items do not violate this limit. This value allows rubric points to extend beyond this limit, e.g., for bonus credit."
                     >
                       <i class="fas fa-circle-info"></i>
                     </button>
@@ -235,9 +235,9 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                 <button
                   type="button"
                   class="btn btn-sm btn-ghost"
-                  data-toggle="tooltip"
-                  data-placement="top"
-                  title="Changes in rubric item values update the points for all previously graded submissions. If this option is selected, these submissions will also be tagged for manual grading, requiring a review by a grader."
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  data-bs-title="Changes in rubric item values update the points for all previously graded submissions. If this option is selected, these submissions will also be tagged for manual grading, requiring a review by a grader."
                 >
                   <i class="fas fa-circle-info"></i>
                 </button>

@@ -86,12 +86,13 @@ export function InstructorCourseAdminStaff({
             <button
               type="button"
               class="btn btn-light btn-sm ml-auto"
-              data-toggle="popover"
-              data-container="body"
-              data-html="true"
-              data-placement="auto"
-              title="Remove all student data access"
-              data-content="${escapeHtml(
+              aria-label="Remove all student data access"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-placement="auto"
+              data-bs-title="Remove all student data access"
+              data-bs-content="${escapeHtml(
                 CoursePermissionsRemoveStudentDataAccessForm({
                   csrfToken: resLocals.__csrf_token,
                 }),
@@ -104,12 +105,13 @@ export function InstructorCourseAdminStaff({
             <button
               type="button"
               class="btn btn-light btn-sm ml-auto"
-              data-toggle="popover"
-              data-container="body"
-              data-html="true"
-              data-placement="auto"
-              title="Delete users with no access"
-              data-content="${escapeHtml(
+              aria-label="Delete users with no access"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-placement="auto"
+              data-bs-title="Delete users with no access"
+              data-bs-content="${escapeHtml(
                 CoursePermissionsDeleteNoAccessForm({
                   csrfToken: resLocals.__csrf_token,
                 }),
@@ -122,12 +124,13 @@ export function InstructorCourseAdminStaff({
             <button
               type="button"
               class="btn btn-light btn-sm ml-auto"
-              data-toggle="popover"
-              data-container="body"
-              data-html="true"
-              data-placement="auto"
-              title="Delete non-owners"
-              data-content="${escapeHtml(
+              aria-label="Delete non-owners"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-placement="auto"
+              data-bs-title="Delete non-owners"
+              data-bs-content="${escapeHtml(
                 CoursePermissionsDeleteNonOwnersForm({
                   csrfToken: resLocals.__csrf_token,
                 }),
@@ -140,12 +143,13 @@ export function InstructorCourseAdminStaff({
             <button
               type="button"
               class="btn btn-light btn-sm ml-auto"
-              data-toggle="popover"
-              data-container="body"
-              data-html="true"
-              data-placement="auto"
-              title="Add users"
-              data-content="${escapeHtml(
+              aria-label="Add users"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-placement="auto"
+              data-bs-title="Add users"
+              data-bs-content="${escapeHtml(
                 CoursePermissionsInsertForm({
                   csrfToken: resLocals.__csrf_token,
                   uidsLimit,

@@ -204,13 +204,12 @@ export function InstructorAssessmentInstance({
                         type="button"
                         class="btn btn-xs btn-secondary"
                         id="editTotalPointsButton"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Change total points"
-                        aria-label="Change total points"
-                        data-content="${escapeHtml(
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-placement="auto"
+                        data-bs-title="Change total points"
+                        data-bs-content="${escapeHtml(
                           EditTotalPointsForm({
                             resLocals,
                           }),
@@ -234,13 +233,12 @@ export function InstructorAssessmentInstance({
                         type="button"
                         class="btn btn-xs btn-secondary"
                         id="editTotalScorePercButton"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
                         data-placement="auto"
-                        title="Change total percentage score"
-                        aria-label="Change total percentage score"
-                        data-content="${escapeHtml(
+                        data-bs-title="Change total percentage score"
+                        data-bs-content="${escapeHtml(
                           EditTotalScorePercForm({
                             resLocals,
                           }),
@@ -596,12 +594,12 @@ export function InstructorAssessmentInstance({
                                 row.client_fingerprint_number % 6
                               ]}"
                               id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
-                              data-toggle="popover"
-                              data-container="body"
-                              data-html="true"
-                              data-placement="auto"
-                              title="Fingerprint ${row.client_fingerprint_number}"
-                              data-content="${escapeHtml(html`
+                              data-bs-toggle="popover"
+                              data-bs-container="body"
+                              data-bs-html="true"
+                              data-bs-placement="auto"
+                              data-bs-title="Fingerprint ${row.client_fingerprint_number}"
+                              data-bs-content="${escapeHtml(html`
                                 <div>
                                   IP Address:
                                   <a

@@ -54,12 +54,12 @@ export function AdministratorCourses({
           <button
             type="button"
             class="btn btn-sm btn-light ml-auto"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-placement="auto"
-            title="Add new course"
-            data-content="${escapeHtml(
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Add new course"
+            data-bs-content="${escapeHtml(
               CourseInsertForm({
                 institutions,
                 csrfToken: resLocals.__csrf_token,
@@ -135,12 +135,12 @@ export function AdministratorCourses({
                         type="button"
                         class="btn btn-sm btn-danger text-nowrap"
                         id="courseDeleteButton${course.id}"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Really delete ${course.short_name}?"
-                        data-content="${escapeHtml(
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-placement="auto"
+                        data-bs-title="Confirm deletion of ${course.short_name}"
+                        data-bs-content="${escapeHtml(
                           CourseDeleteForm({
                             id: `courseDeleteButton${course.id}`,
                             course,
@@ -311,12 +311,12 @@ function CourseUpdateColumn({
       <button
         type="button"
         class="btn btn-xs btn-secondary"
-        data-toggle="popover"
-        data-container="body"
-        data-html="true"
-        data-placement="auto"
-        title="Change ${label}"
-        data-content="${escapeHtml(
+        data-bs-toggle="popover"
+        data-bs-container="body"
+        data-bs-html="true"
+        data-bs-placement="auto"
+        data-bs-title="Change ${label}"
+        data-bs-content="${escapeHtml(
           CourseUpdateColumnForm({
             course,
             column_name,

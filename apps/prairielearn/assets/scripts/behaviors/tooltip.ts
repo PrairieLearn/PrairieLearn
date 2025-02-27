@@ -8,7 +8,6 @@ onDocumentReady(() => {
     {
       constructor: HTMLElement,
       add(el) {
-        console.log('Initializing tooltip', el);
         new window.bootstrap.Tooltip(el);
 
         // Bootstrap doesn't support a single element triggering multiple things.
@@ -33,10 +32,10 @@ onDocumentReady(() => {
         }
 
         // By default, Bootstrap will copy the `title` attribute to the `aria-label`
-        // attribute. It will _also_ add an `aria-describedby` attribute that points
-        // to the tooltip when it's shown. This is problematic for screen readers,
-        // because it means that the screen reader will announce the tooltip's
-        // text twice.
+        // attribute if the trigger doesn't have any visible text. It will _also_
+        // add an `aria-describedby` attribute that points to the tooltip when it's
+        // shown. This is problematic for screen readers, because it means that the
+        // screen reader will announce the tooltip's text twice.
         //
         // We define our own convention: if `data-bs-title` is set and the tooltip
         // trigger doesn't have any text content or existing `aria-label`, we'll
@@ -47,14 +46,12 @@ onDocumentReady(() => {
           if (title && !el.textContent?.trim()) {
             el.setAttribute('aria-label', title);
           }
-
           el.addEventListener('inserted.bs.tooltip', () => {
             el.removeAttribute('aria-describedby');
           });
         }
       },
       remove(el) {
-        console.log('Disposing tooltip', el);
         window.bootstrap.Tooltip.getInstance(el)?.dispose();
       },
     },
