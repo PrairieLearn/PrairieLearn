@@ -1,4 +1,4 @@
-git pul// Modified version of bootstrap-table-sticky-header.js in bootstrap-table
+// Modified version of bootstrap-table-sticky-header.js in bootstrap-table
 // Link: https://github.com/wenzhixin/bootstrap-table/blob/f34204b3036e80c3545408d75930c955448c4fe5/src/extensions/sticky-header/bootstrap-table-sticky-header.js
 //
 // This version makes the sticky header aware of non-window scrolling containers, necessary for
