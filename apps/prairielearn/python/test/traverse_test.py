@@ -333,6 +333,32 @@ def test_traverse_and_replace_angle_brackets() -> None:
     assert html == "<pre><code>&lt;div&gt;</code></pre>"
 
 
+def test_traverse_and_replace_trailing_entity() -> None:
+    def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
+        if e.tag == "div":
+            return "<span><span>Goodbye</span> &amp;</span>"
+        return e
+
+    html = traverse_and_replace("<div>Hello</div>", replace)
+    assert html == "<span><span>Goodbye</span> &amp;</span>"
+
+
+def test_traverse_and_replace_comment_trailing_entity() -> None:
+    def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
+        return e
+
+    html = traverse_and_replace("hello <!-- comment --> &amp;", replace)
+    assert html == "hello <!-- comment --> &amp;"
+
+
+def test_traverse_and_replace_processing_instruction_trailing_entity() -> None:
+    def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
+        return e
+
+    html = traverse_and_replace('hello <?xml version="1.0"?> &amp;', replace)
+    assert html == 'hello <!--?xml version="1.0"?--> &amp;'
+
+
 def test_traverse_and_replace_xml_processing_instruction() -> None:
     def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
         return e

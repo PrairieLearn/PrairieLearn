@@ -37,7 +37,7 @@ and
 }
 ```
 
-#### Homework:
+#### Homework
 
 Every question added in the `infoAssessment.json` file will appear in the assessment. By default, the questions will appear in the same order they are entered in the `json` file. To shuffle the question, add the option:
 
@@ -49,7 +49,7 @@ Every question added in the `infoAssessment.json` file will appear in the assess
 
 Students can create new instances of the question with different variables (when questions are randomized). The grading scheme rewards repeated correct answers for the same question.
 
-#### Exam:
+#### Exam
 
 Option to randomly select questions that will appear in the Assessment, out of a list of questions in the `infoAssessment.json`. Order of questions is randomized. The title of the question is not displayed. For each exam instance, there is only one instance of the question and hence the variables are fixed. Students can retry questions for reduced points. To create "practice exams", where students can generate many instances of the same assessment, use:
 
@@ -81,7 +81,7 @@ and
 
 **Exam** is used when students are taking an assessment via CBTF (in-person or the online service starting in the Fall 2020). **Public** is used for all other cases, where students have access to the assessment via the internet using any device.
 
-## Examples:
+## Examples
 
 Before you start creating your assessments, make sure you have at least 4 questions inside your course. If you don't have that yet, copy some from the example course `XC 101` as we discussed in the previous lesson.
 

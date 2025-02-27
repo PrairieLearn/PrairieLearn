@@ -30,7 +30,7 @@ def generate(data):
     dft = pd.DataFrame({
         # Scalars
         "integer": 1,
-        "numeric": 3.14,
+        "numeric": 3.15,
         "logical": False,
         "character": "foo",
         # Series
