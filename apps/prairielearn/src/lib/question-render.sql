@@ -60,6 +60,7 @@ SELECT
   s.grading_method,
   s.grading_requested_at,
   s.id,
+  s.is_ai_graded,
   s.mode,
   s.override_score,
   s.score,
