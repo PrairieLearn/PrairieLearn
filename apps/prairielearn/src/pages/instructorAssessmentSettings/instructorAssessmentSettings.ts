@@ -30,6 +30,20 @@ import { InstructorAssessmentSettings } from './instructorAssessmentSettings.htm
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+  if (existingValue === undefined) {
+    if (newValue !== defaultValue) {
+      return newValue;
+    }
+  } else {
+    if (existingValue !== defaultValue && newValue === defaultValue) {
+      return undefined;
+    } else {
+      return newValue;
+    }
+  }
+}
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -159,6 +173,33 @@ router.post(
       if (assessmentInfo.module != null || req.body.module !== 'Default') {
         assessmentInfo.module = req.body.module;
       }
+      assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, req.body.text, '');
+      assessmentInfo.allowIssueReporting = propertyValueWithDefault(
+        assessmentInfo.allowIssueReporting,
+        req.body.allow_issue_reporting === 'on',
+        true,
+      );
+      assessmentInfo.multipleInstance = propertyValueWithDefault(
+        assessmentInfo.multipleInstance,
+        req.body.multiple_instance === 'on',
+        false,
+      );
+      assessmentInfo.allowPersonalNotes = propertyValueWithDefault(
+        assessmentInfo.allowPersonalNotes,
+        req.body.allow_personal_notes === 'on',
+        true,
+      );
+      assessmentInfo.autoClose = propertyValueWithDefault(
+        assessmentInfo.autoClose,
+        req.body.auto_close === 'on',
+        true,
+      );
+      assessmentInfo.requireHonorCode = propertyValueWithDefault(
+        assessmentInfo.requireHonorCode,
+        req.body.require_honor_code === 'on',
+        true,
+      );
+
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
       const tid_new = run(() => {
