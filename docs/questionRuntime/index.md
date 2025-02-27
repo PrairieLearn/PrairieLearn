@@ -28,7 +28,7 @@ The quickest way to add custom libraries is to install them directly to your cou
 
 After these steps, you should be able to `import` the library as normal in your `server.py` files.
 
-**Note:** The local installation may generate compiled files that are commonly ignored in `.gitignore` (for example, `*.so` files). These files are required for the usage of the installed package, so make sure these files are committed within Git if you encounter issues. Ignored files can be viewed with `git status --ignored`.
+**Note:** The local installation may generate compiled files that are commonly ignored in `.gitignore`. For example, packages that use native code will typically contain `*.so` files. These files are required for the usage of the installed package, so make sure these files are committed within Git if you encounter issues. Ignored files can be viewed with `git status --ignored`.
 
 ## Adding libraries to PrairieLearn
 
