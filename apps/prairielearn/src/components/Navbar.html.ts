@@ -20,6 +20,7 @@ export function Navbar({
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
+  /* Indicates if the Navbar component is used within the PageLayout component. */
   isInPageLayout?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix } = resLocals;
