@@ -635,6 +635,7 @@ export async function updateInstanceQuestionScore(
           manual_rubric_grading_id,
           score: new_auto_score_perc == null ? null : new_auto_score_perc / 100,
           correct: new_auto_score_perc == null ? null : new_auto_score_perc > 50,
+          is_ai_graded,
         });
       }
     }

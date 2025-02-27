@@ -461,7 +461,8 @@ SET
   gradable = CASE
     WHEN $score IS NULL THEN gradable
     ELSE TRUE
-  END
+  END,
+  is_ai_graded = $is_ai_graded
 WHERE
   s.id = $submission_id;
 

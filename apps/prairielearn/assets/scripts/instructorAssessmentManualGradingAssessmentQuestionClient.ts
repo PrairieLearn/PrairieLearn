@@ -271,7 +271,6 @@ onDocumentReady(() => {
           field: 'is_ai_graded',
           title: 'AI Graded',
           filterControl: 'select',
-          visible: false,
           formatter: (value: boolean, row: InstanceQuestionRow) =>
             row.is_ai_graded ? 'Yes' : 'No',
         },
