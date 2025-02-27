@@ -1,5 +1,5 @@
 // Modified version of bootstrap-table-sticky-header.js in bootstrap-table
-// Link: https://github.com/wenzhixin/bootstrap-table/blob/develop/src/extensions/sticky-header/bootstrap-table-sticky-header.js
+// Link: https://github.com/wenzhixin/bootstrap-table/blob/f34204b3036e80c3545408d75930c955448c4fe5/src/extensions/sticky-header/bootstrap-table-sticky-header.js
 //
 // This version makes the sticky header aware of non-window scrolling containers, necessary for
 // the side nav component when enhanced navigation is enabled.
@@ -42,7 +42,7 @@ $.BootstrapTable = class extends $.BootstrapTable {
     this.$stickyEnd = this.$tableBody.find('.sticky_anchor_end');
     this.$stickyHeader = this.$header.clone(true, true);
 
-    let $nonBodyScrollableAncestor = this.$tableBody
+    this.$nonBodyScrollableAncestor = this.$tableBody
       .parents()
       .filter(function () {
         return (
@@ -57,7 +57,7 @@ $.BootstrapTable = class extends $.BootstrapTable {
     const resizeEvent = Utils.getEventName('resize.sticky-header-table', this.$el.attr('id'));
     const scrollEvent = Utils.getEventName('scroll.sticky-header-table', this.$el.attr('id'));
 
-    if ($nonBodyScrollableAncestor.length === 0) {
+    if (this.$nonBodyScrollableAncestor.length === 0) {
       // Handle resize and scroll events based on the window
       $(window)
         .off(resizeEvent)
@@ -67,8 +67,10 @@ $.BootstrapTable = class extends $.BootstrapTable {
         .on(scrollEvent, () => this.renderStickyHeader());
     } else {
       // Handle resize and scroll events based on the scrollable ancestor
-      $nonBodyScrollableAncestor.off(resizeEvent).on(resizeEvent, () => this.renderStickyHeader());
-      $nonBodyScrollableAncestor.off().on(scrollEvent, () => this.renderStickyHeader());
+      this.$nonBodyScrollableAncestor
+        .off(resizeEvent)
+        .on(resizeEvent, () => this.renderStickyHeader());
+      this.$nonBodyScrollableAncestor.off().on(scrollEvent, () => this.renderStickyHeader());
     }
     this.$tableBody.off('scroll').on('scroll', () => this.matchPositionX());
   }
@@ -118,6 +120,10 @@ $.BootstrapTable = class extends $.BootstrapTable {
   }
 
   renderStickyHeader() {
+    // Declaration of that is intentional, as this is legacy, 3rd-party jQuery code.
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const that = this;
+
     this.$stickyHeader = this.$header.clone(true, true);
 
     if (this.options.filterControl) {
@@ -127,7 +133,7 @@ $.BootstrapTable = class extends $.BootstrapTable {
           const $target = $(e.target);
           const value = $target.val();
           const field = $target.parents('th').data('field');
-          const $coreTh = this.$header.find(`th[data-field="${field}"]`);
+          const $coreTh = that.$header.find(`th[data-field="${field}"]`);
 
           if ($target.is('input')) {
             $coreTh.find('input').val(value);
@@ -138,21 +144,9 @@ $.BootstrapTable = class extends $.BootstrapTable {
             $select.find(`option[value="${value}"]`).attr('selected', true);
           }
 
-          this.triggerSearch();
+          that.triggerSearch();
         });
     }
-
-    let $nonBodyScrollableAncestor = this.$tableBody
-      .parents()
-      .filter(function () {
-        return (
-          ($(this).css('overflow') === 'auto' || $(this).css('overflow-y') === 'auto') &&
-          !$(this).is('body')
-          // Exclude the body tag, since we will handle scrolling differently if
-          // the body is the scrollable ancestor.
-        );
-      })
-      .first();
 
     // Amount of pixels scrolled down from the top edge of the scrollable container
     let scrollTop;
@@ -166,7 +160,7 @@ $.BootstrapTable = class extends $.BootstrapTable {
     // Distance from the top of the document to the bottom of the sticky header
     let stickyEnd;
 
-    if ($nonBodyScrollableAncestor.length === 0) {
+    if (this.$nonBodyScrollableAncestor.length === 0) {
       scrollTop = $(window).scrollTop();
 
       // The window’s top is aligned with the document’s top.
@@ -175,10 +169,10 @@ $.BootstrapTable = class extends $.BootstrapTable {
       stickyBegin = this.$stickyBegin.offset().top - this.options.stickyHeaderOffsetY;
       stickyEnd = this.$stickyEnd.offset().top - this.options.stickyHeaderOffsetY;
     } else {
-      scrollTop = $nonBodyScrollableAncestor.scrollTop();
+      scrollTop = this.$nonBodyScrollableAncestor.scrollTop();
 
       // Distance from the top of the scrollable container to the top of the document
-      offsetTop = $nonBodyScrollableAncestor.offset().top;
+      offsetTop = this.$nonBodyScrollableAncestor.offset().top;
 
       stickyBegin = this.$stickyBegin.offset().top + scrollTop - this.options.stickyHeaderOffsetY;
       stickyEnd = this.$stickyEnd.offset().top + scrollTop - this.options.stickyHeaderOffsetY;
@@ -220,6 +214,7 @@ $.BootstrapTable = class extends $.BootstrapTable {
         stickyHeaderOffsetRight = 0;
         width = '100%';
       }
+
       this.$stickyContainer.css('top', `${this.options.stickyHeaderOffsetY + offsetTop}px`);
       this.$stickyContainer.css('left', `${stickyHeaderOffsetLeft}px`);
       this.$stickyContainer.css('right', `${stickyHeaderOffsetRight}px`);
