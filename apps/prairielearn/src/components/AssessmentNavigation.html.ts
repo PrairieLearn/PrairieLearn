@@ -33,8 +33,8 @@ export function AssessmentNavigation({
           ${assessments.map((a) => {
             return html`
               <a
-                class="dropdown-item ${`${assessment.id}` === `${a.id}` ? 'active' : ''}"
-                aria-current="${`${assessment.id}` === `${a.id}` ? 'page' : ''}"
+                class="dropdown-item ${idsEqual(assessment.id, a.id) ? 'active' : ''}"
+                aria-current="${idsEqual(assessment.id, a.id) ? 'page' : ''}"
                 href="/pl/course_instance/${courseInstance.id}/instructor/assessment/${a.id}"
               >
                 ${a.title}
