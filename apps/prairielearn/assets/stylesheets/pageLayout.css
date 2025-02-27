@@ -30,7 +30,8 @@ body:has(div.app-container) {
   padding: 0.75rem;
   overflow-y: auto;
 
-  /* --bs-primary-bg-subtle from Bootstrap 5.3 */
+  /* This color is --bs-primary-bg-subtle from Bootstrap 5.3 */
+  /* TODO: Use the native CSS variable when we upgrade to 5.3 */
   background-color: #cfe2ff;
 }
 
