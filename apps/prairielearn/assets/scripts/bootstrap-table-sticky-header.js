@@ -1,4 +1,4 @@
-// Modified version of bootstrap-table-sticky-header.js in bootstrap-table
+git pul// Modified version of bootstrap-table-sticky-header.js in bootstrap-table
 // Link: https://github.com/wenzhixin/bootstrap-table/blob/f34204b3036e80c3545408d75930c955448c4fe5/src/extensions/sticky-header/bootstrap-table-sticky-header.js
 //
 // This version makes the sticky header aware of non-window scrolling containers, necessary for
@@ -49,7 +49,7 @@ $.BootstrapTable = class extends $.BootstrapTable {
           ($(this).css('overflow') === 'auto' || $(this).css('overflow-y') === 'auto') &&
           !$(this).is('body')
           // Exclude the body tag, since we will handle scrolling differently if
-          // the body is the scrollable ancestor
+          // the body is the scrollable ancestor.
         );
       })
       .first();
