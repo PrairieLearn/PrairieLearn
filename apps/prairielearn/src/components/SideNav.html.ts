@@ -27,46 +27,6 @@ interface SideNavTabInfo {
 }
 
 const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabInfo[]>> = {
-  instance_admin: [
-    {
-      activePages: ['instance_admin', 'assessments', 'assessment', 'assessment_instance'],
-      checkActiveSubPageForPages: ['instance_admin'],
-      activeSubPages: ['assessments'],
-      urlSuffix: '/instance_admin/assessments',
-      iconClasses: 'fa fa-list fa-fw',
-      tabLabel: 'Assessments',
-    },
-    {
-      activePages: ['instance_admin'],
-      activeSubPages: ['gradebook'],
-      urlSuffix: '/instance_admin/gradebook',
-      iconClasses: 'fas fa-balance-scale fa-fw',
-      tabLabel: 'Gradebook',
-      renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
-    },
-    {
-      activePages: ['instance_admin'],
-      activeSubPages: ['file_view', 'file_edit'],
-      urlSuffix: '/instance_admin/file_view',
-      iconClasses: 'fa fa-edit fa-fw',
-      tabLabel: 'Files',
-    },
-    {
-      activePages: ['instance_admin'],
-      activeSubPages: ['lti13'],
-      urlSuffix: '/instance_admin/lti13_instance',
-      iconClasses: 'fas fa-school-flag fa-fw',
-      tabLabel: 'LTI 1.3',
-      renderCondition: (resLocals) => resLocals.lti13_enabled,
-    },
-    {
-      activePages: ['instance_admin'],
-      activeSubPages: ['settings', 'access', 'lti', 'billing'],
-      urlSuffix: '/instance_admin/settings',
-      iconClasses: 'fas fa-cog fa-fw',
-      tabLabel: 'Settings',
-    },
-  ],
   course_admin: [
     {
       activePages: ['course_admin'],
@@ -140,6 +100,46 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       activePages: ['course_admin'],
       activeSubPages: ['settings', 'sets', 'modules', 'tags', 'topics', 'sharing'],
       urlSuffix: '/course_admin/settings',
+      iconClasses: 'fas fa-cog fa-fw',
+      tabLabel: 'Settings',
+    },
+  ],
+  instance_admin: [
+    {
+      activePages: ['instance_admin', 'assessments', 'assessment', 'assessment_instance'],
+      checkActiveSubPageForPages: ['instance_admin'],
+      activeSubPages: ['assessments'],
+      urlSuffix: '/instance_admin/assessments',
+      iconClasses: 'fa fa-list fa-fw',
+      tabLabel: 'Assessments',
+    },
+    {
+      activePages: ['instance_admin'],
+      activeSubPages: ['gradebook'],
+      urlSuffix: '/instance_admin/gradebook',
+      iconClasses: 'fas fa-balance-scale fa-fw',
+      tabLabel: 'Gradebook',
+      renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
+    },
+    {
+      activePages: ['instance_admin'],
+      activeSubPages: ['file_view', 'file_edit'],
+      urlSuffix: '/instance_admin/file_view',
+      iconClasses: 'fa fa-edit fa-fw',
+      tabLabel: 'Files',
+    },
+    {
+      activePages: ['instance_admin'],
+      activeSubPages: ['lti13'],
+      urlSuffix: '/instance_admin/lti13_instance',
+      iconClasses: 'fas fa-school-flag fa-fw',
+      tabLabel: 'LTI 1.3',
+      renderCondition: (resLocals) => resLocals.lti13_enabled,
+    },
+    {
+      activePages: ['instance_admin'],
+      activeSubPages: ['settings', 'access', 'lti', 'billing'],
+      urlSuffix: '/instance_admin/settings',
       iconClasses: 'fas fa-cog fa-fw',
       tabLabel: 'Settings',
     },
