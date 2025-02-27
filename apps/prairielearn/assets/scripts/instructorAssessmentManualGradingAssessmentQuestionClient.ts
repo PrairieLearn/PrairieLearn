@@ -156,11 +156,11 @@ onDocumentReady(() => {
                     <a
                       href="#"
                       class="badge badge-pill badge-danger"
-                      title="Instance question has ${row.open_issue_count} open ${row.open_issue_count >
+                      data-bs-toggle="tooltip"
+                      data-bs-title="Instance question has ${row.open_issue_count} open ${row.open_issue_count >
                       1
                         ? 'issues'
                         : 'issue'}"
-                      data-toggle="tooltip"
                     >
                       ${row.open_issue_count}
                     </a>
@@ -168,7 +168,11 @@ onDocumentReady(() => {
                 : ''}
               ${row.assessment_open
                 ? html`
-                    <a href="#" title="Assessment instance is still open" data-toggle="tooltip">
+                    <a
+                      href="#"
+                      data-bs-toggle="tooltip"
+                      data-bs-title="Assessment instance is still open"
+                    >
                       <i class="fas fa-exclamation-triangle text-warning"></i>
                     </a>
                   `

@@ -174,11 +174,10 @@ export function InstructorAssessmentInstance({
                         type="button"
                         class="btn btn-xs btn-ghost"
                         id="fingerprintDescriptionPopover"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="false"
-                        title="Client Fingerprint Changes"
-                        aria-label="Client Fingerprint Changes"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="false"
+                        data-bs-title="Client fingerprint changes"
                         data-content="Client fingerprints are a record of a user's IP address, user agent and session. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
                       >
                         <i class="fa fa-question-circle"></i>
@@ -262,11 +261,11 @@ export function InstructorAssessmentInstance({
                       <button
                         type="button"
                         class="btn btn-xs btn-ghost"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        title="Included in statistics"
-                        data-content="This assessment is included in the calculation of assessment and question statistics"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-title="Included in statistics"
+                        data-bs-content="This assessment is included in the calculation of assessment and question statistics"
                       >
                         <i class="fa fa-question-circle"></i>
                       </button>
@@ -276,11 +275,11 @@ export function InstructorAssessmentInstance({
                       <button
                         type="button"
                         class="btn btn-xs btn-ghost"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        title="Not included in statistics"
-                        data-content="This assessment is not included in the calculation of assessment and question statistics because it was created by a course staff member"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-title="Not included in statistics"
+                        data-bs-content="This assessment is not included in the calculation of assessment and question statistics because it was created by a course staff member"
                       >
                         <i class="fa fa-question-circle"></i>
                       </button>

@@ -112,13 +112,13 @@ export function UserSettings({
             ? html`
                 <button
                   type="button"
-                  class="btn btn-light btn-sm ml-auto"
-                  data-toggle="popover"
-                  data-container="body"
-                  data-html="true"
-                  data-placement="auto"
-                  title="Generate new token"
-                  data-content="${TokenGenerateForm({
+                  class="btn btn-light btn-sm ms-auto"
+                  data-bs-toggle="popover"
+                  data-bs-container="body"
+                  data-bs-html="true"
+                  data-bs-placement="auto"
+                  data-bs-title="Generate new token"
+                  data-bs-content="${TokenGenerateForm({
                     csrfToken: resLocals.__csrf_token,
                   }).toString()}"
                   data-testid="generate-token-button"
@@ -199,13 +199,13 @@ function TokenList({
         </div>
         <button
           type="button"
-          class="btn btn-outline-danger btn-sm ml-auto"
-          data-toggle="popover"
-          data-container="body"
-          data-html="true"
-          data-placement="auto"
-          title="Delete this token"
-          data-content="${TokenDeleteForm({
+          class="btn btn-outline-danger btn-sm ms-auto"
+          data-bs-toggle="popover"
+          data-bs-container="body"
+          data-bs-html="true"
+          data-bs-placement="auto"
+          data-bs-title="Delete this token"
+          data-bs-content="${TokenDeleteForm({
             token_id: token.id,
             csrfToken: resLocals.__csrf_token,
           }).toString()}"

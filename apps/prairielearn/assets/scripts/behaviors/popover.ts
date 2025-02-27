@@ -41,7 +41,7 @@ function isFocusTrigger(trigger: HTMLElement) {
 // `selector-observer` will start running its callbacks immediately, so they'd
 // otherwise execute too soon.
 onDocumentReady(() => {
-  observe('[data-toggle="popover"]', {
+  observe('[data-toggle="popover"], [data-bs-toggle="popover"]', {
     constructor: HTMLElement,
     add(el) {
       new window.bootstrap.Popover(el, { sanitize: false });

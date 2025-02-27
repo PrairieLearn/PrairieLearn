@@ -106,7 +106,7 @@ onDocumentReady(() => {
           <button
             class="btn btn-xs btn-ghost"
             type="button"
-            title="Show roles help"
+            aria-label="Roles help"
             data-toggle="modal"
             data-target="#role-help"
           >

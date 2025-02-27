@@ -19,13 +19,12 @@ ${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
   return html`
     <button
       class="btn btn-xs btn-ghost mr-1"
-      data-toggle="popover"
-      data-trigger="hover"
-      data-container="body"
-      data-html="true"
-      title="${title}"
-      data-content="${escapeHtml(popoverContent)}"
-      data-custom-class="popover-wide"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-title="${title}"
+      data-bs-content="${escapeHtml(popoverContent)}"
+      data-bs-custom-class="popover-wide"
     >
       <i class="fa ${classes}" aria-hidden="true"></i>
     </button>

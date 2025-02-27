@@ -798,12 +798,12 @@ function ExamQuestionHelpAvailablePoints() {
     <button
       type="button"
       class="btn btn-xs btn-ghost"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Available points"
-      data-content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Available points"
+      data-bs-content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
@@ -815,12 +815,12 @@ function ExamQuestionHelpAwardedPoints() {
     <button
       type="button"
       class="btn btn-xs btn-ghost"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Awarded points"
-      data-content="The number of points already earned, as a fraction of the maximum possible points for the question."
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Awarded points"
+      data-bs-content="The number of points already earned, as a fraction of the maximum possible points for the question."
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>

@@ -3,7 +3,7 @@ import { observe } from 'selector-observer';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {
-  observe('[data-toggle="dropdown"]', {
+  observe('[data-toggle="dropdown"], [data-bs-toggle="dropdown"]', {
     add(el) {
       const dropdownParent = el.closest('.dropdown');
       if (dropdownParent) {

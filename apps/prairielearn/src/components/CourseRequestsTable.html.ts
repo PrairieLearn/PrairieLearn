@@ -90,7 +90,7 @@ export function CourseRequestsTable({
                             data-boundary="window"
                             data-html="true"
                             data-placement="auto"
-                            title="Deny course request"
+                            data-bs-title="Deny course request"
                             data-content="${escapeHtml(
                               CourseRequestDenyForm({
                                 request: row,
@@ -108,7 +108,7 @@ export function CourseRequestsTable({
                             data-boundary="window"
                             data-html="true"
                             data-placement="auto"
-                            title="Approve course request"
+                            data-bs-title="Approve course request"
                             data-content="${escapeHtml(
                               CourseRequestApproveForm({
                                 request: row,

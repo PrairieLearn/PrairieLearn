@@ -28,12 +28,12 @@ export function AdministratorAdmins({
           <button
             type="button"
             class="btn btn-sm btn-light ml-auto"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-placement="auto"
-            title="Add new administrator"
-            data-content="${escapeHtml(
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Add new administrator"
+            data-bs-content="${escapeHtml(
               AdministratorInsertForm({
                 csrfToken: resLocals.__csrf_token,
               }),
@@ -65,12 +65,12 @@ export function AdministratorAdmins({
                       <button
                         type="button"
                         class="btn btn-sm btn-danger float-right"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Remove administrator access"
-                        data-content="${escapeHtml(
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-placement="auto"
+                        data-bs-title="Remove administrator access"
+                        data-bs-content="${escapeHtml(
                           AdministratorDeleteForm({
                             csrfToken: resLocals.__csrf_token,
                             uid: admin.uid,

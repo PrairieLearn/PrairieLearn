@@ -221,13 +221,13 @@ function DeletePersonalNoteButton({
   return html`
     <button
       class="btn btn-xs btn-secondary"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Confirm delete"
       aria-label="Delete personal note ${file.display_filename}"
-      data-content="${escapeHtml(popoverContent)}"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Confirm delete"
+      data-bs-content="${escapeHtml(popoverContent)}"
       data-testid="delete-personal-note-button"
     >
       <i class="far fa-trash-alt"></i>

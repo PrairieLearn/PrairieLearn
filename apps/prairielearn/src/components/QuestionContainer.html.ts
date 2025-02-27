@@ -468,11 +468,12 @@ export function QuestionFooterContent({
                       </small>
                       <button
                         type="button"
-                        class="btn btn-xs btn-ghost align-self-center ml-1"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-content="${escapeHtml(
+                        class="btn btn-xs btn-ghost align-self-center ms-1"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-title="Explanation of new variants"
+                        data-bs-content="${escapeHtml(
                           NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
                         )}"
                         data-placement="auto"
@@ -554,11 +555,12 @@ function SubmitRateFooter({
           <button
             type="button"
             class="btn btn-xs btn-ghost"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-content="${escapeHtml(popoverContent)}"
-            data-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-title="Explanation of grading rate limits"
+            data-bs-content="${escapeHtml(popoverContent)}"
+            data-bs-placement="auto"
           >
             <i class="fa fa-question-circle" aria-hidden="true"></i>
           </button>

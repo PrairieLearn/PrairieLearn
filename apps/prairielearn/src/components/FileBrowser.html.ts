@@ -414,13 +414,12 @@ function FileBrowserActions({
           <button
             type="button"
             class="btn btn-sm btn-light"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-placement="auto"
-            title="Upload file"
-            data-content="${escapeHtml(FileUploadForm({ file: fileInfo, csrfToken }))}"
-            data-trigger="click"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Upload file"
+            data-bs-content="${escapeHtml(FileUploadForm({ file: fileInfo, csrfToken }))}"
             ${fileInfo.canUpload ? '' : 'disabled'}
           >
             <i class="fa fa-arrow-up"></i>
@@ -442,15 +441,14 @@ function FileBrowserActions({
           <button
             type="button"
             class="btn btn-sm btn-light"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-placement="auto"
-            title="Rename file"
-            data-content="${escapeHtml(
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Rename file"
+            data-bs-content="${escapeHtml(
               FileRenameForm({ file: fileInfo, csrfToken, isViewingFile: true }),
             )}"
-            data-trigger="click"
             ${fileInfo.canRename ? '' : 'disabled'}
           >
             <i class="fa fa-i-cursor"></i>
@@ -459,13 +457,12 @@ function FileBrowserActions({
           <button
             type="button"
             class="btn btn-sm btn-light"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-placement="auto"
-            title="Confirm delete"
-            data-content="${escapeHtml(FileDeleteForm({ file: fileInfo, csrfToken }))}"
-            data-trigger="click"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Confirm delete"
+            data-bs-content="${escapeHtml(FileDeleteForm({ file: fileInfo, csrfToken }))}"
             ${fileInfo.canDelete ? '' : 'disabled'}
           >
             <i class="far fa-trash-alt"></i>
@@ -489,19 +486,18 @@ function DirectoryBrowserActions({
           type="button"
           id="instructorFileUploadForm-New${d.label}"
           class="btn btn-sm btn-light"
-          data-toggle="popover"
-          data-container="body"
-          data-html="true"
-          data-placement="auto"
-          title="Upload file"
-          data-content="${escapeHtml(
+          data-bs-toggle="popover"
+          data-bs-container="body"
+          data-bs-html="true"
+          data-bs-placement="auto"
+          data-bs-title="Upload file"
+          data-bs-content="${escapeHtml(
             FileUploadForm({
               file: { id: `New${d.label}`, info: d.info, working_path: d.path },
               csrfToken,
             }),
           )}
           "
-          data-trigger="click"
         >
           <i class="fa fa-plus"></i>
           <span>Add new ${d.label.toLowerCase()} file</span>
@@ -512,18 +508,17 @@ function DirectoryBrowserActions({
       type="button"
       id="instructorFileUploadForm-New"
       class="btn btn-sm btn-light"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Upload file"
-      data-content="${escapeHtml(
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Upload file"
+      data-bs-content="${escapeHtml(
         FileUploadForm({
           file: { id: 'New', working_path: paths.workingPath },
           csrfToken,
         }),
       )}"
-      data-trigger="click"
     >
       <i class="fa fa-plus"></i>
       <span>Add new file</span>
@@ -619,14 +614,13 @@ function DirectoryBrowserBody({
                         type="button"
                         id="instructorFileUploadForm-${f.id}"
                         class="btn btn-xs btn-secondary"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Upload file"
-                        data-content="
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-placement="auto"
+                        data-bs-title="Upload file"
+                        data-bs-content="
                   ${escapeHtml(FileUploadForm({ file: f, csrfToken }))}"
-                        data-trigger="click"
                         ${f.canUpload ? '' : 'disabled'}
                       >
                         <i class="fa fa-arrow-up"></i>
@@ -648,15 +642,14 @@ function DirectoryBrowserBody({
                       <button
                         type="button"
                         class="btn btn-xs btn-secondary"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Rename file"
-                        data-content="${escapeHtml(
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-placement="auto"
+                        data-bs-title="Rename file"
+                        data-bs-content="${escapeHtml(
                           FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
                         )}"
-                        data-trigger="click"
                         data-testid="rename-file-button"
                         ${f.canRename ? '' : 'disabled'}
                       >
@@ -666,13 +659,12 @@ function DirectoryBrowserBody({
                       <button
                         type="button"
                         class="btn btn-xs btn-secondary"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Confirm delete"
-                        data-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
-                        data-trigger="click"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-placement="auto"
+                        data-bs-title="Confirm delete"
+                        data-bs-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
                         data-testid="delete-file-button"
                         ${f.canDelete ? '' : 'disabled'}
                       >

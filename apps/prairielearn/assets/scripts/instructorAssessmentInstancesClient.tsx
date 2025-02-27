@@ -247,9 +247,9 @@ onDocumentReady(() => {
                 <button
                   class="btn btn-xs btn-ghost"
                   type="button"
-                  title="Show roles help"
-                  data-toggle="modal"
-                  data-target="#role-help"
+                  aria-label="Roles help"
+                  data-bs-toggle="modal"
+                  data-bs-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
                 </button>
@@ -285,7 +285,7 @@ onDocumentReady(() => {
                 <button
                   class="btn btn-xs btn-ghost"
                   type="button"
-                  title="Show roles help"
+                  aria-label="Roles help"
                   data-toggle="modal"
                   data-target="#role-help"
                 >
@@ -328,7 +328,7 @@ onDocumentReady(() => {
           <button
             class="btn btn-xs btn-ghost"
             type="button"
-            title="Show duration help"
+            aria-label="Duration help"
             data-toggle="modal"
             data-target="#duration-help"
           >
@@ -347,7 +347,7 @@ onDocumentReady(() => {
           <button
             class="btn btn-xs btn-ghost"
             type="button"
-            title="Show remaining time help"
+            aria-label="Remaining time help"
             data-toggle="modal"
             data-target="#time-remaining-help"
           >
@@ -378,7 +378,7 @@ onDocumentReady(() => {
           <button
             class="btn btn-xs btn-ghost"
             type="button"
-            title="Show fingerprint changes help"
+            aria-label="Fingerprint changes help"
             data-toggle="modal"
             data-target="#fingerprint-changes-help"
           >
@@ -750,12 +750,12 @@ onDocumentReady(() => {
                   </button>
                   <button
                     class="dropdown-item ${row.open ? '' : 'disabled'}"
-                    data-toggle="popover"
-                    data-container="body"
-                    data-title="Confirm close"
-                    data-html="true"
-                    data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
-                    data-placement="auto"
+                    data-bs-toggle="popover"
+                    data-bs-container="body"
+                    data-bs-html="true"
+                    data-bs-title="Confirm close"
+                    data-bs-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
+                    data-bs-placement="auto"
                   >
                     <i class="fas fa-ban mr-2" aria-hidden="true"></i>
                     Grade &amp; Close
@@ -769,12 +769,12 @@ onDocumentReady(() => {
                   </button>
                   <button
                     class="dropdown-item"
-                    data-toggle="popover"
-                    data-container="body"
-                    data-title="Confirm regrade"
-                    data-html="true"
-                    data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
-                    data-placement="auto"
+                    data-bs-toggle="popover"
+                    data-bs-container="body"
+                    data-bs-html="true"
+                    data-bs-title="Confirm regrade"
+                    data-bs-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
+                    data-bs-placement="auto"
                   >
                     <i class="fas fa-sync mr-2" aria-hidden="true"></i>
                     Regrade

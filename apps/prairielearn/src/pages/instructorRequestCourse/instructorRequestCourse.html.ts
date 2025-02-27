@@ -198,7 +198,6 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               id="cr-shortname"
               placeholder="MATH 101"
               pattern="[a-zA-Z]+ [a-zA-Z0-9]+"
-              title="this is a series of letters, followed by a space, followed by a series of numbers and/or letters"
               required
             />
             <small class="form-text text-muted"> Examples: MATH 101, PHYS 440. </small>

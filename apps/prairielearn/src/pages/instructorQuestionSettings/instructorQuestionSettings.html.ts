@@ -324,12 +324,12 @@ export function InstructorQuestionSettings({
                           type="button"
                           class="btn btn-sm btn-primary"
                           id="copyQuestionButton"
-                          data-toggle="popover"
-                          data-container="body"
-                          data-html="true"
-                          data-placement="auto"
-                          title="Copy this question"
-                          data-content="${escapeHtml(
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Copy this question"
+                          data-bs-content="${escapeHtml(
                             CopyForm({
                               csrfToken: resLocals.__csrf_token,
                               editableCourses,

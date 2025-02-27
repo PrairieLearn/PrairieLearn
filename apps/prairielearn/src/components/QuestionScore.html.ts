@@ -470,11 +470,12 @@ export function ExamQuestionAvailablePoints({
     <button
       type="button"
       class="btn btn-xs btn-ghost js-available-points-popover"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-content="${escapeHtml(popoverContent)}"
-      data-placement="auto"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-title="Explanation of available points"
+      data-bs-content="${escapeHtml(popoverContent)}"
+      data-bs-placement="auto"
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
@@ -575,11 +576,12 @@ function QuestionValue({
     <button
       type="button"
       class="btn btn-xs js-value-popover"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-content="${escapeHtml(popoverContent)}"
-      data-placement="auto"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-title="Explanation of question value"
+      data-bs-content="${escapeHtml(popoverContent)}"
+      data-bs-placement="auto"
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
