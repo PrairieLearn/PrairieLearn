@@ -16,13 +16,9 @@ ignore:
 flag_management:
   default_rules:
     carryforward: false
-  # individual_flags:
-  #   - name: python
-  #     paths:
-  #       - apps/prairielearn/elements
-  #       - apps/prairielearn/python
-  #     # We will upload coverage on each commit
-  #     carryforward: false
+  individual_flags:
+    - name: python
+    - name: javascript
 
 coverage:
   status:

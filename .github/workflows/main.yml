@@ -318,6 +318,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           exclude: apps/prairielearn/python
+          flags: javascript
 
       - name: Upload Python coverage report to Codecov
         uses: codecov/codecov-action@v5.3.1
