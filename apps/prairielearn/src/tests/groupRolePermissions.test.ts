@@ -340,7 +340,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       lockedRows.each((_, element) => {
         const rowLabelText = $(element).parent('td').find('span').text();
         assert.match(rowLabelText, /HW5\.[23]\./);
-        const popoverText = $(element).attr('data-content');
+        const popoverText = $(element).attr('data-bs-content');
         assert.strictEqual(
           popoverText,
           'Your current group role (Manager) restricts access to this question.',
@@ -403,7 +403,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       assert.isTrue(firstUserSubmitButton.is(':disabled'));
       const popover = $('.btn[aria-label="Submission blocked"]');
       assert.lengthOf(popover, 1);
-      const popoverContent = popover.data('content');
+      const popoverContent = popover.attr('data-bs-content');
       assert.strictEqual(
         popoverContent,
         'Your group role (Manager) is not allowed to submit this question.',

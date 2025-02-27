@@ -345,7 +345,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       assert.lengthOf(lockedRows, 2);
 
       lockedRows.each((_, element) => {
-        const popoverText = $(element).attr('data-content');
+        const popoverText = $(element).attr('data-bs-content');
         assert.strictEqual(
           popoverText,
           'Your current group role (Manager) restricts access to this question.',
@@ -408,7 +408,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       assert.isTrue(firstUserSubmitButton.is(':disabled'));
       const popover = $('.btn[aria-label="Submission blocked"]');
       assert.lengthOf(popover, 1);
-      const popoverContent = popover.data('content');
+      const popoverContent = popover.attr('data-bs-content');
       assert.strictEqual(
         popoverContent,
         'Your group role (Manager) is not allowed to submit this question.',
@@ -510,7 +510,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       );
 
       // Assert the correct errors show up on screen
-      let errorNotification = $('span.badge-danger:contains(2)');
+      let errorNotification = $('[data-testid="group-role-config-problems"]:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
@@ -530,7 +530,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       $ = assessmentInstanceSecondUserPage;
 
       // Assert that the same errors still show
-      errorNotification = $('span.badge-danger:contains(2)');
+      errorNotification = $('[data-testid="group-role-config-problems"]:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
