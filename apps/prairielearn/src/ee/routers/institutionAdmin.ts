@@ -14,6 +14,7 @@ router.use(async (req, res, next) => {
     institution_id: req.params.institution_id,
   });
   res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+
   next();
 });
 
