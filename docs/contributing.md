@@ -24,18 +24,18 @@ A trusted group of core developers are responsible for maintaining the PrairieLe
 - **Responsibilities for merging**
 
   - If a maintainer opens a PR, that person is responsible for merging it after it has been approved.
-  - For PRs from non-maintainers, the primary reviewer is responsible for merging the PR. If there are outstanding nitpicks or unresolved discussions, consult with the author before merging.
+  - For PRs from non-maintainers, the primary reviewer is responsible for merging the PR. If there are outstanding nitpicks or unresolved discussions, consult the author before merging.
 
 - **Responsibilities for production issues**
 
   - Maintainers are ultimately responsible for ensuring that changes will not cause issues in production.
-  - Mistakes happen. If there _is_ an issue after a change is deployed to production, a maintainer is responsible for fixing it.
-    - For a PR opened by a maintainer, the author is responsible for fixing any issues. The author should understand that reviewing is done on a best-effort basis.
-    - For a PR opened by a non-maintainer, the primary reviewer is responsible for fixing any issues.
+  - Mistakes happen. If there _is_ an issue after a change is deployed to production, a maintainer is responsible for resolving it.
+    - For a PR opened by a maintainer, the author is responsible for resolving any issues. The author should understand that reviewing is done on a best-effort basis.
+    - For a PR opened by a non-maintainer, the primary reviewer is responsible for resolving any issues.
 
 - **Taking over abandoned PRs**
   - If a PR appears abandoned, another maintainer may choose to take it over. That maintainer then assumes responsibility for responding to feedback and ultimately merging.
-  - Use your best judgement when deciding to take over a PR. For larger PRs, consider reaching out to the original author first. For smaller PRs, it's likely acceptable to fix things up and merge without the original author's input.
+  - Use your best judgment when deciding to take over a PR. For larger PRs, consider reaching out to the original author first. For smaller PRs, it's likely acceptable to fix things up and merge without the original author's input.
   - If you make significant changes, seek review from the original author or another maintainer.
 
 ### Code review guidelines
