@@ -21,7 +21,8 @@ flag_management:
       paths:
         - apps/prairielearn/elements
         - apps/prairielearn/python
-      carryforward: true
+      # We will upload coverage on each commit
+      carryforward: false
 
 coverage:
   status:
