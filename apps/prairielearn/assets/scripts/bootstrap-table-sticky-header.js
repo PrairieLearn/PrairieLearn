@@ -49,7 +49,7 @@ $.BootstrapTable = class extends $.BootstrapTable {
           ($(this).css('overflow') === 'auto' || $(this).css('overflow-y') === 'auto') &&
           !$(this).is('body')
           // Exclude the body tag, since we will handle scrolling differently if
-          // the body is the scrollable ancestor.
+          // the body is the scrollable ancestor
         );
       })
       .first();
