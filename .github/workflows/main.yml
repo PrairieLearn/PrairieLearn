@@ -317,13 +317,13 @@ jobs:
         uses: codecov/codecov-action@v5.3.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: '!coverage.xml'
+          exclude: apps/prairielearn/python
 
       - name: Upload Python coverage report to Codecov
         uses: codecov/codecov-action@v5.3.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
+          directory: apps/prairielearn/python
           flags: python
           disable_search: true
 
