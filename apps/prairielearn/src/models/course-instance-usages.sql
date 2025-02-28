@@ -77,6 +77,8 @@ WHERE
   -- Avoid inserting anything if we'd compute a NULL duration.
   AND gj.grading_received_at IS NOT NULL
   AND gj.grading_finished_at IS NOT NULL
+  -- Avoid inserting negative durations.
+  AND gj.grading_finished_at > gj.grading_received_at
 ON CONFLICT (
   type,
   course_id,
