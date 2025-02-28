@@ -1161,6 +1161,7 @@ def square(x):
 | `highlight-lines-color` | text    | `"#b3d7ff"`     | Specifies the color of highlighted lines of code.                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `copy-code-button`      | boolean | false           | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                                   |
 | `show-line-numbers`     | boolean | false           | Whether to show line numbers in code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                                           |
+| `normalize-whitespace`  | boolean | false           | Whether to strip trailing whitespace and remove extra indentation of the contents. Recommended for cases where the code is inline in the question file.                                                                                                                                                                                                                                                                                                   |
 
 #### Details
 
@@ -1782,8 +1783,8 @@ Along with the sample usage of the element, we include a sample template file. T
   <div class="card-header" style="cursor: pointer">
     <div
       class="card-title d-flex justify-content-between"
-      data-toggle="collapse"
-      data-target="#collapse-{{uuid}}"
+      data-bs-toggle="collapse"
+      data-bs-target="#collapse-{{uuid}}"
     >
       <div>{{section_header}}</div>
       <div class="fa fa-angle-down"></div>
