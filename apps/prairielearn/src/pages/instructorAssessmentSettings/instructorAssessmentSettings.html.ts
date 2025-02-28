@@ -172,7 +172,7 @@ export function InstructorAssessmentSettings({
                   class="btn btn-sm btn-outline-secondary"
                   aria-label="Student Link QR Code"
                   data-bs-toggle="modal"
-                  data-bs-target="#student-link-qr-code-modal"
+                  data-bs-target="#studentLinkModal"
                 >
                   <i class="fas fa-qrcode"></i>
                 </button>
@@ -182,7 +182,7 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             ${QRCodeModal({
-              id: 'student-link-qr-code-modal',
+              id: 'studentLinkModal',
               title: 'Student Link QR Code',
               content: studentLink,
             })}
