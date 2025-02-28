@@ -18,7 +18,7 @@ ${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
 
   return html`
     <button
-      class="btn btn-xs btn-ghost mr-1"
+      class="btn btn-xs btn-ghost me-1"
       data-bs-toggle="popover"
       data-bs-container="body"
       data-bs-html="true"

@@ -30,7 +30,8 @@ export function ChangeIdButton({
         ChangeIdForm({ id, label, currentValue, extraHelpText, csrfToken, action }),
       )}"
     >
-      <i class="fa fa-i-cursor"></i> Change ${label}
+      <i class="fa fa-i-cursor"></i>
+      <span>Change ${label}</span>
     </button>
   `;
 }
