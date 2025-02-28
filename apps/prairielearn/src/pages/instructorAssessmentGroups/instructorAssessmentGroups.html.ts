@@ -181,7 +181,7 @@ export function InstructorAssessmentGroups({
                                     type="button"
                                     class="btn btn-xs btn-ghost dropdown-toggle"
                                     data-bs-toggle="dropdown"
-                                    data-boundary="window"
+                                    data-bs-boundary="window"
                                     aria-haspopup="true"
                                     aria-expanded="false"
                                   >

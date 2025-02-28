@@ -655,7 +655,6 @@ onDocumentReady(() => {
           aria-label="Change time limit"
           data-row="${JSON.stringify(row)}"
           data-bs-placement="bottom"
-          data-boundary="window"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
         </a>
@@ -725,7 +724,7 @@ onDocumentReady(() => {
             data-bs-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false"
-            data-boundary="window"
+            data-bs-boundary="window"
           >
             Action
           </button>
