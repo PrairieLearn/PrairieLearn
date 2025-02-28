@@ -45,8 +45,6 @@ onDocumentReady(() => {
           }
 
           // If the click occurred inside a popover, prevent the dropdown from hiding.
-          // TODO: handle focus.
-          console.log(event);
           if (clickEvent?.target.closest('.popover')) {
             event.preventDefault();
             return;
