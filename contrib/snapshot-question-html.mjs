@@ -36,8 +36,8 @@ function sanitizeHtml(html) {
  * Usage:
  *
  * ```sh
- * node tools/snapshot-question-html.mjs ./old-renderer
- * node tools/snapshot-question-html.mjs ./new-renderer
+ * node contrib/snapshot-question-html.mjs ./old-renderer
+ * node contrib/snapshot-question-html.mjs ./new-renderer
  * git diff --no-index ./old-renderer ./new-renderer
  * ```
  */

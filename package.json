@@ -4,7 +4,7 @@
   "scripts": {
     "grader-host-dev": "yarn workspace @prairielearn/grader-host dev",
     "grader-host-start": "yarn workspace @prairielearn/grader-host start",
-    "release": "turbo run build && node tools/fix-workspace-versions-before-publish.mjs && changeset publish --no-git-tag",
+    "release": "turbo run build && node scripts/fix-workspace-versions-before-publish.mjs && changeset publish --no-git-tag",
     "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn",
     "dev-workspace-host": "yarn workspace @prairielearn/workspace-host dev",
     "dev-bun": "yarn workspace @prairielearn/prairielearn dev:bun",
