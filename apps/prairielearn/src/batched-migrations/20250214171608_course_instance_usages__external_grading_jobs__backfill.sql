@@ -56,8 +56,8 @@ FROM
   LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
   gj.grading_method = 'External'
-  AND gj.grading_finished_at IS NOT NULL
   AND gj.grading_received_at IS NOT NULL
+  AND gj.grading_finished_at IS NOT NULL
   AND gj.id >= $start
   AND gj.id <= $end
 GROUP BY
