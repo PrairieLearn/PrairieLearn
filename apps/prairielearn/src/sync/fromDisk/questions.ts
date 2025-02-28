@@ -10,6 +10,13 @@ import { isDraftQid } from '../question.js';
 
 function getParamsForQuestion(qid: string, q: Question | null | undefined) {
   if (!q) return null;
+  console.log(q);
+  console.log('Question Params:', q.questionParams);
+  if (!q.questionParams) {
+    console.error('Missing questionParams for question:', qid);
+    // return null;
+  }
+
 
   let partialCredit;
   if (q.partialCredit != null) {
@@ -29,6 +36,7 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
   if (Array.isArray(workspace_args)) {
     workspace_args = shlex.join(workspace_args);
   }
+
   return {
     type: q.type === 'v3' ? 'Freeform' : q.type,
     title: q.title,
@@ -60,6 +68,7 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
     workspace_environment: q.workspaceOptions?.environment ?? {},
     shared_publicly: q.sharePublicly ?? false,
     share_source_publicly: q.shareSourcePublicly ?? false,
+    question_params: q.questionParams ?? {},
   };
 }
 
@@ -67,7 +76,11 @@ export async function sync(
   courseId: string,
   courseData: CourseData,
 ): Promise<Record<string, string>> {
+  console.log('insync')
+
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
+    console.log('question data')
+    console.log(question.data)
     return JSON.stringify([
       qid,
       question.uuid,
@@ -76,6 +89,7 @@ export async function sync(
       getParamsForQuestion(qid, question.data),
     ]);
   });
+  console.log(questionParams)
 
   const result = await sqldb.callRow(
     'sync_questions',

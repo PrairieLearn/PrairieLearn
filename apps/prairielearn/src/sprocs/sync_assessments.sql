@@ -32,6 +32,7 @@ DECLARE
     question_grading_method enum_grading_method;
     computed_manual_points double precision;
     computed_max_auto_points double precision;
+    
 BEGIN
     -- The sync algorithm used here is described in the preprint
     -- "Preserving identity during opportunistic unidirectional
@@ -335,7 +336,7 @@ BEGIN
                 (zone->>'best_questions')::integer,
                 (zone->>'advance_score_perc')::double precision,
                 (zone->>'question_params')::JSONB
-                
+
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET

@@ -1042,18 +1042,20 @@ function getContextOptions(context) {
   return options;
 }
 
-export async function generate(question, course, variant_seed, zoneInformation) {
+export async function generate(question, course, variant_seed) {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
     // const zoneParams = extractZoneParams(assessmentConfig, question);
+    console.log('question');
     console.log(question);
-    console.log(context)
-    console.log('LOGGGG: ' + question);
-    console.log("Question object:", question);
-    console.log("Variant seed:", variant_seed);
-    console.log("zone info: ", zoneInformation)
+    console.log('context')
+    console.log(context);
+    console.log('LOGGGG: ' + question.question_params);
+    // console.log("Question object:", question);
+    // console.log("Variant seed:", variant_seed);
+    // console.log("zone info: ", zoneInformation)
     const data = {
-      params: zoneInformation.question_params || {},
+      params: question.question_params || {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
       options: _.defaults({}, course.options, question.options),
@@ -1091,6 +1093,9 @@ export async function prepare(question, course, variant) {
       options: _.get(variant, 'options', {}),
       answers_names: {},
     };
+    console.log('PARAMS IN FRTEEDFORM')
+    console.log(data.params)
+    console.log(variant)
     _.extend(data.options, getContextOptions(context));
 
     return await withCodeCaller(course, async (codeCaller) => {
@@ -1862,14 +1867,6 @@ async function getContext(question, course) {
   const questionDirectory = path.join(courseDirectory, 'questions', question.directory);
   const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);
 
-  let assessmentConfig = {};
-  try {
-    // Adjust the file name/path as necessary; for example, if your assessment config is named "assessment.json"
-    const assessmentConfigPath = path.join(courseDirectory, 'assessment.json');
-    assessmentConfig = await fs.readJson(assessmentConfigPath);
-  } catch (err) {
-    console.warn('Could not load assessment configuration:', err.message);
-  }
 
   // Load elements and any extensions
   const elements = await loadElementsForCourse(course);
@@ -1891,24 +1888,7 @@ async function getContext(question, course) {
     renderer,
   };
 }
-function extractZoneParams(assessmentConfig, question) {
-  let zoneParams = {};
-  if (assessmentConfig.zones && Array.isArray(assessmentConfig.zones)) {
-    for (const zone of assessmentConfig.zones) {
-      if (zone.questionParams && Array.isArray(zone.questions)) {
-        // Use your matching logic: here we compare using q.id against question.qid or question.id.
-        for (const q of zone.questions) {
-          if (q.id === question.qid || q.id === question.id) {
-            zoneParams = zone.questionParams;
-            break;
-          }
-        }
-      }
-      if (!_.isEmpty(zoneParams)) break;
-    }
-  }
-  return zoneParams;
-}
+
 
 async function getCacheKey(course, data, context) {
   try {

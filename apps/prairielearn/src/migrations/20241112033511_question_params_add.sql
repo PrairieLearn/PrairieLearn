@@ -15,3 +15,6 @@ ADD COLUMN question_params jsonb DEFAULT '{}'::jsonb;
 
 ALTER TABLE assessment_questions
 ADD COLUMN question_params jsonb DEFAULT '{}'::jsonb;
+
+ALTER TABLE questions
+ADD COLUMN question_params jsonb DEFAULT '{}'::jsonb;

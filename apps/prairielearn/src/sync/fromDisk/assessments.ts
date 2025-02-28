@@ -46,6 +46,7 @@ function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
 ) {
+  // console.log('getting paramsssss');
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
@@ -81,8 +82,9 @@ function getParamsForAssessment(
         active: !!_.get(accessRule, 'active', true),
       };
     });
-
+  // console.log('assessment.zones:', assessment.zones);
   const zones = (assessment.zones ?? []).map((zone, index) => {
+    // console.log('zone:', zone);
     return {
       number: index + 1,
       title: zone.title,
@@ -215,6 +217,9 @@ function getParamsForAssessment(
       const questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
         assessmentQuestionNumber++;
         const questionId = questionIds[alternative.qid];
+        // console.log('Alternative Question Params:', alternative.questionParams);
+        // console.log('Question Question Params:', question.questionParams);
+        // console.log('Zone Question Params:', zone.questionParams);
         return {
           number: assessmentQuestionNumber,
           has_split_points: alternative.hasSplitPoints,
@@ -236,10 +241,18 @@ function getParamsForAssessment(
             zone.advanceScorePerc ??
             assessment.advanceScorePerc ??
             0,
-          question_params: alternative.questionParams || {},
+          question_params: alternative.questionParams ?? question.questionParams,
         };
       });
-
+      // console.log('Returning alternative group data:', {
+      //   number: alternativeGroupNumber,
+      //   number_choose: question.numberChoose,
+      //   advance_score_perc: question.advanceScorePerc,
+      //   questions,
+      //   question_params: question.questionParams,
+      // });
+      console.log('question in assessments!!')
+      console.log(question)
       return {
         number: alternativeGroupNumber,
         number_choose: question.numberChoose,
@@ -464,8 +477,15 @@ export async function sync(
       }
     }
   }
-
+  // console.log('params!!')
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
+    // console.log('paramsforassessment');
+    // console.log(getParamsForAssessment(assessment, questionIds));
+    console.log('TID:', tid);
+    console.log('UUID:', assessment.uuid);
+    console.log('Errors:', infofile.stringifyErrors(assessment));
+    console.log('Warnings:', infofile.stringifyWarnings(assessment));
+    console.log('Params:', getParamsForAssessment(assessment, questionIds));
     return JSON.stringify([
       tid,
       assessment.uuid,
@@ -474,6 +494,10 @@ export async function sync(
       getParamsForAssessment(assessment, questionIds),
     ]);
   });
+  console.log('AssessmentParams!CLOCKIT');
+  console.log(assessmentParams);
+  // console.log('paramsforassessment')
+
 
   await sqldb.callOneRowAsync('sync_assessments', [
     assessmentParams,

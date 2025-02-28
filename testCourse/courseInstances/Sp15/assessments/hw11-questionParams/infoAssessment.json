@@ -3,7 +3,7 @@
   "type": "Homework",
   "title": "Homework to test question parameters",
   "set": "Homework",
-  "number": "10",
+  "number": "11",
   "allowAccess": [
     {
       "mode": "Public",
@@ -25,14 +25,15 @@
     },
     {
       "title": "Parameters inherited from zone",
-      "questionParams": {
-        "lower_bound": 5,
-        "upper_bound": 15
-      },
+
       "questions": [
         {
           "id": "addNumbersParameterized/2",
-          "points": 1
+          "points": 1,
+          "questionParams": {
+            "lower_bound": 5,
+            "upper_bound": 15
+          }
         }
       ]
     }

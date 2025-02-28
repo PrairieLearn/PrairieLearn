@@ -131,7 +131,6 @@ async function render(
   submissions: Submission[],
   question_course: Course,
   locals: Record<string, any>,
-  zoneInformation,
 ): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
@@ -143,8 +142,9 @@ async function render(
     submissions,
     question_course,
     locals,
-    zoneInformation,
   );
+  console.log('VARIANT');
+  console.log(variant);
 
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
@@ -288,7 +288,17 @@ function buildLocals({
     // ID is coerced to a string so that it matches what we get back from the client
     variantToken: generateSignedToken({ variantId: variant.id.toString() }, config.secretKey),
   };
-
+  console.log('BUILDING LOCALS BELOW :) ');
+  console.log(assessment_question);
+  console.log('variant:', variant);
+  console.log('question:', question);
+  console.log('instance_question:', instance_question);
+  console.log('group_role_permissions:', group_role_permissions);
+  console.log('assessment:', assessment);
+  console.log('assessment_instance:', assessment_instance);
+  console.log('assessment_question:', assessment_question);
+  console.log('group_config:', group_config);
+  console.log('authz_result:', authz_result);
   if (!assessment || !assessment_instance || !assessment_question || !instance_question) {
     // instructor question pages
     locals.showGradeButton = true;
@@ -307,6 +317,7 @@ function buildLocals({
         locals.variantAttemptsLeft =
           (assessment_question.tries_per_variant ?? 1) - variant.num_tries;
         locals.variantAttemptsTotal = assessment_question.tries_per_variant ?? 1;
+
       }
       // TODO: can get rid of the nullish coalescing if we mark `score_perc` as `NOT NULL`.
       if (question.single_variant && (instance_question.score_perc ?? 0) >= 100.0) {
@@ -382,6 +393,9 @@ function buildLocals({
     locals.disableGradeButton = true;
     locals.disableSaveButton = true;
   }
+  // console.log('QUESTION IN BUILING LOCCALS')
+  // console.log(question?.question_params);
+  // locals.questionParams = assessment_question ? assessment_question.question_params : question?.question_params;
 
   return locals;
 }
@@ -446,7 +460,8 @@ export async function getAndRenderVariant(
       const instance_question_id = locals.instance_question?.id ?? null;
       const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
       const options = { variant_seed };
-      console.log('LOCALS: ', locals);
+      // need to get questionParams here!! Woohooooo
+      console.log('LOCALS from varient: ', locals);
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
@@ -458,6 +473,7 @@ export async function getAndRenderVariant(
         options,
         require_open,
         locals.client_fingerprint_id ?? null,
+        {'lower_bound':10, 'upper_bound': 12}
       );
     }
   });
@@ -500,7 +516,8 @@ export async function getAndRenderVariant(
     newLocals.showTrueAnswer = true;
   }
   Object.assign(locals, newLocals);
-
+  // console.log('NEW LOCALS:   --> beeeeeeeeeep')
+  // console.log(newLocals);
   // We only fully render a small number of submissions on initial page
   // load; the rest only require basic information like timestamps. As
   // such, we'll load submissions in two passes: we'll load basic
@@ -560,6 +577,14 @@ export async function getAndRenderVariant(
     submissions: submissions.length > 0,
     answer: resultLocals.showTrueAnswer,
   };
+  // this has workded before idke how
+  // console.log(' getting and rendering variant')
+  // console.log('Variant Params:', variant);
+  // console.log('Question Params:', question);
+  // console.log('Variant Params paramssss:', variant.params);
+
+  // console.log('Submission Params:', submission?.params);
+  // console.log('Submissions Params:', submissions.map(s => s.params));
   const htmls = await render(
     course,
     renderSelection,
@@ -569,13 +594,8 @@ export async function getAndRenderVariant(
     submissions.slice(0, MAX_RECENT_SUBMISSIONS) as Submission[],
     question_course,
     locals,
-    {
-      question_params: {
-        upper_bound: 10,
-        lower_bound: 5,
-      },
-    },
   );
+  question.question_params = variant.params;
   resultLocals.extraHeadersHtml = htmls.extraHeadersHtml;
   resultLocals.questionHtml = htmls.questionHtml;
   resultLocals.submissionHtmls = htmls.submissionHtmls;
@@ -600,6 +620,7 @@ export async function getAndRenderVariant(
     await manualGrading.populateRubricData(locals);
     await async.eachSeries(submissions, manualGrading.populateManualGradingData);
   }
+  console.log('Setting variant.params:', variant.params);
 
   if (locals.question.type !== 'Freeform') {
     const questionJson = JSON.stringify({
@@ -724,13 +745,7 @@ export async function renderPanelsForSubmission({
         submission,
         submissions,
         question_course,
-        locals,
-        {
-          question_params: {
-            upper_bound: 10,
-            lower_bound: 5,
-          },
-        },
+        locals
       );
 
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;

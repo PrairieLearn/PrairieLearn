@@ -398,6 +398,7 @@ export interface Question {
   sharingSets?: string[];
   sharePublicly: boolean;
   shareSourcePublicly: boolean;
+  questionParams: Record<string, any>;
 }
 
 export interface CourseInstanceData {
