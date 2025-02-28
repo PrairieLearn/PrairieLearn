@@ -2,4 +2,4 @@
 '@prairielearn/browser-utils': patch
 ---
 
-Prevent scroll changes on popover hide
+Prevent scrolling when restoring focus after a focus trap is deactivated
