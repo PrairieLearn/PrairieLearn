@@ -164,7 +164,7 @@ export function Workspace({
           </div>
           <div
             id="stopped"
-            class="d-none h-100 flex-grow flex-column justify-content-center align-items-center"
+            class="d-none h-100 flex-grow flex-column justify-content-center align-items-center p-2 text-center"
           >
             <h2>Workspace stopped due to inactivity</h2>
             <p>Your data was automatically saved. Reload the page to restart the workspace.</p>
@@ -172,7 +172,7 @@ export function Workspace({
           </div>
           <div
             id="failed"
-            class="d-none h-100 flex-grow flex-column justify-content-center align-items-center"
+            class="d-none h-100 flex-grow flex-column justify-content-center align-items-center p-2 text-center"
           >
             <i class="d-block fa fa-10x fa-xmark text-danger" aria-hidden="true"></i>
             <h2>Workspace failed to load</h2>
