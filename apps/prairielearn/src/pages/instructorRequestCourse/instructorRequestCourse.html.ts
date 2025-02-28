@@ -44,7 +44,7 @@ export function RequestCourse({
     },
     headContent: [compiledScriptTag('instructorRequestCourseClient.ts')],
     content: html`
-      <h1 class="sr-only">Request a Course</h1>
+      <h1 class="visually-hidden">Request a Course</h1>
       ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
       ${Modal({
         id: 'fill-course-request-lti13-modal',
@@ -60,7 +60,9 @@ export function RequestCourse({
           <button type="button" class="btn btn-success" id="fill-course-request-lti13-info">
             Fill from LMS data
           </button>
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Don't fill</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Don't fill
+          </button>
         `,
       })}
       ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
@@ -137,8 +139,8 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
           </p>
 
           <div class="form-row">
-            <div class="form-group col-md-6">
-              <label for="cr-firstname">First name</label>
+            <div class="mb-3 col-md-6">
+              <label class="form-label" for="cr-firstname">First name</label>
               <input
                 type="text"
                 class="form-control"
@@ -148,8 +150,8 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
                 required
               />
             </div>
-            <div class="form-group col-md-6">
-              <label for="cr-lastname">Last name</label>
+            <div class="mb-3 col-md-6">
+              <label class="form-label" for="cr-lastname">Last name</label>
               <input
                 type="text"
                 class="form-control"
@@ -161,8 +163,8 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </div>
           </div>
           <div class="form-row">
-            <div class="form-group col-md-6">
-              <label for="cr-institution">Institution</label>
+            <div class="mb-3 col-md-6">
+              <label class="form-label" for="cr-institution">Institution</label>
               <input
                 type="text"
                 class="form-control"
@@ -175,8 +177,8 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
                 This is your academic institution (e.g., "University of Illinois").
               </small>
             </div>
-            <div class="form-group col-md-6">
-              <label for="cr-email">Email</label>
+            <div class="mb-3 col-md-6">
+              <label class="form-label" for="cr-email">Email</label>
               <input
                 type="email"
                 class="form-control"
@@ -189,8 +191,8 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               <small class="form-text text-muted"> Use your official work email address. </small>
             </div>
           </div>
-          <div class="form-group">
-            <label for="cr-shortname">Course Rubric and Number</label>
+          <div class="mb-3">
+            <label class="form-label" for="cr-shortname">Course Rubric and Number</label>
             <input
               type="text"
               class="form-control"
@@ -203,8 +205,8 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             />
             <small class="form-text text-muted"> Examples: MATH 101, PHYS 440. </small>
           </div>
-          <div class="form-group">
-            <label for="cr-title">Course Title</label>
+          <div class="mb-3">
+            <label class="form-label" for="cr-title">Course Title</label>
             <input
               type="text"
               class="form-control"
@@ -218,20 +220,20 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               This is the official title of the course, as given in the course catalog.
             </small>
           </div>
-          <div class="form-group">
-            <label for="cr-ghuser">GitHub Username (optional)</label>
+          <div class="mb-3">
+            <label class="form-label" for="cr-ghuser">GitHub Username (optional)</label>
             <input type="text" class="form-control" name="cr-ghuser" id="cr-ghuser" />
             <small class="form-text text-muted">
               Providing your GitHub username will allow you to edit course content offline. You do
               not need to provide this if you would like to use the online web editor.
             </small>
           </div>
-          <div class="form-group">
-            <label id="cr-referral-source-label" for="cr-referral-source">
+          <div class="mb-3">
+            <label class="form-label" id="cr-referral-source-label" for="cr-referral-source">
               How did you hear about PrairieLearn?
             </label>
             <select
-              class="custom-select"
+              class="form-select"
               name="cr-referral-source"
               id="cr-referral-source"
               aria-labelledby="cr-referral-source-label"
@@ -257,8 +259,8 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               for sharing!
             </small>
           </div>
-          <div class="form-group">
-            <label for="role-instructor">Your Role in the Course</label>
+          <div class="mb-3">
+            <label class="form-label" for="role-instructor">Your Role in the Course</label>
             <ul class="list-group">
               <li class="list-group-item">
                 <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
@@ -307,10 +309,10 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
 
 function ApprovalStatusIcon({ status }: { status: CourseRequest['approved_status'] }) {
   if (status === 'pending' || status === 'creating' || status === 'failed') {
-    return html`<span class="badge badge-secondary"> <i class="fa fa-clock"></i> Pending</span>`;
+    return html`<span class="badge text-bg-secondary"> <i class="fa fa-clock"></i> Pending</span>`;
   } else if (status === 'approved') {
-    return html`<span class="badge badge-success"> <i class="fa fa-check"></i> Approved</span>`;
+    return html`<span class="badge text-bg-success"> <i class="fa fa-check"></i> Approved</span>`;
   } else if (status === 'denied') {
-    return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Denied</span>`;
+    return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
   }
 }

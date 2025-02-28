@@ -54,7 +54,7 @@ export function AdministratorFeatures({
                     <div class="list-group-item d-flex align-items-center">
                       <a
                         href="${resLocals.urlPrefix}/administrator/features/${feature}"
-                        class="mr-auto text-monospace"
+                        class="me-auto font-monospace"
                       >
                         ${feature}
                       </a>
@@ -105,11 +105,11 @@ export function AdministratorFeature({
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <span class="text-monospace">${feature}</span>
+          <span class="font-monospace">${feature}</span>
           <button
-            class="btn btn-light ml-auto"
-            data-toggle="modal"
-            data-target="#add-feature-grant-modal"
+            class="btn btn-light ms-auto"
+            data-bs-toggle="modal"
+            data-bs-target="#add-feature-grant-modal"
           >
             Grant feature
           </button>
@@ -121,7 +121,7 @@ export function AdministratorFeature({
                   ? html`
                       <div class="list-group-item">
                         <i
-                          class="fa-solid mr-1 ${featureInConfig
+                          class="fa-solid me-1 ${featureInConfig
                             ? 'fa-check text-success'
                             : 'fa-times text-danger'}"
                         ></i>
@@ -168,7 +168,7 @@ function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantR
       ${
         isGlobal
           ? html`<li class="list-inline-item inline-flex">
-              <i class="fa-solid fa-globe mr-1"></i>
+              <i class="fa-solid fa-globe me-1"></i>
               Global
             </li>`
           : null
@@ -224,10 +224,10 @@ function FeatureGrant({
         : ''}"
     >
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
-      <div class="ml-auto d-flex flex-row flex-nowrap flex-shrink-0">
+      <div class="ms-auto d-flex flex-row flex-nowrap flex-shrink-0">
         <form
           method="POST"
-          class="mr-2"
+          class="me-2"
           hx-boost="true"
           hx-trigger="change"
           hx-ext="morphdom-swap"
@@ -288,7 +288,7 @@ function AddFeatureGrantModal(props: FeatureGrantModalProps) {
     body: AddFeatureGrantModalBody(props),
     footer: html`
       <input type="hidden" name="__csrf_token" value="${props.csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" name="__action" value="add_feature_grant" class="btn btn-primary">
         Grant feature
       </button>
@@ -347,12 +347,12 @@ export function AddFeatureGrantModalBody({
 
       <hr />
 
-      <div class="form-group">
-        <label for="feature-grant-institution">
+      <div class="mb-3">
+        <label class="form-label" for="feature-grant-institution">
           Institution
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
-        <select class="custom-select" id="feature-grant-institution" name="institution_id">
+        <select class="form-select" id="feature-grant-institution" name="institution_id">
           <option value="">All institutions</option>
           ${institutions.map((institution) => {
             return html`
@@ -367,13 +367,13 @@ export function AddFeatureGrantModalBody({
         </select>
       </div>
 
-      <div class="form-group">
-        <label for="feature-grant-course">
+      <div class="mb-3">
+        <label class="form-label" for="feature-grant-course">
           Course
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
         <select
-          class="custom-select"
+          class="form-select"
           id="feature-grant-course"
           name="course_id"
           ${!institution_id ? 'disabled' : ''}
@@ -389,13 +389,13 @@ export function AddFeatureGrantModalBody({
         </select>
       </div>
 
-      <div class="form-group">
-        <label for="feature-grant-course-instance">
+      <div class="mb-3">
+        <label class="form-label" for="feature-grant-course-instance">
           Course instance
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
         <select
-          class="custom-select"
+          class="form-select"
           id="feature-grant-course-instance"
           name="course_instance_id"
           ${!course_id ? 'disabled' : ''}

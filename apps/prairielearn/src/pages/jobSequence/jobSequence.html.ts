@@ -24,7 +24,7 @@ export function JobSequence({
     },
     headContent: [compiledScriptTag('jobSequenceClient.ts')],
     content: html`
-      <h1 class="sr-only">Job Sequence</h1>
+      <h1 class="visually-hidden">Job Sequence</h1>
       <div class="row">
         <div class="col-12">
           <a class="btn btn-primary mb-4" href="javascript:history.back();">
