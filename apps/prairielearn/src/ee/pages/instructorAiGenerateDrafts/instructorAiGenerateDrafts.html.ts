@@ -111,8 +111,8 @@ export function InstructorAIGenerateDrafts({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="generate_question" />
 
-            <div class="form-group">
-              <label for="user-prompt-llm">
+            <div class="mb-3">
+              <label class="form-label" for="user-prompt-llm">
                 Give a high-level overview of the question. What internal parameters need to be
                 generated and what information should be provided to students?
               </label>
@@ -133,8 +133,8 @@ export function InstructorAIGenerateDrafts({
             </div>
 
             <div class="js-hidden-inputs-container ${hasDrafts ? 'd-none' : ''}">
-              <div class="form-group">
-                <label for="user-prompt-llm-user-input">
+              <div class="mb-3">
+                <label class="form-label" for="user-prompt-llm-user-input">
                   How should students input their solution? What choices or input boxes are they
                   given?
                 </label>
@@ -152,8 +152,10 @@ export function InstructorAIGenerateDrafts({
                 </div>
               </div>
 
-              <div class="form-group">
-                <label for="user-prompt-llm-grading"> How is the correct answer determined? </label>
+              <div class="mb-3">
+                <label class="form-label" for="user-prompt-llm-grading">
+                  How is the correct answer determined?
+                </label>
                 <textarea
                   name="prompt_grading"
                   id="user-prompt-llm-grading"
@@ -178,7 +180,7 @@ export function InstructorAIGenerateDrafts({
                         <label for="user-prompt-example" class="form-label">
                           Or choose an example prompt:
                         </label>
-                        <select id="user-prompt-example" class="custom-select">
+                        <select id="user-prompt-example" class="form-select">
                           <option value=""></option>
                           ${examplePrompts.map(
                             (question) =>
@@ -230,9 +232,9 @@ export function InstructorAIGenerateDrafts({
             <div class="d-flex flex-row align-items-center justify-content-between mb-2">
               <h1 class="h5 mb-0">Continue working on a draft question</h1>
               <button
-                class="btn btn-sm btn-outline-danger ml-2"
-                data-toggle="modal"
-                data-target="#deleteModal"
+                class="btn btn-sm btn-outline-danger ms-2"
+                data-bs-toggle="modal"
+                data-bs-target="#deleteModal"
               >
                 <i class="fa fa-trash" aria-hidden="true"></i>
                 <span class="d-none d-sm-inline">Delete all drafts</span>
@@ -308,13 +310,13 @@ function DeleteQuestionsModal({ csrfToken }: { csrfToken: string }) {
     title: 'Delete all draft questions',
     body: 'Are you sure you want to permanently delete all draft questions?',
     footer: html`
-      <form method="POST" class="mr-2">
+      <form method="POST" class="me-2">
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
         <button class="btn btn-danger" name="__action" value="delete_drafts">
           <i class="fa fa-trash" aria-hidden="true"></i>
           Delete all drafts
         </button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </form>
     `,
   });

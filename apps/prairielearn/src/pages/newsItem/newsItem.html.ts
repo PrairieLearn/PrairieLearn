@@ -40,12 +40,12 @@ export function NewsItem({
           <h1>${newsItem.title}</h1>
 
           <p>
-            <i class="mr-2 text-muted">
+            <i class="me-2 text-muted">
               Posted on ${formattedDate}
               ${newsItem.author ? html`by ${unsafeHtml(newsItem.author)}` : ''}
             </i>
             ${userIsInstructor && newsItem.visible_to_students
-              ? html`<span class="badge badge-secondary">Visible to students</span>`
+              ? html`<span class="badge text-bg-secondary">Visible to students</span>`
               : ''}
           </p>
         </header>
