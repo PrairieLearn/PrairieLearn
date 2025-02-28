@@ -154,7 +154,7 @@
     "prettier": "3.5.2",
     "qrcode-svg": "^1.1.0",
     "qs": "^6.14.0",
-    "quill": "2.0.3",
+    "quill": "2.0.2",
     "quilljs-markdown": "^1.2.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
