@@ -99,10 +99,6 @@ typecheck-contrib:
 	@yarn tsc -p contrib
 typecheck-scripts:
 	@yarn tsc -p scripts
-# This is just an alias to our build script, which will perform typechecking
-# as a side-effect.
-# TODO: Do we want to have a separate typecheck command for all packages/apps?
-# Maybe using TypeScript project references?
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:
