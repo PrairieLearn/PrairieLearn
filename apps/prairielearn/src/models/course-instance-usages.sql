@@ -74,6 +74,9 @@ FROM
   LEFT JOIN course_instances AS ci ON (ci.course_id = a.course_instance_id)
 WHERE
   gj.id = $grading_job_id
+  -- Avoid inserting anything if we'd compute a NULL duration.
+  AND gj.grading_received_at IS NOT NULL
+  AND gj.grading_finished_at IS NOT NULL
 ON CONFLICT (
   type,
   course_id,
