@@ -63,6 +63,11 @@ test-prairielearn: start-support
 check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
+check-jsonschema:
+	@yarn dlx tsx tools/gen-jsonschema.mts check
+update-jsonschema:
+	@yarn dlx tsx tools/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json"
+
 # Runs additional third-party linters
 lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell
 
