@@ -317,7 +317,6 @@ function buildLocals({
         locals.variantAttemptsLeft =
           (assessment_question.tries_per_variant ?? 1) - variant.num_tries;
         locals.variantAttemptsTotal = assessment_question.tries_per_variant ?? 1;
-
       }
       // TODO: can get rid of the nullish coalescing if we mark `score_perc` as `NOT NULL`.
       if (question.single_variant && (instance_question.score_perc ?? 0) >= 100.0) {
@@ -436,7 +435,7 @@ export async function getAndRenderVariant(
   // We write a fair amount of unstructured data back into locals,
   // so we'll cast it to `any` once so we don't have to do it every time.
   const resultLocals = locals as any;
-
+  console.log('resultLocals:', resultLocals);
   const question_course = await getQuestionCourse(locals.question, locals.course);
   resultLocals.question_is_shared = await sqldb.queryRow(
     sql.select_is_shared,
@@ -446,6 +445,7 @@ export async function getAndRenderVariant(
 
   const variant = await run(async () => {
     if (variant_id != null) {
+      console.log('SELECTING VARIANTTTT');
       return await sqldb.queryOptionalRow(
         sql.select_variant_for_render,
         {
@@ -462,6 +462,8 @@ export async function getAndRenderVariant(
       const options = { variant_seed };
       // need to get questionParams here!! Woohooooo
       console.log('LOCALS from varient: ', locals);
+      console.log('QUESTION PARAMS PASSED');
+      // console.log(question_params)
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
@@ -473,7 +475,7 @@ export async function getAndRenderVariant(
         options,
         require_open,
         locals.client_fingerprint_id ?? null,
-        {'lower_bound':10, 'upper_bound': 12}
+        { lower_bound: 10, upper_bound: 12 },
       );
     }
   });
@@ -745,7 +747,7 @@ export async function renderPanelsForSubmission({
         submission,
         submissions,
         question_course,
-        locals
+        locals,
       );
 
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;

@@ -65,7 +65,8 @@ async function makeVariant(
   } else {
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
   }
-
+  console.log('old questionParmas in makeVariant');
+  console.log(question.question_params)
   console.log('questionParmas in makeVariant');
   console.log(questionParams);
 

@@ -217,9 +217,9 @@ function getParamsForAssessment(
       const questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
         assessmentQuestionNumber++;
         const questionId = questionIds[alternative.qid];
-        // console.log('Alternative Question Params:', alternative.questionParams);
-        // console.log('Question Question Params:', question.questionParams);
-        // console.log('Zone Question Params:', zone.questionParams);
+        console.log('Alternative Question Params:', alternative.questionParams);
+        console.log('Question Question Params:', question.questionParams);
+        console.log('Zone Question Params:', zone.questionParams);
         return {
           number: assessmentQuestionNumber,
           has_split_points: alternative.hasSplitPoints,

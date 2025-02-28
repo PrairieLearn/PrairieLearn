@@ -47,6 +47,8 @@ async function ensureUpToDate(locals: Record<string, any>) {
       { assessment_instance_id: locals.assessment_instance.id },
       AssessmentInstanceSchema,
     );
+    console.log('Assessment Instance:', locals.assessment_instance);
+    console.log('Filename: studentAssessmentInstance.ts');
   }
 }
 
