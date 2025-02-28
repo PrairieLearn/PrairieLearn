@@ -43,6 +43,7 @@
     "@prairielearn/markdown": "workspace:^",
     "@prairielearn/migrations": "workspace:^",
     "@prairielearn/named-locks": "workspace:^",
+    "@prairielearn/node-metrics": "workspace:^",
     "@prairielearn/opentelemetry": "workspace:^",
     "@prairielearn/path-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
