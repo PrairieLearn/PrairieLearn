@@ -21,9 +21,12 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           <div class="modal-content">
             <div class="modal-header bg-info">
               <h5 class="modal-title">Rubric settings</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
             <div class="modal-body">
               ${resLocals.assessment_question.max_auto_points
@@ -131,8 +134,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     </button>
                   </div>
                 </div>
-                <div class="form-group col-6 col-lg-3">
-                  <label>
+                <div class="mb-3 col-6 col-lg-3">
+                  <label class="form-label">
                     Minimum rubric score
                     <button
                       type="button"
@@ -152,8 +155,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     />
                   </label>
                 </div>
-                <div class="form-group col-6 col-lg-3">
-                  <label>
+                <div class="mb-3 col-6 col-lg-3">
+                  <label class="form-label">
                     Maximum extra credit
                     <button
                       type="button"
@@ -251,19 +254,19 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                       ? html`
                           <button
                             type="button"
-                            class="btn btn-link btn-sm js-disable-rubric-button mr-auto"
+                            class="btn btn-link btn-sm js-disable-rubric-button me-auto"
                           >
                             Disable rubric
                           </button>
                         `
                       : ''}
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                       Cancel
                     </button>
                     <button type="submit" class="btn btn-primary">Save rubric</button>
                   `
                 : html`
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                       Close
                     </button>
                   `}
@@ -294,8 +297,10 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
         >
           <i class="fas fa-arrows-up-down"></i>
         </button>
-        <button type="button" class="sr-only js-rubric-item-move-down-button">Move down</button>
-        <button type="button" class="sr-only js-rubric-item-move-up-button">Move up</button>
+        <button type="button" class="visually-hidden js-rubric-item-move-down-button">
+          Move down
+        </button>
+        <button type="button" class="visually-hidden js-rubric-item-move-up-button">Move up</button>
         <button
           type="button"
           class="btn btn-sm btn-ghost js-rubric-item-delete text-danger"

@@ -27,7 +27,7 @@ export function AdministratorAdmins({
           <h1>Administrators</h1>
           <button
             type="button"
-            class="btn btn-sm btn-light ml-auto"
+            class="btn btn-sm btn-light ms-auto"
             data-bs-toggle="popover"
             data-bs-container="body"
             data-bs-html="true"
@@ -64,7 +64,7 @@ export function AdministratorAdmins({
                     <td class="align-middle">
                       <button
                         type="button"
-                        class="btn btn-sm btn-danger float-right"
+                        class="btn btn-sm btn-danger float-end"
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-bs-html="true"
@@ -105,8 +105,8 @@ function AdministratorInsertForm({ csrfToken }: { csrfToken: string }) {
     <form name="add-user-form" method="POST">
       <input type="hidden" name="__action" value="administrators_insert_by_user_uid" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <div class="form-group">
-        <label for="administratorInsertFormUid">UID:</label>
+      <div class="mb-3">
+        <label class="form-label" for="administratorInsertFormUid">UID:</label>
         <input
           type="text"
           class="form-control"
@@ -116,7 +116,7 @@ function AdministratorInsertForm({ csrfToken }: { csrfToken: string }) {
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Add administrator</button>
       </div>
     </form>
@@ -137,12 +137,9 @@ function AdministratorDeleteForm({
       <input type="hidden" name="__action" value="administrators_delete_by_user_id" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="user_id" value="${userId}" />
-      <div class="form-group">
-        <label>UID:</label>
-        <p class="form-control-static">${uid}</p>
-      </div>
+      <div class="mb-3"><strong>UID:</strong> ${uid}</div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Remove access</button>
       </div>
     </form>

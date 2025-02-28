@@ -346,11 +346,11 @@ export function FileBrowser({
     `,
     content: html`
       ${syncErrorsAndWarnings}
-      <h1 class="sr-only">Files</h1>
+      <h1 class="visually-hidden">Files</h1>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <div class="row align-items-center justify-content-between">
-            <div class="col-auto text-monospace d-flex">
+            <div class="col-auto font-monospace d-flex">
               ${joinHtml(
                 breadcrumbPaths.map(
                   (dir) => html`
@@ -572,7 +572,7 @@ function DirectoryBrowserBody({
 }) {
   return html`
     <table class="table table-sm table-hover" aria-label="Directories and files">
-      <thead class="sr-only">
+      <thead class="visually-hidden">
         <tr>
           <th>File</th>
           <th>Actions</th>
@@ -702,32 +702,30 @@ function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: 
       enctype="multipart/form-data"
       novalidate
     >
-      ${file.info ? html`<div class="form-group">${file.info}</div>` : ''}
+      ${file.info ? html`<div class="mb-3">${file.info}</div>` : ''}
 
-      <div class="form-group">
-        <div class="custom-file">
-          <input
-            type="file"
-            name="file"
-            class="custom-file-input"
-            id="attachFileInput-${file.id}"
-            required
-          />
-          <label class="custom-file-label" for="attachFileInput-${file.id}">Choose file</label>
-          <small class="form-text text-muted">
-            Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
-          </small>
-        </div>
+      <div class="mb-3">
+        <label class="form-label" for="attachFileInput-${file.id}">Choose file</label>
+        <input
+          type="file"
+          name="file"
+          class="form-control"
+          id="attachFileInput-${file.id}"
+          required
+        />
+        <small class="form-text text-muted">
+          Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
+        </small>
       </div>
 
-      <div class="form-group">
+      <div class="mb-3">
         <input type="hidden" name="__action" value="upload_file" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
         ${file.path != null
           ? html`<input type="hidden" name="file_path" value="${file.path}" />`
           : html`<input type="hidden" name="working_path" value="${file.working_path}" />`}
         <div class="text-right">
-          <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
           <button type="submit" class="btn btn-primary">Upload file</button>
         </div>
       </div>
@@ -743,7 +741,7 @@ function FileDeleteForm({ file, csrfToken }: { file: FileDeleteInfo; csrfToken: 
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="file_path" value="${file.path}" />
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete</button>
       </div>
     </form>
@@ -777,8 +775,8 @@ function FileRenameForm({
         you can specify a relative path that is delimited by a forward slash and that includes
         "<code>..</code>".
       </div>
-      <div class="form-group">
-        <label for="renameFileInput${file.id}">Path:</label>
+      <div class="mb-3">
+        <label class="form-label" for="renameFileInput${file.id}">Path:</label>
         <input
           type="text"
           class="form-control js-rename-input"
@@ -792,7 +790,7 @@ function FileRenameForm({
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

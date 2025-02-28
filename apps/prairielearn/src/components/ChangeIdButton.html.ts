@@ -30,8 +30,7 @@ export function ChangeIdButton({
         ChangeIdForm({ id, label, currentValue, extraHelpText, csrfToken, action }),
       )}"
     >
-      <i class="fa fa-i-cursor"></i>
-      <span>Change ${label}</span>
+      <i class="fa fa-i-cursor"></i> Change ${label}
     </button>
   `;
 }
@@ -59,8 +58,8 @@ function ChangeIdForm({
         Use only letters, numbers, dashes, and underscores, with no spaces. You may use forward
         slashes to separate directories. ${extraHelpText ?? ''}
       </div>
-      <div class="form-group">
-        <label for="input-${id}">${label}:</label>
+      <div class="mb-3">
+        <label class="form-label" for="input-${id}">${label}:</label>
         <input
           type="text"
           class="form-control"
@@ -72,7 +71,7 @@ function ChangeIdForm({
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

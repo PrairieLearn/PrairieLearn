@@ -190,7 +190,7 @@ function TokenList({
   return accessTokens.map(
     (token) => html`
       <li class="list-group-item d-flex align-items-center">
-        <div class="d-flex flex-column mr-3">
+        <div class="d-flex flex-column me-3">
           <strong>${token.name}</strong>
           <span class="text-muted">Created at ${token.created_at}</span>
           <span class="text-muted">
@@ -222,8 +222,8 @@ function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
     <form name="generate-token-form" method="post">
       <input type="hidden" name="__action" value="token_generate" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <div class="form-group">
-        <label for="token_name">Name:</label>
+      <div class="mb-3">
+        <label class="form-label" for="token_name">Name:</label>
         <input
           type="text"
           class="form-control"
@@ -234,7 +234,7 @@ function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Generate token</button>
       </div>
     </form>
@@ -252,7 +252,7 @@ function TokenDeleteForm({ token_id, csrfToken }: { token_id: string; csrfToken:
         API. You cannot undo this action.
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete token</button>
       </div>
     </form>

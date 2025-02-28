@@ -94,20 +94,20 @@ export function InstructorAssessmentGroups({
                 <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups</h1>
                 ${resLocals.authz_data.has_course_instance_permission_edit
                   ? html`
-                      <div class="ml-auto">
+                      <div class="ms-auto">
                         <button
                           type="button"
                           class="btn btn-sm btn-light"
-                          data-toggle="modal"
-                          data-target="#addGroupModal"
+                          data-bs-toggle="modal"
+                          data-bs-target="#addGroupModal"
                         >
                           <i class="fa fa-plus" aria-hidden="true"></i> Add a group
                         </button>
                         <button
                           type="button"
                           class="btn btn-sm btn-danger"
-                          data-toggle="modal"
-                          data-target="#deleteAllGroupsModal"
+                          data-bs-toggle="modal"
+                          data-bs-target="#deleteAllGroupsModal"
                         >
                           <i class="fa fa-times" aria-hidden="true"></i> Delete all groups
                         </button>
@@ -123,8 +123,8 @@ export function InstructorAssessmentGroups({
                           <button
                             type="button"
                             class="btn btn-primary text-nowrap"
-                            data-toggle="modal"
-                            data-target="#uploadAssessmentGroupsModal"
+                            data-bs-toggle="modal"
+                            data-bs-target="#uploadAssessmentGroupsModal"
                           >
                             <i class="fas fa-upload" aria-hidden="true"></i> Upload
                           </button>
@@ -134,8 +134,8 @@ export function InstructorAssessmentGroups({
                           <button
                             type="button"
                             class="btn btn-primary text-nowrap"
-                            data-toggle="modal"
-                            data-target="#randomAssessmentGroupsModal"
+                            data-bs-toggle="modal"
+                            data-bs-target="#randomAssessmentGroupsModal"
                           >
                             <i class="fas fa-shuffle" aria-hidden="true"></i> Random
                           </button>
@@ -180,7 +180,7 @@ export function InstructorAssessmentGroups({
                                   <button
                                     type="button"
                                     class="btn btn-xs btn-ghost dropdown-toggle"
-                                    data-toggle="dropdown"
+                                    data-bs-toggle="dropdown"
                                     data-boundary="window"
                                     aria-haspopup="true"
                                     aria-expanded="false"
@@ -310,8 +310,8 @@ export function InstructorAssessmentGroups({
 function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
   return html`
     <form name="add-member-form" method="POST">
-      <div class="form-group">
-        <label for="add_member_uids">UIDs</label>
+      <div class="mb-3">
+        <label class="form-label" for="add_member_uids">UIDs</label>
         <input
           type="text"
           class="form-control"
@@ -326,7 +326,7 @@ function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: str
       <input type="hidden" name="__action" value="add_member" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-primary">Add</button>
     </form>
   `;
@@ -339,7 +339,7 @@ function DeleteGroupForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: st
       <input type="hidden" name="__action" value="delete_group" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     </form>
   `;
@@ -348,9 +348,9 @@ function DeleteGroupForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: st
 function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
   return html`
     <form name="delete-member-form" method="POST">
-      <div class="form-group">
-        <label for="delete-member-form-${row.group_id}">UID:</label>
-        <select class="custom-select" name="user_id" id="delete-member-form-${row.group_id}">
+      <div class="mb-3">
+        <label class="form-label" for="delete-member-form-${row.group_id}">UID:</label>
+        <select class="form-select" name="user_id" id="delete-member-form-${row.group_id}">
           ${row.users.map((user) => {
             return html` <option value="${user.user_id}">${user.uid}</option> `;
           })}
@@ -359,7 +359,7 @@ function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: 
       <input type="hidden" name="__action" value="delete_member" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger" ${row.users.length > 0 ? '' : 'disabled'}>
         Delete
       </button>
@@ -386,25 +386,21 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
         The <code>groupname</code> column should be a unique identifier for each group. To change
         the grouping, link uids to the groupname.
       </p>
-      <div class="form-group">
-        <div class="custom-file">
-          <input
-            type="file"
-            accept=".csv"
-            name="file"
-            class="custom-file-input"
-            id="uploadAssessmentGroupsFileInput"
-          />
-          <label class="custom-file-label" for="uploadAssessmentGroupsFileInput">
-            Choose CSV file
-          </label>
-        </div>
+      <div class="mb-3">
+        <label class="form-label" for="uploadAssessmentGroupsFileInput"> Choose CSV file </label>
+        <input
+          type="file"
+          accept=".csv"
+          name="file"
+          class="form-control"
+          id="uploadAssessmentGroupsFileInput"
+        />
       </div>
     `,
     footer: html`
       <input type="hidden" name="__action" value="upload_assessment_groups" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Upload</button>
     `,
   });
@@ -423,8 +419,8 @@ function RandomAssessmentGroupsModal({
     id: 'randomAssessmentGroupsModal',
     title: 'Random group assignments',
     body: html`
-      <div class="form-group">
-        <label for="formMin">Min number of members in a group</label>
+      <div class="mb-3">
+        <label class="form-label" for="formMin">Min number of members in a group</label>
         <input
           type="number"
           required
@@ -435,8 +431,8 @@ function RandomAssessmentGroupsModal({
           name="min_group_size"
         />
       </div>
-      <div class="form-group">
-        <label for="formMax">Max number of members in a group</label>
+      <div class="mb-3">
+        <label class="form-label" for="formMax">Max number of members in a group</label>
         <input
           type="number"
           required
@@ -451,7 +447,7 @@ function RandomAssessmentGroupsModal({
     footer: html`
       <input type="hidden" name="__action" value="random_assessment_groups" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Group</button>
     `,
   });
@@ -462,12 +458,12 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
     id: 'addGroupModal',
     title: 'Add a group',
     body: html`
-      <div class="form-group">
-        <label for="formName">Group Name</label>
+      <div class="mb-3">
+        <label class="form-label" for="formName">Group Name</label>
         <input type="text" class="form-control" id="formName" name="group_name" />
       </div>
-      <div class="form-group">
-        <label for="addGroupUids">UIDs</label>
+      <div class="mb-3">
+        <label class="form-label" for="addGroupUids">UIDs</label>
         <input
           type="text"
           class="form-control"
@@ -484,7 +480,7 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
     footer: html`
       <input type="hidden" name="__action" value="add_group" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Add</button>
     `,
   });
@@ -511,7 +507,7 @@ function DeleteAllGroupsModal({
     footer: html`
       <input type="hidden" name="__action" value="delete_all" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete all</button>
     `,
   });

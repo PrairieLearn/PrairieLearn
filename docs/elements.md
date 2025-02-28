@@ -1783,8 +1783,8 @@ Along with the sample usage of the element, we include a sample template file. T
   <div class="card-header" style="cursor: pointer">
     <div
       class="card-title d-flex justify-content-between"
-      data-toggle="collapse"
-      data-target="#collapse-{{uuid}}"
+      data-bs-toggle="collapse"
+      data-bs-target="#collapse-{{uuid}}"
     >
       <div>{{section_header}}</div>
       <div class="fa fa-angle-down"></div>

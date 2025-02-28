@@ -196,7 +196,7 @@ onDocumentReady(() => {
     });
   });
 
-  $('[data-toggle="modal"]').on('click', function (e) {
+  $('[data-bs-toggle="modal"]').on('click', function (e) {
     e.stopPropagation(); // Keep click from changing sort
     $($(e.currentTarget).data('target')).modal('show');
   });
@@ -205,7 +205,7 @@ onDocumentReady(() => {
     return [
       {
         field: 'assessment_instance_id',
-        title: '<span class="sr-only">Assessment Instance</span>',
+        title: '<span class="visually-hidden">Assessment Instance</span>',
         sortable: true,
         sorter: detailsLinkSorter,
         formatter: detailsLinkFormatter,
@@ -286,8 +286,8 @@ onDocumentReady(() => {
                   class="btn btn-xs btn-ghost"
                   type="button"
                   aria-label="Roles help"
-                  data-toggle="modal"
-                  data-target="#role-help"
+                  data-bs-toggle="modal"
+                  data-bs-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
                 </button>
@@ -329,8 +329,8 @@ onDocumentReady(() => {
             class="btn btn-xs btn-ghost"
             type="button"
             aria-label="Duration help"
-            data-toggle="modal"
-            data-target="#duration-help"
+            data-bs-toggle="modal"
+            data-bs-target="#duration-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
           </button>
@@ -348,8 +348,8 @@ onDocumentReady(() => {
             class="btn btn-xs btn-ghost"
             type="button"
             aria-label="Remaining time help"
-            data-toggle="modal"
-            data-target="#time-remaining-help"
+            data-bs-toggle="modal"
+            data-bs-target="#time-remaining-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
           </button>
@@ -379,8 +379,8 @@ onDocumentReady(() => {
             class="btn btn-xs btn-ghost"
             type="button"
             aria-label="Fingerprint changes help"
-            data-toggle="modal"
-            data-target="#fingerprint-changes-help"
+            data-bs-toggle="modal"
+            data-bs-target="#fingerprint-changes-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
           </button>
@@ -525,7 +525,7 @@ onDocumentReady(() => {
         {showTimeLimitOptions ? (
           <p>
             <select
-              class="custom-select select-time-limit"
+              class="form-select select-time-limit"
               name="action"
               aria-label="Time limit options"
               onChange={(e) => updateFormState('action', e.currentTarget.value as TimeLimitAction)}
@@ -611,7 +611,7 @@ onDocumentReady(() => {
           ) : null}
         </p>
         <div class="btn-toolbar justify-content-end">
-          <button type="button" class="btn btn-secondary mr-2" data-dismiss="popover">
+          <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="popover">
             Cancel
           </button>
           <button type="submit" class="btn btn-primary">
@@ -650,11 +650,11 @@ onDocumentReady(() => {
       ${value}
       <span>
         <button
-          class="btn btn-secondary btn-xs ml-1 time-limit-edit-button"
+          class="btn btn-secondary btn-xs ms-1 time-limit-edit-button"
           id="row${row.assessment_instance_id}PopoverTimeLimit"
           aria-label="Change time limit"
           data-row="${JSON.stringify(row)}"
-          data-placement="bottom"
+          data-bs-placement="bottom"
           data-boundary="window"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
@@ -722,7 +722,7 @@ onDocumentReady(() => {
           <button
             type="button"
             class="btn btn-secondary btn-xs dropdown-toggle"
-            data-toggle="dropdown"
+            data-bs-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false"
             data-boundary="window"
@@ -734,8 +734,8 @@ onDocumentReady(() => {
               ? html`
                   <button
                     class="dropdown-item"
-                    data-toggle="modal"
-                    data-target="#deleteAssessmentInstanceModal"
+                    data-bs-toggle="modal"
+                    data-bs-target="#deleteAssessmentInstanceModal"
                     data-uid="${row.uid}"
                     data-name="${row.name}"
                     data-number="${row.number}"
@@ -745,7 +745,7 @@ onDocumentReady(() => {
                     data-score-perc="${Math.floor(row.score_perc ?? 0)}"
                     data-assessment-instance-id="${row.assessment_instance_id}"
                   >
-                    <i class="fas fa-times mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-times me-2" aria-hidden="true"></i>
                     Delete
                   </button>
                   <button
@@ -757,14 +757,14 @@ onDocumentReady(() => {
                     data-bs-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
                     data-bs-placement="auto"
                   >
-                    <i class="fas fa-ban mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-ban me-2" aria-hidden="true"></i>
                     Grade &amp; Close
                   </button>
                   <button
                     class="dropdown-item ${!row.open ? '' : 'disabled'}"
                     onclick="$('#row${ai_id}PopoverTimeLimit').popover('show')"
                   >
-                    <i class="fas fa-clock mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-clock me-2" aria-hidden="true"></i>
                     Re-open
                   </button>
                   <button
@@ -776,7 +776,7 @@ onDocumentReady(() => {
                     data-bs-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
                     data-bs-placement="auto"
                   >
-                    <i class="fas fa-sync mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-sync me-2" aria-hidden="true"></i>
                     Regrade
                   </button>
                 `
@@ -854,7 +854,7 @@ function CloseForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number }) {
       <input type="hidden" name="__action" value="close" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Grade and close</button>
     </form>
   `;
@@ -866,7 +866,7 @@ function RegradeForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number })
       <input type="hidden" name="__action" value="regrade" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-primary">Regrade</button>
     </form>
   `;

@@ -124,14 +124,14 @@ export function InstructorQuestionSettings({
           <form name="edit-question-settings-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
-            <div class="form-group">
-              <label for="qid">QID</label>
+            <div class="mb-3">
+              <label class="form-label" for="qid">QID</label>
               ${questionGHLink
                 ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
                 : ''}
               <input
                 type="text"
-                class="form-control text-monospace"
+                class="form-control font-monospace"
                 id="qid"
                 name="qid"
                 value="${resLocals.question.qid}"
@@ -145,7 +145,7 @@ export function InstructorQuestionSettings({
                 separate directories.
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <h2 class="h4">General</h2>
               <label for="title">Title</label>
               <input
@@ -350,8 +350,8 @@ export function InstructorQuestionSettings({
                           class="btn btn-sm btn-primary"
                           id
                           href="#"
-                          data-toggle="modal"
-                          data-target="#deleteQuestionModal"
+                          data-bs-toggle="modal"
+                          data-bs-target="#deleteQuestionModal"
                         >
                           <i class="fa fa-times" aria-hidden="true"></i> Delete this question
                         </button>
@@ -385,11 +385,11 @@ function CopyForm({
     <form name="copy-question-form" method="POST">
       <input type="hidden" name="__action" value="copy_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <div class="form-group">
-        <label for="to-course-id-select">
+      <div class="mb-3">
+        <label class="form-label" for="to-course-id-select">
           The copied question will be added to the following course:
         </label>
-        <select class="custom-select" id="to-course-id-select" name="to_course_id" required>
+        <select class="form-select" id="to-course-id-select" name="to_course_id" required>
           ${editableCourses.map((c) => {
             return html`
               <option value="${c.id}" ${idsEqual(c.id, courseId) ? 'selected' : ''}>
@@ -400,7 +400,7 @@ function CopyForm({
         </select>
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Submit</button>
       </div>
     </form>
@@ -454,7 +454,7 @@ function DeleteQuestionModal({
     footer: html`
       <input type="hidden" name="__action" value="delete_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     `,
   });
@@ -496,7 +496,7 @@ function QuestionSharing({
   if (question.shared_publicly) {
     details.push(html`
       <p>
-        <span class="badge color-green3 mr-1">Public</span>
+        <span class="badge color-green3 me-1">Public</span>
         This question is publicly shared and can be imported by other courses.
       </p>
     `);
@@ -505,7 +505,7 @@ function QuestionSharing({
   if (question.share_source_publicly) {
     details.push(html`
       <p>
-        <span class="badge color-green3 mr-1">Public source</span>
+        <span class="badge color-green3 me-1">Public source</span>
         This question's source is publicly shared.
       </p>
     `);

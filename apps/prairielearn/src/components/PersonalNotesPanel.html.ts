@@ -38,7 +38,7 @@ export function PersonalNotesPanel({
                 (file) => html`
                   <li class="list-group-item d-flex align-items-center">
                     <a
-                      class="text-break mr-2"
+                      class="text-break me-2"
                       href="${config.urlPrefix}/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}"
                       data-testid="attached-file"
                     >
@@ -50,7 +50,7 @@ export function PersonalNotesPanel({
                     allowNewUploads &&
                     file.type === 'student_upload'
                       ? html`
-                          <div class="ml-auto">
+                          <div class="ms-auto">
                             ${DeletePersonalNoteButton({ file, variantId, csrfToken })}
                           </div>
                         `
@@ -93,8 +93,8 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
       <button
         class="btn btn-xs btn-secondary"
         type="button"
-        data-toggle="collapse"
-        data-target="#attachFileCollapse"
+        data-bs-toggle="collapse"
+        data-bs-target="#attachFileCollapse"
         aria-expanded="false"
         aria-controls="attachFileCollapse"
       >
@@ -111,16 +111,14 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             Attached files will be saved here for your reference. These files act as personal notes
             and can be used for your own review purposes. They are not used for grading.
           </p>
-          <div class="form-group">
-            <div class="custom-file">
-              <input type="file" name="file" class="custom-file-input" id="attachFileInput" />
-              <label class="custom-file-label" for="attachFileInput">Choose file</label>
-              <small class="form-text text-muted">
-                Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
-              </small>
-            </div>
+          <div class="mb-3">
+            <label class="form-label" for="attachFileInput">Choose file</label>
+            <input type="file" name="file" class="form-control" id="attachFileInput" />
+            <small class="form-text text-muted">
+              Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
+            </small>
           </div>
-          <div class="form-group mb-0">
+          <div class="mb-3">
             <input type="hidden" name="__action" value="attach_file" />
             ${variantId != null
               ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
@@ -152,8 +150,8 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
       <button
         class="btn btn-xs btn-secondary"
         type="button"
-        data-toggle="collapse"
-        data-target="#attachTextCollapse"
+        data-bs-toggle="collapse"
+        data-bs-target="#attachTextCollapse"
         aria-expanded="false"
         aria-controls="attachTextCollapse"
       >
@@ -171,7 +169,7 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             name="filename"
             value="notes.txt"
           />
-          <div class="form-group">
+          <div class="mb-3">
             <textarea
               class="form-control"
               rows="5"
@@ -212,7 +210,7 @@ function DeletePersonalNoteButton({
         : ''}
       <input type="hidden" name="file_id" value="${file.id}" />
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete</button>
       </div>
     </form>
