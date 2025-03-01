@@ -74,7 +74,8 @@ lint-python:
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
 lint-html:
-	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" \
+	"site/**/*.html" --ignore 'overrides/**'
 lint-markdown:
 	@yarn markdownlint "docs/**/*.md"
 lint-links:

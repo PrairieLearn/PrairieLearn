@@ -373,8 +373,6 @@ jobs:
         run: make build
       - name: Run the JavaScript linter
         run: make lint-js
-      - name: Run the HTML linter
-        run: make lint-html
       - name: Run the links linter
         run: make lint-links
       - name: Run the d2 diagram linter
@@ -390,12 +388,15 @@ jobs:
         run: make lint-docker
       - name: Run the Shellcheck linter
         run: make lint-shell
-      - name: Check for markdown linting errors
+      - name: Run the Markdown linter
         run: make lint-markdown
       - name: Run the GitHub Actions linter
         run: make lint-actions
       - name: Check for warnings in documentation
         run: make build-docs
+      # Run after the docs build
+      - name: Run the HTML linter
+        run: make lint-html
       - name: Check dependency structure
         run: make check-dependencies
 
