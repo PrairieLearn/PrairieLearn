@@ -107,7 +107,7 @@ plugins:
             group_by_category: false # e.g. 'classes', 'functions'
             members_order: source # source, alphabetical
 
-          import:
+          inventories:
             - url: https://numpy.org/doc/stable/objects.inv
             - url: https://pandas.pydata.org/pandas-docs/stable/objects.inv
             - url: https://matplotlib.org/objects.inv
@@ -160,6 +160,12 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
   - md_in_html
+  # https://facelessuser.github.io/pymdown-extensions/extensions/betterem/
+  - pymdownx.betterem
+  # https://facelessuser.github.io/pymdown-extensions/extensions/caret/
+  - pymdownx.caret # h^2^o
+  # https://facelessuser.github.io/pymdown-extensions/extensions/tilde/
+  - pymdownx.tilde # ~~deleted~~
 
 extra_javascript:
   - assets/mathjax-config.js

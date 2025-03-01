@@ -34,7 +34,7 @@ If students click the left menu PrairieLearn link before you have connected a co
 they will see a 'come back later' message. After a course instance is connected, the link will
 take them into your course instance.
 
-## "LTI 1.3" tab in your PrairieLearn course instance
+## 'LTI 1.3' tab in your PrairieLearn course instance
 
 Once a Canvas course is linked with your PrairieLearn course instance, you will see an
 "LTI 1.3" tab in the PrairieLearn course instance instructor view. All of the Canvas
