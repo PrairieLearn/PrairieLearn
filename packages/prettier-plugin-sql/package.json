@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.17.19",
+    "@types/node": "^20.17.21",
     "prettier": "3.5.2",
     "typescript": "^5.8.2"
   },

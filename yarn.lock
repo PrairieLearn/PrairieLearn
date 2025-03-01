@@ -1704,62 +1704,62 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@eslint-react/ast@npm:1.28.0":
-  version: 1.28.0
-  resolution: "@eslint-react/ast@npm:1.28.0"
+"@eslint-react/ast@npm:1.29.0":
+  version: 1.29.0
+  resolution: "@eslint-react/ast@npm:1.29.0"
   dependencies:
-    "@eslint-react/eff": "npm:1.28.0"
+    "@eslint-react/eff": "npm:1.29.0"
     "@typescript-eslint/types": "npm:^8.25.0"
     "@typescript-eslint/typescript-estree": "npm:^8.25.0"
     "@typescript-eslint/utils": "npm:^8.25.0"
     string-ts: "npm:^2.2.1"
     ts-pattern: "npm:^5.6.2"
-  checksum: 10c0/4037b69587d64f46c84694a2257415bfd4005206934a5054595ba3258541db9510cd898609454f2765fde8caddb3f73801297d08602bb31cb4178c8947abab7d
+  checksum: 10c0/2833531994d126b9fbe6b2b812328dc9b210229882522de710422727241420645f618a383e52f15e67b6e9e24720cc3c135cf2aa5e1ed0e9a9c2157d65433f4f
   languageName: node
   linkType: hard
 
-"@eslint-react/core@npm:1.28.0":
-  version: 1.28.0
-  resolution: "@eslint-react/core@npm:1.28.0"
+"@eslint-react/core@npm:1.29.0":
+  version: 1.29.0
+  resolution: "@eslint-react/core@npm:1.29.0"
   dependencies:
-    "@eslint-react/ast": "npm:1.28.0"
-    "@eslint-react/eff": "npm:1.28.0"
-    "@eslint-react/jsx": "npm:1.28.0"
-    "@eslint-react/shared": "npm:1.28.0"
-    "@eslint-react/var": "npm:1.28.0"
+    "@eslint-react/ast": "npm:1.29.0"
+    "@eslint-react/eff": "npm:1.29.0"
+    "@eslint-react/jsx": "npm:1.29.0"
+    "@eslint-react/shared": "npm:1.29.0"
+    "@eslint-react/var": "npm:1.29.0"
     "@typescript-eslint/scope-manager": "npm:^8.25.0"
     "@typescript-eslint/type-utils": "npm:^8.25.0"
     "@typescript-eslint/types": "npm:^8.25.0"
     "@typescript-eslint/utils": "npm:^8.25.0"
     birecord: "npm:^0.1.1"
     ts-pattern: "npm:^5.6.2"
-  checksum: 10c0/81f9521661530dc1c681d252c092e948c25037fed491999375c592b80a921102713bd67d3e9ccbd8d015e34e4a1269df413af5da190653ed3077a1590d465820
+  checksum: 10c0/cc222cdfc2ba729ae20bc9d30b132ce1cc6c24263a20163736d7bfc4a4ef5786090d126347e1dee854cec7fedcfce7462ea1afd8c7e30c859a61e9cec8c1c901
   languageName: node
   linkType: hard
 
-"@eslint-react/eff@npm:1.28.0":
-  version: 1.28.0
-  resolution: "@eslint-react/eff@npm:1.28.0"
-  checksum: 10c0/8870c615358a916b1531eff5054c17bdaf00fa925a875e412105affd66ea8ff365bc643c597fd02615302c78c90c3880c93ba1127b694b3632141ac74f39a938
+"@eslint-react/eff@npm:1.29.0":
+  version: 1.29.0
+  resolution: "@eslint-react/eff@npm:1.29.0"
+  checksum: 10c0/ff2fd03ece9ef08d39cefd328b0fa4962d3b5e8797a7964d09f43315e27ac9ea2131789fcc828190bd20b8ad8e902fa6bcd26f6dc1c548e494ad3ee281a457ff
   languageName: node
   linkType: hard
 
-"@eslint-react/eslint-plugin@npm:^1.28.0":
-  version: 1.28.0
-  resolution: "@eslint-react/eslint-plugin@npm:1.28.0"
+"@eslint-react/eslint-plugin@npm:^1.29.0":
+  version: 1.29.0
+  resolution: "@eslint-react/eslint-plugin@npm:1.29.0"
   dependencies:
-    "@eslint-react/eff": "npm:1.28.0"
-    "@eslint-react/shared": "npm:1.28.0"
+    "@eslint-react/eff": "npm:1.29.0"
+    "@eslint-react/shared": "npm:1.29.0"
     "@typescript-eslint/scope-manager": "npm:^8.25.0"
     "@typescript-eslint/type-utils": "npm:^8.25.0"
     "@typescript-eslint/types": "npm:^8.25.0"
     "@typescript-eslint/utils": "npm:^8.25.0"
-    eslint-plugin-react-debug: "npm:1.28.0"
-    eslint-plugin-react-dom: "npm:1.28.0"
-    eslint-plugin-react-hooks-extra: "npm:1.28.0"
-    eslint-plugin-react-naming-convention: "npm:1.28.0"
-    eslint-plugin-react-web-api: "npm:1.28.0"
-    eslint-plugin-react-x: "npm:1.28.0"
+    eslint-plugin-react-debug: "npm:1.29.0"
+    eslint-plugin-react-dom: "npm:1.29.0"
+    eslint-plugin-react-hooks-extra: "npm:1.29.0"
+    eslint-plugin-react-naming-convention: "npm:1.29.0"
+    eslint-plugin-react-web-api: "npm:1.29.0"
+    eslint-plugin-react-x: "npm:1.29.0"
   peerDependencies:
     eslint: ^8.57.0 || ^9.0.0
     typescript: ^4.9.5 || ^5.3.3
@@ -1768,49 +1768,49 @@ __metadata:
       optional: false
     typescript:
       optional: true
-  checksum: 10c0/7d2f8065af3adbbce47c02bccd7775c2cc9faca3b4498de4d44fe10deb2dceda5b7cddef63e0d3a943e3d4676d502dc9caf57f6461795fe4c98e5222784d9ca4
+  checksum: 10c0/107c00646ef6b6e7ee0c5ad2c19bb406efd2bf6df7a0bbcb86932049be19732fbc69e08a8d04b843c4de463845b4c8d820608f16ef65d127cdbc62dc1c752b7d
   languageName: node
   linkType: hard
 
-"@eslint-react/jsx@npm:1.28.0":
-  version: 1.28.0
-  resolution: "@eslint-react/jsx@npm:1.28.0"
+"@eslint-react/jsx@npm:1.29.0":
+  version: 1.29.0
+  resolution: "@eslint-react/jsx@npm:1.29.0"
   dependencies:
-    "@eslint-react/ast": "npm:1.28.0"
-    "@eslint-react/eff": "npm:1.28.0"
-    "@eslint-react/var": "npm:1.28.0"
+    "@eslint-react/ast": "npm:1.29.0"
+    "@eslint-react/eff": "npm:1.29.0"
+    "@eslint-react/var": "npm:1.29.0"
     "@typescript-eslint/scope-manager": "npm:^8.25.0"
     "@typescript-eslint/types": "npm:^8.25.0"
     "@typescript-eslint/utils": "npm:^8.25.0"
     ts-pattern: "npm:^5.6.2"
-  checksum: 10c0/f9a167b2a9201f3831071afeac53fdaf52b58924187cf02d1d23df72603704d41b94fa2df5ebbe40bec1abc44f4bfd183d5491746bb6a44a02e1375bed7e94d5
+  checksum: 10c0/525c3f7b2e360e3d6051fde9338dc312fc67b43a3773ae980dfc44980de555db46ec7f0faba62fb8db3ef6d946c4b03b2264b0f8382cb0c07003ca3760acdaaa
   languageName: node
   linkType: hard
 
-"@eslint-react/shared@npm:1.28.0":
-  version: 1.28.0
-  resolution: "@eslint-react/shared@npm:1.28.0"
+"@eslint-react/shared@npm:1.29.0":
+  version: 1.29.0
+  resolution: "@eslint-react/shared@npm:1.29.0"
   dependencies:
-    "@eslint-react/eff": "npm:1.28.0"
+    "@eslint-react/eff": "npm:1.29.0"
     "@typescript-eslint/utils": "npm:^8.25.0"
     picomatch: "npm:^4.0.2"
     ts-pattern: "npm:^5.6.2"
-  checksum: 10c0/cd54a1ac54cc8b1cb3de34a59eaebd1f4fb36c526b93106accceec424600d6734022ede32b98e04daaa2caf9cd9b25d8aad52669cedf249e058b5ced506ad006
+  checksum: 10c0/54119da6a41f06da652dfa313b0cc1fd1ce3c46d1c023d8911a9acd798e3fb42d33532d2b06c45eba5f2bb5573e20cd1f23ee0b78035e4944a40cc016f467da1
   languageName: node
   linkType: hard
 
-"@eslint-react/var@npm:1.28.0":
-  version: 1.28.0
-  resolution: "@eslint-react/var@npm:1.28.0"
+"@eslint-react/var@npm:1.29.0":
+  version: 1.29.0
+  resolution: "@eslint-react/var@npm:1.29.0"
   dependencies:
-    "@eslint-react/ast": "npm:1.28.0"
-    "@eslint-react/eff": "npm:1.28.0"
+    "@eslint-react/ast": "npm:1.29.0"
+    "@eslint-react/eff": "npm:1.29.0"
     "@typescript-eslint/scope-manager": "npm:^8.25.0"
     "@typescript-eslint/types": "npm:^8.25.0"
     "@typescript-eslint/utils": "npm:^8.25.0"
     string-ts: "npm:^2.2.1"
     ts-pattern: "npm:^5.6.2"
-  checksum: 10c0/3a6de60498262fa66e8472a18b372fa12cbaba257ab18b77ae8a5ac03c794ff45cb698543430501018bc79a0a4e72aa33df8c9efafc03872a2041b06a21c0fff
+  checksum: 10c0/c1a7b4bc9af38f8da544f003d383d3052a6f0513995d77dcee734aca574510d7ed755c744859fd5589a62f8985c539c3119952890365e9c4c2b1a4f855e5a3a9
   languageName: node
   linkType: hard
 
@@ -3205,7 +3205,7 @@ __metadata:
     "@actions/core": "npm:^1.11.1"
     "@actions/github": "npm:^6.0.0"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     typescript: "npm:^5.8.2"
     zod: "npm:^3.24.2"
   languageName: unknown
@@ -3216,7 +3216,7 @@ __metadata:
   resolution: "@prairielearn/aws-imds@workspace:packages/aws-imds"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     node-fetch: "npm:^3.3.2"
     typescript: "npm:^5.8.2"
     zod: "npm:^3.24.2"
@@ -3230,7 +3230,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@smithy/property-provider": "npm:^4.0.1"
     "@smithy/types": "npm:^4.1.0"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
@@ -3241,7 +3241,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/bindings": "npm:^1.5.5"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     bindings: "npm:^1.5.0"
     nan: "npm:^2.22.2"
     node-gyp: "npm:^11.1.0"
@@ -3280,7 +3280,7 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     commander: "npm:^13.1.0"
@@ -3312,7 +3312,7 @@ __metadata:
     "@types/fs-extra": "npm:^11.0.4"
     "@types/lodash": "npm:^4.17.15"
     "@types/mocha": "npm:^10.0.10"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     fs-extra: "npm:^11.3.0"
@@ -3332,7 +3332,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": "npm:^10.0.10"
     "@types/multipipe": "npm:^3.0.5"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     csv-stringify: "npm:^6.5.2"
@@ -3352,7 +3352,7 @@ __metadata:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": "npm:^10.0.10"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     date-fns: "npm:^4.1.0"
@@ -3369,7 +3369,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": "npm:^10.0.10"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     lodash: "npm:^4.17.21"
@@ -3384,7 +3384,7 @@ __metadata:
   resolution: "@prairielearn/eslint-plugin@workspace:packages/eslint-plugin-prairielearn"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
@@ -3401,7 +3401,7 @@ __metadata:
   resolution: "@prairielearn/express-list-endpoints@workspace:packages/express-list-endpoints"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     express: "npm:^4.21.2"
@@ -3426,7 +3426,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/express": "npm:^4.17.21"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     mocha: "npm:^11.1.0"
@@ -3440,7 +3440,7 @@ __metadata:
   resolution: "@prairielearn/formatter@workspace:packages/formatter"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     lodash: "npm:^4.17.21"
@@ -3472,7 +3472,7 @@ __metadata:
     "@types/chai": "npm:^5.0.1"
     "@types/dockerode": "npm:^3.3.35"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     "@types/sinon": "npm:^17.0.4"
     "@types/tmp": "npm:^0.2.6"
     async: "npm:^3.2.6"
@@ -3505,7 +3505,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/ejs": "npm:^3.1.5"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     ejs: "npm:^3.1.10"
@@ -3520,7 +3520,7 @@ __metadata:
   resolution: "@prairielearn/html@workspace:packages/html"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     mocha: "npm:^11.1.0"
@@ -3534,7 +3534,7 @@ __metadata:
   resolution: "@prairielearn/logger@workspace:packages/logger"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     logform: "npm:^2.7.0"
     typescript: "npm:^5.8.2"
     winston: "npm:^3.17.0"
@@ -3551,7 +3551,7 @@ __metadata:
     "@types/hast": "npm:^3.0.4"
     "@types/mdast": "npm:^4.0.4"
     "@types/mocha": "npm:^10.0.10"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     "@types/unist": "npm:^3.0.3"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
@@ -3583,7 +3583,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/mocha": "npm:^10.0.10"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     chai-as-promised: "npm:^8.0.1"
@@ -3604,7 +3604,7 @@ __metadata:
   dependencies:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     pg: "npm:^8.13.3"
     typescript: "npm:^5.8.2"
   languageName: unknown
@@ -3640,7 +3640,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": "npm:^5.0.1"
     "@types/mocha": "npm:^10.0.10"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     chai-as-promised: "npm:^8.0.1"
@@ -3657,7 +3657,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": "npm:^5.0.1"
     "@types/mocha": "npm:^10.0.10"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     mocha: "npm:^11.1.0"
@@ -3675,7 +3675,7 @@ __metadata:
     "@types/diff": "npm:^7.0.1"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/lodash": "npm:^4.17.15"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     "@types/yargs": "npm:^17.0.33"
     async: "npm:^3.2.6"
     chalk: "npm:^5.4.1"
@@ -3701,7 +3701,7 @@ __metadata:
     "@types/lodash": "npm:^4.17.15"
     "@types/mocha": "npm:^10.0.10"
     "@types/multipipe": "npm:^3.0.5"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     "@types/pg-cursor": "npm:^2.7.2"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
@@ -3799,7 +3799,7 @@ __metadata:
     "@types/mocha": "npm:^10.0.10"
     "@types/multer": "npm:^1.4.12"
     "@types/mustache": "npm:^4.2.5"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     "@types/node-fetch": "npm:^2.6.12"
     "@types/node-jose": "npm:^1.1.13"
     "@types/oauth-signature": "npm:^1.5.2"
@@ -3921,7 +3921,7 @@ __metadata:
     prettier: "npm:3.5.2"
     qrcode-svg: "npm:^1.1.0"
     qs: "npm:^6.14.0"
-    quill: "npm:2.0.2"
+    quill: "npm:2.0.3"
     quilljs-markdown: "npm:^1.2.0"
     remark-gfm: "npm:^4.0.1"
     remark-parse: "npm:^11.0.0"
@@ -3967,7 +3967,7 @@ __metadata:
   resolution: "@prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     prettier: "npm:3.5.2"
     sql-formatter: "npm:^15.4.11"
     typescript: "npm:^5.8.2"
@@ -3979,7 +3979,7 @@ __metadata:
   resolution: "@prairielearn/run@workspace:packages/run"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     mocha: "npm:^11.1.0"
@@ -3993,7 +3993,7 @@ __metadata:
   resolution: "@prairielearn/sanitize@workspace:packages/sanitize"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     mocha: "npm:^11.1.0"
@@ -4009,7 +4009,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@sentry/node": "npm:^8.55.0"
     "@sentry/utils": "npm:^8.55.0"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     execa: "npm:^9.5.2"
     tsx: "npm:^4.19.3"
     typescript: "npm:^5.8.2"
@@ -4026,7 +4026,7 @@ __metadata:
     "@types/cookie": "npm:^0.6.0"
     "@types/cookie-signature": "npm:^1.1.2"
     "@types/express": "npm:^4.17.21"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     "@types/node-fetch": "npm:^2.6.12"
     "@types/on-headers": "npm:^1.0.3"
     "@types/set-cookie-parser": "npm:^2.4.10"
@@ -4055,7 +4055,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": "npm:^4.1.12"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     base64url: "npm:^3.0.1"
     debug: "npm:^4.4.0"
     lodash: "npm:^4.17.21"
@@ -4089,7 +4089,7 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@socket.io/redis-emitter": "npm:^5.1.0"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
     async-mutex: "npm:^0.5.0"
@@ -4125,7 +4125,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@socket.io/redis-emitter": "npm:^5.1.0"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     fast-glob: "npm:^3.3.3"
     filesize: "npm:^10.1.6"
     socket.io: "npm:^4.8.1"
@@ -4141,7 +4141,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": "npm:^5.0.1"
     "@types/mocha": "npm:^10.0.10"
-    "@types/node": "npm:^20.17.19"
+    "@types/node": "npm:^20.17.21"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     mocha: "npm:^11.1.0"
@@ -5828,7 +5828,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.17.19":
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0":
   version: 20.17.19
   resolution: "@types/node@npm:20.17.19"
   dependencies:
@@ -5850,6 +5850,15 @@ __metadata:
   dependencies:
     undici-types: "npm:~5.26.4"
   checksum: 10c0/e985f50684def801801069e236165ee511f9195fc04ad4a2af7642d86aeaeaf7bfe34c147f894a48618a5c71c15b388ca91341a244792149543a712e38351988
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^20.17.21":
+  version: 20.17.21
+  resolution: "@types/node@npm:20.17.21"
+  dependencies:
+    undici-types: "npm:~6.19.2"
+  checksum: 10c0/b37582d3600d4ac75601ecded10656ae055aeab6a99f89145e4e0c6b9dfdb934ea137dcd07a81af067ab93d91ebc6d9ab27a370368f9939d9a6ae37535173746
   languageName: node
   linkType: hard
 
@@ -9018,16 +9027,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-debug@npm:1.28.0":
-  version: 1.28.0
-  resolution: "eslint-plugin-react-debug@npm:1.28.0"
+"eslint-plugin-react-debug@npm:1.29.0":
+  version: 1.29.0
+  resolution: "eslint-plugin-react-debug@npm:1.29.0"
   dependencies:
-    "@eslint-react/ast": "npm:1.28.0"
-    "@eslint-react/core": "npm:1.28.0"
-    "@eslint-react/eff": "npm:1.28.0"
-    "@eslint-react/jsx": "npm:1.28.0"
-    "@eslint-react/shared": "npm:1.28.0"
-    "@eslint-react/var": "npm:1.28.0"
+    "@eslint-react/ast": "npm:1.29.0"
+    "@eslint-react/core": "npm:1.29.0"
+    "@eslint-react/eff": "npm:1.29.0"
+    "@eslint-react/jsx": "npm:1.29.0"
+    "@eslint-react/shared": "npm:1.29.0"
+    "@eslint-react/var": "npm:1.29.0"
     "@typescript-eslint/scope-manager": "npm:^8.25.0"
     "@typescript-eslint/type-utils": "npm:^8.25.0"
     "@typescript-eslint/types": "npm:^8.25.0"
@@ -9042,20 +9051,20 @@ __metadata:
       optional: false
     typescript:
       optional: true
-  checksum: 10c0/254711f7776c9c9d5446939d09977bfb3c791e6703c385466767357e4b3d0900c3c866217c6554c53b49f1693eab7f7757ab1c8df986558e36c5c761291cf770
+  checksum: 10c0/b5761c379e3edafef18f29325d406f410aeb1b5a9f18a0344877f6a45d55ee5732140b7185c6c9e8ca8498dea1c3b65b45e3d23860143a74ec4afb9214e64e47
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-dom@npm:1.28.0":
-  version: 1.28.0
-  resolution: "eslint-plugin-react-dom@npm:1.28.0"
+"eslint-plugin-react-dom@npm:1.29.0":
+  version: 1.29.0
+  resolution: "eslint-plugin-react-dom@npm:1.29.0"
   dependencies:
-    "@eslint-react/ast": "npm:1.28.0"
-    "@eslint-react/core": "npm:1.28.0"
-    "@eslint-react/eff": "npm:1.28.0"
-    "@eslint-react/jsx": "npm:1.28.0"
-    "@eslint-react/shared": "npm:1.28.0"
-    "@eslint-react/var": "npm:1.28.0"
+    "@eslint-react/ast": "npm:1.29.0"
+    "@eslint-react/core": "npm:1.29.0"
+    "@eslint-react/eff": "npm:1.29.0"
+    "@eslint-react/jsx": "npm:1.29.0"
+    "@eslint-react/shared": "npm:1.29.0"
+    "@eslint-react/var": "npm:1.29.0"
     "@typescript-eslint/scope-manager": "npm:^8.25.0"
     "@typescript-eslint/types": "npm:^8.25.0"
     "@typescript-eslint/utils": "npm:^8.25.0"
@@ -9070,20 +9079,20 @@ __metadata:
       optional: false
     typescript:
       optional: true
-  checksum: 10c0/412dacd527363cf6c9752bfed795d6b46020f48125543b0c0236fe738d6c3f3f5631ed085a0682a0d6249fe4a0e93a3244a8b7f692429fb3ef74f78c06d8b591
+  checksum: 10c0/186dae69f3abeea5daa4ce336b71ef970328e51bb58ed84159c5d8aecb7b766aff541953bef939e6609202e40a59cf3d2881f344a47428122e3f933ff1c6c7a9
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-hooks-extra@npm:1.28.0":
-  version: 1.28.0
-  resolution: "eslint-plugin-react-hooks-extra@npm:1.28.0"
+"eslint-plugin-react-hooks-extra@npm:1.29.0":
+  version: 1.29.0
+  resolution: "eslint-plugin-react-hooks-extra@npm:1.29.0"
   dependencies:
-    "@eslint-react/ast": "npm:1.28.0"
-    "@eslint-react/core": "npm:1.28.0"
-    "@eslint-react/eff": "npm:1.28.0"
-    "@eslint-react/jsx": "npm:1.28.0"
-    "@eslint-react/shared": "npm:1.28.0"
-    "@eslint-react/var": "npm:1.28.0"
+    "@eslint-react/ast": "npm:1.29.0"
+    "@eslint-react/core": "npm:1.29.0"
+    "@eslint-react/eff": "npm:1.29.0"
+    "@eslint-react/jsx": "npm:1.29.0"
+    "@eslint-react/shared": "npm:1.29.0"
+    "@eslint-react/var": "npm:1.29.0"
     "@typescript-eslint/scope-manager": "npm:^8.25.0"
     "@typescript-eslint/type-utils": "npm:^8.25.0"
     "@typescript-eslint/types": "npm:^8.25.0"
@@ -9098,19 +9107,20 @@ __metadata:
       optional: false
     typescript:
       optional: true
-  checksum: 10c0/9095f43d952554acb7bab09c734ba318e52d5e047a48651dbf548000b52dd9bed5c03cd19a9bc629026b4d3940fa7edad69867c17de4a66474e844515c88a818
+  checksum: 10c0/3790fe36e2d640f958da6801fe31da6b3612abe21ff410f6cf40c854881256d0e07e1e6195903ce9839eb944f3c82a08cf55290ff740dc5ab31359ff8a7add70
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-naming-convention@npm:1.28.0":
-  version: 1.28.0
-  resolution: "eslint-plugin-react-naming-convention@npm:1.28.0"
+"eslint-plugin-react-naming-convention@npm:1.29.0":
+  version: 1.29.0
+  resolution: "eslint-plugin-react-naming-convention@npm:1.29.0"
   dependencies:
-    "@eslint-react/ast": "npm:1.28.0"
-    "@eslint-react/core": "npm:1.28.0"
-    "@eslint-react/eff": "npm:1.28.0"
-    "@eslint-react/jsx": "npm:1.28.0"
-    "@eslint-react/shared": "npm:1.28.0"
+    "@eslint-react/ast": "npm:1.29.0"
+    "@eslint-react/core": "npm:1.29.0"
+    "@eslint-react/eff": "npm:1.29.0"
+    "@eslint-react/jsx": "npm:1.29.0"
+    "@eslint-react/shared": "npm:1.29.0"
+    "@eslint-react/var": "npm:1.29.0"
     "@typescript-eslint/scope-manager": "npm:^8.25.0"
     "@typescript-eslint/type-utils": "npm:^8.25.0"
     "@typescript-eslint/types": "npm:^8.25.0"
@@ -9125,20 +9135,20 @@ __metadata:
       optional: false
     typescript:
       optional: true
-  checksum: 10c0/168c3c5ebbe187fdff0818bf4be41418da5eafb79a93775262654c0b4dc4a6c1e9ee3b758fa74a5f2a0558f7f0f4f39db14570e75a79347af6ee12ce2fa529ca
+  checksum: 10c0/1c844ebc477fcfebec4aa74c9c18e8e77d9dfa1a67ed7ad1df3a2ba9d7d5a3bd8d2956cf753d77f7a275f6eaaf36f34ade185328837428321eaf5a11e71e849e
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-web-api@npm:1.28.0":
-  version: 1.28.0
-  resolution: "eslint-plugin-react-web-api@npm:1.28.0"
+"eslint-plugin-react-web-api@npm:1.29.0":
+  version: 1.29.0
+  resolution: "eslint-plugin-react-web-api@npm:1.29.0"
   dependencies:
-    "@eslint-react/ast": "npm:1.28.0"
-    "@eslint-react/core": "npm:1.28.0"
-    "@eslint-react/eff": "npm:1.28.0"
-    "@eslint-react/jsx": "npm:1.28.0"
-    "@eslint-react/shared": "npm:1.28.0"
-    "@eslint-react/var": "npm:1.28.0"
+    "@eslint-react/ast": "npm:1.29.0"
+    "@eslint-react/core": "npm:1.29.0"
+    "@eslint-react/eff": "npm:1.29.0"
+    "@eslint-react/jsx": "npm:1.29.0"
+    "@eslint-react/shared": "npm:1.29.0"
+    "@eslint-react/var": "npm:1.29.0"
     "@typescript-eslint/scope-manager": "npm:^8.25.0"
     "@typescript-eslint/types": "npm:^8.25.0"
     "@typescript-eslint/utils": "npm:^8.25.0"
@@ -9152,20 +9162,20 @@ __metadata:
       optional: false
     typescript:
       optional: true
-  checksum: 10c0/efd8587c3e39a76bcf68d578fd5e1c123b7a597ead5bcbf5fc878d4d9d986acc39dd1a2f4132b74e66cd5dfea9d6be9330444596b82b6e446a652752bcad10ac
+  checksum: 10c0/39b7fad444846219427f0f4b1356e36b521a42e7db8e80464e94dfa0c0a792346dde1a524546923134eca9fea6f074c8f3e5e4fd03d325fce00a9e80ddc3a5b6
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-x@npm:1.28.0":
-  version: 1.28.0
-  resolution: "eslint-plugin-react-x@npm:1.28.0"
+"eslint-plugin-react-x@npm:1.29.0":
+  version: 1.29.0
+  resolution: "eslint-plugin-react-x@npm:1.29.0"
   dependencies:
-    "@eslint-react/ast": "npm:1.28.0"
-    "@eslint-react/core": "npm:1.28.0"
-    "@eslint-react/eff": "npm:1.28.0"
-    "@eslint-react/jsx": "npm:1.28.0"
-    "@eslint-react/shared": "npm:1.28.0"
-    "@eslint-react/var": "npm:1.28.0"
+    "@eslint-react/ast": "npm:1.29.0"
+    "@eslint-react/core": "npm:1.29.0"
+    "@eslint-react/eff": "npm:1.29.0"
+    "@eslint-react/jsx": "npm:1.29.0"
+    "@eslint-react/shared": "npm:1.29.0"
+    "@eslint-react/var": "npm:1.29.0"
     "@typescript-eslint/scope-manager": "npm:^8.25.0"
     "@typescript-eslint/type-utils": "npm:^8.25.0"
     "@typescript-eslint/types": "npm:^8.25.0"
@@ -9185,7 +9195,7 @@ __metadata:
       optional: true
     typescript:
       optional: true
-  checksum: 10c0/5fa38907689ab0ad3f3126c8ec685c53aba62c509707b0dee086b1d2e6341712771ed81999f7f41a9449c90a65c8d8e19f1b79f21c158774b600c9e7e0fbe4a0
+  checksum: 10c0/0c39dbea70df8973d7a6b004de330b2fc56348cb5ce128af1b133a03582ad507a90d8891b83797f55de25f6501757486dee9e54b12573d2db71c0d1811addbc3
   languageName: node
   linkType: hard
 
@@ -13850,7 +13860,7 @@ __metadata:
   resolution: "prairielearn@workspace:."
   dependencies:
     "@changesets/cli": "npm:^2.28.1"
-    "@eslint-react/eslint-plugin": "npm:^1.28.0"
+    "@eslint-react/eslint-plugin": "npm:^1.29.0"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@typescript-eslint/eslint-plugin": "npm:^8.25.0"
     "@typescript-eslint/parser": "npm:^8.25.0"
@@ -13867,7 +13877,7 @@ __metadata:
     markdownlint-cli: "npm:^0.44.0"
     node-gyp: "npm:^11.1.0"
     prettier: "npm:3.5.2"
-    pyright: "npm:^1.1.395"
+    pyright: "npm:^1.1.396"
     s3rver: "npm:^3.7.1"
     turbo: "npm:^2.4.4"
     typescript: "npm:^5.8.2"
@@ -14045,9 +14055,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pyright@npm:^1.1.395":
-  version: 1.1.395
-  resolution: "pyright@npm:1.1.395"
+"pyright@npm:^1.1.396":
+  version: 1.1.396
+  resolution: "pyright@npm:1.1.396"
   dependencies:
     fsevents: "npm:~2.3.3"
   dependenciesMeta:
@@ -14056,7 +14066,7 @@ __metadata:
   bin:
     pyright: index.js
     pyright-langserver: langserver.index.js
-  checksum: 10c0/daf451d279ce1351e6fefb015a918bd0adc08db0893ec9aeef5af3fb9a8cb3f8c931b1fa59b7d8b0d4d8b965b1f12e7a1471a2b2af877555b3a1e5655d4305cb
+  checksum: 10c0/ed2b8b2bf2a89cb0aeb71bfec183113497a3555070a202b70d5f93357a29b9b2ed0cc7f70f0aba82d230dbf68074eb367b2c3143fb259c5c82274cb40d74e2ff
   languageName: node
   linkType: hard
 
@@ -14112,15 +14122,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"quill@npm:2.0.2":
-  version: 2.0.2
-  resolution: "quill@npm:2.0.2"
+"quill@npm:2.0.3":
+  version: 2.0.3
+  resolution: "quill@npm:2.0.3"
   dependencies:
     eventemitter3: "npm:^5.0.1"
     lodash-es: "npm:^4.17.21"
     parchment: "npm:^3.0.0"
     quill-delta: "npm:^5.1.0"
-  checksum: 10c0/6d680a87b683041524ea3dcb2a04a9620562e36367bcd0492fc4c1db66238375ac76a65c5e89ef1eb65e7aacd8c1a49b04cef48feeb5d52b4fc8d91a07d0ec8f
+  checksum: 10c0/9897468b3e2b0fbf9c91471deea745d7b6494f866cb8caace63267769b2c4c6128e49da0988c4ed64f1a91a171fbf91c84009b663b1256a3caca0755204bb6b5
   languageName: node
   linkType: hard
 
