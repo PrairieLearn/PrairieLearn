@@ -103,7 +103,7 @@ def get_uuid() -> str:
 
 
 def escape_invalid_string(string: str) -> str:
-    """Wrap and escape string in <code> tags."""
+    """Wrap and escape string in `<code>` tags."""
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
 
 
