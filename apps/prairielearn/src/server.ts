@@ -595,6 +595,7 @@ export async function initExpress(): Promise<Express> {
   // route handler will only ever display courses for which the user has staff
   // access; the course ID in the URL is only used to determine which course
   // is the currently selected one.
+
   app.use(
     '/pl/navbar/course/:course_id(\\d+)/switcher',
     (await import('./pages/navbarCourseSwitcher/navbarCourseSwitcher.js')).default,
@@ -1421,6 +1422,12 @@ export async function initExpress(): Promise<Express> {
     ],
   );
 
+  // Handles side nav toggling if the user is on a course instance page.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/side_nav',
+    (await import('./pages/sideNav/sideNav.js')).default,
+  );
+
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1721,6 +1728,12 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/grading_job',
     (await import('./pages/instructorGradingJob/instructorGradingJob.js')).default,
+  );
+
+  // Handles side nav toggling if the user is on a course page.
+  app.use(
+    '/pl/course/:course_id(\\d+)/side_nav',
+    (await import('./pages/sideNav/sideNav.js')).default,
   );
 
   // This route is used to initiate a copy of a question with publicly shared source
