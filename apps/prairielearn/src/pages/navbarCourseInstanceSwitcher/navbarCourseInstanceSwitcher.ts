@@ -6,7 +6,7 @@ import { selectCourseInstancesWithStaffAccess } from '../../models/course-instan
 import { NavbarCourseInstanceSwitcher } from './navbarCourseInstanceSwitcher.html.js';
 
 const router = Router({
-  mergeParams: true  // Ensures that navbarCourseSwitcher can retrieve req.params.course_instance_id from the parent router
+  mergeParams: true, // Ensures that navbarCourseSwitcher can retrieve req.params.course_instance_id from the parent router
 });
 
 router.get(

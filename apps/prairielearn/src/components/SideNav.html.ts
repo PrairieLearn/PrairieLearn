@@ -205,7 +205,11 @@ function CourseNav({
           <span> ${resLocals.course.short_name} </span>
         </button>
         <div class="dropdown-menu py-0 overflow-hidden">
-          <div id="sideNavCourseDropdownContent" style="max-height: 50vh" class="overflow-auto py-2">
+          <div
+            id="sideNavCourseDropdownContent"
+            style="max-height: 50vh"
+            class="overflow-auto py-2"
+          >
             <div class="d-flex justify-content-center">
               <div class="spinner-border spinner-border-sm" role="status">
                 <span class="visually-hidden">Loading courses...</span>
