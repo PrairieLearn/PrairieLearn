@@ -195,7 +195,7 @@ export async function pullAndUpdateCourse({
 }
 
 /**
- * Return the courses that the user has administrator access to.
+ * Return the courses that the user has staff access to.
  */
 export async function selectInstructorCourses({
   userId,

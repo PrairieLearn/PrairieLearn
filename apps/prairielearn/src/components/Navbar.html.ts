@@ -20,6 +20,10 @@ export function Navbar({
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
+  /**
+   * Indicates if the Navbar component is used within the PageLayout component.
+   * Used to ensure that enhanced navigation features are only present on pages that use PageLayout.
+   */
   isInPageLayout?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix } = resLocals;
