@@ -1,7 +1,5 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 
-import type { Course } from '../lib/db-types.js';
-
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
@@ -195,24 +193,23 @@ function CourseNav({
           aria-haspopup="true"
           aria-expanded="false"
           data-boundary="window"
+          ${!resLocals.authz_data.overrides
+            ? html`
+                hx-get="/pl/navbar/course/${resLocals.course.id}/switcher"
+                hx-trigger="show.bs.dropdown once delay:200ms"
+                hx-target="#sideNavCourseDropdownContent"
+              `
+            : ''}
         >
           <span> ${resLocals.course.short_name} </span>
         </button>
         <div class="dropdown-menu py-0 overflow-hidden">
-          <div style="max-height: 50vh" class="overflow-auto">
-            ${resLocals.courses.map((course: Course) => {
-              return html`
-                <a
-                  class="dropdown-item ${`${resLocals.course.id}` === `${course.id}`
-                    ? 'active'
-                    : ''}"
-                  aria-current="${`${resLocals.course.id}` === `${course.id}` ? 'page' : ''}"
-                  href="/pl/course/${course.id}/course_admin"
-                >
-                  ${course.short_name}
-                </a>
-              `;
-            })}
+          <div id="sideNavCourseDropdownContent" style="max-height: 50vh" class="overflow-auto">
+            <div class="d-flex justify-content-center py-2">
+              <div class="spinner-border spinner-border-sm" role="status">
+                <span class="sr-only">Loading courses...</span>
+              </div>
+            </div>
           </div>
         </div>
         ${courseSideNavPageTabs.map((tabInfo) =>
@@ -252,24 +249,24 @@ function CourseInstanceNav({
             aria-haspopup="true"
             aria-expanded="false"
             data-boundary="window"
+            hx-get="/pl/navbar/course/${resLocals.course.id}/course_instance_switcher/${resLocals
+              .course_instance.id}"
+            hx-trigger="show.bs.dropdown once delay:200ms"
+            hx-target="#sideNavCourseInstancesDropdownContent"
           >
             <span> ${resLocals.course_instance.short_name} </span>
           </button>
           <div class="dropdown-menu py-0 overflow-hidden">
-            <div style="max-height: 50vh" class="overflow-auto">
-              ${resLocals.course_instances.map((ci) => {
-                return html`
-                  <a
-                    class="dropdown-item ${`${resLocals.course_instance.id}` === `${ci.id}`
-                      ? 'active'
-                      : ''}"
-                    aria-current="${`${resLocals.course_instance.id}` === `${ci.id}` ? 'page' : ''}"
-                    href="/pl/course_instance/${ci.id}/instructor/instance_admin"
-                  >
-                    ${ci.short_name}
-                  </a>
-                `;
-              })}
+            <div
+              id="sideNavCourseInstancesDropdownContent"
+              style="max-height: 50vh"
+              class="overflow-auto"
+            >
+              <div class="d-flex justify-content-center py-2">
+                <div class="spinner-border spinner-border-sm" role="status">
+                  <span class="sr-only">Loading course instances...</span>
+                </div>
+              </div>
             </div>
           </div>
           ${courseInstanceSideNavPageTabs.map((tabInfo) =>
