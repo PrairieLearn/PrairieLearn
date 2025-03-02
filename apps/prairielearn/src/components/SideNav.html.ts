@@ -160,7 +160,7 @@ export function SideNav({
         page,
         subPage,
       })}
-      ${resLocals.course_instance && resLocals.course_instances
+      ${resLocals.course_instance
         ? CourseInstanceNav({
             resLocals,
             page,
@@ -190,6 +190,7 @@ function CourseNav({
           type="button"
           class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center"
           data-toggle="dropdown"
+          aria-label="Change course"
           aria-haspopup="true"
           aria-expanded="false"
           data-boundary="window"
@@ -246,6 +247,7 @@ function CourseInstanceNav({
             type="button"
             class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center"
             data-toggle="dropdown"
+            aria-label="Change course instance"
             aria-haspopup="true"
             aria-expanded="false"
             data-boundary="window"
