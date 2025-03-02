@@ -17,7 +17,7 @@ export function ContextNavigation({
 
   const showSideNav = resLocals.has_enhanced_navigation && resLocals.course !== undefined;
   const navPagesTabs = getNavPageTabs(resLocals.has_enhanced_navigation);
-  const navPageTabs = navPagesTabs[navPage] ?? [];
+  const navPageTabs = navPagesTabs[navPage] ?? []; // Some navPages do not have tabs
 
   return html`
     <nav>
