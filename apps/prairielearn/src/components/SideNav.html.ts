@@ -205,10 +205,10 @@ function CourseNav({
           <span> ${resLocals.course.short_name} </span>
         </button>
         <div class="dropdown-menu py-0 overflow-hidden">
-          <div id="sideNavCourseDropdownContent" style="max-height: 50vh" class="overflow-auto">
-            <div class="d-flex justify-content-center py-2">
+          <div id="sideNavCourseDropdownContent" style="max-height: 50vh" class="overflow-auto py-2">
+            <div class="d-flex justify-content-center">
               <div class="spinner-border spinner-border-sm" role="status">
-                <span class="sr-only">Loading courses...</span>
+                <span class="visually-hidden">Loading courses...</span>
               </div>
             </div>
           </div>
@@ -261,11 +261,11 @@ function CourseInstanceNav({
             <div
               id="sideNavCourseInstancesDropdownContent"
               style="max-height: 50vh"
-              class="overflow-auto"
+              class="overflow-auto py-2"
             >
-              <div class="d-flex justify-content-center py-2">
+              <div class="d-flex justify-content-center">
                 <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="sr-only">Loading course instances...</span>
+                  <span class="visually-hidden">Loading course instances...</span>
                 </div>
               </div>
             </div>
