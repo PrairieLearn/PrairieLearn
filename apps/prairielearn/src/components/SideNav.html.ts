@@ -236,7 +236,6 @@ function CourseInstanceNav({
   subPage: NavSubPage;
 }) {
   const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
-  if (!courseInstanceSideNavPageTabs) return '';
 
   return html`
     <div class="side-nav-section-header">Course instance</div>

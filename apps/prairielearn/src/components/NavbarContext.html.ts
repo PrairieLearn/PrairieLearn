@@ -19,8 +19,6 @@ export function ContextNavigation({
   const navPagesTabs = getNavPageTabs(resLocals.has_enhanced_navigation);
   const navPageTabs = navPagesTabs[navPage];
 
-  if (!navPageTabs) return '';
-
   return html`
     <nav>
       <ul
