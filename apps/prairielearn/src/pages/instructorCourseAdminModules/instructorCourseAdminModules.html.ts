@@ -49,8 +49,7 @@ export function InstructorCourseAdminModules({
                     <td class="align-middle">${module.number}</td>
                     <td>${module.name}</td>
                     <td class="align-middle">
-                      ${module.heading}
-                      ${module.implicit ? MissingDefinition({ item: 'Module' }) : ''}
+                      ${module.heading} ${module.implicit && MissingDefinition({ item: 'Module' })}
                     </td>
                   </tr>
                 `;

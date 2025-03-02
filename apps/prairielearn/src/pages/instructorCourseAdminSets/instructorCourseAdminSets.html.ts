@@ -57,7 +57,7 @@ export function InstructorCourseAdminSets({
                     <td class="align-middle">${assessment_set.name}</td>
                     <td class="align-middle">
                       ${assessment_set.heading}
-                      ${assessment_set.implicit ? MissingDefinition({ item: 'Set' }) : ''}
+                      ${assessment_set.implicit && MissingDefinition({ item: 'Set' })}
                     </td>
                     <td class="align-middle">${assessment_set.color}</td>
                   </tr>
