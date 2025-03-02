@@ -8,7 +8,7 @@ import { ProgressCircle } from '../components/ProgressCircle.html.js';
  * @returns Navigation page tabs and their configurations
  */
 export function getNavPageTabs(hasEnhancedNavigation: boolean) {
-  const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
+  const navPagesTabs = {
     public_question: [
       {
         activeSubPage: 'file_view',
@@ -480,7 +480,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         tabLabel: 'Courses',
       },
     ],
-  };
+  } satisfies Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>>;
 
   return navPagesTabs;
 }

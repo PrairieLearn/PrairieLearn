@@ -26,7 +26,7 @@ interface SideNavTabInfo {
   renderCondition?: (resLocals: Record<string, any>) => boolean;
 }
 
-const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabInfo[]>> = {
+const sideNavPagesTabs = {
   course_admin: [
     {
       activePages: ['course_admin'],
@@ -144,7 +144,7 @@ const sideNavPagesTabs: Partial<Record<Exclude<NavPage, undefined>, SideNavTabIn
       tabLabel: 'Settings',
     },
   ],
-};
+} satisfies Partial<Record<Exclude<NavPage, undefined>, SideNavTabInfo[]>>;
 
 export function SideNav({
   resLocals,
@@ -183,7 +183,6 @@ function CourseNav({
   subPage: NavSubPage;
 }) {
   const courseSideNavPageTabs = sideNavPagesTabs.course_admin;
-  if (!courseSideNavPageTabs) return '';
 
   return html`
     <div class="side-nav-section-header">Course</div>
