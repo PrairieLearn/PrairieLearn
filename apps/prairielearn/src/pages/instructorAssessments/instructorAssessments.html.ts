@@ -120,7 +120,9 @@ export function InstructorAssessments({
                               <tr>
                                 <th colspan="7" scope="row">
                                   ${row.assessment_group_heading}
-                                  ${row.implicit ? MissingDefinition({ item: assessmentsGroupBy }) : ""}
+                                  ${row.implicit
+                                    ? MissingDefinition({ item: assessmentsGroupBy })
+                                    : ''}
                                 </th>
                               </tr>
                             `

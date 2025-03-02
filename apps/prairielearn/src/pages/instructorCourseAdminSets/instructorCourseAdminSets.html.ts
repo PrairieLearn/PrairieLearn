@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 
+import { MissingDefinition } from '../../components/AssessmentSetHeading.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { MissingDefinition } from '../../components/AssessmentSetHeading.html.js';
 import { type AssessmentSet } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminSets({
@@ -57,7 +57,7 @@ export function InstructorCourseAdminSets({
                     <td class="align-middle">${assessment_set.name}</td>
                     <td class="align-middle">
                       ${assessment_set.heading}
-                      ${assessment_set.implicit ? MissingDefinition({ item: "Set" }) : ""}
+                      ${assessment_set.implicit ? MissingDefinition({ item: 'Set' }) : ''}
                     </td>
                     <td class="align-middle">${assessment_set.color}</td>
                   </tr>
