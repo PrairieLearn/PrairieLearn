@@ -99,7 +99,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   };
   res.locals.user = res.locals.authz_data.user;
   if (isCourseInstance) {
-    // Retrieve the course instances the user has access to in the course
     res.locals.course_instance = result.rows[0].course_instance;
     const permissions_course_instance = result.rows[0].permissions_course_instance;
     res.locals.authz_data.authn_course_instance_role =
