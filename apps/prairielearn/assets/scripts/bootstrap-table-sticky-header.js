@@ -5,7 +5,7 @@
 // the side nav component when enhanced navigation is enabled.
 
 /**
- *(The MIT License)
+ * (The MIT License)
  *
  * Copyright (c) 2012-2019 Zhixin Wen <wenzhixin2010@gmail.com>
  *
