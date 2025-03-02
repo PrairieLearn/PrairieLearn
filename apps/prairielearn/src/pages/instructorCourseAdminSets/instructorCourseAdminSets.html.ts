@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { MissingDefinition } from '../../components/AssessmentSetHeading.html.js';
 import { type AssessmentSet } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminSets({
@@ -55,10 +56,8 @@ export function InstructorCourseAdminSets({
                     </td>
                     <td class="align-middle">${assessment_set.name}</td>
                     <td class="align-middle">
-                      ${!assessment_set.implicit
-                        ? assessment_set.heading
-                        : assessment_set.abbreviation +
-                          ' (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)'}
+                      ${assessment_set.heading}
+                      ${assessment_set.implicit ? MissingDefinition({ item: "Set" }) : ""}
                     </td>
                     <td class="align-middle">${assessment_set.color}</td>
                   </tr>

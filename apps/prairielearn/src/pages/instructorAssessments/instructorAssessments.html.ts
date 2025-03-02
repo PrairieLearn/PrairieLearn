@@ -5,6 +5,7 @@ import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
+import { MissingDefinition } from '../../components/AssessmentSetHeading.html.js';
 import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
@@ -118,10 +119,8 @@ export function InstructorAssessments({
                           ? html`
                               <tr>
                                 <th colspan="7" scope="row">
-                                  ${!row.implicit
-                                    ? row.assessment_group_heading
-                                    : row.abbreviation +
-                                      ' (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)'}
+                                  ${row.assessment_group_heading}
+                                  ${row.implicit ? MissingDefinition({ item: assessmentsGroupBy }) : ""}
                                 </th>
                               </tr>
                             `
