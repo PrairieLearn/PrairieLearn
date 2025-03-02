@@ -14,12 +14,14 @@ export function Navbar({
   navPage,
   navSubPage,
   navbarType,
+  marginBottom = true,
   isInPageLayout = false,
 }: {
   resLocals: Record<string, any>;
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
+  marginBottom?: boolean;
   /**
    * Indicates if the Navbar component is used within the PageLayout component.
    * Used to ensure that enhanced navigation features are only present on pages that use PageLayout.
@@ -115,7 +117,7 @@ export function Navbar({
     ${resLocals.has_enhanced_navigation && isInPageLayout
       ? FlashMessages()
       : html`
-          <div class="mb-3">
+          <div class="${marginBottom ? 'mb-3' : ''}">
             ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
           </div>
         `}
