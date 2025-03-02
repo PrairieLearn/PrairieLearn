@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import type { Assessment, CourseInstance } from '../lib/db-types.js';
+import { idsEqual } from '../lib/id.js';
 
 /**
  * Dropdown that lets users navigate between assessments in a
