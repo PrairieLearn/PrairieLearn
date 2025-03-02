@@ -93,7 +93,7 @@ export function InstructorAiGenerateDraftEditor({
                     ></textarea>
                     <button type="submit" class="btn btn-dark w-100">
                       <span
-                        class="spinner-grow spinner-grow-sm d-none mr-1"
+                        class="spinner-grow spinner-grow-sm d-none me-1"
                         role="status"
                         aria-hidden="true"
                         data-loading-class-remove="d-none"
@@ -108,11 +108,11 @@ export function InstructorAiGenerateDraftEditor({
               </div>
 
               <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs">
-                <ul class="nav nav-tabs mr-auto pl-2 pt-2">
+                <ul class="nav nav-tabs me-auto ps-2 pt-2">
                   <li class="nav-item">
                     <a
                       class="nav-link active"
-                      data-toggle="tab"
+                      data-bs-toggle="tab"
                       aria-current="page"
                       href="#question-preview"
                     >
@@ -120,17 +120,17 @@ export function InstructorAiGenerateDraftEditor({
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a a class="nav-link" data-toggle="tab" href="#question-code">Files</a>
+                    <a a class="nav-link" data-bs-toggle="tab" href="#question-code">Files</a>
                   </li>
                 </ul>
                 <div
-                  class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pr-2"
+                  class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2"
                 >
-                  <span data-toggle="modal" data-target="#finalizeModal">
+                  <span data-bs-toggle="modal" data-bs-target="#finalizeModal">
                     <button
                       type="button"
                       class="btn btn-sm btn-primary"
-                      data-toggle="tooltip"
+                      data-bs-toggle="tooltip"
                       title="Finalize a question to use it on assessments and make manual edits"
                     >
                       <i class="fa fa-check" aria-hidden="true"></i>
@@ -189,7 +189,7 @@ function PromptHistory({
         </div>
       </div>
       <div
-        class="d-flex flex-row justify-content-start align-items-start py-3 pl-3 mb-2 prompt-response"
+        class="d-flex flex-row justify-content-start align-items-start py-3 ps-3 mb-2 prompt-response"
       >
         <div>
           ${run(() => {
@@ -232,7 +232,7 @@ function PromptHistory({
                 type="submit"
                 class="btn btn-sm btn-ghost revert-to-revision-button"
                 aria-label="Revert to this revision"
-                data-toggle="tooltip"
+                data-bs-toggle="tooltip"
                 title="Revert to this revision"
               >
                 <i class="fa fa-undo" aria-hidden="true"></i>
@@ -283,7 +283,7 @@ function QuestionCodeEditors({
     <div class="editor-panes p-2 gap-2">
       <!-- TODO: Move this to a more sensible location -->
       <div class="editor-pane-status">
-        <div class="d-flex flex-row align-items-center justify-content-between pl-2">
+        <div class="d-flex flex-row align-items-center justify-content-between ps-2">
           <span class="js-editor-status">No unsaved changes.</span>
           <form method="post" class="js-editor-form">
             <input type="hidden" name="__action" value="submit_manual_revision" />
@@ -305,7 +305,7 @@ function QuestionCodeEditors({
         </div>
       </div>
       <div class="editor-pane-html d-flex flex-column border rounded" style="overflow: hidden">
-        <div class="py-2 px-3 text-monospace bg-light">question.html</div>
+        <div class="py-2 px-3 font-monospace bg-light">question.html</div>
         <div
           class="js-file-editor flex-grow-1"
           data-ace-mode="ace/mode/html"
@@ -313,7 +313,7 @@ function QuestionCodeEditors({
         ></div>
       </div>
       <div class="editor-pane-python d-flex flex-column border rounded" style="overflow: hidden">
-        <div class="py-2 px-3 text-monospace bg-light">server.py</div>
+        <div class="py-2 px-3 font-monospace bg-light">server.py</div>
         <div
           class="js-file-editor flex-grow-1"
           data-ace-mode="ace/mode/python"
@@ -360,7 +360,7 @@ function FinalizeModal({ csrfToken }: { csrfToken: string }) {
     footer: html`
       <input type="hidden" name="__action" value="save_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       <button class="btn btn-primary">Finalize question</button>
     `,
   });

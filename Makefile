@@ -43,11 +43,11 @@ update-database-description:
 
 start-support: start-postgres start-redis start-s3rver
 start-postgres:
-	@docker/start_postgres.sh
+	@scripts/start_postgres.sh
 start-redis:
-	@docker/start_redis.sh
+	@scripts/start_redis.sh
 start-s3rver:
-	@docker/start_s3rver.sh
+	@scripts/start_s3rver.sh
 
 test: test-js test-python
 test-js: start-support
@@ -56,6 +56,7 @@ test-js-dist: start-support
 	@yarn turbo run test:dist
 test-python:
 	@python3 -m pytest
+	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
 
@@ -77,7 +78,7 @@ lint-html:
 lint-markdown:
 	@yarn markdownlint "docs/**/*.md"
 lint-links:
-	@node tools/validate-links.mjs
+	@node scripts/validate-links.mjs
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 lint-shell:
@@ -93,13 +94,11 @@ format-python:
 	@python3 -m ruff check --fix ./
 	@python3 -m ruff format ./
 
-typecheck: typecheck-js typecheck-python
-# This is just an alias to our build script, which will perform typechecking
-# as a side-effect.
-# TODO: Do we want to have a separate typecheck command for all packages/apps?
-# Maybe using TypeScript project references?
-typecheck-tools:
-	@yarn tsc
+typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts
+typecheck-contrib:
+	@yarn tsc -p contrib
+typecheck-scripts:
+	@yarn tsc -p scripts
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:
