@@ -186,12 +186,24 @@ function CourseNav({
   if (!courseSideNavPageTabs) return '';
 
   return html`
-    <div class="side-nav-section-header">Course</div>
+    <div class="side-nav-section-header-row">
+      <p class="side-nav-section-header-text" class="m-0">Course</p>
+      <button
+        id="side-nav-toggler"
+        class="navbar-toggler"
+        type="button"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <i class="bi bi-arrow-left-square-fill text-secondary" aria-hidden="true"></i>
+      </button>
+    </div>
     <div class="side-nav-group mb-3">
       <div class="dropdown">
         <button
+          id="course-dropdown"
           type="button"
-          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center"
+          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center"
           data-toggle="dropdown"
           aria-haspopup="true"
           aria-expanded="false"
@@ -326,7 +338,7 @@ function SideNavLink({
       aria-current="${isActive ? 'page' : ''}"
     >
       <i class="${iconClasses}"></i>
-      ${tabLabel} ${htmlSuffix?.(resLocals) || ''}
+      <span class="side-nav-link-text">${tabLabel}</span> ${htmlSuffix?.(resLocals) || ''}
     </a>
   `;
 }

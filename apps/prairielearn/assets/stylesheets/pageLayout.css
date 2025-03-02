@@ -20,7 +20,7 @@ body:has(div.app-container) {
   transition: 300ms;
   grid-template:
     'top-nav top-nav' auto
-    'side-nav content' 1fr / 0 1fr;
+    'side-nav content' 1fr / 50px 1fr;
 }
 
 /* app-container styles when the side nav is shown */
@@ -28,6 +28,18 @@ body:has(div.app-container) {
   grid-template:
     'top-nav top-nav' auto
     'side-nav content' 1fr / 300px 1fr;
+}
+
+.app-container #course-dropdown {
+  display: none;
+}
+
+.app-container.side-nav-can-show.show-side-nav #course-dropdown {
+  display: flex;
+}
+
+.app-cotnainer.side-nav-can-show.show-side-nav .side-nav-link-text {
+  border-radius: 0;
 }
 
 .app-top-nav {
@@ -105,11 +117,41 @@ body:has(div.app-container) {
   border-bottom-right-radius: 0.25rem;
 }
 
-.side-nav-section-header {
+.app-container .side-nav-link {
+  justify-content: center;
+}
+
+.app-container .side-nav-link .side-nav-link-text {
+  display: none;
+}
+
+.app-container.side-nav-can-show.show-side-nav .side-nav-link {
+  justify-content: flex-start;
+}
+
+.app-container.side-nav-can-show.show-side-nav .side-nav-link .side-nav-link-text {
+  display: block;
+}
+
+.side-nav-section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   text-transform: uppercase;
   font-size: 0.8rem;
   font-weight: bold;
   border-bottom: 1px solid var(--bs-body-color);
   margin-bottom: 0.5rem;
   white-space: nowrap;
+}
+
+.side-nav-section-header-row .side-nav-section-header-text {
+  display: none;
+  margin: 0;
+}
+
+.app-container.side-nav-can-show.show-side-nav
+  .side-nav-section-header-row
+  .side-nav-section-header-text {
+  display: block;
 }

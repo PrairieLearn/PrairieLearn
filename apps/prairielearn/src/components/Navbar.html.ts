@@ -22,14 +22,11 @@ export function Navbar({
   navbarType?: NavbarType;
   isInPageLayout?: boolean;
 }) {
-  const { __csrf_token, course, course_instance, urlPrefix, has_enhanced_navigation } = resLocals;
+  const { __csrf_token, course, urlPrefix } = resLocals;
 
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
-
-  const canShowSideNav =
-    has_enhanced_navigation && navbarType !== 'student' && navbarType !== 'public' && course;
 
   return html`
     ${config.devMode && __csrf_token
@@ -62,42 +59,12 @@ export function Navbar({
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid">
-        ${canShowSideNav
-          ? html`
-              <button
-                id="side-nav-toggler"
-                class="navbar-toggler d-none d-md-inline-block mr-3 px-2 py-1"
-                hx-put="${course_instance
-                  ? `/pl/course_instance/${course_instance.id}/instructor/side_nav`
-                  : `/pl/course/${course.id}/side_nav`}"
-                hx-target="#side-nav"
-                hx-swap="outerHTML"
-                hx-trigger="click"
-                hx-vals='{"navPage": "${navPage}", "navSubPage": "${navSubPage}"}'
-                aria-expanded="false"
-                aria-label="Toggle side nav"
-              >
-                <span class="navbar-toggler-icon side-nav-toggle-icon"></span>
-              </button>
-            `
-          : ''}
         <a class="navbar-brand" href="${config.homeUrl}" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
             Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
           </span>
         </a>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-toggle="collapse"
-          data-target=".navbar-collapse"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-
         <div id="course-nav" class="collapse navbar-collapse">
           <ul class="nav navbar-nav mr-auto" id="main-nav">
             ${NavbarByType({
