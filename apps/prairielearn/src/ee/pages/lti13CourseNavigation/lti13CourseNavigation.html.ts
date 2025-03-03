@@ -4,18 +4,19 @@ import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { config } from '../../../lib/config.js';
-import { type Course, type CourseInstance } from '../../../lib/db-types.js';
+import { type Course } from '../../../lib/db-types.js';
+import { STUDENT_ROLE } from '../../lib/lti13.js';
 
 export function Lti13CourseNavigationInstructor({
   courseName,
   resLocals,
   courses,
-  course_instances,
+  lti13_instance_id,
 }: {
   courseName: string;
   resLocals: Record<string, any>;
   courses: Course[];
-  course_instances: CourseInstance[];
+  lti13_instance_id: string;
 }): string {
   return html`
     <!doctype html>
@@ -25,99 +26,83 @@ export function Lti13CourseNavigationInstructor({
       </head>
       <body>
         ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })} ${TerminologyModal()}
-        <script>
-          $(() => {
-            $('#connect_course_instance').one('change', () => {
-              $('#saveButton').prop('disabled', false);
-            });
-          });
-        </script>
-
         <main id="content" class="container mb-4">
           <h1>Welcome to PrairieLearn</h1>
           <p>
-            To finish the integration for your course, we need to connect
-            <code>${courseName}</code> with a PrairieLearn course instance.
+            To finish the integration for your course, you need to connect
+            <strong>${courseName}</strong> with a PrairieLearn course instance.
           </p>
-          <p>
-            <button
-              type="button"
-              class="btn btn-sm btn-info"
-              data-toggle="modal"
-              data-target="#terminology-modal"
-            >
-              New here? Learn about our terminology
-            </button>
-          </p>
-
-          <p>
-            If you want this to connect to a <strong>new course</strong> or
-            <strong>new course instance</strong>, you need to create those first and then return to
-            this form.
-          </p>
-          <ul>
-            <li>
-              To create a new course, please <a href="/pl/request_course">request one here</a>.
-            </li>
-            <li>
-              New course instances can be made from the "Course Instances" tab in an existing
-              course.
-            </li>
-            <ul>
-              <li>
-                If you want to copy an existing course instance, you can do that from its Course
-                Instance "Settings" tab.
-              </li>
-            </ul>
-          </ul>
 
           ${courses.length === 0
             ? html`<p>
-                It doesn't look like you have any PrairieLearn courses.
-                <a href="/pl/request_course" class="btn btn-success">Go request a course</a>
+                <strong>
+                  You don't have course owner or editor permissions in any PrairieLearn courses.
+                </strong>
               </p>`
             : html`
-                <p>Your courses:</p>
-                <ul>
-                  ${courses.map((course) => {
-                    return html` <li>
-                      <a href="/pl/course/${course.id}">${course.short_name}: ${course.title}</a>
-                    </li>`;
-                  })}
-                </ul>
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <div class="form-group">
-                    <label class="form-label" for="connect_course_instance">
-                      Connect ${courseName} with:
+                <div class="mb-3">
+                  <form method="POST" id="link_form">
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+
+                    <label class="form-label" for="connect_course">
+                      Select a PrairieLearn course:
                     </label>
                     <select
-                      class="custom-select"
-                      id="connect_course_instance"
-                      name="unsafe_course_instance_id"
+                      id="connect_course"
+                      class="form-select mb-3"
+                      name="unsafe_course_id"
+                      hx-get="/pl/lti13_instance/${lti13_instance_id}/course_navigation/course_instances"
+                      hx-include="#link_form"
+                      hx-target="#course_instances"
+                      required
                     >
-                      <option value="" disabled selected>
-                        Select an existing course instance...
-                      </option>
-                      ${courses.map((course) => {
-                        const course_cis = course_instances.filter(
-                          (ci) => ci.course_id === course.id,
-                        );
-                        return html`
-                          <optgroup label="${course.short_name}: ${course.title}">
-                            ${course_cis.map((ci) => {
-                              return html`<option value="${ci.id}">
-                                ${course.short_name} -- ${ci.long_name} (${ci.short_name})
-                              </option>`;
-                            })}
-                          </optgroup>
-                        `;
+                      <option selected disabled value="">Select a course to continue</option>
+                      ${courses.map((c) => {
+                        return html`<option value="${c.id}">${c.short_name}: ${c.title}</option>`;
                       })}
                     </select>
-                  </div>
-                  <button class="btn btn-primary" id="saveButton" disabled>Save</button>
-                </form>
+                    <label class="form-label" for="course_instances">
+                      Select a course instance to connect:
+                    </label>
+                    <select
+                      id="course_instances"
+                      name="unsafe_course_instance_id"
+                      class="form-select mb-3"
+                      required
+                    >
+                      <option selected disabled value="">See above</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Connect course instance</button>
+                  </form>
+                </div>
               `}
+
+          <p>
+            <details>
+              <summary>Why don't I see my course or course instances here?</summary>
+              <p>
+                You must have PrairieLearn course <strong>Editor</strong> and course instance
+                <strong>Student Data Editor</strong> permissions to link a course.
+              </p>
+            </details>
+          </p>
+          <p>
+            If you need a new PrairieLearn course,
+            <a href="/pl/request_course">request one here</a>.
+          </p>
+
+          <p>
+            If you need a new course instance, create one in PrairieLearn first then revisit this
+            course linking flow.
+          </p>
+          <button
+            type="button"
+            class="btn btn-link"
+            data-bs-toggle="modal"
+            data-bs-target="#terminology-modal"
+          >
+            New here? Learn about PrairieLearn terminology
+          </button>
         </main>
       </body>
     </html>
@@ -127,9 +112,11 @@ export function Lti13CourseNavigationInstructor({
 export function Lti13CourseNavigationNotReady({
   courseName,
   resLocals,
+  ltiRoles,
 }: {
   courseName: string;
   resLocals: Record<string, any>;
+  ltiRoles: string[];
 }): string {
   return html`
     <!doctype html>
@@ -145,10 +132,30 @@ export function Lti13CourseNavigationNotReady({
 
           <p>An instructor has not yet configured ${courseName} in PrairieLearn.</p>
           <p>Please come back later.</p>
-          <a href="${config.urlPrefix}" class="btn btn-primary">
-            <i class="fa fa-home" aria-hidden="true"></i>
-            PrairieLearn home
-          </a>
+          <p>
+            <a href="${config.urlPrefix}" class="btn btn-primary">
+              <i class="fa fa-home" aria-hidden="true"></i>
+              PrairieLearn home
+            </a>
+          </p>
+          ${ltiRoles.includes(STUDENT_ROLE)
+            ? ''
+            : html`
+                <div class="card">
+                  <div class="card-header bg-info">Debugging information</div>
+                  <div class="card-body">
+                    <p>
+                      You do not have the permissions to integrate PrairieLearn course instances. An
+                      instructor or designer (and not Teaching Assistant) LMS role is needed to do
+                      this.
+                    </p>
+                    <p>Here are your roles that we received from your LMS:</p>
+                    <ul class="mb-0">
+                      ${ltiRoles.map((role) => html`<li><code>${role}</code></li>`)}
+                    </ul>
+                  </div>
+                </div>
+              `}
         </main>
       </body>
     </html>
@@ -215,7 +222,7 @@ function TerminologyModal() {
         assessments, enrollments, grades, etc. Like a semester or quarter.
       </p>
 
-      <p class="font-italic">
+      <p class="fst-italic">
         Example: A course might be MATH 101 and have a course instance MATH 101 Fall 2023.
       </p>
 

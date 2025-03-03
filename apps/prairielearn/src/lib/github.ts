@@ -1,6 +1,7 @@
-import { setTimeout as sleep } from 'node:timers/promises';
+import * as path from 'path';
 
 import { Octokit } from '@octokit/rest';
+import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
@@ -14,6 +15,8 @@ import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import { type User } from './db-types.js';
 import { sendCourseRequestMessage } from './opsbot.js';
+import { TEMPLATE_COURSE_PATH } from './paths.js';
+import { formatJsonWithPrettier } from './prettier.js';
 import { createServerJob, type ServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -22,7 +25,6 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
   Required configuration options to get this working:
   - config.githubClientToken
   - config.githubCourseOwner
-  - config.githubCourseTemplate
   - config.githubMachineTeam
 */
 
@@ -37,96 +39,27 @@ function getGithubClient() {
 }
 
 /**
- * Creates a new repository from a given template.
+ * Creates a new, empty repository.
  * @param client Octokit client
- * @param repo Name of the new repo to create
- * @param template Name of the template to use
+ * @param repo Name of the new repository to create
  */
-async function createRepoFromTemplate(client: Octokit, repo: string, template: string) {
-  await client.repos.createUsingTemplate({
-    template_owner: config.githubCourseOwner,
-    template_repo: template,
+async function createEmptyRepository(client: Octokit, repo: string) {
+  await client.repos.createInOrg({
+    org: config.githubCourseOwner,
     owner: config.githubCourseOwner,
     name: repo,
     private: true,
   });
-
-  // The above call will complete before the repo itself is actually ready to use,
-  // so poll for a bit until all the files are finally copied in.
-  //
-  // We'll try for up to 30 seconds, polling every second.
-  for (let i = 0; i < 30; i++) {
-    try {
-      // If the repo is not ready yet, this will fail with "repo is empty"
-      await client.repos.getContent({
-        owner: config.githubCourseOwner,
-        repo,
-        path: 'infoCourse.json',
-      });
-      return;
-    } catch (err) {
-      // We'll get a 404 if the repo is not ready yet. If we get any other
-      // error, then something unexpected happened and we should bail out.
-      if (err.status !== 404) {
-        throw err;
-      }
-
-      await sleep(1000);
-    }
-  }
-
-  // If we get here, the repo didn't become ready in time.
-  throw new Error('Repository contents were not ready after 30 seconds.');
 }
 
 /**
- * Pulls the contents of a file from a repository.
- * @param client Octokit client
- * @param repo Repository to get file contents from
- * @param path Path to the file, relative from the root of the repository.
- * @returns An object representing the file data.  Raw contents are stored in the 'contents' key,
- * while the file's SHA is stored in 'sha' (this is needed if you want to update the contents later)
- */
-async function getFileFromRepo(
-  client: Octokit,
-  repo: string,
-  path: string,
-): Promise<{
-  sha: string;
-  contents: string;
-}> {
-  const file = await client.repos.getContent({
-    owner: config.githubCourseOwner,
-    repo,
-    path,
-  });
-  if (Array.isArray(file.data) || file.data.type !== 'file') {
-    throw new Error('Unexpected array response from GitHub API');
-  }
-  if (file.data.encoding !== 'base64') {
-    throw new Error(`Unexpected encoding from GitHub API: ${file.data.encoding}`);
-  }
-  return {
-    sha: file.data.sha,
-    contents: Buffer.from(file.data.content, 'base64').toString('utf-8'),
-  };
-}
-
-/**
- * Updates a file's contents in a repository.
+ * Adds a file's contents in a repository.
  * @param client Octokit client
  * @param repo Repository to set file contents in
  * @param path Path to the file, relative from the root of the repository.
  * @param contents Raw contents of the file, stored as a string.
- * @param sha The file's SHA that is being updated (this is returned in getFileFromRepoAsync).
  */
-async function putFileToRepo(
-  client: Octokit,
-  repo: string,
-  path: string,
-  contents: string,
-  sha: string,
-) {
+async function addFileToRepo(client: Octokit, repo: string, path: string, contents: string) {
   await client.repos.createOrUpdateFileContents({
     owner: config.githubCourseOwner,
     repo,
@@ -134,7 +67,6 @@ async function putFileToRepo(
     message: `Update ${path}`,
     // Add a trailing newline to the contents.
     content: Buffer.from(contents + '\n', 'ascii').toString('base64'),
-    sha,
   });
 }
 
@@ -212,14 +144,44 @@ export async function createCourseRepoJob(
     job.info(`Creating course ${options.short_name}`);
     job.info(JSON.stringify(options, null, 4));
 
-    // Create base github repo from template
-    job.info('Creating repository from template');
-    await createRepoFromTemplate(client, options.repo_short_name, config.githubCourseTemplate);
+    // Create an empty repository for the course
+    job.info('Creating empty repository');
+    await createEmptyRepository(client, options.repo_short_name);
     job.info(`Created repository ${options.repo_short_name}`);
+
+    job.info('Creating infoCourse.json based on template');
+    const infoCoursePath = path.join(TEMPLATE_COURSE_PATH, 'infoCourse.json');
+    const infoCourse = JSON.parse(await fs.readFile(infoCoursePath, 'utf-8'));
+
+    infoCourse.uuid = uuidv4();
+    infoCourse.name = options.short_name;
+    infoCourse.title = options.title;
+    infoCourse.timezone = options.display_timezone;
+
+    const newContents = await formatJsonWithPrettier(JSON.stringify(infoCourse));
+    job.verbose('New infoCourse.json file:');
+    job.verbose(newContents);
+
+    await addFileToRepo(client, options.repo_short_name, 'infoCourse.json', newContents);
+    job.info('Uploaded new infoCourse.json file');
+
+    // Copy the template .gitignore file
+    job.info('Copying .gitignore file');
+    const gitignorePath = path.join(TEMPLATE_COURSE_PATH, '.gitignore');
+    const gitignoreContents = await fs.readFile(gitignorePath, 'utf-8');
+    await addFileToRepo(client, options.repo_short_name, '.gitignore', gitignoreContents);
+    job.info('Uploaded new .gitignore file');
+
+    job.info('Copying README.md file');
+    const readmePath = path.join(TEMPLATE_COURSE_PATH, 'README.md');
+    const readmeContents = await fs.readFile(readmePath, 'utf-8');
+    await addFileToRepo(client, options.repo_short_name, 'README.md', readmeContents);
+    job.info('Uploaded new README.md file');
 
     // Find main branch (which is the only branch in the new repo).
     // The output of this is array of objects following:
     // https://docs.github.com/en/rest/reference/repos#list-branches
+
     const branches = (
       await client.repos.listBranches({
         owner: config.githubCourseOwner,
@@ -231,28 +193,6 @@ export async function createCourseRepoJob(
     }
     const branch = branches[0].name;
     job.info(`Main branch for new repository: "${branch}"`);
-
-    // Update the infoCourse.json file by grabbing the original and JSON editing it.
-    job.info('Updating infoCourse.json');
-    const { sha: sha, contents } = await getFileFromRepo(
-      client,
-      options.repo_short_name,
-      'infoCourse.json',
-    );
-    job.info(`Loaded infoCourse.json file (SHA ${sha})`);
-
-    const courseInfo = JSON.parse(contents);
-    courseInfo.uuid = uuidv4();
-    courseInfo.name = options.short_name;
-    courseInfo.title = options.title;
-    courseInfo.timezone = options.display_timezone;
-
-    const newContents = JSON.stringify(courseInfo, null, 4);
-    job.verbose('New infoCourse.json file:');
-    job.verbose(newContents);
-
-    await putFileToRepo(client, options.repo_short_name, 'infoCourse.json', newContents, sha);
-    job.info('Uploaded new infoCourse.json file');
 
     // Add machine and instructor to the repo
     job.info('Adding machine team to repo');

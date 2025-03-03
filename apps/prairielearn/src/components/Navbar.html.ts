@@ -7,17 +7,20 @@ import { config } from '../lib/config.js';
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
+import { ProgressCircle } from './ProgressCircle.html.js';
 
 export function Navbar({
   resLocals,
   navPage,
   navSubPage,
   navbarType,
+  marginBottom = true,
 }: {
   resLocals: Record<string, any>;
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
+  marginBottom?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix } = resLocals;
   navPage ??= resLocals.navPage;
@@ -38,7 +41,7 @@ export function Navbar({
       : ''}
 
     <div class="container-fluid bg-primary">
-      <a href="#content" class="sr-only sr-only-focusable d-inline-flex p-2 m-2 text-white">
+      <a href="#content" class="visually-hidden-focusable d-inline-flex p-2 m-2 text-white">
         Skip to main content
       </a>
     </div>
@@ -64,15 +67,15 @@ export function Navbar({
         <button
           class="navbar-toggler"
           type="button"
-          data-toggle="collapse"
-          data-target=".navbar-collapse"
+          data-bs-toggle="collapse"
+          data-bs-target=".navbar-collapse"
           aria-expanded="false"
           aria-label="Toggle navigation"
         >
           <span class="navbar-toggler-icon"></span>
         </button>
         <div id="course-nav" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav mr-auto" id="main-nav">
+          <ul class="nav navbar-nav me-auto" id="main-nav">
             ${NavbarByType({ resLocals, navPage, navSubPage, navbarType })}
           </ul>
 
@@ -99,7 +102,9 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
+    <div class="${marginBottom ? 'mb-3' : ''}">
+      ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
+    </div>
   `;
 }
 
@@ -170,11 +175,11 @@ function UserDropdownMenu({
     (authz_data.authn_has_course_permission_preview ||
       authz_data.authn_has_course_instance_permission_view)
   ) {
-    displayedName = html`${displayedName} <span class="badge badge-warning">student</span>`;
+    displayedName = html`${displayedName} <span class="badge text-bg-warning">student</span>`;
   } else if (authz_data?.overrides) {
-    displayedName = html`${displayedName} <span class="badge badge-warning">modified</span>`;
+    displayedName = html`${displayedName} <span class="badge text-bg-warning">modified</span>`;
   } else if (navbarType === 'instructor') {
-    displayedName = html`${displayedName} <span class="badge badge-success">staff</span>`;
+    displayedName = html`${displayedName} <span class="badge text-bg-success">staff</span>`;
   }
 
   return html`
@@ -187,21 +192,24 @@ function UserDropdownMenu({
       data-authn-course-instance-role="${authz_data?.authn_course_instance_role}"
       data-has-instructor-access="${authz_data?.user_with_requested_uid_has_instructor_access_to_course_instance?.toString()}"
     >
-      <li class="nav-item dropdown mb-2 mb-md-0 mr-2 ${navPage === 'effective' ? 'active' : ''}">
-        <button
-          class="btn nav-link dropdown-toggle"
+      <li class="nav-item dropdown mb-2 mb-md-0 me-2 ${navPage === 'effective' ? 'active' : ''}">
+        <a
+          class="nav-link dropdown-toggle"
           id="navbarDropdown"
-          type="button"
-          data-toggle="dropdown"
+          href="#"
+          role="button"
+          data-bs-toggle="dropdown"
           aria-haspopup="true"
           aria-expanded="false"
         >
           ${displayedName}
           ${newsCount
-            ? html`<span class="badge badge-pill badge-primary news-item-count">${newsCount}</span>`
+            ? html`<span class="badge rounded-pill text-bg-primary news-item-count"
+                >${newsCount}</span
+              >`
             : ''}
-        </button>
-        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+        </a>
+        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
           ${authn_is_administrator
             ? html`
                 <button type="button" class="dropdown-item" id="navbar-administrator-toggle">
@@ -241,7 +249,7 @@ function UserDropdownMenu({
             News
             ${newsCount
               ? html`
-                  <span class="badge badge-pill badge-primary news-item-link-count">
+                  <span class="badge rounded-pill text-bg-primary news-item-link-count">
                     ${newsCount}
                   </span>
                 `
@@ -274,25 +282,19 @@ function FlashMessages() {
     }
   });
 
-  return html`
-    <div class="mb-3">
-      ${flashMessages.map(
-        ({ type, message }) => html`
-          <div
-            class="alert alert-${globalFlashColors[
-              type
-            ]} border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
-            role="alert"
-          >
-            ${unsafeHtml(message)}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-        `,
-      )}
-    </div>
-  `;
+  return flashMessages.map(
+    ({ type, message }) => html`
+      <div
+        class="alert alert-${globalFlashColors[
+          type
+        ]} border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
+        role="alert"
+      >
+        ${unsafeHtml(message)}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `,
+  );
 }
 
 function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
@@ -403,7 +405,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
       ? html`
           <a class="dropdown-item" href="${instructorLink}" id="navbar-reset-view">
             Reset to default staff view
-            <span class="badge badge-success">staff</span>
+            <span class="badge text-bg-success">staff</span>
           </a>
 
           <div class="dropdown-divider"></div>
@@ -414,26 +416,26 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
 
     <a class="dropdown-item" href="${instructorLink}" id="navbar-user-view-authn-instructor">
       <span class="${authnViewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">&check;</span>
-      <span class="pl-3">
+      <span class="ps-3">
         ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
           ? 'Modified staff'
           : 'Staff'}
-        view <span class="badge badge-success">staff</span>
+        view <span class="badge text-bg-success">staff</span>
       </span>
     </a>
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student">
       <span class="${authnViewTypeMenuChecked !== 'student' ? 'invisible' : ''}">&check;</span>
-      <span class="pl-3">Student view <span class="badge badge-warning">student</span></span>
+      <span class="ps-3">Student view <span class="badge text-bg-warning">student</span></span>
     </a>
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student-no-rules">
       <span class="${authnViewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
         &check;
       </span>
-      <span class="pl-3">
+      <span class="ps-3">
         Student view without access restrictions
-        <span class="badge badge-warning">student</span>
+        <span class="badge text-bg-warning">student</span>
       </span>
     </a>
 
@@ -448,21 +450,21 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
                   <span class="${viewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">
                     &check;
                   </span>
-                  <span class="pl-3">Staff view</span>
+                  <span class="ps-3">Staff view</span>
                 </a>
               `
             : ''}
 
           <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student">
             <span class="${viewTypeMenuChecked !== 'student' ? 'invisible' : ''}"> &check; </span>
-            <span class="pl-3">Student view</span>
+            <span class="ps-3">Student view</span>
           </a>
 
           <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student-no-rules">
             <span class="${viewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
               &check;
             </span>
-            <span class="pl-3">Student view without access restrictions</span>
+            <span class="ps-3">Student view without access restrictions</span>
           </a>
         `
       : ''}
@@ -508,13 +510,13 @@ function AuthnOverrides({
   return html`
     <h6 class="dropdown-header">Effective user</h6>
 
-    <form class="form-inline dropdown-item-text d-flex flex-nowrap js-effective-uid-form">
-      <label class="sr-only" for="effective-uid">UID</label>
+    <form class="dropdown-item-text d-flex flex-nowrap js-effective-uid-form">
+      <label class="visually-hidden" for="effective-uid">UID</label>
       <input
         id="effective-uid"
         type="email"
         placeholder="student@example.com"
-        class="form-control form-control-sm mr-2 flex-grow-1 js-effective-uid-input"
+        class="form-control form-control-sm me-2 flex-grow-1 js-effective-uid-input"
       />
       <button
         type="submit"
@@ -533,9 +535,9 @@ function AuthnOverrides({
                 (override) => html`
                   <div class="list-group-item list-group-item-warning small p-2">
                     <div class="d-flex flex-row justify-content-between align-items-center">
-                      <div class="p-0 mr-4">
+                      <div class="p-0 me-4">
                         <ul class="list-unstyled">
-                          <li class="font-weight-bold">${override.name}</li>
+                          <li class="fw-bold">${override.name}</li>
                           <li>${override.value}</li>
                         </ul>
                       </div>
@@ -545,7 +547,7 @@ function AuthnOverrides({
                           type="button"
                           data-override-cookie="${override.cookie}"
                         >
-                          <i class="fas fa-times mr-1"></i>
+                          <i class="fas fa-times me-1"></i>
                           Remove
                         </button>
                       </div>
@@ -584,7 +586,7 @@ function NavbarStudent({
     resLocals;
 
   return html`
-    <li class="nav-item navbar-text mr-4">
+    <li class="nav-item navbar-text me-4">
       ${course?.short_name ?? ''}, ${course_instance?.short_name ?? ''}
     </li>
 
@@ -623,6 +625,8 @@ function NavbarInstructor({
     assessment_label,
     assessments,
     navbarOpenIssueCount,
+    navbarCompleteGettingStartedTasksCount,
+    navbarTotalGettingStartedTasksCount,
     authz_data,
     urlPrefix,
   } = resLocals;
@@ -638,21 +642,22 @@ function NavbarInstructor({
       >
         ${course.short_name}
       </a>
-      <button
-        class="btn nav-link dropdown-toggle dropdown-toggle-split"
+      <a
+        class="nav-link dropdown-toggle dropdown-toggle-split"
         id="navbarDropdownMenuCourseAdminLink"
-        type="button"
-        data-toggle="dropdown"
+        href="#"
+        role="button"
+        data-bs-toggle="dropdown"
         aria-label="Change course"
         aria-haspopup="true"
         aria-expanded="false"
         ${!authz_data.overrides
           ? html`
-              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show-course-switcher once
+              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show.bs.dropdown once
               delay:200ms" hx-target="#navbarDropdownMenuCourseAdmin"
             `
           : ''}
-      ></button>
+      ></a>
       <div
         class="dropdown-menu"
         aria-labelledby="navbarDropdownMenuCourseAdminLink"
@@ -667,12 +672,30 @@ function NavbarInstructor({
           : html`
               <div class="d-flex justify-content-center">
                 <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="sr-only">Loading courses...</span>
+                  <span class="visually-hidden">Loading courses...</span>
                 </div>
               </div>
             `}
       </div>
     </li>
+
+    ${authz_data.has_course_permission_edit && course.show_getting_started
+      ? html`
+          <li class="nav-item d-flex align-items-center">
+            <a
+              style="display: inline-flex; align-items: center;"
+              class="nav-link pe-0"
+              href="${urlPrefix}/course_admin/getting_started"
+            >
+              Getting Started
+              ${ProgressCircle({
+                value: navbarCompleteGettingStartedTasksCount,
+                maxValue: navbarTotalGettingStartedTasksCount,
+              })}
+            </a>
+          </li>
+        `
+      : ''}
 
     <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'issues' ? 'active' : ''}">
       <a class="nav-link" href="${urlPrefix}/course_admin/issues">
@@ -712,18 +735,19 @@ function NavbarInstructor({
             >
               ${course_instance.short_name}
             </a>
-            <button
-              class="btn nav-link dropdown-toggle dropdown-toggle-split"
+            <a
+              class="nav-link dropdown-toggle dropdown-toggle-split"
               id="navbarDropdownMenuInstanceAdminLink"
-              type="button"
-              data-toggle="dropdown"
+              href="#"
+              role="button"
+              data-bs-toggle="dropdown"
               aria-label="Change course instance"
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher/${course_instance.id}"
-              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-trigger="show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceAdmin"
-            ></button>
+            ></a>
             <div
               class="dropdown-menu"
               aria-labelledby="navbarDropdownMenuInstanceAdminLink"
@@ -731,7 +755,7 @@ function NavbarInstructor({
             >
               <div class="d-flex justify-content-center">
                 <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="sr-only">Loading course instances...</span>
+                  <span class="visually-hidden">Loading course instances...</span>
                 </div>
               </div>
             </div>
@@ -765,15 +789,16 @@ function NavbarInstructor({
                   </a>
                   ${assessments != null
                     ? html`
-                        <button
-                          class="btn nav-link dropdown-toggle dropdown-toggle-split"
+                        <a
+                          class="nav-link dropdown-toggle dropdown-toggle-split"
                           id="navbarDropdownMenuLink"
-                          type="button"
-                          data-toggle="dropdown"
+                          href="#"
+                          role="button"
+                          data-bs-toggle="dropdown"
                           aria-haspopup="true"
                           aria-expanded="false"
                           aria-label="Change assessment"
-                        ></button>
+                        ></a>
                         <div
                           class="dropdown-menu"
                           aria-labelledby="navbarDropdownMenuLink"
@@ -806,19 +831,20 @@ function NavbarInstructor({
           <li class="navbar-text mx-2 no-select">/</li>
 
           <li class="nav-item dropdown" id="navbar-course-instance-switcher">
-            <button
-              class="btn nav-link dropdown-toggle"
+            <a
+              class="nav-link dropdown-toggle"
               id="navbarDropdownMenuInstanceChooseLink"
-              type="button"
-              data-toggle="dropdown"
+              href="#"
+              role="button"
+              data-bs-toggle="dropdown"
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher"
-              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-trigger="show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceChoose"
             >
               Choose course instance...
-            </button>
+            </a>
             <div
               class="dropdown-menu"
               aria-labelledby="navbarDropdownMenuInstanceChooseLink"
@@ -826,7 +852,7 @@ function NavbarInstructor({
             >
               <div class="d-flex justify-content-center">
                 <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="sr-only">Loading course instances...</span>
+                  <span class="visually-hidden">Loading course instances...</span>
                 </div>
               </div>
             </div>

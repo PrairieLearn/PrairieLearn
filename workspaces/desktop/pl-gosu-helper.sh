@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # The purpose of this script is to prevent subtle issues that might occur if
 # you are testing in the local PrairieLearn Docker container and it attempts

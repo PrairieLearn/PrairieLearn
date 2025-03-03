@@ -192,8 +192,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Only apply ignore filter if we enable hiding warnings
         if not log_warnings:
             warnings.simplefilter("ignore")
-        svg = translated_dotcode.draw(format="svg", prog=engine).decode(
-            "utf-8", "strict"
-        )
+
+        svg_bytes = translated_dotcode.draw(format="svg", prog=engine)
+        if svg_bytes is None:
+            raise TypeError("Graph was not returned.")
+        svg = svg_bytes.decode("utf-8", "strict")
 
     return f'<div class="pl-graph">{svg}</div>'

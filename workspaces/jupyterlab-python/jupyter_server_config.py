@@ -1,6 +1,6 @@
 import os
 
-c = get_config()  # type: ignore # noqa F821
+c = get_config()  # type: ignore # noqa: F821
 
 c.ServerApp.base_url = "/"
 if "WORKSPACE_BASE_URL" in os.environ:
@@ -26,7 +26,7 @@ if "LAUNCH_FILE_NAME" in os.environ:
     # https://github.com/jupyterlab/jupyter-collaboration/issues/202
     # https://github.com/jupyterlab/jupyter-collaboration/issues/183
     drive = "RTC:" if enable_rtc else ""
-    c.LabApp.default_url= f"/lab/tree/{drive}{os.environ['LAUNCH_FILE_NAME']}"
+    c.LabApp.default_url = f"/lab/tree/{drive}{os.environ['LAUNCH_FILE_NAME']}"
 
 c.FileContentsManager.delete_to_trash = False
 c.FileCheckpoints.checkpoint_dir = "/tmp/ipynb_checkpoints"

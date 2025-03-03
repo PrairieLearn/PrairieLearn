@@ -6,7 +6,6 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from lxml.html import HtmlElement
-from typing_extensions import assert_never
 
 ATTR_ANSWER_NAME = "answers-name"
 ATTR_WIDTH = "width"
@@ -130,46 +129,38 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                         initial_content = empty_diagram
                 else:  # submission
                     initial_content = data["submitted_answers"][drawing_name]
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
         case "answer":
             if gradable:
                 show_widget = False
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
         case "submission":
             if gradable:
                 if fresh:
                     raise unreachable
-                else:  # submission
-                    initial_content = data["submitted_answers"][drawing_name]
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+                # submission
+                initial_content = data["submitted_answers"][drawing_name]
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
-        case panel:
-            assert_never(panel)
+    content_bytes = json.dumps({
+        "read_only": not is_widget_editable(panel, gradable, data["editable"]),
+        "initial_content": initial_content,
+        "width": pl.get_string_attrib(element, ATTR_WIDTH, "100%"),
+        "height": pl.get_string_attrib(element, ATTR_HEIGHT, "800px"),
+    }).encode()
 
-    content_bytes = json.dumps(
-        {
-            "read_only": not is_widget_editable(panel, gradable, data["editable"]),
-            "initial_content": initial_content,
-            "width": pl.get_string_attrib(element, ATTR_WIDTH, "100%"),
-            "height": pl.get_string_attrib(element, ATTR_HEIGHT, "800px"),
-        }
-    ).encode()
-
-    errors: list = []
+    errors: list[str] = []
     if panel == "submission" and drawing_name and drawing_name in data["format_errors"]:
         errors = data["format_errors"][drawing_name]
 
@@ -194,7 +185,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             # Check the submissions if available
             if drawing_name in data["submitted_answers"]:
                 json.loads(data["submitted_answers"][drawing_name])
-        except Exception as exc:
+        except ValueError as exc:
             if drawing_name not in data["format_errors"]:
                 data["format_errors"][drawing_name] = []
             data["format_errors"][drawing_name].append(

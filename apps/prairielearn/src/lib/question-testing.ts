@@ -105,6 +105,7 @@ async function createTestSubmission(
     credit: null,
     mode: null,
     variant_id: variant.id,
+    user_id,
     auth_user_id: authn_user_id,
     client_fingerprint_id: null,
   });

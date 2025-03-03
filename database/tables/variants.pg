@@ -1,5 +1,5 @@
 columns
-    authn_user_id: bigint
+    authn_user_id: bigint not null
     broken: boolean default false
     broken_at: timestamp with time zone
     broken_by: bigint
@@ -20,7 +20,7 @@ columns
     question_id: bigint not null
     true_answer: jsonb
     user_id: bigint
-    variant_seed: text
+    variant_seed: text not null
     workspace_id: bigint
 
 indexes

@@ -3,9 +3,6 @@ import SelectorSet from 'selector-set';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-const compatEnabled =
-  document.head.querySelector('meta[name="bootstrap-version"]')?.getAttribute('content') !== '4';
-
 interface MigratorUtils {
   addClass(el: Element, newClass: string | string[], message: string): void;
   migrateClass(el: Element, oldClass: string, newClass: string): void;
@@ -40,10 +37,6 @@ onDocumentReady(() => {
     subtree: true,
   });
 });
-
-export function isBootstrapCompatEnabled() {
-  return compatEnabled;
-}
 
 export function makeMigrator(options: MigratorOptions) {
   observe(options.selector, {

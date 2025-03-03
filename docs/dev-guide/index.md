@@ -103,7 +103,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 ## HTML style
 
-- Use [Bootstrap](http://getbootstrap.com) as the style. As of 2024-06-05 we are using v4.
+- Use [Bootstrap](http://getbootstrap.com) as the style. As of 2025-01-01 we are using Bootstrap 5.
 
 - Local CSS rules go in `public/stylesheets/local.css`. Try to minimize use of this and use plain Bootstrap styling wherever possible.
 
@@ -188,8 +188,9 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - To be able to use the stored procedures from the `psql` command line it is necessary to get the most recent schema name using `\dn` and set the `search_path` to use this _quoted_ schema name and the `public` schema:
 
-  ```
-  set search_path to "server_2021-07-07T20:25:04.779Z_T75V6Y",public;
+  <!-- prettier-ignore -->
+  ```sql
+  set search_path to "server_2021-07-07T20:25:04.779Z_T75V6Y", public;
   ```
 
 - During startup we initially have no non-public schema in use. We first run the migrations to update all tables in the `public` schema, then we call `sqldb.setRandomSearchSchemaAsync()` to activate a random per-execution schema, and we run the sproc creation code to generate all the stored procedures in this schema. This means that every invocation of PrairieLearn will have its own locally-scoped copy of the stored procedures which are the correct versions for its code. This lets us upgrade PrairieLearn servers one at a time, while old servers are still running with their own copies of their sprocs. When PrairieLearn first starts up it has `search_path = public`, but later it will have `search_path = "server_2021-07-07T20:25:04.779Z_T75V6Y",public` so that it will first search the random schema and then fall back to `public`. The naming convention for the random schema uses the local instance name, the date, and a random string. Note that schema names need to be quoted using double-quotations in `psql` because they contain characters such as hyphens.
@@ -200,7 +201,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - The most important tables in the database are shown in the diagram below:
 
-![](./simplified-models.d2)
+![Simplified database diagram](./simplified-models.d2)
 
 - Detailed descriptions of the format of each table are in the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
@@ -233,7 +234,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - See the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below:
 
-![](./models.d2){layout="elk"}
+![Full database diagram](./models.d2){layout="elk"}
 
 ## Database schema conventions
 
@@ -367,9 +368,7 @@ WHERE
   FROM
     ROWS
   FROM
-    (jsonb_to_recordset($data) AS (a INTEGER, b TEXT))
-  WITH
-    ORDINALITY AS data (a, b, order_by);
+    (jsonb_to_recordset($data) AS (a INTEGER, b TEXT)) WITH ORDINALITY AS data (a, b, order_by);
   ```
 
 ## Asynchronous control flow in JavaScript
@@ -537,7 +536,7 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - The question flow is shown in the diagram below:
 
-![](./question-flow.d2)
+![Question lifecycle flowchart](./question-flow.d2)
 
 ## JavaScript equality operator
 

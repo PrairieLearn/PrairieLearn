@@ -1,0 +1,66 @@
+{
+  "uuid": "b7198b89-2dcd-405c-99c9-1df4aa9eaeec",
+  "name": "TPL 101",
+  "title": "Template Course",
+  "options": {
+    "useNewQuestionRenderer": true
+  },
+  "assessmentSets": [
+    {
+      "abbreviation": "PLEC",
+      "name": "Prelecture",
+      "heading": "Prelectures",
+      "color": "turquoise1"
+    },
+    {
+      "abbreviation": "LEC",
+      "name": "Lecture",
+      "heading": "Lectures",
+      "color": "turquoise2"
+    },
+    {
+      "abbreviation": "LAB",
+      "name": "Lab",
+      "heading": "Labs",
+      "color": "blue1"
+    },
+    {
+      "abbreviation": "HW",
+      "name": "Homework",
+      "heading": "Homeworks",
+      "color": "green1"
+    },
+    {
+      "abbreviation": "PQ",
+      "name": "Practice Quiz",
+      "heading": "Practice Quizzes",
+      "color": "yellow1"
+    },
+    {
+      "abbreviation": "Q",
+      "name": "Quiz",
+      "heading": "Quizzes",
+      "color": "yellow2"
+    },
+    {
+      "abbreviation": "PE",
+      "name": "Practice Exam",
+      "heading": "Practice Exams",
+      "color": "pink1"
+    },
+    {
+      "abbreviation": "E",
+      "name": "Exam",
+      "heading": "Exams",
+      "color": "pink2"
+    },
+    {
+      "abbreviation": "U",
+      "name": "Unknown",
+      "heading": "Unknown",
+      "color": "red3"
+    }
+  ],
+  "topics": [{ "name": "Default", "color": "gray1", "description": "Default topic" }],
+  "tags": []
+}

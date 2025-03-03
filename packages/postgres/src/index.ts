@@ -1,7 +1,7 @@
 export { type PoolClient } from 'pg';
 
 export { loadSql, loadSqlEquiv } from './loader.js';
-export { PostgresPool, PostgresPoolConfig } from './pool.js';
+export { PostgresPool, type PostgresPoolConfig } from './pool.js';
 
 export * from './default-pool.js';
 

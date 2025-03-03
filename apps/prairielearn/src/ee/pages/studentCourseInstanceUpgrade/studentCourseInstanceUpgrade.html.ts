@@ -74,7 +74,7 @@ export function StudentCourseInstanceUpgrade({
                     type="submit"
                     name="__action"
                     value="upgrade"
-                    class="btn btn-primary btn-block"
+                    class="btn btn-primary d-block w-100"
                     disabled
                   >
                     Upgrade

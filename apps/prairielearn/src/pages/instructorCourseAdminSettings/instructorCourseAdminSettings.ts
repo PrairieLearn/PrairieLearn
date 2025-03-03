@@ -13,6 +13,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getAvailableTimezones } from '../../lib/timezones.js';
+import { updateCourseShowGettingStarted } from '../../models/course.js';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
@@ -52,7 +53,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied. Must be course editor to make changes.');
+      throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
     if (res.locals.course.example_course) {
@@ -63,6 +64,16 @@ router.post(
       if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
+
+      const show_getting_started = req.body.show_getting_started === 'on';
+
+      if (res.locals.course.show_getting_started !== show_getting_started) {
+        await updateCourseShowGettingStarted({
+          course_id: res.locals.course.id,
+          show_getting_started,
+        });
+      }
+
       const paths = getPaths(undefined, res.locals);
 
       const courseInfo = JSON.parse(
@@ -77,7 +88,7 @@ router.post(
       courseInfoEdit.timezone = req.body.display_timezone;
 
       const editor = new FileModifyEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
@@ -90,14 +101,12 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-        flash('success', 'Course configuration updated successfully');
-        return res.redirect(req.originalUrl);
       } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
-    }
-
-    if (req.body.__action === 'add_configuration') {
+      flash('success', 'Course configuration updated successfully');
+      return res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'add_configuration') {
       const infoJson = {
         uuid: uuidv4(),
         name: path.basename(res.locals.course.path),
@@ -110,7 +119,7 @@ router.post(
         topics: [],
       };
       const editor = new CourseInfoCreateEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         infoJson,
       });
       const serverJob = await editor.prepareServerJob();

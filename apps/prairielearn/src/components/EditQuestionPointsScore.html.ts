@@ -37,12 +37,12 @@ export function EditQuestionPointsScoreButton({
   return html`<button
     type="button"
     class="btn btn-xs btn-secondary"
-    data-toggle="popover"
-    data-container="body"
-    data-html="true"
-    data-placement="auto"
+    data-bs-toggle="popover"
+    data-bs-container="body"
+    data-bs-html="true"
+    data-bs-placement="auto"
     aria-label="Change question ${findLabel(field)}"
-    data-content="${escapeHtml(editForm)}"
+    data-bs-content="${escapeHtml(editForm)}"
     data-testid="edit-question-points-score-button-${field}"
   >
     <i class="fa fa-edit" aria-hidden="true"></i>
@@ -74,7 +74,7 @@ function EditQuestionPointsScoreForm({
           <a href="${manualGradingUrl}">the manual grading page</a>.
         </p>
         <div class="text-right">
-          <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         </div>
       </div>
     `;
@@ -92,7 +92,7 @@ function EditQuestionPointsScoreForm({
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="instance_question_id" value="${instance_question.id}" />
       <input type="hidden" name="modified_at" value="${instance_question.modified_at.toString()}" />
-      <div class="form-group">
+      <div class="mb-3">
         <div class="input-group">
           <input
             type="number"
@@ -103,11 +103,9 @@ function EditQuestionPointsScoreForm({
             value="${pointsOrScore}"
             aria-label="${findLabel(field)}"
           />
-          <div class="input-group-append">
-            <span class="input-group-text">
-              ${field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}
-            </span>
-          </div>
+          <span class="input-group-text">
+            ${field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}
+          </span>
         </div>
       </div>
       <p>
@@ -121,7 +119,7 @@ function EditQuestionPointsScoreForm({
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

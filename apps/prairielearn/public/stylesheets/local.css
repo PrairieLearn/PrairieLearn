@@ -278,7 +278,7 @@ a.badge {
 
 /* Supports a color accent at the tops of nav tabs, github-style */
 .nav-tabs.pl-nav-tabs-bar .nav-link.active {
-  border-top-color: var(--primary, var(--bs-primary));
+  border-top-color: var(--bs-primary);
   border-top-width: 0.2rem;
   padding-top: 0.4rem;
 }
@@ -367,6 +367,15 @@ small .user-output-invalid {
   border-color: #6c757d;
   margin-left: 5px;
   background: #fff;
+}
+
+/**
+ * We use red text in light buttons to indicate errors on many elements.
+ * By default, this has insufficient contrast. We override the color in
+ * this specific case to improve the contrast.
+ */
+.btn.btn-light.text-danger {
+  color: hsl(from rgb(var(--bs-danger-rgb)) h s calc(l - 5)) !important;
 }
 
 /***********************************
@@ -499,17 +508,24 @@ small .user-output-invalid {
   outline-offset: -2px !important;
 }
 
+.btn.btn-med-light:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #212529) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
 /* The sticky-column class is used to make the first column of a bootstrap-table sticky. */
 .table > :not(caption) > * > .sticky-column {
   position: sticky;
   left: 0;
-  background-color: var(--bs-body-bg, white);
+  background-color: var(--bs-body-bg);
   background-clip: padding-box;
   box-shadow: inset -1px 0 #dee2e6;
 }
 
 .table.table-hover > tbody > tr:hover > td.sticky-column {
-  color: var(--bs-table-hover-color, #212529);
+  color: var(--bs-table-hover-color);
   /* This must be opaque, to ensure the cell shows on top of others.
      TODO: compute this value by combining --bs-body-bg (opaque) with --bs-table-hover-bg (semi-transparent). */
   background-color: #efefef;

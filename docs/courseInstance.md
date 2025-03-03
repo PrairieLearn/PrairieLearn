@@ -55,9 +55,7 @@ This file specifies basic information about the course instance:
     --8<-- "apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
     ```
 
-## Course instance `allowAccess`
-
-See the [access control documentation](accessControl/index.md) for more details on `allowAccess` rules.
+## Access controls
 
 The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Course staff always have access. The simple example below gives students access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
 
@@ -71,6 +69,58 @@ The course instance `allowAccess` rules determine who can access the course inst
   ]
 }
 ```
+
+See the [access control documentation](accessControl/index.md) for more details on `allowAccess` rules.
+
+### Controlling access by institution
+
+By default, only students that belong to the course's institution can access the course instance. You can use the [`institution` property](./accessControl/index.md#institutions) to allow access from other institutions. For instance, you can use the following rule to allow students from any institution to access the course instance between the specified dates:
+
+```json title="infoCourseInstance.json"
+{
+  "allowAccess": [
+    {
+      "startDate": "2015-01-19T00:00:01",
+      "endDate": "2015-05-13T23:59:59",
+      "institution": "Any"
+    }
+  ]
+}
+```
+
+### Controlling access by UID
+
+You can restrict access to particular students by listing their UIDs in the `uids` property. For instance, the following rule only allows `student1@example.com` and `student2@example.com` to access the course instance between the specified dates:
+
+```json title="infoCourseInstance.json"
+{
+  "allowAccess": [
+    {
+      "startDate": "2015-01-19T00:00:01",
+      "endDate": "2015-05-13T23:59:59",
+      "uids": ["student1@example.com", "student2@example.com"]
+    }
+  ]
+}
+```
+
+## Enrollment controls
+
+Students can enroll in a course instance through one of two ways:
+
+1. They can use a URL specific to the course instance or [to one of its assessments](assessment/index.md#linking-to-assessments). You can find the "student link" on the "Settings" tab of the course instance. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
+
+2. They can use the "Add or remove courses" button on PrairieLearn's homepage. This button opens a page listing all course instances that are currently available for enrollment, giving students the option to add new courses.
+
+Some instructors may wish to hide their course from the list of available course instances. This may be done to provide a small level of control over which students get access to the course, or to avoid confusion in case of course instances that are not expected to be visible to students in general. For these instances, the following setting will hide the course instance from the list of instances on the add/remove courses page, even if the instance is available for enrollment.
+
+```json title="infoCourseInstance.json"
+{
+  "hideInEnrollPage": true
+}
+```
+
+Note that _this is not a security setting_. Students may still enroll in the course instance if they get access to the URL, such as from a friend. Instructors that wish to actually restrict course enrollment to a specific list of students should instead use an access rule with an explicit list of UIDs, as described under ["Controlling access by UID"](#controlling-access-by-uid).
 
 ## Assessment page organization
 
@@ -96,25 +146,11 @@ The default timezone for course instances is the timezone of the course. This ca
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
 
-## Enrollment controls
-
-Students can enroll in a course instance through one of two ways:
-
-1. They can use a URL specific to the course instance or [to one of its assessments](assessment/index.md#linking-to-assessments). The appropriate link to provide to students can be found by opening the "Settings" tab of the Course Instance. This page includes, among other useful information, a Student Link that can be provided to students. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
-
-2. They can use the "Enroll" button in PrairieLearn's main page. This button opens a page listing all course instances that are currently available for enrollment, giving students the option to Add new courses.
-
-Some instructors may wish to hide their course from the list of available course instances in the Enroll page. This may be done to provide a small level of control over which students get access to the course, or to avoid confusion in case of course instances that are not expected to be visible to students in general. For these instances, the following setting will hide the course instance from the list of instances in the Enroll page, even if the instance is available for enrollment.
-
-```json title="infoCourseInstance.json"
-{
-  "hideInEnrollPage": true
-}
-```
-
-Note that _this is not a security setting_. Students may still enroll in the course instance if they get access to the URL, either through friends or by [Forced Browsing Attacks](https://owasp.org/www-community/attacks/Forced_browsing). Instructors that wish to actually restrict course enrollment to a specific list of students should instead use well-defined access rules with restrictions by UIDs, Institution, or through LTI support.
-
 ## LTI support
+
+!!! warning
+
+    LTI 1.1 support as described below is deprecated. We recommend using LTI 1.3 for all new course instances. See [the LTI 1.3 documentation](./lmsIntegrationInstructor.md) for more details.
 
 ### LTI Overview
 

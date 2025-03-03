@@ -1,0 +1,18 @@
+{
+  "uuid": "8dc0e750-d9bf-44ed-89f8-ba07f5182e90",
+  "type": "Homework",
+  "title": "AI Grading",
+  "set": "Homework",
+  "number": "10",
+  "allowAccess": [],
+  "zones": [
+    {
+      "questions": [
+        {
+          "id": "aiGradingRubrics",
+          "manualPoints": 4
+        }
+      ]
+    }
+  ]
+}

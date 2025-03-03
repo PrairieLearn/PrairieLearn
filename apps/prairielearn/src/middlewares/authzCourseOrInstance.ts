@@ -119,8 +119,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     res.locals,
   );
 
-  res.locals.use_bootstrap_4 = await features.enabledFromLocals('bootstrap-4', res.locals);
-
   // Check if it is necessary to request a user data override - if not, return
   const overrides: Override[] = [];
   if (req.cookies.pl2_requested_uid) {
