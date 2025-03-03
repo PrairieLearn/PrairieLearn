@@ -120,7 +120,7 @@ class Canvas:
 class Course(Canvas):
     """Course"""
 
-    def __init__(self, canvas, course_data):
+    def __init__(self, _canvas, course_data):
         super().__init__()
         self.data = course_data
         self.id = course_data["id"]
