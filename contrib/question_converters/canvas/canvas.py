@@ -121,7 +121,7 @@ class Course(Canvas):
     """Course"""
 
     def __init__(self, canvas, course_data):
-        super().__init__(canvas.token)
+        super().__init__()
         self.data = course_data
         self.id = course_data["id"]
         self.url_prefix = f"/courses/{self.id}"
@@ -219,10 +219,9 @@ class CourseSubObject(Canvas):
     def __init__(
         self, parent, route_name, data, id_field="id", request_param_name=None
     ):
-        # MUST be available before calling self.get_course.
-        self.parent = parent
-        super().__init__(self.get_course().token)
+        super().__init__()
 
+        self.parent = parent
         self.data = data
         self.id_field = id_field
         self.id = self.compute_id()
