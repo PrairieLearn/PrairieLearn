@@ -2157,16 +2157,6 @@ if (esMain(import.meta) && config.startServer) {
         dsn: config.sentryDsn,
         environment: config.sentryEnvironment,
 
-        // Sentry (specifically `import-in-the-middle`, which Sentry uses)
-        // is known to cause issues with loading `openai` as ESM. Their
-        // recommended workaround it to exclude the module from their hooks.
-        // See related issues:
-        // https://github.com/openai/openai-node/issues/903
-        // https://github.com/getsentry/sentry-javascript/issues/12414
-        registerEsmLoaderHooks: {
-          exclude: [/openai/],
-        },
-
         // We have our own OpenTelemetry setup, so ensure Sentry doesn't
         // try to set that up for itself, but only if OpenTelemetry is
         // enabled. Otherwise, allow Sentry to install its own stuff so
