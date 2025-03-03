@@ -6,7 +6,7 @@ Thanks for your interest in contributing to PrairieLearn!
 
 If you're making a small enhancement, fixing a typo, or updating some documentation, you can jump ahead without getting any maintainers involved first. Onward!
 
-If you want to make a larger change, such as implementing a new feature, changing an API, or introducing a new [element](https://prairielearn.readthedocs.io/en/latest/elements/), you should first start a discussion with the maintainers to make sure that your change would ultimately be accepted. This can be in the form of a GitHub issue or discussion, or for really big features, you can open an [issue tagged as "RFC"](https://github.com/PrairieLearn/PrairieLearn/issues?q=label%3ARFC%20). The maintainers will work with you to answer any questions, fill in any gaps, and ensure that your proposed change will integrate well into PrairieLearn.
+If you want to make a larger change, such as implementing a new feature, changing an API, or introducing a new [element](https://prairielearn.readthedocs.io/en/latest/elements/), you should first start a discussion with the maintainers to make sure that your change would ultimately be accepted. This can be in the form of a GitHub issue or discussion, or for really big features, you can open an [issue with the "RFC" label](https://github.com/PrairieLearn/PrairieLearn/issues?q=label%3ARFC%20). The maintainers will work with you to answer any questions, fill in any gaps, and ensure that your proposed change will integrate well into PrairieLearn.
 
 ## Setup
 
