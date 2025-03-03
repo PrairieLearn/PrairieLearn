@@ -7,6 +7,7 @@ import re
 import uuid
 
 import canvas
+import requests
 
 
 def file_name_only(name):
@@ -47,10 +48,10 @@ if not os.path.exists(os.path.join(args.pl_repo, "infoCourse.json")):
     raise ValueError("Provided directory is not a PrairieLearn repository")
 
 print("Reading data from Canvas...")
-course = canvas.course(args.course, prompt_if_needed=True)
+course = canvas.course(args.course)
 print("Using course: {} / {}".format(course["term"]["name"], course["course_code"]))
 
-quiz = course.quiz(args.quiz, prompt_if_needed=True)
+quiz = course.quiz(args.quiz)
 print("Using quiz: {}".format(quiz["title"]))
 
 # Reading questions
@@ -74,6 +75,17 @@ if os.path.exists(quiz_name):
     quiz_name = f"{quiz_name}_{suffix}"
 os.makedirs(quiz_name)
 
+pl_quiz_allow_access = [{"credit": 100}]
+
+if quiz["access_code"]:
+    pl_quiz_allow_access[0]["password"] = quiz["access_code"]
+if quiz["unlock_at"]:
+    pl_quiz_allow_access[0]["startDate"] = quiz["unlock_at"]
+if quiz["lock_at"]:
+    pl_quiz_allow_access[0]["endDate"] = quiz["lock_at"]
+if quiz["time_limit"]:
+    pl_quiz_allow_access[0]["timeLimitMin"] = quiz["time_limit"]
+
 pl_quiz = {
     "uuid": str(uuid.uuid4()),
     "type": args.assessment_type or ("Exam" if quiz["time_limit"] else "Homework"),
@@ -81,17 +93,10 @@ pl_quiz = {
     "text": quiz["description"],
     "set": args.assessment_set,
     "number": args.assessment_number,
-    "allowAccess": [{"startDate": quiz["unlock_at"], "credit": 100}],
+    "allowAccess": pl_quiz_allow_access,
     "zones": [{"questions": []}],
     "comment": f"Imported from Canvas, quiz {quiz['id']}",
 }
-
-if quiz["access_code"]:
-    pl_quiz["allowAccess"][0]["password"] = quiz["access_code"]
-if quiz["lock_at"]:
-    pl_quiz["allowAccess"][0]["endDate"] = quiz["lock_at"]
-if quiz["time_limit"]:
-    pl_quiz["allowAccess"][0]["timeLimitMin"] = quiz["time_limit"]
 
 
 def clean_question_text(text: str) -> str:
@@ -104,6 +109,36 @@ def clean_question_text(text: str) -> str:
     # script to only using the Python standard library.
     text = re.sub(r"<link[^>]*>", "", text)
     text = re.sub(r"<script[^>]*>.*?</script>", "", text)
+
+    return text
+
+
+def handle_images(question_dir: str, text: str) -> str:
+    # Links to images will still point to Canvas. We need to download them and
+    # replace them with `pl-figure` elements.
+    # We use regex instead of a proper HTML parser because we want to limit this
+    # script to only using the Python standard library.
+    for match in re.finditer(r'<img[^>]*src="([^"]+)"[^>]*>', text):
+        url = match.group(1)
+        if not url.startswith("http"):
+            continue
+
+        # Set up the `clientFilesQuestion` directory for this question.
+        client_files_question_dir = os.path.join(question_dir, "clientFilesQuestion")
+        os.makedirs(client_files_question_dir, exist_ok=True)
+
+        # Download the image if it doesn't exist.
+        filename = os.path.join(client_files_question_dir, os.path.basename(url))
+        if not os.path.exists(filename):
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
+            # Download the image and save it with the `requests` library.
+            with open(filename, "wb") as f:
+                f.write(requests.get(url).content)
+
+        # Replace the image with a `pl-figure` element.
+        text = text.replace(
+            match.group(0), f'<pl-figure file-name="{filename}"></pl-figure>'
+        )
 
     return text
 
@@ -165,6 +200,9 @@ for question in questions.values():
         ):
             obj["gradingMethod"] = "Manual"
         json.dump(obj, info, indent=4)
+
+    # Handle images.
+    question_text = handle_images(question_dir, question_text)
 
     with open(os.path.join(question_dir, "question.html"), "w") as template:
         if question["question_type"] == "calculated_question":

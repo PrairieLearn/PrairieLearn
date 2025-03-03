@@ -96,20 +96,19 @@ class Canvas:
             courses.extend(result)
         return courses
 
-    def course(self, course_id, *, prompt_if_needed=False):
+    def course(self, course_id: str):
         """docstring"""
         if course_id:
             for course in self.request(f"/courses/{course_id}?include[]=term"):
                 return Course(course)
-        if prompt_if_needed:
-            courses = self.courses()
-            for index, course in enumerate(courses):
-                term = course.get("term", {}).get("name", "NO TERM")
-                course_code = course.get("course_code", "UNKNOWN COURSE")
-                print(f"{index:2}: {course['id']:7} - {term:10} / {course_code}")
-            course_index = int(input("Which course? "))
-            return Course(courses[course_index])
-        return None
+
+        courses = self.courses()
+        for index, course in enumerate(courses):
+            term = course.get("term", {}).get("name", "NO TERM")
+            course_code = course.get("course_code", "UNKNOWN COURSE")
+            print(f"{index:2}: {course['id']:7} - {term:10} / {course_code}")
+        course_index = int(input("Which course? "))
+        return Course(courses[course_index])
 
     def file(self, file_id):
         """docstring"""
@@ -158,18 +157,17 @@ class Course(Canvas):
             ]
         return quizzes
 
-    def quiz(self, quiz_id, *, prompt_if_needed=False):
+    def quiz(self, quiz_id):
         """docstring"""
         if quiz_id:
             for quiz in self.request(f"{self.url_prefix}/quizzes/{quiz_id}"):
                 return Quiz(self, quiz)
-        if prompt_if_needed:
-            quizzes = self.quizzes()
-            for index, quiz in enumerate(quizzes):
-                print(f"{index:2}: {quiz['id']:7} - {quiz['title']}")
-            quiz_index = int(input("Which quiz? "))
-            return quizzes[quiz_index]
-        return None
+
+        quizzes = self.quizzes()
+        for index, quiz in enumerate(quizzes):
+            print(f"{index:2}: {quiz['id']:7} - {quiz['title']}")
+        quiz_index = int(input("Which quiz? "))
+        return quizzes[quiz_index]
 
     def assignments(self):
         """docstring"""
