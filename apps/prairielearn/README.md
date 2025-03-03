@@ -1,6 +1,6 @@
 # apps/prairielearn
 
-More information about developing and contributing to PrairieLearn can be found on the docs in the [Developer guide](https://prairielearn.readthedocs.io/en/latest/dev-guide/).
+More information about developing and contributing to PrairieLearn can be found on the docs in the [developer guide](https://prairielearn.readthedocs.io/en/latest/dev-guide/).
 
 Key directories:
 
