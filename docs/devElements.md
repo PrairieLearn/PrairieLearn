@@ -2,7 +2,7 @@
 
 See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/elements) for example elements.
 
-Element code uses the libraries in [the `python/prairielearn` module](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/python/prairielearn). Documentation for this module can be found in the [Python Reference](https://prairielearn.readthedocs.io/en/latest/python-reference/).
+Element code uses the [`prairielearn` module](https://prairielearn.readthedocs.io/en/latest/python-reference/) for common functionality like parsing attributes and computing scores.
 
 ## Anatomy of an element
 
