@@ -1,4 +1,4 @@
-# exampleCourse
+# Example course
 
 This directory contains a comprehensive example course that demonstrates many of the features of PrairieLearn. It is intended to be used as a reference for instructors and course developers.
 
