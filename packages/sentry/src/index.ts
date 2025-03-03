@@ -1,5 +1,5 @@
-import * as Sentry from '@sentry/node';
 import { httpRequestToRequestData, stripUrlQueryAndFragment } from '@sentry/core';
+import * as Sentry from '@sentry/node';
 import { execa } from 'execa';
 
 /**
