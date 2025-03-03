@@ -1,4 +1,4 @@
-# apps/prairielearn
+# PrairieLearn frontend and backend
 
 More information about developing and contributing to PrairieLearn can be found on the docs in the [developer guide](https://prairielearn.readthedocs.io/en/latest/dev-guide/).
 

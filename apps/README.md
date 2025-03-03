@@ -1,5 +1,7 @@
-# apps
+# Apps
 
-The main source code for the PrairieLearn project can be found in the [`prairielearn`](prairielearn/) directory.
+This directory contains the various applications that make up the PrairieLearn platform.
 
-The [`grader-host`](./grader-host/) is the production version of the grading process, with the development version running directly inside of PrairieLearn by default. The [`workspace-host`](./workspace-host/) runs in both production and development.
+- [`prairielearn`](./prairielearn): The PrairieLearn application (frontend & backend).
+- [`grader-host`](./grader-host): The production runner for external grading jobs. `prairielearn` contains a separate implementation that's used during local development.
+- [`workspace-host`](./workspace-host): The runner for workspace containers.
