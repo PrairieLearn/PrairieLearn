@@ -73,8 +73,9 @@ lint-js:
 lint-python:
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
+# Lint HTML files, and the build output of the docs
 lint-html:
-	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
 lint-markdown:
 	@yarn markdownlint "docs/**/*.md"
 lint-links:

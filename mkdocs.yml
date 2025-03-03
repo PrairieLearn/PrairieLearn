@@ -60,6 +60,12 @@ theme:
     # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/#adding-annotations
     - content.code.annotate
 plugins:
+  - exclude:
+      glob:
+        - scripts/**
+        - overrides/**
+        - mkdocstrings/**
+        - requirements.txt
   - gen-files:
       scripts:
         - docs/scripts/gen_python_nav.py
@@ -107,7 +113,7 @@ plugins:
             group_by_category: false # e.g. 'classes', 'functions'
             members_order: source # source, alphabetical
 
-          import:
+          inventories:
             - url: https://numpy.org/doc/stable/objects.inv
             - url: https://pandas.pydata.org/pandas-docs/stable/objects.inv
             - url: https://matplotlib.org/objects.inv
@@ -160,6 +166,12 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
   - md_in_html
+  # https://facelessuser.github.io/pymdown-extensions/extensions/betterem/
+  - pymdownx.betterem
+  # https://facelessuser.github.io/pymdown-extensions/extensions/caret/
+  - pymdownx.caret # h^2^o
+  # https://facelessuser.github.io/pymdown-extensions/extensions/tilde/
+  - pymdownx.tilde # ~~deleted~~
 
 extra_javascript:
   - assets/mathjax-config.js
@@ -249,4 +261,4 @@ validation:
   unrecognized_links: warn
   anchors: warn
 hooks:
-  - docs/hooks/d2-svg-file.py
+  - docs/scripts/d2-svg-file.py
