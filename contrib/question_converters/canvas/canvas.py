@@ -214,7 +214,7 @@ class Course(Canvas):
         return students
 
 
-class CourseSubObject(Course):
+class CourseSubObject(Canvas):
     # If not provided, the request_param_name defaults to the lower-cased class name.
     def __init__(
         self, parent, route_name, data, id_field="id", request_param_name=None
@@ -425,7 +425,7 @@ class QuizQuestion(CourseSubObject):
                 raise RuntimeError(
                     f"No quiz provided and cannot find quiz id for: {quiz_question_data}"
                 )
-            quiz = self.quiz(quiz_question_data)
+            quiz = self.get_course().quiz(quiz_question_data)
         super().__init__(
             quiz, "questions", quiz_question_data, request_param_name="question"
         )
