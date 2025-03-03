@@ -13,7 +13,7 @@ CONTAINER_NAME=$1
 # Construct a list of all coverage reports in the container.
 docker container exec $CONTAINER_NAME bash -c "find /PrairieLearn/apps -name cobertura-coverage.xml" >> /tmp/coverage_reports.txt
 docker container exec $CONTAINER_NAME bash -c "find /PrairieLearn/packages -name cobertura-coverage.xml" >> /tmp/coverage_reports.txt
-docker container exec $CONTAINER_NAME bash -c "find /PrairieLearn -maxdepth 1 -name coverage.xml" >> /tmp/coverage_reports.txt
+docker container exec $CONTAINER_NAME bash -c "find /PrairieLearn/apps/prairielearn/python -name coverage.xml" >> /tmp/coverage_reports.txt
 
 # Print the list for debugging.
 echo "Coverage reports in container:"
