@@ -1,5 +1,5 @@
 <script>
-  $(function() {
+  $(async function() {
     const element = $('#xss-{{uuid}}');
     const language = element.attr("data-language");
     let code = element.attr("data-code");
@@ -7,11 +7,8 @@
     // conversion and xss filter for compatibility and to avoid
     // confusion
     if (language == "markdown") {
-      let renderer = new showdown.Converter({
-        'literalMidWordUnderscores':true,
-        'literalMidWordAsterisks':true,
-      });
-      code = renderer.makeHtml(code);
+      const marked = (await import('marked')).marked;
+      code = await marked.parse(code);
     }
     code = DOMPurify.sanitize(code, {SANITIZE_NAMED_PROPS: true});
     element.html(code);
