@@ -100,7 +100,7 @@ class Canvas:
         """docstring"""
         if course_id:
             for course in self.request(f"/courses/{course_id}?include[]=term"):
-                return Course(self, course)
+                return Course(course)
         if prompt_if_needed:
             courses = self.courses()
             for index, course in enumerate(courses):
@@ -108,7 +108,7 @@ class Canvas:
                 course_code = course.get("course_code", "UNKNOWN COURSE")
                 print(f"{index:2}: {course['id']:7} - {term:10} / {course_code}")
             course_index = int(input("Which course? "))
-            return Course(self, courses[course_index])
+            return Course(courses[course_index])
         return None
 
     def file(self, file_id):
@@ -120,7 +120,7 @@ class Canvas:
 class Course(Canvas):
     """Course"""
 
-    def __init__(self, _canvas, course_data):
+    def __init__(self, course_data):
         super().__init__()
         self.data = course_data
         self.id = course_data["id"]
