@@ -7,6 +7,7 @@ mkdocstrings==0.28.2
 mkdocstrings-python==1.16.2
 mkdocs-gen-files==0.5.0
 mkdocs-literate-nav==0.6.1
+mkdocs-exclude==1.0.2
 # mkdocstrings-python will format the docstrings using ruff
 # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
 ruff==0.9.6

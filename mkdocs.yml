@@ -60,6 +60,12 @@ theme:
     # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/#adding-annotations
     - content.code.annotate
 plugins:
+  - exclude:
+      glob:
+        - scripts/**
+        - overrides/**
+        - mkdocstrings/**
+        - requirements.txt
   - gen-files:
       scripts:
         - docs/scripts/gen_python_nav.py
@@ -255,4 +261,4 @@ validation:
   unrecognized_links: warn
   anchors: warn
 hooks:
-  - docs/hooks/d2-svg-file.py
+  - docs/scripts/d2-svg-file.py
