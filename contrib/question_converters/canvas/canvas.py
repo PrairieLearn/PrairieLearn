@@ -100,7 +100,7 @@ class Canvas:
         """docstring"""
         if course_id:
             for course in self.request(f"/courses/{course_id}?include[]=term"):
-                return Course(self, course)
+                return Course(course)
         if prompt_if_needed:
             courses = self.courses()
             for index, course in enumerate(courses):
@@ -108,7 +108,7 @@ class Canvas:
                 course_code = course.get("course_code", "UNKNOWN COURSE")
                 print(f"{index:2}: {course['id']:7} - {term:10} / {course_code}")
             course_index = int(input("Which course? "))
-            return Course(self, courses[course_index])
+            return Course(courses[course_index])
         return None
 
     def file(self, file_id):
@@ -120,8 +120,8 @@ class Canvas:
 class Course(Canvas):
     """Course"""
 
-    def __init__(self, canvas, course_data):
-        super().__init__(canvas.token)
+    def __init__(self, course_data):
+        super().__init__()
         self.data = course_data
         self.id = course_data["id"]
         self.url_prefix = f"/courses/{self.id}"
@@ -214,15 +214,14 @@ class Course(Canvas):
         return students
 
 
-class CourseSubObject(Course):
+class CourseSubObject(Canvas):
     # If not provided, the request_param_name defaults to the lower-cased class name.
     def __init__(
         self, parent, route_name, data, id_field="id", request_param_name=None
     ):
-        # MUST be available before calling self.get_course.
-        self.parent = parent
-        super().__init__(self.get_course().token)
+        super().__init__()
 
+        self.parent = parent
         self.data = data
         self.id_field = id_field
         self.id = self.compute_id()
@@ -425,7 +424,7 @@ class QuizQuestion(CourseSubObject):
                 raise RuntimeError(
                     f"No quiz provided and cannot find quiz id for: {quiz_question_data}"
                 )
-            quiz = self.quiz(quiz_question_data)
+            quiz = self.get_course().quiz(quiz_question_data)
         super().__init__(
             quiz, "questions", quiz_question_data, request_param_name="question"
         )
