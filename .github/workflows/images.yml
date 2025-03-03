@@ -184,7 +184,7 @@ jobs:
       ######################################################################################################
       # workspace-vscode-base
       - name: Check whether workspaces/vscode-base was modified
-        run: tools/check_path_modified.sh workspaces/vscode-base workspaces_vscode_base_modified
+        run: scripts/check_path_modified.sh workspaces/vscode-base workspaces_vscode_base_modified
       - name: Build and push prairielearn/vscode-base
         if: ${{ env.workspaces_vscode_base_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -212,7 +212,7 @@ jobs:
       ######################################################################################################
       # workspace-vscode-cpp
       - name: Check whether workspaces/vscode-cpp was modified
-        run: tools/check_path_modified.sh workspaces/vscode-cpp workspaces_vscode_cpp_modified
+        run: scripts/check_path_modified.sh workspaces/vscode-cpp workspaces_vscode_cpp_modified
       - name: Build and push prairielearn/vscode-cpp
         if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_cpp_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
