@@ -13,6 +13,13 @@ comment:
 ignore:
   - 'apps/prairielearn/python/test'
 
+flag_management:
+  default_rules:
+    carryforward: false
+  individual_flags:
+    - name: python
+    - name: javascript
+
 coverage:
   status:
     project:

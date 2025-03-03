@@ -329,6 +329,8 @@ The `focus` attribute defaults to `false`. Setting this to true will cause the f
 
 This element supports additional preview options through [element extensions](elementExtensions.md). To provide this functionality, the extension must assign, to `window.PLFileEditor.prototype.preview.PREVIEW_TYPE` (where `PREVIEW_TYPE` is the value of the `preview` attribute), a function that converts a string representing the editor's content into suitable HTML content.
 
+The contents of the file editor are only displayed by default in the question panel. If the contents are expected to be listed in the submission panel, they should be explicitly added using other elements such as [`pl-file-preview`](#pl-file-preview-element) or [`pl-xss-safe`](#pl-xss-safe-element).
+
 #### Example implementations
 
 - [element/fileEditor]
@@ -362,6 +364,10 @@ in the format expected by externally graded questions.
 | Attribute    | Type     | Default | description                                                                                                                                    |
 | ------------ | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `file-names` | CSV list | —       | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes. |
+
+#### Details
+
+The `pl-file-upload` element and the contents of the uploaded file(s) are only displayed by default in the question panel. If the contents are expected to be listed in the submission panel, they should be explicitly added using other elements such as [`pl-file-preview`](#pl-file-preview-element) or [`pl-xss-safe`](#pl-xss-safe-element).
 
 #### Example implementations
 
@@ -1783,8 +1789,8 @@ Along with the sample usage of the element, we include a sample template file. T
   <div class="card-header" style="cursor: pointer">
     <div
       class="card-title d-flex justify-content-between"
-      data-toggle="collapse"
-      data-target="#collapse-{{uuid}}"
+      data-bs-toggle="collapse"
+      data-bs-target="#collapse-{{uuid}}"
     >
       <div>{{section_header}}</div>
       <div class="fa fa-angle-down"></div>

@@ -83,7 +83,7 @@ export function QuestionsTable({
               aria-label="Questions"
               data-data="${JSON.stringify(questions)}"
               data-classes="table table-sm table-hover table-bordered"
-              data-thead-classes="thead-light"
+              data-thead-classes="table-light"
               data-filter-control="true"
               data-show-columns="true"
               data-show-columns-toggle-all="true"
@@ -223,7 +223,7 @@ export function QuestionsTable({
           `
         : html`
             <div class="my-4 card-body text-center" style="text-wrap: balance;">
-              <p class="font-weight-bold">No questions found.</p>
+              <p class="fw-bold">No questions found.</p>
               <p class="mb-0">
                 A question is a problem or task that tests a student's understanding of a specific
                 concept.
@@ -240,8 +240,8 @@ export function QuestionsTable({
                       <button
                         type="button"
                         class="btn btn-sm btn-primary"
-                        data-toggle="modal"
-                        data-target="#createQuestionModal"
+                        data-bs-toggle="modal"
+                        data-bs-target="#createQuestionModal"
                       >
                         <i class="fa fa-plus" aria-hidden="true"></i>
                         Add question
@@ -278,8 +278,8 @@ function CreateQuestionModal({
     title: 'Create question',
     formMethod: 'POST',
     body: html`
-      <div class="form-group">
-        <label for="title">Title</label>
+      <div class="mb-3">
+        <label class="form-label" for="title">Title</label>
         <input
           type="text"
           class="form-control"
@@ -292,8 +292,8 @@ function CreateQuestionModal({
           The full name of the question, visible to users.
         </small>
       </div>
-      <div class="form-group">
-        <label for="qid">Question identifier (QID)</label>
+      <div class="mb-3">
+        <label class="form-label" for="qid">Question identifier (QID)</label>
         <input
           type="text"
           class="form-control"
@@ -308,8 +308,8 @@ function CreateQuestionModal({
           Use only letters, numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
-      <div class="form-group">
-        <label for="start_from">Start from</label>
+      <div class="mb-3">
+        <label class="form-label" for="start_from">Start from</label>
         <select
           class="form-select"
           id="start_from"
@@ -325,8 +325,8 @@ function CreateQuestionModal({
         </small>
       </div>
 
-      <div id="templateContainer" class="form-group" hidden>
-        <label for="template_qid">Template</label>
+      <div id="templateContainer" class="mb-3" hidden>
+        <label class="form-label" for="template_qid">Template</label>
         <select
           class="form-select"
           id="template_qid"
@@ -347,7 +347,7 @@ function CreateQuestionModal({
     footer: html`
       <input type="hidden" name="__action" value="add_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Create</button>
     `,
   });

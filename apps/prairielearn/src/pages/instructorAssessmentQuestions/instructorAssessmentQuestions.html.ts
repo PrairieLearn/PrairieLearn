@@ -110,7 +110,7 @@ export function InstructorAssessmentQuestions({
             class="js-assessment-question-id"
             value=""
           />
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-danger">Reset question variants</button>
         `,
       })}
@@ -155,7 +155,7 @@ function AssessmentQuestionsTable({
       <table class="table table-sm table-hover" aria-label="Assessment questions">
         <thead>
           <tr>
-            <th><span class="sr-only">Name</span></th>
+            <th><span class="visually-hidden">Name</span></th>
             <th>QID</th>
             <th>Topic</th>
             <th>Tags</th>
@@ -212,7 +212,7 @@ function AssessmentQuestionsTable({
                       question.alternative_group_size === 1
                         ? `${question.alternative_group_number}.`
                         : html`
-                            <span class="ml-3">
+                            <span class="ms-3">
                               ${question.alternative_group_number}.${question.number_in_alternative_group}.
                             </span>
                           `;
@@ -295,7 +295,7 @@ function AssessmentQuestionsTable({
                     <button
                       type="button"
                       class="btn btn-secondary btn-xs dropdown-toggle"
-                      data-toggle="dropdown"
+                      data-bs-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
@@ -307,8 +307,8 @@ function AssessmentQuestionsTable({
                         ? html`
                             <button
                               class="dropdown-item"
-                              data-toggle="modal"
-                              data-target="#resetQuestionVariantsModal"
+                              data-bs-toggle="modal"
+                              data-bs-target="#resetQuestionVariantsModal"
                               data-assessment-question-id="${question.id}"
                             >
                               Reset question variants

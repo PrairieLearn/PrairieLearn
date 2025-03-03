@@ -3,7 +3,7 @@ import { observe } from 'selector-observer';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {
-  observe('[data-toggle="tooltip"]', {
+  observe('[data-bs-toggle="tooltip"]', {
     add(el) {
       new window.bootstrap.Tooltip(el);
     },
