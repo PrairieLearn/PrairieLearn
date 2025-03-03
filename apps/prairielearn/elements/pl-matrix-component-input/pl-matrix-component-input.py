@@ -584,15 +584,15 @@ def create_table_for_html_display(
         if score is not None:
             score = float(score)
             if score >= 1:
-                score_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+                score_message = '&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
             elif score > 0:
                 score_message = (
-                    '&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i>'
+                    '&nbsp;<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i>'
                     + str(math.floor(score * 100))
                     + "%</span>"
                 )
             else:
-                score_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+                score_message = '&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
         else:
             score_message = ""
 
@@ -619,9 +619,9 @@ def create_table_for_html_display(
                 feedback_each_entry, dict
             ):
                 if feedback_each_entry[each_entry_name] == "correct":
-                    feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
+                    feedback_message = '&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                 elif feedback_each_entry[each_entry_name] == "incorrect":
-                    feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                    feedback_message = '&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
                 else:
                     raise ValueError(
                         f"invalid feedback type: {feedback_each_entry[each_entry_name]}"
@@ -652,9 +652,9 @@ def create_table_for_html_display(
                     feedback_each_entry, dict
                 ):
                     if feedback_each_entry[each_entry_name] == "correct":
-                        feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
+                        feedback_message = '&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                     elif feedback_each_entry[each_entry_name] == "incorrect":
-                        feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                        feedback_message = '&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
                     else:
                         raise ValueError(
                             "invalid feedback type: this should not happen"

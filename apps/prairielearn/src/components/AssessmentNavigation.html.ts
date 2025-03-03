@@ -23,6 +23,7 @@ export function AssessmentNavigation({
         class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center"
         style="max-width: 100%;"
         data-toggle="dropdown"
+        aria-label="Change assessment"
         aria-haspopup="true"
         aria-expanded="false"
         data-boundary="window"

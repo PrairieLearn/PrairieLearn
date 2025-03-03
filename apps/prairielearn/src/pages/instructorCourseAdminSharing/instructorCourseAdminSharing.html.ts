@@ -25,7 +25,7 @@ function AddCourseToSharingSetPopover({
       <input type="hidden" name="__action" value="course_sharing_set_add" />
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       <input type="hidden" name="unsafe_sharing_set_id" value="${sharing_set.id}" />
-      <div class="form-group mb-4">
+      <div class="mb-3">
         <div class="form-text text-wrap">
           <p>
             To allow another course to access questions in the sharing set "${sharing_set.name}",
@@ -33,8 +33,8 @@ function AddCourseToSharingSetPopover({
           </p>
         </div>
       </div>
-      <div class="form-group">
-        <label for="course_sharing_token">Course sharing token</label>
+      <div class="mb-3">
+        <label class="form-label" for="course_sharing_token">Course sharing token</label>
         <input
           class="form-control form-control-sm"
           type="text"
@@ -44,7 +44,7 @@ function AddCourseToSharingSetPopover({
         />
       </div>
       <div>
-        <button type="button" class="btn btn-sm btn-secondary" data-dismiss="popover">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="popover">
           Cancel
         </button>
         <button class="btn btn-sm btn-primary" type="Submit">Add Course</button>
@@ -65,8 +65,8 @@ function ChooseSharingNameModal({
   if (canChooseSharingName) {
     body = html`
       <p class="form-text">Enter the sharing name you would like for your course.</p>
-      <div class="form-group">
-        <label for="course_sharing_name">Sharing name</label>
+      <div class="mb-3">
+        <label class="form-label" for="course_sharing_name">Sharing name</label>
         <input
           class="form-control"
           type="text"
@@ -102,7 +102,7 @@ function ChooseSharingNameModal({
       imported your questions.
     </p>`;
     footer = html`
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
     `;
   }
   return Modal({
@@ -167,8 +167,8 @@ export function InstructorCourseAdminSharing({
                         class="btn btn-xs btn-secondary mx-2"
                         id="chooseSharingName"
                         title="Choose Sharing Name"
-                        data-toggle="modal"
-                        data-target="#chooseSharingNameModal"
+                        data-bs-toggle="modal"
+                        data-bs-target="#chooseSharingNameModal"
                       >
                         <i class="fas fa-share-nodes" aria-hidden="true"></i>
                         <span class="d-none d-sm-inline">Choose Sharing Name</span>
@@ -251,12 +251,12 @@ export function InstructorCourseAdminSharing({
                           <button
                             type="button"
                             class="btn btn-sm btn-outline-dark"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
+                            data-bs-toggle="popover"
+                            data-bs-container="body"
+                            data-bs-html="true"
+                            data-bs-placement="auto"
                             title="Add Course to Sharing Set"
-                            data-content="${escapeHtml(
+                            data-bs-content="${escapeHtml(
                               AddCourseToSharingSetPopover({
                                 resLocals,
                                 sharing_set,

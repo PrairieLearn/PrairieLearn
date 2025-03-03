@@ -63,8 +63,8 @@ export function InstructorAssessmentRegrading({
                   <button
                     type="button"
                     class="btn btn-primary"
-                    data-toggle="modal"
-                    data-target="#regrade-all-form"
+                    data-bs-toggle="modal"
+                    data-bs-target="#regrade-all-form"
                   >
                     <i class="fa fa-sync" aria-hidden="true"></i>
                     Regrade all assessment instances
@@ -146,7 +146,7 @@ function regradeAllAssessmentInstancesModal({
     footer: html`
       <input type="hidden" name="__action" value="regrade_all" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Regrade all</button>
     `,
   });

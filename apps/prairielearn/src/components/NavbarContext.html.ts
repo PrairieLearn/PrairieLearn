@@ -17,9 +17,7 @@ export function ContextNavigation({
 
   const showSideNav = resLocals.has_enhanced_navigation && resLocals.course !== undefined;
   const navPagesTabs = getNavPageTabs(resLocals.has_enhanced_navigation);
-  const navPageTabs = navPagesTabs[navPage];
-
-  if (!navPageTabs) return '';
+  const navPageTabs = navPagesTabs[navPage] ?? []; // Some navPages do not have tabs
 
   return html`
     <nav>
@@ -68,7 +66,7 @@ function NavbarTab({
         class="nav-link d-flex align-items-center ${activeClasses}"
         href="${urlPrefix}${urlSuffix}"
       >
-        <i class="mr-1 ${iconClasses}"></i>${tabLabel}${htmlSuffix?.(resLocals) || ''}
+        <i class="me-1 ${iconClasses}"></i>${tabLabel}${htmlSuffix?.(resLocals) || ''}
       </a>
     </li>
   `;

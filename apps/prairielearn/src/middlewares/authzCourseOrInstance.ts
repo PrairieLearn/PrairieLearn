@@ -1,4 +1,4 @@
-import { isValid, parseISO } from 'date-fns';
+import { parseISO, isValid } from 'date-fns';
 import debugfn from 'debug';
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -10,10 +10,8 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
-import { selectInstructorCourses } from '../lib/course.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
-import { selectCourseInstancesWithStaffAccess } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:authzCourseOrInstance');
@@ -67,16 +65,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     throw new HttpStatusError(403, 'Access denied');
   }
 
-  // Retrieve the courses the user has access to
-  const courses = await selectInstructorCourses({
-    userId: res.locals.authn_user.user_id,
-    isAdministrator: res.locals.is_administrator,
-    includeExampleCourse: res.locals.is_administrator || config.devMode,
-  });
-
   // Now that we know the user has access, parse the authz data
   res.locals.course = result.rows[0].course;
-  res.locals.courses = courses;
 
   const institution = result.rows[0].institution;
   res.locals.institution = institution;
@@ -109,16 +99,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   };
   res.locals.user = res.locals.authz_data.user;
   if (isCourseInstance) {
-    // Retrieve the course instances the user has access to in the course
-    const courseInstances = await selectCourseInstancesWithStaffAccess({
-      course_id: res.locals.course.id,
-      user_id: res.locals.authn_user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authz_data.authn_is_administrator,
-    });
-
-    res.locals.course_instances = courseInstances;
     res.locals.course_instance = result.rows[0].course_instance;
     const permissions_course_instance = result.rows[0].permissions_course_instance;
     res.locals.authz_data.authn_course_instance_role =

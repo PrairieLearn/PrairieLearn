@@ -89,7 +89,7 @@ export function InstructorGradebook({
               <table id="gradebook-table" aria-label="Gradebook"></table>
 
               <div class="spinning-wheel card-body spinner-border">
-                <span class="sr-only">Loading...</span>
+                <span class="visually-hidden">Loading...</span>
               </div>
             </div>
             ${RoleDescriptionModal()}
@@ -160,7 +160,7 @@ function RoleDescriptionModal() {
       </ul>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }

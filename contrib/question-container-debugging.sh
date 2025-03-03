@@ -4,7 +4,7 @@
 # i.e.
 #   $ ls
 #   courseInstances/ infoCourse.json questions/ serverFilesCourse/
-#   $ ~/git/PrairieLearn/tools/question-container-debugging.sh <QID> [<command to run in container>]
+#   $ ~/git/PrairieLearn/contrib/question-container-debugging.sh <QID> [<command to run in container>]
 #
 #   where <QID> is the folder name of the question you want to test
 #   and the last argument is left out to auto-run it, or /bin/bash to explore
@@ -48,7 +48,7 @@ else
     STUDENTMOUNT="-v $STUDENTPATH:/grade/student"
 fi
 
-RUN="/PrairieLearn/tools/run-question-in-container.sh"
+RUN="/PrairieLearn/contrib/run-question-in-container.sh"
 if [ -z "$2" ]; then
     DOCKERENV="-e QID=$QID -e RUNENTRY=1"
     IT=""
