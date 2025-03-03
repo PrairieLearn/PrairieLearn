@@ -8,7 +8,7 @@
             name="{{name}}"
             type="text"
             inputmode="text"
-            class="form-control pl-string-input-input"
+            class="form-control pl-string-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
             size="{{size}}"
             autocomplete="off"
             autocorrect="off"
@@ -42,17 +42,26 @@
             </span>
         {{/incorrect}}
         {{#parse_error}}
-            <button
-                type="button"
-                class="btn btn-light border d-flex align-items-center text-danger"
-                data-bs-toggle="popover"
-                data-bs-html="true"
-                title="Format Error"
-                data-bs-placement="auto"
-                data-bs-content="{{parse_error}}"
-            >
-                <span class="me-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-            </button>
+            <span class="input-group-text text-danger">
+                <span class="me-1">Invalid</span> 
+                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            </span>
+            <div class="ms-2 invalid-feedback d-block is-invalid">
+                You must enter a valid string.
+                <a 
+                    class="link-opacity-100"
+                    tabindex="0"
+                    role="button"
+                    data-bs-containter="body"
+                    data-bs-placement="auto" 
+                    data-bs-toggle="popover"
+                    data-bs-html="true"
+                    title="Format Error"
+                    data-bs-content="{{parse_error}}"
+                >
+                    More info
+                </a>
+            </div>
         {{/parse_error}}
     </span>
 {{#inline}}</span>{{/inline}}
@@ -66,16 +75,21 @@
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
-    <button
-        class="badge text-danger badge-invalid btn btn-sm btn-secondary small border"
-        data-bs-placement="auto"
-        data-bs-toggle="popover"
-        data-bs-html="true"
-        title="Format Error"
-        data-bs-content="{{parse_error}}"
-    >
-        Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-    </button>
+        <span class="badge text-danger badge-invalid btn btn-sm btn-secondary small border">
+            Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+        </span>
+        <a
+            class="link-opacity-100"
+            tabindex="0"
+            role="button"
+            data-bs-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            title="Format Error"
+            data-bs-content="{{parse_error}}"
+            >
+           More Info
+        </a>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/parse_error}}
 {{#missing_input}}
