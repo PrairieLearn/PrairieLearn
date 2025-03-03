@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node';
-import { stripUrlQueryAndFragment } from '@sentry/utils';
+import { httpRequestToRequestData, stripUrlQueryAndFragment } from '@sentry/core';
 import { execa } from 'execa';
 
 /**
@@ -69,7 +69,8 @@ export function requestHandler() {
         // swallow any errors.
         try {
           event.transaction = extractTransaction(req);
-          return Sentry.addRequestDataToEvent(event, req);
+          event.request = httpRequestToRequestData(req);
+          return event;
         } catch {
           return event;
         }
@@ -91,7 +92,6 @@ export type {
   Exception,
   NodeOptions,
   PolymorphicRequest,
-  Request,
   SdkInfo,
   Session,
   SeverityLevel,
@@ -105,7 +105,6 @@ export type {
 export {
   addBreadcrumb,
   addEventProcessor,
-  addRequestDataToEvent,
   captureEvent,
   captureException,
   captureMessage,
@@ -114,9 +113,7 @@ export {
   defaultStackParser,
   expressErrorHandler,
   expressIntegration,
-  extractRequestData,
   flush,
-  getCurrentHub,
   getCurrentScope,
   getSentryRelease,
   makeNodeTransport,
