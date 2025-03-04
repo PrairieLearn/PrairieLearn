@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 from collections import OrderedDict
+from typing import Any
 
 import requests
 
@@ -27,7 +28,13 @@ class Canvas:
         self.token_header = {"Authorization": f"Bearer {self.token}"}
 
     @staticmethod
-    def add_arguments(parser, *, course=True, quiz=False, assignment=False):
+    def add_arguments(
+        parser: argparse.ArgumentParser,
+        *,
+        course: bool = True,
+        quiz: bool = False,
+        assignment: bool = False,
+    ):
         """docstring"""
 
         parser.add_argument(
@@ -40,7 +47,7 @@ class Canvas:
         if assignment:
             parser.add_argument("-a", "--assignment", type=int, help="Assignment ID")
 
-    def request(self, request, *, stop_at_first=False):
+    def request(self, request: str, *, stop_at_first: bool = False):
         """docstring"""
         retval = []
         response = requests.get(self.api_url + request, headers=self.token_header)
@@ -61,7 +68,7 @@ class Canvas:
             )
         return retval
 
-    def put(self, url, data):
+    def put(self, url: str, data: Any):
         """docstring"""
         response = requests.put(
             self.api_url + url, json=data, headers=self.token_header
@@ -71,7 +78,7 @@ class Canvas:
             return None
         return response.json()
 
-    def post(self, url, data):
+    def post(self, url: str, data: Any):
         """docstring"""
         response = requests.post(
             self.api_url + url, json=data, headers=self.token_header
@@ -81,7 +88,7 @@ class Canvas:
             return None
         return response.json()
 
-    def delete(self, url):
+    def delete(self, url: str):
         """docstring"""
         response = requests.delete(self.api_url + url, headers=self.token_header)
         response.raise_for_status()
@@ -119,13 +126,13 @@ class Canvas:
 class Course(Canvas):
     """Course"""
 
-    def __init__(self, course_data):
+    def __init__(self, course_data: Any):
         super().__init__()
         self.data = course_data
         self.id = course_data["id"]
         self.url_prefix = f"/courses/{self.id}"
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         return self.data[index]
 
     def pages(self):

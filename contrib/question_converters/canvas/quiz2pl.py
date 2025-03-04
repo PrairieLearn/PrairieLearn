@@ -10,7 +10,7 @@ import canvas
 import requests
 
 
-def file_name_only(name):
+def file_name_only(name: str):
     return re.sub(r"[\W_]+", "", name)
 
 
@@ -113,13 +113,25 @@ def clean_question_text(text: str) -> str:
     return text
 
 
+def image_file_extension(content_type: str) -> str:
+    match content_type:
+        case "image/x-icon":
+            return "ico"
+        case "image/svg+xml":
+            return "svg"
+        case _:
+            return content_type.split("/")[1]
+
+
 def handle_images(question_dir: str, text: str) -> str:
     # Links to images will still point to Canvas. We need to download them and
     # replace them with `pl-figure` elements.
+    #
     # We use regex instead of a proper HTML parser because we want to limit this
     # script to only using the Python standard library.
-    for match in re.finditer(r'<img[^>]*src="([^"]+)"[^>]*>', text):
-        url = match.group(1)
+    image_idx = 1
+    for match in re.finditer(r'(<p>)(<img[^>]*src="([^"]+)"[^>]*>)(</p>)', text):
+        url = match.group(3)
         if not url.startswith("http"):
             continue
 
@@ -127,18 +139,36 @@ def handle_images(question_dir: str, text: str) -> str:
         client_files_question_dir = os.path.join(question_dir, "clientFilesQuestion")
         os.makedirs(client_files_question_dir, exist_ok=True)
 
-        # Download the image if it doesn't exist.
-        filename = os.path.join(client_files_question_dir, os.path.basename(url))
-        if not os.path.exists(filename):
-            os.makedirs(os.path.dirname(filename), exist_ok=True)
-            # Download the image and save it with the `requests` library.
-            with open(filename, "wb") as f:
-                f.write(requests.get(url).content)
+        # Canvas image URLs don't include the file extension, so we need to
+        # extract it from the `Content-Type` header.
+        res = requests.get(url)
+        extension = image_file_extension(res.headers["Content-Type"])
+
+        file_name = f"image_{image_idx}.{extension}"
+        file_path = os.path.join(client_files_question_dir, file_name)
+        with open(file_path, "wb") as f:
+            f.write(requests.get(url).content)
+
+        # Extract the alt text, if any.
+        alt_match = re.search(r'alt="([^"]*)"', match.group(0))
+        alt_text = alt_match.group(1) if alt_match else ""
+        alt_attribute = f' alt="{alt_text}"' if alt_text else ""
+
+        # Canvas will sometimes wrap images in `<p>` tags, which we don't want.
+        # We'll handle those by checking if an image is preceded by an opening
+        # `<p>` tag and followed by a closing `</p>` tag. If so, we'll remove
+        # those tags.
+        replace_str = match.group(2)
+        if match.group(1) == "<p>" and match.group(4) == "</p>":
+            replace_str = match.group(0)
 
         # Replace the image with a `pl-figure` element.
         text = text.replace(
-            match.group(0), f'<pl-figure file-name="{filename}"></pl-figure>'
+            replace_str,
+            f'<pl-figure file-name="{file_name}"{alt_attribute}></pl-figure>',
         )
+
+        image_idx += 1
 
     return text
 
@@ -215,9 +245,14 @@ for question in questions.values():
             question["question_type"] != "fill_in_multiple_blanks_question"
             and question["question_type"] != "multiple_dropdowns_question"
         ):
-            template.write("<pl-question-panel>\n<p>\n")
+            include_paragraph = not question_text.strip().startswith("<p>")
+            template.write("<pl-question-panel>\n")
+            if include_paragraph:
+                template.write("<p>\n")
             template.write(question_text + "\n")
-            template.write("</p>\n</pl-question-panel>\n")
+            if include_paragraph:
+                template.write("</p>\n")
+            template.write("</pl-question-panel>\n")
 
         if question["question_type"] == "text_only_question":
             pass
