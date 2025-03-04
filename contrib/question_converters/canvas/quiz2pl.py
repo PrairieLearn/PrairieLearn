@@ -41,13 +41,13 @@ parser.add_argument(
     "--topic", default="None", help="Assessment set to assign this assessment to"
 )
 args = parser.parse_args()
-canvas = canvas.Canvas()
+canvas_client = canvas.Canvas()
 
 if not os.path.exists(os.path.join(args.pl_repo, "infoCourse.json")):
     raise ValueError("Provided directory is not a PrairieLearn repository")
 
 print("Reading data from Canvas...")
-course = canvas.course(args.course)
+course = canvas_client.course(args.course)
 print("Using course: {} / {}".format(course["term"]["name"], course["course_code"]))
 
 quiz = course.quiz(args.quiz)
