@@ -201,7 +201,7 @@ export function InstructorAIGenerateDrafts({
 
               <button type="submit" class="btn btn-primary w-100">
                 <span
-                  class="spinner-grow spinner-grow-sm d-none"
+                  class="spinner-grow spinner-grow-sm d-none me-1"
                   role="status"
                   aria-hidden="true"
                   data-loading-class-remove="d-none"
