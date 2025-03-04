@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/opentelemetry",
-  "version": "2.1.9",
+  "version": "2.1.10",
   "type": "module",
   "main": "dist/index.js",
   "repository": {
