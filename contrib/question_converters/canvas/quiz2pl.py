@@ -219,7 +219,7 @@ for question in questions.values():
             or question["question_type"] == "essay_question"
         ):
             obj["gradingMethod"] = "Manual"
-        json.dump(obj, info, indent=4)
+        json.dump(obj, info, indent=2)
 
     # Handle images.
     question_text = handle_images(question_dir, question_text)
@@ -363,7 +363,7 @@ for question in questions.values():
 
         else:
             input("Unsupported question type: " + question["question_type"])
-            template.write(json.dumps(question, indent=4))
+            template.write(json.dumps(question, indent=2))
 
         if question["correct_comments"] or question["neutral_comments"]:
             template.write("<pl-answer-panel>\n<p>\n")
@@ -413,6 +413,6 @@ with open(os.path.join(quiz_name, "infoAssessment.json"), "w") as assessment:
         "zones": [{"questions": pl_quiz_questions}],
         "comment": f"Imported from Canvas, quiz {quiz['id']}",
     }
-    json.dump(pl_quiz, assessment, indent=4)
+    json.dump(pl_quiz, assessment, indent=2)
 
 print(f"\nDONE. The assessment was created in: {quiz_name}")
