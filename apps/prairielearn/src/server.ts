@@ -48,12 +48,14 @@ import {
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
+import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
 import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
+import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
@@ -67,7 +69,6 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { LocalCache } from './lib/local-cache.js';
-import * as nodeMetrics from './lib/node-metrics.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -2475,7 +2476,21 @@ if (esMain(import.meta) && config.startServer) {
 
     await workspace.init();
     serverJobs.init();
-    nodeMetrics.init();
+
+    if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
+      nodeMetrics.start({
+        awsConfig: makeAwsClientConfig(),
+        intervalSeconds: config.nodeMetricsIntervalSec,
+        dimensions: [
+          { Name: 'Server Group', Value: config.groupName },
+          { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },
+        ],
+        onError(err) {
+          logger.error('Error reporting Node metrics', err);
+          Sentry.captureException(err);
+        },
+      });
+    }
 
     // These should be the last things to start before we actually start taking
     // requests, as they may actually end up executing course code.

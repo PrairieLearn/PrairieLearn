@@ -93,6 +93,21 @@ if quiz["lock_at"]:
 if quiz["time_limit"]:
     pl_quiz["allowAccess"][0]["timeLimitMin"] = quiz["time_limit"]
 
+
+def clean_question_text(text: str) -> str:
+    # Some Canvas plugins like DesignPlus inject custom CSS and JavaScript into
+    # all questions. This code is not needed in PrairieLearn, and in fact can
+    # cause problems in CBTF environments since they'll be forbidden from loading
+    # by most firewalls/proxies. We just remove them.
+    #
+    # We use regex instead of a proper HTML parser because we want to limit this
+    # script to only using the Python standard library.
+    text = re.sub(r"<link[^>]*>", "", text)
+    text = re.sub(r"<script[^>]*>.*?</script>", "", text)
+
+    return text
+
+
 for question in questions.values():
     # Clear the screen
     if os.name == "nt":
@@ -100,8 +115,10 @@ for question in questions.values():
     else:
         print("\033c", end="")
 
+    question_text = clean_question_text(question["question_text"])
+
     print(f"Handling question {question['id']}...")
-    print(question["question_text"])
+    print(question_text)
     print()
     for answer in question.get("answers", []):
         print(f" - {answer['text']}")
@@ -152,7 +169,7 @@ for question in questions.values():
     with open(os.path.join(question_dir, "question.html"), "w") as template:
         if question["question_type"] == "calculated_question":
             for variable in question["variables"]:
-                question["question_text"] = question["question_text"].replace(
+                question_text = question_text.replace(
                     f"[{variable['name']}]", "{{params." + variable["name"] + "}}"
                 )
 
@@ -161,7 +178,7 @@ for question in questions.values():
             and question["question_type"] != "multiple_dropdowns_question"
         ):
             template.write("<pl-question-panel>\n<p>\n")
-            template.write(question["question_text"] + "\n")
+            template.write(question_text + "\n")
             template.write("</p>\n</pl-question-panel>\n")
 
         if question["question_type"] == "text_only_question":
@@ -240,7 +257,6 @@ for question in questions.values():
             )
 
         elif question["question_type"] == "fill_in_multiple_blanks_question":
-            question_text = question["question_text"]
             options = {}
             for answer in question["answers"]:
                 if answer["blank_id"] not in options:
@@ -271,7 +287,6 @@ for question in questions.values():
                 if answer["blank_id"] not in blanks:
                     blanks[answer["blank_id"]] = []
                 blanks[answer["blank_id"]].append(answer)
-            question_text = question["question_text"]
             for blank, answers in blanks.items():
                 dropdown = f'<pl-multiple-choice display="dropdown" hide-letter-keys="true" answers-name="{blank}">\n'
                 for answer in answers:

@@ -203,7 +203,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-cloudwatch@npm:^3.758.0":
+"@aws-sdk/client-cloudwatch@npm:^3.741.0, @aws-sdk/client-cloudwatch@npm:^3.758.0":
   version: 3.758.0
   resolution: "@aws-sdk/client-cloudwatch@npm:3.758.0"
   dependencies:
@@ -3575,6 +3575,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/node-metrics@workspace:^, @prairielearn/node-metrics@workspace:packages/node-metrics":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/node-metrics@workspace:packages/node-metrics"
+  dependencies:
+    "@aws-sdk/client-cloudwatch": "npm:^3.741.0"
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/loopbench": "npm:^1.2.4"
+    "@types/node": "npm:^20.17.16"
+    loopbench: "npm:^2.0.0"
+    typescript: "npm:^5.7.3"
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/opentelemetry@workspace:^, @prairielearn/opentelemetry@workspace:packages/opentelemetry":
   version: 0.0.0-use.local
   resolution: "@prairielearn/opentelemetry@workspace:packages/opentelemetry"
@@ -3717,6 +3730,7 @@ __metadata:
     "@prairielearn/markdown": "workspace:^"
     "@prairielearn/migrations": "workspace:^"
     "@prairielearn/named-locks": "workspace:^"
+    "@prairielearn/node-metrics": "workspace:^"
     "@prairielearn/opentelemetry": "workspace:^"
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
@@ -5783,7 +5797,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.17.23":
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.17.16, @types/node@npm:^20.17.23":
   version: 20.17.23
   resolution: "@types/node@npm:20.17.23"
   dependencies:
@@ -15853,7 +15867,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.8.2":
+"typescript@npm:^5.7.3, typescript@npm:^5.8.2":
   version: 5.8.2
   resolution: "typescript@npm:5.8.2"
   bin:
@@ -15863,7 +15877,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.8.2#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.7.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.8.2#optional!builtin<compat/typescript>":
   version: 5.8.2
   resolution: "typescript@patch:typescript@npm%3A5.8.2#optional!builtin<compat/typescript>::version=5.8.2&hash=b45daf"
   bin:

@@ -1,19 +1,26 @@
-import { CloudWatch, type Dimension } from '@aws-sdk/client-cloudwatch';
+import { setTimeout } from 'node:timers/promises';
+
+import {
+  CloudWatch,
+  type CloudWatchClientConfig,
+  type Dimension,
+} from '@aws-sdk/client-cloudwatch';
 import loopbench from 'loopbench';
-
-import { logger } from '@prairielearn/logger';
-import * as Sentry from '@prairielearn/sentry';
-
-import { makeAwsClientConfig } from './aws.js';
-import { config } from './config.js';
 
 const loopbenchInstance = loopbench();
 
-let intervalId: NodeJS.Timeout;
+let abortController: AbortController | null = null;
 let cpuUsage = process.cpuUsage();
 let time = process.hrtime.bigint();
 
-async function emit() {
+interface NodeMetricsOptions {
+  awsConfig: CloudWatchClientConfig;
+  intervalSeconds: number;
+  dimensions: Dimension[];
+  onError: (err: Error) => void;
+}
+
+async function emit(options: NodeMetricsOptions) {
   try {
     const memoryStats = process.memoryUsage();
 
@@ -74,37 +81,50 @@ async function emit() {
       },
     ] as const;
 
-    const cloudwatch = new CloudWatch(makeAwsClientConfig());
-    const dimensions: Dimension[] = [
-      { Name: 'Server Group', Value: config.groupName },
-      { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },
-    ];
+    // We must use a config passed in from outside this package.
+    // eslint-disable-next-line @prairielearn/aws-client-shared-config
+    const cloudwatch = new CloudWatch(options.awsConfig);
     await cloudwatch.putMetricData({
       Namespace: 'PrairieLearn',
       MetricData: metrics.map((m) => ({
         ...m,
         StorageResolution: 1,
         Timestamp: new Date(),
-        Dimensions: dimensions,
+        Dimensions: options.dimensions,
       })),
     });
-  } catch (err) {
-    logger.error('Error reporting Node metrics', err);
-    Sentry.captureException(err);
+  } catch (err: any) {
+    options.onError(err);
   }
 }
 
-export function init() {
-  if (!config.runningInEc2 || config.nodeMetricsIntervalSec === null) return;
+async function emitLoop({
+  signal,
+  ...options
+}: NodeMetricsOptions & {
+  signal: AbortSignal;
+}) {
+  try {
+    while (!signal.aborted) {
+      await setTimeout(options.intervalSeconds * 1000, null, { signal, ref: false });
+      await emit(options);
+    }
+  } catch (err: any) {
+    if (err.name === 'AbortError') return;
+    throw err;
+  }
+}
+
+export function start(options: NodeMetricsOptions) {
+  abortController = new AbortController();
 
   // Initialize these so that we can compute a valid delta on the first run of `emit()`.
   cpuUsage = process.cpuUsage();
   time = process.hrtime.bigint();
 
-  intervalId = setInterval(emit, config.nodeMetricsIntervalSec * 1000).unref();
-  process.nextTick(emit);
+  (() => emitLoop({ signal: abortController.signal, ...options }))();
 }
 
-export function close() {
-  clearInterval(intervalId);
+export function stop() {
+  abortController?.abort();
 }
