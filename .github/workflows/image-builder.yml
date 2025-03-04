@@ -41,7 +41,7 @@ jobs:
       - name: Check whether ${{ inputs.folder }}/${{ matrix.image }} was modified
         id: check-modified
         run: |
-          tools/check_path_modified.sh ${{ inputs.folder }}/${{ matrix.image }} ${{ inputs.folder }}_${{ matrix.image }}_modified
+          scripts/check_path_modified.sh ${{ inputs.folder }}/${{ matrix.image }} ${{ inputs.folder }}_${{ matrix.image }}_modified
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -118,7 +118,7 @@ jobs:
       - name: Check whether ${{ inputs.folder }}/${{ matrix.image }} was modified
         id: check-modified
         run: |
-          tools/check_path_modified.sh ${{ inputs.folder }}/${{ matrix.image }} ${{ inputs.folder }}_${{ matrix.image }}_modified
+          scripts/check_path_modified.sh ${{ inputs.folder }}/${{ matrix.image }} ${{ inputs.folder }}_${{ matrix.image }}_modified
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
