@@ -182,11 +182,25 @@ jobs:
           tags: prairielearn/workspace-xtermjs:latest,prairielearn/workspace-xtermjs:${{ github.sha }}
 
       ######################################################################################################
+      # workspace-vscode-base
+      - name: Check whether workspaces/vscode-base was modified
+        run: scripts/check_path_modified.sh workspaces/vscode-base workspaces_vscode_base_modified
+      - name: Build and push prairielearn/vscode-base
+        if: ${{ env.workspaces_vscode_base_modified }}
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-base
+          platforms: linux/amd64,linux/arm64
+          push: true
+          no-cache: true
+          tags: prairielearn/workspace-vscode-base:latest,prairielearn/workspace-vscode-base:${{ github.sha }}
+
+      ######################################################################################################
       # workspace-vscode-python
       - name: Check whether workspaces/vscode-python was modified
         run: scripts/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
       - name: Build and push prairielearn/vscode-python
-        if: ${{ env.workspaces_vscode_python_modified }}
+        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_python_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-python
@@ -194,3 +208,17 @@ jobs:
           push: true
           no-cache: true
           tags: prairielearn/workspace-vscode-python:latest,prairielearn/workspace-vscode-python:${{ github.sha }}
+
+      ######################################################################################################
+      # workspace-vscode-cpp
+      - name: Check whether workspaces/vscode-cpp was modified
+        run: scripts/check_path_modified.sh workspaces/vscode-cpp workspaces_vscode_cpp_modified
+      - name: Build and push prairielearn/vscode-cpp
+        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_cpp_modified }}
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-cpp
+          platforms: linux/amd64,linux/arm64
+          push: true
+          no-cache: true
+          tags: prairielearn/workspace-vscode-cpp:latest,prairielearn/workspace-vscode-cpp:${{ github.sha }}

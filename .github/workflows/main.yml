@@ -40,10 +40,35 @@ jobs:
           # what images need to be built.
           fetch-depth: 0
 
+      # This is needed to support exporting (loading) multiplatform images to Docker.
+      - name: Use the containerd image store
+        shell: bash
+        run: |
+          [ -f /etc/docker/daemon.json ] || echo "{}" | sudo tee /etc/docker/daemon.json
+          jq '. | .+{"features": {"containerd-snapshotter": true}}' /etc/docker/daemon.json > /tmp/docker-daemon-with-containerd.json
+          sudo mv /tmp/docker-daemon-with-containerd.json /etc/docker/daemon.json
+          cat /etc/docker/daemon.json
+          sudo systemctl restart docker
+          docker info -f '{{ .DriverStatus }}'
+
+      # Because we switch to use the containerd image store, we can't use
+      # Action's support for service containers:
+      # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
+      # After updating the configuration and restarting docker, the old
+      # image (and thus the container) is no longer available.
+      #
+      # Instead, we need to manually run the registry container ourselves.
+      - run: |
+          docker pull registry:2
+          docker run -d -p 5000:5000 --name registry --restart always registry:2
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
+        with:
+          # This is needed to allow pushing to the local registry running on port 5000.
+          driver-opts: network=host
       - name: Login to DockerHub
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
@@ -122,11 +147,35 @@ jobs:
           tags: prairielearn/workspace-xtermjs:${{ env.COMMIT_SHA }}
 
       ######################################################################################################
+      # prairielearn/workspace-vscode-base
+      - name: Check whether workspaces/vscode-base was modified
+        run: scripts/check_path_modified.sh workspaces/vscode-base workspaces_vscode_base_modified
+      - name: Build and push prairielearn/workspace-vscode-base
+        if: ${{ env.workspaces_vscode_base_modified }}
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-base
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          no-cache: true
+          load: true
+          tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+
+      # The container builder doesn't have access to Docker's image store, so
+      # we need to push it to a local registry to make it available to other
+      # containers that need it.
+      # https://github.com/docker/build-push-action/issues/1116
+      - name: Tag prairielearn/workspace-vscode-base for local registry
+        run: docker tag prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }} localhost:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+      - name: Push prairielearn/workspace-vscode-base to local registry
+        run: docker push localhost:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+
+      ######################################################################################################
       # prairielearn/workspace-vscode-python
       - name: Check whether workspaces/vscode-python was modified
         run: scripts/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
       - name: Build and push prairielearn/workspace-vscode-python
-        if: ${{ env.workspaces_vscode_python_modified }}
+        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_python_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-python
@@ -134,6 +183,26 @@ jobs:
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           tags: prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}
+          build-args: |
+            BASE_IMAGE=localhost:5000/prairielearn/workspace-vscode-base
+            BASE_IMAGE_TAG=${{ env.COMMIT_SHA }}
+
+      ######################################################################################################
+      # prairielearn/workspace-vscode-cpp
+      - name: Check whether workspaces/vscode-cpp was modified
+        run: scripts/check_path_modified.sh workspaces/vscode-cpp workspaces_vscode_cpp_modified
+      - name: Build and push prairielearn/workspace-vscode-cpp
+        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_cpp_modified }}
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-cpp
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          no-cache: true
+          tags: prairielearn/workspace-vscode-cpp:${{ env.COMMIT_SHA }}
+          build-args: |
+            BASE_IMAGE=localhost:5000/prairielearn/workspace-vscode-base
+            BASE_IMAGE_TAG=${{ env.COMMIT_SHA }}
 
   build-grader-images:
     runs-on: ubuntu-latest
