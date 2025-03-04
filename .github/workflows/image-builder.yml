@@ -82,7 +82,7 @@ jobs:
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           outputs: |
             type=docker,dest=${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
-  
+
       # We will upload the artifact so we can use it in the next job
       - name: Upload artifact
         if: ${{ steps.check-modified.outputs.was-modified != 'trueTEST'}}
@@ -92,7 +92,7 @@ jobs:
           path: ${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
           if-no-files-found: error
           retention-days: 1
-  
+
   build-images:
     needs: [build-base-images]
     strategy:
@@ -129,7 +129,7 @@ jobs:
           merge-multiple: true
 
       # This won't do anything if there are no artifacts to download (i.e. the base image didn't change)
-      # Retag these loaded images as latest, so that they get used as the base image instead of 
+      # Retag these loaded images as latest, so that they get used as the base image instead of
       # the one from DockerHub
       - name: Load and tag base images
         run: |
@@ -152,7 +152,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
 
-      - name: Build ${{ (env.CAN_PUSH_IMAGE && 'and push') || '' }}
+      - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }}
         id: build
         uses: docker/build-push-action@v6
         continue-on-error: true
@@ -167,8 +167,8 @@ jobs:
         if: steps.build.outcome == 'failure'
         run: sleep 10
 
-      - name: Retry build ${{ env.CAN_PUSH_IMAGE && 'and push' }}
-        if: steps.build.outcome == 'failure' 
+      - name: Retry build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }}
+        if: steps.build.outcome == 'failure'
         uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.folder }}/${{ matrix.image }}
