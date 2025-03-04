@@ -7,7 +7,7 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { clearCookie, setCookie } from '../../lib/cookie.js';
 
-import { CourseRolesSchema, InstructorEffectiveUser } from './instructorEffectiveUser.html.js';
+import { InstructorEffectiveUser, CourseRolesSchema } from './instructorEffectiveUser.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
