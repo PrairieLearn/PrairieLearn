@@ -197,7 +197,7 @@ function CourseNav({
           ${!resLocals.authz_data.overrides
             ? html`
                 hx-get="/pl/navbar/course/${resLocals.course.id}/switcher"
-                hx-trigger="show.bs.dropdown once delay:200ms"
+                hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
                 hx-target="#sideNavCourseDropdownContent"
               `
             : ''}
