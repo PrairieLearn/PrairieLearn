@@ -9,7 +9,7 @@ import uuid
 import canvas
 
 
-def file_name_only(name):
+def file_name_only(name: str) -> str:
     return re.sub(r"[\W_]+", "", name)
 
 
@@ -41,16 +41,16 @@ parser.add_argument(
     "--topic", default="None", help="Assessment set to assign this assessment to"
 )
 args = parser.parse_args()
-canvas = canvas.Canvas(args=args)
+canvas_client = canvas.Canvas()
 
 if not os.path.exists(os.path.join(args.pl_repo, "infoCourse.json")):
     raise ValueError("Provided directory is not a PrairieLearn repository")
 
 print("Reading data from Canvas...")
-course = canvas.course(args.course, prompt_if_needed=True)
+course = canvas_client.course(args.course)
 print("Using course: {} / {}".format(course["term"]["name"], course["course_code"]))
 
-quiz = course.quiz(args.quiz, prompt_if_needed=True)
+quiz = course.quiz(args.quiz)
 print("Using quiz: {}".format(quiz["title"]))
 
 # Reading questions
@@ -74,24 +74,33 @@ if os.path.exists(quiz_name):
     quiz_name = f"{quiz_name}_{suffix}"
 os.makedirs(quiz_name)
 
-pl_quiz = {
-    "uuid": str(uuid.uuid4()),
-    "type": args.assessment_type or ("Exam" if quiz["time_limit"] else "Homework"),
-    "title": quiz["title"],
-    "text": quiz["description"],
-    "set": args.assessment_set,
-    "number": args.assessment_number,
-    "allowAccess": [{"startDate": quiz["unlock_at"], "credit": 100}],
-    "zones": [{"questions": []}],
-    "comment": f"Imported from Canvas, quiz {quiz['id']}",
-}
+pl_quiz_allow_access_rule = {"credit": 100}
 
 if quiz["access_code"]:
-    pl_quiz["allowAccess"][0]["password"] = quiz["access_code"]
+    pl_quiz_allow_access_rule["password"] = quiz["access_code"]
+if quiz["unlock_at"]:
+    pl_quiz_allow_access_rule["startDate"] = quiz["unlock_at"]
 if quiz["lock_at"]:
-    pl_quiz["allowAccess"][0]["endDate"] = quiz["lock_at"]
+    pl_quiz_allow_access_rule["endDate"] = quiz["lock_at"]
 if quiz["time_limit"]:
-    pl_quiz["allowAccess"][0]["timeLimitMin"] = quiz["time_limit"]
+    pl_quiz_allow_access_rule["timeLimitMin"] = quiz["time_limit"]
+
+pl_quiz_questions = []
+
+
+def clean_question_text(text: str) -> str:
+    # Some Canvas plugins like DesignPlus inject custom CSS and JavaScript into
+    # all questions. This code is not needed in PrairieLearn, and in fact can
+    # cause problems in CBTF environments since they'll be forbidden from loading
+    # by most firewalls/proxies. We just remove them.
+    #
+    # We use regex instead of a proper HTML parser because we want to limit this
+    # script to only using the Python standard library.
+    text = re.sub(r"<link[^>]*>", "", text)
+    text = re.sub(r"<script[^>]*>.*?</script>", "", text)
+
+    return text
+
 
 for question in questions.values():
     # Clear the screen
@@ -100,8 +109,10 @@ for question in questions.values():
     else:
         print("\033c", end="")
 
+    question_text = clean_question_text(question["question_text"])
+
     print(f"Handling question {question['id']}...")
-    print(question["question_text"])
+    print(question_text)
     print()
     for answer in question.get("answers", []):
         print(f" - {answer['text']}")
@@ -129,10 +140,10 @@ for question in questions.values():
                 "points": group["question_points"],
                 "alternatives": [],
             }
-            pl_quiz["zones"][0]["questions"].append(group["_pl_alt"])
+            pl_quiz_questions.append(group["_pl_alt"])
         group["_pl_alt"]["alternatives"].append(question_alt)
     else:
-        pl_quiz["zones"][0]["questions"].append(question_alt)
+        pl_quiz_questions.append(question_alt)
 
     with open(os.path.join(question_dir, "info.json"), "w") as info:
         obj = {
@@ -152,7 +163,7 @@ for question in questions.values():
     with open(os.path.join(question_dir, "question.html"), "w") as template:
         if question["question_type"] == "calculated_question":
             for variable in question["variables"]:
-                question["question_text"] = question["question_text"].replace(
+                question_text = question_text.replace(
                     f"[{variable['name']}]", "{{params." + variable["name"] + "}}"
                 )
 
@@ -161,7 +172,7 @@ for question in questions.values():
             and question["question_type"] != "multiple_dropdowns_question"
         ):
             template.write("<pl-question-panel>\n<p>\n")
-            template.write(question["question_text"] + "\n")
+            template.write(question_text + "\n")
             template.write("</p>\n</pl-question-panel>\n")
 
         if question["question_type"] == "text_only_question":
@@ -240,7 +251,6 @@ for question in questions.values():
             )
 
         elif question["question_type"] == "fill_in_multiple_blanks_question":
-            question_text = question["question_text"]
             options = {}
             for answer in question["answers"]:
                 if answer["blank_id"] not in options:
@@ -271,7 +281,6 @@ for question in questions.values():
                 if answer["blank_id"] not in blanks:
                     blanks[answer["blank_id"]] = []
                 blanks[answer["blank_id"]].append(answer)
-            question_text = question["question_text"]
             for blank, answers in blanks.items():
                 dropdown = f'<pl-multiple-choice display="dropdown" hide-letter-keys="true" answers-name="{blank}">\n'
                 for answer in answers:
@@ -324,6 +333,17 @@ for question in questions.values():
             script.write(f'    data["correct_answers"]["{answer}"] = {answer}\n')
 
 with open(os.path.join(quiz_name, "infoAssessment.json"), "w") as assessment:
+    pl_quiz = {
+        "uuid": str(uuid.uuid4()),
+        "type": args.assessment_type or ("Exam" if quiz["time_limit"] else "Homework"),
+        "title": quiz["title"],
+        "text": quiz["description"],
+        "set": args.assessment_set,
+        "number": args.assessment_number,
+        "allowAccess": [pl_quiz_allow_access_rule],
+        "zones": [{"questions": pl_quiz_questions}],
+        "comment": f"Imported from Canvas, quiz {quiz['id']}",
+    }
     json.dump(pl_quiz, assessment, indent=4)
 
 print(f"\nDONE. The assessment was created in: {quiz_name}")

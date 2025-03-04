@@ -3,7 +3,7 @@ include = [
     "**/*.py",
 ]
 
-exclude = [
+extend-exclude = [
     # These files are intentionally not parseable as Python.
     "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_binary_file/fib.py",
     "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_large_text_file/fib.py",
@@ -143,7 +143,15 @@ convention = "google"
 "docs/hooks/*.py" = ["D"]
 "apps/prairielearn/src/tests/**/*.py" = ["D", "ANN"]
 "apps/prairielearn/python/prairielearn/to_precision.py" = ["D"]
-"contrib/**/*.py" = ["ANN", "D"]
+"contrib/api_download.py" = ["ANN", "D"]
+"contrib/assess-convert.py" = ["ANN", "D"]
+"contrib/generate_submissions.py" = ["ANN", "D"]
+"contrib/generate_text.py" = ["ANN", "D"]
+"contrib/generate_uuids.py" = ["ANN", "D"]
+"contrib/reassign_questions_to_subdirs.py" = ["ANN", "D"]
+"contrib/question_converters/lon-capa/**/*.py" = ["ANN", "D"]
+"contrib/question_converters/randexam/**/*.py" = ["ANN", "D"]
+"contrib/question_converters/smart-physics/**/*.py" = ["ANN", "D"]
 "testCourse/**/*.py" = ["ANN", "D"]
 "exampleCourse/**/*.py" = ["ANN", "D"]
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
@@ -165,6 +173,7 @@ typeCheckingMode = "strict"
 include = [
     "./apps/prairielearn/elements",
     "./apps/prairielearn/python",
+    "./contrib/question_converters/canvas",
     "./graders",
 ]
 exclude = [

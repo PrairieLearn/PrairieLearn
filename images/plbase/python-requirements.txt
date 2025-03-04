@@ -23,7 +23,7 @@ pygraphviz==1.14
 pyquaternion==0.9.9
 pytest-cov==6.0.0
 pytest-repeat==0.9.3
-pytest==8.3.4
+pytest==8.3.5
 recommonmark==0.7.1
 regex==2024.11.6
 ruff==0.9.9
