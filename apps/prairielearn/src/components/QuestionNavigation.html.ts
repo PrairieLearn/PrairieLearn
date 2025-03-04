@@ -98,12 +98,12 @@ export function QuestionNavSideButton({
   }
 
   return html`
-    <a
+    <button
       id="${buttonId}"
       class="btn btn-primary mb-3"
       href="${urlPrefix}/instance_question/${instanceQuestionId}/"
     >
       ${buttonLabel}
-    </a>
+    </button>
   `;
 }
