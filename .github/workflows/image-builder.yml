@@ -110,6 +110,7 @@ jobs:
       matrix:
         image: ${{ fromJSON(inputs.images) }}
         os: [ubuntu-24.04, ubuntu-24.04-arm]
+        exclude: ${{ fromJSON(inputs.exclude) }}
     runs-on: ${{ matrix.os }}
     env:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
