@@ -15,6 +15,8 @@ import {
   GroupSchema,
   InstanceQuestionSchema,
   QuestionSchema,
+  RubricGradingItemSchema,
+  RubricGradingSchema,
   type Submission,
   SubmissionSchema,
   UserSchema,
@@ -67,6 +69,9 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   graded_at_formatted: z.string().nullable(),
   correct: z.enum(['TRUE', 'FALSE']).nullable(),
   feedback: SubmissionSchema.shape.feedback,
+  rubric_grading: RubricGradingSchema.pick({ computed_points: true, adjust_points: true })
+    .extend({ items: RubricGradingItemSchema.pick({ description: true, points: true }).array() })
+    .nullable(),
   submission_number: z.number(),
   final_submission_per_variant: z.boolean(),
   best_submission_per_variant: z.boolean(),
@@ -75,6 +80,8 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   submission_user: UserSchema.shape.uid.nullable(),
   assigned_grader: UserSchema.shape.uid.nullable(),
   last_grader: UserSchema.shape.uid.nullable(),
+  zone_number: z.number(),
+  zone_title: z.string().nullable(),
 });
 type AssessmentInstanceSubmissionRow = z.infer<typeof AssessmentInstanceSubmissionRowSchema>;
 
@@ -378,6 +385,8 @@ router.get(
       const columns = identityColumn.concat([
         ['Assessment', 'assessment_label'],
         ['Assessment instance', 'assessment_instance_number'],
+        ['Zone number', 'zone_number'],
+        ['Zone title', 'zone_title'],
         ['Question', 'qid'],
         ['Question instance', 'instance_question_number'],
         ['Question points', 'points'],
@@ -409,6 +418,8 @@ router.get(
         (pair) => [pair[1], pair[1]],
       );
       const columns = identityColumn.concat([
+        ['Zone number', 'zone_number'],
+        ['Zone title', 'zone_title'],
         ['qid', 'qid'],
         ['old_score_perc', 'old_score_perc'],
         ['old_feedback', 'old_feedback'],
@@ -462,6 +473,8 @@ router.get(
       const columns = submissionColumn.concat([
         ['Assessment', 'assessment_label'],
         ['Assessment instance', 'assessment_instance_number'],
+        ['Zone number', 'zone_number'],
+        ['Zone title', 'zone_title'],
         ['Question', 'qid'],
         ['Question instance', 'instance_question_number'],
         ['Variant', 'variant_number'],
@@ -483,6 +496,7 @@ router.get(
         ['Score', 'score'],
         ['Correct', 'correct'],
         ['Feedback', 'feedback'],
+        ['Rubric Grading', 'rubric_grading'],
         ['Question points', 'points'],
         ['Max points', 'max_points'],
         ['Question % score', 'score_perc'],

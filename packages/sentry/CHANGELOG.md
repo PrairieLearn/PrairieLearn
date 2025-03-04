@@ -1,5 +1,12 @@
 # @prairielearn/sentry
 
+## 2.0.12
+
+### Patch Changes
+
+- 0e1aa6e: Upgrade all Sentry and OpenTelemetry packages
+- 4a8b376: Upgrade all JavaScript dependencies
+
 ## 2.0.11
 
 ### Patch Changes

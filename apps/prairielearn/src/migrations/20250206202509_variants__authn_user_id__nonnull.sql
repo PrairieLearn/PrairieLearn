@@ -1,0 +1,6 @@
+-- This migration failed; it took too long to run in production.
+--
+-- See `20250212012249_variants__authn_user_id__nonnull` for the new approach.
+-- It's preceded by a batched migration to backfill `variants.authn_user_id`.
+--
+-- This did already run in some environments, but that's fine.

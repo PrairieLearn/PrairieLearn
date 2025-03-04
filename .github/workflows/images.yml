@@ -31,7 +31,7 @@ jobs:
       ######################################################################################################
       # plbase
       - name: Check whether images/plbase was modified
-        run: tools/check_path_modified.sh images/plbase images_plbase_modified
+        run: scripts/check_path_modified.sh images/plbase images_plbase_modified
       - name: Build and push prairielearn/plbase
         if: ${{ env.images_plbase_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -63,7 +63,7 @@ jobs:
       ######################################################################################################
       # grader-c
       - name: Check whether graders/c was modified
-        run: tools/check_path_modified.sh graders/c graders_c_modified
+        run: scripts/check_path_modified.sh graders/c graders_c_modified
       - name: Build and push prairielearn/grader-c
         if: ${{ env.graders_c_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -77,7 +77,7 @@ jobs:
       ######################################################################################################
       # grader-java
       - name: Check whether graders/java was modified
-        run: tools/check_path_modified.sh graders/java graders_java_modified
+        run: scripts/check_path_modified.sh graders/java graders_java_modified
       - name: Build and push prairielearn/grader-java
         if: ${{ env.graders_java_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -91,7 +91,7 @@ jobs:
       ######################################################################################################
       # grader-python
       - name: Check whether graders/python was modified
-        run: tools/check_path_modified.sh graders/python graders_python_modified
+        run: scripts/check_path_modified.sh graders/python graders_python_modified
       - name: Build and push prairielearn/grader-python
         if: ${{ env.graders_python_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -105,7 +105,7 @@ jobs:
       ######################################################################################################
       # grader-r
       - name: Check whether graders/r was modified
-        run: tools/check_path_modified.sh graders/r graders_r_modified
+        run: scripts/check_path_modified.sh graders/r graders_r_modified
       - name: Build and push prairielearn/grader-r
         if: ${{ env.graders_r_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images

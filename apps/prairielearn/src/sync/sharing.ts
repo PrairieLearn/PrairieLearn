@@ -61,7 +61,7 @@ export function checkInvalidPublicSharingRemovals(
 
     // TODO: allow if question is not used in anyone else's assessments
     const questionData = courseData.questions[question.qid].data;
-    if (!(questionData?.sharePublicly || questionData?.sharedPublicly)) {
+    if (!questionData?.sharePublicly) {
       invalidUnshares.push(question.qid);
     }
   });

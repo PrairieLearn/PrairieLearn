@@ -6,6 +6,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import * as questionServers from '../question-servers/index.js';
 
 import {
@@ -68,6 +69,7 @@ export async function insertSubmission({
   credit,
   mode,
   variant_id,
+  user_id,
   auth_user_id,
   client_fingerprint_id,
 }: {
@@ -82,6 +84,7 @@ export async function insertSubmission({
   credit?: number | null;
   mode?: Submission['mode'];
   variant_id: string;
+  user_id: string;
   auth_user_id: string | null;
   client_fingerprint_id?: string | null;
 }): Promise<{ submission_id: string; variant: Variant }> {
@@ -148,6 +151,8 @@ export async function insertSubmission({
       },
       IdSchema,
     );
+
+    await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
     if (variant.assessment_instance_id != null) {
       await sqldb.queryAsync(sql.update_instance_question_post_submission, {

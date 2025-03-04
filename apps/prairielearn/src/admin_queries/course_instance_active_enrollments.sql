@@ -1,88 +1,108 @@
 WITH
-  course_instances_initial_selection AS (
-    -- First find any course instances with activity in
-    -- the given time period.
-    SELECT DISTINCT
-      ci.id
-    FROM
-      assessment_instances AS ai
-      JOIN assessments AS a ON (a.id = ai.assessment_id)
-      JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-      JOIN pl_courses AS c ON (c.id = ci.course_id)
-      JOIN institutions AS i ON (i.id = c.institution_id)
-    WHERE
-      (
-        $institution_short_name = ''
-        OR i.short_name = $institution_short_name
-      )
-      AND ai.modified_at BETWEEN $start_date AND $end_date
-  ),
   course_instance_user_data AS (
-    -- Re-select this to get all course instance data,
-    -- not just that from the search date range.
+    -- We filter using ai.modified_at and iq.modified_at for efficiency. This
+    -- means we might miss some activity (e.g., if a student has later worked on
+    -- a question or assessment) but this should be accurate enough when we are
+    -- looking at whole terms.
     SELECT
-      ci.id,
+      ci.id AS course_instance_id,
       u.user_id,
       (i.id = u.institution_id) AS is_institution_user,
-      count(*) AS instance_question_count,
-      count(*) FILTER (
-        WHERE
-          iq.modified_at BETWEEN $start_date AND $end_date
-      ) AS instance_question_within_dates_count,
-      min(iq.created_at) AS start_date,
-      max(iq.modified_at) AS end_date
+      count(*) AS instance_question_count
     FROM
-      course_instances_initial_selection AS ciis
-      JOIN course_instances AS ci ON (ci.id = ciis.id)
-      JOIN assessments AS a ON (a.course_instance_id = ciis.id)
+      institutions AS i
+      JOIN pl_courses AS c ON (c.institution_id = i.id)
+      JOIN course_instances AS ci ON (ci.course_id = c.id)
+      JOIN assessments AS a ON (a.course_instance_id = ci.id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
       JOIN users AS u ON (u.user_id = iq.authn_user_id)
-      JOIN pl_courses AS c ON (c.id = ci.course_id)
-      JOIN institutions AS i ON (i.id = c.institution_id)
+    WHERE
+      i.short_name = $institution_short_name
+      AND ai.modified_at BETWEEN $start_date AND $end_date
+      AND ai.include_in_statistics
+      AND iq.modified_at BETWEEN $start_date AND $end_date
     GROUP BY
       ci.id,
       u.user_id,
       i.id,
       u.institution_id
   ),
-  course_instance_user_selection AS (
-    SELECT
-      *
-    FROM
-      course_instance_user_data
-    WHERE
-      NOT users_is_instructor_in_course_instance (user_id, id)
-      AND instance_question_count >= $minimum_instance_question_count
-  ),
   course_instance_data AS (
     SELECT
-      id,
+      course_instance_id,
       count(*) AS total_students,
       count(*) FILTER (
         WHERE
           NOT is_institution_user
       ) AS outside_students,
-      count(*) FILTER (
-        WHERE
-          instance_question_within_dates_count >= $minimum_instance_question_count
-      ) AS within_dates_students,
-      sum(instance_question_count) AS instance_question_count,
-      avg(
-        instance_question_within_dates_count::double precision / instance_question_count::double precision * 100
-      ) AS activity_within_dates_perc,
-      percentile_disc(0.5) WITHIN GROUP (
-        ORDER BY
-          start_date
-      ) AS start_date,
-      percentile_disc(0.5) WITHIN GROUP (
-        ORDER BY
-          end_date
-      ) AS end_date
+      sum(instance_question_count) AS instance_question_count
     FROM
-      course_instance_user_selection
+      course_instance_user_data
+    WHERE
+      instance_question_count >= $minimum_instance_question_count
     GROUP BY
-      id
+      course_instance_id
+  ),
+  workspace_data AS (
+    -- We exhaustively find all workspaces in the given time range and then
+    -- filter them down to only those that are associated with a course
+    -- instance. This is more thorough than the approach above for instance
+    -- questions because we don't want to miss any compute activity.
+    SELECT
+      ci.id AS course_instance_id,
+      COUNT(*) AS workspace_count,
+      sum(
+        extract(
+          epoch
+          from
+            w.launching_duration + w.running_duration
+        ) / 3600.0
+      ) AS workspace_hours
+    FROM
+      institutions AS i
+      JOIN pl_courses AS c ON (c.institution_id = i.id)
+      JOIN course_instances AS ci ON (ci.course_id = c.id)
+      JOIN assessments AS a ON (a.course_instance_id = ci.id)
+      JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+      JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+      JOIN variants AS v ON (v.instance_question_id = iq.id)
+      JOIN workspaces AS w ON (w.id = v.workspace_id)
+    WHERE
+      i.short_name = $institution_short_name
+      AND w.created_at BETWEEN $start_date AND $end_date
+    GROUP BY
+      ci.id
+  ),
+  grading_job_data AS (
+    -- We use a similar exhaustive approach for grading jobs as we do for
+    -- workspaces above.
+    SELECT
+      ci.id AS course_instance_id,
+      COUNT(*) AS external_grading_count,
+      sum(
+        extract(
+          epoch
+          from
+            gj.grading_finished_at - gj.grading_received_at
+        ) / 3600.0
+      ) AS external_grading_hours
+    FROM
+      institutions AS i
+      JOIN pl_courses AS c ON (c.institution_id = i.id)
+      JOIN course_instances AS ci ON (ci.course_id = c.id)
+      JOIN assessments AS a ON (a.course_instance_id = ci.id)
+      JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+      JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+      JOIN variants AS v ON (v.instance_question_id = iq.id)
+      JOIN submissions AS s ON (s.variant_id = v.id)
+      JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
+    WHERE
+      i.short_name = $institution_short_name
+      AND (gj.date BETWEEN $start_date AND $end_date)
+      AND gj.grading_method = 'External'
+    GROUP BY
+      ci.id
   )
 SELECT
   i.short_name AS institution,
@@ -90,35 +110,36 @@ SELECT
   c.id AS course_id,
   ci.short_name AS course_instance,
   ci.id AS course_instance_id,
-  -- total number of students in the course instance (over all time)
-  cid.total_students,
-  -- number of students in the course instance who are from a different institution (over all time)
-  cid.outside_students,
-  -- average percentage of question activity within the original search date range
-  round(cid.activity_within_dates_perc)::integer AS activity_within_dates_perc,
-  -- average number of instance questions per student in the course instance (over all students and all time)
-  round(
-    cid.instance_question_count::double precision / cid.total_students::double precision
-  )::integer AS questions_per_student,
-  -- approximate first date when most students starting working on questions in the course instance (over all students and all time)
-  to_char(cid.start_date, 'YYYY-MM-DD') AS start_date,
-  -- approximate last date when most students last worked on questions in the course instance (over all students and all time)
-  to_char(cid.end_date, 'YYYY-MM-DD') AS end_date,
-  -- number of dates from start_date to end_date
-  round(
-    extract(
-      epoch
-      from
-        (end_date - start_date)
-    )::double precision / (24 * 60 * 60)::double precision
-  )::integer AS duration_days
+  -- number of students in the course instance
+  coalesce(cid.total_students, 0) AS total_students,
+  -- number of students in the course instance who are from a different institution
+  coalesce(cid.outside_students, 0) AS outside_students,
+  -- number of instance questions
+  coalesce(cid.instance_question_count, 0) AS instance_question_count,
+  -- number of workspaces in each course instance
+  coalesce(wd.workspace_count, 0) AS workspace_count,
+  -- running duration of workspaces (in hours)
+  coalesce(wd.workspace_hours, 0) AS workspace_hours,
+  -- number of external grading jobs in each course instance
+  coalesce(gjd.external_grading_count, 0) AS external_grading_count,
+  -- running duration of external grading jobs (in hours)
+  coalesce(gjd.external_grading_hours, 0) AS external_grading_hours,
+  -- total compute time for both workspaces and external grading jobs (in hours)
+  coalesce(wd.workspace_hours, 0) + coalesce(gjd.external_grading_hours, 0) AS total_compute_hours
 FROM
-  course_instance_data AS cid
-  JOIN course_instances AS ci ON (ci.id = cid.id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
-  JOIN institutions AS i ON (i.id = c.institution_id)
+  institutions AS i
+  JOIN pl_courses AS c ON (c.institution_id = i.id)
+  JOIN course_instances AS ci ON (ci.course_id = c.id)
+  LEFT JOIN course_instance_data AS cid ON (cid.course_instance_id = ci.id)
+  LEFT JOIN workspace_data AS wd ON (wd.course_instance_id = ci.id)
+  LEFT JOIN grading_job_data AS gjd ON (gjd.course_instance_id = ci.id)
 WHERE
-  cid.within_dates_students >= $minimum_student_count
+  i.short_name = $institution_short_name
+  AND (
+    cid.course_instance_id IS NOT NULL
+    OR wd.course_instance_id IS NOT NULL
+    OR gjd.course_instance_id IS NOT NULL
+  )
 ORDER BY
   i.short_name,
   c.short_name,

@@ -8,6 +8,8 @@ export type NavbarType =
   | undefined;
 
 export type NavPage =
+  | 'public_question'
+  | 'public_questions'
   | 'instance_admin'
   | 'course_admin'
   | 'assessment'
@@ -27,9 +29,16 @@ export type NavPage =
   | 'news_item'
   | 'news_items'
   | 'user_settings'
+  | 'password'
   | undefined;
 
 // This type is provisionally very lenient, to avoid problems with existing
 // code. A future version where navSubPage is more strictly defined can set
 // this to a more specific enum-like type.
 export type NavSubPage = string | undefined;
+
+export interface NavContext {
+  type: NavbarType;
+  page: NavPage;
+  subPage?: NavSubPage;
+}

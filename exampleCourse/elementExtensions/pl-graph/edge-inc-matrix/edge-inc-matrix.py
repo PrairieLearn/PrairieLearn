@@ -23,25 +23,25 @@ def graphviz_from_inc_matrix(element, data):
 
     # Sanity check
     if label is not None and label.shape[0] != mat.shape[0]:
-        raise Exception(
+        raise TypeError(
             "Dimensionality of the label is not consistent with the dimensionality of the matrix"
         )
 
     if label is None:
         label = range(mat.shape[1])
 
-    G = pygraphviz.AGraph(directed=True)
+    graph = pygraphviz.AGraph(directed=True)
 
     for node in label:
-        G.add_node(node)
+        graph.add_node(node)
 
-    edges, nodes = mat.shape
+    edges, _ = mat.shape
     for e in range(edges):
         out_node = np.where(mat[e] == -1)[0][0]
         in_node = np.where(mat[e] == 1)[0][0]
-        G.add_edge(out_node, in_node)
+        graph.add_edge(out_node, in_node)
 
-    return G.string()
+    return graph.string()
 
 
 backends = {"edge-inc-matrix": graphviz_from_inc_matrix}

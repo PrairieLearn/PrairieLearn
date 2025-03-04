@@ -17,7 +17,7 @@ export const updateQuestionFiles = privateProcedure
       question_id: IdSchema,
 
       // Question data.
-      files: z.record(z.string()),
+      files: z.record(z.string().nullable()),
     }),
   )
   .output(

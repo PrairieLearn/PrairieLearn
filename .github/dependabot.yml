@@ -36,6 +36,9 @@ updates:
       - dependency-name: 'fabric'
       # Recent versions of `threejs` don't include the pre-bundled file we rely on.
       - dependency-name: 'three'
+      # novnc 1.5.0+ no longer publishes ESM files:
+      # https://github.com/novnc/noVNC/issues/1792
+      - dependency-name: '@novnc/novnc'
     groups:
       # Many OpenTelemetry packages are still pre-v1, so updates frequently won't
       # be considered patch/minor updates. We always want to bump these all
@@ -65,6 +68,9 @@ updates:
       # We're not ready to jump to the latest version of `numpy` yet.
       - dependency-name: 'numpy'
         versions: ['>=2']
+      # The most recent versions no longer support Python 3.10.
+      - dependency-name: 'sphinx'
+        versions: ['>=8.2.0']
     groups:
       all-patch-minor:
         update-types:

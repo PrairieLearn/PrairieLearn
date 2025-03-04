@@ -28,7 +28,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
             html_variables.append(var_dict)
 
-        elif child.tag is lxml.etree.Comment:
+        elif isinstance(child, lxml.etree._Comment):
             continue
 
         else:
@@ -43,7 +43,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError(
                 f'Variable name "{params_name}" was declared empty, but has variables defined in "question.html".'
             )
-        elif params_name in data["params"]:
+        if params_name in data["params"]:
             raise ValueError(
                 f'Variable name "{params_name}" was declared empty, but has variables defined in "server.py".'
             )
@@ -57,11 +57,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
 
         data["params"][params_name] = html_variables
-    else:
-        if html_variables:
-            raise ValueError(
-                f'Cannot define variables from both "question.html" and "server.py" for variable name "{params_name}".'
-            )
+    elif html_variables:
+        raise ValueError(
+            f'Cannot define variables from both "question.html" and "server.py" for variable name "{params_name}".'
+        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

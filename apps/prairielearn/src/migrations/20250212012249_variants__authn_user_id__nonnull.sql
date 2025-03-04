@@ -1,0 +1,4 @@
+-- This migration also failed! We'll try again with the migration split into two parts:
+-- 
+-- 20250213014138_variants__authn_user_id__nonnull_constraint_add.sql
+-- 20250213014139_variants__authn_user_id__nonnull_constraint_validate.sql

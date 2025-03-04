@@ -6,7 +6,7 @@ number_input = importlib.import_module("pl-number-input")
 
 
 @pytest.mark.parametrize(
-    "number_string, expected_precision",
+    ("number_string", "expected_precision"),
     [
         ("42", 1),
         ("420", 10),
@@ -27,7 +27,7 @@ def test_only_string_precision_fn(
 
 
 @pytest.mark.parametrize(
-    "number_string, expected_significant_digits",
+    ("number_string", "expected_significant_digits"),
     [
         ("4", 1),
         ("42", 2),
@@ -52,7 +52,7 @@ def test_only_significant_digits_fn(
 
 
 @pytest.mark.parametrize(
-    "number_string, expected_decimal_digits",
+    ("number_string", "expected_decimal_digits"),
     [
         ("4", 0),
         ("42", 0),

@@ -1,13 +1,3 @@
--- BLOCK select_instance_questions_manual_grading
-SELECT
-  iq.*
-FROM
-  instance_questions AS iq
-WHERE
-  iq.assessment_question_id = $assessment_question_id
-  AND iq.requires_manual_grading
-  AND iq.status != 'unanswered';
-
 -- BLOCK select_instance_questions_for_assessment_question
 SELECT
   *
@@ -72,13 +62,15 @@ VALUES
 RETURNING
   *;
 
--- BLOCK select_closest_embeddings
+-- BLOCK select_closest_submission_info
 WITH
   latest_submissions AS (
     SELECT
       s.id AS s_id,
       iq.id AS iq_id,
       iq.score_perc AS iq_score_perc,
+      s.feedback,
+      s.manual_rubric_grading_id AS s_manual_rubric_grading_id,
       ROW_NUMBER() OVER (
         PARTITION BY
           s.variant_id
@@ -97,7 +89,9 @@ WITH
   )
 SELECT
   emb.submission_text,
+  ls.s_manual_rubric_grading_id AS manual_rubric_grading_id,
   ls.iq_score_perc AS score_perc,
+  ls.feedback,
   ls.iq_id AS instance_question_id
 FROM
   latest_submissions ls
@@ -108,3 +102,24 @@ ORDER BY
   embedding <=> $embedding
 LIMIT
   $limit;
+
+-- BLOCK select_rubric_for_grading
+SELECT
+  ri.*
+FROM
+  assessment_questions aq
+  JOIN rubric_items ri ON aq.manual_rubric_id = ri.rubric_id
+WHERE
+  aq.id = $assessment_question_id
+  AND ri.deleted_at IS NULL
+ORDER BY
+  ri.number;
+
+-- BLOCK select_rubric_grading_items
+SELECT
+  ri.*
+FROM
+  rubric_grading_items AS rgi
+  JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
+WHERE
+  rgi.rubric_grading_id = $manual_rubric_grading_id;

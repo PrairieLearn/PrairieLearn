@@ -206,3 +206,19 @@ export async function insertCourse({
     return course;
   });
 }
+
+/**
+ * Update the show_getting_started field for a course.
+ */
+export async function updateCourseShowGettingStarted({
+  course_id,
+  show_getting_started,
+}: {
+  course_id: string;
+  show_getting_started: boolean;
+}) {
+  await queryAsync(sql.update_course_show_getting_started, {
+    course_id,
+    show_getting_started,
+  });
+}
