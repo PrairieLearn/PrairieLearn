@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 2.0.9
+
+### Patch Changes
+
+- 49bb3fa: Upgrade all JavaScript dependencies
+
 ## 2.0.8
 
 ### Patch Changes
