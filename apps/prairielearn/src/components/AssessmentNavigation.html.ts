@@ -17,7 +17,7 @@ export function AssessmentNavigation({
   assessments: Assessment[];
 }) {
   return html`
-    <div class="dropdown bg-light p-3 pb-0">
+    <div class="dropdown bg-light pt-2 px-3">
       <button
         type="button"
         class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center"
