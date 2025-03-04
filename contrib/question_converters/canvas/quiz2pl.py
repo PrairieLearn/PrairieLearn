@@ -141,7 +141,7 @@ def handle_images(question_dir: str, text: str) -> str:
             f.write(res.content)
 
         # Extract the alt text, if any.
-        alt_match = re.search(r'alt="([^"]*)"', match.group(0))
+        alt_match = re.search(r'alt="([^"]*)"', match.group(2))
         alt_text = alt_match.group(1) if alt_match else ""
         alt_attribute = f' alt="{alt_text}"' if alt_text else ""
 
@@ -157,6 +157,7 @@ def handle_images(question_dir: str, text: str) -> str:
         text = text.replace(
             replace_str,
             f'<pl-figure file-name="{file_name}"{alt_attribute}></pl-figure>',
+            1,
         )
 
         image_idx += 1
