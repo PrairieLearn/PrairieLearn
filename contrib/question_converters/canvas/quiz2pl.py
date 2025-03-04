@@ -5,6 +5,7 @@ import json
 import os
 import re
 import uuid
+from itertools import count
 
 import canvas
 import requests
@@ -119,7 +120,7 @@ def handle_images(question_dir: str, text: str) -> str:
     #
     # We use regex instead of a proper HTML parser because we want to limit this
     # script to only using the Python standard library.
-    image_idx = 1
+    image_count = count(1)
     for match in re.finditer(r'(<p>)?(<img[^>]*src="([^"]+)"[^>]*>)(</p>)?', text):
         url = match.group(3)
         if not url.startswith("http"):
@@ -135,7 +136,7 @@ def handle_images(question_dir: str, text: str) -> str:
         res.raise_for_status()
         extension = image_file_extension(res.headers["Content-Type"])
 
-        file_name = f"image_{image_idx}.{extension}"
+        file_name = f"image_{next(image_count)}.{extension}"
         file_path = os.path.join(client_files_question_dir, file_name)
         with open(file_path, "wb") as f:
             f.write(res.content)
@@ -159,8 +160,6 @@ def handle_images(question_dir: str, text: str) -> str:
             f'<pl-figure file-name="{file_name}"{alt_attribute}></pl-figure>',
             1,
         )
-
-        image_idx += 1
 
     return text
 
