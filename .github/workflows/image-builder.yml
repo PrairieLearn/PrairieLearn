@@ -1,0 +1,173 @@
+on:
+  workflow_call:
+    inputs:
+      folder:
+        description: 'Either "workspace" or "grader"'
+        required: true
+        type: string
+      image-prefix:
+        description: 'The prefix for the image name'
+        required: true
+        type: string
+      base-images:
+        description: 'The base images to build'
+        required: true
+        type: string
+        default: '[]'
+      images:
+        description: 'The images to build'
+        required: true
+        type: string
+        default: '[]'
+
+env:
+  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+jobs:
+  build-base-images:
+    strategy:
+      max-parallel: 5
+      matrix:
+        image: ${{ fromJSON(inputs.base-images) }}
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    env:
+      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+    steps:
+      # Checkout the repository with full depth so we can check if the workspace was modified
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check whether ${{ inputs.folder }}/${{ matrix.image }} was modified
+        id: check-modified
+        run: |
+          tools/check_path_modified.sh ${{ inputs.folder }}/${{ matrix.image }} ${{ inputs.folder }}_${{ matrix.image }}_modified
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set platform
+        id: set-platform
+        run: |
+          if [[ "${{ matrix.os }}" == *"arm"* ]]; then
+            echo "platform=linux/arm64" >> $GITHUB_OUTPUT
+          else
+            echo "platform=linux/amd64" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Login to DockerHub
+        if: ${{ env.CAN_PUSH_IMAGE }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set docker tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          context: git
+          images: |
+            ${{ inputs.image-prefix }}-${{ matrix.image }}
+          # On the default branch, we'll also tag the image as `latest`
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
+
+      - name: Build ${{ env.CAN_PUSH_IMAGE == 'true' && 'and push' }}
+        id: build
+        uses: docker/build-push-action@v6
+        if: ${{ steps.check-modified.outputs.was-modified }}
+        with:
+          context: ${{ inputs.folder }}/${{ matrix.image }}
+          platforms: ${{ steps.set-platform.outputs.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          push: ${{ env.CAN_PUSH_IMAGE }}
+          outputs: |
+            type=docker,${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
+  
+      # We will upload the artifact so we can use it in the next job
+      - name: Upload artifact
+        if: ${{ steps.check-modified.outputs.was-modified }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.image }}-${{ matrix.os }}-tarball
+          path: ${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
+          if-no-files-found: error
+          retention-days: 1
+  
+  build-images:
+    needs: [build-base-images]
+    strategy:
+      max-parallel: 5
+      matrix:
+        image: ${{ fromJSON(inputs.images) }}
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    env:
+      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+
+    # Associate each workspace with requirements
+    steps:
+      # Checkout the repository with full depth so we can check if the workspace was modified
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check whether ${{ inputs.folder }}/${{ matrix.image }} was modified
+        id: check-modified
+        run: |
+          tools/check_path_modified.sh ${{ inputs.folder }}/${{ matrix.image }} ${{ inputs.folder }}_${{ matrix.image }}_modified
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        # Download all uploaded artifacts that match our OS
+        with:
+          pattern: '*-${{ matrix.os }}-tarball'
+          path: ${{ runner.temp }}
+          merge-multiple: true
+
+      # This won't do anything if there are no artifacts to download (i.e. the base image didn't change)
+      - name: Load and tag base images
+        run: |
+          for file in ${{ runner.temp }}/*.tar; do
+            docker load -i "$file" | sed -n 's/Loaded image: //p' | while read -r image; do
+              docker tag "$image" "$image:latest"
+            done
+          done
+          docker image ls -a
+
+      - name: Set platform
+        id: set-platform
+        run: |
+          if [[ "${{ matrix.os }}" == *"arm"* ]]; then
+            echo "platform=linux/arm64" >> $GITHUB_OUTPUT
+          else
+            echo "platform=linux/amd64" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set docker tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          context: git
+          images: |
+            ${{ inputs.image-prefix }}-${{ matrix.image }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
+
+      - name: Build ${{ env.CAN_PUSH_IMAGE && 'and push' }}
+        id: build
+        uses: docker/build-push-action@v6
+        if: ${{ steps.check-modified.outputs.was-modified }}
+        with:
+          context: ${{ inputs.folder }}/${{ matrix.image }}
+          platforms: ${{ steps.set-platform.outputs.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          push: ${{ env.CAN_PUSH_IMAGE }}

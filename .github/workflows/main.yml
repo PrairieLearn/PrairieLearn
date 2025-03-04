@@ -25,7 +25,12 @@ env:
 
 jobs:
   build-workspace-images:
-    uses: ./.github/workflows/workspace-images.yml
+    uses: ./.github/workflows/image-builder.yml
+    with:
+      folder: workspaces  
+      image-prefix: prairielearn/workspace
+      base-images: "['vscode-base']"
+      images: "['desktop', 'jupyterlab', 'jupyterlab-python', 'rstudio', 'xtermjs', 'vscode-python', 'vscode-cpp']"
     secrets: inherit
 
   build-workspace-images-results:
