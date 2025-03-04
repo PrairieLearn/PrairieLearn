@@ -2,11 +2,11 @@ on:
   workflow_call:
     inputs:
       folder:
-        description: 'Either "workspace" or "grader"'
+        description: 'Either "workspaces" or "graders"'
         required: true
         type: string
       image-prefix:
-        description: 'The prefix for the image name'
+        description: 'The prefix for the image name (e.g. prairielearn/workspace)'
         required: true
         type: string
       base-images:
