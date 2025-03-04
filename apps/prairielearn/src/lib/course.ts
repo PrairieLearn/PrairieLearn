@@ -193,31 +193,3 @@ export async function pullAndUpdateCourse({
 
   return { jobSequenceId: serverJob.jobSequenceId, jobPromise };
 }
-
-/**
- * Return the courses that the user has staff access to.
- */
-export async function selectInstructorCourses({
-  userId,
-  isAdministrator,
-  includeExampleCourse,
-}: {
-  userId: string;
-  isAdministrator: boolean;
-  /**
-   * Example courses are only shown to users who are either instructors of
-   * at least one other course, or who are admins. They're also shown
-   * unconditionally in dev mode.
-   */
-  includeExampleCourse: boolean;
-}) {
-  return await sqldb.queryRows(
-    sql.select_instructor_courses,
-    {
-      user_id: userId,
-      is_administrator: isAdministrator,
-      include_example_course: includeExampleCourse,
-    },
-    InstructorCourseSchema,
-  );
-}
