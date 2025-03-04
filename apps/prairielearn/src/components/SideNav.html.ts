@@ -188,7 +188,7 @@ function CourseNav({
       <div class="dropdown">
         <button
           type="button"
-          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center"
+          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
           data-toggle="dropdown"
           aria-label="Change course"
           aria-haspopup="true"
@@ -248,7 +248,7 @@ function CourseInstanceNav({
         <div class="dropdown">
           <button
             type="button"
-            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center"
+            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
             data-toggle="dropdown"
             aria-label="Change course instance"
             aria-haspopup="true"
