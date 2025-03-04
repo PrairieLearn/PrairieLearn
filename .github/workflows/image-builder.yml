@@ -136,7 +136,7 @@ jobs:
       # the one from DockerHub
       - name: Load and tag base images
         run: |
-          for file in ${{ runner.temp }}/*.tar; do
+          for file in ${{ runner.temp }}/*-${{ matrix.os }}.tar; do
             docker load -i "$file" | sed -n 's/Loaded image: //p' | while read -r tagged_image; do
               image="${tagged_image%:*}"
               docker tag "$tagged_image" "$image:latest"
