@@ -64,7 +64,7 @@ export function InstructorAssessmentQuestionStatistics({
     },
     headContent: [compiledScriptTag('instructorAssessmentQuestionStatisticsClient.ts')],
     content: html`
-      <h1 class="sr-only">
+      <h1 class="visually-hidden">
         ${resLocals.assessment_set.name} ${resLocals.assessment.number} Question Statistics
       </h1>
       ${AssessmentSyncErrorsAndWarnings({
@@ -86,7 +86,9 @@ export function InstructorAssessmentQuestionStatistics({
             footer: html`
               <input type="hidden" name="__action" value="refresh_stats" />
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancel
+              </button>
               <button type="submit" class="btn btn-danger">Submit</button>
             `,
           })
@@ -98,15 +100,15 @@ export function InstructorAssessmentQuestionStatistics({
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question difficulty vs
             discrimination
           </h2>
-          <div class="ml-auto">
+          <div class="ms-auto">
             <small>
-              <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
+              <span class="text-light me-2">Last calculated: ${statsLastUpdated}</span>
             </small>
             <button
               type="button"
               class="btn btn-sm btn-light"
-              data-toggle="modal"
-              data-target="#refreshAssessmentQuestionStatsModal"
+              data-bs-toggle="modal"
+              data-bs-target="#refreshAssessmentQuestionStatsModal"
             >
               <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </button>
@@ -161,15 +163,15 @@ export function InstructorAssessmentQuestionStatistics({
           <h2>
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question statistics
           </h2>
-          <div class="ml-auto">
+          <div class="ms-auto">
             <small>
-              <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
+              <span class="text-light me-2">Last calculated: ${statsLastUpdated}</span>
             </small>
             <button
               type="button"
               class="btn btn-sm btn-light"
-              data-toggle="modal"
-              data-target="#refreshAssessmentQuestionStatsModal"
+              data-bs-toggle="modal"
+              data-bs-target="#refreshAssessmentQuestionStatsModal"
             >
               <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </button>
@@ -293,15 +295,15 @@ export function InstructorAssessmentQuestionStatistics({
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Detailed question
             statistics
           </h2>
-          <div class="ml-auto">
+          <div class="ms-auto">
             <small>
-              <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
+              <span class="text-light me-2">Last calculated: ${statsLastUpdated}</span>
             </small>
             <button
               type="button"
               class="btn btn-sm btn-light"
-              data-toggle="modal"
-              data-target="#refreshAssessmentQuestionStatsModal"
+              data-bs-toggle="modal"
+              data-bs-target="#refreshAssessmentQuestionStatsModal"
             >
               <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </button>

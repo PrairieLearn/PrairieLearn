@@ -17,35 +17,33 @@ DATAFILE = "/grade/data/data.json"
 SB_USER = "sbuser"
 
 # List of symbols that are not allowed to be used in student code
-INVALID_SYMBOLS = frozenset(
-    (
-        "__asan_default_options",
-        "__asan_on_error",
-        "__asan_malloc_hook",
-        "__asan_free_hook",
-        "__asan_unpoison_memory_region",
-        "__asan_set_error_exit_code",
-        "__asan_set_death_callback",
-        "__asan_set_error_report_callback",
-        "__msan_default_options",
-        "__msan_malloc_hook",
-        "__msan_free_hook",
-        "__msan_unpoison",
-        "__msan_unpoison_string",
-        "__msan_set_exit_code",
-        "__lsan_is_turned_off",
-        "__lsan_default_suppressions",
-        "__lsan_do_leak_check",
-        "__lsan_disable",
-        "__lsan_enable",
-        "__lsan_ignore_object",
-        "__lsan_register_root_region",
-        "__lsan_unregister_root_region",
-        "__sanitizer_set_death_callback",
-        "__sanitizer_set_report_path",
-        "__sanitizer_sandbox_on_notify",
-    )
-)
+INVALID_SYMBOLS = frozenset((
+    "__asan_default_options",
+    "__asan_on_error",
+    "__asan_malloc_hook",
+    "__asan_free_hook",
+    "__asan_unpoison_memory_region",
+    "__asan_set_error_exit_code",
+    "__asan_set_death_callback",
+    "__asan_set_error_report_callback",
+    "__msan_default_options",
+    "__msan_malloc_hook",
+    "__msan_free_hook",
+    "__msan_unpoison",
+    "__msan_unpoison_string",
+    "__msan_set_exit_code",
+    "__lsan_is_turned_off",
+    "__lsan_default_suppressions",
+    "__lsan_do_leak_check",
+    "__lsan_disable",
+    "__lsan_enable",
+    "__lsan_ignore_object",
+    "__lsan_register_root_region",
+    "__lsan_unregister_root_region",
+    "__sanitizer_set_death_callback",
+    "__sanitizer_set_report_path",
+    "__sanitizer_sandbox_on_notify",
+))
 INVALID_PRIMITIVES = frozenset(("no_sanitize", "disable_sanitizer_instrumentation"))
 
 ASAN_FLAGS = ("-fsanitize=address", "-static-libasan", "-g", "-O0")
@@ -418,7 +416,7 @@ class CGrader:
         command: str | Iterable[str],
         input: str | None = None,  # noqa: A002
         exp_output: str | Iterable[str] | None = None,
-        must_match_all_outputs: OutputMatchingOption | bool = "any",
+        must_match_all_outputs: OutputMatchingOption | bool = "any",  # noqa: FBT001
         reject_output: str | Iterable[str] | None = None,
         field: str | None = None,
         ignore_case: bool = True,  # noqa: FBT001
@@ -471,7 +469,7 @@ class CGrader:
                 t.strip(),
                 re.compile(
                     (
-                        "\\s+".join(map(re.escape, re.split("\\s+", t)))
+                        r"\s+".join(map(re.escape, re.split(r"\s+", t)))
                         if ignore_consec_spaces
                         else re.escape(t)
                     ),
@@ -581,7 +579,7 @@ class CGrader:
         self,
         name: str,
         description: str = "",
-        points: bool | float = True,
+        points: bool | float = True,  # noqa: FBT001
         msg: str | None = "",
         output: str = "",
         max_points: float = 1,
@@ -597,7 +595,7 @@ class CGrader:
             "points": points,
             "max_points": max_points,
             "output": output,
-            "message": msg if msg else "",
+            "message": msg or "",
         }
         if images and isinstance(images, str | dict):
             test["images"] = [images]

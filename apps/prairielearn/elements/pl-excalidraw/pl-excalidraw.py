@@ -153,14 +153,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             else:
                 raise unreachable
 
-    content_bytes = json.dumps(
-        {
-            "read_only": not is_widget_editable(panel, gradable, data["editable"]),
-            "initial_content": initial_content,
-            "width": pl.get_string_attrib(element, ATTR_WIDTH, "100%"),
-            "height": pl.get_string_attrib(element, ATTR_HEIGHT, "800px"),
-        }
-    ).encode()
+    content_bytes = json.dumps({
+        "read_only": not is_widget_editable(panel, gradable, data["editable"]),
+        "initial_content": initial_content,
+        "width": pl.get_string_attrib(element, ATTR_WIDTH, "100%"),
+        "height": pl.get_string_attrib(element, ATTR_HEIGHT, "800px"),
+    }).encode()
 
     errors: list[str] = []
     if panel == "submission" and drawing_name and drawing_name in data["format_errors"]:

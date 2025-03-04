@@ -1000,6 +1000,9 @@ export class CourseInstanceRenameEditor extends Editor {
     const oldPath = path.join(courseInstancesPath, this.course_instance.short_name);
     const newPath = path.join(courseInstancesPath, this.ciid_new);
 
+    // Skip editing if the paths are the same.
+    if (oldPath === newPath) return null;
+
     // Ensure that the updated course instance folder path is fully contained in the course instances directory
     if (!contains(courseInstancesPath, newPath)) {
       throw new AugmentedError('Invalid folder path', {

@@ -75,7 +75,7 @@ export function InstanceQuestion({
       </div>
     `,
     content: html`
-      <h1 class="sr-only">Instance Question Manual Grading</h1>
+      <h1 class="visually-hidden">Instance Question Manual Grading</h1>
       ${resLocals.assessment_instance.open
         ? html`
             <div class="alert alert-danger" role="alert">
@@ -150,9 +150,12 @@ function ConflictGradingJobModal({
         <div class="modal-content">
           <div class="modal-header bg-danger text-light">
             <div class="modal-title">Grading conflict identified</div>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
           </div>
           <div class="modal-body">
             <div class="alert alert-danger" role="alert">

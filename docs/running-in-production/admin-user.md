@@ -1,4 +1,4 @@
-## Admin User Setup
+# Admin User Setup
 
 After setting up authentication we can elevate a user that's logged into the system to administrator status:
 
