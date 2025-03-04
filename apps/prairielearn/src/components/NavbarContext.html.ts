@@ -16,8 +16,8 @@ export function ContextNavigation({
   if (!navPage) return '';
 
   const navPagesTabs = getNavPageTabs(resLocals.has_enhanced_navigation);
-  const navPageTabs = navPagesTabs[navPage]; 
-  
+  const navPageTabs = navPagesTabs[navPage];
+
   // Some navPages do not have tabs
   if (!navPageTabs) return '';
 
