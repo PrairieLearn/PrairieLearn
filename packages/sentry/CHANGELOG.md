@@ -1,5 +1,15 @@
 # @prairielearn/sentry
 
+## 3.0.0
+
+### Major Changes
+
+- 16c6dd4: Upgrade to v9 of the Sentry SDK
+
+### Patch Changes
+
+- 49bb3fa: Upgrade all JavaScript dependencies
+
 ## 2.0.12
 
 ### Patch Changes
