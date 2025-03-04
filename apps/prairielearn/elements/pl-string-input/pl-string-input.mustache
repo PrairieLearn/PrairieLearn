@@ -59,10 +59,10 @@
                     data-bs-placement="auto" 
                     data-bs-toggle="popover"
                     data-bs-html="true"
-                    title="Format Error"
+                    title="Format error"
                     data-bs-content="{{parse_error}}"
                 >
-                    More info...
+                    More info…
                 </a>
             </span>
         {{/parse_error}}
@@ -77,7 +77,7 @@
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
-    <span class="d-inline invalid-feedback is-invalid" style="white-space: nowrap">
+    <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-danger">
             Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
@@ -91,14 +91,14 @@
             title="Format error"
             data-bs-content="{{parse_error}}"
             >
-           More info...
+           More info…
         </a>
     </span>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/parse_error}}
 {{#missing_input}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    <span class="d-inline invalid-feedback is-invalid" style="white-space: nowrap">
+    <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-dark border">
             Missing Input 
             <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
@@ -113,7 +113,7 @@
             title="Missing input"
             data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
             >
-           More info...
+           More info…
         </a>
     </span>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
