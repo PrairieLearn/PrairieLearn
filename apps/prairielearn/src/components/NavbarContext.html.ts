@@ -26,7 +26,7 @@ export function ContextNavigation({
           nav 
           nav-tabs 
           pl-nav-tabs-bar 
-          ${showSideNav ? 'pt-3' : 'pt-2'} 
+          pt-2
           px-3 
           bg-light
         "
