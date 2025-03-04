@@ -196,8 +196,8 @@ function CourseNav({
           data-boundary="window"
           ${!resLocals.authz_data.overrides
             ? html`
-                hx-get="/pl/navbar/course/${resLocals.course.id}/switcher"
-                hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
+                hx-get="/pl/navbar/course/${resLocals.course.id}/switcher" hx-trigger="mouseover
+                once, focus once, show.bs.dropdown once delay:200ms"
                 hx-target="#sideNavCourseDropdownContent"
               `
             : ''}

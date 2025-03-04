@@ -11,7 +11,6 @@ import {
   selectCourseById,
   updateCourseCommitHash,
 } from '../models/course.js';
-import { InstructorCourseSchema } from '../pages/home/home.html.js';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
 import * as chunks from './chunks.js';
