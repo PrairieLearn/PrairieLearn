@@ -71,13 +71,12 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
 
-      - name: Build ${{ env.CAN_PUSH_IMAGE == 'true' && 'and push' }}
+      - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }}
         id: build
         uses: docker/build-push-action@v6
         if: ${{ steps.check-modified.outputs.was-modified != 'trueTEST' }}
         with:
           context: ${{ inputs.folder }}/${{ matrix.image }}
-          platforms: ${{ runner.os }}/${{ runner.arch }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
@@ -153,14 +152,13 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
 
-      - name: Build ${{ env.CAN_PUSH_IMAGE && 'and push' }}
+      - name: Build ${{ (env.CAN_PUSH_IMAGE && 'and push') || '' }}
         id: build
         uses: docker/build-push-action@v6
         continue-on-error: true
         if: ${{ steps.check-modified.outputs.was-modified != 'trueTEST' }}
         with:
           context: ${{ inputs.folder }}/${{ matrix.image }}
-          platforms: ${{ runner.os }}/${{ runner.arch }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
@@ -174,7 +172,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.folder }}/${{ matrix.image }}
-          platforms: ${{ runner.os }}/${{ runner.arch }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
