@@ -19,6 +19,11 @@ on:
         required: true
         type: string
         default: '[]'
+      exclude:
+        description: 'The combinations to exclude'
+        required: false
+        type: string
+        default: '[]'
 
 env:
   COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -29,6 +34,7 @@ jobs:
       matrix:
         image: ${{ fromJSON(inputs.base-images) }}
         os: [ubuntu-24.04, ubuntu-24.04-arm]
+        exclude: ${{ fromJSON(inputs.exclude) }}
     runs-on: ${{ matrix.os }}
     env:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}

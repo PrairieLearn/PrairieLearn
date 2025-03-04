@@ -31,6 +31,8 @@ jobs:
       image-prefix: prairielearn/workspace
       base-images: "['vscode-base']"
       images: "['desktop', 'jupyterlab', 'jupyterlab-python', 'rstudio', 'xtermjs', 'vscode-python', 'vscode-cpp']"
+      # Deprecated image without arm64 support
+      exclude: "[{'image': 'jupyterlab', 'os': 'ubuntu-24.04-arm'}]"
     secrets: inherit
 
   build-workspace-images-results:
