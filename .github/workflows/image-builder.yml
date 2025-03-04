@@ -85,7 +85,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ env.CAN_PUSH_IMAGE }}
           outputs: |
-            type=docker,${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
+            type=docker,dest=${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
   
       # We will upload the artifact so we can use it in the next job
       - name: Upload artifact
@@ -132,6 +132,8 @@ jobs:
           merge-multiple: true
 
       # This won't do anything if there are no artifacts to download (i.e. the base image didn't change)
+      # Retag these loaded images as latest, so that they get used as the base image instead of 
+      # the one from DockerHub
       - name: Load and tag base images
         run: |
           for file in ${{ runner.temp }}/*.tar; do
