@@ -2,8 +2,7 @@
 # as well as general support of STAT 477 Data Science Programming Methods
 # (which was formerly STAT 430 Topics - Data Science Programming Methods
 
-# Alton Barbehenn and Dirk Eddelbuettel, 2019-2022
-# Dirk Eddelbuettel, 2024
+# Alton Barbehenn and Dirk Eddelbuettel, 2019-2025
 
 # We initially based this container on the 'r-ubuntu:20.04' container of the
 # Rocker Project which offers us a well-understood and stable basis
@@ -55,6 +54,7 @@ RUN apt update \
                  igraph \
                  lahman \
                  lintr \
+                 magick \
                  memoise \
                  microbenchmark \
                  nycflights13 \
@@ -69,6 +69,7 @@ RUN apt update \
                  stringdist \
                  testthat \
                  tidyverse \
+                 tinysnapshot \
                  tinytest \
                  ttdo \
                  unix \

@@ -4,6 +4,7 @@ import io
 import os
 import pathlib
 import sys
+from inspect import signature
 from typing import Any, Literal, TypedDict
 
 import lxml.html
@@ -30,7 +31,7 @@ class RenderContext(TypedDict):
     elements: dict[str, ElementInfo]
     """A dict mapping an element name to information about them."""
 
-    element_extensions: dict[str, dict[str, dict]]
+    element_extensions: dict[str, dict[str, dict[Any, Any]]]
     """A dict mapping an element name to a dict of extensions for that element."""
 
     course_path: str
@@ -57,7 +58,7 @@ def filelike_to_string(filelike: Any) -> str:
 
 
 def process(
-    phase: Phase, data: dict, context: RenderContext
+    phase: Phase, data: dict[str, Any], context: RenderContext
 ) -> tuple[str | None, set[str]]:
     html = context["html"]
     elements = context["elements"]
@@ -87,8 +88,11 @@ def process(
 
     def process_element(
         element: lxml.html.HtmlElement,
-    ) -> None | str | lxml.html.HtmlElement:
+    ) -> str | lxml.html.HtmlElement | None:
         nonlocal result
+
+        if not isinstance(element.tag, str):
+            return element
 
         if element.tag not in elements:
             return element
@@ -143,12 +147,32 @@ def process(
             temp_tail = element.tail
             element.tail = None
 
-            element_value = mod[phase](lxml.html.tostring(element), data)
+            args: list[Any] = [lxml.html.tostring(element), data]
+
+            # We need to support legacy element functions, which take three arguments.
+            # The second argument is `element_index`; we'll pass `None`. This is
+            # consistent with the same backwards-compatibility logic in `zygote.py`.
+            arg_names = list(signature(mod[phase]).parameters.keys())
+            if arg_names == ["element_html", "element_index", "data"]:
+                args.insert(1, None)
+
+            element_value = mod[phase](*args)
 
             # Restore the tail text.
             element.tail = temp_tail
 
-            check_data(original_data, data, phase)
+            if phase not in ("render", "file"):
+                # For legacy reasons, we don't validate `data` during the,
+                # `render` or `file` phases, since the old question processor
+                # didn't either. These phases will never produce new data
+                # that's stored anywhere, so this should technically be fine,
+                # though the lack of an error could mislead instructors into
+                # thinking that any changed data will be persisted.
+                #
+                # TODO: Once we have a system for reporting warnings to instructors,
+                # we should restore this check and emit a warning if it fails.
+                # See https://github.com/PrairieLearn/PrairieLearn/issues/7337
+                check_data(original_data, data, phase)
 
             # Clean up changes to `data` and `original_data` for the next iteration.
             restore_data(data)
@@ -188,7 +212,7 @@ def process(
 
 
 def prepare_data(
-    phase: Phase, data: dict, context: RenderContext, element_tag: str
+    phase: Phase, data: dict[str, Any], context: RenderContext, element_tag: str
 ) -> None:
     element_extensions = context["element_extensions"]
     element_info = context["elements"][element_tag]
@@ -218,7 +242,7 @@ def prepare_data(
         data["options"]["client_files_extensions_url"] = client_files_extensions_url
 
 
-def restore_data(data: dict) -> None:
+def restore_data(data: dict[str, Any]) -> None:
     data.pop("extensions", None)
     data["options"].pop("client_files_element_url", None)
     data["options"].pop("client_files_extensions_url", None)

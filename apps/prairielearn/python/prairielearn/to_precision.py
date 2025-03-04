@@ -5,13 +5,13 @@ from typing import Any, Literal
 
 from typing_extensions import assert_never
 
+Notation = Literal["auto", "sci", "std", "standard", "eng", "engineering", "scientific"]
+
 
 def to_precision(
     value: Any,
     precision: int,
-    notation: Literal[
-        "auto", "sci", "std", "standard", "engineering", "scientific"
-    ] = "auto",
+    notation: Notation = "auto",
     filler: str = "e",
 ) -> str:
     """
@@ -50,7 +50,7 @@ def to_precision(
     return converter(value, precision, filler)
 
 
-def std_notation(value: float, precision: int, _extra=None) -> str:
+def std_notation(value: float, precision: int, _extra: Any = None) -> str:
     """
     standard notation (US version)
     ref: http://www.mathsisfun.com/definitions/standard-notation.html
@@ -210,6 +210,6 @@ def _number_profile(value: float, precision: int) -> tuple[str, int, bool]:
             is_neg = False
 
         power = -1 * math.floor(math.log10(value)) + precision - 1
-        sig_digits = str(int(round(abs(value) * 10.0**power)))
+        sig_digits = str(round(abs(value) * 10.0**power))
 
     return sig_digits, int(-power), is_neg

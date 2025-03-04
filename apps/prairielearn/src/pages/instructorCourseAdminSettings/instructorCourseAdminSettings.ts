@@ -80,35 +80,29 @@ router.post(
         await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
       );
 
-      if (
-        req.body.short_name !== courseInfo.name ||
-        req.body.title !== courseInfo.title ||
-        req.body.display_timezone !== courseInfo.timezone
-      ) {
-        const origHash = req.body.orig_hash;
+      const origHash = req.body.orig_hash;
 
-        const courseInfoEdit = courseInfo;
-        courseInfoEdit.name = req.body.short_name;
-        courseInfoEdit.title = req.body.title;
-        courseInfoEdit.timezone = req.body.display_timezone;
+      const courseInfoEdit = courseInfo;
+      courseInfoEdit.name = req.body.short_name;
+      courseInfoEdit.title = req.body.title;
+      courseInfoEdit.timezone = req.body.display_timezone;
 
-        const editor = new FileModifyEditor({
-          locals: res.locals,
-          container: {
-            rootPath: paths.rootPath,
-            invalidRootPaths: paths.invalidRootPaths,
-          },
-          filePath: path.join(res.locals.course.path, 'infoCourse.json'),
-          editContents: b64EncodeUnicode(JSON.stringify(courseInfoEdit, null, 2)),
-          origHash,
-        });
+      const editor = new FileModifyEditor({
+        locals: res.locals as any,
+        container: {
+          rootPath: paths.rootPath,
+          invalidRootPaths: paths.invalidRootPaths,
+        },
+        filePath: path.join(res.locals.course.path, 'infoCourse.json'),
+        editContents: b64EncodeUnicode(JSON.stringify(courseInfoEdit, null, 2)),
+        origHash,
+      });
 
-        const serverJob = await editor.prepareServerJob();
-        try {
-          await editor.executeWithServerJob(serverJob);
-        } catch {
-          return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-        }
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch {
+        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
       flash('success', 'Course configuration updated successfully');
       return res.redirect(req.originalUrl);
@@ -125,7 +119,7 @@ router.post(
         topics: [],
       };
       const editor = new CourseInfoCreateEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         infoJson,
       });
       const serverJob = await editor.prepareServerJob();

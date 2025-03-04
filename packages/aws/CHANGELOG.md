@@ -1,5 +1,12 @@
 # @prairielearn/aws
 
+## 2.0.8
+
+### Patch Changes
+
+- 4a8b376: Upgrade all JavaScript dependencies
+- 00629e4: Upgrade AWS packages
+
 ## 2.0.7
 
 ### Patch Changes

@@ -24,8 +24,7 @@ VALUES
     $resource_link_title,
     $resource_link_description
   )
-ON CONFLICT (course_instance_id, context_id, resource_link_id) DO
-UPDATE
+ON CONFLICT (course_instance_id, context_id, resource_link_id) DO UPDATE
 SET
   resource_link_title = $resource_link_title,
   resource_link_description = $resource_link_description
@@ -49,8 +48,7 @@ VALUES
     $lis_outcome_service_url,
     $lti_credential_id
   )
-ON CONFLICT (user_id, assessment_id) DO
-UPDATE
+ON CONFLICT (user_id, assessment_id) DO UPDATE
 SET
   lis_result_sourcedid = $lis_result_sourcedid,
   lis_outcome_service_url = $lis_outcome_service_url;

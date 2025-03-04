@@ -4,17 +4,15 @@ Phase = Literal["generate", "prepare", "render", "parse", "grade", "test", "file
 
 ValueType = Literal["boolean", "integer", "number", "string", "object"]
 
-all_phases: frozenset[Phase] = frozenset(
-    {
-        "generate",
-        "prepare",
-        "render",
-        "parse",
-        "grade",
-        "test",
-        "file",
-    }
-)
+all_phases: frozenset[Phase] = frozenset({
+    "generate",
+    "prepare",
+    "render",
+    "parse",
+    "grade",
+    "test",
+    "file",
+})
 
 
 class PropInfo(TypedDict):
@@ -27,7 +25,7 @@ PROPS: dict[str, PropInfo] = {
     "params": {
         "type": "object",
         "present_phases": all_phases,
-        "edit_phases": frozenset({"generate", "prepare", "grade"}),
+        "edit_phases": frozenset({"generate", "prepare", "parse", "grade"}),
     },
     "correct_answers": {
         "type": "object",
@@ -156,7 +154,9 @@ def check_prop(
         raise ValueError(f'data["{prop}"] has been illegally modified')
 
 
-def check_data(old_data: dict, new_data: dict, phase: Phase) -> None:
+def check_data(
+    old_data: dict[Any, Any], new_data: dict[Any, Any], phase: Phase
+) -> None:
     # First, check for extra keys on `new_data`.
     extra_keys = set(new_data.keys()) - set(PROPS.keys())
     if extra_keys:

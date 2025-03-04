@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/browser-utils",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "type": "module",
   "main": "dist/index.js",
   "sideEffects": false,
@@ -19,6 +19,6 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "typescript": "^5.7.2"
+    "typescript": "^5.8.2"
   }
 }

@@ -2,8 +2,9 @@ import json
 from itertools import chain, repeat
 from typing import Any
 
+import prairielearn as pl
+import prairielearn.sympy_utils as psu
 import pytest
-import python_helper_sympy as phs
 import sympy
 
 
@@ -14,7 +15,7 @@ def test_evaluate() -> None:
     f = sympy.Function("f")
     custom_function = sympy.Function("custom_function")
 
-    locals_for_eval: phs.LocalsForEval = {
+    locals_for_eval: psu.LocalsForEval = {
         "functions": {str(f): f, str(custom_function): custom_function},
         "variables": {str(z): z},
         "helpers": {},
@@ -23,13 +24,13 @@ def test_evaluate() -> None:
     expression = f(z) + custom_function(z, 1) + 3  # type: ignore
 
     # Check that using custom functions on the backend works
-    assert expression == phs.evaluate(
+    assert expression == psu.evaluate(
         "f(z) + custom_function(z, 1) + 3", locals_for_eval=locals_for_eval
     )
 
     # Safety check
-    with pytest.raises(phs.BaseSympyError):
-        phs.evaluate("eval('dict')", locals_for_eval=locals_for_eval)
+    with pytest.raises(psu.BaseSympyError):
+        psu.evaluate("eval('dict')", locals_for_eval=locals_for_eval)
 
 
 class TestSympy:
@@ -127,7 +128,7 @@ class TestSympy:
     def test_custom_function_conversion(
         self, a_sub: str, sympy_ref: sympy.Expr
     ) -> None:
-        assert sympy_ref == phs.convert_string_to_sympy(
+        assert sympy_ref == psu.convert_string_to_sympy(
             a_sub,
             self.SYMBOL_NAMES,
             allow_complex=True,
@@ -136,7 +137,7 @@ class TestSympy:
 
     @pytest.mark.parametrize(("a_sub", "sympy_ref"), INCORRECT_FUNCTION_PAIRS)
     def test_custom_function_incorrect(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
-        assert sympy_ref != phs.convert_string_to_sympy(
+        assert sympy_ref != psu.convert_string_to_sympy(
             a_sub,
             self.SYMBOL_NAMES,
             allow_complex=True,
@@ -145,7 +146,7 @@ class TestSympy:
 
     @pytest.mark.parametrize(("a_sub", "sympy_ref"), EXPR_PAIRS)
     def test_string_conversion(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
-        assert sympy_ref == phs.convert_string_to_sympy(
+        assert sympy_ref == psu.convert_string_to_sympy(
             a_sub,
             self.SYMBOL_NAMES,
             allow_complex=True,
@@ -155,7 +156,7 @@ class TestSympy:
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
         a_sub, _ = a_pair
         assert (
-            phs.validate_string_as_sympy(a_sub, self.SYMBOL_NAMES, allow_complex=True)
+            psu.validate_string_as_sympy(a_sub, self.SYMBOL_NAMES, allow_complex=True)
             is None
         )
 
@@ -166,7 +167,7 @@ class TestSympy:
     def test_string_conversion_no_complex(
         self, a_sub: str, sympy_ref: sympy.Expr
     ) -> None:
-        assert sympy_ref != phs.convert_string_to_sympy(
+        assert sympy_ref != psu.convert_string_to_sympy(
             a_sub, ["i", "j"], allow_complex=False
         )
 
@@ -180,11 +181,11 @@ class TestSympy:
         var = sympy.symbols("I")
         ref_expr = 2 * var
 
-        assert ref_expr == phs.convert_string_to_sympy(
+        assert ref_expr == psu.convert_string_to_sympy(
             a_sub, ["I"], allow_complex=False
         )
 
-        assert ref_expr == phs.json_to_sympy(phs.sympy_to_json(ref_expr))
+        assert ref_expr == psu.json_to_sympy(psu.sympy_to_json(ref_expr))
 
     @pytest.mark.parametrize(
         ("a_pair", "custom_functions"),
@@ -201,14 +202,14 @@ class TestSympy:
         remove_assumptions: bool,  # noqa: FBT001
     ) -> None:
         a_sub, _ = a_pair
-        sympy_expr = phs.convert_string_to_sympy(
+        sympy_expr = psu.convert_string_to_sympy(
             a_sub,
             self.SYMBOL_NAMES,
             allow_complex=True,
             custom_functions=custom_functions,
         )
         # Check that json serialization works
-        json_dict = phs.sympy_to_json(sympy_expr)
+        json_dict = psu.sympy_to_json(sympy_expr)
 
         if remove_assumptions:
             json_dict.pop("_assumptions")
@@ -216,7 +217,7 @@ class TestSympy:
         json_expr = json.dumps(json_dict, allow_nan=False)
 
         # Check equivalence after converting back
-        json_converted_expr = phs.json_to_sympy(json.loads(json_expr))
+        json_converted_expr = psu.json_to_sympy(json.loads(json_expr))
 
         assert sympy_expr == json_converted_expr
 
@@ -239,19 +240,34 @@ class TestSympy:
     def test_assumption_conversion(
         self, assumptions: dict[str, dict[str, Any]], expression_str: str
     ) -> None:
-        sympy_expr = phs.convert_string_to_sympy(
+        sympy_expr = psu.convert_string_to_sympy(
             expression_str,
             ["x", "y", "z"],
             allow_complex=True,
             assumptions=assumptions,
         )
 
-        json_expr = json.dumps(phs.sympy_to_json(sympy_expr), allow_nan=False)
+        json_expr = json.dumps(psu.sympy_to_json(sympy_expr), allow_nan=False)
 
         # Check equivalence after converting back
-        json_converted_expr = phs.json_to_sympy(json.loads(json_expr))
+        json_converted_expr = psu.json_to_sympy(json.loads(json_expr))
         assert sympy_expr == json_converted_expr
         assert sympy_expr.assumptions0 == json_converted_expr.assumptions0
+
+        # Ensure this works with to_json/from_json as well
+        assert sympy_expr == pl.from_json(pl.to_json(sympy_expr))
+
+    @pytest.mark.parametrize(
+        ("matrix"),
+        [
+            sympy.Matrix([[1, -1], [3, 4], [0, 2]]),  # rectangular matrix
+            sympy.Matrix([[sympy.Symbol("x")]]),  # matrix with symbols
+            sympy.Matrix([[]]),  # empty matrix
+        ],
+    )
+    def test_matrix_conversion(self, matrix: sympy.Matrix) -> None:
+        # Check equivalence after converting back
+        assert matrix == pl.from_json(pl.to_json(matrix))
 
     @pytest.mark.parametrize(
         ("expr", "bad_assumptions"),
@@ -261,10 +277,10 @@ class TestSympy:
         ],
     )
     def test_bad_assumption_conversion(
-        self, expr: str, bad_assumptions: phs.AssumptionsDictT
+        self, expr: str, bad_assumptions: psu.AssumptionsDictT
     ) -> None:
-        with pytest.raises(phs.HasInvalidAssumptionError):
-            phs.convert_string_to_sympy(
+        with pytest.raises(psu.HasInvalidAssumptionError):
+            psu.convert_string_to_sympy(
                 expr,
                 custom_functions=["f"],
                 variables=["y"],
@@ -273,7 +289,7 @@ class TestSympy:
 
 
 class TestExceptions:
-    VARIABLES = ("n",)
+    VARIABLES: tuple[str] = ("n",)
 
     COMPLEX_CASES = ("i", "5 * i", "j", "I")
     NO_FLOATS_CASES = ("3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)")
@@ -289,76 +305,83 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_not_allowed_complex(self, a_sub: str) -> None:
-        with pytest.raises((phs.HasComplexError, phs.HasInvalidSymbolError)):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES, allow_complex=False)
+        with pytest.raises((psu.HasComplexError, psu.HasInvalidSymbolError)):
+            psu.convert_string_to_sympy(a_sub, self.VARIABLES, allow_complex=False)
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasConflictingVariableError):
-            phs.convert_string_to_sympy(a_sub, ["i", "j"], allow_complex=True)
+        with pytest.raises(psu.HasConflictingVariableError):
+            psu.convert_string_to_sympy(a_sub, ["i", "j"], allow_complex=True)
 
     def test_reserved_functions(self) -> None:
-        with pytest.raises(phs.HasConflictingFunctionError):
-            phs.convert_string_to_sympy("sin 1", custom_functions=["sin", "f"])
+        with pytest.raises(psu.HasConflictingFunctionError):
+            psu.convert_string_to_sympy("sin 1", custom_functions=["sin", "f"])
 
     @pytest.mark.parametrize("a_sub", NO_FLOATS_CASES)
     def test_no_floats(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasFloatError):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
+        with pytest.raises(psu.HasFloatError):
+            psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_EXPRESSION_CASES)
     def test_invalid_expression(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasInvalidExpressionError):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
+        with pytest.raises(psu.HasInvalidExpressionError):
+            psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_FUNCTION_CASES)
     def test_invalid_function(self, a_sub: str) -> None:
-        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidFunctionError)):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
+        with pytest.raises((psu.HasInvalidSymbolError, psu.HasInvalidFunctionError)):
+            psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_VARIABLE_CASES)
     def test_invalid_variable(self, a_sub: str) -> None:
-        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidVariableError)):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
+        with pytest.raises((psu.HasInvalidSymbolError, psu.HasInvalidVariableError)):
+            psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", FUNCTION_NOT_CALLED_CASES)
     def test_function_not_called(self, a_sub: str) -> None:
-        with pytest.raises(phs.FunctionNameWithoutArgumentsError):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
+        with pytest.raises(psu.FunctionNameWithoutArgumentsError):
+            psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_PARSE_CASES)
     def test_parse_error(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasParseError):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
+        with pytest.raises(psu.HasParseError):
+            psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_ESCAPE_CASES)
     def test_escape_error(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasEscapeError):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
+        with pytest.raises(psu.HasEscapeError):
+            psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_COMMENT_CASES)
     def test_comment_error(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasCommentError):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
+        with pytest.raises(psu.HasCommentError):
+            psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     # Test formatting strings from validation
 
     @pytest.mark.parametrize(
-        ("a_sub_list", "target_string"),
+        ("a_sub_list", "target_string", "with_vars"),
         [
-            (NO_FLOATS_CASES, "floating-point number"),
-            (INVALID_EXPRESSION_CASES, "invalid expression"),
-            (INVALID_FUNCTION_CASES, "invalid"),
-            (INVALID_VARIABLE_CASES, "invalid symbol"),
-            (INVALID_PARSE_CASES, "syntax error"),
-            (INVALID_ESCAPE_CASES, 'must not contain the character "\\"'),
-            (INVALID_COMMENT_CASES, 'must not contain the character "#"'),
+            (NO_FLOATS_CASES, "floating-point number", ()),
+            (INVALID_EXPRESSION_CASES, "invalid expression", ()),
+            (INVALID_FUNCTION_CASES, "invalid", ()),
+            (INVALID_VARIABLE_CASES, "invalid symbol", ()),
+            (INVALID_PARSE_CASES, "syntax error", ()),
+            (INVALID_ESCAPE_CASES, 'must not contain the character "\\"', ()),
+            (INVALID_COMMENT_CASES, 'must not contain the character "#"', ()),
+            # TODO: not handled
+            # (COMPLEX_CASES, "must be expressed as integers", ("i",)),
         ],
     )
-    def test_invalid_format(self, a_sub_list: list[str], target_string: str) -> None:
+    def test_invalid_format(
+        self, a_sub_list: list[str], target_string: str, with_vars: tuple[str]
+    ) -> None:
         for a_sub in a_sub_list:
-            format_error = phs.validate_string_as_sympy(
-                a_sub, self.VARIABLES, allow_complex=False, allow_trig_functions=True
+            format_error = psu.validate_string_as_sympy(
+                a_sub,
+                self.VARIABLES + with_vars,
+                allow_complex=False,
+                allow_trig_functions=True,
             )
             assert format_error is not None
             assert target_string in format_error
@@ -369,4 +392,15 @@ class TestExceptions:
     [("abba", "abba"), ("\u03bc0", "mu0")],
 )
 def test_greek_unicode_transform(input_str: str, expected_output: str) -> None:
-    assert phs.greek_unicode_transform(input_str) == expected_output
+    assert psu.greek_unicode_transform(input_str) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("items_string", "expected_output"),
+    [
+        ("1, 2, a", ["1", "2", "a"]),
+        (None, []),
+    ],
+)
+def test_get_items_list(items_string: str | None, expected_output: list[str]) -> None:
+    assert psu.get_items_list(items_string) == expected_output

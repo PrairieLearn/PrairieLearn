@@ -6,7 +6,7 @@ from collections.abc import Callable
 from functools import wraps
 from os.path import join, splitext
 from types import ModuleType
-from typing import IO, Any
+from typing import IO, Any, TypeVar
 
 import pygments
 from code_feedback import Feedback
@@ -63,26 +63,28 @@ def save_plot(plt: ModuleType, iternum: int = 0) -> None:
             f.write(imgsrc)
 
 
-def points(points: float) -> Callable:
+def points(points: float) -> Callable[..., Callable[..., Any]]:
     """
     Set the number of points that a test case should award.
     """
+    T = TypeVar("T")
 
-    def decorator(f: Any):
+    def decorator(f: Callable[..., T]) -> Callable[..., T]:
         f.__dict__["points"] = points
         return f
 
     return decorator
 
 
-def name(name: str) -> Callable:
+def name(name: str) -> Callable[..., Callable[..., None]]:
     """
     Set the name of a test case, this will appear on the "results" tab.
     """
+    T = TypeVar("T")
 
-    def decorator(f: Callable):
+    def decorator(f: Callable[..., T]) -> Callable[..., None]:
         @wraps(f)
-        def wrapped(test_instance: Any):
+        def wrapped(test_instance: Any) -> None:
             Feedback.set_name(f.__name__)
             if test_instance.total_iters > 1 and getattr(
                 test_instance, "print_iteration_prefix", True
@@ -96,13 +98,13 @@ def name(name: str) -> Callable:
     return decorator
 
 
-def not_repeated(f: Callable) -> Callable:
+def not_repeated(f: Callable[..., Any]) -> Callable[..., None]:
     """
     Marks this test as running only once, if the test suite is to be run multiple times.
     """
 
     @wraps(f)
-    def wrapped(test_instance: Any):
+    def wrapped(test_instance: Any) -> None:
         # test_instance should be typed as PLTestCase if there was no circular import
         if test_instance.iter_num > 0:
             raise DoNotRunError
@@ -124,7 +126,7 @@ def print_student_code(
     """
 
     with open(st_code, encoding="utf-8") as f:
-        filename, extension = splitext(st_code)
+        _, extension = splitext(st_code)
         if extension == ".ipynb":
             contents = extract_ipynb_contents(f, ipynb_key).strip()
             lines = filter(
