@@ -35,10 +35,10 @@ jobs:
       exclude: "[{'image': 'jupyterlab', 'os': 'ubuntu-24.04-arm'}]"
     secrets: inherit
 
+  # This job is used to check if `build-workspace-images` was successful.
   build-workspace-images-results:
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    name: Final Results of Workspace Images
     needs: [build-workspace-images]
     steps:
       - run: |
@@ -330,7 +330,7 @@ jobs:
   report-image-sizes:
     runs-on: ubuntu-latest
     needs:
-      - build-workspace-images-results
+      - build-workspace-images
       - build-grader-images
       - build-core-images
     if: ${{ always() }}

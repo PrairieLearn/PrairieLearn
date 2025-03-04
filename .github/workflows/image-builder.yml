@@ -181,3 +181,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+
+      - name: Sleep before retrying (Optional)
+        if: steps.build.outcome == 'failure'
+        run: sleep 10
+
+      - name: Retry build ${{ env.CAN_PUSH_IMAGE && 'and push' }} (Optional)
+        if: steps.build.outcome == 'failure' 
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.folder }}/${{ matrix.image }}
+          platforms: ${{ steps.set-platform.outputs.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
