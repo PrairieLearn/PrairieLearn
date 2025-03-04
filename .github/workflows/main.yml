@@ -166,8 +166,10 @@ jobs:
       # containers that need it.
       # https://github.com/docker/build-push-action/issues/1116
       - name: Tag prairielearn/workspace-vscode-base for local registry
+        if: ${{ env.workspaces_vscode_base_modified }}
         run: docker tag prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }} localhost:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
       - name: Push prairielearn/workspace-vscode-base to local registry
+        if: ${{ env.workspaces_vscode_base_modified }}
         run: docker push localhost:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
       ######################################################################################################
@@ -184,8 +186,8 @@ jobs:
           no-cache: true
           tags: prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}
           build-args: |
-            BASE_IMAGE=localhost:5000/prairielearn/workspace-vscode-base
-            BASE_IMAGE_TAG=${{ env.COMMIT_SHA }}
+            BASE_IMAGE=${{ env.workspaces_vscode_base_modified && 'localhost:5000/prairielearn/workspace-vscode-base' || 'prairielearn/workspace-vscode-base' }}
+            BASE_IMAGE_TAG=${{ env.workspaces_vscode_base_modified && env.COMMIT_SHA || 'latest' }}
 
       ######################################################################################################
       # prairielearn/workspace-vscode-cpp
@@ -201,8 +203,8 @@ jobs:
           no-cache: true
           tags: prairielearn/workspace-vscode-cpp:${{ env.COMMIT_SHA }}
           build-args: |
-            BASE_IMAGE=localhost:5000/prairielearn/workspace-vscode-base
-            BASE_IMAGE_TAG=${{ env.COMMIT_SHA }}
+            BASE_IMAGE=${{ env.workspaces_vscode_base_modified && 'localhost:5000/prairielearn/workspace-vscode-base' || 'prairielearn/workspace-vscode-base' }}
+            BASE_IMAGE_TAG=${{ env.workspaces_vscode_base_modified && env.COMMIT_SHA || 'latest' }}
 
   build-grader-images:
     runs-on: ubuntu-latest
