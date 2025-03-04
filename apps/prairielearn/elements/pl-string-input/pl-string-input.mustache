@@ -44,17 +44,18 @@
         {{/incorrect}}
     </span>
         {{#parse_error}}
-            <span id="pl-string-input-{{uuid}}-error" class="invalid-feedback d-block">
+            <span class="invalid-feedback d-block">
                 <span class="badge text-bg-danger">
                     Invalid 
                     <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
                 </span>
+                <span id="pl-string-input-{{uuid}}-error">
                 You must enter a valid string.
+                </span>
                 <a 
-                    class="link-opacity-100"
+                    class="link-primary"
                     tabindex="0"
                     role="button"
-                    data-bs-container="body"
                     data-bs-placement="auto" 
                     data-bs-toggle="popover"
                     data-bs-html="true"
@@ -81,7 +82,7 @@
             Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
         <a
-            class="link-opacity-100"
+            class="link-primary"
             tabindex="0"
             role="button"
             data-bs-placement="auto"
@@ -103,7 +104,7 @@
             <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
         <a 
-            class="link-opacity-100"
+            class="link-primary"
             tabindex="0"
             role="button"
             data-bs-placement="auto"
