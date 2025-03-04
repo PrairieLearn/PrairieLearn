@@ -15,5 +15,8 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^20.17.23",
     "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@typescript-eslint/utils": "^8.26.0"
   }
 }

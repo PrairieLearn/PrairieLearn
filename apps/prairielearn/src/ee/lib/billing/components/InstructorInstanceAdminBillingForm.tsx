@@ -244,7 +244,7 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
 }
 
 function Alert(props: AlertProps) {
-  return <div class={`alert alert-${props.color}`}>${props.message}</div>;
+  return <div class={`alert alert-${props.color}`}>{props.message}</div>;
 }
 
 function enrollmentLimitExplanation({
