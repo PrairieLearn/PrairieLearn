@@ -120,7 +120,7 @@ def handle_images(question_dir: str, text: str) -> str:
     # We use regex instead of a proper HTML parser because we want to limit this
     # script to only using the Python standard library.
     image_idx = 1
-    for match in re.finditer(r'(<p>)(<img[^>]*src="([^"]+)"[^>]*>)(</p>)', text):
+    for match in re.finditer(r'(<p>)?(<img[^>]*src="([^"]+)"[^>]*>)(</p>)?', text):
         url = match.group(3)
         if not url.startswith("http"):
             continue
@@ -132,12 +132,13 @@ def handle_images(question_dir: str, text: str) -> str:
         # Canvas image URLs don't include the file extension, so we need to
         # extract it from the `Content-Type` header.
         res = requests.get(url)
+        res.raise_for_status()
         extension = image_file_extension(res.headers["Content-Type"])
 
         file_name = f"image_{image_idx}.{extension}"
         file_path = os.path.join(client_files_question_dir, file_name)
         with open(file_path, "wb") as f:
-            f.write(requests.get(url).content)
+            f.write(res.content)
 
         # Extract the alt text, if any.
         alt_match = re.search(r'alt="([^"]*)"', match.group(0))
