@@ -1,4 +1,4 @@
-FROM quay.io/jupyter/datascience-notebook:lab-4.3.5
+FROM jupyter/datascience-notebook:a85bfad8ca54
 COPY jupyter_notebook_config.py /etc/jupyter/
 
 ENV XDG_DATA_HOME=/tmp/local/share
