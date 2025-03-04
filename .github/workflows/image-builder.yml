@@ -56,7 +56,7 @@ jobs:
           fi
 
       - name: Login to DockerHub
-        if: ${{ env.CAN_PUSH_IMAGE }}
+        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -77,19 +77,19 @@ jobs:
       - name: Build ${{ env.CAN_PUSH_IMAGE == 'true' && 'and push' }}
         id: build
         uses: docker/build-push-action@v6
-        if: ${{ steps.check-modified.outputs.was-modified }}
+        if: ${{ steps.check-modified.outputs.was-modified != 'trueTEST' }}
         with:
           context: ${{ inputs.folder }}/${{ matrix.image }}
           platforms: ${{ steps.set-platform.outputs.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
-          push: ${{ env.CAN_PUSH_IMAGE }}
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           outputs: |
             type=docker,dest=${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
   
       # We will upload the artifact so we can use it in the next job
       - name: Upload artifact
-        if: ${{ steps.check-modified.outputs.was-modified }}
+        if: ${{ steps.check-modified.outputs.was-modified != 'trueTEST'}}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.image }}-${{ matrix.os }}-tarball
@@ -137,8 +137,9 @@ jobs:
       - name: Load and tag base images
         run: |
           for file in ${{ runner.temp }}/*.tar; do
-            docker load -i "$file" | sed -n 's/Loaded image: //p' | while read -r image; do
-              docker tag "$image" "$image:latest"
+            docker load -i "$file" | sed -n 's/Loaded image: //p' | while read -r tagged_image; do
+              image="${tagged_image%:*}"
+              docker tag "$tagged_image" "$image:latest"
             done
           done
           docker image ls -a
@@ -166,10 +167,10 @@ jobs:
       - name: Build ${{ env.CAN_PUSH_IMAGE && 'and push' }}
         id: build
         uses: docker/build-push-action@v6
-        if: ${{ steps.check-modified.outputs.was-modified }}
+        if: ${{ steps.check-modified.outputs.was-modified != 'trueTEST' }}
         with:
           context: ${{ inputs.folder }}/${{ matrix.image }}
           platforms: ${{ steps.set-platform.outputs.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
-          push: ${{ env.CAN_PUSH_IMAGE }}
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
