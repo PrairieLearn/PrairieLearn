@@ -27,12 +27,12 @@ export function IssueBadgePreact({
   if (Number(count) === 0) return '';
 
   if (suppressLink) {
-    return <span class={clsx('badge badge-pill badge-danger', className)}>{count}</span>;
+    return <span class={clsx('badge rounded-pill text-bg-danger', className)}>{count}</span>;
   }
 
   return (
     <a
-      class={clsx('badge badge-pill badge-danger', className)}
+      class={clsx('badge rounded-pill text-bg-danger', className)}
       href={`${urlPrefix}/course_admin/issues${
         issueQid ? `?q=is%3Aopen+qid%3A${encodeURIComponent(issueQid)}` : ''
       }`}

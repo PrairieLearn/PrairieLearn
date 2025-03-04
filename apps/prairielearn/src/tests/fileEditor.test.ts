@@ -944,7 +944,7 @@ function testUploadFile(params: {
         elemList = row.find('button[id^="instructorFileUploadForm-"]');
       }
       assert.lengthOf(elemList, 1);
-      const $ = cheerio.load(elemList[0].attribs['data-content']);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
@@ -1026,7 +1026,7 @@ function testRenameFile(params: {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
       elemList = row.find('button[data-testid="rename-file-button"]');
       assert.lengthOf(elemList, 1);
-      const $ = cheerio.load(elemList[0].attribs['data-content']);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
@@ -1078,7 +1078,7 @@ function testDeleteFile(params: { url: string; path: string }) {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
       elemList = row.find('button[data-testid="delete-file-button"]');
       assert.lengthOf(elemList, 1);
-      const $ = cheerio.load(elemList[0].attribs['data-content']);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);

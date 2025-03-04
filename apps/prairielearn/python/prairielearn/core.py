@@ -1,3 +1,12 @@
+"""Utilities for building questions and elements in PrairieLearn.
+
+```python
+from prairielearn import ...
+# or ...
+from prairielearn.core import ...
+```
+"""
+
 import collections
 import html
 import importlib
@@ -10,7 +19,6 @@ import os
 import random
 import re
 import string
-import unicodedata
 import uuid
 from collections import namedtuple
 from collections.abc import Callable, Generator
@@ -37,14 +45,17 @@ from prairielearn.sympy_utils import (
     sympy_to_json,
 )
 from prairielearn.to_precision import to_precision
-from prairielearn.unicode_utils import full_unidecode
+from prairielearn.unicode_utils import escape_unicode_string, full_unidecode
 
 if TYPE_CHECKING:
     from numpy.core.arrayprint import _FormatDict
 
 
 class PartialScore(TypedDict):
-    """A class with type signatures for the partial scores dict"""
+    """A class with type signatures for the partial scores dict.
+
+    For more information see the [element developer guide](../../devElements.md).
+    """
 
     score: float | None
     weight: NotRequired[int]
@@ -59,7 +70,10 @@ class PartialScore(TypedDict):
 # for their answer data, feedback data, etc., but TypedDicts with Generics are
 # not yet supported: https://bugs.python.org/issue44863
 class QuestionData(TypedDict):
-    """A class with type signatures for the data dictionary"""
+    """A class with type signatures for the data dictionary.
+
+    For more information see the [element developer guide](../../devElements.md).
+    """
 
     params: dict[str, Any]
     correct_answers: dict[str, Any]
@@ -282,7 +296,6 @@ _JSONSerializedType = (
     | _JSONSerializedSympyMatrix
 )
 
-# This represents the object formats that will be serialized by the to_json function
 _JSONPythonType = (
     np.complex64
     | np.complex128
@@ -297,6 +310,10 @@ _JSONPythonType = (
     | nx.MultiGraph
     | nx.MultiDiGraph
 )
+"""
+This represents additional object formats (i.e. non-standard Python types)
+that can be serialized / deserialized.
+"""
 
 
 @overload
@@ -324,32 +341,38 @@ def to_json(
     np_encoding_version: Literal[1, 2] = 1,
 ) -> Any | _JSONSerializedType:
     """
+    Convert a value to a JSON serializable format.
+
     If v has a standard type that cannot be json serialized, it is replaced with
-    a {'_type':..., '_value':...} pair that can be json serialized:
+    a `{'_type': ..., '_value': ...}` pair that can be json serialized.
 
-        If np_encoding_version is set to 2, will serialize numpy scalars as follows:
+    This is a complete table of the mappings:
 
-        numpy scalar -> '_type': 'np_scalar'
+    | Type | JSON `_type` field | notes |
+    | --- | --- | --- |
+    | complex scalar | `complex` | including numpy |
+    | non-complex ndarray | `ndarray` | assumes each element can be json serialized |
+    | complex ndarray | `complex_ndarray` | |
+    | `sympy.Expr` | `sympy` | any scalar sympy expression |
+    | `sympy.Matrix` | `sympy_matrix` | |
+    | `pandas.DataFrame` | `dataframe` | `df_encoding_version=1` |
+    | `pandas.DataFrame` | `dataframe_v2` | `df_encoding_version=2` |
+    | networkx graph type | `networkx_graph` |
+    | numpy scalar | `np_scalar` | `np_encoding_version=2` |
+    | any | `v` | if v can be json serialized |
 
-        If df_encoding_version is set to 2, will serialize pandas DataFrames as follows:
+    !!! note
+        The `'dataframe_v2'` encoding allows for missing and date time values whereas
+        the `'dataframe'` (default) does not. However, the `'dataframe'` encoding allows for complex
+        numbers while `'dataframe_v2'` does not.
 
-        pandas.DataFrame -> '_type': 'dataframe_v2'
+    If `np_encoding_version` is set to 2, then numpy scalars serialize using `'_type': 'np_scalar'`.
 
-        Otherwise, the following mappings are used:
+    If `df_encoding_version` is set to 2, then pandas DataFrames serialize using `'_type': 'dataframe_v2'`.
 
-        any complex scalar (including numpy) -> '_type': 'complex'
-        non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
-        complex ndarray -> '_type': 'complex_ndarray'
-        sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
-        sympy.Matrix -> '_type': 'sympy_matrix'
-        pandas.DataFrame -> '_type': 'dataframe'
-        any networkx graph type -> '_type': 'networkx_graph'
+    See [from_json][prairielearn.core.from_json] for details about the differences between encodings.
 
-    Note that the 'dataframe_v2' encoding allows for missing and date time values whereas
-    the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
-    numbers while 'dataframe_v2' does not.
-
-    If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
+    If v is an ndarray, this function preserves its dtype (by adding `'_dtype'` as
     a third field in the dictionary).
 
     If v can be json serialized or does not have a standard type, then it is
@@ -444,23 +467,28 @@ def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
 
 def from_json(v: _JSONSerializedType | Any) -> Any:
     """
-    If v has the format {'_type':..., '_value':...} as would have been created
-    using to_json(...), then it is replaced:
+    Converts a JSON serialized value (from `to_json`) back to its original type.
 
-        '_type': 'complex' -> complex
-        '_type': 'np_scalar' -> numpy scalar defined by '_concrete_type'
-        '_type': 'ndarray' -> non-complex ndarray
-        '_type': 'complex_ndarray' -> complex ndarray
-        '_type': 'sympy' -> sympy.Expr
-        '_type': 'sympy_matrix' -> sympy.Matrix
-        '_type': 'dataframe' -> pandas.DataFrame
-        '_type': 'dataframe_v2' -> pandas.DataFrame
-        '_type': 'networkx_graph' -> corresponding networkx graph
+    If v has the format `{'_type': ..., '_value': ...}` as would have been created
+    using `to_json(...)`, then it is replaced according to the following table:
 
-    If v encodes an ndarray and has the field '_dtype', this function recovers
+    | JSON `_type` field | Python type |
+    | --- | --- |
+    | `complex` | `complex` |
+    | `np_scalar` | numpy scalar defined by `_concrete_type` |
+    | `ndarray` | non-complex `ndarray` |
+    | `complex_ndarray` | complex `ndarray` |
+    | `sympy` | `sympy.Expr` |
+    | `sympy_matrix` | `sympy.Matrix` |
+    | `dataframe` | `pandas.DataFrame` |
+    | `dataframe_v2` | `pandas.DataFrame` |
+    | `networkx_graph` | corresponding networkx graph |
+    | missing | input value v returned |
+
+    If v encodes an ndarray and has the field `'_dtype'`, this function recovers
     its dtype.
 
-    If v does not have the format {'_type':..., '_value':...}, then it is
+    If v does not have the format `{'_type': ..., '_value': ...}`, then it is
     returned without change.
     """
     if isinstance(v, dict) and "_type" in v:
@@ -833,6 +861,7 @@ def numpy_to_matlab(
     np_object: _NumericScalarType | npt.NDArray[Any],
     ndigits: int = 2,
     wtype: str = "f",
+    style: Literal["legacy", "space", "comma"] = "legacy",
 ) -> str:
     """
     Return np_object as a MATLAB-formatted string in which each number has "ndigits"
@@ -851,6 +880,8 @@ def numpy_to_matlab(
 
     assert isinstance(np_object, np.ndarray)
 
+    sep_1d = ", " if style in ["comma", "legacy"] else " "
+    sep_2d = ", " if style == "comma" else " "
     if np_object.ndim == 1:
         s = np_object.shape
         m = s[0]
@@ -860,7 +891,7 @@ def numpy_to_matlab(
                 np_object[i], indigits=ndigits, iwtype=wtype
             )
             if i < m - 1:
-                vector_str += ", "
+                vector_str += sep_1d
         vector_str += "]"
         return vector_str
     else:
@@ -879,7 +910,7 @@ def numpy_to_matlab(
                     else:
                         matrix_str += "; "
                 else:
-                    matrix_str += " "
+                    matrix_str += sep_2d
         return matrix_str
 
 
@@ -1058,7 +1089,9 @@ def _string_from_complex_sigfig(
 
 
 def numpy_to_matlab_sf(
-    A: _NumericScalarType | npt.NDArray[Any], ndigits: int = 2
+    A: _NumericScalarType | npt.NDArray[Any],
+    ndigits: int = 2,
+    style: Literal["legacy", "comma", "space"] = "legacy",
 ) -> str:
     """
     Return A as a MATLAB-formatted string in which each number has
@@ -1068,6 +1101,11 @@ def numpy_to_matlab_sf(
 
         - a number (float or complex)
         - a 2D ndarray (float or complex)
+
+    The style argument must be one of three values:
+    - legacy: formats 1d arrays with commas and 2d arrays with spaces
+    - comma: formats all arrays with commas
+    - space: formats all arrays with spaces
     """
     if np.isscalar(A):
         assert not isinstance(A, memoryview | str | bytes)
@@ -1079,6 +1117,8 @@ def numpy_to_matlab_sf(
             scalar_str = to_precision(A, ndigits)
         return scalar_str
     assert isinstance(A, np.ndarray)
+    sep_1d = ", " if style in ["comma", "legacy"] else " "
+    sep_2d = ", " if style == "comma" else " "
     if A.ndim == 1:
         s = A.shape
         m = s[0]
@@ -1089,7 +1129,7 @@ def numpy_to_matlab_sf(
             else:
                 vector_str += to_precision(A[i], ndigits)
             if i < m - 1:
-                vector_str += ", "
+                vector_str += sep_1d
         vector_str += "]"
         return vector_str
     else:
@@ -1109,7 +1149,7 @@ def numpy_to_matlab_sf(
                     else:
                         matrix_str += "; "
                 else:
-                    matrix_str += " "
+                    matrix_str += sep_2d
         return matrix_str
 
 
@@ -1154,7 +1194,7 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
 
 def string_to_number(
     s: str, *, allow_complex: bool = True
-) -> None | np.float64 | np.complex128:
+) -> np.float64 | np.complex128 | None:
     """
     Parse a string that can be interpreted either as float or (optionally) complex,
     and return a number with type np.float64 or np.complex128, or None on parse error.
@@ -1296,7 +1336,7 @@ def string_fraction_to_number(
 
 def string_to_2darray(
     s: str, *, allow_complex: bool = True
-) -> tuple[None | npt.NDArray[Any], dict[str, str]]:
+) -> tuple[npt.NDArray[Any] | None, dict[str, str]]:
     """
     Parse a string that is either a scalar or a 2D array in matlab or python
     format. Each number must be interpretable as type float or complex.
@@ -1744,6 +1784,10 @@ def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
         imag_comp = is_correct_scalar_dd(a_sub.imag, a_tru.imag, digits=digits)  # type: ignore
         return real_comp and imag_comp
 
+    if np.abs(a_tru) == math.inf:
+        return a_sub == a_tru
+    elif np.isnan(a_tru):
+        return np.isnan(a_sub)  # type: ignore
     # Get bounds on submitted answer
     eps = 0.51 * (10**-digits)
     lower_bound = a_tru - eps
@@ -1764,6 +1808,10 @@ def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
     # Get bounds on submitted answer
     if a_tru == 0:
         n = digits - 1
+    elif np.abs(a_tru) == math.inf:
+        return a_sub == a_tru
+    elif np.isnan(a_tru):
+        return np.isnan(a_sub)  # type: ignore
     else:
         n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
     eps = 0.51 * (10**-n)
@@ -1789,28 +1837,6 @@ def get_uuid() -> str:
     return random_char + uuid_string[1:]
 
 
-def escape_unicode_string(string: str) -> str:
-    """
-    Replace invisible/unprintable characters with a
-    text representation of their hex id: <U+xxxx>
-
-    A character is considered invisible if its category is "control" or "format", as
-    reported by the 'unicodedata' library.
-
-    More info on unicode categories:
-    https://en.wikipedia.org/wiki/Unicode_character_property#General_Category
-    """
-
-    def escape_unprintable(x: str) -> str:
-        category = unicodedata.category(x)
-        if category in ("Cc", "Cf"):
-            return f"<U+{ord(x):x}>"
-        else:
-            return x
-
-    return "".join(map(escape_unprintable, string))
-
-
 def escape_invalid_string(string: str) -> str:
     """Wrap and escape string in <code> tags."""
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
@@ -1820,8 +1846,8 @@ def clean_identifier_name(name: str) -> str:
     """Escapes a string so that it becomes a valid Python identifier."""
     # Strip invalid characters and weird leading characters so we have
     # a decent python identifier
-    name = re.sub("[^a-zA-Z0-9_]", "_", name)
-    name = re.sub("^[^a-zA-Z]+", "", name)
+    name = re.sub(r"[^a-zA-Z0-9_]", "_", name)
+    name = re.sub(r"^[^a-zA-Z]+", "", name)
     return name
 
 

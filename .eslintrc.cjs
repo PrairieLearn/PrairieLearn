@@ -21,17 +21,16 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
-    'plugin:import-x/recommended',
-    'plugin:import-x/typescript',
     'plugin:@eslint-react/recommended-legacy',
     'plugin:@typescript-eslint/stylistic',
     'plugin:@typescript-eslint/strict',
     'prettier',
   ],
   plugins: [
+    'import-x',
+    'mocha',
     'no-floating-promise',
     'no-only-tests',
-    'mocha',
     '@eslint-react',
     '@prairielearn',
     '@typescript-eslint',
@@ -67,10 +66,6 @@ module.exports = {
     ],
     'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
     'object-shorthand': 'error',
-
-    // This isn't super useful to use because we're using TypeScript.
-    'import-x/no-named-as-default': 'off',
-    'import-x/no-named-as-default-member': 'off',
 
     'import-x/order': [
       'error',
@@ -128,12 +123,6 @@ module.exports = {
     {
       files: ['*.ts'],
       rules: {
-        // TypeScript performs similar checks, so we disable these for TS files.
-        // https://typescript-eslint.io/linting/troubleshooting/performance-troubleshooting/#eslint-plugin-import
-        'import-x/named': 'off',
-        'import-x/namespace': 'off',
-        'import-x/default': 'off',
-        'import-x/no-named-as-default-member': 'off',
         'no-restricted-syntax': [
           'error',
           ...NO_RESTRICTED_SYNTAX,

@@ -86,7 +86,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
     });
-    esbuildServer = await esbuildContext.serve();
+    esbuildServer = await esbuildContext.serve({ host: '127.0.0.1' });
 
     const splitSourceGlob = path.join(
       options.sourceDirectory,
@@ -113,7 +113,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
     });
-    splitEsbuildServer = await splitEsbuildContext.serve();
+    splitEsbuildServer = await splitEsbuildContext.serve({ host: '127.0.0.1' });
   }
 }
 
@@ -153,8 +153,8 @@ export function handler(): RequestHandler {
     throw new Error('esbuild server not initialized');
   }
 
-  const { host, port } = esbuildServer;
-  const { host: splitHost, port: splitPort } = splitEsbuildServer;
+  const { port } = esbuildServer;
+  const { port: splitPort } = splitEsbuildServer;
 
   // We're running in dev mode, so we need to boot up ESBuild to start building
   // and watching our assets.
@@ -164,11 +164,10 @@ export function handler(): RequestHandler {
       req.url.startsWith('/scripts/split-bundles') ||
       // Chunked assets must be served by the split server.
       req.url.startsWith('/chunk-');
-    const proxyHost = isSplitBundle ? splitHost : host;
     const proxyPort = isSplitBundle ? splitPort : port;
     const proxyReq = http.request(
       {
-        hostname: proxyHost,
+        hostname: '127.0.0.1',
         port: proxyPort,
         path: req.url,
         method: req.method,

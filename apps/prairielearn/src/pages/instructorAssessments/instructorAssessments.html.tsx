@@ -72,9 +72,9 @@ export function InstructorAssessments({
             ? html`
                 <button
                   type="button"
-                  class="btn btn-sm btn-light ml-auto"
-                  data-toggle="modal"
-                  data-target="#createAssessmentModal"
+                  class="btn btn-sm btn-light ms-auto"
+                  data-bs-toggle="modal"
+                  data-bs-target="#createAssessmentModal"
                 >
                   <i class="fa fa-plus" aria-hidden="true"></i>
                   <span class="d-none d-sm-inline ml-1">Add assessment</span>
@@ -88,8 +88,8 @@ export function InstructorAssessments({
                 <table class="table table-sm table-hover" aria-label="Assessments">
                   <thead>
                     <tr>
-                      <th style="width: 1%"><span class="sr-only">Label</span></th>
-                      <th><span class="sr-only">Title</span></th>
+                      <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                      <th><span class="visually-hidden">Title</span></th>
                       <th>AID</th>
                       <th class="text-center">Students</th>
                       <th class="text-center">Scores</th>
@@ -149,7 +149,7 @@ export function InstructorAssessments({
             `
           : html`
               <div class="my-4 card-body text-center" style="text-wrap: balance;">
-                <p class="font-weight-bold">No assessments found.</p>
+                <p class="fw-bold">No assessments found.</p>
                 <p class="mb-0">
                   An assessment is a collection of questions to build or assess a student's
                   knowledge.
@@ -174,8 +174,8 @@ export function InstructorAssessments({
                     <button
                       type="button"
                       class="btn btn-sm btn-primary"
-                      data-toggle="modal"
-                      data-target="#createAssessmentModal"
+                      data-bs-toggle="modal"
+                      data-bs-target="#createAssessmentModal"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>
                       <span class="d-none d-sm-inline">Add assessment</span>
@@ -201,7 +201,7 @@ export function InstructorAssessments({
 export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
   const spinner = html`
     <div class="spinner-border spinner-border-sm" role="status">
-      <span class="sr-only">Loading...</span>
+      <span class="visually-hidden">Loading...</span>
     </div>
   `;
   return html`
@@ -326,8 +326,8 @@ function CreateAssessmentModal({
     title: 'Create assessment',
     formMethod: 'POST',
     body: html`
-      <div class="form-group">
-        <label for="title">Title</label>
+      <div class="mb-3">
+        <label class="form-label" for="title">Title</label>
         <input
           type="text"
           class="form-control"
@@ -340,8 +340,8 @@ function CreateAssessmentModal({
           The full name of the assessment, visible to users.
         </small>
       </div>
-      <div class="form-group">
-        <label for="aid">Assessment identifier (AID)</label>
+      <div class="mb-3">
+        <label class="form-label" for="aid">Assessment identifier (AID)</label>
         <input
           type="text"
           class="form-control"
@@ -356,8 +356,8 @@ function CreateAssessmentModal({
           "hw2-derivatives". Use only letters, numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
-      <div class="form-group">
-        <label for="type">Type</label>
+      <div class="mb-3">
+        <label class="form-label" for="type">Type</label>
         <select class="form-select" id="type" name="type" aria-describedby="type_help" required>
           <option value="Homework">Homework</option>
           <option value="Exam">Exam</option>
@@ -366,8 +366,8 @@ function CreateAssessmentModal({
           The type of the assessment. This can be either Homework or Exam.
         </small>
       </div>
-      <div class="form-group">
-        <label for="set">Set</label>
+      <div class="mb-3">
+        <label class="form-label" for="set">Set</label>
         <select class="form-select" id="set" name="set" aria-describedby="set_help" required>
           ${assessmentSets.map((set) => html`<option value="${set.name}">${set.name}</option>`)}
         </select>
@@ -378,8 +378,8 @@ function CreateAssessmentModal({
       </div>
       ${assessmentsGroupBy === 'Module'
         ? html`
-            <div class="form-group">
-              <label for="module">Module</label>
+            <div class="mb-3">
+              <label class="form-label" for="module">Module</label>
               <select
                 class="form-select"
                 id="module"
@@ -402,7 +402,7 @@ function CreateAssessmentModal({
     footer: html`
       <input type="hidden" name="__action" value="add_assessment" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Create</button>
     `,
   });

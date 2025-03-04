@@ -308,7 +308,6 @@ export async function joinGroup(
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
     // the join code input by user is not valid (not in format of groupname+4-character)
     throw new GroupOperationError('The join code has an incorrect format');
-    return;
   }
 
   const group_name = splitJoinCode[0];

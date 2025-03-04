@@ -146,7 +146,7 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
       <h2 class="h4">Enrollments</h2>
       <div class="mb-3">
         <div class="d-flex flex-row align-items-center">
-          <span class="mr-2">
+          <span class="me-2">
             {formatEnrollmentCount(enrollmentCount, enrollmentLimit, studentBillingEnabled)}
           </span>
           <div
