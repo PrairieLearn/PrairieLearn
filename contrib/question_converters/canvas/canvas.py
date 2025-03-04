@@ -145,10 +145,12 @@ class Quiz(CourseSubObject):
     def __init__(self, course: Course, quiz_data: dict[str, Any]) -> None:
         super().__init__(course, "quizzes", quiz_data)
 
-    def question_group(self, group_id: str | None) -> dict[str, Any]:
+    def question_group(self, group_id: str | None) -> dict[str, Any] | None:
+        if not group_id:
+            return None
         for group in self.request(f"{self.url_prefix}/groups/{group_id}"):
             return group
-        raise ValueError(f"Group {group_id} not found")
+        return None
 
     def questions(self) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
         questions: dict[str, dict[str, Any]] = {}
@@ -160,7 +162,8 @@ class Quiz(CourseSubObject):
                     group = groups[question["quiz_group_id"]]
                 else:
                     group = self.question_group(question["quiz_group_id"])
-                    groups[question["quiz_group_id"]] = group
+                    if group:
+                        groups[question["quiz_group_id"]] = group
 
                 if group:
                     question["points_possible"] = group["question_points"]
@@ -173,6 +176,7 @@ class Quiz(CourseSubObject):
         for grp in groups.values():
             if not grp:
                 continue
+
             for question in [
                 q
                 for q in questions.values()
