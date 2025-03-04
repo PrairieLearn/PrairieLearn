@@ -32,7 +32,7 @@ onDocumentReady(async () => {
           body: JSON.stringify({}),
         })
       } else if (courseId) {
-        await fetch(`/pl/course/${courseId}/instructor/side_nav`, {
+        await fetch(`/pl/course/${courseId}/side_nav`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -57,7 +57,7 @@ onDocumentReady(async () => {
           body: JSON.stringify({ showSideNav: true }),
         });
       } else if (courseId) {
-        await fetch(`/pl/course/${courseId}/instructor/side_nav`, {
+        await fetch(`/pl/course/${courseId}/side_nav`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
