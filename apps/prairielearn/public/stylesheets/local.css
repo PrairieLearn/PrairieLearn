@@ -369,6 +369,15 @@ small .user-output-invalid {
   background: #fff;
 }
 
+/**
+ * We use red text in light buttons to indicate errors on many elements.
+ * By default, this has insufficient contrast. We override the color in
+ * this specific case to improve the contrast.
+ */
+.btn.btn-light.text-danger {
+  color: hsl(from rgb(var(--bs-danger-rgb)) h s calc(l - 5)) !important;
+}
+
 /***********************************
  * Button focus accessibility styles
  ***********************************/
@@ -495,6 +504,13 @@ small .user-output-invalid {
 .btn.btn-outline-dark:focus:focus-visible {
   outline-style: solid !important;
   outline-color: var(--bs-btn-hover-color, #343a40) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-med-light:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #212529) !important;
   outline-width: 2px !important;
   outline-offset: -2px !important;
 }

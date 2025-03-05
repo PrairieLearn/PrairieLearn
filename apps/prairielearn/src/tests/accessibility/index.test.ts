@@ -38,6 +38,24 @@ async function loadPageJsdom(url: string): Promise<JSDOM> {
  */
 async function checkPage(url: string) {
   const page = await loadPageJsdom(SITE_URL + url);
+
+  // We need to mimic what Bootstrap will do at runtime for tooltips and popovers:
+  // it will copy the `data-bs-title` attribute to the `aria-label` attribute if
+  // the element doesn't already have an `aria-label` attribute and if its text
+  // content is empty.
+  //
+  // Without this, we'll get a bunch of false positives that don't reflect
+  // the actual behavior at runtime.
+  page.window.document.querySelectorAll('[data-bs-title]').forEach((el) => {
+    if (el.hasAttribute('aria-label') || el.textContent?.trim() !== '') {
+      return;
+    }
+    const title = el.getAttribute('data-bs-title');
+    if (title) {
+      el.setAttribute('aria-label', title);
+    }
+  });
+
   const results = await axe.run(page.window.document.documentElement, {
     resultTypes: ['violations', 'incomplete'],
   });
@@ -51,7 +69,7 @@ const STATIC_ROUTE_PARAMS = {
   course_instance_id: 1,
 };
 
-function getRouteParams(url) {
+function getRouteParams(url: string) {
   const routeParams = url.match(/:([^/]+)/g);
 
   if (!routeParams) return [];
@@ -65,7 +83,7 @@ function getMissingRouteParams(url: string, params: Record<string, any>) {
   return routeParams.filter((p) => !(p in params));
 }
 
-function substituteParams(path, params) {
+function substituteParams(path: string, params: Record<string, string>) {
   const routeParams = getRouteParams(path);
   let newPath = path;
   for (const param of routeParams) {
@@ -196,8 +214,10 @@ const SKIP_ROUTES = [
 
   // These pages just redirect to other pages and thus don't have to be tested.
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/next_ungraded',
+  '/pl/course_instance/:course_instance_id/instructor/course_admin/questions/qid/*',
   '/pl/course_instance/:course_instance_id/instructor/loadFromDisk',
   '/pl/course_instance/:course_instance_id/loadFromDisk',
+  '/pl/course/:course_id/course_admin/questions/qid/*',
   '/pl/course/:course_id/file_transfer/:file_transfer_id',
   '/pl/course/:course_id/loadFromDisk',
   '/pl/loadFromDisk',

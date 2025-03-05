@@ -31,7 +31,8 @@ def validate_grouping(
 def solve_dag(
     depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, str | None]
 ) -> list[str]:
-    """Solve the given problem
+    """
+    Solve the given problem
     :param depends_graph: The dependency graph between blocks specified in the question
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
     :return: a list that is a topological sort of the input DAG with blocks in the same group occuring
@@ -155,7 +156,8 @@ def grade_dag(
     depends_graph: Mapping[str, list[str]],
     group_belonging: Mapping[str, str | None],
 ) -> tuple[int, int]:
-    """In order for a student submission to a DAG graded question to be deemed correct, the student
+    """
+    In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
     :param submission: the block ordering given by the student
@@ -173,7 +175,8 @@ def grade_dag(
 
 
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
-    """this function from
+    """
+    Taken from
     https://docs.ocean.dwavesys.com/en/stable/docs_dnx/reference/algorithms/generated/dwave_networkx.algorithms.cover.is_vertex_cover.html
     """
     cover = set(vertex_cover)
@@ -185,7 +188,8 @@ def lcs_partial_credit(
     depends_graph: Mapping[str, list[str]],
     group_belonging: Mapping[str, str | None],
 ) -> int:
-    """Computes the number of edits required to change the student solution into a correct solution using
+    """
+    Compute the number of edits required to change the student solution into a correct solution using
     largest common subsequence edit distance (allows only additions and deletions, not replacing).
     The naive solution would be to enumerate all topological sorts, then get the edit distance to each of them,
     but this would be too slow. Instead, our algorithm is as follows:

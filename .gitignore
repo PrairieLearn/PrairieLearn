@@ -101,6 +101,7 @@ packages/*/dist
 coverage/
 apps/*/coverage
 packages/*/coverage
+coverage.xml
 
 ## TypeScript cache
 *.tsbuildinfo

@@ -34,12 +34,13 @@ async function update(locals: Record<string, any>) {
     //
     // A set also maintains insertion order, which ensures that courses that are
     // listed in the config (and listed earlier in the config) are synced first.
-    const courseDirs = new Set<string>(config.courseDirs);
+    const courseDirs = new Set<string>(
+      config.courseDirs.map((courseDir) => path.resolve(REPOSITORY_ROOT_PATH, courseDir)),
+    );
     const courses = await queryRows(sql.select_all_courses, CourseSchema);
     courses.forEach((course) => courseDirs.add(course.path));
 
     await async.eachOfSeries(Array.from(courseDirs), async (courseDir, index) => {
-      courseDir = path.resolve(REPOSITORY_ROOT_PATH, courseDir);
       job.info(chalk.bold(courseDir));
       const infoCourseFile = path.join(courseDir, 'infoCourse.json');
       const hasInfoCourseFile = await fs.pathExists(infoCourseFile);

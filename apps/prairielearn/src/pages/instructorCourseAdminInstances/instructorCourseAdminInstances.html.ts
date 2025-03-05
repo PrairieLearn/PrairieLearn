@@ -77,8 +77,8 @@ export function InstructorCourseAdminInstances({
             ? html`
                 <button
                   class="btn btn-sm btn-light"
-                  data-toggle="modal"
-                  data-target="#createCourseInstanceModal"
+                  data-bs-toggle="modal"
+                  data-bs-target="#createCourseInstanceModal"
                 >
                   <i class="fa fa-plus" aria-hidden="true"></i>
                   <span class="d-none d-sm-inline">Add course instance</span>
@@ -101,13 +101,13 @@ export function InstructorCourseAdminInstances({
                         Earliest Access Date
                         <button
                           class="btn btn-xs btn-light"
-                          data-toggle="popover"
-                          data-container="body"
-                          data-placement="bottom"
-                          data-html="true"
-                          title="Earliest Access Date"
-                          data-content="${PopoverStartDate()}"
                           aria-label="Information about Earliest Access Date"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-placement="bottom"
+                          data-bs-html="true"
+                          data-bs-title="Earliest Access Date"
+                          data-bs-content="${PopoverStartDate()}"
                         >
                           <i class="far fa-question-circle" aria-hidden="true"></i>
                         </button>
@@ -116,13 +116,13 @@ export function InstructorCourseAdminInstances({
                         Latest Access Date
                         <button
                           class="btn btn-xs btn-light"
-                          data-toggle="popover"
-                          data-container="body"
-                          data-placement="bottom"
-                          data-html="true"
-                          title="Latest Access Date"
-                          data-content="${PopoverEndDate()}"
                           aria-label="Information about Latest Access Date"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-placement="bottom"
+                          data-bs-html="true"
+                          data-bs-title="Latest Access Date"
+                          data-content="${PopoverEndDate()}"
                         >
                           <i class="far fa-question-circle" aria-hidden="true"></i>
                         </button>
@@ -164,7 +164,7 @@ export function InstructorCourseAdminInstances({
             `
           : html`
               <div class="my-4 card-body text-center" style="text-wrap: balance;">
-                <p class="font-weight-bold">No course instances found.</p>
+                <p class="fw-bold">No course instances found.</p>
                 <p class="mb-0">
                   A course instance contains the assessments and other configuration for a single
                   offering of a course.
@@ -196,8 +196,8 @@ export function InstructorCourseAdminInstances({
                   return html`
                     <button
                       class="btn btn-sm btn-primary"
-                      data-toggle="modal"
-                      data-target="#createCourseInstanceModal"
+                      data-bs-toggle="modal"
+                      data-bs-target="#createCourseInstanceModal"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>
                       <span class="d-none d-sm-inline">Add course instance</span>
@@ -269,8 +269,8 @@ function CreateCourseInstanceModal({
     title: 'Create course instance',
     formMethod: 'POST',
     body: html`
-      <div class="form-group">
-        <label for="long_name">Long name</label>
+      <div class="mb-3">
+        <label class="form-label" for="long_name">Long name</label>
         <input
           type="text"
           class="form-control"
@@ -284,8 +284,8 @@ function CreateCourseInstanceModal({
           name, e.g. "${courseShortName} Fall 2025".
         </small>
       </div>
-      <div class="form-group">
-        <label for="short_name">Short name</label>
+      <div class="mb-3">
+        <label class="form-label" for="short_name">Short name</label>
         <input
           type="text"
           class="form-control"
@@ -318,8 +318,8 @@ function CreateCourseInstanceModal({
         </label>
       </div>
       <div id="accessDates" hidden="true">
-        <div class="form-group">
-          <label for="start_access_date">Access start date</label>
+        <div class="mb-3">
+          <label class="form-label" for="start_access_date">Access start date</label>
           <div class="input-group date-picker">
             <input
               class="form-control date-picker"
@@ -335,8 +335,8 @@ function CreateCourseInstanceModal({
             The date when students can access the course instance. Can be edited later.
           </small>
         </div>
-        <div class="form-group">
-          <label for="end_access_date">Access end date</label>
+        <div class="mb-3">
+          <label class="form-label" for="end_access_date">Access end date</label>
           <div class="input-group date-picker">
             <input
               class="form-control date-picker"
@@ -357,7 +357,7 @@ function CreateCourseInstanceModal({
     footer: html`
       <input type="hidden" name="__action" value="add_course_instance" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button id="add_course_instance_button" type="submit" class="btn btn-primary">Create</button>
     `,
   });

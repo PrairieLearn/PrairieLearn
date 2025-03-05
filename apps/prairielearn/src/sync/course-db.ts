@@ -410,10 +410,21 @@ export async function loadFullCourse(
   courseId: string | null,
   courseDir: string,
 ): Promise<CourseData> {
-  const courseInfo = await loadCourseInfo(courseId, courseDir);
   const questions = await loadQuestions(courseDir);
+  const tagsInUse = new Set<string>();
+
+  for (const question of Object.values(questions)) {
+    if (question.data?.tags) {
+      for (const tag of question.data.tags) {
+        tagsInUse.add(tag);
+      }
+    }
+  }
+
   const courseInstanceInfos = await loadCourseInstances(courseDir);
   const courseInstances: Record<string, CourseInstanceData> = {};
+  const assessmentSetsInUse = new Set<string>();
+
   for (const [courseInstanceId, courseInstance] of Object.entries(courseInstanceInfos)) {
     // Check if the course instance is "expired". A course instance is considered
     // expired if it either has zero `allowAccess` rules (in which case it is never
@@ -432,11 +443,25 @@ export async function loadFullCourse(
       questions,
     );
 
+    for (const assessment of Object.values(assessments)) {
+      if (assessment.data?.set) {
+        assessmentSetsInUse.add(assessment.data?.set);
+      }
+    }
+
     courseInstances[courseInstanceId] = {
       courseInstance,
       assessments,
     };
   }
+
+  const courseInfo = await loadCourseInfo({
+    courseId,
+    coursePath: courseDir,
+    assessmentSetsInUse,
+    tagsInUse,
+  });
+
   return {
     course: courseInfo,
     questions,
@@ -651,10 +676,17 @@ export async function loadInfoFile<T extends { uuid: string }>({
   }
 }
 
-export async function loadCourseInfo(
-  courseId: string | null,
-  coursePath: string,
-): Promise<InfoFile<Course>> {
+export async function loadCourseInfo({
+  courseId,
+  coursePath,
+  assessmentSetsInUse,
+  tagsInUse,
+}: {
+  courseId: string | null;
+  coursePath: string;
+  assessmentSetsInUse: Set<string>;
+  tagsInUse: Set<string>;
+}): Promise<InfoFile<Course>> {
   const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
     coursePath,
     filePath: 'infoCourse.json',
@@ -717,12 +749,25 @@ export async function loadCourseInfo(
     return [...known.values()];
   }
 
+  // Assessment sets in DEFAULT_ASSESSMENT_SETS may be in use but not present in the
+  // course info JSON file. This ensures that default assessment sets are added if
+  // an assessment uses them, and removed if not.
+  const defaultAssessmentSetsInUse = DEFAULT_ASSESSMENT_SETS.filter((set) =>
+    assessmentSetsInUse.has(set.name),
+  );
+
   const assessmentSets = getFieldWithoutDuplicates(
     'assessmentSets',
     'name',
-    DEFAULT_ASSESSMENT_SETS,
+    defaultAssessmentSetsInUse,
   );
-  const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
+
+  // Tags in DEFAULT_TAGS may be in use but not present in the course info JSON
+  // file. This ensures that default tags are added if a question uses them, and
+  // removed if not.
+  const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => tagsInUse.has(tag.name));
+
+  const tags = getFieldWithoutDuplicates('tags', 'name', defaultTagsInUse);
   const topics = getFieldWithoutDuplicates('topics', 'name');
   const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
 
