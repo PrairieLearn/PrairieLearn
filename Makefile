@@ -115,15 +115,15 @@ lint-docs: lint-d2 lint-links lint-markdown
 
 build-docs:
 	@if uv --version >/dev/null 2>&1; then \
-	  uv venv /tmp/pldocs/venv; \
+		uv venv /tmp/pldocs/venv; \
 		. /tmp/pldocs/venv/bin/activate; \
 		uv pip install -r docs/requirements.txt; \
 	else \
 		python3 -m venv /tmp/pldocs/venv; \
 		. /tmp/pldocs/venv/bin/activate; \
-		/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt; \
+		pip install -r docs/requirements.txt; \
 	fi
-	@/tmp/pldocs/venv/bin/python3 -m mkdocs build --strict
+	@/tmp/pldocs/venv/bin/mkdocs build --strict
 preview-docs:
 	@mkdocs serve
 
