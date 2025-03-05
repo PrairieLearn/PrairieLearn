@@ -297,6 +297,10 @@ def worker_loop() -> None:
 
             # reset and then set up the path
             sys.path = copy.copy(saved_path)
+            if paths is None:
+                sys.stderr.write("paths is required and is None")
+                continue
+
             for path in reversed(paths):
                 sys.path.insert(0, path)
             sys.path.insert(0, cwd)
