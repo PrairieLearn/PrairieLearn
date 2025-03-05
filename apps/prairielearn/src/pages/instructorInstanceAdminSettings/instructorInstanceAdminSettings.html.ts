@@ -38,7 +38,11 @@ export function InstructorInstanceAdminSettings({
       })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
-          <h1>Course instance settings</h1>
+          <h1>
+            ${resLocals.has_enhanced_navigation
+              ? 'General course instance settings'
+              : 'Course instance settings'}
+          </h1>
         </div>
         <div class="card-body">
           <form name="edit-course-instance-settings-form" method="POST">

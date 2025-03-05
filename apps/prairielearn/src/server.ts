@@ -1093,6 +1093,7 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
+      (await import('./middlewares/selectAssessments.js')).default,
       (await import('./pages/instructorAssessmentInstance/instructorAssessmentInstance.js'))
         .default,
     ],
@@ -1870,6 +1871,16 @@ export async function initExpress(): Promise<Express> {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
+
+  app.use(
+    '/pl/administrator',
+    asyncHandler(async (req, res, next) => {
+      const hasEnhancedNavigation = await features.enabled('enhanced-navigation');
+      res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+      next();
+    }),
+  );
+
   app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,

@@ -79,6 +79,7 @@ export function InstructorAssessmentInstance({
     navContext: {
       type: 'instructor',
       page: 'assessment',
+      subPage: 'assessment_instance',
     },
     options: {
       fullWidth: true,
