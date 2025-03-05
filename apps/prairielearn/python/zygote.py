@@ -213,6 +213,7 @@ def worker_loop() -> None:
                 json.dump({"present": True, "val": "success"}, outf)
                 outf.write("\n")
                 outf.flush()
+
                 # `sys.exit()` allows the process to gracefully shut down. however, that
                 # makes things much slower than necessary, because we can't reuse this
                 # worker until control returns to the parent, and one or more things we
