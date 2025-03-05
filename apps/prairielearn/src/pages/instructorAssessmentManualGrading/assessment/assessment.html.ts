@@ -145,8 +145,7 @@ function AssessmentQuestionRow({
                 href="#"
                 class="ms-2 text-info"
                 data-bs-toggle="tooltip"
-                data-boundary="window"
-                title="This question uses a rubric"
+                data-bs-title="This question uses a rubric"
               >
                 <i class="fas fa-list-check"></i><span class="visually-hidden">(uses rubric)</span>
               </a>

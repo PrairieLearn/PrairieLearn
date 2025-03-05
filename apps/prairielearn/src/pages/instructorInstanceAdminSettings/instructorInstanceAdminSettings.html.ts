@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
+import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { encodePath } from '../../lib/uri-util.js';
@@ -37,7 +38,11 @@ export function InstructorInstanceAdminSettings({
       })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
-          <h1>Course instance settings</h1>
+          <h1>
+            ${resLocals.has_enhanced_navigation
+              ? 'General course instance settings'
+              : 'Course instance settings'}
+          </h1>
         </div>
         <div class="card-body">
           <form name="edit-course-instance-settings-form" method="POST">
@@ -105,10 +110,10 @@ export function InstructorInstanceAdminSettings({
                 </button>
                 <button
                   type="button"
-                  title="Student Link QR Code"
+                  class="btn btn-sm btn-outline-secondary"
                   aria-label="Student Link QR Code"
-                  class="btn btn-sm btn-outline-secondary js-qrcode-button"
-                  data-qr-code-content="${studentLink}"
+                  data-bs-toggle="modal"
+                  data-bs-target="#studentLinkModal"
                 >
                   <i class="fas fa-qrcode"></i>
                 </button>
@@ -118,6 +123,11 @@ export function InstructorInstanceAdminSettings({
                 to share with students.
               </small>
             </div>
+            ${QRCodeModal({
+              id: 'studentLinkModal',
+              title: 'Student Link QR Code',
+              content: studentLink,
+            })}
             ${EditConfiguration({
               hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
               hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,

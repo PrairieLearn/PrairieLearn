@@ -181,7 +181,7 @@ export function InstructorAssessmentGroups({
                                     type="button"
                                     class="btn btn-xs btn-ghost dropdown-toggle"
                                     data-bs-toggle="dropdown"
-                                    data-boundary="window"
+                                    data-bs-boundary="window"
                                     aria-haspopup="true"
                                     aria-expanded="false"
                                   >
@@ -194,7 +194,7 @@ export function InstructorAssessmentGroups({
                                       data-bs-container="body"
                                       data-bs-html="true"
                                       data-bs-placement="auto"
-                                      title="Add members"
+                                      data-bs-title="Add members"
                                       data-bs-content="${escapeHtml(
                                         AddMembersForm({
                                           row,
@@ -204,32 +204,39 @@ export function InstructorAssessmentGroups({
                                     >
                                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                                     </button>
-                                    <button
-                                      class="dropdown-item js-group-action"
-                                      ${row.users.length === 0
-                                        ? 'disabled'
-                                        : html`
-                                            data-bs-toggle="popover" data-bs-container="body"
-                                            data-bs-html="true" data-bs-placement="auto"
-                                            title="Remove members"
+                                    ${row.users.length > 0
+                                      ? html`
+                                          <button
+                                            class="dropdown-item js-group-action"
+                                            data-bs-toggle="popover"
+                                            data-bs-container="body"
+                                            data-bs-html="true"
+                                            data-bs-placement="auto"
+                                            data-bs-title="Remove members"
                                             data-bs-content="${escapeHtml(
                                               RemoveMembersForm({
                                                 row,
                                                 csrfToken: resLocals.__csrf_token,
                                               }),
                                             )}"
-                                          `}
-                                    >
-                                      <i class="fa fa-user-minus" aria-hidden="true"></i> Remove
-                                      members
-                                    </button>
+                                          >
+                                            <i class="fa fa-user-minus" aria-hidden="true"></i>
+                                            Remove members
+                                          </button>
+                                        `
+                                      : html`
+                                          <button class="dropdown-item js-group-action" disabled>
+                                            <i class="fa fa-user-minus" aria-hidden="true"></i>
+                                            Remove members
+                                          </button>
+                                        `}
                                     <button
                                       class="dropdown-item js-group-action"
                                       data-bs-toggle="popover"
                                       data-bs-container="body"
                                       data-bs-html="true"
                                       data-bs-placement="auto"
-                                      title="Delete group"
+                                      data-bs-title="Delete group"
                                       data-bs-content="${escapeHtml(
                                         DeleteGroupForm({
                                           row,

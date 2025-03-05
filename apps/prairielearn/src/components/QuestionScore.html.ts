@@ -473,6 +473,7 @@ export function ExamQuestionAvailablePoints({
       data-bs-toggle="popover"
       data-bs-container="body"
       data-bs-html="true"
+      data-bs-title="Explanation of available points"
       data-bs-content="${escapeHtml(popoverContent)}"
       data-bs-placement="auto"
     >
@@ -578,6 +579,7 @@ function QuestionValue({
       data-bs-toggle="popover"
       data-bs-container="body"
       data-bs-html="true"
+      data-bs-title="Explanation of question value"
       data-bs-content="${escapeHtml(popoverContent)}"
       data-bs-placement="auto"
     >

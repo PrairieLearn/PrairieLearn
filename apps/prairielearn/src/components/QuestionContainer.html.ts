@@ -472,6 +472,7 @@ export function QuestionFooterContent({
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-bs-html="true"
+                        data-bs-title="Explanation of new variants"
                         data-bs-content="${escapeHtml(
                           NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
                         )}"
@@ -557,6 +558,7 @@ function SubmitRateFooter({
             data-bs-toggle="popover"
             data-bs-container="body"
             data-bs-html="true"
+            data-bs-title="Explanation of grading rate limits"
             data-bs-content="${escapeHtml(popoverContent)}"
             data-bs-placement="auto"
           >

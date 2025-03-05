@@ -117,7 +117,7 @@ export function UserSettings({
                   data-bs-container="body"
                   data-bs-html="true"
                   data-bs-placement="auto"
-                  title="Generate new token"
+                  data-bs-title="Generate new token"
                   data-bs-content="${TokenGenerateForm({
                     csrfToken: resLocals.__csrf_token,
                   }).toString()}"
@@ -204,7 +204,7 @@ function TokenList({
           data-bs-container="body"
           data-bs-html="true"
           data-bs-placement="auto"
-          title="Delete this token"
+          data-bs-title="Delete this token"
           data-bs-content="${TokenDeleteForm({
             token_id: token.id,
             csrfToken: resLocals.__csrf_token,
