@@ -1,5 +1,7 @@
 SH_FILES := $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
 
+.PHONY: build
+
 build:
 	@yarn turbo run build
 build-sequential:
