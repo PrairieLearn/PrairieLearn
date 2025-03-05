@@ -90,6 +90,7 @@ module.exports = {
     // These rules are implemented in `packages/eslint-plugin-prairielearn`.
     '@prairielearn/aws-client-mandatory-config': 'error',
     '@prairielearn/aws-client-shared-config': 'error',
+    '@prairielearn/jsx-no-dollar-interpolation': 'error',
 
     '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
 
