@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
 import {
@@ -13,6 +14,7 @@ import {
   InstitutionSchema,
 } from '../../lib/db-types.js';
 import { type FeatureName, features } from '../../lib/features/index.js';
+import { selectOptionalUserByUid } from '../../models/user.js';
 
 import {
   AdministratorFeatures,
@@ -77,6 +79,10 @@ const AddFeatureGrantModalParamsSchema = z.object({
   institution_id: OptionalIdSchema,
   course_id: OptionalIdSchema,
   course_instance_id: OptionalIdSchema,
+  user_uid: z
+    .string()
+    .optional()
+    .transform((val) => val?.trim()),
 });
 type AddFeatureGrantModalParams = z.infer<typeof AddFeatureGrantModalParamsSchema>;
 
@@ -117,7 +123,15 @@ async function getEntitiesFromParams(params: AddFeatureGrantModalParams) {
     course_instance = undefined;
   }
 
-  return { institutions, institution, courses, course, course_instances, course_instance };
+  const user = await run(async () => {
+    if (!params.user_uid) return null;
+
+    const user = await selectOptionalUserByUid(params.user_uid);
+    if (!user) throw new error.HttpStatusError(400, `User not found: ${params.user_uid}`);
+    return user;
+  });
+
+  return { institutions, institution, courses, course, course_instances, course_instance, user };
 }
 
 router.get(
@@ -151,12 +165,13 @@ router.post(
       const feature = validateFeature(req.params.feature);
 
       const params = AddFeatureGrantModalParamsSchema.parse(req.body);
-      const { institution, course, course_instance } = await getEntitiesFromParams(params);
+      const { institution, course, course_instance, user } = await getEntitiesFromParams(params);
 
       const context = features.validateContext({
         institution_id: institution?.id ?? null,
         course_id: course?.id ?? null,
         course_instance_id: course_instance?.id ?? null,
+        user_id: user?.user_id ?? null,
       });
 
       if (params.enabled) {

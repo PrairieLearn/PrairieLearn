@@ -285,7 +285,23 @@ function AddFeatureGrantModal(props: FeatureGrantModalProps) {
   return Modal({
     title: 'Grant feature',
     id: 'add-feature-grant-modal',
-    body: AddFeatureGrantModalBody(props),
+    // The user UID input is deliberately outside of `AddFeatureGrantModalBody`.
+    // We don't want changes to the user to trigger a reload of the modal body,
+    // nor do we want to include it when sending back the updated body HTML.
+    body: html`
+      ${AddFeatureGrantModalBody(props)}
+      <div>
+        <label class="form-label" for="feature-grant-user">User</label>
+        <input
+          type="text"
+          class="form-control"
+          id="feature-grant-user"
+          name="user_uid"
+          placeholder="student@example.com"
+        />
+        <div class="form-text">Leave blank to grant to all users in the given context.</div>
+      </div>
+    `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${props.csrfToken}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
