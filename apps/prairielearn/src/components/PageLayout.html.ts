@@ -99,8 +99,8 @@ export function PageLayout({
           ${compiledStylesheetTag('pageLayout.css')} ${headContent}
         </head>
         <body
-          ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
+          hx-ext="${options.hxExt ?? ''}"
         >
           <div class="app-container ${!showSideNav ? 'no-sidebar' : ''}">
             <div class="app-top-nav">
@@ -171,8 +171,8 @@ export function PageLayout({
           ${headContent}
         </head>
         <body
-          ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
+          hx-ext="${options.hxExt ?? ''}"
         >
           ${Navbar({
             resLocals,
