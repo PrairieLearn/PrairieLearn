@@ -6,7 +6,7 @@ This file documents the default Python autograder included in the `prairielearn/
 
 ### `info.json`
 
-The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific Python autograder detailed in this document, `"image"` should be set to `"prairielearn/grader-python"` and `"entrypoint"` should point to `"/python_autograder/run.sh"` in the `"externalGradingOptions"` dictionary.
+The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific Python autograder detailed in this document, `"image"` should be set to `"prairielearn/grader-python"` in the `"externalGradingOptions"` dictionary. The `entrypoint` property does not need to be provided.
 
 A full `info.json` file should look something like:
 
@@ -21,8 +21,7 @@ A full `info.json` file should look something like:
   "gradingMethod": "External",
   "externalGradingOptions": {
     "enabled": true,
-    "image": "prairielearn/grader-python",
-    "entrypoint": "/python_autograder/run.sh"
+    "image": "prairielearn/grader-python"
   }
 }
 ```
@@ -255,8 +254,7 @@ Some courses may use libraries that are common across multiple questions. For su
   "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-python",
-    "serverFilesCourse": ["course_lib.py"],
-    "entrypoint": "/python_autograder/run.sh"
+    "serverFilesCourse": ["course_lib.py"]
   }
 }
 ```
@@ -272,7 +270,6 @@ To access `serverFilesCourse` from the autograder, specify the file or its conta
   "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-python",
-    "entrypoint": "/python_autograder/run.sh",
     "serverFilesCourse": ["compounds"]
   }
 }
