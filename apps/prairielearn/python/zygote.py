@@ -224,9 +224,9 @@ def worker_loop() -> None:
                 # fast as possible.
                 os._exit(0)
 
-            if fcn is None:
-                sys.stderr.write("fcn is required and is None")
-                continue
+            # if fcn is None:
+            #     sys.stderr.write("fcn is required and is None")
+            #     continue
 
             if file is None:
                 sys.stderr.write(f"file is required for fcn type {fcn}, and is None")
@@ -242,9 +242,9 @@ def worker_loop() -> None:
                 sys.stderr.write(f"cwd is required for fcn type {fcn}, and is None")
                 continue
 
-            if not is_phase(fcn):
-                sys.stderr.write(f"fcn type {fcn} must be one of {get_args(Phase)}")
-                continue
+            # if not is_phase(fcn):
+            #     sys.stderr.write(f"fcn type {fcn} must be one of {get_args(Phase)}")
+            #     continue
 
             if file.endswith(".js"):
                 # We've shoehorned legacy v2 questions into the v3 code caller
