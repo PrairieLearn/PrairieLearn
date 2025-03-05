@@ -224,27 +224,19 @@ def worker_loop() -> None:
                 # fast as possible.
                 os._exit(0)
 
-            # if fcn is None:
-            #     sys.stderr.write("fcn is required and is None")
-            #     continue
-
             if file is None:
-                sys.stderr.write(f"file is required for fcn type {fcn}, and is None")
+                sys.stderr.write("file is required")
                 continue
 
             if args is None or len(args) == 0:
                 sys.stderr.write(
-                    f"args is required for fcn type {fcn}, and is None or empty"
+                    f"args is required for {file=} {fcn=}, and is None or empty"
                 )
                 continue
 
             if cwd is None:
-                sys.stderr.write(f"cwd is required for fcn type {fcn}, and is None")
+                sys.stderr.write(f"cwd is required for {file=} {fcn=}, and is None")
                 continue
-
-            # if not is_phase(fcn):
-            #     sys.stderr.write(f"fcn type {fcn} must be one of {get_args(Phase)}")
-            #     continue
 
             if file.endswith(".js"):
                 # We've shoehorned legacy v2 questions into the v3 code caller
@@ -284,6 +276,20 @@ def worker_loop() -> None:
                 outf.flush()
                 continue
 
+            # At this point, we are dealing with a Python file and should assert that our expected arguments are present.
+
+            if fcn is None:
+                sys.stderr.write("fcn is required and is None")
+                continue
+
+            if not is_phase(fcn):
+                sys.stderr.write(f"fcn type {fcn} must be one of {get_args(Phase)}")
+                continue
+
+            if paths is None:
+                sys.stderr.write("paths is required and is None")
+                continue
+
             # Here, we re-seed the PRNGs if not already seeded in this worker_loop() call.
             # We only want to seed the PRNGs once per worker_loop() call, so that if a
             # question happens to contain multiple occurrences of the same element, the
@@ -298,9 +304,6 @@ def worker_loop() -> None:
 
             # reset and then set up the path
             sys.path = copy.copy(saved_path)
-            if paths is None:
-                sys.stderr.write("paths is required and is None")
-                continue
 
             for path in reversed(paths):
                 sys.path.insert(0, path)
