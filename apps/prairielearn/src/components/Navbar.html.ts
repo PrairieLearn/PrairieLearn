@@ -316,7 +316,7 @@ function FlashMessages() {
       <div
         class="alert alert-${globalFlashColors[
           type
-        ]} border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
+        ]} border-start-0 border-end-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
         role="alert"
       >
         ${unsafeHtml(message)}
