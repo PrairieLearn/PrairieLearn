@@ -1,7 +1,12 @@
 from typing import Any
 
 import pytest
-from prairielearn.internal.check_data import check_data
+from prairielearn.internal.check_data import check_data, is_phase
+
+
+def test_is_phase() -> None:
+    assert is_phase("render")
+    assert not is_phase("not_a_phase")
 
 
 def test_check_data_extra_props() -> None:
