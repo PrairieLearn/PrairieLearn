@@ -165,10 +165,9 @@ export function InstructorCourseAdminSharing({
                       <button
                         type="button"
                         class="btn btn-xs btn-secondary mx-2"
-                        id="chooseSharingName"
-                        title="Choose Sharing Name"
-                        data-bs-toggle="modal"
-                        data-bs-target="#chooseSharingNameModal"
+                        aria-label="Choose Sharing Name"
+                        data-toggle="modal"
+                        data-target="#chooseSharingNameModal"
                       >
                         <i class="fas fa-share-nodes" aria-hidden="true"></i>
                         <span class="d-none d-sm-inline">Choose Sharing Name</span>
@@ -251,11 +250,12 @@ export function InstructorCourseAdminSharing({
                           <button
                             type="button"
                             class="btn btn-sm btn-outline-dark"
+                            aria-label="Add course to sharing set"
                             data-bs-toggle="popover"
                             data-bs-container="body"
                             data-bs-html="true"
                             data-bs-placement="auto"
-                            title="Add Course to Sharing Set"
+                            data-bs-title="Add Course to Sharing Set"
                             data-bs-content="${escapeHtml(
                               AddCourseToSharingSetPopover({
                                 resLocals,

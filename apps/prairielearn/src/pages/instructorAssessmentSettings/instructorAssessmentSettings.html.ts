@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
+import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
@@ -168,10 +169,10 @@ export function InstructorAssessmentSettings({
                 </button>
                 <button
                   type="button"
-                  title="Student Link QR Code"
+                  class="btn btn-sm btn-outline-secondary"
                   aria-label="Student Link QR Code"
-                  class="btn btn-sm btn-outline-secondary js-qrcode-button"
-                  data-qr-code-content="${studentLink}"
+                  data-bs-toggle="modal"
+                  data-bs-target="#studentLinkModal"
                 >
                   <i class="fas fa-qrcode"></i>
                 </button>
@@ -180,6 +181,11 @@ export function InstructorAssessmentSettings({
                 The link that students will use to access this assessment.
               </small>
             </div>
+            ${QRCodeModal({
+              id: 'studentLinkModal',
+              title: 'Student Link QR Code',
+              content: studentLink,
+            })}
             ${resLocals.authz_data.has_course_permission_view
               ? canEdit
                 ? html`

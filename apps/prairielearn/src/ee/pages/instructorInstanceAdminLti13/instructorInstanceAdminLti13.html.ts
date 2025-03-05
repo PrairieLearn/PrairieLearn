@@ -70,7 +70,7 @@ export function InstructorInstanceAdminLti13({
                   data-bs-toggle="dropdown"
                   aria-haspopup="true"
                   aria-expanded="false"
-                  data-boundary="window"
+                  data-bs-boundary="window"
                 >
                   ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
                 </button>

@@ -67,7 +67,15 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   // Now that we know the user has access, parse the authz data
   res.locals.course = result.rows[0].course;
-  res.locals.institution = result.rows[0].institution;
+
+  const institution = result.rows[0].institution;
+  res.locals.institution = institution;
+
+  const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
+    institution_id: institution.id,
+  });
+  res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+
   const permissions_course = result.rows[0].permissions_course;
   res.locals.authz_data = {
     authn_user: _.cloneDeep(res.locals.authn_user),
