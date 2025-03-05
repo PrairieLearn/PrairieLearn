@@ -158,19 +158,20 @@ mjx-container {
  * Similar to `btn-light`, but with a slightly darker background.
  */
 .btn.btn-med-light {
-  --bs-btn-color: #292121;
-  --bs-btn-bg: #dbdcdc;
-  --bs-btn-border-color: #dbdcdc;
-  --bs-btn-hover-color: #292121;
-  --bs-btn-hover-bg: #ced0d0;
-  --bs-btn-focus-bg: #c3c3c3;
-  --bs-btn-focus-shadow-rgb: 195, 195, 195;
-  --bs-btn-active-color: #292121;
-  --bs-btn-active-bg: #c3c3c3;
-  --bs-btn-active-border-color: #c3c3c3;
-  --bs-btn-disabled-color: #292121;
-  --bs-btn-disabled-bg: #c3c3c3;
-  --bs-btn-disabled-border-color: #c3c3c3;
+  --bs-btn-color: #000;
+  --bs-btn-bg: #dee2e6;
+  --bs-btn-border-color: #dee2e6;
+  --bs-btn-hover-color: #000;
+  --bs-btn-hover-bg: #bdc0c4;
+  --bs-btn-hover-border-color: #b2b5b8;
+  --bs-btn-focus-shadow-rgb: 189, 192, 196;
+  --bs-btn-active-color: #000;
+  --bs-btn-active-bg: #b2b5b8;
+  --bs-btn-active-border-color: #a7aaad;
+  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  --bs-btn-disabled-color: #000;
+  --bs-btn-disabled-bg: #dee2e6;
+  --bs-btn-disabled-border-color: #dee2e6;
 }
 
 /**
