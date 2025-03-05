@@ -15,7 +15,6 @@ export default ESLintUtils.RuleCreator.withoutDocs({
     type: 'problem',
     messages: {
       dollarInterpolationNotAllowed: 'Interpolation with a dollar sign is not allowed in JSX.',
-      dollarInterpolationSuspect: 'This may be an improperly formatted string interpolation.',
     },
     schema: [],
   },
@@ -36,33 +35,25 @@ export default ESLintUtils.RuleCreator.withoutDocs({
           // Skip nodes that aren't preceded by a JSXText node.
           if (previousChild.type !== 'JSXText') return;
 
+          // Skip nodes that aren't preceded by a dollar sign.
+          if (!previousChild.value.trimEnd().endsWith('$')) return;
+
+          // Determine the range of characters that should be reported. We
+          // include the dollar sign, any following whitespace, and the
+          // expression container.
           const start = context.sourceCode.getIndexFromLoc(previousChild.loc.start);
           const lastIndex = previousChild.value.lastIndexOf('$');
           const dollarStart = start + lastIndex;
           const dollarStartLoc = context.sourceCode.getLocFromIndex(dollarStart);
 
-          if (previousChild.value.endsWith('$')) {
-            // Handle unambiguous cases where the dollar sign is adjacent to the curly braces.
-            context.report({
-              node,
-              loc: {
-                start: dollarStartLoc,
-                end: child.loc.end,
-              },
-              messageId: 'dollarInterpolationNotAllowed',
-            });
-          } else if (previousChild.value.trimEnd().endsWith('$')) {
-            // Handle ambiguous cases where the dollar sign is not adjacent to the curly braces,
-            // which may be the case if Prettier has formatted the code.
-            context.report({
-              node,
-              loc: {
-                start: dollarStartLoc,
-                end: child.loc.end,
-              },
-              messageId: 'dollarInterpolationSuspect',
-            });
-          }
+          context.report({
+            node,
+            loc: {
+              start: dollarStartLoc,
+              end: child.loc.end,
+            },
+            messageId: 'dollarInterpolationNotAllowed',
+          });
         });
       },
     };

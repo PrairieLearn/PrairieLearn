@@ -33,11 +33,27 @@ ruleTester.run('jsx-no-dollar-interpolation', rule, {
     {
       // eslint-disable-next-line no-template-curly-in-string
       code: '<div>${message}</div>',
-      errors: [{ messageId: 'dollarInterpolationNotAllowed' }],
+      errors: [
+        {
+          messageId: 'dollarInterpolationNotAllowed',
+          line: 1,
+          column: 6,
+          endLine: 1,
+          endColumn: 16,
+        },
+      ],
     },
     {
       code: '<div>$ {message}</div>',
-      errors: [{ messageId: 'dollarInterpolationSuspect' }],
+      errors: [
+        {
+          messageId: 'dollarInterpolationNotAllowed',
+          line: 1,
+          column: 6,
+          endLine: 1,
+          endColumn: 17,
+        },
+      ],
     },
   ],
 });
