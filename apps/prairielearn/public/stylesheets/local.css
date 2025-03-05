@@ -386,25 +386,7 @@ small .user-output-invalid {
 /***********************************
  * Button focus accessibility styles
  ***********************************/
-.btn.btn-primary:focus:focus-visible,
-.btn.btn-secondary:focus:focus-visible,
-.btn.btn-success:focus:focus-visible,
-.btn.btn-danger:focus:focus-visible,
-.btn.btn-warning:focus:focus-visible,
-.btn.btn-info:focus:focus-visible,
-.btn.btn-light:focus:focus-visible,
-.btn.btn-ghost:focus:focus-visible,
-.btn.btn-dark:focus:focus-visible,
-.btn.btn-link:focus:focus-visible,
-.btn.btn-outline-primary:focus:focus-visible,
-.btn.btn-outline-secondary:focus:focus-visible,
-.btn.btn-outline-success:focus:focus-visible,
-.btn.btn-outline-danger:focus:focus-visible,
-.btn.btn-outline-warning:focus:focus-visible,
-.btn.btn-outline-info:focus:focus-visible,
-.btn.btn-outline-light:focus:focus-visible,
-.btn.btn-outline-dark:focus:focus-visible,
-.btn.btn-med-light:focus:focus-visible {
+.btn:focus:focus-visible {
   outline-style: solid !important;
   outline-color: var(--bs-btn-hover-color) !important;
   outline-width: 2px !important;
