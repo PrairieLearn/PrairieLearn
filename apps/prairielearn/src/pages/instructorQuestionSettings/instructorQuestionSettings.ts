@@ -43,6 +43,11 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+/**
+ * Returns the new value if it differs from the default value. Otherwise, returns undefined.
+ * This is helpful for setting JSON properties that we only want to write to if they are different
+ * than the default value.
+ */
 function propertyValueWithDefault(existingValue, newValue, defaultValue) {
   if (existingValue === undefined) {
     if (newValue !== defaultValue) {

@@ -237,7 +237,7 @@ export function InstructorQuestionSettings({
               </table>
             </div>
             <div class="form-group">
-              <label for="grading_method">Grading Method</label>
+              <label for="grading_method">Grading method</label>
               <select
                 class="form-select"
                 id="grading_method"
@@ -277,7 +277,7 @@ export function InstructorQuestionSettings({
                 ${canEdit ? '' : 'disabled'}
                 ${resLocals.question.single_variant ? 'checked' : ''}
               />
-              <label class="form-check-label" for="single_variant">Single Variant</label>
+              <label class="form-check-label" for="single_variant">Single variant</label>
               <div class="form-text small text-muted">
                 If enabled, students will only be able to try a single variant of this question on any given assessment.
               </div>
