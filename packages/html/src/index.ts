@@ -77,7 +77,7 @@ export function html(strings: TemplateStringsArray, ...values: HtmlValue[]): Htm
 
 /**
  * Pre-escapes the rendered HTML. Useful for when you want to inline the HTML
- * in something else, for instance in a `data-content` attribute for a Bootstrap
+ * in something else, for instance in a `data-bs-content` attribute for a Bootstrap
  * popover.
  */
 export function escapeHtml(html: HtmlSafeString): HtmlSafeString {

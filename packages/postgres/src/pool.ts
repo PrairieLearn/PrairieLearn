@@ -133,7 +133,7 @@ function escapeIdentifier(identifier: string): string {
   // Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
   // https://github.com/brianc/node-postgres/pull/396
   // https://github.com/brianc/node-postgres/issues/1978
-  // https://www.postgresql.org/docs/12/sql-syntax-lexical.html
+  // https://www.postgresql.org/docs/current/sql-syntax-lexical.html
   return pg.Client.prototype.escapeIdentifier(identifier);
 }
 

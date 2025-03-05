@@ -25,6 +25,10 @@ def generate(data):
             "questionFile": "path/with/another/file.txt",
         },
         {
+            "name": "server_file.txt",
+            "serverFilesCourseFile": "workspace_file.txt",
+        },
+        {
             "name": "path/../not_normalized.txt",
             "contents": "File identified by path that is not normalized\n",
         },

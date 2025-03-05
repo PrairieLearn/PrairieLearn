@@ -246,7 +246,7 @@ BEGIN
             DELETE FROM group_roles
             WHERE
                 assessment_id = new_assessment_id
-                AND role_name NOT IN (SELECT unnest(new_group_role_names));
+                AND role_name != ALL (new_group_role_names);
 
         ELSE
             UPDATE group_configs

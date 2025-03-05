@@ -94,8 +94,8 @@
           "type": "string"
         },
         "entrypoint": {
-          "description": "Program to run as the entrypoint to your grader. Must be runnable as 'chmod +x script && ./script'.",
-          "type": "string"
+          "description": "Program or command to run as the entrypoint to your grader.",
+          "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
         },
         "serverFilesCourse": {
           "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/",
@@ -220,7 +220,7 @@
         },
         "args": {
           "description": "Command line arguments to pass to the Docker.",
-          "type": "string"
+          "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
         },
         "rewriteUrl": {
           "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.",
@@ -262,10 +262,6 @@
     },
     "sharePublicly": {
       "description": "Whether this question is publicly shared.",
-      "type": "boolean"
-    },
-    "sharedPublicly": {
-      "description": "[DEPRECATED, DO NOT USE] Whether this question is publicly shared.",
       "type": "boolean"
     },
     "shareSourcePublicly": {

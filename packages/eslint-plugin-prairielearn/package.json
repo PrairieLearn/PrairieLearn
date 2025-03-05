@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/eslint-plugin",
-  "version": "2.0.4",
+  "version": "2.0.9",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.16.2",
-    "typescript": "^5.5.4"
+    "@types/node": "^20.17.23",
+    "typescript": "^5.8.2"
   }
 }

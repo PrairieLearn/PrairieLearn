@@ -5,7 +5,9 @@ import { selectCoursesWithStaffAccess } from '../../models/course.js';
 
 import { NavbarCourseSwitcher } from './navbarCourseSwitcher.html.js';
 
-const router = Router();
+const router = Router({
+  mergeParams: true, // Ensures that navbarCourseSwitcher can retrieve req.params.course_id from the parent router
+});
 
 router.get(
   '/',
