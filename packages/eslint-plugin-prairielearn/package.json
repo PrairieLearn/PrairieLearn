@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/eslint-plugin",
-  "version": "2.0.9",
+  "version": "2.1.0",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
