@@ -197,19 +197,19 @@ def worker_loop() -> None:
                     continue
                 path_finder.forbid_modules(forbidden_modules)
 
+            # "ping" is a special fake function name that the parent process
+            # will use to check if the worker is active and able to respond to
+            # calls. We just reply with "pong" to indicate that we're alive.
             if file is None and fcn == "ping":
-                # "ping" is a special fake function name that the parent process
-                # will use to check if the worker is active and able to respond to
-                # calls. We just reply with "pong" to indicate that we're alive.
                 json.dump({"present": True, "val": "pong"}, outf)
                 outf.write("\n")
                 outf.flush()
                 continue
 
+            # "restart" is a special fake function name that causes
+            # the forked worker to exit, returning control to the
+            # zygote parent process
             if file is None and fcn == "restart":
-                # "restart" is a special fake function name that causes
-                # the forked worker to exit, returning control to the
-                # zygote parent process
                 json.dump({"present": True, "val": "success"}, outf)
                 outf.write("\n")
                 outf.flush()
