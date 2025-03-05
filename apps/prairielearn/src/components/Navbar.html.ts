@@ -243,7 +243,6 @@ function UserDropdownMenu({
           <a
             class="dropdown-item news-item-link"
             href="${urlPrefix}/news_items"
-            title="News${newsCount ? ` (${newsCount} unread)` : ''}"
             aria-label="News${newsCount ? ` (${newsCount} unread)` : ''}"
           >
             News

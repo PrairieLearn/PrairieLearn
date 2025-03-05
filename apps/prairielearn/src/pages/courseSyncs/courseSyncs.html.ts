@@ -237,7 +237,7 @@ function ImageTable({
                           data-bs-toggle="popover"
                           data-bs-container="body"
                           data-bs-html="true"
-                          title="Questions using ${image.image}"
+                          data-bs-title="Questions using ${image.image}"
                           data-bs-content="${escapeHtml(
                             ListQuestionsPopover({ image, urlPrefix }),
                           )}"

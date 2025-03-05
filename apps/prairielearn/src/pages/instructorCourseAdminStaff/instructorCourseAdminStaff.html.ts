@@ -85,12 +85,13 @@ export function InstructorCourseAdminStaff({
           <div class="ms-auto">
             <button
               type="button"
-              class="btn btn-light btn-sm ms-auto"
+              class="btn btn-light btn-sm ml-auto"
+              aria-label="Remove all student data access"
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
               data-bs-placement="auto"
-              title="Remove all student data access"
+              data-bs-title="Remove all student data access"
               data-bs-content="${escapeHtml(
                 CoursePermissionsRemoveStudentDataAccessForm({
                   csrfToken: resLocals.__csrf_token,
@@ -103,12 +104,13 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ms-auto"
+              class="btn btn-light btn-sm ml-auto"
+              aria-label="Delete users with no access"
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
               data-bs-placement="auto"
-              title="Delete users with no access"
+              data-bs-title="Delete users with no access"
               data-bs-content="${escapeHtml(
                 CoursePermissionsDeleteNoAccessForm({
                   csrfToken: resLocals.__csrf_token,
@@ -121,12 +123,13 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ms-auto"
+              class="btn btn-light btn-sm ml-auto"
+              aria-label="Delete non-owners"
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
               data-bs-placement="auto"
-              title="Delete non-owners"
+              data-bs-title="Delete non-owners"
               data-bs-content="${escapeHtml(
                 CoursePermissionsDeleteNonOwnersForm({
                   csrfToken: resLocals.__csrf_token,
@@ -139,12 +142,13 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ms-auto"
+              class="btn btn-light btn-sm ml-auto"
+              aria-label="Add users"
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
               data-bs-placement="auto"
-              title="Add users"
+              data-bs-title="Add users"
               data-bs-content="${escapeHtml(
                 CoursePermissionsInsertForm({
                   csrfToken: resLocals.__csrf_token,
