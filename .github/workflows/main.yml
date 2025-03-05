@@ -408,7 +408,7 @@ jobs:
       - name: Install OS packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: graphviz graphviz-dev
+          packages: graphviz libgraphviz-dev
           version: 1.0
           execute_install_scripts: true
 
