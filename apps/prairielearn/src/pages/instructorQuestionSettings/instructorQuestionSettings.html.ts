@@ -279,7 +279,7 @@ export function InstructorQuestionSettings({
               />
               <label class="form-check-label" for="single_variant">Single Variant</label>
               <div class="form-text small text-muted">
-                If checked, the question is not randomized and only generates a single variant.
+                If enabled, students will only be able to try a single variant of this question on any given assessment.
               </div>
             </div>
             <div class="form-group form-check">
