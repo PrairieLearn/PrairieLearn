@@ -435,6 +435,7 @@ jobs:
       - name: Set up Turborepo cache
         uses: actions/cache@v4
         with:
+          # Cache is outside of node_modules to avoid confusing caching behavior.
           path: .turbo
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: |
