@@ -20,9 +20,6 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
     headContent: html`
       <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
       <script src="${nodeModulesAssetPath(
-          'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-        )}"></script>
-      <script src="${nodeModulesAssetPath(
           'bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js',
         )}"></script>
       <link
@@ -35,7 +32,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
         )}"
         rel="stylesheet"
       />
-
+      ${compiledScriptTag('bootstrap-table-sticky-header.js')}
       ${compiledScriptTag('instructorAssessmentInstancesClient.tsx')}
     `,
     content: html`

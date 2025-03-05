@@ -328,7 +328,7 @@ export function InstructorQuestionSettings({
                           data-bs-container="body"
                           data-bs-html="true"
                           data-bs-placement="auto"
-                          title="Copy this question"
+                          data-bs-title="Copy this question"
                           data-bs-content="${escapeHtml(
                             CopyForm({
                               csrfToken: resLocals.__csrf_token,

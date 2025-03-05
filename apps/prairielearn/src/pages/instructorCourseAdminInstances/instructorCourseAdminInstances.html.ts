@@ -101,13 +101,13 @@ export function InstructorCourseAdminInstances({
                         Earliest Access Date
                         <button
                           class="btn btn-xs btn-light"
+                          aria-label="Information about Earliest Access Date"
                           data-bs-toggle="popover"
                           data-bs-container="body"
                           data-bs-placement="bottom"
                           data-bs-html="true"
-                          title="Earliest Access Date"
+                          data-bs-title="Earliest Access Date"
                           data-bs-content="${PopoverStartDate()}"
-                          aria-label="Information about Earliest Access Date"
                         >
                           <i class="far fa-question-circle" aria-hidden="true"></i>
                         </button>
@@ -116,13 +116,13 @@ export function InstructorCourseAdminInstances({
                         Latest Access Date
                         <button
                           class="btn btn-xs btn-light"
+                          aria-label="Information about Latest Access Date"
                           data-bs-toggle="popover"
                           data-bs-container="body"
                           data-bs-placement="bottom"
                           data-bs-html="true"
-                          title="Latest Access Date"
-                          data-bs-content="${PopoverEndDate()}"
-                          aria-label="Information about Latest Access Date"
+                          data-bs-title="Latest Access Date"
+                          data-content="${PopoverEndDate()}"
                         >
                           <i class="far fa-question-circle" aria-hidden="true"></i>
                         </button>

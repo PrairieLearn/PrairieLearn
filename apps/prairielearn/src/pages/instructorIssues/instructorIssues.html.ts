@@ -164,17 +164,17 @@ export function InstructorIssues({
               <a
                 class="btn btn-med-light"
                 href="${urlPrefix}/course_admin/issues?q="
-                title="Clear filters"
+                data-bs-toggle="tooltip"
+                data-bs-title="Clear filters"
               >
                 <i class="fa fa-times" aria-hidden="true"></i>
               </a>
               <button
                 class="btn btn-med-light"
                 type="button"
-                title="Show filter help"
-                data-bs-toggle="modal"
+                data-bs-toggle="modal tooltip"
                 data-bs-target="#filterHelpModal"
-                aria-label="Show filter help"
+                data-bs-title="Filter help"
               >
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
               </button>
@@ -443,7 +443,10 @@ function IssueActionButton({ issue, csrfToken }: { issue: Issue; csrfToken: stri
                 class="btn btn-outline-secondary"
                 name="__action"
                 value="close"
-                title="Close issue"
+                aria-label="Close issue"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                data-bs-title="Close issue"
               >
                 <i class="fa fa-times fa-fw" aria-hidden="true"></i>
               </button>
@@ -453,7 +456,10 @@ function IssueActionButton({ issue, csrfToken }: { issue: Issue; csrfToken: stri
                 class="btn btn-outline-secondary"
                 name="__action"
                 value="open"
-                title="Reopen issue"
+                aria-label="Reopen issue"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                data-bs-title="Reopen issue"
               >
                 <i class="fa fa-rotate-right fa-fw" aria-hidden="true"></i>
               </button>

@@ -86,7 +86,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
     });
-    esbuildServer = await esbuildContext.serve({ host: '127.0.0.1' });
+    esbuildServer = await esbuildContext.serve({ host: '0.0.0.0' });
 
     const splitSourceGlob = path.join(
       options.sourceDirectory,
@@ -113,7 +113,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
     });
-    splitEsbuildServer = await splitEsbuildContext.serve({ host: '127.0.0.1' });
+    splitEsbuildServer = await splitEsbuildContext.serve({ host: '0.0.0.0' });
   }
 }
 
@@ -156,22 +156,34 @@ export function handler(): RequestHandler {
   const { port } = esbuildServer;
   const { port: splitPort } = splitEsbuildServer;
 
-  // We're running in dev mode, so we need to boot up ESBuild to start building
+  // We're running in dev mode, so we need to boot up esbuild to start building
   // and watching our assets.
   return function (req, res) {
-    console.log('asset request', req.url);
     const isSplitBundle =
       req.url.startsWith('/scripts/split-bundles') ||
       // Chunked assets must be served by the split server.
       req.url.startsWith('/chunk-');
-    const proxyPort = isSplitBundle ? splitPort : port;
+
+    // esbuild will reject requests that come from hosts other than the host on
+    // which the esbuild dev server is listening:
+    // https://github.com/evanw/esbuild/commit/de85afd65edec9ebc44a11e245fd9e9a2e99760d
+    // https://github.com/evanw/esbuild/releases/tag/v0.25.0
+    // We work around this by modifying the request headers to make it look like
+    // the request is coming from localhost, which esbuild won't reject.
+    const headers = structuredClone(req.headers);
+    headers.host = 'localhost';
+    delete headers['x-forwarded-for'];
+    delete headers['x-forwarded-host'];
+    delete headers['x-forwarded-proto'];
+    delete headers['referer'];
+
     const proxyReq = http.request(
       {
         hostname: '127.0.0.1',
-        port: proxyPort,
+        port: isSplitBundle ? splitPort : port,
         path: req.url,
         method: req.method,
-        headers: req.headers,
+        headers,
       },
       (proxyRes) => {
         res.writeHead(proxyRes.statusCode ?? 500, proxyRes.headers);
