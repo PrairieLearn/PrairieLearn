@@ -1,9 +1,11 @@
+import base64
 import itertools as it
 import json
 import math
 import string
 from collections.abc import Callable
 from enum import Enum
+from pathlib import Path
 from typing import Any, cast
 
 import lxml.html
@@ -279,27 +281,37 @@ class DummyEnum(Enum):
 
 
 @pytest.mark.parametrize(
-    ("html_str", "expected_result"),
+    ("html_str", "expected_result", "default"),
     [
-        ("<pl-thing></pl-thing>", DummyEnum.DEFAULT),
-        ('<pl-thing test-choice="default"></pl-thing>', DummyEnum.DEFAULT),
+        ("<pl-thing></pl-thing>", DummyEnum.DEFAULT, DummyEnum.DEFAULT),
+        (
+            '<pl-thing test-choice="default"></pl-thing>',
+            DummyEnum.DEFAULT,
+            DummyEnum.DEFAULT,
+        ),
+        ('<pl-thing test-choice="default"></pl-thing>', DummyEnum.DEFAULT, None),
         (
             '<pl-thing test-choice="dummy-choice-1"></pl-thing>',
             DummyEnum.DUMMY_CHOICE_1,
+            DummyEnum.DEFAULT,
         ),
         (
             '<pl-thing test-choice="dummy-choice-2"></pl-thing>',
             DummyEnum.DUMMY_CHOICE_2,
+            DummyEnum.DEFAULT,
         ),
         (
             '<pl-thing test-choice="dummy-choice-3"></pl-thing>',
             DummyEnum.DUMMY_CHOICE_3,
+            DummyEnum.DEFAULT,
         ),
     ],
 )
-def test_get_enum_attrib(html_str: str, expected_result: DummyEnum) -> None:
+def test_get_enum_attrib(
+    *, html_str: str, expected_result: DummyEnum, default: DummyEnum | None
+) -> None:
     element = lxml.html.fragment_fromstring(html_str)
-    result = pl.get_enum_attrib(element, "test-choice", DummyEnum, DummyEnum.DEFAULT)
+    result = pl.get_enum_attrib(element, "test-choice", DummyEnum, default)
 
     assert result is expected_result
 
@@ -498,7 +510,7 @@ def test_string_from_numpy(value: Any, args: dict, expected_output: str) -> None
         (complex(0, 2), {}, "0.0+2.0j"),
         (complex(1, 0), {}, "1.0+0.0j"),
         (np.complex64(complex(1, 2)), {}, "1.0+2.0j"),
-        (np.complex64(complex(0, 2)), {}, "0.0+2.0j"),
+        (np.complex64(complex(0, -2)), {}, "0.0-2.0j"),
         (np.complex64(complex(1, 0)), {}, "1.0+0.0j"),
         # For legacy reasons, we must also support strings.
         ("0", {}, "0.0"),
@@ -527,10 +539,40 @@ def test_string_from_number_sigfig(
         (np.complex64(complex(1, 2)), {}, "1.0+2.0j"),
         (np.complex64(complex(0, 2)), {}, "0.0+2.0j"),
         (np.complex64(complex(1, 0)), {}, "1.0+0.0j"),
+        # 1D arrays
+        (np.array([1, 2, 3]), {"style": "legacy"}, "[1.0, 2.0, 3.0]"),
+        (np.array([1, 2, 3]), {"style": "space"}, "[1.0 2.0 3.0]"),
+        (np.array([1, 2, 3]), {"style": "comma"}, "[1.0, 2.0, 3.0]"),
+        (np.array([1.5, 2.5]), {}, "[1.5, 2.5]"),
+        (np.array([1 + 2j, 3 + 4j]), {}, "[1.0+2.0j, 3.0+4.0j]"),
+        # 2D arrays
+        (np.array([[1, 2], [3, 4]]), {}, "[1.0 2.0; 3.0 4.0]"),
+        (np.array([[1, 2], [3, 4]]), {"style": "space"}, "[1.0 2.0; 3.0 4.0]"),
+        (np.array([[1, 2], [3, 4]]), {"style": "comma"}, "[1.0, 2.0; 3.0, 4.0]"),
+        (np.array([[1.5, 2.5], [3.5, 4.5]]), {}, "[1.5 2.5; 3.5 4.5]"),
+        (
+            np.array([[1 + 2j, 3 + 4j], [5 + 6j, 7 + 8j]]),
+            {},
+            "[1.0+2.0j 3.0+4.0j; 5.0+6.0j 7.0+8.0j]",
+        ),
     ],
 )
-def test_numpy_to_matlab_sf(value: Any, args: dict, expected_output: str) -> None:
+def test_numpy_to_matlab_sf(
+    value: Any, args: dict[str, Any], expected_output: str
+) -> None:
     assert pl.numpy_to_matlab_sf(value, **args) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("value", "args", "expected_output"),
+    [
+        (0.0123, {}, "0.01"),
+    ],
+)
+def test_numpy_to_matlab(
+    value: Any, args: dict[str, Any], expected_output: str
+) -> None:
+    assert pl.numpy_to_matlab(value, **args) == expected_output
 
 
 @pytest.mark.parametrize(
@@ -599,7 +641,6 @@ def test_string_to_2darray_valid(
         ("a", True, "invalid format"),
         ("[a b]", True, "invalid format"),
         ("[[a, b]]", True, "invalid format"),
-        # Complex numbers disabled
         ("1+2j", False, "invalid format"),
         ("[1+2j]", False, "invalid format"),
         ("[[1+2j]]", False, "invalid format"),
@@ -636,96 +677,589 @@ def test_string_to_2darray_invalid(
 
 
 @pytest.mark.parametrize(
-    ("text", "allow_complex", "expected_result"),
+    ("score", "expected_key", "expected_value"),
     [
-        # Basic integer/float inputs
-        ("0", True, np.float64(0.0)),
-        ("1", True, np.float64(1.0)),
-        ("-1", True, np.float64(-1.0)),
-        ("1.0", True, np.float64(1.0)),
-        ("-1.0", True, np.float64(-1.0)),
-        ("1e0", True, np.float64(1.0)),
-        ("1e1", True, np.float64(10.0)),
-        ("1e-1", True, np.float64(0.1)),
-        ("-1e-1", True, np.float64(-0.1)),
-        # Complex numbers with various formats
-        ("1+1j", True, np.complex128(1 + 1j)),
-        ("1-1j", True, np.complex128(1 - 1j)),
-        ("1+i", True, np.complex128(1 + 1j)),
-        ("1-i", True, np.complex128(1 - 1j)),
-        ("i", True, np.complex128(1j)),
-        ("j", True, np.complex128(1j)),
-        ("-i", True, np.complex128(-1j)),
-        ("2.5+3.6j", True, np.complex128(2.5 + 3.6j)),
-        # Unicode minus sign
-        ("\u22121.0", True, np.float64(-1.0)),
-        ("1\u2212i", True, np.complex128(1 - 1j)),
-        # Without complex numbers allowed
-        ("1", False, np.float64(1.0)),
-        ("1.0", False, np.float64(1.0)),
-        ("-1.0", False, np.float64(-1.0)),
-        ("1e0", False, np.float64(1.0)),
-        # Invalid inputs should return None
-        ("", True, None),
-        ("abc", True, None),
-        ("1++1", True, None),
-        ("1+-1", True, None),
-        ("1+2+3j", True, None),
-        ("1+", True, None),
-        # Complex inputs should return None when complex not allowed
-        ("1+1j", False, None),
-        ("1+i", False, None),
-        ("i", False, None),
+        # Full credit
+        (1.0, "correct", True),
+        (1.5, "correct", True),
+        # Zero credit
+        (0.0, "incorrect", True),
+        (-1.0, "incorrect", True),
+        # Partial credit
+        (0.75, "partial", 75),
+        (0.1, "partial", 10),
+        (0.99, "partial", 99),
+        (0.001, "partial", 0),  # Tests floor rounding
     ],
 )
-def test_string_to_number(
-    *,
-    text: str,
-    allow_complex: bool,
-    expected_result: np.float64 | np.complex128 | None,
+def test_determine_score_params(
+    *, score: float, expected_key: str, expected_value: bool | float
 ) -> None:
-    """Test the string_to_number function with various inputs."""
-    result = pl.string_to_number(text, allow_complex=allow_complex)
-
-    if expected_result is None:
-        assert result is None
-    else:
-        assert result is not None
-        assert type(result) is type(expected_result)
-        assert np.allclose(result, expected_result)
+    """Test score parameter determination for frontend display."""
+    key, value = pl.determine_score_params(score)
+    assert key == expected_key
+    assert value == expected_value
 
 
 @pytest.mark.parametrize(
-    ("input_name", "expected_output"),
+    ("html_str", "expected_result", "default"),
     [
-        # Basic alphanumeric cases
-        ("abc", "abc"),
-        ("ABC", "ABC"),
-        ("abc123", "abc123"),
-        ("123abc", "abc"),
-        # Special characters
-        ("hello#world", "hello_world"),
-        ("hello.$world", "hello__world"),
-        ("hello##`'\"world", "hello_____world"),
-        ("hello  world 123", "hello__world_123"),
-        # Leading special characters
-        ("_hello", "hello"),
-        ("123hello", "hello"),
-        # Mixed cases
-        ("HelloWorld!", "HelloWorld_"),
-        ("hello_World_123", "hello_World_123"),
-        ("123_hello_world", "hello_world"),
-        ("___hello___", "hello___"),
-        # Edge cases
-        ("", ""),
-        ("___", ""),
-        ("123", ""),
-        ("123_456", ""),
-        ("!@#$%", ""),
-        # Unicode characters
-        ("hello™world→", "hello_world_"),
+        # Standard boolean values
+        ('<pl-thing bool-val="true"></pl-thing>', True, None),
+        ('<pl-thing bool-val="false"></pl-thing>', False, None),
+        ('<pl-thing bool-val="True"></pl-thing>', True, None),
+        ('<pl-thing bool-val="False"></pl-thing>', False, None),
+        ('<pl-thing bool-val="TRUE"></pl-thing>', True, None),
+        ('<pl-thing bool-val="FALSE"></pl-thing>', False, None),
+        # Numeric values
+        ('<pl-thing bool-val="1"></pl-thing>', True, None),
+        ('<pl-thing bool-val="0"></pl-thing>', False, None),
+        # Yes/no values
+        ('<pl-thing bool-val="yes"></pl-thing>', True, None),
+        ('<pl-thing bool-val="no"></pl-thing>', False, None),
+        ('<pl-thing bool-val="Yes"></pl-thing>', True, None),
+        ('<pl-thing bool-val="No"></pl-thing>', False, None),
+        ('<pl-thing bool-val="YES"></pl-thing>', True, None),
+        ('<pl-thing bool-val="NO"></pl-thing>', False, None),
+        # Single letter values
+        ('<pl-thing bool-val="t"></pl-thing>', True, None),
+        ('<pl-thing bool-val="f"></pl-thing>', False, None),
+        ('<pl-thing bool-val="T"></pl-thing>', True, None),
+        ('<pl-thing bool-val="F"></pl-thing>', False, None),
+        ('<pl-thing bool-val="y"></pl-thing>', True, None),
+        ('<pl-thing bool-val="n"></pl-thing>', False, None),
+        ('<pl-thing bool-val="Y"></pl-thing>', True, None),
+        ('<pl-thing bool-val="N"></pl-thing>', False, None),
+        # Default value cases
+        ("<pl-thing></pl-thing>", True, True),
+        ("<pl-thing></pl-thing>", False, False),
+        ("<pl-thing></pl-thing>", None, None),
     ],
 )
-def test_clean_identifier_name(*, input_name: str, expected_output: str) -> None:
-    """Test clean_identifier_name with various input strings."""
-    assert pl.clean_identifier_name(input_name) == expected_output
+def test_get_boolean_attrib(
+    *, html_str: str, expected_result: bool | None, default: bool | None
+) -> None:
+    """Test boolean attribute parsing with various formats and defaults."""
+    element = lxml.html.fragment_fromstring(html_str)
+    if default is None:
+        # Test without default value, should get attribute value or raise ValueError
+        if "bool-val" in element.attrib:
+            result = pl.get_boolean_attrib(element, "bool-val")
+            assert result == expected_result
+        else:
+            with pytest.raises(ValueError, match="missing and no default is available"):
+                pl.get_boolean_attrib(element, "bool-val")
+    else:
+        # Test with default value
+        result = pl.get_boolean_attrib(element, "bool-val", default)
+        assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "html_str",
+    [
+        '<pl-thing bool-val="invalid"></pl-thing>',
+        '<pl-thing bool-val="2"></pl-thing>',
+        '<pl-thing bool-val="maybe"></pl-thing>',
+        '<pl-thing bool-val=""></pl-thing>',
+    ],
+)
+def test_get_boolean_attrib_invalid(html_str: str) -> None:
+    """Test that invalid boolean values raise ValueError."""
+    element = lxml.html.fragment_fromstring(html_str)
+    with pytest.raises(ValueError, match="must be a boolean value"):
+        pl.get_boolean_attrib(element, "bool-val")
+
+
+@pytest.mark.parametrize(
+    ("html_str", "expected_result", "default"),
+    [
+        # Basic integer parsing
+        ('<pl-thing int-val="42"></pl-thing>', 42, None),
+        # Negative number
+        ('<pl-thing int-val="-13"></pl-thing>', -13, None),
+        # Default value cases
+        ("<pl-thing></pl-thing>", 0, 0),
+        ("<pl-thing></pl-thing>", None, None),
+    ],
+)
+def test_get_integer_attrib(
+    *, html_str: str, expected_result: int | None, default: int | None
+) -> None:
+    """Test integer attribute parsing."""
+    element = lxml.html.fragment_fromstring(html_str)
+    if default is None:
+        # Test without default value
+        if "int-val" in element.attrib:
+            result = pl.get_integer_attrib(element, "int-val")
+            assert result == expected_result
+        else:
+            with pytest.raises(ValueError, match="missing and no default is available"):
+                pl.get_integer_attrib(element, "int-val")
+    else:
+        # Test with default value
+        result = pl.get_integer_attrib(element, "int-val", default)
+        assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "html_str",
+    [
+        '<pl-thing int-val="3.14"></pl-thing>',
+        '<pl-thing int-val="not-a-number"></pl-thing>',
+        '<pl-thing int-val=""></pl-thing>',
+    ],
+)
+def test_get_integer_attrib_invalid(html_str: str) -> None:
+    """Test that invalid integer values raise ValueError."""
+    element = lxml.html.fragment_fromstring(html_str)
+    with pytest.raises(ValueError, match="must be an integer"):
+        pl.get_integer_attrib(element, "int-val")
+
+
+@pytest.mark.parametrize(
+    ("html_str", "expected_result", "default"),
+    [
+        # Basic float parsing
+        ('<pl-thing float-val="5.5"></pl-thing>', 5.5, None),
+        # Scientific notation
+        ('<pl-thing float-val="-1.2e-3"></pl-thing>', -0.0012, None),
+        # Special values
+        ('<pl-thing float-val="-inf"></pl-thing>', float("-inf"), None),
+        ('<pl-thing float-val="nan"></pl-thing>', float("nan"), None),
+        # Default value cases
+        ("<pl-thing></pl-thing>", 0.0, 0.0),
+        ("<pl-thing></pl-thing>", None, None),
+    ],
+)
+def test_get_float_attrib(
+    *, html_str: str, expected_result: float | None, default: float | None
+) -> None:
+    """Test float attribute parsing."""
+    element = lxml.html.fragment_fromstring(html_str)
+    if default is None:
+        # Test without default value
+        if "float-val" in element.attrib:
+            result = pl.get_float_attrib(element, "float-val")
+            if expected_result is not None and np.isnan(expected_result):
+                assert np.isnan(result)
+            else:
+                assert result == expected_result
+        else:
+            with pytest.raises(ValueError, match="missing and no default is available"):
+                pl.get_float_attrib(element, "float-val")
+    else:
+        # Test with default value
+        result = pl.get_float_attrib(element, "float-val", default)
+        assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "html_str",
+    [
+        '<pl-thing float-val="not-a-number"></pl-thing>',
+        '<pl-thing float-val=""></pl-thing>',
+        '<pl-thing float-val="3+4"></pl-thing>',
+    ],
+)
+def test_get_float_attrib_invalid(html_str: str) -> None:
+    """Test that invalid float values raise ValueError."""
+    element = lxml.html.fragment_fromstring(html_str)
+    with pytest.raises(ValueError, match="must be a number"):
+        pl.get_float_attrib(element, "float-val")
+
+
+@pytest.mark.parametrize(
+    ("html_str", "expected_result", "default"),
+    [
+        # Hex color formats
+        ('<pl-thing color-val="#123"></pl-thing>', "#123", None),
+        ('<pl-thing color-val="#1a2b3c"></pl-thing>', "#1a2b3c", None),
+        # Named colors
+        ('<pl-thing color-val="red"></pl-thing>', "#ff0000", None),
+        # Default value cases
+        ("<pl-thing></pl-thing>", "#000000", "#000000"),
+        ("<pl-thing></pl-thing>", None, None),
+    ],
+)
+def test_get_color_attrib(
+    *, html_str: str, expected_result: str | None, default: str | None
+) -> None:
+    """Test color attribute parsing with various formats and defaults."""
+    element = lxml.html.fragment_fromstring(html_str)
+    if default is None:
+        # Test without default value
+        if "color-val" in element.attrib:
+            result = pl.get_color_attrib(element, "color-val")
+            assert result == expected_result
+        else:
+            with pytest.raises(ValueError, match="missing and no default is available"):
+                pl.get_color_attrib(element, "color-val")
+    else:
+        # Test with default value
+        result = pl.get_color_attrib(element, "color-val", default)
+        assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "html_str",
+    [
+        '<pl-thing color-val="not-a-color"></pl-thing>',
+        '<pl-thing color-val="#xyz"></pl-thing>',
+        '<pl-thing color-val="#12"></pl-thing>',
+        '<pl-thing color-val=""></pl-thing>',
+    ],
+)
+def test_get_color_attrib_invalid(html_str: str) -> None:
+    """Test that invalid color values raise ValueError."""
+    element = lxml.html.fragment_fromstring(html_str)
+    with pytest.raises(ValueError, match="must be a CSS-style RGB string"):
+        pl.get_color_attrib(element, "color-val")
+
+
+@pytest.mark.parametrize(
+    (
+        "input_str",
+        "allow_fractions",
+        "allow_complex",
+        "expected_value",
+        "expected_data",
+    ),
+    [
+        # Basic fractions
+        ("1/2", True, False, 0.5, {"submitted_answers": 0.5}),
+        # Basic decimals
+        ("0.25", True, False, 0.25, {"submitted_answers": 0.25}),
+        # Complex numbers
+        (
+            "1+2j",
+            True,
+            True,
+            1 + 2j,
+            {
+                "submitted_answers": {
+                    "_type": "complex",
+                    "_value": {"real": 1.0, "imag": 2.0},
+                }
+            },
+        ),
+        # Error cases
+        ("", True, False, None, {"format_errors": "The submitted answer was blank."}),
+        (
+            "invalid",
+            True,
+            False,
+            None,
+            {
+                "format_errors": "Invalid format: The submitted answer could not be interpreted as a decimal number."
+            },
+        ),
+        (
+            "1/2",
+            False,
+            False,
+            None,
+            {"format_errors": "Fractional answers are not allowed in this input."},
+        ),
+        (
+            "1/0",
+            True,
+            False,
+            None,
+            {"format_errors": "Your expression resulted in a division by zero."},
+        ),
+    ],
+)
+def test_string_fraction_to_number(
+    *,
+    input_str: str | None,
+    allow_fractions: bool,
+    allow_complex: bool,
+    expected_value: complex | None,
+    expected_data: dict[str, Any],
+) -> None:
+    """Test parsing strings into numbers, with support for fractions."""
+    value, data = pl.string_fraction_to_number(
+        input_str, allow_fractions, allow_complex
+    )
+
+    if expected_value is None:
+        assert value is None
+    else:
+        assert value == pytest.approx(expected_value)
+    assert len(data) == 1  # Should only contain one key
+    assert next(iter(data.keys())) in ["submitted_answers", "format_errors"]
+    if "submitted_answers" in data:
+        submitted = pl.from_json(data["submitted_answers"])
+        assert submitted == pytest.approx(expected_value)
+    else:
+        assert data == expected_data
+
+
+@pytest.mark.parametrize(
+    ("submitted", "true", "digits", "expected"),
+    [
+        # Basic array equality
+        (
+            np.array([[1.0, 2.0], [3.0, 4.0]]),
+            np.array([[1.0, 2.0], [3.0, 4.0]]),
+            2,
+            True,
+        ),
+        # Within tolerance (2 decimal places = +/- 0.005)
+        (
+            np.array([[1.001, 2.005], [3.008, 4.009]]),
+            np.array([[1.005, 2.000], [3.004, 4.014]]),
+            2,
+            True,
+        ),
+        # Outside tolerance
+        (
+            np.array([[1.01, 2.0], [3.0, 4.0]]),
+            np.array([[1.00, 2.0], [3.0, 4.0]]),
+            2,
+            False,
+        ),
+        # Complex numbers
+        (
+            np.array([[1 + 1j, 2 + 2j], [3 + 3j, 4 + 4j]]),
+            np.array([[1 + 1j, 2 + 2j], [3 + 3j, 4 + 4j]]),
+            2,
+            True,
+        ),
+    ],
+)
+def test_is_correct_ndarray2d_dd(
+    *,
+    submitted: np.ndarray[Any, Any],
+    true: np.ndarray[Any, Any],
+    digits: int,
+    expected: bool,
+) -> None:
+    """Test arrays are equal within decimal digit tolerance."""
+    assert pl.is_correct_ndarray2d_dd(submitted, true, digits) == expected
+
+
+@pytest.mark.parametrize(
+    ("submitted", "true", "digits", "expected"),
+    [
+        # Basic array equality
+        (
+            np.array([[1.0, np.inf], [3.0, np.nan]]),
+            np.array([[1.0, np.inf], [3.0, np.nan]]),
+            2,
+            True,
+        ),
+        # Within tolerance (2 significant figures)
+        (
+            np.array([[0.095, 2.0], [3.0, 4.0]]),
+            np.array([[0.100, 2.0], [3.0, 4.0]]),
+            2,
+            True,
+        ),
+        # Outside tolerance
+        (
+            np.array([[0.094, 2.0], [3.0, 4.0]]),
+            np.array([[0.100, 2.0], [3.0, 4.0]]),
+            2,
+            False,
+        ),
+        # Complex numbers
+        (
+            np.array([[1 + 1j, 2 + 2j], [3 + 3j, 4 + 4j]]),
+            np.array([[1 + 1j, 2 + 2j], [3 + 3j, 4 + 4j]]),
+            2,
+            True,
+        ),
+        (
+            np.array([[1 + 0.094j, 2 + 2j], [3 + 3j, 4 + 4j]]),
+            np.array([[1 + 1j, 2 + 2j], [3 + 3j, 4 + 4j]]),
+            2,
+            False,
+        ),
+    ],
+)
+def test_is_correct_ndarray2d_sf(
+    *,
+    submitted: np.ndarray[Any, Any],
+    true: np.ndarray[Any, Any],
+    digits: int,
+    expected: bool,
+) -> None:
+    """Test arrays are equal within significant figure tolerance."""
+    assert pl.is_correct_ndarray2d_sf(submitted, true, digits) == expected
+
+
+def test_load_extension() -> None:
+    """Test loading extensions with the load_extension function."""
+    director = Path(__file__).parent
+    controller = "dummy_extension.py"
+
+    # Create mock data with extension info
+    data: pl.QuestionData = {
+        "extensions": {
+            "dummy": {
+                "directory": director,
+                "controller": controller,
+            }
+        },
+        # Fill required fields with empty values
+        "params": {},
+        "correct_answers": {},
+        "submitted_answers": {},
+        "format_errors": {},
+        "partial_scores": {},
+        "score": 0,
+        "feedback": {},
+        "variant_seed": "",
+        "options": {},
+        "raw_submitted_answers": {},
+        "editable": True,
+        "panel": "question",
+        "num_valid_submissions": 0,
+        "manual_grading": False,
+        "answers_names": {},
+    }
+
+    # Test successful loading
+    ext = pl.load_extension(data, "dummy")
+    assert ext.sample_function() == "Hello from dummy extension"
+    assert ext.SAMPLE_CONSTANT == 42
+    with pytest.raises(AttributeError):
+        _ = ext.__python_internal__
+
+    # Test loading non-existent extension
+    with pytest.raises(ValueError, match="Could not find extension"):
+        pl.load_extension(data, "nonexistent")
+
+    # Test loading all extensions
+    exts = pl.load_all_extensions(data)
+    assert len(exts) == 1
+    assert "dummy" in exts
+    assert exts["dummy"].sample_function() == "Hello from dummy extension"
+    assert exts["dummy"].SAMPLE_CONSTANT == 42
+    with pytest.raises(AttributeError):
+        _ = exts["dummy"].__python_internal__
+
+
+def test_add_files_format_error(question_data: pl.QuestionData) -> None:
+    """Test basic functionality of add_files_format_error."""
+    # Test adding first error
+    pl.add_files_format_error(question_data, "Error 1")
+    assert question_data["format_errors"]["_files"] == ["Error 1"]
+
+    # Test adding second error
+    pl.add_files_format_error(question_data, "Error 2")
+    assert question_data["format_errors"]["_files"] == ["Error 1", "Error 2"]
+
+    # Test handling non-list _files value
+    question_data["format_errors"]["_files"] = "not a list"
+    pl.add_files_format_error(question_data, "Error 3")
+    assert question_data["format_errors"]["_files"] == [
+        '"_files" was present in "format_errors" but was not an array',
+        "Error 3",
+    ]
+
+
+def test_check_attribs() -> None:
+    """Test checking required and optional attributes."""
+    element = lxml.html.fragment_fromstring(
+        '<pl-test required-attr="val" optional-attr="val"></pl-test>'
+    )
+
+    # Should pass with correct attributes
+    pl.check_attribs(element, ["required-attr"], ["optional-attr"])
+
+    # Should fail if required attribute missing
+    with pytest.raises(ValueError, match='Required attribute "missing-attr" missing'):
+        pl.check_attribs(element, ["missing-attr"], ["optional-attr"])
+
+
+@pytest.mark.parametrize(
+    ("element_str", "expected_result", "default"),
+    [
+        # Empty and whitespace
+        ('<pl-test str-attr=""></pl-test>', "", None),
+        ('<pl-test str-attr="   "></pl-test>', "   ", None),
+        # Special characters
+        ('<pl-test str-attr="hello&quot;world"></pl-test>', 'hello"world', None),
+        # Unicode
+        ('<pl-test str-attr="こんにちは"></pl-test>', "こんにちは", None),
+        # '<pl-test str-attr="value"></pl-test>'
+        ('<pl-test str-attr="value"></pl-test>', "value", None),
+        # Default value cases
+        ("<pl-test></pl-test>", "default", "default"),
+        ("<pl-test></pl-test>", None, None),
+    ],
+)
+def test_get_string_attrib(
+    *, element_str: str, expected_result: str, default: str | None
+) -> None:
+    """Test edge cases for string attribute retrieval."""
+    element = lxml.html.fragment_fromstring(element_str)
+    if default is None and "str-attr" not in element.attrib:
+        with pytest.raises(ValueError, match='Attribute "str-attr" missing'):
+            pl.get_string_attrib(element, "str-attr")
+    else:
+        result = pl.get_string_attrib(element, "str-attr", default)
+        assert result == expected_result
+
+
+def test_string_to_integer() -> None:
+    """Test converting strings to integers."""
+    # Basic integer parsing
+    assert pl.string_to_integer("42") == 42
+    assert pl.string_to_integer("3.14") is None
+    assert pl.string_to_integer("not a number") is None
+
+
+def test_load_host_script() -> None:
+    """Test loading host scripts."""
+    # Test loading dummy_extension.py
+    script = pl.load_host_script("dummy_extension")
+
+    # Verify the loaded module has expected attributes
+    assert script.sample_function() == "Hello from dummy extension"
+    assert script.SAMPLE_CONSTANT == 42
+
+
+def test_add_submitted_file(question_data: pl.QuestionData) -> None:
+    """Test adding submitted files to question data."""
+    # Test adding first file
+    base64_msg1 = base64.b64encode(b"msg1").decode("utf-8")
+    base64_msg2 = base64.b64encode(b"msg2").decode("utf-8")
+    pl.add_submitted_file(question_data, "test1.txt", base64_msg1)
+    assert question_data["submitted_answers"]["_files"] == [
+        {"name": "test1.txt", "contents": base64_msg1}
+    ]
+
+    # Test adding second file
+    pl.add_submitted_file(question_data, "test2.txt", base64_msg2)
+    assert question_data["submitted_answers"]["_files"] == [
+        {"name": "test1.txt", "contents": base64_msg1},
+        {"name": "test2.txt", "contents": base64_msg2},
+    ]
+
+
+@pytest.mark.parametrize(
+    ("answers_names", "name", "should_raise"),
+    [
+        ({"x": None, "y": None}, "z", False),
+        ({"x": None, "y": None}, "x", True),
+        ({}, "y", False),
+    ],
+)
+def test_check_answers_names(
+    *,
+    answers_names: dict[str, Any],
+    name: str,
+    should_raise: bool,
+) -> None:
+    """Test checking answer name validation."""
+    question_data = cast(pl.QuestionData, {"answers_names": answers_names})
+    if should_raise:
+        with pytest.raises(KeyError):
+            pl.check_answers_names(question_data, name)
+    else:
+        # Should not raise an exception
+        pl.check_answers_names(question_data, name)

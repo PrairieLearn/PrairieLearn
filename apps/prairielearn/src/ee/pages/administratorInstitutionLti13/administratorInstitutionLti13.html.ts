@@ -56,7 +56,7 @@ export function AdministratorInstitutionLti13({
           <form method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <button
-              class="btn btn-outline-success btn-block my-4"
+              class="btn btn-outline-success d-block w-100 my-4"
               type="submit"
               name="__action"
               value="add_instance"
@@ -88,8 +88,8 @@ function LTI13Instance(
         <button
           class="btn btn-sm btn-secondary"
           type="button"
-          data-toggle="modal"
-          data-target="#instanceData"
+          data-bs-toggle="modal"
+          data-bs-target="#instanceData"
         >
           <i class="fa-solid fa-screwdriver-wrench"></i> Show details
         </button>
@@ -100,9 +100,12 @@ function LTI13Instance(
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title">LTI 1.3 instance data</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
             <div class="modal-body">
               <pre><code>${JSON.stringify(instance, null, 1)}</code></pre>
@@ -130,8 +133,8 @@ function LTI13Instance(
       <form class="form" method="POST">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_name" />
-        <div class="form-group my-2">
-          <label for="name" class="mr-2">Branded platform name: </label>
+        <div class="mb-3 my-2">
+          <label for="name" class="form-label">Branded platform name: </label>
           <input
             id="name"
             class="form-control"
@@ -159,9 +162,17 @@ function LTI13Instance(
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_platform" />
 
-        <div class="form-group">
-          <label for="choosePlatform">Platform type: </label>
-          <div class="form-check form-check-inline ml-2">
+        <div class="mb-3">
+          <label class="form-label" for="choosePlatform">Platform type: </label>
+          <select class="form-select mb-2" id="choosePlatform" name="platform">
+            ${platform_defaults.map((d) => {
+              return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
+                ${d.platform}
+              </option>`;
+            })}
+          </select>
+
+          <div class="form-check form-check-inline">
             <label class="form-check-label">
               <input
                 id="update_params"
@@ -174,17 +185,9 @@ function LTI13Instance(
               On change, load defaults into form&nbsp;<em>(remember to edit and save!)</em>
             </label>
           </div>
-
-          <select class="custom-select" id="choosePlatform" name="platform">
-            ${platform_defaults.map((d) => {
-              return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
-                ${d.platform}
-              </option>`;
-            })}
-          </select>
         </div>
 
-        <div class="form-group mt-2">
+        <div class="mb-3 mt-2">
           <label for="issuer_params"> Issuer params: </label>
           <textarea
             class="form-control"
@@ -197,7 +200,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
           >
         </div>
 
-        <div class="form-group mt-2">
+        <div class="mb-3 mt-2">
           <label for="client_id">Client ID: </label>
           <input
             id="client_id"
@@ -213,7 +216,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group mt-2">
+        <div class="mb-3 mt-2">
           <label for="custom_fields">Custom fields suggestions: </label>
           <textarea
             class="form-control"
@@ -235,7 +238,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
           <button class="btn btn-info">Save platform options</button>
           <input type="reset" class="btn btn-secondary" value="Reset options" />
         </div>
@@ -289,8 +292,8 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         <input type="hidden" name="__action" value="save_pl_config" />
 
         <h6>Which attributes from the LTI 1.3 user claim should be mapped to PL identities?</h6>
-        <div class="form-group">
-          <label for="name_attribute">Name attribute</label>
+        <div class="mb-3">
+          <label class="form-label" for="name_attribute">Name attribute</label>
           <input
             type="text"
             class="form-control"
@@ -304,8 +307,8 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
-          <label for="name_attribute">UID attribute</label>
+        <div class="mb-3">
+          <label class="form-label" for="name_attribute">UID attribute</label>
           <input
             type="text"
             class="form-control"
@@ -322,8 +325,8 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
-          <label for="name_attribute">UIN attribute</label>
+        <div class="mb-3">
+          <label class="form-label" for="name_attribute">UIN attribute</label>
           <input
             type="text"
             class="form-control"
@@ -341,8 +344,8 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
-          <label for="name_attribute">Email attribute</label>
+        <div class="mb-3">
+          <label class="form-label" for="name_attribute">Email attribute</label>
           <input
             type="text"
             class="form-control"

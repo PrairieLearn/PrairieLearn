@@ -242,7 +242,7 @@ router.get(
     // `originalUrl` so that this router doesn't have to be aware of where it's
     // mounted.
     const host = getCanonicalHost(req);
-    let questionTestPath = new URL(`${host}${req.originalUrl}`).pathname;
+    let questionTestPath = new URL(req.originalUrl, host).pathname;
     if (!questionTestPath.endsWith('/')) {
       questionTestPath += '/';
     }
