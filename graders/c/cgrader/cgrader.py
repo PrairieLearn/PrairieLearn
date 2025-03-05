@@ -420,7 +420,10 @@ class CGrader:
         | Iterable[str | re.Pattern[str]]
         | None = None,
         must_match_all_outputs: OutputMatchingOption | bool = "any",  # noqa: FBT001
-        reject_output: str | Iterable[str] | None = None,
+        reject_output: str
+        | re.Pattern[str]
+        | Iterable[str | re.Pattern[str]]
+        | None = None,
         field: str | None = None,
         ignore_case: bool = True,  # noqa: FBT001
         timeout: float = 1,
