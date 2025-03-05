@@ -155,7 +155,12 @@ mjx-container {
 }
 
 /**
- * Similar to `btn-light`, but with a slightly darker background.
+ * A darker variant of `btn-light`.
+ *
+ * These colors were determined by rebuilding the Bootstrap CSS with the `light`
+ * base color redefined from gray-100 to gray-300 here:
+ *
+ * https://github.com/twbs/bootstrap/blob/bafa9d25ed38b8742a3f52bc1401d46b71960153/scss/_variables.scss#L307
  */
 .btn.btn-med-light {
   --bs-btn-color: #000;
