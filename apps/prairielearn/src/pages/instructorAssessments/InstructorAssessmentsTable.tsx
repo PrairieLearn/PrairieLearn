@@ -48,7 +48,7 @@ export function InstructorAssessmentsTable({
           },
         );
         if (!response.ok) {
-          throw new Error(`ERROR ${response.status} (${response.statusText}}`);
+          throw new Error(`ERROR ${response.status} (${response.statusText})`);
         }
 
         const stats = await response.json();
