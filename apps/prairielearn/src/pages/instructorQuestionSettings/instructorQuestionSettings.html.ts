@@ -279,7 +279,8 @@ export function InstructorQuestionSettings({
               />
               <label class="form-check-label" for="single_variant">Single variant</label>
               <div class="form-text small text-muted">
-                If enabled, students will only be able to try a single variant of this question on any given assessment.
+                If enabled, students will only be able to try a single variant of this question on
+                any given assessment.
               </div>
             </div>
             <div class="form-group form-check">
@@ -293,7 +294,8 @@ export function InstructorQuestionSettings({
               />
               <label class="form-check-label" for="show_correct_answer">Show Correct Answer</label>
               <div class="form-text small text-muted">
-                If enabled, the correct answer panel will be shown after all submission attempts have been exhausted.
+                If enabled, the correct answer panel will be shown after all submission attempts
+                have been exhausted.
               </div>
             </div>
             ${canEdit
