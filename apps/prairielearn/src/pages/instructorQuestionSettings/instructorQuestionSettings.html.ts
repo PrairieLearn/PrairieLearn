@@ -293,7 +293,7 @@ export function InstructorQuestionSettings({
               />
               <label class="form-check-label" for="show_correct_answer">Show Correct Answer</label>
               <div class="form-text small text-muted">
-                If checked, shows the correct answer panel after submission.
+                If enabled, the correct answer panel will be shown after all submission attempts have been exhausted.
               </div>
             </div>
             ${canEdit
