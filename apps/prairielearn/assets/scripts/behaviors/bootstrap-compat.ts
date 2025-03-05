@@ -56,9 +56,7 @@ makeMigrator({
     BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
       // `tom-select` uses a `data-content` attribute on `option` elements.
       // This is unrelated to Bootstrap, so we don't want to do anything with this.
-      if (attr === 'data-content' && el.tagName === 'OPTION') {
-        return;
-      }
+      if (attr === 'data-content' && el.tagName === 'OPTION') return;
 
       if (el.hasAttribute(attr)) {
         migrateAttribute(el, attr, attr.replace('data-', 'data-bs-'));
