@@ -12,7 +12,13 @@ ruleTester.run('aws-client-shared-config', rule, {
       code: "import { S3 } from '@aws-sdk/client-s3'; new S3(makeS3ClientConfig());",
     },
     {
+      code: "import { S3Client } from '@aws-sdk/client-s3'; new S3Client(makeS3ClientConfig());",
+    },
+    {
       code: "import { EC2 } from '@aws-sdk/client-ec2'; new EC2(makeAwsClientConfig());",
+    },
+    {
+      code: "import { EC2Client } from '@aws-sdk/client-ec2'; new EC2Client(makeAwsClientConfig());",
     },
     {
       code: "import { EC2 } from '@aws-sdk/client-ec2'; new EC2(aws.makeAwsClientConfig());",
@@ -20,7 +26,11 @@ ruleTester.run('aws-client-shared-config', rule, {
   ],
   invalid: [
     {
-      code: "import { S3 } from '@aws-sdk/client-s3'; new S3({ region: 'us-west-2' });",
+      code: "import { S3 } from '@aws-sdk/client-s3'; new S3({ region: 'us-east-2' });",
+      errors: [{ messageId: 'improperConfig' }],
+    },
+    {
+      code: "import { EC2 } from '@aws-sdk/client-ec2'; new EC2({ region: 'us-east-2' });",
       errors: [{ messageId: 'improperConfig' }],
     },
     {

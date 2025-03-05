@@ -25,6 +25,9 @@ ruleTester.run('jsx-no-dollar-interpolation', rule, {
     {
       code: '<div>$100</div>',
     },
+    {
+      code: '<div>$</div>',
+    },
   ],
   invalid: [
     {

@@ -9,10 +9,16 @@ const ruleTester = new RuleTester();
 ruleTester.run('aws-client-mandatory-config', rule, {
   valid: [
     {
-      code: "import { S3 } from '@aws-sdk/client-s3'; new S3({ region: 'us-west-2' })",
+      code: "import { S3 } from '@aws-sdk/client-s3'; new S3({ region: 'us-east-2' })",
     },
     {
-      code: "import { S3 } from '@aws-sdk/client-s3'; new S3({ region: 'us-west-2', accessKeyId: 'foo' })",
+      code: "import { S3Client } from '@aws-sdk/client-s3'; new S3Client({ region: 'us-east-2' })",
+    },
+    {
+      code: "import { EC2 } from '@aws-sdk/client-ec2'; new EC2({ region: 'us-east-2' })",
+    },
+    {
+      code: "import { EC2Client } from '@aws-sdk/client-ec2'; new EC2Client({ region: 'us-east-2' })",
     },
   ],
   invalid: [
