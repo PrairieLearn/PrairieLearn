@@ -3,9 +3,9 @@ SH_FILES := $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -pa
 .PHONY: build
 
 build:
-	@yarn turbo run build --cache-dir=.turbo
+	@yarn turbo run build
 build-sequential:
-	@yarn turbo run --concurrency 1 build --cache-dir=.turbo
+	@yarn turbo run --concurrency 1 build
 python-deps:
 	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
 deps:

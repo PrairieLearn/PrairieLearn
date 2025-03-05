@@ -404,7 +404,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install OS packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
           packages: graphviz libgraphviz-dev
           version: 1.0
@@ -443,8 +443,7 @@ jobs:
       - name: Set up Turborepo cache
         uses: actions/cache@v4
         with:
-          # Cache is outside of node_modules to avoid confusing caching behavior.
-          path: .turbo
+          path: .turbo/cache
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-turbo-
