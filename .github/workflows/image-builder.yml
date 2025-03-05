@@ -11,14 +11,13 @@ on:
         type: string
       base-images:
         description: 'The base images to build'
-        required: true
+        required: false
         type: string
         default: '[]'
       images:
         description: 'The images to build'
         required: true
         type: string
-        default: '[]'
       exclude:
         description: 'The combinations to exclude'
         required: false
