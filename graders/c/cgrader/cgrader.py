@@ -49,6 +49,7 @@ INVALID_PRIMITIVES = frozenset(("no_sanitize", "disable_sanitizer_instrumentatio
 ASAN_FLAGS = ("-fsanitize=address", "-static-libasan", "-g", "-O0")
 
 
+OutputMatch = str | re.Pattern[str] | Iterable[str | re.Pattern[str]]
 OutputMatchingOption = Literal["all", "partial", "any"]
 
 
@@ -415,15 +416,9 @@ class CGrader:
         self,
         command: str | Iterable[str],
         input: str | None = None,  # noqa: A002
-        exp_output: str
-        | re.Pattern[str]
-        | Iterable[str | re.Pattern[str]]
-        | None = None,
+        exp_output: OutputMatch | None = None,
         must_match_all_outputs: OutputMatchingOption | bool = "any",  # noqa: FBT001
-        reject_output: str
-        | re.Pattern[str]
-        | Iterable[str | re.Pattern[str]]
-        | None = None,
+        reject_output: OutputMatch | None = None,
         field: str | None = None,
         ignore_case: bool = True,  # noqa: FBT001
         timeout: float = 1,
