@@ -73,7 +73,7 @@ jobs:
       - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }}
         id: build
         uses: docker/build-push-action@v6
-        if: ${{ steps.check-modified.outputs.was-modified != 'trueTEST' }}
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         with:
           context: ${{ inputs.folder }}/${{ matrix.image }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -84,7 +84,7 @@ jobs:
 
       # We will upload the artifact so we can use it in the next job
       - name: Upload artifact
-        if: ${{ steps.check-modified.outputs.was-modified != 'trueTEST'}}
+        if: ${{ steps.check-modified.outputs.was-modified == 'true'}}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.image }}-${{ matrix.os }}-tarball
@@ -155,7 +155,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         continue-on-error: true
-        if: ${{ steps.check-modified.outputs.was-modified != 'trueTEST' }}
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         with:
           context: ${{ inputs.folder }}/${{ matrix.image }}
           labels: ${{ steps.meta.outputs.labels }}
