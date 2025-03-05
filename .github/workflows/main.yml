@@ -400,8 +400,6 @@ jobs:
 
   native-checks:
     runs-on: ubuntu-latest
-    env:
-      UV_SYSTEM_PYTHON: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -428,6 +426,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: 'images/plbase/python-requirements.txt'
       - name: Install Python dependencies
+        env:
+          UV_SYSTEM_PYTHON: 1
         run: uv pip install -r images/plbase/python-requirements.txt
 
       - name: Set up Node
