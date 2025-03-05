@@ -410,6 +410,7 @@ jobs:
         with:
           packages: graphviz graphviz-dev
           version: 1.0
+          execute_install_scripts: true
 
       - name: Install additional dependencies
         run: |-
