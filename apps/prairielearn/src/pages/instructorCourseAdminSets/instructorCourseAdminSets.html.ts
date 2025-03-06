@@ -1,9 +1,9 @@
 import { html } from '@prairielearn/html';
 
-import { MissingDefinition } from '../../components/AssessmentSetHeading.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type AssessmentSet } from '../../lib/db-types.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 
 export function InstructorCourseAdminSets({
   resLocals,
@@ -47,20 +47,7 @@ export function InstructorCourseAdminSets({
             <tbody>
               ${assessmentSets.map(function (assessment_set) {
                 return html`
-                  <tr>
-                    <td class="align-middle">${assessment_set.number}</td>
-                    <td class="align-middle">
-                      <span class="badge color-${assessment_set.color}">
-                        ${assessment_set.abbreviation}
-                      </span>
-                    </td>
-                    <td class="align-middle">${assessment_set.name}</td>
-                    <td class="align-middle">
-                      ${assessment_set.heading}
-                      ${assessment_set.implicit && MissingDefinition({ item: 'Set' })}
-                    </td>
-                    <td class="align-middle">${assessment_set.color}</td>
-                  </tr>
+                  ${AssessmentSetHeading({assessment_set: assessment_set})}
                 `;
               })}
             </tbody>
