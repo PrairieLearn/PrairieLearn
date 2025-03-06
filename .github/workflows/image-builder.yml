@@ -24,8 +24,6 @@ on:
         type: string
         default: '[]'
 
-env:
-  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 jobs:
   build-base-images:
     strategy:
@@ -71,7 +69,7 @@ jobs:
           # On the default branch, we'll also tag the image as `latest`
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=sha
+            type=sha,prefix=,format=long
 
       - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }}
         id: build
@@ -156,7 +154,7 @@ jobs:
             ${{ inputs.image-prefix }}-${{ matrix.image }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=sha
+            type=sha,prefix=,format=long
 
       - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }}
         id: build
