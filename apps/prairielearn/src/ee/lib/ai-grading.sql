@@ -142,8 +142,8 @@ VALUES
     $job_sequence_id,
     to_jsonb($prompt::text[]),
     $completion,
-    model,
-    prompt_tokens,
-    completion_tokens,
-    cost
+    $model,
+    $prompt_tokens,
+    $completion_tokens,
+    $cost
   );

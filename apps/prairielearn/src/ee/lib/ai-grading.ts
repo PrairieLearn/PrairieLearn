@@ -53,6 +53,20 @@ const GradedExampleSchema = z.object({
 });
 type GradedExample = z.infer<typeof GradedExampleSchema>;
 
+function calculateAPICost(usage?: OpenAI.Completions.CompletionUsage): number {
+  if (!usage) {
+    return 0;
+  }
+  const prompt_tokens = usage.prompt_tokens;
+  const completion_tokens = usage.completion_tokens;
+
+  // Pricings are updated according to https://openai.com/api/pricing/
+  const prompt_cost = 2.5 / 10 ** 6;
+  const completion_cost = 10.0 / 10 ** 6;
+
+  return prompt_tokens * prompt_cost + completion_tokens * completion_cost;
+}
+
 async function generatePrompt({
   questionPrompt,
   submission_text,
@@ -455,7 +469,7 @@ export async function aiGrade({
               model: OPEN_AI_MODEL,
               prompt_tokens: completion.usage?.prompt_tokens,
               completion_tokens: completion.usage?.completion_tokens,
-              cost: 0,
+              cost: calculateAPICost(completion.usage),
             });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
@@ -502,7 +516,7 @@ export async function aiGrade({
               model: OPEN_AI_MODEL,
               prompt_tokens: completion.usage?.prompt_tokens,
               completion_tokens: completion.usage?.completion_tokens,
-              cost: 0,
+              cost: calculateAPICost(completion.usage),
             });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
