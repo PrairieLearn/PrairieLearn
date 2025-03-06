@@ -1,5 +1,3 @@
-import { boolean } from 'zod';
-
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
