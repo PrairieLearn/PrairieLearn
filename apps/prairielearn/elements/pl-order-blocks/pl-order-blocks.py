@@ -10,8 +10,8 @@ from typing import TypedDict
 import chevron
 import lxml.html
 import prairielearn as pl
-
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag, get_wrong_order_lines
+
 from lxml.etree import _Comment
 from typing_extensions import NotRequired, assert_never
 
@@ -66,6 +66,9 @@ class OrderBlocksAnswerData(TypedDict):
     depends: list[str]  # only used with DAG grader
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
+    distractor_feedback: str | None
+    uuid: str
+
 
     distractor_feedback: str | None
     ordering_feedback: str | None
@@ -369,42 +372,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                         grouped_tag, index, {"tag": group_tag, "depends": group_depends}
                     )
                     index += 1
-        elif html_tags.tag == "pl-feedback":
-            if grading_method is not GradingMethodType.DAG:
-                raise Exception(
-                    'pl-feedback only supported in the "dag" grading mode.'
-                )
-            for feedback_element in html_tags:
-                if feedback_element.tag != "pl-feedback-message":
-                    raise Exception(
-                        'Any html tags nested inside <pl-feedback> must be <pl-feedback-message>.'
-                    )
-                condition_tag = pl.get_string_attrib(feedback_element, "condition-tag")
-                condition = pl.get_string_attrib(feedback_element, "condition")
-                target_tag = pl.get_string_attrib(feedback_element, "target-tag")
-                message = pl.inner_html(feedback_element)
-                if not condition_tag or not target_tag or not message or not condition:
-                    raise Exception(
-                        "All attributes(condition-tag, condition, target-tag, and message) in <pl-feedback-message> must be provided."
-                    )
-                if condition != "after" and condition != "before":
-                    raise Exception(
-                        f"The condition can only be 'after' or 'before'."
-                    )
-                if condition_tag == target_tag:
-                    raise Exception(
-                        f"The condition_tag '{condition_tag}' and tag '{target_tag}' can't be the same."
-                    )
-                feedback_message_data: FeedbackMessageData = {
-                    "condition_tag": condition_tag,
-                    "condition": condition,
-                    "target_tag": target_tag,
-                    "message": message,
-                }
-                feedback_messages.append(feedback_message_data)
-
-            
-
         else:
             prepare_tag(html_tags, index, {"tag": None, "depends": None})
             index += 1
@@ -484,15 +451,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     data["params"][answer_name] = all_blocks
 
-    for block in correct_answers:
-        for feedback_message in feedback_messages:
-            if block["tag"] == feedback_message["target_tag"]:
-                block["feedback_messages"].append({
-                    "condition_tag": feedback_message["condition_tag"], 
-                    "condition": feedback_message["condition"], 
-                    "message": feedback_message["message"],
-                    "is_disordered": False
-                })
 
     data["correct_answers"][answer_name] = correct_answers
 
@@ -635,7 +593,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "icon": attempt.get("icon", ""),
                 "ordering_feedback": attempt.get("ordering_feedback", ""),
                 "is_disordered": attempt.get("is_disordered", False),
-                "return_messages": attempt.get("return_messages", ""),
             }
             for attempt in data["submitted_answers"].get(answer_name, [])
         ]
@@ -800,8 +757,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             answer["distractor_feedback"] = matching_block["distractor_feedback"]
             answer["ordering_feedback"] = matching_block["ordering_feedback"]
             answer["check_tag"] = matching_block.get("check_tag", None)
-            answer["feedback_messages"] = matching_block["feedback_messages"]
-            answer["return_messages"] = matching_block.get("return_messages", [])
 
 
     if grading_method is GradingMethodType.EXTERNAL:
@@ -911,7 +866,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         for ans in student_answer:
             if ans["ordering_feedback"] and not ans["check_tag"]:
                 ans["check_tag"] = ans["tag"]
-        submission = [{"tag": ans["tag"], "check_tag": ans.get("check_tag", None), "feedback_messages": ans["feedback_messages"]} for ans in student_answer]
+        submission = [ans["tag"] for ans in student_answer]
+        sub_for_order_feed = [{"tag": ans["tag"], "check_tag": ans.get("check_tag", None)} for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
 
@@ -941,21 +897,15 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         elif grading_method is GradingMethodType.DAG:
             depends_graph, group_belonging = extract_dag(true_answer_list)
-            disordered_lines = get_wrong_order_lines(submission, depends_graph, group_belonging)     
+            disordered_lines = get_wrong_order_lines(sub_for_order_feed, depends_graph, group_belonging)     
             for i in disordered_lines:
                 student_answer[i]["is_disordered"] = True
-        num_initial_correct, true_answer_length, edited_submission = grade_dag(
-            submission, depends_graph, group_belonging)
+        num_initial_correct, true_answer_length = grade_dag(
+            submission, depends_graph, group_belonging
+        )
         first_wrong = (
             None if num_initial_correct == len(submission) else num_initial_correct
-        )   
-
-        for i, (answer, edited_block) in enumerate(zip(student_answer, edited_submission)):
-            answer["return_messages"] = []
-            if "feedback_messages" in edited_block:
-                for message_info in edited_block["feedback_messages"]:
-                    if message_info['is_disordered']:
-                        answer["return_messages"].append(message_info["message"])
+        )
 
         if feedback_type in FIRST_WRONG_TYPES:
             for block in student_answer[:num_initial_correct]:
@@ -974,7 +924,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     block["icon"] = ""
                     block["distractor_feedback"] = ""
 
-        num_initial_correct, true_answer_length, edited_submission = grade_dag(
+        num_initial_correct, true_answer_length = grade_dag(
             submission, depends_graph, group_belonging)
 
         if partial_credit_type is PartialCreditType.NONE:
@@ -983,14 +933,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             elif num_initial_correct < true_answer_length:
                 final_score = 0
         elif partial_credit_type is PartialCreditType.LCS:
-            submission = [ans["tag"] for ans in submission]
             edit_distance = lcs_partial_credit(
                 submission, depends_graph, group_belonging
             )
             final_score = max(
                 0, float(true_answer_length - edit_distance) / true_answer_length
             )
-
         if final_score < 1:
             first_wrong_is_distractor = first_wrong is not None and student_answer[
                 first_wrong
@@ -999,7 +947,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 for block in get_distractors(
                     data["params"][answer_name], data["correct_answers"][answer_name]
                 )
-
             }
             feedback = construct_feedback(
                 feedback_type,
