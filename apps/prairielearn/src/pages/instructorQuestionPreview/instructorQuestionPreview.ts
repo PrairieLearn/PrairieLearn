@@ -41,19 +41,22 @@ router.post(
 router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
+    const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
-      question_id: res.locals.question.id,
-      instance_question_id: null,
+      question: res.locals.question,
+      instance_question: null,
       variant_id: req.params.variant_id,
-      user_id: res.locals.user.user_id,
+      user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'instructor',
-      csrfToken: null,
-      authorizedEdit: null,
+      // This is only used by score panels, which are not rendered in this context.
+      authorizedEdit: false,
+      // score panels are never rendered on the instructor question preview page.
       renderScorePanels: false,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
     });
-    res.send({ submissionPanel, extraHeadersHtml });
+    res.json(panels);
   }),
 );
 
@@ -63,7 +66,7 @@ router.get(
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
-    await getAndRenderVariant(variant_id, variant_seed, res.locals);
+    await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
 

@@ -140,6 +140,8 @@ export const Lti13ClaimSchema = z.object({
 });
 export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
+export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
+
 export class Lti13Claim {
   private claims: Lti13ClaimType;
   private req: Request;
@@ -215,11 +217,8 @@ export class Lti13Claim {
   /**
    * Return if user claim has roles for Instructor. Can toggle if a TA is considered an
    * instructor or not.
-   *
-   * @param {boolean} taIsInstructor [false]
-   * @returns boolean
    */
-  isRoleInstructor(taIsInstructor = false) {
+  isRoleInstructor(): boolean {
     this.assertValid();
     /*
      TA roles from Canvas development system
@@ -229,15 +228,32 @@ export class Lti13Claim {
       'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
       'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
       'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
+     ]
+    Student roles
+    [
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner',
+      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
+    ]
+    Designer roles
+    [
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
+      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
     ]
     */
 
     let role_instructor = this.roles.some((val: string) =>
-      ['Instructor', 'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'].includes(val),
+      [
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
+      ].includes(val),
     );
 
+    // TA roles may also have Instructor roles, so check this next. We don't
+    // currently consider TAs to be instructors.
     if (
-      !taIsInstructor &&
       this.roles.includes(
         'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
       )
@@ -307,10 +323,31 @@ export async function getAccessToken(lti13_instance_id: string) {
   const issuer = new Issuer(lti13_instance.issuer_params);
   const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
 
-  tokenSet = await client.grant({
-    grant_type: 'client_credentials',
-    scope: TOKEN_SCOPES.join(' '),
-  });
+  tokenSet = await client.grant(
+    {
+      grant_type: 'client_credentials',
+      scope: TOKEN_SCOPES.join(' '),
+    },
+    {
+      clientAssertionPayload: {
+        // Canvas requires the `aud` claim the be (or contain) the token endpoint:
+        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/client_credentials_provider.rb#L26-L29
+        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/asymmetric_client_credentials_provider.rb#L24
+        //
+        // From what we can tell, the OIDC spec requires this as well, see "private key jwt"
+        // here: https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.9
+        //
+        // "The Audience SHOULD be the URL of the Authorization Server's Token Endpoint."
+        //
+        // However, `openid-client` changed their behavior in the following commit:
+        // https://github.com/panva/openid-client/commit/0b05217e7f283b75fd93c27c0f8c647f37501a33
+        //
+        // There wasn't a justification provided and this seems to deviate from the OIDC spec.
+        // See a discussion here: https://github.com/panva/openid-client/discussions/730
+        aud: [...new Set([issuer.issuer, issuer.token_endpoint].filter(Boolean))],
+      },
+    },
+  );
 
   // Store the token for reuse
   const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();

@@ -2,16 +2,12 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
+import { selectCourseById } from '../../models/course.js';
 import { config } from '../config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-const IsFeatureEnabledSchema = z.object({
-  has_feature_grant: z.boolean(),
-  course_dev_mode_features: z.unknown(),
-});
 
 const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'];
 const DEFAULT_CONTEXT = {
@@ -98,29 +94,32 @@ export class FeatureManager<FeatureName extends string> {
     // Allow config to globally override a feature.
     if (name in config.features) return config.features[name];
 
-    const featureIsEnabled = await queryRow(
+    const featureIsEnabled = await queryOptionalRow(
       sql.is_feature_enabled,
       {
         name,
         ...DEFAULT_CONTEXT,
         ...context,
       },
-      IsFeatureEnabledSchema,
+      z.boolean(),
     );
 
-    if (featureIsEnabled.has_feature_grant) return true;
+    if (featureIsEnabled) return true;
 
     // Allow features to be enabled in dev mode via `options.devModeFeatures`
     // in `infoCourse.json`.
-    //
-    // We could check for the feature in the array in SQL, but it's easier to
-    // write this more defensively in JavaScript.
-    if (
-      config.devMode &&
-      Array.isArray(featureIsEnabled.course_dev_mode_features) &&
-      featureIsEnabled.course_dev_mode_features.includes(name)
-    ) {
-      return true;
+    if (config.devMode && 'course_id' in context) {
+      const course = await selectCourseById(context.course_id);
+      const devModeFeatures = course?.options?.devModeFeatures;
+
+      if (Array.isArray(devModeFeatures)) {
+        // Legacy support: `devModeFeatures` used to be an array, not an object.
+        if (devModeFeatures.includes(name)) return true;
+      } else if (devModeFeatures && name in devModeFeatures) {
+        // Features should now be configured with an object mapping feature
+        // names to booleans.
+        return devModeFeatures[name];
+      }
     }
 
     // Default to disabled if not explicitly enabled by a specific grant, config,
@@ -178,7 +177,12 @@ export class FeatureManager<FeatureName extends string> {
    */
   async enable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.enable_feature, { name, ...DEFAULT_CONTEXT, ...context });
+    await queryAsync(sql.update_feature_grant_enabled, {
+      name,
+      enabled: true,
+      ...DEFAULT_CONTEXT,
+      ...context,
+    });
   }
 
   /**
@@ -189,7 +193,23 @@ export class FeatureManager<FeatureName extends string> {
    */
   async disable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.disable_feature, { name, ...DEFAULT_CONTEXT, ...context });
+    await queryAsync(sql.update_feature_grant_enabled, {
+      name,
+      enabled: false,
+      ...DEFAULT_CONTEXT,
+      ...context,
+    });
+  }
+
+  /**
+   * Deletes the feature grant that exactly matches the given context, if any.
+   *
+   * @param name The name of the feature.
+   * @param context The context for which the feature grant should be deleted.
+   */
+  async delete(name: FeatureName, context: FeatureContext = {}) {
+    this.validateFeature(name, context);
+    await queryAsync(sql.delete_feature, { name, ...DEFAULT_CONTEXT, ...context });
   }
 
   /**

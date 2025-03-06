@@ -97,13 +97,12 @@ describe('student data access', function () {
 
   step('student can start E1 in exam mode', async () => {
     const headers = { cookie: 'pl_test_user=test_student; pl_test_mode=Exam' };
-    const form = {
-      __action: 'new_instance',
-      __csrf_token: context.__csrf_token,
-    };
     const response = await helperClient.fetchCheerio(context.examAssessmentUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'new_instance',
+        __csrf_token: context.__csrf_token,
+      }),
       headers,
     });
     assert.isTrue(response.ok);
@@ -216,15 +215,14 @@ describe('student data access', function () {
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
       assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
-      const form = {
-        __action: 'attach_text',
-        __csrf_token,
-        filename: 'notes.txt',
-        contents: 'This is a test.',
-      };
       response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'attach_text',
+          __csrf_token,
+          filename: 'notes.txt',
+          contents: 'This is a test.',
+        }),
         headers,
       });
       assert.equal(response.status, 403);
@@ -241,15 +239,14 @@ describe('student data access', function () {
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
       assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
-      const form = {
-        __action: 'grade',
-        __csrf_token,
-        __variant_id: context.homeworkQuestionVariant.id,
-        c: context.homeworkQuestionVariant.true_answer.c,
-      };
       response = await helperClient.fetchCheerio(context.homeworkQuestionInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'grade',
+          __csrf_token,
+          __variant_id: context.homeworkQuestionVariant.id,
+          c: context.homeworkQuestionVariant.true_answer.c,
+        }),
         headers,
       });
       assert.equal(response.status, 403);
@@ -266,15 +263,14 @@ describe('student data access', function () {
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
       assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
-      const form = {
-        __action: 'attach_text',
-        __csrf_token,
-        filename: 'notes.txt',
-        contents: 'This is a test.',
-      };
       response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'attach_text',
+          __csrf_token,
+          filename: 'notes.txt',
+          contents: 'This is a test.',
+        }),
         headers,
       });
       assert.equal(response.status, 403);
@@ -289,15 +285,14 @@ describe('student data access', function () {
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
       assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
-      const form = {
-        __action: 'grade',
-        __csrf_token,
-        __variant_id: context.examQuestionVariant.id,
-        c: context.examQuestionVariant.true_answer.c,
-      };
       response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'grade',
+          __csrf_token,
+          __variant_id: context.examQuestionVariant.id,
+          c: context.examQuestionVariant.true_answer.c,
+        }),
         headers,
       });
       assert.equal(response.status, 403);
@@ -331,15 +326,14 @@ describe('student data access', function () {
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
       assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
-      const form = {
-        __action: 'attach_text',
-        __csrf_token,
-        filename: 'notes.txt',
-        contents: 'This is a test.',
-      };
       response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'attach_text',
+          __csrf_token,
+          filename: 'notes.txt',
+          contents: 'This is a test.',
+        }),
         headers,
       });
       assert.equal(response.status, 403);
@@ -356,15 +350,14 @@ describe('student data access', function () {
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
       assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
-      const form = {
-        __action: 'grade',
-        __csrf_token,
-        __variant_id: context.homeworkQuestionVariant.id,
-        c: context.homeworkQuestionVariant.true_answer.c,
-      };
       response = await helperClient.fetchCheerio(context.homeworkQuestionInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'grade',
+          __csrf_token,
+          __variant_id: context.homeworkQuestionVariant.id,
+          c: context.homeworkQuestionVariant.true_answer.c,
+        }),
         headers,
       });
       assert.equal(response.status, 403);
@@ -381,15 +374,14 @@ describe('student data access', function () {
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
       assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
-      const form = {
-        __action: 'attach_text',
-        __csrf_token,
-        filename: 'notes.txt',
-        contents: 'This is a test.',
-      };
       response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'attach_text',
+          __csrf_token,
+          filename: 'notes.txt',
+          contents: 'This is a test.',
+        }),
         headers,
       });
       assert.equal(response.status, 403);
@@ -404,15 +396,14 @@ describe('student data access', function () {
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
       assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
-      const form = {
-        __action: 'grade',
-        __csrf_token,
-        __variant_id: context.examQuestionVariant.id,
-        c: context.examQuestionVariant.true_answer.c,
-      };
       response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'grade',
+          __csrf_token,
+          __variant_id: context.examQuestionVariant.id,
+          c: context.examQuestionVariant.true_answer.c,
+        }),
         headers,
       });
       assert.equal(response.status, 403);
@@ -430,15 +421,14 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       helperClient.extractAndSaveCSRFToken(context, response.$, 'form[class=attach-text-form]');
-      const form = {
-        __action: 'attach_text',
-        __csrf_token: context.__csrf_token,
-        filename: 'notes.txt',
-        contents: 'This is a test.',
-      };
       response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'attach_text',
+          __csrf_token: context.__csrf_token,
+          filename: 'notes.txt',
+          contents: 'This is a test.',
+        }),
         headers,
       });
       assert.isTrue(response.ok);
@@ -457,15 +447,14 @@ describe('student data access', function () {
       assert.isTrue(response.ok);
       helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name=question-form]');
       assert.lengthOf(response.$('button[name=__action][value=grade]'), 1);
-      const form = {
-        __action: 'grade',
-        __csrf_token: context.__csrf_token,
-        __variant_id: context.homeworkQuestionVariant.id,
-        c: context.homeworkQuestionVariant.true_answer.c,
-      };
       response = await helperClient.fetchCheerio(context.homeworkQuestionInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'grade',
+          __csrf_token: context.__csrf_token,
+          __variant_id: context.homeworkQuestionVariant.id,
+          c: context.homeworkQuestionVariant.true_answer.c,
+        }),
         headers,
       });
       assert.isTrue(response.ok);
@@ -484,15 +473,14 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       helperClient.extractAndSaveCSRFToken(context, response.$, 'form[class=attach-text-form]');
-      const form = {
-        __action: 'attach_text',
-        __csrf_token: context.__csrf_token,
-        filename: 'notes.txt',
-        contents: 'This is a test.',
-      };
       response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'attach_text',
+          __csrf_token: context.__csrf_token,
+          filename: 'notes.txt',
+          contents: 'This is a test.',
+        }),
         headers,
       });
       assert.isTrue(response.ok);
@@ -510,15 +498,14 @@ describe('student data access', function () {
       assert.isTrue(response.ok);
       helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name=question-form]');
       assert.lengthOf(response.$('button[name=__action][value=grade]'), 1);
-      const form = {
-        __action: 'grade',
-        __csrf_token: context.__csrf_token,
-        __variant_id: context.examQuestionVariant.id,
-        c: context.examQuestionVariant.true_answer.c,
-      };
       response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, {
         method: 'POST',
-        form,
+        body: new URLSearchParams({
+          __action: 'grade',
+          __csrf_token: context.__csrf_token,
+          __variant_id: context.examQuestionVariant.id,
+          c: context.examQuestionVariant.true_answer.c,
+        }),
         headers,
       });
       assert.isTrue(response.ok);

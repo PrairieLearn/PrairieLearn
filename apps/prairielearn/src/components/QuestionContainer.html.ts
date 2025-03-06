@@ -1,15 +1,19 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml, escapeHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 import type {
   AssessmentQuestion,
   CourseInstance,
+  GroupConfig,
   InstanceQuestion,
   Issue,
   Question,
   User,
+  Variant,
 } from '../lib/db-types.js';
+import { getRoleNamesForUser, type GroupInfo } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
 import { Modal } from './Modal.html.js';
@@ -30,18 +34,12 @@ export function QuestionContainer({
     question,
     issues,
     variant,
-    instance_question,
-    user,
     variantToken,
-    __csrf_token,
     questionJsonBase64,
-    urlPrefix,
     course_instance,
     authz_data,
-    authz_result,
     is_administrator,
     showTrueAnswer,
-    showSubmissions,
     submissions,
     submissionHtmls,
     answerHtml,
@@ -52,14 +50,7 @@ export function QuestionContainer({
       class="question-container"
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
-      data-question-id="${question.id}"
-      data-instance-question-id="${instance_question?.id ?? ''}"
-      data-user-id="${user.user_id}"
       data-variant-token="${variantToken}"
-      data-url-prefix="${urlPrefix}"
-      data-question-context="${questionContext}"
-      data-csrf-token="${__csrf_token}"
-      data-authorized-edit="${authz_result?.authorized_edit !== false}"
     >
       ${question.type !== 'Freeform'
         ? html`<div hidden="true" class="question-data">${questionJsonBase64}</div>`
@@ -80,7 +71,7 @@ export function QuestionContainer({
         <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
       </div>
 
-      ${showSubmissions
+      ${submissions.length > 0
         ? html`
             ${SubmissionList({
               resLocals,
@@ -95,13 +86,13 @@ export function QuestionContainer({
                     <button
                       class="show-hide-btn btn btn-outline-secondary btn-sm collapsed"
                       type="button"
-                      data-toggle="collapse"
-                      data-target="#more-submissions-collapser"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#more-submissions-collapser"
                       aria-expanded="false"
                       aria-controls="more-submissions-collapser"
                     >
                       Show/hide older submissions
-                      <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+                      <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
                     </button>
                   </div>
 
@@ -234,7 +225,7 @@ ${issue.system_data.courseErrData.outputBoth}</pre
                 <button
                   type="button"
                   class="btn btn-xs btn-secondary"
-                  data-toggle="collapse"
+                  data-bs-toggle="collapse"
                   href="#issue-course-data-${issue.id}"
                   aria-expanded="false"
                   aria-controls="#issue-course-data-${issue.id}"
@@ -254,7 +245,7 @@ ${JSON.stringify(issue.course_data, null, '    ')}</pre
                       <button
                         type="button"
                         class="btn btn-xs btn-secondary"
-                        data-toggle="collapse"
+                        data-bs-toggle="collapse"
                         href="#issue-system-data-${issue.id}"
                         aria-expanded="false"
                         aria-controls="#issue-system-data-${issue.id}"
@@ -294,17 +285,46 @@ export function QuestionTitle({
   }
 }
 
-export function QuestionFooter({
+interface QuestionFooterResLocals {
+  showSaveButton: boolean;
+  showGradeButton: boolean;
+  disableSaveButton: boolean;
+  disableGradeButton: boolean;
+  showNewVariantButton: boolean;
+  showTryAgainButton: boolean;
+  hasAttemptsOtherVariants: boolean;
+  variantAttemptsLeft: number;
+  variantAttemptsTotal: number;
+  newVariantUrl: string;
+  tryAgainUrl: string;
+  question: Question;
+  variant: Variant;
+  instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
+  assessment_question: AssessmentQuestion | null;
+  instance_question_info: Record<string, any>;
+  authz_result: Record<string, any>;
+  group_config: GroupConfig | null;
+  group_info: GroupInfo | null;
+  group_role_permissions: {
+    can_view: boolean;
+    can_submit: boolean;
+  } | null;
+  user: User;
+  __csrf_token: string;
+}
+
+function QuestionFooter({
   resLocals,
   questionContext,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: QuestionFooterResLocals;
   questionContext: QuestionContext;
 }) {
   if (questionContext === 'manual_grading') return '';
   if (resLocals.question.type === 'Freeform') {
     return html`
       <div class="card-footer" id="question-panel-footer">
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         ${QuestionFooterContent({ resLocals, questionContext })}
       </div>
     `;
@@ -312,6 +332,7 @@ export function QuestionFooter({
     return html`
       <div class="card-footer" id="question-panel-footer">
         <form class="question-form" name="question-form" method="POST">
+          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
           ${QuestionFooterContent({ resLocals, questionContext })}
         </form>
       </div>
@@ -319,11 +340,11 @@ export function QuestionFooter({
   }
 }
 
-function QuestionFooterContent({
+export function QuestionFooterContent({
   resLocals,
   questionContext,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: Omit<QuestionFooterResLocals, '__csrf_token'>;
   questionContext: QuestionContext;
 }) {
   const {
@@ -340,136 +361,142 @@ function QuestionFooterContent({
     tryAgainUrl,
     question,
     variant,
-    assessment,
     instance_question,
-    assessment_instance,
     assessment_question,
     instance_question_info,
     authz_result,
-    __csrf_token,
+    group_config,
+    group_info,
+    group_role_permissions,
+    user,
   } = resLocals;
 
-  if (questionContext === 'student_exam' && variantAttemptsLeft === 0) {
-    return 'This question is complete and cannot be answered again.';
-  }
+  const contents = run(() => {
+    if (questionContext === 'student_exam' && variantAttemptsLeft === 0) {
+      return 'This question is complete and cannot be answered again.';
+    }
 
-  if (authz_result?.authorized_edit === false) {
-    return html`<div class="alert alert-warning mt-2" role="alert">
-      You are viewing the question instance of a different user and so are not authorized to save
-      answers, to submit answers for grading, or to try a new variant of this same question.
-    </div>`;
-  }
+    if (authz_result?.authorized_edit === false) {
+      return html`<div class="alert alert-warning mt-2" role="alert">
+        You are viewing the question instance of a different user and so are not authorized to save
+        answers, to submit answers for grading, or to try a new variant of this same question.
+      </div>`;
+    }
 
-  return html`
-    <div class="row">
-      <div class="col d-flex justify-content-between">
-        <span class="d-flex align-items-center">
-          ${showSaveButton
-            ? html`
-                <button
-                  class="btn btn-info question-save disable-on-submit order-2"
-                  ${disableSaveButton ? 'disabled' : ''}
-                  ${question.type === 'Freeform' ? html`name="__action" value="save"` : ''}
-                >
-                  ${showGradeButton ? 'Save only' : 'Save'}
-                </button>
-              `
-            : ''}
-          ${showGradeButton
-            ? html`
-                <button
-                  class="btn btn-primary question-grade disable-on-submit order-1 mr-1"
-                  ${disableGradeButton ? 'disabled' : ''}
-                  ${question.type === 'Freeform' ? html`name="__action" value="grade"` : ''}
-                >
-                  Save &amp; Grade
-                  ${variantAttemptsTotal > 0
-                    ? variantAttemptsLeft > 1
-                      ? html`
-                          <small class="font-italic ml-2">
-                            ${variantAttemptsLeft} attempts left
-                          </small>
-                        `
-                      : variantAttemptsLeft === 1 && variantAttemptsTotal > 1
-                        ? html`<small class="font-italic ml-2">Last attempt</small>`
-                        : variantAttemptsLeft === 1
-                          ? html`<small class="font-italic ml-2">Single attempt</small>`
-                          : ''
-                    : questionContext === 'student_homework'
-                      ? html`<small class="font-italic ml-2">Unlimited attempts</small>`
-                      : ''}
-                </button>
-              `
-            : ''}
-          ${assessment?.group_config?.has_roles &&
-          !instance_question?.group_role_permissions?.can_submit
-            ? html`
-                <button
-                  type="button"
-                  class="btn btn-xs btn-ghost mr-1"
-                  data-toggle="popover"
-                  data-content="Your group role (${assessment_instance.user_group_roles}) is not allowed to submit this question."
-                  aria-label="Submission blocked"
-                >
-                  <i class="fa fa-lock" aria-hidden="true"></i>
-                </button>
-              `
-            : ''}
-        </span>
-        <span class="d-flex">
-          ${question.type === 'Freeform'
-            ? html` <input type="hidden" name="__variant_id" value="${variant.id}" /> `
-            : html`
-                <input type="hidden" name="postData" class="postData" />
-                <input type="hidden" name="__action" class="__action" />
-              `}
-          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-          ${showNewVariantButton
-            ? html`
-                <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ml-1">
-                  New variant
-                </a>
-              `
-            : showTryAgainButton
+    return html`
+      <div class="row">
+        <div class="col d-flex justify-content-between">
+          <span class="d-flex align-items-center">
+            ${showSaveButton
               ? html`
-                  <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ml-1">
-                    ${instance_question_info.previous_variants?.some((variant) => variant.open)
-                      ? 'Go to latest variant'
-                      : 'Try a new variant'}
+                  <button
+                    class="btn btn-info question-save disable-on-submit order-2"
+                    ${disableSaveButton ? 'disabled' : ''}
+                    ${question.type === 'Freeform' ? html`name="__action" value="save"` : ''}
+                  >
+                    ${showGradeButton ? 'Save only' : 'Save'}
+                  </button>
+                `
+              : ''}
+            ${showGradeButton
+              ? html`
+                  <button
+                    class="btn btn-primary question-grade disable-on-submit order-1 me-1"
+                    ${disableGradeButton ? 'disabled' : ''}
+                    ${question.type === 'Freeform' ? html`name="__action" value="grade"` : ''}
+                  >
+                    Save &amp; Grade
+                    ${variantAttemptsTotal > 0
+                      ? variantAttemptsLeft > 1
+                        ? html`
+                            <small class="font-italic ms-2">
+                              ${variantAttemptsLeft} attempts left
+                            </small>
+                          `
+                        : variantAttemptsLeft === 1 && variantAttemptsTotal > 1
+                          ? html`<small class="font-italic ms-2">Last attempt</small>`
+                          : variantAttemptsLeft === 1
+                            ? html`<small class="font-italic ms-2">Single attempt</small>`
+                            : ''
+                      : questionContext === 'student_homework'
+                        ? html`<small class="font-italic ms-2">Unlimited attempts</small>`
+                        : ''}
+                  </button>
+                `
+              : ''}
+            ${group_config?.has_roles && !group_role_permissions?.can_submit && group_info
+              ? html`
+                  <button
+                    type="button"
+                    class="btn btn-xs btn-ghost me-1"
+                    data-bs-toggle="popover"
+                    data-bs-content="Your group role (${getRoleNamesForUser(group_info, user).join(
+                      ', ',
+                    )}) is not allowed to submit this question."
+                    aria-label="Submission blocked"
+                  >
+                    <i class="fa fa-lock" aria-hidden="true"></i>
+                  </button>
+                `
+              : ''}
+          </span>
+          <span class="d-flex">
+            ${question.type === 'Freeform'
+              ? html` <input type="hidden" name="__variant_id" value="${variant.id}" /> `
+              : html`
+                  <input type="hidden" name="postData" class="postData" />
+                  <input type="hidden" name="__action" class="__action" />
+                `}
+            ${showNewVariantButton
+              ? html`
+                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ms-1">
+                    New variant
                   </a>
                 `
-              : hasAttemptsOtherVariants
+              : showTryAgainButton
                 ? html`
-                    <small class="font-italic align-self-center">
-                      Additional attempts available with new variants
-                    </small>
-                    <button
-                      type="button"
-                      class="btn btn-xs btn-ghost align-self-center ml-1"
-                      data-toggle="popover"
-                      data-container="body"
-                      data-html="true"
-                      data-content="${escapeHtml(
-                        NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
-                      )}"
-                      data-placement="auto"
-                    >
-                      <i class="fa fa-question-circle" aria-hidden="true"></i>
-                    </button>
+                    <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
+                      ${instance_question_info.previous_variants?.some((variant) => variant.open)
+                        ? 'Go to latest variant'
+                        : 'Try a new variant'}
+                    </a>
                   `
-                : ''}
-          ${AvailablePointsNotes({ questionContext, instance_question, assessment_question })}
-        </span>
+                : hasAttemptsOtherVariants
+                  ? html`
+                      <small class="font-italic align-self-center">
+                        Additional attempts available with new variants
+                      </small>
+                      <button
+                        type="button"
+                        class="btn btn-xs btn-ghost align-self-center ms-1"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-title="Explanation of new variants"
+                        data-bs-content="${escapeHtml(
+                          NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
+                        )}"
+                        data-bs-placement="auto"
+                      >
+                        <i class="fa fa-question-circle" aria-hidden="true"></i>
+                      </button>
+                    `
+                  : ''}
+            ${AvailablePointsNotes({ questionContext, instance_question, assessment_question })}
+          </span>
+        </div>
       </div>
-    </div>
-    ${SubmitRateFooter({
-      questionContext,
-      showGradeButton,
-      disableGradeButton,
-      assessment_question,
-      allowGradeLeftMs: instance_question?.allow_grade_left_ms ?? 0,
-    })}
-  `;
+      ${SubmitRateFooter({
+        questionContext,
+        showGradeButton,
+        disableGradeButton,
+        assessment_question,
+        allowGradeLeftMs: instance_question?.allow_grade_left_ms ?? 0,
+      })}
+    `;
+  });
+
+  return html`<div id="question-panel-footer-content">${contents}</div>`;
 }
 
 function SubmitRateFooter({
@@ -482,7 +509,7 @@ function SubmitRateFooter({
   questionContext: QuestionContext;
   showGradeButton: boolean;
   disableGradeButton: boolean;
-  assessment_question: AssessmentQuestion;
+  assessment_question: AssessmentQuestion | null;
   allowGradeLeftMs: number;
 }) {
   if (!showGradeButton || !assessment_question?.grade_rate_minutes) return '';
@@ -506,7 +533,7 @@ function SubmitRateFooter({
         <span class="d-flex">
           ${disableGradeButton
             ? html`
-                <small class="font-italic ml-2 mt-1 submission-suspended-msg">
+                <small class="font-italic ms-2 mt-1 submission-suspended-msg">
                   Grading possible in <span id="submission-suspended-display"></span>
                   <div id="submission-suspended-progress" class="border border-info"></div>
                 </small>
@@ -528,11 +555,12 @@ function SubmitRateFooter({
           <button
             type="button"
             class="btn btn-xs btn-ghost"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-content="${escapeHtml(popoverContent)}"
-            data-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-title="Explanation of grading rate limits"
+            data-bs-content="${escapeHtml(popoverContent)}"
+            data-bs-placement="auto"
           >
             <i class="fa fa-question-circle" aria-hidden="true"></i>
           </button>
@@ -570,10 +598,10 @@ function AvailablePointsNotes({
   assessment_question,
 }: {
   questionContext: QuestionContext;
-  instance_question: InstanceQuestion;
-  assessment_question: AssessmentQuestion;
+  instance_question: InstanceQuestion | null;
+  assessment_question: AssessmentQuestion | null;
 }) {
-  if (questionContext !== 'student_exam' || !instance_question.points_list) return '';
+  if (questionContext !== 'student_exam' || !instance_question?.points_list) return '';
 
   const roundedPoints = instance_question.points_list.map((p: number) => Math.round(p * 100) / 100);
   const maxManualPoints = assessment_question?.max_manual_points ?? 0;
@@ -628,10 +656,10 @@ function QuestionPanel({
         ${showCopyQuestionButton
           ? html`
               <button
-                class="btn btn-light btn-sm ml-auto"
+                class="btn btn-light btn-sm ms-auto"
                 type="button"
-                data-toggle="modal"
-                data-target="#copyQuestionModal"
+                data-bs-toggle="modal"
+                data-bs-target="#copyQuestionModal"
               >
                 <i class="fa fa-clone"></i>
                 Copy question
@@ -640,7 +668,11 @@ function QuestionPanel({
           : ''}
       </div>
       <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
-      ${QuestionFooter({ resLocals, questionContext })}
+      ${QuestionFooter({
+        // TODO: propagate more precise types upwards.
+        resLocals: resLocals as any,
+        questionContext,
+      })}
     </div>
   `;
 }
@@ -696,7 +728,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
               This question can be copied to any course for which you have editor permissions.
               Select one of your courses to copy this question.
             </p>
-            <select class="custom-select" name="to_course_id" required>
+            <select class="form-select" name="to_course_id" required>
               ${question_copy_targets.map(
                 (course, index) => html`
                   <option
@@ -719,7 +751,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
       />
       <input type="hidden" name="question_id" value="${question.id}" />
       <input type="hidden" name="course_id" value="${course.id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       ${question_copy_targets?.length > 0
         ? html`
             <button type="submit" name="__action" value="copy_question" class="btn btn-primary">

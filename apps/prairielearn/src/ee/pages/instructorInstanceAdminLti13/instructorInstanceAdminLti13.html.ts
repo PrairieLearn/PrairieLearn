@@ -3,15 +3,14 @@ import { z } from 'zod';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, type HtmlSafeString } from '@prairielearn/html';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
-import { Navbar } from '../../../components/Navbar.html.js';
+import { PageLayout } from '../../../components/PageLayout.html.js';
 import {
-  type Lti13CourseInstance,
-  type Lti13Instance,
   AssessmentSchema,
   AssessmentSetSchema,
   type Lti13Assessments,
+  type Lti13CourseInstance,
+  type Lti13Instance,
 } from '../../../lib/db-types.js';
 import { type Lineitems } from '../../lib/lti13.js';
 
@@ -44,98 +43,109 @@ export function InstructorInstanceAdminLti13({
 }): string {
   const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
-      </head>
-      <body>
-        <script>
-          $(() => {
-            $('#selectLti13Instance').on('change', () => {
-              let li = $('#selectLti13Instance option:selected');
-              window.location.href =
-                '/pl/course_instance/${resLocals.course_instance
-                  .id}/instructor/instance_admin/lti13_instance/' + li.val();
-            });
-          });
-        </script>
-        ${Navbar({ resLocals, navSubPage: 'lti13' })}
-        <main id="content" class="container-fluid mb-4">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">
-              <h1>LTI 1.3 configuration</h1>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-2">
-                  <select class="custom-select mb-2" id="selectLti13Instance">
-                    ${instances.map((i) => {
-                      return html`
-                        <option
-                          value="${i.lti13_course_instance.id}"
-                          ${instance.lti13_course_instance.id === i.lti13_course_instance.id
-                            ? 'selected'
-                            : ''}
-                        >
-                          ${i.lti13_instance.name}: ${i.lti13_course_instance.context_label}
-                        </option>
-                      `;
-                    })}
-                  </select>
-                  Quick links:
-                  <ul>
-                    <li><a href="#assessments">Linked Assessments</a></li>
-                    <li><a href="#connection">Connection to LMS</a></li>
-                  </ul>
-                  Created at:
-                  ${formatDateYMDHM(
-                    instance.lti13_course_instance.created_at,
-                    resLocals.course_instance.display_timezone,
-                  )}
-                </div>
-                <div class="col-10">
-                  <h3 id="assessments">Linked Assessments</h3>
-                  ${instance.lti13_course_instance.context_memberships_url &&
-                  instance.lti13_course_instance.lineitems_url
-                    ? LinkedAssessments({
-                        resLocals,
-                        lms_name,
-                        assessments,
-                        lineitems,
-                      })
-                    : html`
-                        <p>
-                          PrairieLearn does not have enough LTI metadata to link assignments and do
-                          grade passback.
-                        </p>
-                        <p>
-                          To update our metadata, go back to the LMS and initiate a PrairieLearn
-                          connection via LTI as an instructor, then return here.
-                        </p>
-                      `}
-
-                  <h3 id="connection">Connection to LMS</h3>
-                  <form method="POST">
-                    <input type="hidden" name="__action" value="delete_lti13_course_instance" />
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <button
-                      class="btn btn-danger btn-sm"
-                      onclick="return confirm('Are you sure you want to remove this connection?');"
-                    >
-                      Remove LTI 1.3 connection with ${instance.lti13_instance.name}:
-                      ${instance.lti13_course_instance.context_label}
-                    </button>
-                  </form>
+  return PageLayout({
+    resLocals,
+    pageTitle: 'LTI 1.3',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'lti13',
+    },
+    options: {
+      fullWidth: true,
+      marginBottom: true,
+    },
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex">
+          <h1>LTI 1.3 configuration</h1>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-2">
+              <div class="dropdown mb-2">
+                <button
+                  type="button"
+                  class="btn dropdown-toggle border border-gray"
+                  data-bs-toggle="dropdown"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  data-bs-boundary="window"
+                >
+                  ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
+                </button>
+                <div class="dropdown-menu">
+                  ${instances.map((i) => {
+                    return html`
+                      <a
+                        class="dropdown-item ${instance.lti13_course_instance.id ===
+                        i.lti13_course_instance.id
+                          ? 'active'
+                          : ''}"
+                        href="/pl/course_instance/${resLocals.course_instance
+                          .id}/instructor/instance_admin/lti13_instance/${i.lti13_course_instance
+                          .id}"
+                        aria-current="${instance.lti13_course_instance.id ===
+                        i.lti13_course_instance.id
+                          ? 'true'
+                          : ''}"
+                      >
+                        ${i.lti13_instance.name}: ${i.lti13_course_instance.context_label}
+                      </a>
+                    `;
+                  })}
                 </div>
               </div>
+              Quick links:
+              <ul>
+                <li><a href="#assessments">Linked Assessments</a></li>
+                <li><a href="#connection">Connection to LMS</a></li>
+              </ul>
+              Created at:
+              ${formatDateYMDHM(
+                instance.lti13_course_instance.created_at,
+                resLocals.course_instance.display_timezone,
+              )}
+            </div>
+            <div class="col-10">
+              <h3 id="assessments">Linked Assessments</h3>
+              ${instance.lti13_course_instance.context_memberships_url &&
+              instance.lti13_course_instance.lineitems_url
+                ? LinkedAssessments({
+                    resLocals,
+                    lms_name,
+                    assessments,
+                    lineitems,
+                  })
+                : html`
+                    <p>
+                      PrairieLearn does not have enough LTI metadata to link assignments and do
+                      grade passback.
+                    </p>
+                    <p>
+                      To update our metadata, go back to the LMS and initiate a PrairieLearn
+                      connection via LTI as an instructor, then return here.
+                    </p>
+                  `}
+
+              <h3 id="connection">Connection to LMS</h3>
+              <form method="POST">
+                <input type="hidden" name="__action" value="delete_lti13_course_instance" />
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <button
+                  class="btn btn-danger btn-sm"
+                  onclick="return confirm('Are you sure you want to remove this connection?');"
+                >
+                  Remove LTI 1.3 connection with ${instance.lti13_instance.name}:
+                  ${instance.lti13_course_instance.context_label}
+                </button>
+              </form>
             </div>
           </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+        </div>
+      </div>
+    `,
+  });
 }
 
 function LinkedAssessments({
@@ -228,17 +238,17 @@ function LinkedAssessments({
                           footer: html`<button
                             type="button"
                             class="btn btn-secondary"
-                            data-dismiss="modal"
+                            data-bs-dismiss="modal"
                           >
                             Close
                           </button>`,
                         })}
                         ${row.assessment_group_heading}
                         <button
-                          class="btn btn-sm btn-secondary ml-2"
+                          class="btn btn-sm btn-secondary ms-2"
                           type="button"
-                          data-toggle="modal"
-                          data-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
+                          data-bs-toggle="modal"
+                          data-bs-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
                         >
                           Bulk actions
                         </button>
@@ -299,7 +309,7 @@ function LinkedAssessments({
                     footer: html`<button
                       type="button"
                       class="btn btn-secondary"
-                      data-dismiss="modal"
+                      data-bs-dismiss="modal"
                     >
                       Close
                     </button>`,
@@ -315,8 +325,8 @@ function LinkedAssessments({
                           <button
                             class="btn btn-med-light"
                             type="button"
-                            data-toggle="modal"
-                            data-target="#assignment-${row.id}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#assignment-${row.id}"
                           >
                             Link assignment
                           </button>

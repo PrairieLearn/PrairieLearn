@@ -7,7 +7,7 @@ PrairieLearn allows you to securely run custom grading scripts in environments t
 You can define a number of resources for the external grading process:
 
 - A Docker image to execute your tests in
-- A script to serve as an entrypoint to your grading process
+- A script or command line to serve as an entrypoint to your grading process
 - Files that are shared between questions
 - Tests for individual questions
 
@@ -62,7 +62,9 @@ External grading configuration is done on a per-question basis. All configuratio
 
 - `image`: The Docker image that should be used for the question. This can be any image specification that is understood by the `docker pull` command. This property is required.
 
-- `entrypoint`: The script that will be run when your container starts. This should be an absolute path to something that is executable via `chmod +x /path/to/entrypoint && /path/to/entrypoint`; this could take the form of a shell script, a python script, a compiled executable, or anything else that can be run like that. This file can be built into your image, or it can be one of the files that will be mounted into `/grade` (more on that later). This property is required.
+- `entrypoint`: The script or command line that will be run when your container starts. This should be an absolute path to something that is executable in the Docker image; this could take the form of a shell script, a python script, a compiled executable, or anything else that can be run like that. This file can be built into your image, which must be executable in the image itself; or it can be one of the files that will be mounted into `/grade` (more on that later), in which case the entrypoint file is given executable permission by the grading process itself before running (i.e., `chmod +x /path/to/entrypoint && /path/to/entrypoint`). If this property is not provided, the default entrypoint of the Docker image will be used.
+
+  - The `entrypoint` may also be provided with additional command line arguments. These may be provided either as a string (e.g., `"/path/to/entrypoint -h"`) or as an array, with each element corresponding to an argument (e.g., `["/path/to/entrypoint", "-h"]`).
 
 - `serverFilesCourse`: Specifies a list of files or directories that will be copied from a course's `serverFilesCourse` into the grading job. This can be useful if you want to share a standard grading framework between many questions. This property is optional.
 
@@ -74,13 +76,15 @@ External grading configuration is done on a per-question basis. All configuratio
 
 Here's an example of a complete `externalGradingOptions` portion of a question's `info.json`:
 
-```json
-"externalGradingOptions": {
+```json title="info.json"
+{
+  "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-python",
     "serverFilesCourse": ["python_autograder/"],
     "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh",
     "timeout": 5
+  }
 }
 ```
 
@@ -92,7 +96,7 @@ This config file specifies the following things:
 - The script `/grade/serverFilesCourse/python_autograder/run.sh` will be executed when your container starts up
 - If grading takes longer that 5 seconds, the container will be killed
 
-#### Special directories
+### Special directories
 
 There are several ways that you can load files from PrairieLearn into your container if you don't want to build the files directly into your image.
 
@@ -135,7 +139,11 @@ In particular, the file system structure of the grader looks like:
 +-- /...                       # Additional directories and files as needed.
 ```
 
-When your container starts up, your `entrypoint` script will be executed. After that, you can do whatever you want. The only requirement is that by the time that script finished, you should have written results for the grading job to `/grade/results/results.json`; the format for this is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
+When your container starts up, your `entrypoint` script will be executed. After that, you can do whatever you want. The only requirement is that by the time that script finished, you should have written results for the grading job to `/grade/results/results.json`. The format for this file is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
+
+!!! note
+
+    The `/grade/results` directory is not automatically created, so you must create it yourself before writing `results.json`.
 
 ## Directory layout
 
@@ -151,7 +159,7 @@ The following is an example of a well-structured course layout:
 |   `-- /addVector
 |       +-- info.json           # required configuration goes here (see below)
 |       |-- ...                 # some other question files
-|       `-- /tests              # folder of test cases
+|       `-- /tests              # directory of test cases
 |           +-- ag.py           # testing files
 |           `-- soln_out.txt
 |
@@ -238,15 +246,18 @@ To enable students to submit files, you can use one of PrairieLearn's file eleme
 If you want to write your own submission mechanism (as a custom element, for instance), you can do that as well. We expect files to be present in a `_files` array on the `submitted_answers` dict. They should be represented as objects containing the `name` of the file and base-64 encoded `contents`. Here's an example of a well-formed `_files` array:
 
 ```json
-"_files": [
+{
+  "_files": [
     {
-        "name": "fib.py",
-        "contents": "ZGVmIGZpYihuKToNCiAgaWYgKG4gPT0gMCk6DQogICAgICByZXR1cm4gMA0KICBlbGlmIChuID09IDEpOg0KICAgICAgcmV0dXJuIDENCiAgZWxzZToNCiAgICAgIHJldHVybiBmaWIobiAtIDEpICsgZmliKG4gLSAyKQ=="
-    }, {
-        "name": "anotherFile.py",
-        "contents": "base64EncodedFileGoesHere"
+      "name": "fib.py",
+      "contents": "ZGVmIGZpYihuKToNCiAgaWYgKG4gPT0gMCk6DQogICAgICByZXR1cm4gMA0KICBlbGlmIChuID09IDEpOg0KICAgICAgcmV0dXJuIDENCiAgZWxzZToNCiAgICAgIHJldHVybiBmaWIobiAtIDEpICsgZmliKG4gLSAyKQ=="
+    },
+    {
+      "name": "anotherFile.py",
+      "contents": "base64EncodedFileGoesHere"
     }
-]
+  ]
+}
 ```
 
 For a working example of this, see [the implementation of `pl-file-upload`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-file-upload/pl-file-upload.py).

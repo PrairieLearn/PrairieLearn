@@ -1,5 +1,5 @@
 import { formatDate, formatInterval } from '@prairielearn/formatter';
-import { html } from '@prairielearn/html';
+import { html, type HtmlValue } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
@@ -74,22 +74,32 @@ export function InstructorInfoPanel({
       <div class="card-header bg-warning">
         <h2>Staff information</h2>
       </div>
-      <div class="card-body">
-        ${InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list })}
-        ${QuestionInfo({
+      ${ListGroup([
+        InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list }),
+        QuestionInfo({
           course,
           course_instance,
           question,
           variant,
           question_is_shared,
           questionContext,
-        })}
-        ${VariantInfo({ variant, timeZone, questionContext })}
-        ${IssueReportButton({ variant, csrfToken, questionContext })}
-        ${AssessmentInstanceInfo({ assessment, assessment_instance, timeZone })}
-        ${ManualGradingInfo({ instance_question, assessment, questionContext })}
-      </div>
+        }),
+        VariantInfo({ variant, timeZone, questionContext }),
+        IssueReportButton({ variant, csrfToken, questionContext }),
+        AssessmentInstanceInfo({ assessment, assessment_instance, timeZone }),
+        ManualGradingInfo({ instance_question, assessment, questionContext }),
+      ])}
       <div class="card-footer small">This box is not visible to students.</div>
+    </div>
+  `;
+}
+
+function ListGroup(children: HtmlValue[]) {
+  const filteredChildren = children.filter((child) => !!child);
+
+  return html`
+    <div class="list-group list-group-flush">
+      ${filteredChildren.map((child) => html`<div class="list-group-item py-3">${child}</div>`)}
     </div>
   `;
 }
@@ -110,21 +120,20 @@ function InstanceUserInfo({
         ${instance_group != null
           ? html`
               <summary><h3 class="card-title h5">Group details</h3></summary>
-              <div class="d-flex flex-wrap pb-2">
-                <div class="pr-1">${instance_group.name}</div>
-                <div class="pr-1">(${instance_group_uid_list?.join(', ')})</div>
+              <div class="d-flex flex-wrap">
+                <div class="pe-1">${instance_group.name}</div>
+                <div class="pe-1">(${instance_group_uid_list?.join(', ')})</div>
               </div>
             `
           : html`
-              <summary><h3 class="card-title d-inline-block h5">Student details</h3></summary>
-              <div class="d-flex flex-wrap pb-2">
-                <div class="pr-1">${instance_user?.name}</div>
-                <div class="pr-1">${instance_user?.uid}</div>
+              <summary><h3 class="card-title d-inline-block h5 mb-0">Student details</h3></summary>
+              <div class="d-flex flex-wrap mt-2">
+                <div class="pe-1">${instance_user?.name}</div>
+                <div class="pe-1">${instance_user?.uid}</div>
               </div>
             `}
       </details>
     </div>
-    <hr />
   `;
 }
 
@@ -152,20 +161,22 @@ function QuestionInfo({
   }/question/${question.id}?variant_seed=${variant.variant_seed}`;
   const publicPreviewUrl = `${config.urlPrefix}/public/course/${course.id}/question/${question.id}/preview`;
 
-  // Example course questions can be publicly shared, but we don't allow them to
-  // be imported into courses, so we won't show the sharing name in the QID.
+  // We don't show the sharing name in the QID if the question is not shared
+  // publicly for importing, such as if only `share_source_publicly` is set.
   //
-  // In the future, this should use some kind of "allow import" flag on the
-  // question so that this behavior can be achieved within other courses.
-  const sharingQid = course.example_course
-    ? question.qid
-    : `@${course.sharing_name}/${question.qid}`;
+  // TODO: Remove the special-casing of the example course once its questions
+  // have been updated to use `share_source_publicly`. This special-casing
+  // predates the ability to share questions only for copying, not importing.
+  const sharingQid =
+    course.example_course || !question.shared_publicly
+      ? question.qid
+      : `@${course.sharing_name}/${question.qid}`;
 
   return html`
-    <h3 class="card-title h5">Question:</h3>
+    <h3 class="card-title h5">Question</h3>
 
     <div class="d-flex flex-wrap">
-      <div class="pr-1">QID:</div>
+      <div class="pe-1">QID:</div>
       <div>
         ${questionContext === 'public'
           ? html`<a href="${publicPreviewUrl}?variant_seed=${variant.variant_seed}">
@@ -178,8 +189,8 @@ function QuestionInfo({
     ${question_is_shared && course.sharing_name && questionContext !== 'public'
       ? html`
           <div class="d-flex flex-wrap">
-            <div class="pr-1">Shared As:</div>
-            ${question.shared_publicly
+            <div class="pe-1">Shared As:</div>
+            ${question.shared_publicly || question.share_source_publicly
               ? html`
                   <div>
                     <a href="${publicPreviewUrl}">${sharingQid}</a>
@@ -190,7 +201,7 @@ function QuestionInfo({
         `
       : ''}
     <div class="d-flex flex-wrap">
-      <div class="pr-1">Title:</div>
+      <div class="pe-1">Title:</div>
       <div>${question.title}</div>
     </div>
   `;
@@ -216,22 +227,23 @@ function VariantInfo({
     typeof variant.date === 'string' ? DateFromISOString.parse(variant.date) : variant.date;
 
   return html`
+    <h3 class="card-title h5">Variant</h3>
     ${questionContext !== 'public'
       ? html`
           <div class="d-flex flex-wrap">
-            <div class="pr-1">Started at:</div>
+            <div class="pe-1">Started at:</div>
             <div>${date ? formatDate(date, timeZone) : '(unknown)'}</div>
           </div>
           <div class="d-flex flex-wrap">
-            <div class="pr-1">Duration:</div>
+            <div class="pe-1">Duration:</div>
             <div>${formatInterval(duration)}</div>
           </div>
         `
       : ''}
-    <div class="d-flex flex-wrap mt-2 mb-3">
-      <details class="pr-1">
+    <div class="d-flex flex-wrap">
+      <details class="pe-1">
         <summary>Show/Hide answer</summary>
-        <pre><code>${JSON.stringify(variant.true_answer, null, 2)}</code></pre>
+        <pre class="mt-2 mb-0"><code>${JSON.stringify(variant.true_answer, null, 2)}</code></pre>
       </details>
     </div>
   `;
@@ -261,22 +273,21 @@ function AssessmentInstanceInfo({
       : assessment_instance.date;
 
   return html`
-    <hr />
-    <h3 class="card-title h5">Assessment Instance:</h3>
+    <h3 class="card-title h5">Assessment instance</h3>
     <div class="d-flex flex-wrap">
-      <div class="pr-1">AID:</div>
+      <div class="pe-1">AID:</div>
       <div>
         <a href="${instructorUrlPrefix}/assessment/${assessment.id}">${assessment.tid}</a>
       </div>
     </div>
 
     <div class="d-flex flex-wrap">
-      <div class="pr-1">Started at:</div>
+      <div class="pe-1">Started at:</div>
       <div>${date ? formatDate(date, timeZone) : '(unknown)'}</div>
     </div>
 
     <div class="d-flex flex-wrap">
-      <div class="pr-1">Duration:</div>
+      <div class="pe-1">Duration:</div>
       <div>${formatInterval(duration)}</div>
     </div>
 
@@ -311,18 +322,17 @@ function ManualGradingInfo({
   const manualGradingUrl = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`;
 
   return html`
-    <hr />
-    <h3 class="card-title h5">Manual Grading:</h3>
+    <h3 class="card-title h5">Manual grading</h3>
 
     <div class="d-flex flex-wrap">
-      <div class="pr-1">Status:</div>
+      <div class="pe-1">Status:</div>
       <div>${instance_question.requires_manual_grading ? 'Requires grading' : 'Graded'}</div>
     </div>
 
     ${instance_question.requires_manual_grading
       ? html`
           <div class="d-flex flex-wrap">
-            <div class="pr-1">Assigned to:</div>
+            <div class="pe-1">Assigned to:</div>
             <div>${instance_question.assigned_grader_name ?? 'Unassigned'}</div>
           </div>
         `
@@ -330,7 +340,7 @@ function ManualGradingInfo({
     ${instance_question.last_grader
       ? html`
           <div class="d-flex flex-wrap">
-            <div class="pr-1">Graded by:</div>
+            <div class="pe-1">Graded by:</div>
             <div>${instance_question.last_grader_name}</div>
           </div>
         `
@@ -364,24 +374,19 @@ function IssueReportButton({
   }
 
   return html`
-    <div class="row">
-      <div class="col-auto">
-        <button
-          class="btn btn-sm btn-primary"
-          type="button"
-          data-toggle="collapse"
-          data-target="#issueCollapse"
-          aria-expanded="false"
-          aria-controls="issueCollapse"
-        >
-          Report an issue with this question
-        </button>
-      </div>
-    </div>
+    <button
+      class="btn btn-sm btn-primary"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#issueCollapse"
+      aria-expanded="false"
+      aria-controls="issueCollapse"
+    >
+      Report an issue with this question
+    </button>
     <div class="collapse" id="issueCollapse">
-      <hr />
-      <form method="POST">
-        <div class="form-group">
+      <form method="POST" class="mt-3">
+        <div class="mb-3">
           <textarea
             class="form-control"
             rows="5"
@@ -392,11 +397,9 @@ function IssueReportButton({
         </div>
         <input type="hidden" name="__variant_id" value="${variant.id}" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <div class="form-group text-right">
-          <button class="btn btn-small btn-warning" name="__action" value="report_issue">
-            Report issue
-          </button>
-        </div>
+        <button class="btn btn-small btn-warning" name="__action" value="report_issue">
+          Report issue
+        </button>
       </form>
     </div>
   `;

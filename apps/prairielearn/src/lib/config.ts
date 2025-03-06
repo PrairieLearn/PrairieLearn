@@ -553,6 +553,20 @@ const ConfigSchema = z.object({
   pyroscopeBasicAuthUser: z.string().nullable().default(null),
   pyroscopeBasicAuthPassword: z.string().nullable().default(null),
   pyroscopeTags: z.record(z.string(), z.string()).default({}),
+  /**
+   * Keys used to sign and verify tRPC requests. Multiple keys are supported
+   * to allow for key rotation. The first key will always be used to sign
+   * requests. When verifying requests, all keys will be tried in order.
+   */
+  trpcSecretKeys: z.string().array().nullable().default(null),
+  courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
+  /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
+  courseFilesApiUrl: z.string().nullable().default(null),
+  /**
+   * A list of Python venvs in which to search for Python executables.
+   * Will be resolved relative to the repository root.
+   */
+  pythonVenvSearchPaths: z.string().array().default(['.venv']),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -591,6 +605,10 @@ export async function loadConfig(paths: string[]) {
     if (!config.cookieDomain.startsWith('.')) {
       throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
     }
+  }
+
+  if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
+    throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
   }
 }
 

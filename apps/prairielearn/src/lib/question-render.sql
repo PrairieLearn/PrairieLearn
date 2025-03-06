@@ -114,10 +114,7 @@ SELECT
 FROM
   submissions AS s
 WHERE
-  s.id IN (
-    SELECT
-      UNNEST($submission_ids::bigint[])
-  )
+  s.id = ANY ($submission_ids::bigint[])
 ORDER BY
   s.date DESC;
 
@@ -169,7 +166,6 @@ SELECT
   to_jsonb(lgj) AS grading_job,
   to_jsonb(s) AS submission,
   to_jsonb(v) AS variant,
-  to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
   qo.question_number,
   jsonb_build_object(
     'id',
@@ -177,7 +173,6 @@ SELECT
     'sequence_locked',
     next_iq.sequence_locked
   ) AS next_instance_question,
-  to_jsonb(q) AS question,
   to_jsonb(aq) AS assessment_question,
   to_jsonb(ai) AS assessment_instance,
   to_jsonb(a) AS assessment,
@@ -206,7 +201,8 @@ SELECT
       submissions AS s2
     WHERE
       s2.variant_id = s.variant_id
-  ) AS submission_count
+  ) AS submission_count,
+  to_jsonb(gc) AS group_config
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -220,10 +216,13 @@ FROM
   LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
   JOIN pl_courses AS c ON (c.id = v.course_id)
   JOIN pl_courses AS qc ON (qc.id = q.course_id)
-  JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
   LEFT JOIN users AS u ON (s.auth_user_id = u.user_id)
   LEFT JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
+  LEFT JOIN group_configs AS gc ON (
+    gc.assessment_id = a.id
+    AND gc.deleted_at IS NULL
+  )
 WHERE
   s.id = $submission_id
   AND q.id = $question_id
