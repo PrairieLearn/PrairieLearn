@@ -19,49 +19,53 @@ onDocumentReady(() => {
   );
   const saveButton = document.querySelector<HTMLButtonElement>('#save-button');
 
-  new TomSelect('#topic', {
-    valueField: 'name',
-    searchField: ['name', 'description'],
-    closeAfterSelect: true,
-    plugins: ['dropdown_input', 'no_backspace_delete'],
-    maxItems: 1,
-    render: {
-      option(data: Topic) {
-        return html`
-          <div>
-            ${TopicBadge(data)}
+  if (document.getElementById('topic')) {
+    new TomSelect('#topic', {
+      valueField: 'name',
+      searchField: ['name', 'description'],
+      closeAfterSelect: true,
+      plugins: ['no_backspace_delete'],
+      maxItems: 1,
+      render: {
+        option(data: Topic) {
+          return html`
             <div>
-              <small>${data.description}</small>
+              ${TopicBadge(data)}
+              <div>
+                <small>${data.description}</small>
+              </div>
             </div>
-          </div>
-        `.toString();
+          `.toString();
+        },
+        item(data: Topic) {
+          return TopicBadge(data).toString();
+        },
       },
-      item(data: Topic) {
-        return TopicBadge(data).toString();
-      },
-    },
-  });
+    });
+  }
 
-  new TomSelect('#tags', {
-    valueField: 'name',
-    searchField: ['name', 'description'],
-    plugins: ['dropdown_input', 'remove_button'],
-    render: {
-      option(data: Tag) {
-        return html`
-          <div>
-            ${TagBadge(data)}
+  if (document.getElementById('tags')) {
+    new TomSelect('#tags', {
+      valueField: 'name',
+      searchField: ['name', 'description'],
+      plugins: ['remove_button'],
+      render: {
+        option(data: Tag) {
+          return html`
             <div>
-              <small>${data.description}</small>
+              ${TagBadge(data)}
+              <div>
+                <small>${data.description}</small>
+              </div>
             </div>
-          </div>
-        `.toString();
+          `.toString();
+        },
+        item(data: Tag) {
+          return html`<span class="badge color-${data.color} me-1">${data.name}</span>`.toString();
+        },
       },
-      item(data: Tag) {
-        return html`<span class="badge color-${data.color} mr-1">${data.name}</span>`.toString();
-      },
-    },
-  });
+    });
+  }
 
   qidField.addEventListener('input', () => validateId({ input: qidField, otherIds: otherQids }));
   qidField.addEventListener('change', () => validateId({ input: qidField, otherIds: otherQids }));

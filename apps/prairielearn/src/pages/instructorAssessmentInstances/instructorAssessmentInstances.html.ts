@@ -20,9 +20,6 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
     headContent: html`
       <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
       <script src="${nodeModulesAssetPath(
-          'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-        )}"></script>
-      <script src="${nodeModulesAssetPath(
           'bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js',
         )}"></script>
       <link
@@ -35,7 +32,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
         )}"
         rel="stylesheet"
       />
-
+      ${compiledScriptTag('bootstrap-table-sticky-header.js')}
       ${compiledScriptTag('instructorAssessmentInstancesClient.tsx')}
     `,
     content: html`
@@ -77,30 +74,30 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students</h1>
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
-                <div class="ml-auto">
+                <div class="ms-auto">
                   <div class="dropdown d-flex flex-row">
                     <button
                       type="button"
                       class="btn btn-light dropdown-toggle"
-                      data-toggle="dropdown"
+                      data-bs-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
                       Action for all instances <span class="caret"></span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-menu dropdown-menu-end">
                       ${resLocals.authz_data.has_course_instance_permission_edit
                         ? html`
                             <button
                               class="dropdown-item"
-                              data-toggle="modal"
-                              data-target="#deleteAllAssessmentInstancesModal"
+                              data-bs-toggle="modal"
+                              data-bs-target="#deleteAllAssessmentInstancesModal"
                             >
                               <i class="fas fa-times" aria-hidden="true"></i> Delete all instances
                             </button>
                             <button
                               class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
-                              data-placement="left"
+                              data-bs-placement="left"
                               data-bs-toggle-popover
                             >
                               <i class="far fa-clock" aria-hidden="true"></i> Change time limit for
@@ -108,16 +105,16 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                             </button>
                             <button
                               class="dropdown-item"
-                              data-toggle="modal"
-                              data-target="#grade-all-form"
+                              data-bs-toggle="modal"
+                              data-bs-target="#grade-all-form"
                             >
                               <i class="fas fa-clipboard-check" aria-hidden="true"></i> Grade all
                               instances
                             </button>
                             <button
                               class="dropdown-item"
-                              data-toggle="modal"
-                              data-target="#closeAllAssessmentInstancesModal"
+                              data-bs-toggle="modal"
+                              data-bs-target="#closeAllAssessmentInstancesModal"
                             >
                               <i class="fas fa-ban" aria-hidden="true"></i> Grade and close all
                               instances
@@ -150,7 +147,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
           data-auto-refresh-status="false"
           data-auto-refresh-interval="30"
           data-buttons-order="['refresh', 'autoRefresh', 'columns']"
-          data-thead-classes="thead-light"
+          data-thead-classes="table-light"
           data-pagination="true"
           data-pagination-v-align="both"
           data-pagination-h-align="left"
@@ -173,7 +170,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
         ></table>
 
         <div class="spinning-wheel card-body spinner-border">
-          <span class="sr-only">Loading...</span>
+          <span class="visually-hidden">Loading...</span>
         </div>
 
         ${RoleHelpModal()} ${FingerprintChangesHelpModal()} ${DurationHelpModal()}
@@ -206,7 +203,7 @@ function RoleHelpModal() {
       </ul>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }
@@ -230,7 +227,7 @@ function FingerprintChangesHelpModal() {
       </p>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }
@@ -273,7 +270,7 @@ function DurationHelpModal() {
       </p>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }
@@ -309,7 +306,7 @@ function TimeRemainingHelpModal() {
       </ul>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }
@@ -355,7 +352,7 @@ function DeleteAssessmentInstanceModal({
         class="modal-assessment-instance-id"
         value=""
       />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     `,
   });
@@ -381,7 +378,7 @@ function DeleteAllAssessmentInstancesModal({
     footer: html`
       <input type="hidden" name="__action" value="delete_all" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete all</button>
     `,
   });
@@ -406,7 +403,7 @@ function GradeAllAssessmentInstancesModal({
     footer: html`
       <input type="hidden" name="__action" value="grade_all" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Grade all</button>
     `,
   });
@@ -431,7 +428,7 @@ function CloseAllAssessmentInstancesModal({
     footer: html`
       <input type="hidden" name="__action" value="close_all" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Grade and Close all</button>
     `,
   });

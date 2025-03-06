@@ -201,7 +201,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - The most important tables in the database are shown in the diagram below:
 
-![](./simplified-models.d2)
+![Simplified database diagram](./simplified-models.d2)
 
 - Detailed descriptions of the format of each table are in the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
@@ -234,7 +234,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - See the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below:
 
-![](./models.d2){layout="elk"}
+![Full database diagram](./models.d2){layout="elk"}
 
 ## Database schema conventions
 
@@ -536,7 +536,7 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - The question flow is shown in the diagram below:
 
-![](./question-flow.d2)
+![Question lifecycle flowchart](./question-flow.d2)
 
 ## JavaScript equality operator
 

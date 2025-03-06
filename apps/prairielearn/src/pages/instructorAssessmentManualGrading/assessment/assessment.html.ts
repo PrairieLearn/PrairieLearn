@@ -143,12 +143,11 @@ function AssessmentQuestionRow({
           : html`
               <a
                 href="#"
-                class="ml-2 text-info"
-                data-toggle="tooltip"
-                data-boundary="window"
-                title="This question uses a rubric"
+                class="ms-2 text-info"
+                data-bs-toggle="tooltip"
+                data-bs-title="This question uses a rubric"
               >
-                <i class="fas fa-list-check"></i><span class="sr-only">(uses rubric)</span>
+                <i class="fas fa-list-check"></i><span class="visually-hidden">(uses rubric)</span>
               </a>
             `}
       </td>
@@ -181,11 +180,12 @@ function AssessmentQuestionRow({
                     <button
                       type="button"
                       class="btn btn-sm btn-ghost"
-                      data-toggle="modal"
-                      data-target="#grader-assignment-modal"
+                      data-bs-toggle="modal"
+                      data-bs-target="#grader-assignment-modal"
                       data-assessment-question-id="${question.id}"
                     >
-                      <i class="fas fa-pencil"></i><span class="sr-only">Assign to&hellip;</span>
+                      <i class="fas fa-pencil"></i
+                      ><span class="visually-hidden">Assign to&hellip;</span>
                     </button>
                   `
                 : ''}
@@ -263,7 +263,7 @@ function GraderAssignmentModal({
       <input type="hidden" name="unsafe_assessment_question_id" value="" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="__action" value="assign_graders" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       ${courseStaff.length > 0
         ? html`<button type="submit" class="btn btn-primary">Assign</button>`
         : ''}

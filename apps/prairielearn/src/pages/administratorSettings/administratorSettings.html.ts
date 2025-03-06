@@ -19,7 +19,7 @@ export function AdministratorSettings({ resLocals }) {
       fullWidth: true,
     },
     content: html`
-      <h1 class="sr-only">Administrator Settings</h1>
+      <h1 class="visually-hidden">Administrator Settings</h1>
       <!-- Chunk generation -->
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -29,8 +29,8 @@ export function AdministratorSettings({ resLocals }) {
           <form name="generate_chunks_form" method="POST">
             <input type="hidden" name="__action" value="generate_chunks" />
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <div class="form-group">
-              <label for="generateChunksCourseIds">Course IDs:</label>
+            <div class="mb-3">
+              <label class="form-label" for="generateChunksCourseIds">Course IDs:</label>
               <input
                 type="text"
                 class="form-control"
@@ -138,6 +138,7 @@ export function AdministratorSettings({ resLocals }) {
             <button type="button" class="btn btn-warning">Warning</button>
             <button type="button" class="btn btn-info">Info</button>
             <button type="button" class="btn btn-light">Light</button>
+            <button type="button" class="btn btn-med-light">Medium Light</button>
             <button type="button" class="btn btn-dark">Dark</button>
             <button type="button" class="btn btn-link">Link</button>
           </div>
