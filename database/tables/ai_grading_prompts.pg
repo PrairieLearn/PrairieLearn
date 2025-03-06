@@ -1,12 +1,19 @@
 columns
     completion: jsonb not null
+    completion_tokens: integer
+    cost: double precision not null
+    grading_job_id: bigint
     id: bigint not null default nextval('ai_grading_prompts_id_seq'::regclass)
+    job_sequence_id: bigint
+    model: text not null
     prompt: jsonb not null
-    submission_id: bigint
+    prompt_tokens: integer
 
 indexes
     ai_grading_prompts_pkey: PRIMARY KEY (id) USING btree (id)
-    ai_grading_prompts_submission_id_idx: USING btree (submission_id)
+    ai_grading_prompts_grading_job_id_idx: USING btree (grading_job_id)
+    ai_grading_prompts_job_sequence_id_idx: USING btree (job_sequence_id)
 
 foreign-key constraints
-    ai_grading_prompts_submission_id_fkey: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    ai_grading_prompts_grading_job_id_fkey: FOREIGN KEY (grading_job_id) REFERENCES grading_jobs(id) ON UPDATE CASCADE ON DELETE SET NULL
+    ai_grading_prompts_job_sequence_id_fkey: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL

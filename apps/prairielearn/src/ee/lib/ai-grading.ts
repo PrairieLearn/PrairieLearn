@@ -394,11 +394,6 @@ export async function aiGrade({
           response_format: zodResponseFormat(RubricGradingResultSchema, 'score'),
           temperature: API_TEMPERATURE,
         });
-        await queryAsync(sql.insert_ai_grading_prompt, {
-          submission_id: submission.id,
-          prompt: messages,
-          completion,
-        });
         try {
           job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
           job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
@@ -436,7 +431,7 @@ export async function aiGrade({
               rubric_id: rubric_items[0].rubric_id,
               applied_rubric_items: appliedRubricItems,
             };
-            await manualGrading.updateInstanceQuestionScore(
+            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
               assessment_question.assessment_id,
               instance_question.id,
               submission.id,
@@ -452,6 +447,16 @@ export async function aiGrade({
             for (const item of selectedRubricDescriptions) {
               job.info(`- ${item}`);
             }
+            await queryAsync(sql.insert_ai_grading_prompt, {
+              grading_job_id,
+              job_sequence_id: serverJob.jobSequenceId,
+              prompt: messages,
+              completion,
+              model: OPEN_AI_MODEL,
+              prompt_tokens: completion.usage?.prompt_tokens,
+              completion_tokens: completion.usage?.completion_tokens,
+              cost: 0,
+            });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
             job.error(response.refusal);
@@ -470,11 +475,6 @@ export async function aiGrade({
           response_format: zodResponseFormat(GradingResultSchema, 'score'),
           temperature: API_TEMPERATURE,
         });
-        await queryAsync(sql.insert_ai_grading_prompt, {
-          submission_id: submission.id,
-          prompt: messages,
-          completion,
-        });
         try {
           job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
           job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
@@ -482,7 +482,7 @@ export async function aiGrade({
           const response = completion.choices[0].message;
           job.info(`Raw response:\n${response.content}`);
           if (response.parsed) {
-            await manualGrading.updateInstanceQuestionScore(
+            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
               assessment_question.assessment_id,
               instance_question.id,
               submission.id,
@@ -494,6 +494,16 @@ export async function aiGrade({
               user_id,
             );
             job.info(`AI score: ${response.parsed.score}`);
+            await queryAsync(sql.insert_ai_grading_prompt, {
+              grading_job_id,
+              job_sequence_id: serverJob.jobSequenceId,
+              prompt: messages,
+              completion,
+              model: OPEN_AI_MODEL,
+              prompt_tokens: completion.usage?.prompt_tokens,
+              completion_tokens: completion.usage?.completion_tokens,
+              cost: 0,
+            });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
             job.error(response.refusal);

@@ -126,10 +126,24 @@ WHERE
 
 -- BLOCK insert_ai_grading_prompt
 INSERT INTO
-  ai_grading_prompts (submission_id, prompt, completion)
+  ai_grading_prompts (
+    grading_job_id,
+    job_sequence_id,
+    prompt,
+    completion,
+    model,
+    prompt_tokens,
+    completion_tokens,
+    cost
+  )
 VALUES
   (
-    $submission_id,
+    $grading_job_id,
+    $job_sequence_id,
     to_jsonb($prompt::text[]),
-    $completion
+    $completion,
+    model,
+    prompt_tokens,
+    completion_tokens,
+    cost
   );
