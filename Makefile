@@ -79,7 +79,7 @@ lint-python:
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
 lint-markdown:
-	@yarn markdownlint "docs/**/*.md"
+	@yarn markdownlint --ignore node_modules --ignore exampleCourse --ignore "**/dist/**" "**/*.md"
 lint-links:
 	@node scripts/validate-links.mjs
 lint-docker:
