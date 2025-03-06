@@ -511,11 +511,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             help_text += "<p>Your answer will be autograded; be sure to indent and order your answer properly.</p>"
 
         if check_indentation:
-<<<<<<< HEAD
-            help_text += "<p><b>Your answer should be indented. </b> Indent your tiles by dragging them horizontally in the answer area.</p>"
-=======
             help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area.</p>"
->>>>>>> PrairieLearn/master
 
         help_text += "<p>Keyboard Controls: Arrows to navigate; Enter to select; Escape to deselect blocks.</p>"
 
