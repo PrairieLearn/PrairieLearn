@@ -101,6 +101,7 @@ export function QuestionNavSideButton({
     <a
       id="${buttonId}"
       class="btn btn-primary mb-3"
+      role="button"
       href="${urlPrefix}/instance_question/${instanceQuestionId}/"
     >
       ${buttonLabel}
