@@ -10,7 +10,7 @@ This tool is meant to produce many small, independent bundles that can then be i
 
 Create a directory of assets that you wish to bundle, e.g. `assets/`. Within that directory, create another directory `scripts/`. Any JavaScript or TypeScript files in the root of the `scripts/` directory will become a bundle that can be loaded on a page. For example, the following directory structure would produce bundles named `foo` and `bar`:
 
-```
+```text
 ├── assets/
 │   ├── scripts/
 │   │   ├── foo.ts
@@ -19,7 +19,7 @@ Create a directory of assets that you wish to bundle, e.g. `assets/`. Within tha
 
 You can locate shared code in directories inside this directory. As long as those files aren't in the root of the `scripts/` directory, they won't become separate bundles.
 
-```
+```text
 ├── assets/
 │   ├── scripts/
 |   │   ├── lib/
@@ -79,4 +79,5 @@ For production usage, assets must be precompiled with the `compiled-assets build
 
 ```sh
 $ compiled-assets build ./assets ./public/build
+...
 ```
