@@ -105,10 +105,9 @@ class PrairieLearnColor(sRGB):
         alpha: bool | None = None,
         fit: bool | str | dict[str, Any] = True,
         names: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
         """Convert to string."""
-
         if names:
             # Get alpha and coordinates resolving undefined values as required
             alpha_float = serialize.get_alpha(parent, alpha, none=False, legacy=False)
@@ -142,7 +141,7 @@ PLColor.register(PrairieLearnColor(), overwrite=True)
 
 def get_css_color(name: str) -> str | None:
     """
-    Tries to look up a hex code value from a named css color, otherwise will
+    Try to look up a hex code value from a named css color, otherwise
     return None if not a valid color.
     """
     name = name.lower()

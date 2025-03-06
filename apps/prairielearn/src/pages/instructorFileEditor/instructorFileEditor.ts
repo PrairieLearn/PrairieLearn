@@ -196,7 +196,7 @@ router.post(
       });
 
       const editor = new FileModifyEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         container,
         filePath: paths.workingPath,
         editContents: req.body.file_edit_contents,

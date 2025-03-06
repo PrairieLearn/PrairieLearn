@@ -35,7 +35,7 @@ def graphviz_from_inc_matrix(element, data):
     for node in label:
         graph.add_node(node)
 
-    edges, nodes = mat.shape
+    edges, _ = mat.shape
     for e in range(edges):
         out_node = np.where(mat[e] == -1)[0][0]
         in_node = np.where(mat[e] == 1)[0][0]

@@ -73,38 +73,42 @@ For example, suppose Fall 2017 is the completed semester and it is now Spring 20
 
 First, edit `pl-exp101/courseInstance/Fa17/infoCourseInstance.json` to add a section for `student@example.com`:
 
-```
-    "allowAccess": [
-        {
-            "startDate": "2017-08-19T00:00:01",
-            "endDate": "2017-12-31T23:59:59"
-        },
-        {
-            "uids": ["student@example.com"],
-            "startDate": "2018-02-01T00:00:01",
-            "endDate": "2018-02-28T23:59:59"
-        }
-    ]
+```json title="infoCourseInstance.json"
+{
+  "allowAccess": [
+    {
+      "startDate": "2017-08-19T00:00:01",
+      "endDate": "2017-12-31T23:59:59"
+    },
+    {
+      "uids": ["student@example.com"],
+      "startDate": "2018-02-01T00:00:01",
+      "endDate": "2018-02-28T23:59:59"
+    }
+  ]
+}
 ```
 
 Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoAssessment.json` to add a section for `student@example.com`:
 
-```
-    "allowAccess": [
-        {
-            "mode": "Exam",
-            "credit": 100,
-            "startDate": "2017-12-14T00:00:01",
-            "endDate": "2017-12-22T22:10:59"
-        },
-        {
-            "uids": ["student@example.com"],
-            "mode": "Exam",
-            "credit": 100,
-            "startDate": "2018-02-01T00:00:01",
-            "endDate": "2018-02-28T23:59:59"
-        }
-    ]
+```json title="infoAssessment.json"
+{
+  "allowAccess": [
+    {
+      "mode": "Exam",
+      "credit": 100,
+      "startDate": "2017-12-14T00:00:01",
+      "endDate": "2017-12-22T22:10:59"
+    },
+    {
+      "uids": ["student@example.com"],
+      "mode": "Exam",
+      "credit": 100,
+      "startDate": "2018-02-01T00:00:01",
+      "endDate": "2018-02-28T23:59:59"
+    }
+  ]
+}
 ```
 
 See [Access control](accessControl/index.md) for more details.
@@ -125,8 +129,10 @@ unable to provide new submissions. This is regardless of whether the end date
 specified in an access control is reached. If the examination is a take-home exam,
 then the feature can be disabled by specifying in the `infoAssessment.json`:
 
-```
-"autoClose": false
+```json title="infoAssessment.json"
+{
+  "autoClose": false
+}
 ```
 
 See [Auto-closing Exam assessments](assessment/index.md#auto-closing-exam-assessments)
@@ -169,7 +175,7 @@ To learn more about where files are stored, please see [clientFiles and serverFi
 To reference a question in the `clientFilesQuestion` folder from `server.py`,
 use the relative path from the base of the question.
 
-```
+```text
 ./clientFilesQuestion/<your_file_here>
 ```
 
@@ -321,7 +327,7 @@ To address this, there are a variety of different ways. In particular, we have:
 - Restart docker
   - Click the Whale icon in the taskbar and select "Restart".
 - Restart your computer.
-- Stop the process in terminal with <kbd>CNTRL</kbd> + <kbd>C</kbd> and, then,
+- Stop the process in terminal with ++ctrl+c++ and, then,
   close the terminal application.
 
 ## Why do special characters like (<=) break my question display?
@@ -345,37 +351,11 @@ Example:
 
 ## How can I make a block that can be re-used in many questions?
 
-If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can do the following.
+If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can use the [`<pl-template>` element](./elements.md#pl-template-element). This element allows you to define a template in one place and then use it in many questions.
 
-1.  Put a file called `local_template.py` into `serverFilesCourse` that contains:
+!!! danger
 
-        import chevron, os
-
-        def render(data, template_filename, params):
-            with open(os.path.join(data["options"]["server_files_course_path"], template_filename)) as f:
-                return chevron.render(f, params)
-
-2.  Put a template (this example is called `units_instructions.html`) into `serverFilesCourse`:
-
-        <pl-question-panel>
-          <p>
-            All data for this problem is given in {{given_units}} units. Your answers should be in {{answer_units}}.
-          </p>
-        </pl-question-panel>
-
-3.  In the `server.py` for a question, render the template like this:
-
-        import local_template
-
-        def generate(data):
-            data["params"]["units_instructions"] = local_template.render(data, "units_instructions.html", {
-                "given_units": "US customary",
-                "answer_units": "metric",
-            })
-
-4.  In the `question.html` for the same question, insert the rendered template like this (note the use of triple curly braces):
-
-        {{{params.units_instructions}}}
+    Elements that accept and/or grade student input used within this element will not work correctly with `<pl-template>`. Templates should only contain other decorative elements.
 
 ## How can I hide the correct answer when students see their grading results?
 
@@ -419,3 +399,20 @@ You are highly encouraged to avoid changes such as the ones above to questions w
 Neither of these options will affect the score a student may already have obtained in any previous variants. However, any work a student may have started on an open variant but not yet submitted will be lost.
 
 For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](regrading.md).
+
+## When I open some of the CSV downloads, some of the data is in the wrong columns
+
+When loading some assessment download files, such as `*_all_submissions.csv`, in Excel, you may notice data appearing in the wrong column or wrapping incorrectly. This typically happens because Excel has a maximum cell size of 32,767 characters and does not always correctly parse complex CSV data, particularly when fields contain JSON or special characters. While the `Params` column is the most likely culprit, other columns such as true answers, submitted answers, or feedback may also be affected. To work with these files, you can use Pandas in Python to clean or restructure the data for easier processing in Excel. For example:
+
+```python
+import pandas as pd
+df = pd.read_csv("PREFIX_all_submissions.csv")
+
+# Strip the JSON Params data and save to a new CSV
+df2 = df.drop(columns=["Params"])
+df2.to_csv("PREFIX_all_submissions_no_params.csv", index=False)
+
+# Write all the data (including Params) to an Excel file,
+# while trimming the values in Params that are above the Excel limit
+df.to_excel("PREFIX_all_submissions.xlsx", index=False)
+```

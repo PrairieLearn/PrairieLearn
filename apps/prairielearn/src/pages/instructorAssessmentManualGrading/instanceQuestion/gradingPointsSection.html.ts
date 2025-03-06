@@ -67,25 +67,25 @@ export function TotalPointsSection({
   return html`
     ${context === 'main' && resLocals.rubric_data?.replace_auto_points && !disable
       ? html`
-          <span class="float-right btn-group btn-group-sm ml-1" role="group">
+          <span class="float-end btn-group btn-group-sm ms-1" role="group">
             <button type="button" class="btn btn-outline-secondary js-show-rubric-settings-button">
               <i class="fas fa-list-check"></i> Rubric
             </button>
           </span>
         `
       : ''}
-    <div class="form-group js-manual-grading-points w-100">
+    <div class="mb-3 js-manual-grading-points w-100">
       Total Points:
-      <span class="float-right">
+      <span class="float-end">
         <span class="js-value-total-points">${Math.round(100 * points) / 100}</span>
         / ${resLocals.assessment_question.max_points}
       </span>
     </div>
     ${resLocals.assessment_question.max_points
       ? html`
-          <div class="form-group js-manual-grading-percentage w-100">
+          <div class="mb-3 js-manual-grading-percentage w-100">
             Total Score:
-            <span class="float-right"> <span class="js-value-total-percentage"></span>% </span>
+            <span class="float-end"> <span class="js-value-total-percentage"></span>% </span>
           </div>
         `
       : ''}
@@ -116,7 +116,7 @@ export function GradingPointsSection({
   show_rubric_button: boolean;
 }) {
   return html`
-    <div class="form-group">
+    <div class="mb-3">
       <span class="w-100">
         <label
           for="js-${type}-score-value-input-points-${context}"
@@ -134,7 +134,7 @@ export function GradingPointsSection({
               </label>
             `
           : ''}
-        <span class="float-right">
+        <span class="float-end">
           ${!show_input
             ? html`
                 <span class="js-manual-grading-points">
@@ -191,9 +191,7 @@ export function GradingPointsSection({
             value="${Math.round(points * 100) / 100}"
             ${disable ? 'disabled' : ''}
           />
-          <span class="input-group-append">
-            <span class="input-group-text">/ ${max_points}</span>
-          </span>
+          <span class="input-group-text">/ ${max_points}</span>
         </div>
       </div>
       ${show_percentage
@@ -209,9 +207,7 @@ export function GradingPointsSection({
                   name="score_${type}_percent"
                   ${disable ? 'disabled' : ''}
                 />
-                <span class="input-group-append">
-                  <span class="input-group-text">%</span>
-                </span>
+                <span class="input-group-text">%</span>
               </div>
             </div>
           `

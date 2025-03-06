@@ -9,7 +9,7 @@ export function TimeLimitExpiredModal({ showAutomatically }: { showAutomatically
       title: 'Time limit expired',
       body: html`<p>Your time limit expired and your assessment is now finished.</p>`,
       footer: html`
-        <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
       `,
     })}
     ${showAutomatically

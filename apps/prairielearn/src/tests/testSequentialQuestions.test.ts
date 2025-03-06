@@ -131,7 +131,7 @@ describe('Assessment that forces students to complete questions in-order', funct
 
   step('Question 2 "next question" link contains the correct advanceScorePerc', async function () {
     const response = await submitQuestion(50, context.firstUnlockedQuestion);
-    assert.include(response.$('#question-nav-next').attr('data-content'), '60%');
+    assert.include(response.$('#question-nav-next').attr('data-bs-content'), '60%');
   });
 
   async function submitQuestion(score, question) {

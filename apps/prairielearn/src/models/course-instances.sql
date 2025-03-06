@@ -22,7 +22,13 @@ SELECT
     OR ia.id IS NOT NULL
     OR cip.course_instance_role > 'None',
     FALSE
-  ) AS has_course_instance_permission_view
+  ) AS has_course_instance_permission_view,
+  COALESCE(
+    $is_administrator
+    OR ia.id IS NOT NULL
+    OR cip.course_instance_role >= 'Student Data Editor',
+    FALSE
+  ) AS has_course_instance_permission_edit
 FROM
   pl_courses AS c
   JOIN institutions AS i ON (i.id = c.institution_id)

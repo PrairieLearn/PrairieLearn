@@ -224,7 +224,7 @@ router.post(
       }
 
       const editor = new AssessmentAddEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         title: req.body.title,
         aid: req.body.aid,
         type: req.body.type,

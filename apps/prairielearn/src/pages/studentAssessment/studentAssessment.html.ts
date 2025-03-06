@@ -126,7 +126,7 @@ function HonorPledge({ user, groupWork }: { user: User; groupWork: boolean }) {
       <div class="card-footer d-flex justify-content-center">
         <span class="form-check">
           <input type="checkbox" class="form-check-input" id="certify-pledge" />
-          <label class="form-check-label font-weight-bold" for="certify-pledge">
+          <label class="form-check-label fw-bold" for="certify-pledge">
             I certify and pledge the above.
           </label>
         </span>
@@ -228,7 +228,7 @@ function GroupCreationJoinForm({
                     characters.
                   </small>
                   <div class="mt-4 d-flex justify-content-center">
-                    <div class="form-group mb-0">
+                    <div class="mb-3">
                       <input type="hidden" name="__action" value="create_group" />
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                       <button type="submit" class="btn btn-primary">Create new group</button>
@@ -251,7 +251,7 @@ function GroupCreationJoinForm({
                     placeholder="abcd-1234"
                   />
                   <div class="mt-4 d-flex justify-content-center">
-                    <div class="form-group mb-0">
+                    <div class="mb-3">
                       <input type="hidden" name="__action" value="join_group" />
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                       <button type="submit" class="btn btn-primary">Join group</button>

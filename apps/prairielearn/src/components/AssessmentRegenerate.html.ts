@@ -18,7 +18,7 @@ export function RegenerateInstanceModal({ csrfToken }: { csrfToken: string }) {
       <form method="POST">
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
         <input type="hidden" name="__action" value="regenerate_instance" />
-        <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
+        <button type="button" data-bs-dismiss="modal" class="btn btn-secondary">Cancel</button>
         <button type="submit" class="btn btn-danger">Regenerate assessment instance</button>
       </form>
     `,
@@ -29,14 +29,12 @@ export function RegenerateInstanceAlert() {
   return html`
     <div class="alert alert-warning border-warning alert-dismissible fade show">
       Course staff:
-      <a href="#" role="button" data-toggle="modal" data-target="#regenerateInstanceModal">
+      <a href="#" role="button" data-bs-toggle="modal" data-bs-target="#regenerateInstanceModal">
         Regenerate your assessment instance</a
       >
       to pick up changes to the assessment or to get a fresh set of questions.
 
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   `;
 }

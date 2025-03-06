@@ -49,8 +49,7 @@ WITH
         COALESCE($public_key, ''),
         COALESCE($private_key, '')
       )
-    ON CONFLICT (institution_id) DO
-    UPDATE
+    ON CONFLICT (institution_id) DO UPDATE
     SET
       sso_login_url = EXCLUDED.sso_login_url,
       issuer = EXCLUDED.issuer,

@@ -23,6 +23,18 @@ def test_get_css_color(color: str, expected: str | None) -> None:
 
 @pytest.mark.parametrize(
     ("color", "expected"),
+    [
+        ("#ff0000", "red"),
+        ("#008c31", "green3"),
+    ],
+)
+def test_get_css_color_custom(color: str, expected: str) -> None:
+    """Assert the get_css_color method can handle custom colors."""
+    assert PLColor(color).to_string(names=True) == expected
+
+
+@pytest.mark.parametrize(
+    ("color", "expected"),
     [("red", Base("srgb", [1, 0, 0], 1)), ("RED", Base("srgb", [1, 0, 0], 1))],
 )
 def test_color_constructor(color: str, expected: str) -> None:

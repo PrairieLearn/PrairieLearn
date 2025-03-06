@@ -29,6 +29,7 @@ export type NavPage =
   | 'news_item'
   | 'news_items'
   | 'user_settings'
+  | 'password'
   | undefined;
 
 // This type is provisionally very lenient, to avoid problems with existing

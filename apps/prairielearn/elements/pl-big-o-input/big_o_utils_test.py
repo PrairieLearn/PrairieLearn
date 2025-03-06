@@ -1,6 +1,6 @@
 import big_o_utils as bou
+import prairielearn.sympy_utils as psu
 import pytest
-import python_helper_sympy as phs
 
 VARIABLES = ["n"]
 
@@ -249,8 +249,8 @@ class TestExceptions:
         a_true = "n**2"
 
         # Test for invalid functions in student submission and solution
-        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidFunctionError)):
+        with pytest.raises((psu.HasInvalidSymbolError, psu.HasInvalidFunctionError)):
             grading_fn(a_true, a_sub, VARIABLES)
 
-        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidFunctionError)):
+        with pytest.raises((psu.HasInvalidSymbolError, psu.HasInvalidFunctionError)):
             grading_fn(a_sub, a_true, VARIABLES)

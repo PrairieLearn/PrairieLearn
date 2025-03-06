@@ -1,3 +1,5 @@
+"""Utility functions for parsing and evaluating SymPy expressions."""
+
 import ast
 import copy
 import html
@@ -5,7 +7,7 @@ from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from tokenize import TokenError
-from typing import Any, Literal, TypedDict, cast
+from typing import Any, Literal, TypedDict, TypeGuard, cast
 
 import sympy
 from sympy.parsing.sympy_parser import (
@@ -20,9 +22,15 @@ from prairielearn.unicode_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
-SympyMapT = dict[str, Callable | sympy.Basic]
+SympyMapT = dict[str, Callable[..., Any] | sympy.Basic]
 ASTWhiteListT = tuple[type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
+"""
+A dictionary of assumptions for variables in the expression.
+
+Examples:
+    >>> {"x": {"positive": True}, "y": {"real": True}}
+"""
 
 
 class SympyJson(TypedDict):
@@ -33,6 +41,17 @@ class SympyJson(TypedDict):
     _variables: list[str]
     _assumptions: NotRequired[AssumptionsDictT]
     _custom_functions: NotRequired[list[str]]
+
+
+def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
+    return (
+        isinstance(json, dict)
+        and json.get("_type") == "sympy"
+        and isinstance(json.get("_value"), str)
+        and isinstance(json.get("_variables"), list)
+        and isinstance(json.get("_assumptions", {}), dict)
+        and isinstance(json.get("_custom_functions", []), list)
+    )
 
 
 class LocalsForEval(TypedDict):
@@ -377,13 +396,13 @@ def sympy_check(
 
 
 def evaluate(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_complex=False
+    expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> sympy.Expr:
     return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
 
 
 def evaluate_with_source(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_complex=False
+    expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> tuple[sympy.Expr, str]:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
@@ -443,14 +462,35 @@ def evaluate_with_source(
 
 def convert_string_to_sympy(
     expr: str,
-    variables: None | Iterable[str] = None,
+    variables: Iterable[str] | None = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | Iterable[str] = None,
-    assumptions: None | AssumptionsDictT = None,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
 ) -> sympy.Expr:
+    """
+    Convert a string to a sympy expression, with optional restrictions on
+    the variables and functions that can be used. If the string is invalid,
+    raise an exception with a message that can be displayed to the user.
+
+    Parameters:
+        expr: The string to convert to a sympy expression.
+        variables: A list of variable names that are allowed in the expression.
+        allow_hidden: Whether to allow hidden variables (like pi and e).
+        allow_complex: Whether to allow complex numbers (like i).
+        allow_trig_functions: Whether to allow trigonometric functions.
+        custom_functions: A list of custom function names that are allowed in the expression.
+        assumptions: A dictionary of assumptions for variables in the expression.
+
+    Examples:
+        >>> convert_string_to_sympy("n * sin(7*m) + m**2 * cos(6*n)", variables=["m", "n"])
+        n * sympy.sin(m * 7) + m * m * sympy.cos(n * 6)
+        >>> convert_string_to_sympy("-infty")
+        -sympy.oo
+        >>> convert_string_to_sympy("z**2 + y - x", variables=["x", "y", "z"], allow_complex=True, assumptions={"x": {"positive": False}, "z": {"complex": True}})
+    """
     return convert_string_to_sympy_with_source(
         expr,
         variables=variables,
@@ -464,13 +504,13 @@ def convert_string_to_sympy(
 
 def convert_string_to_sympy_with_source(
     expr: str,
-    variables: None | Iterable[str] = None,
+    variables: Iterable[str] | None = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | Iterable[str] = None,
-    assumptions: None | AssumptionsDictT = None,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
 ) -> tuple[sympy.Expr, str]:
     const = _Constants()
 
@@ -578,9 +618,9 @@ def sympy_to_json(
     # Apply substitutions for hidden variables
     a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
     if allow_complex:
-        a_sub = a_sub.subs(
-            [(val, key) for key, val in const.hidden_complex_variables.items()]
-        )
+        a_sub = a_sub.subs([
+            (val, key) for key, val in const.hidden_complex_variables.items()
+        ])
 
     assumptions_dict = {
         str(variable): variable.assumptions0 for variable in a.free_symbols
@@ -627,16 +667,15 @@ def json_to_sympy(
 
 def validate_string_as_sympy(
     expr: str,
-    variables: None | Iterable[str],
+    variables: Iterable[str] | None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | list[str] = None,
-    imaginary_unit: None | str = None,
-) -> None | str:
-    """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
-
+    custom_functions: list[str] | None = None,
+    imaginary_unit: str | None = None,
+) -> str | None:
+    """Try to parse expr as a sympy expression. If it fails, return a string with an appropriate error message for display on the frontend."""
     try:
         expr_parsed = convert_string_to_sympy(
             expr,
@@ -731,7 +770,7 @@ def validate_string_as_sympy(
     return None
 
 
-def get_items_list(items_string: None | str) -> list[str]:
+def get_items_list(items_string: str | None) -> list[str]:
     if items_string is None:
         return []
 

@@ -43,7 +43,7 @@ Read more in the [authentication documentation](./authentication.md).
 
   which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
 
-  ```
+  ```console
   CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
   e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
   ```

@@ -181,7 +181,6 @@ function getTraceExporter(config: OpenTelemetryConfig): SpanExporter | null {
         credentials: credentials.createSsl(),
         metadata: getHoneycombMetadata(config),
       });
-      break;
     case 'jaeger':
       return new OTLPTraceExporterHttp();
     default:

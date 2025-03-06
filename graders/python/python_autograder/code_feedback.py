@@ -22,16 +22,19 @@ THE SOFTWARE.
 
 
 from collections.abc import Callable
-from typing import Any, Literal, NoReturn
+from typing import Any, Literal, NoReturn, TypeVar
 
 import numpy as np
 from matplotlib.axes import Axes
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame
 
 
 class GradingComplete(Exception):  # noqa: N818
     pass
+
+
+T = TypeVar("T")
 
 
 class Feedback:
@@ -115,7 +118,7 @@ class Feedback:
         raise GradingComplete("Your answer is correct.")
 
     @staticmethod
-    def not_allowed(*_args, **_kwargs) -> NoReturn:
+    def not_allowed(*_args: Any, **_kwargs: Any) -> NoReturn:
         """
         Used to hook into disallowed functions, raises an exception if
         the student tries to call it.
@@ -175,7 +178,7 @@ class Feedback:
     def check_numpy_array_features(
         cls,
         name: str,
-        ref: np.ndarray,
+        ref: NDArray[Any],
         data: None | ArrayLike,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
@@ -195,7 +198,7 @@ class Feedback:
         """
         import numpy as np
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -234,7 +237,7 @@ class Feedback:
     def check_numpy_array_allclose(
         cls,
         name: str,
-        ref: np.ndarray,
+        ref: NDArray[Any],
         data: ArrayLike,
         accuracy_critical: bool = False,  # noqa: FBT001
         rtol: float = 1e-05,
@@ -283,8 +286,8 @@ class Feedback:
     def check_list(
         cls,
         name: str,
-        ref: list,
-        data: list | None,
+        ref: list[Any],
+        data: list[Any] | None,
         entry_type: Any | None = None,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
@@ -304,7 +307,7 @@ class Feedback:
             >>> Feedback.check_list(name, ref, data)
         """
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -335,8 +338,8 @@ class Feedback:
     def check_tuple(
         cls,
         name: str,
-        ref: tuple,
-        data: tuple | None,
+        ref: tuple[Any],
+        data: tuple[Any] | None,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
         report_success: bool = True,  # noqa: FBT001
@@ -356,7 +359,7 @@ class Feedback:
             >>> Feedback.check_tuple(name, ref, data)
         """
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -397,8 +400,8 @@ class Feedback:
     def check_scalar(
         cls,
         name: str,
-        ref: complex | np.number,
-        data: complex | np.number | None | Any,
+        ref: complex | np.number[Any],
+        data: complex | np.number[Any] | None,
         accuracy_critical: bool = False,  # noqa: FBT001
         rtol: float = 1e-5,
         atol: float = 1e-8,
@@ -430,7 +433,7 @@ class Feedback:
 
         import numpy as np
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -467,7 +470,7 @@ class Feedback:
         return True
 
     @classmethod
-    def call_user(cls, f: Callable, *args, **kwargs) -> Any:
+    def call_user(cls, f: Callable[..., T], *args: Any, **kwargs: Any) -> T:
         """
         Attempts to call a student defined function, with any arbitrary arguments specified in `*args` and `**kwargs`. If the student code raises an exception, this will be caught and user feedback will be given.
 
@@ -532,7 +535,7 @@ class Feedback:
         import matplotlib.axes
         import numpy as np
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -630,7 +633,7 @@ class Feedback:
 
         import pandas as pd
 
-        def bad(msg) -> Literal[False]:
+        def bad(msg: str) -> Literal[False]:
             cls.add_feedback(msg)
             if display_input and isinstance(data, pd.DataFrame):
                 cls.add_feedback("----------")

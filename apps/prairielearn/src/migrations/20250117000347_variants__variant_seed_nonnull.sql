@@ -1,6 +1,11 @@
+-- prairielearn:migrations NO TRANSACTION
+--
 -- Declare `variants.variant_seed` as NOT NULL; it was always required.
 -- Use the approach described here to avoid a long table lock:
 -- https://dba.stackexchange.com/questions/267947/how-can-i-set-a-column-to-not-null-without-locking-the-table-during-a-table-scan/268128#268128
+ALTER TABLE variants
+DROP CONSTRAINT IF EXISTS variants_variant_seed_not_null;
+
 ALTER TABLE variants
 ADD CONSTRAINT variants_variant_seed_not_null CHECK (variant_seed IS NOT NULL) NOT VALID;
 

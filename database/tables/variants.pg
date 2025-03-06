@@ -1,5 +1,5 @@
 columns
-    authn_user_id: bigint
+    authn_user_id: bigint not null
     broken: boolean default false
     broken_at: timestamp with time zone
     broken_by: bigint

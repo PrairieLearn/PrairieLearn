@@ -36,7 +36,7 @@ from prairielearn.internal import question_phases
 
 saved_path = copy.copy(sys.path)
 
-drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
+drop_privileges = int(os.environ.get("DROP_PRIVILEGES", "0")) == 1
 
 # If we're configured to drop privileges (that is, if we're running in a
 # Docker container), various tools like matplotlib and fontconfig will be
@@ -142,7 +142,7 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
 # helpful because the object - which contains something that cannot be converted
 # to JSON - would otherwise never be displayed to the developer, making it hard to
 # debug the problem.
-def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False):
+def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> str:
     try:
         zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)

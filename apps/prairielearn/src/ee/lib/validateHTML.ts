@@ -281,6 +281,12 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
           break;
         // string inputs are valid as strings, and these don't affect other tags, so no validation required
         case 'correct-answer':
+          if (val.match(mustacheTemplateExtractorRegex)) {
+            errors.push(
+              "pl-integer-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
+            );
+          }
+          break;
         case 'label':
         case 'suffix':
         case 'placeholder':
@@ -340,6 +346,11 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
           break;
         case 'correct-answer':
           assertFloat('pl-number-input', key, val, errors);
+          if (val.match(mustacheTemplateExtractorRegex)) {
+            errors.push(
+              "pl-number-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
+            );
+          }
           break;
         case 'label':
         case 'suffix':

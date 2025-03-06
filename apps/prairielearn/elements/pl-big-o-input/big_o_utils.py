@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-import python_helper_sympy as phs
+import prairielearn.sympy_utils as psu
 import sympy
 
 BigOGradingFunctionT = Callable[[str, str, list[str]], tuple[float, str]]
@@ -33,11 +33,11 @@ THETA_LOWER_ORDER_TERMS_FEEDBACK = (
 def grade_o_expression(
     a_true: str, a_sub: str, variables: list[str]
 ) -> tuple[float, str]:
-    sym_true, sym_true_source = phs.convert_string_to_sympy_with_source(
+    sym_true, sym_true_source = psu.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )
 
-    sym_sub, sym_sub_source = phs.convert_string_to_sympy_with_source(
+    sym_sub, sym_sub_source = psu.convert_string_to_sympy_with_source(
         a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
 
@@ -74,11 +74,11 @@ def grade_o_expression(
 def grade_theta_expression(
     a_true: str, a_sub: str, variables: list[str]
 ) -> tuple[float, str]:
-    sym_true, sym_true_source = phs.convert_string_to_sympy_with_source(
+    sym_true, sym_true_source = psu.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )
 
-    sym_sub, sym_sub_source = phs.convert_string_to_sympy_with_source(
+    sym_sub, sym_sub_source = psu.convert_string_to_sympy_with_source(
         a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
 
@@ -116,11 +116,11 @@ def grade_theta_expression(
 def grade_omega_expression(
     a_true: str, a_sub: str, variables: list[str]
 ) -> tuple[float, str]:
-    sym_true, sym_true_source = phs.convert_string_to_sympy_with_source(
+    sym_true, sym_true_source = psu.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )
 
-    sym_sub, sym_sub_source = phs.convert_string_to_sympy_with_source(
+    sym_sub, sym_sub_source = psu.convert_string_to_sympy_with_source(
         a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
 
