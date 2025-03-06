@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 2.1.0
+
+### Minor Changes
+
+- 284df1c: Introduce `jsx-no-dollar-interpolation` rule
+
 ## 2.0.9
 
 ### Patch Changes
