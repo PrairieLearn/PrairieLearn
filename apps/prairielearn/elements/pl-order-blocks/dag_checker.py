@@ -55,59 +55,23 @@ def solve_dag(
     return sort
 
 
-def check_topological_sorting(submission: list[dict[str, any]], graph: nx.DiGraph) -> tuple[int, list[dict[str, any]]]:
-
+def check_topological_sorting(
+    submission: Sequence[str | None], graph: nx.DiGraph
+) -> int:
     """
-    Checks if the provided submission is a valid topological sort of the given directed acyclic graph (DAG).
-    
-    :param submission: A list of dictionaries representing the nodes, where each node contains its 'tag' and 
-    'feedback_messages'.
-    :param graph: The directed acyclic graph (DAG) that the submission is being checked against.
-    :return: A tuple containing:
-        - The index of the first element in the submission that is not topologically sorted, or the length of the 
-        submission if it is correctly sorted.
-        - The submission list with updated 'is_disordered' flags in the 'feedback_messages' for blocks that are disordered 
-        based on their `condition_tag` relationships.
-    
-    The function first verifies basic topological order by ensuring each node appears after all its dependencies.
-    It then checks the 'condition' in 'feedback_messages' to ensure specified ordering relationships are respected.
+    :param submission: candidate for topological sorting
+    :param graph: graph to check topological sorting over
+    :return: index of first element not topologically sorted, or length of list if sorted
     """
     seen = set()
-    disordered = []
-    top = None
-
-    # Check the basic topological order of nodes
     for i, node in enumerate(submission):
-        # If node's tag is None or any of its dependencies are not in the seen set, mark it as disordered
-        if node["tag"] is None or not all(u in seen for (u, _) in graph.in_edges(node["tag"])):
-            disordered.append(i)
-        seen.add(node["tag"])
-    
-    # Determine the first incorrect node's index
-    if not disordered:
-        top = len(submission)
-    else:
-        top = disordered[0]
+        if node is None or not all(u in seen for (u, _) in graph.in_edges(node)):
+            return i
+        seen.add(node)
+    return len(submission)
 
-    # Check additional ordering conditions specified in feedback_messages
-    for i, node in enumerate(submission):
-        for message_info in node["feedback_messages"]:
-            condition_tag_index = None
-            for idx, block in enumerate(submission):
-                if block["tag"] == message_info['condition_tag']:
-                    condition_tag_index = idx
-            if condition_tag_index is not None:
-                if message_info['condition'] == "after" and condition_tag_index > i:
-                    message_info['is_disordered'] = True
-                elif message_info['condition'] == "before" and condition_tag_index < i:
-                    message_info['is_disordered'] = True
-            else:
-                message_info['is_disordered'] = True
-
-    return top, submission
 
 def check_grouping(
-
     submission: Sequence[str | None], group_belonging: Mapping[str, str | None]
 ) -> int:
     """
@@ -187,11 +151,10 @@ def add_edges_for_groups(
         graph.remove_node(group_tag)
 
 def grade_dag(
-     submission: Sequence[str | None],
+    submission: Sequence[str | None],
     depends_graph: Mapping[str, list[str]],
     group_belonging: Mapping[str, str | None],
-) -> tuple[int, int, list[int]]:
-    
+) -> tuple[int, int]:
     """
     In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
@@ -200,15 +163,14 @@ def grade_dag(
     :param depends_graph: The dependency graph between blocks specified in the question
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
     :return: tuple containing length of list that meets both correctness conditions, starting from the beginning,
-    and the length of any correct solution, and The submission list with updated 'is_disordered' flags in the 'feedback_messages' for blocks that are disordered 
-    based on their `condition_tag` relationships.
-    
+    and the length of any correct solution
     """
     graph = dag_to_nx(depends_graph, group_belonging)
-    top_sort_correctness, edited_submission = check_topological_sorting(submission, graph)
-    submission_new = [ans["tag"] for ans in submission]
-    grouping_correctness = check_grouping(submission_new, group_belonging)
-    return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes(), edited_submission
+
+    top_sort_correctness = check_topological_sorting(submission, graph)
+    grouping_correctness = check_grouping(submission, group_belonging)
+
+    return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes()
 
 def get_wrong_order_lines(
     submission: list[Mapping[str, str]],
