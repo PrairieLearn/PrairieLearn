@@ -60,7 +60,7 @@ function calculateAPICost(usage?: OpenAI.Completions.CompletionUsage): number {
   const prompt_tokens = usage.prompt_tokens;
   const completion_tokens = usage.completion_tokens;
 
-  // Pricings are updated according to https://openai.com/api/pricing/
+  // Pricings are updated according to https://platform.openai.com/docs/pricing
   const prompt_cost = 2.5 / 10 ** 6;
   const completion_cost = 10.0 / 10 ** 6;
 
