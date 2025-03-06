@@ -1,3 +1,5 @@
+import { boolean } from 'zod';
+
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
@@ -267,15 +269,17 @@ onDocumentReady(() => {
           formatter: (value: string, row: InstanceQuestionRow) =>
             value ? row.last_grader_name : '&mdash;',
         },
-        {
-          field: 'is_ai_graded',
-          title: 'AI Graded',
-          filterControl: 'select',
-          visible: aiGradingEnabled,
-          formatter: (value: boolean, row: InstanceQuestionRow) =>
-            row.is_ai_graded ? 'Yes' : 'No',
-        },
-      ],
+        aiGradingEnabled
+          ? {
+              field: 'is_ai_graded',
+              title: 'AI Graded',
+              filterControl: 'select',
+              visible: aiGradingEnabled,
+              formatter: (value: boolean, row: InstanceQuestionRow) =>
+                row.is_ai_graded ? 'Yes' : 'No',
+            }
+          : null,
+      ].filter(Boolean),
     ],
   });
 });
