@@ -5,7 +5,8 @@ import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { MissingDefinition } from '../../components/AssessmentSetHeading.html.js';
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
@@ -31,7 +32,8 @@ export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
   AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true, implicit: true }),
 ).extend({
   start_new_assessment_group: z.boolean(),
-  assessment_group_heading: AssessmentSetSchema.shape.heading,
+  heading: AssessmentSetSchema.shape.heading,
+  assessment_set: AssessmentSetSchema,
   label: z.string(),
   open_issue_count: z.coerce.number(),
 });
@@ -119,8 +121,11 @@ export function InstructorAssessments({
                           ? html`
                               <tr>
                                 <th colspan="7" scope="row">
-                                  ${row.assessment_group_heading}
-                                  ${row.implicit && MissingDefinition({ item: assessmentsGroupBy })}
+                                  ${assessmentsGroupBy === 'Set'
+                                    ? AssessmentSetHeading({ assessment_set: row.assessment_set })
+                                    : AssessmentModuleHeading({
+                                        assessment_module: row.assessment_set,
+                                      })}
                                 </th>
                               </tr>
                             `

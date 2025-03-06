@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { MissingDefinition } from '../../components/AssessmentSetHeading.html.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type AssessmentSet } from '../../lib/db-types.js';
@@ -55,10 +55,7 @@ export function InstructorCourseAdminSets({
                       </span>
                     </td>
                     <td class="align-middle">${assessment_set.name}</td>
-                    <td class="align-middle">
-                      ${assessment_set.heading}
-                      ${assessment_set.implicit && MissingDefinition({ item: 'Set' })}
-                    </td>
+                    <td class="align-middle">${AssessmentSetHeading({ assessment_set })}</td>
                     <td class="align-middle">${assessment_set.color}</td>
                   </tr>
                 `;

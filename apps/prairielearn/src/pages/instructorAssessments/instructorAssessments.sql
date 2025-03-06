@@ -30,6 +30,7 @@ SELECT
   aset.color,
   aset.implicit,
   (aset.abbreviation || a.number) as label,
+  to_jsonb(aset) as assessment_set,
   (
     LAG(
       CASE
@@ -55,7 +56,7 @@ SELECT
       WHEN $assessments_group_by = 'Set' THEN aset.heading
       ELSE am.heading
     END
-  ) AS assessment_group_heading,
+  ) AS heading,
   coalesce(ic.open_issue_count, 0) AS open_issue_count
 FROM
   assessments AS a

@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { MissingDefinition } from '../../components/AssessmentSetHeading.html.js';
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type AssessmentModule } from '../../lib/db-types.js';
@@ -49,7 +49,7 @@ export function InstructorCourseAdminModules({
                     <td class="align-middle">${module.number}</td>
                     <td>${module.name}</td>
                     <td class="align-middle">
-                      ${module.heading} ${module.implicit && MissingDefinition({ item: 'Module' })}
+                      ${AssessmentModuleHeading({ assessment_module: module })}
                     </td>
                   </tr>
                 `;
