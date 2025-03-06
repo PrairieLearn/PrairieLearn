@@ -26,6 +26,8 @@ export function UserSettings({
   newAccessTokens,
   purchases,
   isExamMode,
+  showEnhancedNavigationToggle,
+  enhancedNavigationEnabled,
   resLocals,
 }: {
   authn_user: User;
@@ -35,6 +37,8 @@ export function UserSettings({
   newAccessTokens: string[];
   purchases: Purchase[];
   isExamMode: boolean;
+  showEnhancedNavigationToggle: boolean;
+  enhancedNavigationEnabled: boolean;
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
@@ -78,6 +82,26 @@ export function UserSettings({
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h2>Feature preview</h2>
+        </div>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item d-flex align-items-center">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" value="1" />
+              <label class="form-check-label d-flex align-items-center">
+                Enhanced navigation
+                <span class="badge rounded-pill text-bg-success ms-2">Beta</span>
+              </label>
+              <div class="small text-muted">
+                Try out a new navigation experience. TODO sell this better.
+              </div>
+            </div>
+          </li>
+        </ul>
       </div>
 
       ${isEnterprise() ? UserSettingsPurchasesCard({ purchases }) : ''}

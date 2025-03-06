@@ -10,6 +10,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
 import { InstitutionSchema, EnumModeSchema, UserSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
@@ -55,6 +56,13 @@ router.get(
       z.object({ mode: EnumModeSchema }),
     );
 
+    const showEnhancedNavigationToggle = await features.enabled('enhanced-navigation-user-toggle', {
+      user_id: authn_user.user_id,
+    });
+    const enhancedNavigationEnabled = await features.enabled('enhanced-navigation', {
+      user_id: authn_user.user_id,
+    });
+
     res.send(
       UserSettings({
         authn_user,
@@ -64,6 +72,8 @@ router.get(
         newAccessTokens,
         purchases,
         isExamMode: mode !== 'Public',
+        showEnhancedNavigationToggle,
+        enhancedNavigationEnabled,
         resLocals: res.locals,
       }),
     );
