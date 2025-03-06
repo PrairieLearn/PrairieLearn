@@ -84,50 +84,55 @@ export function UserSettings({
         </table>
       </div>
 
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h2>Feature preview</h2>
-        </div>
-        <ul class="list-group list-group-flush">
-          <li class="list-group-item d-flex align-items-center">
-            <div class="form-check">
-              <input type="checkbox" class="form-check-input" value="1" />
-              <label class="form-check-label d-flex align-items-center">
-                Enhanced navigation
-                <span class="badge rounded-pill text-bg-success ms-2">Beta</span>
-              </label>
-              <div class="small text-muted">
-                Try out a new navigation experience. TODO sell this better.
+      ${showEnhancedNavigationToggle
+        ? html`
+            <form method="POST">
+              <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex align-items-center">
+                  <h2>Feature preview</h2>
+                </div>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex align-items-center">
+                    <div class="form-check">
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        name="enhanced_navigation"
+                        value="1"
+                        id="enhanced_navigation_toggle"
+                        ${enhancedNavigationEnabled ? 'checked' : ''}
+                      />
+                      <label
+                        class="form-check-label d-flex align-items-center"
+                        for="enhanced_navigation_toggle"
+                      >
+                        Enhanced navigation
+                        <span class="badge rounded-pill text-bg-success ms-2" aria-hidden="true">
+                          Beta
+                        </span>
+                      </label>
+                      <div class="small text-muted">
+                        Try out a new navigation experience. TODO sell this better.
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+                <div class="card-footer">
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-primary"
+                    name="__action"
+                    value="update_features"
+                  >
+                    Save changes
+                  </button>
+                </div>
               </div>
-            </div>
-          </li>
-        </ul>
-      </div>
-
+            </form>
+          `
+        : ''}
       ${isEnterprise() ? UserSettingsPurchasesCard({ purchases }) : ''}
-
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
-          <h2>Browser configuration</h2>
-        </div>
-        <div class="card-body">
-          <p>
-            This section will let you reset browser settings related to technology inside
-            PrairieLearn.
-          </p>
-          <p>
-            If math formulas shows up as code like
-            <strong>$ x = rac {-b pm sqrt {b^2 - 4ac}}{2a} $</strong>
-            resetting the MathJax menu settings might help.
-          </p>
-          <button
-            class="btn btn-md btn-info"
-            onClick="localStorage.removeItem('MathJax-Menu-Settings');alert('MathJax menu settings have been reset');"
-          >
-            Reset MathJax menu settings
-          </button>
-        </div>
-      </div>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -180,6 +185,29 @@ export function UserSettings({
 
         <div class="card-footer small">
           Access tokens can be used to access the PrairieLearn API. Be sure to keep them secure.
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex">
+          <h2>Browser configuration</h2>
+        </div>
+        <div class="card-body">
+          <p>
+            This section will let you reset browser settings related to technology inside
+            PrairieLearn.
+          </p>
+          <p>
+            If math formulas shows up as code like
+            <strong>$ x = rac {-b pm sqrt {b^2 - 4ac}}{2a} $</strong>
+            resetting the MathJax menu settings might help.
+          </p>
+          <button
+            class="btn btn-md btn-info"
+            onClick="localStorage.removeItem('MathJax-Menu-Settings');alert('MathJax menu settings have been reset');"
+          >
+            Reset MathJax menu settings
+          </button>
         </div>
       </div>
     `,

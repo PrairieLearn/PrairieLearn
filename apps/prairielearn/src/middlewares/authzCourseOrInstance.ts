@@ -73,6 +73,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
     institution_id: institution.id,
+    user_id: res.locals.authn_user.user_id,
   });
   res.locals.has_enhanced_navigation = hasEnhancedNavigation;
 
