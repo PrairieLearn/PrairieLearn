@@ -1,3 +1,5 @@
+# Rubric Instructions
+
 Add the following rubric items:
 
 - Identified that the bounds of the loop are incorrect.

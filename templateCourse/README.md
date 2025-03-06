@@ -1,4 +1,4 @@
-# Welcome to PrairieLearn!
+# Welcome to PrairieLearn
 
 The content for your course is stored within this repository. You can see and edit a live version at [https://prairielearn.com](https://prairielearn.com).
 
