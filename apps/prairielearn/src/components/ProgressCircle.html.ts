@@ -47,7 +47,7 @@ export function ProgressCircle({
     style="transform:rotate(-90deg)"
     width="20px"
     height="20px"
-    viewBox="0 0 20px 20px"
+    viewBox="0 0 20 20"
     class="mx-1 ${mlAuto ? 'ms-auto' : ''}"
   >
     <circle

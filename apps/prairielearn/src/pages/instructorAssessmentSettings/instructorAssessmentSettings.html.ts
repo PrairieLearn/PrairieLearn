@@ -43,6 +43,11 @@ export function InstructorAssessmentSettings({
         course: resLocals.course,
         urlPrefix: resLocals.urlPrefix,
       })}
+      ${QRCodeModal({
+        id: 'studentLinkModal',
+        title: 'Student Link QR Code',
+        content: studentLink,
+      })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
@@ -181,11 +186,6 @@ export function InstructorAssessmentSettings({
                 The link that students will use to access this assessment.
               </small>
             </div>
-            ${QRCodeModal({
-              id: 'studentLinkModal',
-              title: 'Student Link QR Code',
-              content: studentLink,
-            })}
             ${resLocals.authz_data.has_course_permission_view
               ? canEdit
                 ? html`
