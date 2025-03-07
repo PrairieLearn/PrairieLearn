@@ -63,13 +63,18 @@ onDocumentReady(() => {
     },
   });
 
-  on('show.bs.tooltip', 'body', (event) => {
-    // Close existing tooltips when a new one is shown.
+  // Hide other open tooltips when a new one is shown.
+  on('show.bs.tooltip', 'body', () => {
     closeOpenTooltips();
+  });
 
+  on('shown.bs.tooltip', 'body', (event) => {
     const tooltip = window.bootstrap.Tooltip.getInstance(event.target as HTMLElement);
-    if (tooltip) {
-      openTooltips.add(tooltip);
-    }
+    if (tooltip) openTooltips.add(tooltip);
+  });
+
+  on('hide.bs.tooltip', 'body', (event) => {
+    const tooltip = window.bootstrap.Tooltip.getInstance(event.target as HTMLElement);
+    if (tooltip) openTooltips.delete(tooltip);
   });
 });

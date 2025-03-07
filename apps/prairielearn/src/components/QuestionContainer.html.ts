@@ -642,12 +642,10 @@ function QuestionPanel({
   // Show even when question_copy_targets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
   const showCopyQuestionButton =
-    (question.type === 'Freeform' &&
-      question_copy_targets != null &&
-      (course.template_course ||
-        (question.share_source_publicly && questionContext === 'public')) &&
-      questionContext !== 'manual_grading') ||
-    true;
+    question.type === 'Freeform' &&
+    question_copy_targets != null &&
+    (course.template_course || (question.share_source_publicly && questionContext === 'public')) &&
+    questionContext !== 'manual_grading';
 
   return html`
     <div class="card mb-3 question-block">
