@@ -19,6 +19,7 @@ import {
   AssessmentSchema,
   type AssessmentSet,
   AssessmentSetSchema,
+  AssessmentModuleSchema,
 } from '../../lib/db-types.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
@@ -29,11 +30,11 @@ export const AssessmentStatsRowSchema = AssessmentSchema.extend({
 type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
 
 export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true, implicit: true }),
+  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
 ).extend({
   start_new_assessment_group: z.boolean(),
-  heading: AssessmentSetSchema.shape.heading,
   assessment_set: AssessmentSetSchema,
+  assessment_module: AssessmentModuleSchema,
   label: z.string(),
   open_issue_count: z.coerce.number(),
 });
@@ -124,7 +125,7 @@ export function InstructorAssessments({
                                   ${assessmentsGroupBy === 'Set'
                                     ? AssessmentSetHeading({ assessment_set: row.assessment_set })
                                     : AssessmentModuleHeading({
-                                        assessment_module: row.assessment_set,
+                                        assessment_module: row.assessment_module,
                                       })}
                                 </th>
                               </tr>

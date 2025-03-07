@@ -7,12 +7,12 @@ export function AssessmentModuleHeading({
 }: {
   assessment_module: AssessmentModule;
 }) {
-  if (!assessment_module.implicit) {
+  if (!assessment_module.implicit || assessment_module.name === 'Default') {
     return assessment_module.heading;
   }
 
   return html`
-    ${assessment_module.heading}
+    ${assessment_module.name}
     <span class="text-muted">
       (Auto-generated from use in an assessment; add this assessment module to your infoCourse.json
       file to customize)
