@@ -6,7 +6,13 @@ import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 
-export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<string, any> }) {
+export function InstructorQuestionPreview({
+  manualGradingPreviewUrl,
+  resLocals,
+}: {
+  manualGradingPreviewUrl: string;
+  resLocals: Record<string, any>;
+}) {
   return PageLayout({
     resLocals,
     pageTitle: 'Question Preview',
@@ -49,11 +55,15 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
     content: html`
       <div class="row">
         <div class="col-lg-9 col-sm-12">
-          ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+          ${QuestionContainer({
+            resLocals,
+            questionContext: 'instructor',
+            manualGradingPreviewUrl,
+          })}
         </div>
 
         <div class="col-lg-3 col-sm-12">
-          <div class="card mb-4">
+          <div class="card mb-3">
             <div class="card-header bg-secondary text-white">
               <h2>Student view placeholder</h2>
             </div>

@@ -1,3 +1,5 @@
+import * as url from 'node:url';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
@@ -13,6 +15,7 @@ import {
   setRendererHeader,
 } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
+import { getSearchParams } from '../../lib/url.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 
 import { InstructorQuestionPreview } from './instructorQuestionPreview.html.js';
@@ -63,6 +66,11 @@ router.get(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
+    if (manualGradingPreviewEnabled) {
+      res.locals.manualGradingInterface = true;
+    }
+
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
@@ -70,8 +78,19 @@ router.get(
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
 
+    // Construct a URL to preview the question as it would appear in the manual
+    // grading interface. We need to include the `variant_id` in the URL so that
+    // we show the current variant and not a new one.
+    const searchParams = getSearchParams(req);
+    searchParams.set('variant_id', res.locals.variant.id.toString());
+    searchParams.set('manual_grading_preview', 'true');
+    const manualGradingPreviewUrl = url.format({
+      pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
+      search: searchParams.toString(),
+    });
+
     setRendererHeader(res);
-    res.send(InstructorQuestionPreview({ resLocals: res.locals }));
+    res.send(InstructorQuestionPreview({ manualGradingPreviewUrl, resLocals: res.locals }));
   }),
 );
 

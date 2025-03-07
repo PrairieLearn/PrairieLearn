@@ -26,9 +26,11 @@ const MAX_TOP_RECENTS = 3;
 export function QuestionContainer({
   resLocals,
   questionContext,
+  manualGradingPreviewUrl,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  manualGradingPreviewUrl?: string;
 }) {
   const {
     question,
@@ -47,7 +49,7 @@ export function QuestionContainer({
 
   return html`
     <div
-      class="question-container"
+      class="question-container mb-4"
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
       data-variant-token="${variantToken}"
@@ -59,12 +61,12 @@ export function QuestionContainer({
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
-              ${QuestionPanel({ resLocals, questionContext })}
+              ${QuestionPanel({ resLocals, questionContext, manualGradingPreviewUrl })}
             </form>
           `
         : QuestionPanel({ resLocals, questionContext })}
 
-      <div class="card mb-4 grading-block${showTrueAnswer ? '' : ' d-none'}">
+      <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
         <div class="card-header bg-secondary text-white">
           <h2>Correct answer</h2>
         </div>
@@ -82,7 +84,7 @@ export function QuestionContainer({
             })}
             ${submissions.length > MAX_TOP_RECENTS
               ? html`
-                  <div class="mb-4 d-flex justify-content-center">
+                  <div class="mb-3 d-flex justify-content-center">
                     <button
                       class="show-hide-btn btn btn-outline-secondary btn-sm collapsed"
                       type="button"
@@ -154,7 +156,7 @@ export function IssuePanel({
   }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(msgBody)}`;
 
   return html`
-    <div class="card mb-4">
+    <div class="card mb-3">
       <div class="card-header bg-danger text-white">
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
       </div>
@@ -629,9 +631,11 @@ function AvailablePointsNotes({
 function QuestionPanel({
   resLocals,
   questionContext,
+  manualGradingPreviewUrl,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  manualGradingPreviewUrl?: string;
 }) {
   const { question, questionHtml, question_copy_targets, course, instance_question_info } =
     resLocals;
@@ -646,7 +650,7 @@ function QuestionPanel({
     true;
 
   return html`
-    <div class="card mb-4 question-block">
+    <div class="card mb-3 question-block">
       <div class="card-header bg-primary text-white d-flex align-items-center">
         <h1>
           ${QuestionTitle({
@@ -662,7 +666,7 @@ function QuestionPanel({
                   <button
                     class="btn btn-sm btn-outline-light"
                     type="button"
-                    data-bs-toggle="modal, tooltip"
+                    data-bs-toggle="modal tooltip"
                     data-bs-title="Copy question"
                     data-bs-target="#copyQuestionModal"
                   >
@@ -670,20 +674,28 @@ function QuestionPanel({
                   </button>
                 `
               : ''}
-            <div class="btn-group">
-              <button
-                class="btn btn-sm btn-outline-light dropdown-toggle dropdown-toggle-no-caret"
-                type="button"
-                aria-expanded="false"
-                aria-label="More options"
-                data-bs-toggle="dropdown"
-              >
-                <i class="fa fa-fw fa-ellipsis-v"></i>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end">
-                <li class="dropdown-item">Preview manual grading view</li>
-              </ul>
-            </div>
+            ${manualGradingPreviewUrl
+              ? html`
+                  <div class="btn-group">
+                    <button
+                      class="btn btn-sm btn-outline-light dropdown-toggle dropdown-toggle-no-caret"
+                      type="button"
+                      aria-expanded="false"
+                      data-bs-toggle="dropdown tooltip"
+                      data-bs-title="Preview..."
+                    >
+                      <i class="fa fa-fw fa-eye"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <a class="dropdown-item" href="${manualGradingPreviewUrl}">
+                          Preview manual grading view
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                `
+              : ''}
           </div>
         </div>
       </div>

@@ -70,7 +70,7 @@ export function InstructorInfoPanel({
   const timeZone = course_instance?.display_timezone ?? course.display_timezone;
 
   return html`
-    <div class="card mb-4 border-warning">
+    <div class="card mb-3 border-warning">
       <div class="card-header bg-warning">
         <h2>Staff information</h2>
       </div>

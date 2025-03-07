@@ -6,7 +6,7 @@ onDocumentReady(() => {
   observe('[data-bs-toggle~="tooltip"], [data-bs-toggle-tooltip="true"]', {
     constructor: HTMLElement,
     add(el) {
-      new window.bootstrap.Tooltip(el);
+      new window.bootstrap.Tooltip(el, { trigger: 'hover' });
 
       // Bootstrap doesn't support a single element triggering multiple things.
       // There are cases where we want this behavior, e.g. to have a tooltip
