@@ -22,7 +22,7 @@ A full `info.json` file should look something like:
   "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-c",
-    "timeout": 100
+    "timeout": 10
   }
 }
 ```
