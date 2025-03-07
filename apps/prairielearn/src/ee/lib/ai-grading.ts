@@ -514,9 +514,11 @@ export async function aiGrade({
               prompt: messages,
               completion,
               model: OPEN_AI_MODEL,
-              prompt_tokens: completion.usage?.prompt_tokens,
-              completion_tokens: completion.usage?.completion_tokens,
+              prompt_tokens: completion.usage?.prompt_tokens ?? 0,
+              completion_tokens: completion.usage?.completion_tokens ?? 0,
               cost: calculateApiCost(completion.usage),
+              course_id: course.id,
+              course_instance_id,
             });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);

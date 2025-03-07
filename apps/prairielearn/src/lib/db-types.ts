@@ -49,14 +49,16 @@ export type Administrator = z.infer<typeof AdministratorSchema>;
 
 export const AiGradingPromptSchema = z.object({
   completion: z.any(),
-  completion_tokens: z.number().nullable(),
+  completion_tokens: z.number(),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
   cost: z.number(),
   grading_job_id: IdSchema.nullable(),
   id: IdSchema,
   job_sequence_id: IdSchema.nullable(),
   model: z.string(),
   prompt: z.any(),
-  prompt_tokens: z.number().nullable(),
+  prompt_tokens: z.number(),
 });
 export type AiGradingPrompt = z.infer<typeof AiGradingPromptSchema>;
 

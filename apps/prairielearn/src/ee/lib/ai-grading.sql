@@ -134,7 +134,9 @@ INSERT INTO
     model,
     prompt_tokens,
     completion_tokens,
-    cost
+    cost,
+    course_id,
+    course_instance_id
   )
 VALUES
   (
@@ -145,5 +147,7 @@ VALUES
     $model,
     $prompt_tokens,
     $completion_tokens,
-    $cost
+    $cost,
+    $course_id,
+    $course_instance_id
   );
