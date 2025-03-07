@@ -1,4 +1,3 @@
-import { isFuture, isValid, parseISO } from 'date-fns';
 import _ from 'lodash';
 import { z } from 'zod';
 
@@ -7,12 +6,11 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { Assessment, CourseInstanceData } from '../course-db.js';
+import { type Assessment, type CourseInstanceData } from '../course-db.js';
+import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
-import { makePerformance } from '../performance.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const perf = makePerformance('assessments');
 
 type AssessmentInfoFile = infofile.InfoFile<Assessment>;
 
@@ -55,6 +53,7 @@ function getParamsForAssessment(
   const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
   const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
   const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
+  const allowPersonalNotes = !!_.get(assessment, 'allowPersonalNotes', true);
 
   // It used to be the case that assessment access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
@@ -65,7 +64,11 @@ function getParamsForAssessment(
     .map((accessRule, index) => {
       return {
         number: index + 1,
-        mode: _.has(accessRule, 'mode') ? accessRule.mode : null,
+        mode: _.has(accessRule, 'mode')
+          ? accessRule.mode
+          : _.has(accessRule, 'examUuid')
+            ? 'Exam'
+            : null,
         uids: _.has(accessRule, 'uids') ? accessRule.uids : null,
         start_date: _.has(accessRule, 'startDate') ? accessRule.startDate : null,
         end_date: _.has(accessRule, 'endDate') ? accessRule.endDate : null,
@@ -260,6 +263,7 @@ function getParamsForAssessment(
         : false,
     allow_issue_reporting: allowIssueReporting,
     allow_real_time_grading: allowRealTimeGrading,
+    allow_personal_notes: allowPersonalNotes,
     require_honor_code: requireHonorCode,
     auto_close: !!_.get(assessment, 'autoClose', true),
     max_points: assessment.maxPoints,
@@ -319,22 +323,7 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   // If there are no access rules, the course instance is not accessible.
   if (!courseInstance.allowAccess?.length) return false;
 
-  return courseInstance.allowAccess.some((accessRule) => {
-    if (!accessRule.endDate) return true;
-
-    // We don't have easy access to the course instance's timezone, so we'll
-    // just parse it in the machine's local timezone. This is fine, as we're
-    // only interesting in a rough signal of whether the end date is in the
-    // future. If we're off by up to a day, it's not a big deal.
-    //
-    // If the date is invalid, we'll treat it as though it's in the past and
-    // thus that it does not make the course instance accessible.
-    //
-    // `parseISO` is used instead of `new Date` for consistency with `course-db.ts`.
-    const parsedDate = parseISO(accessRule.endDate);
-    if (!isValid(parsedDate)) return false;
-    return isFuture(parsedDate);
-  });
+  return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
 }
 
 export async function sync(
@@ -480,12 +469,10 @@ export async function sync(
     ]);
   });
 
-  perf.start('sproc:sync_assessments');
   await sqldb.callOneRowAsync('sync_assessments', [
     assessmentParams,
     courseId,
     courseInstanceId,
     config.checkSharingOnSync,
   ]);
-  perf.end('sproc:sync_assessments');
 }

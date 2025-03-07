@@ -3,11 +3,188 @@
 window.PLOrderBlocks = function (uuid, options) {
   const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
   // drags and indents a block
-  let maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
-  let enableIndentation = options.enableIndentation;
+  const maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
+  const enableIndentation = options.enableIndentation;
 
-  let optionsElementId = '#order-blocks-options-' + uuid;
-  let dropzoneElementId = '#order-blocks-dropzone-' + uuid;
+  const optionsElementId = '#order-blocks-options-' + uuid;
+  const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
+  const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
+
+  function initializeKeyboardHandling() {
+    const blocks = fullContainer.querySelectorAll('.pl-order-block');
+
+    blocks.forEach((block) => block.setAttribute('tabindex', '-1'));
+    blocks[0].setAttribute('tabindex', '0'); // only the first block in the pl-order-blocks element can be focused by tabbing through
+
+    blocks.forEach((block) => initializeBlockEvents(block));
+  }
+
+  function inDropzone(block) {
+    const parentArea = block.closest('.pl-order-blocks-connected-sortable');
+    return parentArea.classList.contains('dropzone');
+  }
+
+  function getIndentation(block) {
+    return Math.round(parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
+  }
+
+  function setIndentation(block, indentation) {
+    if (indentation >= 0 && indentation <= maxIndent) {
+      block.style.marginLeft = indentation * TABWIDTH + 'px';
+    }
+  }
+
+  function initializeBlockEvents(block) {
+    function removeSelectedAttribute() {
+      block.classList.remove('pl-order-blocks-selected');
+    }
+
+    function handleKey(ev, block, handle, focus = true) {
+      // When we manipulate the location of the block, the focus is automatically removed by the browser,
+      // so we immediately refocus it. In some browsers, the blur event will still fire in this case even
+      // though we don't want it to, so we temporarily remove and then reattach the blur event listener.
+      block.removeEventListener('blur', removeSelectedAttribute);
+      handle();
+      ev.preventDefault();
+      block.addEventListener('blur', removeSelectedAttribute);
+      correctPairing(block);
+      if (focus) {
+        block.focus();
+      }
+      setAnswer();
+    }
+
+    function handleKeyPress(ev) {
+      const optionsBlocks = Array.from($(optionsElementId)[0].querySelectorAll('.pl-order-block'));
+      const dropzoneBlocks = Array.from(
+        $(dropzoneElementId)[0].querySelectorAll('.pl-order-block'),
+      );
+      if (!block.classList.contains('pl-order-blocks-selected')) {
+        const moveBetweenOptionsOrDropzone = (options) => {
+          if (options && inDropzone(block) && optionsBlocks.length) {
+            optionsBlocks[0].focus();
+          } else if (!options && !inDropzone(block) && dropzoneBlocks.length) {
+            dropzoneBlocks[0].focus();
+          }
+        };
+        const moveWithinOptionsOrDropzone = (forward) => {
+          if (forward) {
+            if (inDropzone(block)) {
+              const blockIndex = dropzoneBlocks.indexOf(block);
+              if (blockIndex < dropzoneBlocks.length - 1) {
+                dropzoneBlocks[blockIndex + 1].focus();
+              }
+            } else {
+              const blockIndex = optionsBlocks.indexOf(block);
+              if (blockIndex < optionsBlocks.length - 1) {
+                optionsBlocks[blockIndex + 1].focus();
+              }
+            }
+          } else {
+            if (inDropzone(block)) {
+              const blockIndex = dropzoneBlocks.indexOf(block);
+              if (blockIndex > 0) {
+                dropzoneBlocks[blockIndex - 1].focus();
+              }
+            } else {
+              const blockIndex = optionsBlocks.indexOf(block);
+              if (blockIndex > 0) {
+                optionsBlocks[blockIndex - 1].focus();
+              }
+            }
+          }
+        };
+        switch (ev.key) {
+          case ' ': // Space key
+          case 'Enter':
+            handleKey(ev, block, () => block.classList.add('pl-order-blocks-selected'));
+            break;
+          case 'ArrowUp':
+            handleKey(ev, block, () => moveWithinOptionsOrDropzone(false), false);
+            break;
+          case 'ArrowDown':
+            handleKey(ev, block, () => moveWithinOptionsOrDropzone(true), false);
+            break;
+          case 'ArrowLeft':
+            handleKey(ev, block, () => moveBetweenOptionsOrDropzone(true), false);
+            break;
+          case 'ArrowRight':
+            handleKey(ev, block, () => moveBetweenOptionsOrDropzone(false), false);
+            break;
+        }
+      } else {
+        switch (ev.key) {
+          case ' ': // If selected, space bar should PreventDefault
+            handleKey(ev, block, () => {});
+            break;
+          case 'ArrowDown':
+            handleKey(ev, block, () => {
+              if (block.nextElementSibling) {
+                block.nextElementSibling.insertAdjacentElement('afterend', block);
+              }
+            });
+            break;
+          case 'ArrowUp':
+            handleKey(ev, block, () => {
+              if (block.previousElementSibling) {
+                block.previousElementSibling.insertAdjacentElement('beforebegin', block);
+              }
+            });
+            break;
+          case 'ArrowLeft':
+            handleKey(ev, block, () => {
+              if (inDropzone(block)) {
+                const currentIndent = getIndentation(block);
+                if (currentIndent > 0) {
+                  setIndentation(block, getIndentation(block) - 1);
+                } else {
+                  $(optionsElementId)[0].insertAdjacentElement('beforeend', block);
+                  correctPairing(block);
+                }
+              }
+            });
+            break;
+          case 'ArrowRight':
+            handleKey(ev, block, () => {
+              if (!inDropzone(block)) {
+                $(dropzoneElementId)[0].insertAdjacentElement('beforeend', block);
+              } else if (enableIndentation) {
+                setIndentation(block, getIndentation(block) + 1);
+              }
+            });
+            break;
+          case 'Escape':
+            handleKey(ev, block, removeSelectedAttribute);
+            break;
+        }
+      }
+    }
+
+    block.addEventListener('click', () => {
+      block.focus();
+    });
+
+    block.addEventListener('keydown', (ev) => handleKeyPress(ev));
+
+    block.addEventListener('blur', () => {
+      block.setAttribute('tabindex', '-1');
+      const blocks = fullContainer.querySelectorAll('.pl-order-block');
+      if (
+        // Make sure one block is always focusable in each pl-order-blocks element
+        Array.from(blocks).every((item) => {
+          return item.getAttribute('tabindex') === '-1';
+        })
+      ) {
+        block.setAttribute('tabindex', '0');
+      }
+    });
+    block.addEventListener('focus', () => {
+      fullContainer
+        .querySelectorAll('.pl-order-block')
+        .forEach((item) => item.setAttribute('tabindex', '-1'));
+      block.setAttribute('tabindex', '0');
+    });
+  }
 
   function setAnswer() {
     var answerObjs = $(dropzoneElementId).children();
@@ -96,12 +273,11 @@ window.PLOrderBlocks = function (uuid, options) {
     }
   }
 
-  function correctPairing(ui) {
-    if (ui.item.parent()[0].classList.contains('dropzone')) {
+  function correctPairing(block) {
+    if (block.parentElement.classList.contains('dropzone')) {
       // there aren't pairing indicators in the dropzone
       return;
     }
-    let block = ui.item[0];
     let binUuid = block.getAttribute('data-distractor-bin');
     let containingIndicator = block.closest('.pl-order-blocks-pairing-indicator');
     let containingIndicatorUuid = containingIndicator
@@ -164,12 +340,12 @@ window.PLOrderBlocks = function (uuid, options) {
       ui.item[0].style.marginLeft = leftDiff + 'px';
       setAnswer();
 
-      correctPairing(ui);
+      correctPairing(ui.item[0]);
     },
   });
+  initializeKeyboardHandling(optionsElementId, dropzoneElementId);
 
   if (enableIndentation) {
     $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);
   }
-  $('[data-toggle="popover"]').popover();
 };

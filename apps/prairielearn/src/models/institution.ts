@@ -1,6 +1,6 @@
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { Institution, InstitutionSchema } from '../lib/db-types.js';
+import { type Institution, InstitutionSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

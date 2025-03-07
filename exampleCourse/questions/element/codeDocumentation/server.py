@@ -48,7 +48,7 @@ def generate(data):
 
     # Display a dynamically generated graph
     mat = np.random.random((3, 3))
-    mat = mat / np.linalg.norm(mat, 1, axis=0)
+    mat /= np.linalg.norm(mat, 1, axis=0)
     data["params"]["labels"] = pl.to_json(["A", "B", "C"])
     data["params"]["matrix"] = pl.to_json(mat)
 

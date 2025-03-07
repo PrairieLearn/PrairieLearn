@@ -1,5 +1,60 @@
 # @prairielearn/config
 
+## 3.0.10
+
+### Patch Changes
+
+- 49bb3fa: Upgrade all JavaScript dependencies
+- Updated dependencies [49bb3fa]
+  - @prairielearn/aws-imds@2.0.9
+
+## 3.0.9
+
+### Patch Changes
+
+- 4a8b376: Upgrade all JavaScript dependencies
+- 00629e4: Upgrade AWS packages
+- Updated dependencies [4a8b376]
+  - @prairielearn/aws-imds@2.0.8
+
+## 3.0.8
+
+### Patch Changes
+
+- 9d7d790: Upgrade all JavaScript dependencies
+- Updated dependencies [9d7d790]
+  - @prairielearn/aws-imds@2.0.7
+
+## 3.0.7
+
+### Patch Changes
+
+- 315d931: Upgrade all JavaScript dependencies
+- Updated dependencies [315d931]
+  - @prairielearn/aws-imds@2.0.6
+
+## 3.0.6
+
+### Patch Changes
+
+- 4b79275: Upgrade all JavaScript dependencies
+- Updated dependencies [4b79275]
+  - @prairielearn/aws-imds@2.0.5
+
+## 3.0.5
+
+### Patch Changes
+
+- 852c2e2: Upgrade all JavaScript dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+- Updated dependencies [a8438ff]
+  - @prairielearn/aws-imds@2.0.4
+
 ## 3.0.3
 
 ### Patch Changes

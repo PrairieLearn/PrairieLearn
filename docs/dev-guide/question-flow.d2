@@ -1,0 +1,189 @@
+direction: down
+
+# Style definitions
+classes: {
+  process: {
+    style: {
+      fill: "#FFE4B5" # moccasin
+      stroke: "#000000"
+    }
+  }
+  code: {
+    style: {
+      fill: "#B0E0E6" # powderblue
+      stroke: "#000000"
+    }
+  }
+  state: {
+    style: {
+      fill: "#DCDCDC" # gainsboro
+      stroke: "#000000"
+    }
+  }
+}
+
+# Process nodes
+start: Start {class: process}
+display_broken: "update issues table\ndisplay issue code to student" {class: process}
+display_editable: "question displayed to student\nwith submit button" {class: process}
+display_uneditable: "question displayed to student\nwithout submit button" {class: process}
+submission_received: "submission received" {class: process}
+question_update: "question points update" {class: process}
+
+# Code nodes
+generating: "generate() code" {class: code; shape: oval}
+preparing: "prepare() code" {class: code; shape: oval}
+rendering_uneditable: "Uneditable Render" {
+  explanation: ||md
+    ```
+    render() code
+    editable = false
+    ```
+  ||
+}
+rendering_editable: "Editable Render" {
+  explanation: ||md
+    ```
+    render() code
+    editable = true
+    ```
+  ||
+}
+
+broken_variant: "Broken variant" {
+  explanation: |md
+    ```
+    variant.broken_at != null
+    variant.open = true
+    ```
+  |
+}
+
+parsing: "parse() code" {
+  class: code
+}
+grading: "grade() code" {
+  class: code
+}
+
+open_variant: "Open variant" {
+  explanation: |md
+    ```
+    variant.broken_at = null
+    variant.open = true
+    ```
+  |
+  class: state
+  explanation.width: 200
+}
+closed_variant: "Closed variant" {
+  explanation: |md
+    ```
+    variant.broken_at = null
+    variant.open = false
+    ```
+  |
+  class: state
+}
+broken_submission: "Broken submission" {
+  explanation: |md
+    ```
+    submission.broken = true
+    ```
+  |
+  class: state
+}
+ungradable_no_grading_job: "" {
+  explanation: |md
+    No grading job inserted
+  |
+  class: state
+}
+ungradable_grading_job: "Ungradable grading job" {
+  explanation: |md
+    ```
+    grading_job.gradable = false
+    grading_job.date = <value>
+    grading_job.score = null
+    grading_job.partial_scores = null
+    grading_job.correct = null
+    ```
+  |
+  class: state
+}
+ungradable_submission: "Ungradable submission" {
+  explanation: |md
+    ```
+    submission.broken = false
+    submission.gradable = false
+    submission.score = null
+    submission.partial_scores = null
+    ```
+  |
+  class: state
+}
+gradable_grading_job: "Gradable grading job" {
+  explanation: |md
+    ```
+    grading_job.gradable = true
+    grading_job.date = <value>
+    grading_job.score = <value>
+    grading_job.partial_scores = <value>
+    grading_job.correct = <value>
+    ```
+  |
+  class: state
+}
+gradable_submission: "Gradable submission" {
+  explanation: |md
+    ```
+    submission.broken = false
+    submission.gradable = true
+    ```
+  |
+  class: state
+}
+graded_submission: {
+  explanation: |md
+    Graded submission:
+
+    ```
+    submission.broken = false
+    submission.gradable = true
+    submission.graded_at = <value>
+    submission.score = <value>
+    submission.feedback = <value>
+    ```
+  |
+  class: state
+}
+
+# Connections with labels
+start -> generating
+generating -> broken_variant: "question\ncode error" {style.bold: true}
+generating -> preparing: success {style.bold: true}
+preparing -> broken_variant: "question\ncode error" {style.bold: true}
+preparing -> open_variant.explanation: success {style.bold: true}
+broken_variant -> display_broken: {style.bold: true}
+open_variant.explanation -> rendering_editable: {style.bold: true}
+rendering_editable -> display_broken: "question\ncode error" {style.bold: true}
+rendering_editable -> display_editable: success {style.bold: true}
+display_editable -> submission_received: "student submits\nan answer" {style.bold: true}
+submission_received -> parsing
+parsing -> broken_submission: "question\ncode error" {style.bold: true}
+broken_submission -> display_broken
+parsing -> ungradable_no_grading_job: "invalid format for\nsubmitted_answer" {style.bold: true}
+parsing -> gradable_submission: success {style.bold: true}
+ungradable_submission -> open_variant.explanation
+gradable_submission -> grading
+grading -> ungradable_grading_job: "invalid format for\nsubmitted_answer" {style.bold: true}
+grading -> gradable_grading_job: success {style.bold: true}
+ungradable_grading_job -> ungradable_submission
+ungradable_no_grading_job -> ungradable_submission
+gradable_grading_job -> graded_submission
+graded_submission -> question_update
+question_update -> open_variant.explanation: "more submissions are\nallowed for this variant" {style.bold: true}
+question_update -> closed_variant: "submissions are no longer\nallowed for this variant" {style.bold: true}
+closed_variant -> rendering_uneditable
+rendering_uneditable -> display_broken: "question\ncode error" {style.bold: true}
+rendering_uneditable -> display_uneditable: success {style.bold: true}

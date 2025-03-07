@@ -1,8 +1,10 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
-import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function EditError({
   resLocals,
@@ -10,26 +12,20 @@ export function EditError({
   failedSync,
 }: {
   resLocals: any;
-  jobSequence: JobSequenceWithFormattedOutput;
+  jobSequence: JobSequenceWithTokens;
   failedSync: boolean;
 }) {
-  const { __csrf_token } = resLocals;
+  const { course, __csrf_token } = resLocals;
 
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Edit Failure',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Edit Failure' })}
       </head>
 
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'error',
-        })}
+        ${Navbar({ resLocals, navPage: 'error' })}
 
         <main id="content" class="container">
           <script>
@@ -46,22 +42,18 @@ export function EditError({
           </script>
 
           <div class="card mb-4">
-            <h5 class="card-header bg-danger text-white">
-              <div class="row align-items-center justify-content-between">
-                <div class="col-auto">Edit Failure</div>
-                <div class="col-auto">
-                  <button
-                    type="button"
-                    class="btn btn-light btn-sm"
-                    data-toggle="collapse"
-                    data-target="#job-sequence-results"
-                    id="job-sequence-results-button"
-                  >
-                    Show detail
-                  </button>
-                </div>
-              </div>
-            </h5>
+            <div class="card-header bg-danger text-white d-flex align-items-center">
+              <h1>Edit Failure</h1>
+              <button
+                type="button"
+                class="btn btn-light btn-sm ms-auto"
+                data-bs-toggle="collapse"
+                data-bs-target="#job-sequence-results"
+                id="job-sequence-results-button"
+              >
+                Show detail
+              </button>
+            </div>
             <div class="card-body">
               <p>The file edit did not complete successfully.</p>
               ${failedSync
@@ -89,11 +81,7 @@ export function EditError({
           </div>
 
           <div class="collapse" id="job-sequence-results">
-            ${renderEjs(import.meta.url, "<%- include('../partials/jobSequenceResults'); %>", {
-              ...resLocals,
-              job_sequence: jobSequence,
-              job_sequence_enable_live_update: false,
-            })}
+            ${JobSequenceResults({ course, jobSequence })}
           </div>
         </main>
       </body>

@@ -3,7 +3,6 @@ SELECT
   to_jsonb(u.*) AS user,
   to_jsonb(i.*) AS institution,
   (adm.id IS NOT NULL) AS is_administrator,
-  users_is_instructor_in_any_course (u.user_id) AS is_instructor,
   (
     SELECT
       count(*)::integer
@@ -18,3 +17,18 @@ FROM
   JOIN institutions AS i ON (i.id = u.institution_id)
 WHERE
   u.user_id = $user_id;
+
+-- BLOCK select_is_institution_admin
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      institutions AS i
+      LEFT JOIN institution_administrators AS ia ON (
+        ia.institution_id = i.id
+        AND ia.user_id = $user_id
+      )
+    WHERE
+      i.id = $institution_id
+  );

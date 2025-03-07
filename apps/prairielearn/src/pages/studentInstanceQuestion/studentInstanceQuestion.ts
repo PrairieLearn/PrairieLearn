@@ -2,14 +2,10 @@ import { Router, type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import {
-  gradeAssessmentInstance,
-  canDeleteAssessmentInstance,
-  deleteAssessmentInstance,
-} from '../../lib/assessment.js';
+import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
+import { gradeAssessmentInstance, canDeleteAssessmentInstance } from '../../lib/assessment.js';
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { uploadFile, deleteFile } from '../../lib/file-store.js';
@@ -22,7 +18,11 @@ import {
   setRendererHeader,
 } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
+import clientFingerprint from '../../middlewares/clientFingerprint.js';
+import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
+import selectAndAuthzInstanceQuestion from '../../middlewares/selectAndAuthzInstanceQuestion.js';
+import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import {
   validateVariantAgainstQuestion,
   selectVariantsByInstanceQuestion,
@@ -32,7 +32,12 @@ import { StudentInstanceQuestion } from './studentInstanceQuestion.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const router = Router();
+const router = Router({ mergeParams: true });
+
+router.use(selectAndAuthzInstanceQuestion);
+router.use(studentAssessmentAccess);
+router.use(clientFingerprint);
+router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
 
 /**
  * Get a validated variant ID from a request, or throw an exception.
@@ -59,6 +64,9 @@ async function processFileUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
     throw new HttpStatusError(403, 'Assessment is not open');
   }
+  if (!res.locals.assessment.allow_personal_notes) {
+    throw new HttpStatusError(403, 'This assessment does not allow personal notes.');
+  }
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
@@ -82,6 +90,9 @@ async function processTextUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
     throw new HttpStatusError(403, 'Assessment is not open');
   }
+  if (!res.locals.assessment.allow_personal_notes) {
+    throw new HttpStatusError(403, 'This assessment does not allow personal notes.');
+  }
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
@@ -101,6 +112,9 @@ async function processTextUpload(req: Request, res: Response) {
 async function processDeleteFile(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
     throw new HttpStatusError(403, 'Assessment is not open');
+  }
+  if (!res.locals.assessment.allow_personal_notes) {
+    throw new HttpStatusError(403, 'This assessment does not allow personal notes.');
   }
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
@@ -133,10 +147,7 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(400, 'This assessment is not accepting submissions at this time.');
   }
-  if (
-    res.locals.assessment.group_config?.has_roles &&
-    !res.locals.instance_question.group_role_permissions.can_submit
-  ) {
+  if (res.locals.group_config?.has_roles && !res.locals.group_role_permissions.can_submit) {
     throw new HttpStatusError(
       403,
       'Your current group role does not give you permission to submit to this question.',
@@ -186,6 +197,7 @@ router.post(
       const overrideGradeRate = false;
       await gradeAssessmentInstance(
         res.locals.assessment_instance.id,
+        res.locals.user.user_id,
         res.locals.authn_user.user_id,
         requireOpen,
         closeExam,
@@ -215,20 +227,10 @@ router.post(
       res.redirect(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
-    } else if (req.body.__action === 'regenerate_instance') {
-      if (!canDeleteAssessmentInstance(res.locals)) {
-        throw new HttpStatusError(403, 'Access denied');
-      }
-
-      await deleteAssessmentInstance(
-        res.locals.assessment.id,
-        res.locals.assessment_instance.id,
-        res.locals.authn_user.user_id,
-      );
-
-      flash('success', 'Your previous assessment instance was deleted.');
-      res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
     } else {
+      // The 'regenerate_instance' action is handled in the
+      // studentAssessmentAccess middleware, so it doesn't need to be handled
+      // here.
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
@@ -237,19 +239,19 @@ router.post(
 router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
+    const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
-      question_id: res.locals.question.id,
-      instance_question_id: res.locals.instance_question.id,
+      question: res.locals.question,
+      instance_question: res.locals.instance_question,
       variant_id: req.params.variant_id,
-      user_id: res.locals.user.user_id,
+      user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: res.locals.question.type === 'Exam' ? 'student_exam' : 'student_homework',
-      csrfToken: null,
-      authorizedEdit: null,
-      renderScorePanels: false,
+      authorizedEdit: res.locals.authz_result.authorized_edit,
+      renderScorePanels: req.query.render_score_panels === 'true',
+      groupRolePermissions: res.locals.group_role_permissions,
     });
-    res.send({ submissionPanel, extraHeadersHtml });
+    res.json(panels);
   }),
 );
 
@@ -289,7 +291,7 @@ router.get(
         variant_id = last_variant_id;
       }
     }
-    await getAndRenderVariant(variant_id, null, res.locals);
+    await getAndRenderVariant(variant_id, null, res.locals as any);
 
     await logPageView('studentInstanceQuestion', req, res);
     await setQuestionCopyTargets(res);
@@ -300,7 +302,7 @@ router.get(
     });
 
     if (
-      res.locals.assessment.group_config?.has_roles &&
+      res.locals.group_config?.has_roles &&
       !res.locals.authz_data.has_course_instance_permission_view
     ) {
       if (res.locals.instance_question_info.prev_instance_question.id != null) {

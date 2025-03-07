@@ -1,5 +1,6 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -143,13 +144,12 @@ describe('Exam and homework assessment with active access restriction', function
   });
 
   step('start the exam and access a question', async () => {
-    const form = {
-      __action: 'new_instance',
-      __csrf_token: context.__csrf_token,
-    };
     const response = await helperClient.fetchCheerio(context.examUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'new_instance',
+        __csrf_token: context.__csrf_token,
+      }),
       headers,
     });
     assert.isTrue(response.ok);
@@ -184,13 +184,12 @@ describe('Exam and homework assessment with active access restriction', function
   });
 
   step('simulate a time limit expiration', async () => {
-    const form = {
-      __action: 'timeLimitFinish',
-      __csrf_token: context.__csrf_token,
-    };
     const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'timeLimitFinish',
+        __csrf_token: context.__csrf_token,
+      }),
       headers,
     });
 
@@ -245,7 +244,7 @@ describe('Exam and homework assessment with active access restriction', function
   );
 
   step('access the exam when it is no longer active', async () => {
-    headers.cookie = 'pl_test_date=2010-01-02T00:01:01Z';
+    headers.cookie = 'pl_test_date=2010-01-10T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
       headers,
@@ -274,6 +273,30 @@ describe('Exam and homework assessment with active access restriction', function
     });
     assert.equal(response.status, 403);
     assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
+  });
+
+  step('access clientFilesCourse when exam is not active', async () => {
+    const response = await fetch(`${context.examUrl}clientFilesCourse/data.txt`, {
+      headers,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), 'This data is specific to the course.');
+  });
+
+  step('access clientFilesCourseInstance when exam is not active', async () => {
+    const response = await fetch(`${context.examUrl}clientFilesCourseInstance/data.txt`, {
+      headers,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), 'This data is specific to the course instance.');
+  });
+
+  step('access clientFilesAssessment when exam is not active', async () => {
+    const response = await fetch(`${context.examUrl}clientFilesAssessment/data.txt`, {
+      headers,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), 'This data is specific to the assessment.');
   });
 
   step('ensure that no new variants have been created', async () => {
@@ -462,16 +485,14 @@ describe('Exam and homework assessment with active access restriction', function
   step('submit an answer to a question when active is false', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
-    const form = {
-      __action: 'grade',
-      __csrf_token: context.__csrf_token,
-      __variant_id: context.__variant_id,
-      s: '75', // To get 75% of the question
-    };
-
     const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'grade',
+        __csrf_token: context.__csrf_token,
+        __variant_id: context.__variant_id,
+        s: '75', // To get 75% of the question
+      }),
       headers,
     });
     assert.equal(response.status, 400);
@@ -506,17 +527,15 @@ describe('Exam and homework assessment with active access restriction', function
   step('try to attach a file to a question when active is false', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
-    const form = {
-      __action: 'attach_file',
-      __csrf_token: context.__csrf_token,
-      __variant_id: context.__variant_id,
-      filename: 'testfile.txt',
-      contents: 'This is the test text',
-    };
-
     const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'attach_file',
+        __csrf_token: context.__csrf_token,
+        __variant_id: context.__variant_id,
+        filename: 'testfile.txt',
+        contents: 'This is the test text',
+      }),
       headers,
     });
     assert.equal(response.status, 403);
@@ -536,20 +555,18 @@ describe('Exam and homework assessment with active access restriction', function
   step('try to attach a file to the assessment when active is false', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
-    const form = {
-      __action: 'attach_file',
-      __csrf_token: context.__csrf_token,
-      __variant_id: context.__variant_id,
-      filename: 'testfile.txt',
-      contents: 'This is the test text',
-    };
-
     const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'attach_file',
+        __csrf_token: context.__csrf_token,
+        __variant_id: context.__variant_id,
+        filename: 'testfile.txt',
+        contents: 'This is the test text',
+      }),
       headers,
     });
-    assert.equal(response.status, 500);
+    assert.equal(response.status, 403);
   });
 
   step('get CSRF token and variant ID for attaching text on question page', async () => {
@@ -567,17 +584,15 @@ describe('Exam and homework assessment with active access restriction', function
   step('try to attach text to a question when active is false', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
-    const form = {
-      __action: 'attach_text',
-      __csrf_token: context.__csrf_token,
-      __variant_id: context.__variant_id,
-      filename: 'testfile.txt',
-      contents: 'This is the test text',
-    };
-
     const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'attach_text',
+        __csrf_token: context.__csrf_token,
+        __variant_id: context.__variant_id,
+        filename: 'testfile.txt',
+        contents: 'This is the test text',
+      }),
       headers,
     });
     assert.equal(response.status, 403);
@@ -597,20 +612,18 @@ describe('Exam and homework assessment with active access restriction', function
   step('try to attach text to the assessment when active is false', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
-    const form = {
-      __action: 'attach_text',
-      __csrf_token: context.__csrf_token,
-      __variant_id: context.__variant_id,
-      filename: 'testfile.txt',
-      contents: 'This is the test text',
-    };
-
     const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'attach_text',
+        __csrf_token: context.__csrf_token,
+        __variant_id: context.__variant_id,
+        filename: 'testfile.txt',
+        contents: 'This is the test text',
+      }),
       headers,
     });
-    assert.equal(response.status, 500);
+    assert.equal(response.status, 403);
   });
 
   step('check that no files or text were attached', async () => {

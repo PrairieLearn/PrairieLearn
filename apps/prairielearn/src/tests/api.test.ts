@@ -53,13 +53,13 @@ describe('API', function () {
       assert.isTrue(res.ok);
       const page$ = cheerio.load(await res.text());
 
-      const button = page$('#generateTokenButton').get(0);
+      const button = page$('[data-testid="generate-token-button"]').get(0);
       assert(button);
 
       // Load the popover content
-      assert.isString(button.attribs['data-content']);
+      assert.isString(button.attribs['data-bs-content']);
 
-      const data$ = cheerio.load(button.attribs['data-content']);
+      const data$ = cheerio.load(button.attribs['data-bs-content']);
 
       // Validate that the CSRF token is present
       const csrfInput = data$('form input[name="__csrf_token"]').get(0);

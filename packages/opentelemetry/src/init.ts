@@ -1,5 +1,5 @@
 import { Metadata, credentials } from '@grpc/grpc-js';
-import { metrics } from '@opentelemetry/api';
+import { type ContextManager, metrics } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
@@ -22,21 +22,21 @@ import {
 import {
   PeriodicExportingMetricReader,
   MeterProvider,
-  PushMetricExporter,
+  type PushMetricExporter,
   ConsoleMetricExporter,
   AggregationTemporality,
 } from '@opentelemetry/sdk-metrics';
 import {
-  SpanExporter,
-  ReadableSpan,
-  SpanProcessor,
+  type SpanExporter,
+  type ReadableSpan,
+  type SpanProcessor,
   SimpleSpanProcessor,
   BatchSpanProcessor,
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
   AlwaysOnSampler,
   AlwaysOffSampler,
-  Sampler,
+  type Sampler,
   ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
@@ -107,14 +107,16 @@ const instrumentations = [
     ],
   }),
   new HttpInstrumentation({
-    ignoreIncomingPaths: [
-      // socket.io requests are generally just long-polling; they don't add
-      // useful information for us.
-      /\/socket.io\//,
-      // We get several of these per second; they just chew through our event quota.
-      // They don't really do anything interesting anyways.
-      /\/pl\/webhooks\/ping/,
-    ],
+    ignoreIncomingRequestHook(req) {
+      return [
+        // socket.io requests are generally just long-polling; they don't add
+        // useful information for us.
+        /\/socket.io\//,
+        // We get several of these per second; they just chew through our event quota.
+        // They don't really do anything interesting anyways.
+        /\/pl\/webhooks\/ping/,
+      ].some((re) => re.test(req.url ?? '/'));
+    },
   }),
   new IORedisInstrumentation(),
   new PgInstrumentation(),
@@ -137,6 +139,7 @@ interface OpenTelemetryConfigEnabled {
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
   openTelemetrySpanProcessor?: 'batch' | 'simple' | SpanProcessor;
+  contextManager?: ContextManager;
   honeycombApiKey?: string | null;
   honeycombDataset?: string | null;
   serviceName?: string;
@@ -178,7 +181,6 @@ function getTraceExporter(config: OpenTelemetryConfig): SpanExporter | null {
         credentials: credentials.createSsl(),
         metadata: getHoneycombMetadata(config),
       });
-      break;
     case 'jaeger':
       return new OTLPTraceExporterHttp();
     default:
@@ -315,7 +317,9 @@ export async function init(config: OpenTelemetryConfig) {
   if (spanProcessor) {
     nodeTracerProvider.addSpanProcessor(spanProcessor);
   }
-  nodeTracerProvider.register();
+  nodeTracerProvider.register({
+    contextManager: config.contextManager,
+  });
   instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
 
   // Save the provider so we can shut it down later.

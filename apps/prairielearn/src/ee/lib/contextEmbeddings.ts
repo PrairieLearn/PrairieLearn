@@ -2,15 +2,15 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 import klaw from 'klaw';
-import { OpenAI } from 'openai';
+import { type OpenAI } from 'openai';
 
 import { loadSqlEquiv, queryRows, queryOptionalRow } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
-import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
+import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
-import { DocumentChunk, buildContextForElementDocs } from './context-parsers/documentation.js';
+import { type DocumentChunk, buildContextForElementDocs } from './context-parsers/documentation.js';
 import { buildContextForQuestion } from './context-parsers/template-questions.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -63,7 +63,7 @@ export async function createEmbedding(client: OpenAI, text: string, openAiUser: 
  * @param job The server job calling this function.
  * @param openAiUser The OpenAI userstring requesting the adding of the document chunk.
  */
-export async function insertDocumentChunk(
+async function insertDocumentChunk(
   client: OpenAI,
   filepath: string,
   doc: DocumentChunk,
@@ -113,6 +113,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
       REPOSITORY_ROOT_PATH,
       'exampleCourse/questions/template',
     );
+    const allowedFilepaths: string[] = [];
     for await (const file of klaw(templateQuestionsPath)) {
       if (file.stats.isDirectory()) continue;
 
@@ -120,27 +121,40 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
       if (filename !== 'question.html') continue;
 
       const fileText = await buildContextForQuestion(path.dirname(file.path));
-      await insertDocumentChunk(
-        client,
-        file.path,
-        { text: fileText, chunkId: '' },
-        job,
-        openAiUserFromAuthn(authnUserId),
-      );
+      if (fileText) {
+        await insertDocumentChunk(
+          client,
+          path.relative(REPOSITORY_ROOT_PATH, file.path),
+          { text: fileText, chunkId: '' },
+          job,
+          openAiUserFromAuthn(authnUserId),
+        );
+        allowedFilepaths.push(path.relative(REPOSITORY_ROOT_PATH, file.path));
+      }
     }
 
     const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
+    allowedFilepaths.push(path.relative(REPOSITORY_ROOT_PATH, elementDocsPath));
     const fileText = await fs.readFile(elementDocsPath, { encoding: 'utf-8' });
     const files = await buildContextForElementDocs(fileText);
     for (const doc of files) {
       await insertDocumentChunk(
         client,
-        elementDocsPath,
+        path.relative(REPOSITORY_ROOT_PATH, elementDocsPath),
         doc,
         job,
         openAiUserFromAuthn(authnUserId),
       );
     }
+
+    await queryRows(
+      sql.delete_unused_doc_chunks,
+      {
+        doc_paths: allowedFilepaths,
+        chunk_ids: files.map((doc) => doc.chunkId).concat(['']),
+      },
+      QuestionGenerationContextEmbeddingSchema,
+    );
   });
   return serverJob.jobSequenceId;
 }

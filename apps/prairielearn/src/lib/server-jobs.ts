@@ -3,6 +3,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { AnsiUp } from 'ansi_up';
 import { execa } from 'execa';
 import _ from 'lodash';
+import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -12,7 +13,8 @@ import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-toke
 
 import { chalk, chalkDim } from './chalk.js';
 import { config } from './config.js';
-import { IdSchema, Job, JobSchema, JobSequenceSchema, UserSchema } from './db-types.js';
+import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { type JobSequenceWithTokens, JobSequenceWithJobsSchema } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -37,12 +39,15 @@ export interface ServerJobResult {
   data: Record<string, any>;
 }
 
-export interface ServerJob {
-  fail(msg: string): never;
+export interface ServerJobLogger {
   error(msg: string): void;
   warn(msg: string): void;
   info(msg: string): void;
   verbose(msg: string): void;
+}
+
+export interface ServerJob extends ServerJobLogger {
+  fail(msg: string): never;
   exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<ServerJobResult>;
   data: Record<string, unknown>;
 }
@@ -55,38 +60,6 @@ export interface ServerJobExecutor {
 }
 
 export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
-
-const JobRowSchema = JobSchema.extend({
-  start_date_formatted: z.string().nullable(),
-  finish_date_formatted: z.string().nullable(),
-  user_uid: UserSchema.shape.uid.nullable(),
-  authn_user_uid: UserSchema.shape.uid.nullable(),
-});
-type JobRow = z.infer<typeof JobRowSchema>;
-
-const JobSequenceWithJobsSchema = JobSequenceSchema.extend({
-  start_date_formatted: z.string().nullable(),
-  finish_date_formatted: z.string().nullable(),
-  user_uid: UserSchema.shape.uid.nullable(),
-  authn_user_uid: UserSchema.shape.uid.nullable(),
-  job_count: z.coerce.number(),
-  jobs: JobRowSchema.array(),
-});
-type JobSequenceWithJobs = z.infer<typeof JobSequenceWithJobsSchema>;
-
-type JobWithToken = JobRow & { token: string };
-export type JobSequenceWithTokens = Omit<JobSequenceWithJobs, 'jobs'> & {
-  token: string;
-  jobs: JobWithToken[];
-};
-
-type JobWithFormattedOutput = Omit<JobWithToken, 'output'> & {
-  output: string;
-  output_raw: Job['output'];
-};
-export type JobSequenceWithFormattedOutput = Omit<JobSequenceWithTokens, 'jobs'> & {
-  jobs: JobWithFormattedOutput[];
-};
 
 /**
  * Store currently active job information in memory. This is used
@@ -116,6 +89,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   private started = false;
   private finished = false;
   public output = '';
+  private lastSent = Date.now();
 
   constructor(jobSequenceId: string, jobId: string) {
     this.jobSequenceId = jobSequenceId;
@@ -148,7 +122,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     args: string[] = [],
     options: ServerJobExecOptions,
   ): Promise<ServerJobResult> {
-    this.addToOutput(chalk.blueBright(`Command: ${file} ${args.join(' ')}\n`));
+    this.addToOutput(chalk.blueBright(`Command: ${shlex.join([file, ...args])}\n`));
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
     const start = performance.now();
@@ -244,17 +218,27 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   private addToOutput(msg: string) {
     this.output += msg;
-    const ansiUp = new AnsiUp();
-    const ansifiedOutput = ansiUp.ansi_to_html(this.output);
-    socketServer.io
-      ?.to('job-' + this.jobId)
-      .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
+    this.flush();
+  }
+
+  private flush(force = false) {
+    if (Date.now() - this.lastSent > 1000 || force) {
+      const ansiUp = new AnsiUp();
+      const ansifiedOutput = ansiUp.ansi_to_html(this.output);
+      socketServer.io
+        ?.to('job-' + this.jobId)
+        .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
+      this.lastSent = Date.now();
+    }
   }
 
   private async finish(err: any = undefined) {
     // Guard against handling job finish more than once.
     if (this.finished) return;
     this.finished = true;
+
+    // Force a send on the current output to ensure all messages are shown.
+    this.flush(true);
 
     // A `ServerJobAbortError` is thrown by the `fail` method. We won't print
     // any details about the error object itself, as `fail` will have already
@@ -503,25 +487,5 @@ export async function getJobSequence(
       const jobTokenData = { jobId: job.id.toString() };
       return { ...job, token: generateSignedToken(jobTokenData, config.secretKey) };
     }),
-  };
-}
-
-/**
- * Resolves with a job sequence, where each job's output has been turned into
- * markup with `ansi_up`.
- */
-export async function getJobSequenceWithFormattedOutput(
-  job_sequence_id: string,
-  course_id: string | null,
-): Promise<JobSequenceWithFormattedOutput> {
-  const jobSequence = await getJobSequence(job_sequence_id, course_id);
-  const ansiup = new AnsiUp();
-  return {
-    ...jobSequence,
-    jobs: jobSequence.jobs.map((job) => ({
-      ...job,
-      output_raw: job.output,
-      output: job.output ? ansiup.ansi_to_html(job.output) : '',
-    })),
   };
 }

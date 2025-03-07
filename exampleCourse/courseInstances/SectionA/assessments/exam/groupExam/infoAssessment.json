@@ -1,111 +1,75 @@
 {
-    "uuid": "431ab712-5973-48b5-a864-c9a61d6ed70d",
-    "type": "Exam",
-    "title": "Group Work Exam Example",
-    "set": "Exam",
-    "number": "5",
-    "groupMaxSize": 5,
-    "groupMinSize": 1,
-    "groupWork": true,
-    "studentGroupCreate": true,
-    "studentGroupJoin": true,
-    "studentGroupLeave": true,
-    "groupRoles": [
+  "uuid": "431ab712-5973-48b5-a864-c9a61d6ed70d",
+  "type": "Exam",
+  "title": "Group Work Exam Example",
+  "set": "Exam",
+  "number": "5",
+  "groupMaxSize": 5,
+  "groupMinSize": 1,
+  "groupWork": true,
+  "studentGroupCreate": true,
+  "studentGroupJoin": true,
+  "studentGroupLeave": true,
+  "groupRoles": [
+    { "name": "Manager", "minimum": 1, "maximum": 1, "canAssignRoles": true },
+    { "name": "Recorder", "minimum": 1, "maximum": 1 },
+    { "name": "Reflector", "minimum": 1, "maximum": 1 },
+    { "name": "Contributor" }
+  ],
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }],
+  "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
+  "canSubmit": ["Recorder"],
+  "zones": [
+    {
+      "title": "Fundamental questions",
+      "questions": [
         {
-            "name": "Manager",
-            "minimum": 1,
-            "maximum": 1,
-            "canAssignRoles": true
+          "numberChoose": 1,
+          "points": [25, 24, 23, 22, 21, 20],
+          "alternatives": [{ "id": "demo/calculation" }, { "id": "demo/matrixAlgebra" }]
         },
         {
-            "name": "Recorder",
-            "minimum": 1,
-            "maximum": 1
-        },
-        {
-            "name": "Reflector",
-            "minimum": 1,
-            "maximum": 1
-        },
-        {
-            "name": "Contributor"
+          "numberChoose": 1,
+          "points": [25, 24, 23, 22, 21, 20],
+          "alternatives": [{ "id": "demo/fixedCheckbox" }, { "id": "demo/randomPlot" }]
         }
-    ],
-    "allowAccess": [
+      ]
+    },
+    {
+      "title": "Intermediate questions",
+      "questions": [
         {
-            "mode": "Public",
-            "credit": 100,
-            "timeLimitMin": 50,
-            "showClosedAssessment": false
-       }
-    ],
-    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-    "canSubmit": ["Recorder"],
-    "zones": [
-        {
-            "title": "Fundamental questions",
-            "questions": [
-                {
-                    "numberChoose": 1,
-                    "points": [25, 24, 23, 22, 21, 20],
-                    "alternatives": [
-                        {"id": "demo/calculation"},
-                        {"id": "demo/matrixAlgebra"}
-                    ]
-                },
-                {
-                    "numberChoose": 1,
-                    "points": [25, 24, 23, 22, 21, 20],
-                    "alternatives": [
-                        {"id": "demo/fixedCheckbox"},
-                        {"id": "demo/randomPlot"}
-                    ]
-                }
-            ]
+          "numberChoose": 1,
+          "points": [10, 9, 8, 7, 6],
+          "alternatives": [{ "id": "demo/matrixComplexAlgebra" }, { "id": "demo/randomCheckbox" }]
         },
         {
-            "title": "Intermediate questions",
-            "questions": [
-                {
-                    "numberChoose": 1,
-                    "points": [10, 9, 8, 7, 6],
-                    "alternatives": [
-                        {"id": "demo/matrixComplexAlgebra"},
-                        {"id": "demo/randomCheckbox"}
-                    ]
-                },
-                {
-                    "numberChoose": 1,
-                    "points": [10, 9, 8, 7, 6],
-                    "alternatives": [
-                        {"id": "demo/randomMultipleChoice"}
-                    ]
-                }
-           ]
-        },
-        {
-            "title": "Advanced questions",
-            "questions": [
-                {
-                    "numberChoose": 1,
-                    "points": [5, 4, 3, 2, 1],
-                    "alternatives": [
-                        {"id": "demo/randomDataFrame"},
-                        {"id": "template/symbolic-input/random"}
-                    ]
-                },
-                {
-                    "numberChoose": 1,
-                    "points": [5, 4, 3, 2, 1],
-                    "canView": ["Reflector"],
-                    "canSubmit": ["Reflector"],
-                    "alternatives": [
-                        {"id": "demo/custom/element"},
-                        {"id": "demo/custom/gradeFunction"}
-                    ]
-                }
-            ]
+          "numberChoose": 1,
+          "points": [10, 9, 8, 7, 6],
+          "alternatives": [{ "id": "demo/randomMultipleChoice" }]
         }
-    ],
-    "text": "For this quiz you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+      ]
+    },
+    {
+      "title": "Advanced questions",
+      "questions": [
+        {
+          "numberChoose": 1,
+          "points": [5, 4, 3, 2, 1],
+          "alternatives": [
+            { "id": "demo/randomDataFrame" },
+            { "id": "template/symbolic-input/random" }
+          ]
+        },
+        {
+          "numberChoose": 1,
+          "points": [5, 4, 3, 2, 1],
+          "canView": ["Reflector"],
+          "canSubmit": ["Reflector"],
+          "alternatives": [{ "id": "demo/custom/element" }, { "id": "demo/custom/gradeFunction" }]
+        }
+      ]
+    }
+  ],
+  "text": "For this quiz you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
 }

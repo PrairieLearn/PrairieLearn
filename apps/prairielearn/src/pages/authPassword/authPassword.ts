@@ -1,4 +1,3 @@
-// @ts-check
 import { Router } from 'express';
 
 import { generateSignedToken } from '@prairielearn/signed-token';

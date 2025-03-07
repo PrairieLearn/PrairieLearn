@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
 import { Scorebar } from '../../src/components/Scorebar.html.js';
-import { User } from '../../src/lib/db-types.js';
+import { type User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
 import type {
   InstanceQuestionRow,
@@ -19,7 +19,7 @@ onDocumentReady(() => {
     instancesUrl,
     groupWork,
     maxAutoPoints,
-    botGradingEnabled,
+    aiGradingEnabled,
     courseStaff,
     csrfToken,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
@@ -30,6 +30,15 @@ onDocumentReady(() => {
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#grading-table').bootstrapTable({
+    // TODO: If we can pick up the following change, we can drop the `icons` config here:
+    // https://github.com/wenzhixin/bootstrap-table/pull/7190
+    iconsPrefix: 'fa',
+    icons: {
+      refresh: 'fa-sync',
+      autoRefresh: 'fa-clock',
+      columns: 'fa-table-list',
+    },
+
     classes: 'table table-sm table-bordered',
     url: instancesUrl,
     responseHandler: (res: { instance_questions: InstanceQuestionRow[] }) =>
@@ -46,22 +55,22 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'botGrade'],
-    theadClasses: 'thead-light',
+    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'aiGrade'],
+    theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
     buttons: {
-      botGrade: {
-        text: 'Bot Grade All',
+      aiGrade: {
+        text: 'AI Grade All',
         icon: 'fa-pen',
-        render: botGradingEnabled,
+        render: aiGradingEnabled,
         attributes: {
-          id: 'js-bot-grade-button',
-          title: 'Bot grade all instances',
+          id: 'js-ai-grade-button',
+          title: 'AI grade all instances',
         },
         event: () => {
-          const form = document.getElementById('bot-grading') as HTMLFormElement;
+          const form = document.getElementById('ai-grading') as HTMLFormElement;
           form?.submit();
         },
       },
@@ -95,25 +104,36 @@ onDocumentReady(() => {
     onCheckAll: updateGradingTagButton,
     onCheckSome: updateGradingTagButton,
     onCreatedControls: () => {
+      $('#grading-table th[data-field="auto_points"] .filter-control input').tooltip({
+        title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
+        html: true,
+      });
+
+      $('#grading-table th[data-field="manual_points"] .filter-control input').tooltip({
+        title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
+        html: true,
+      });
+
+      // This column is hidden by default, but can be shown by the user.
       $('#grading-table th[data-field="points"] .filter-control input').tooltip({
         title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
         html: true,
       });
+
       $('#grading-table th[data-field="score_perc"] .filter-control input').tooltip({
         title: 'hint: use <code>&lt;50</code>, or <code>&gt;0</code>',
         html: true,
       });
     },
     onPreBody: () => {
-      $('#grading-table [data-toggle="popover"]').popover('dispose');
-      $('#grading-table [data-toggle="tooltip"]').tooltip('dispose');
+      $('#grading-table [data-bs-toggle="popover"]').popover('dispose');
     },
     onPostBody: () => {
       updateGradingTagButton();
-      $('#grading-table [data-toggle="popover"]')
-        .popover({ sanitize: false })
-        .on('shown.bs.popover', updatePointsPopoverHandlers);
-      $('#grading-table [data-toggle=tooltip]').tooltip({ html: true });
+      $('#grading-table [data-bs-toggle="popover"]').on(
+        'shown.bs.popover',
+        updatePointsPopoverHandlers,
+      );
     },
     columns: [
       [
@@ -125,20 +145,39 @@ onDocumentReady(() => {
           sortable: true,
           switchable: false,
           formatter: (_value: number, row: InstanceQuestionRowWithIndex) =>
-            html`<a
+            html`
+              <a
                 href="${urlPrefix}/assessment/${row.assessment_question
                   .assessment_id}/manual_grading/instance_question/${row.id}"
+                >Instance ${row.index + 1}</a
               >
-                Instance ${row.index + 1}
-                ${row.open_issue_count
-                  ? html`<span class="badge badge-pill badge-danger">${row.open_issue_count}</span>`
-                  : ''}
-              </a>
+              ${row.open_issue_count
+                ? html`
+                    <a
+                      href="#"
+                      class="badge rounded-pill text-bg-danger"
+                      data-bs-toggle="tooltip"
+                      data-bs-title="Instance question has ${row.open_issue_count} open ${row.open_issue_count >
+                      1
+                        ? 'issues'
+                        : 'issue'}"
+                    >
+                      ${row.open_issue_count}
+                    </a>
+                  `
+                : ''}
               ${row.assessment_open
-                ? html`<span title="Assessment instance is still open" data-toggle="tooltip">
-                    <i class="fas fa-exclamation-triangle text-warning"></i>
-                  </span>`
-                : ''}`.toString(),
+                ? html`
+                    <a
+                      href="#"
+                      data-bs-toggle="tooltip"
+                      data-bs-title="Assessment instance is still open"
+                    >
+                      <i class="fas fa-exclamation-triangle text-warning"></i>
+                    </a>
+                  `
+                : ''}
+            `.toString(),
         },
         {
           field: 'user_or_group_name',
@@ -263,7 +302,7 @@ async function pointsFormEventListener(this: HTMLFormElement, event: SubmitEvent
     $('#grading-conflict-modal')
       .find('a.conflict-details-link')
       .attr('href', data.conflict_details_url);
-    $('#grading-conflict-modal').modal({});
+    $('#grading-conflict-modal').modal('show');
   }
 }
 
@@ -280,14 +319,15 @@ function gradingTagDropdown(courseStaff: User[]) {
   return html`
     <div class="dropdown btn-group">
       <button
+        type="button"
         class="btn btn-secondary dropdown-toggle grading-tag-button"
-        data-toggle="dropdown"
+        data-bs-toggle="dropdown"
         name="status"
         disabled
       >
         <i class="fas fa-tags"></i> Tag for grading
       </button>
-      <div class="dropdown-menu dropdown-menu-right">
+      <div class="dropdown-menu dropdown-menu-end">
         <div class="dropdown-header">Assign for grading</div>
         ${courseStaff?.map(
           (grader) => html`
@@ -354,7 +394,6 @@ function pointsFormatter(
 ) {
   const points = row[field];
   const maxPoints = row.assessment_question[`max_${field}`];
-  const buttonId = `editQuestionPoints_${field}_${row.id}`;
 
   return html`${formatPoints(points ?? 0)}
     <small>/<span class="text-muted">${maxPoints ?? 0}</span></small>
@@ -365,7 +404,6 @@ function pointsFormatter(
           assessment_question: row.assessment_question,
           urlPrefix: urlPrefix ?? '',
           csrfToken: csrfToken ?? '',
-          buttonId,
         })
       : ''}`;
 }
@@ -377,8 +415,6 @@ function scorebarFormatter(
   urlPrefix: string,
   csrfToken: string,
 ) {
-  const buttonId = `editQuestionScorePerc${row.id}`;
-
   return html`<div class="d-inline-block align-middle">
       ${score == null ? '' : Scorebar(score, { minWidth: '10em' })}
     </div>
@@ -389,7 +425,6 @@ function scorebarFormatter(
           assessment_question: row.assessment_question,
           urlPrefix: urlPrefix ?? '',
           csrfToken: csrfToken ?? '',
-          buttonId,
         })
       : ''}`.toString();
 }

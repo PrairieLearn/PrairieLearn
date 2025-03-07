@@ -3,10 +3,14 @@ import asyncHandler from 'express-async-handler';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import logPageView from '../../middlewares/logPageView.js';
+
 import { StudentAssessments, StudentAssessmentsRowSchema } from './studentAssessments.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
+
+router.use(logPageView('studentAssessments'));
 
 router.get(
   '/',

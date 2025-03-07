@@ -1,24 +1,10 @@
-<script>
-    $(function(){
-        $('#pl-matching-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-dropdown-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
-<style>
-#pl-matching-{{uuid}} .pl-matching-options ol > li:before {
-    content: counter(item, {{counter_type}}) ".";
-}
-</style>
 {{#question}}
-<div id="pl-matching-{{uuid}}" class="pl-matching-container pl-matching-container-{{options_placement}}">
+<div class="pl-matching-container pl-matching-container-{{options_placement}}">
 <div class="pl-matching-statements">
 {{#statements}}
     <div class="pl-matching-statement">
         <div class="pl-matching-statement-select">
-            <select name="{{name}}" class="custom-select" {{^editable}}disabled{{/editable}}>
+            <select name="{{name}}" class="form-select" {{^editable}}disabled{{/editable}}>
                 {{#options}}
                     <option {{selected}} value="{{index}}">{{value}}</option>
                 {{/options}}
@@ -30,10 +16,10 @@
         {{#display_score_badge}}
         <div>
             {{#correct}}
-                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
+                <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>
             {{/correct}}
             {{^correct}}
-                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
+                <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
             {{/correct}}
         </div>
         {{/display_score_badge}}
@@ -44,19 +30,19 @@
 <div class="pl-matching-options">
 <ol>
 {{#options}}
-    <li class="pl-matching-option">{{{html}}}</li>
+    <li class="pl-matching-option" style="--pl-matching-counter-type: {{counter_type}}">{{{html}}}</li>
 {{/options}}
 </ol>
 </div>
 {{/no_counters}}
 </div>
-{{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-{{#partial}}&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/question}}
 
 {{#submission}}
-<div id="pl-matching-{{uuid}}" style="display: flex;">
+<div style="display: flex;">
 <div class="pl-matching-statements">
 {{#statements}}
     <div class="pl-matching-statement">
@@ -68,15 +54,15 @@
         </div>
         {{#parse_error}}
             <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+            <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto"  data-bs-toggle="popover" data-bs-html="true" style="margin-left: 5px" title="Format Error" data-bs-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
         {{/parse_error}}
         {{#display_score_badge}}
         <div>
             {{#correct}}
-                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
+                <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>
             {{/correct}}
             {{^correct}}
-                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
+                <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
             {{/correct}}
         </div>
         {{/display_score_badge}}
@@ -87,7 +73,7 @@
 {{/submission}}
 
 {{#answer}}
-<div id="pl-matching-{{uuid}}" style="display: flex;">
+<div style="display: flex;">
 <div class="pl-matching-statements">
 {{#statements}}
     <div class="pl-matching-statement">

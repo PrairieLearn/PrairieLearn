@@ -72,7 +72,7 @@ export function getCheckedSignedTokenData(
     let tokenDate;
     try {
       tokenDate = new Date(parseInt(tokenDateString, 36));
-    } catch (e) {
+    } catch {
       debug(`getCheckedSignedTokenData(): FAIL - could not parse date: ${tokenDateString}`);
       return null;
     }
@@ -90,13 +90,13 @@ export function getCheckedSignedTokenData(
   let tokenDataJSON, tokenData;
   try {
     tokenDataJSON = base64url.default.decode(tokenDataString);
-  } catch (e) {
+  } catch {
     debug(`getCheckedSignedTokenData(): FAIL - could not base64 decode: ${tokenDateString}`);
     return null;
   }
   try {
     tokenData = JSON.parse(tokenDataJSON);
-  } catch (e) {
+  } catch {
     debug(`getCheckedSignedTokenData(): FAIL - could not parse JSON: ${tokenDataJSON}`);
     return null;
   }

@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as async from 'async';
 // Use slim export, which relies on htmlparser2 instead of parse5. This provides
 // support for questions with legacy renderer.
-import * as cheerio from 'cheerio/lib/slim';
+import * as cheerio from 'cheerio/slim';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import _ from 'lodash';
@@ -18,6 +18,7 @@ import { logger } from '@prairielearn/logger';
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 
 import * as assets from '../lib/assets.js';
+import { canonicalLogger } from '../lib/canonical-logger.js';
 import * as chunks from '../lib/chunks.js';
 import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
@@ -373,7 +374,7 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
 
   try {
     await fs.access(fullFilename, fs.constants.R_OK);
-  } catch (err) {
+  } catch {
     // server.py does not exist
     return { result: defaultServerRet(phase, data, html, context), output: '' };
   }
@@ -409,7 +410,11 @@ async function execTemplate(htmlFilename, data) {
   let html = mustache.render(rawFile, data);
   html = markdown.processQuestion(html);
   const $ = cheerio.load(html, {
-    recognizeSelfClosing: true,
+    xml: {
+      // This is necessary for Cheerio to use `htmlparser2` instead of `parse5`.
+      xmlMode: false,
+      recognizeSelfClosing: true,
+    },
   });
   return { html, $ };
 }
@@ -465,7 +470,7 @@ function checkData(data, origData, phase) {
   /**************************************************************************************************************************************/
   //              property                 type       presentPhases                         changePhases
   /**************************************************************************************************************************************/
-  err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade'])
+  err =   checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
        || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
        || checkProp('variant_seed',          'integer', allPhases,                            [])
        || checkProp('options',               'object',  allPhases,                            [])
@@ -520,7 +525,7 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
       context.question.directory,
       'question.html',
       phase,
-      [data, pythonContext],
+      [pythonContext, data],
     );
     result = res.result;
     output = res.output;
@@ -547,7 +552,7 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
 }
 
 async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, html) {
-  const origData = JSON.parse(JSON.stringify(data));
+  const origData = structuredClone(data);
   const renderedElementNames = [];
   const courseIssues = [];
   let fileData = Buffer.from('');
@@ -674,7 +679,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
 }
 
 async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, $) {
-  const origData = JSON.parse(JSON.stringify(data));
+  const origData = structuredClone(data);
   const renderedElementNames = [];
   const courseIssues = [];
   let fileData = Buffer.from('');
@@ -783,7 +788,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
         }
       });
     });
-  } catch (err) {
+  } catch {
     // Black-hole any errors, they were (should have been) handled by course issues
   }
 
@@ -803,9 +808,9 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
  * @param {QuestionProcessingContext} context
  */
 async function processQuestionHtml(phase, codeCaller, data, context) {
-  const origData = JSON.parse(JSON.stringify(data));
-
-  const checkErr = checkData(data, origData, phase);
+  // We deliberately reuse the same `data` object for both the "new" and "original"
+  // arguments to avoid an unnecessary deep clone and comparison.
+  const checkErr = checkData(data, data, phase);
   if (checkErr) {
     return {
       courseIssues: [
@@ -888,7 +893,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
 
 async function processQuestionServer(phase, codeCaller, data, html, fileData, context) {
   const courseIssues = [];
-  const origData = JSON.parse(JSON.stringify(data));
+  const origData = structuredClone(data);
 
   const checkErrBefore = checkData(data, origData, phase);
   if (checkErrBefore) {
@@ -975,43 +980,51 @@ async function processQuestionServer(phase, codeCaller, data, html, fileData, co
  */
 async function processQuestion(phase, codeCaller, data, context) {
   const meter = metrics.getMeter('prairielearn');
-  return instrumentedWithMetrics(meter, `freeform.${phase}`, async () => {
-    if (phase === 'generate') {
-      return processQuestionServer(phase, codeCaller, data, '', Buffer.from(''), context);
-    } else {
-      const {
-        courseIssues,
-        data: htmlData,
-        html,
-        fileData,
-        renderedElementNames,
-      } = await processQuestionHtml(phase, codeCaller, data, context);
-      const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
-      if (hasFatalError) {
-        return {
+  return instrumentedWithMetrics(
+    meter,
+    `freeform.${phase}`,
+    async () => {
+      if (phase === 'generate') {
+        return processQuestionServer(phase, codeCaller, data, '', Buffer.from(''), context);
+      } else {
+        const {
           courseIssues,
-          data,
+          data: htmlData,
           html,
           fileData,
           renderedElementNames,
+        } = await processQuestionHtml(phase, codeCaller, data, context);
+        const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
+        if (hasFatalError) {
+          return {
+            courseIssues,
+            data,
+            html,
+            fileData,
+            renderedElementNames,
+          };
+        }
+        const {
+          courseIssues: serverCourseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+        } = await processQuestionServer(phase, codeCaller, htmlData, html, fileData, context);
+        courseIssues.push(...serverCourseIssues);
+        return {
+          courseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+          renderedElementNames,
         };
       }
-      const {
-        courseIssues: serverCourseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-      } = await processQuestionServer(phase, codeCaller, htmlData, html, fileData, context);
-      courseIssues.push(...serverCourseIssues);
-      return {
-        courseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-        renderedElementNames,
-      };
-    }
-  });
+    },
+    (duration) => {
+      canonicalLogger.increment(`freeform.${phase}.count`, 1);
+      canonicalLogger.increment(`freeform.${phase}.duration`, duration);
+    },
+  );
 }
 
 /**
@@ -1134,20 +1147,22 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
   }
 
   const data = {
-    params: _.get(variant, 'params', {}),
-    correct_answers: _.get(variant, 'true_answer', {}),
-    submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
+    // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
+    // so we'll use the submission's values if they exist.
+    params: submission?.params ?? variant.params ?? {},
+    correct_answers: submission?.true_answer ?? variant.true_answer ?? {},
+    submitted_answers: submission?.submitted_answer ?? {},
     format_errors: submission?.format_errors ?? {},
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
     variant_seed: parseInt(variant.variant_seed ?? '0', 36),
-    options: _.get(variant, 'options') ?? {},
-    raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
+    options: variant.options ?? {},
+    raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
     manual_grading: !!locals.manualGradingInterface,
     panel,
-    num_valid_submissions: _.get(variant, 'num_tries', null),
+    num_valid_submissions: variant.num_tries ?? null,
   };
 
   // This URL is submission-specific, so we have to compute it here (that is,
@@ -1715,8 +1730,10 @@ export async function grade(submission, variant, question, question_course) {
 
     const context = await getContext(question, question_course);
     let data = {
-      params: variant.params,
-      correct_answers: variant.true_answer,
+      // Note that `params` and `true_answer` can change during `parse()`, so we
+      // use the submission's values when grading.
+      params: submission.params,
+      correct_answers: submission.true_answer,
       submitted_answers: submission.submitted_answer,
       format_errors: submission.format_errors,
       partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
@@ -1863,7 +1880,7 @@ async function getCacheKey(course, data, context) {
     const commitHash = await getOrUpdateCourseCommitHash(course);
     const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
     return `question:${commitHash}-${dataHash}`;
-  } catch (err) {
+  } catch {
     return null;
   }
 }

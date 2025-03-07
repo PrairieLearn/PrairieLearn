@@ -1,12 +1,11 @@
 import { differenceInMilliseconds } from 'date-fns';
 import { z } from 'zod';
 
-import { HtmlValue, html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
   GradingJobSchema,
-  GradingJobStatusSchema,
   SubmissionSchema,
   type AssessmentQuestion,
   type GradingJob,
@@ -14,6 +13,7 @@ import {
   type Question,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
+import { gradingJobStatus } from '../models/grading-job.js';
 
 import { Modal } from './Modal.html.js';
 import type { QuestionContext } from './QuestionContainer.types.js';
@@ -30,7 +30,6 @@ const detailedSubmissionColumns = {
 
 export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
   grading_job: GradingJobSchema.nullable(),
-  grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string().nullable(),
   user_uid: z.string().nullable(),
 });
@@ -82,7 +81,7 @@ export function SubmissionPanel({
   return html`
     <div
       data-testid="submission-with-feedback"
-      data-grading-job-status="${submission.grading_job_status}"
+      data-grading-job-status="${gradingJobStatus(submission.grading_job)}"
       data-grading-job-id="${submission.grading_job?.id}"
       id="submission-${submission.id}"
     >
@@ -90,20 +89,27 @@ export function SubmissionPanel({
         ? html`
             <div class="card mb-4 grading-block border-info">
               <div
-                class="card-header bg-info text-white d-flex submission-header ${!expanded
+                class="card-header bg-info text-white d-flex align-items-center submission-header ${!expanded
                   ? ' collapsed'
                   : ''}"
-                data-toggle="collapse"
-                data-target="#submission-feedback-${submission.id}-body"
               >
-                <div class="mr-auto">
+                <div class="me-auto">
                   Feedback from the Course Staff
                   ${submissionCount > 1
                     ? `(for submitted answer ${submission.submission_number})`
                     : ''}
                 </div>
-                <button type="button" class="expand-icon-container btn btn-outline-light btn-sm">
-                  <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+                <button
+                  type="button"
+                  class="expand-icon-container btn btn-outline-light btn-sm ${!expanded
+                    ? 'collapsed'
+                    : ''}"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#submission-feedback-${submission.id}-body"
+                  aria-expanded="${expanded ? 'true' : 'false'}"
+                  aria-controls="submission-feedback-${submission.id}-body"
+                >
+                  <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
                 </button>
               </div>
               <div
@@ -145,14 +151,14 @@ export function SubmissionPanel({
                                     ? html`
                                         <button
                                           type="button"
-                                          class="btn btn-xs text-info"
-                                          data-toggle="popover"
-                                          data-content="${item.explanation_rendered}"
-                                          data-html="true"
+                                          class="btn btn-xs btn-ghost"
+                                          data-bs-toggle="popover"
+                                          data-bs-content="${item.explanation_rendered}"
+                                          data-bs-html="true"
                                           data-testid="rubric-item-explanation"
                                         >
                                           <i class="fas fa-circle-info"></i>
-                                          <span class="sr-only">Details</span>
+                                          <span class="visually-hidden">Details</span>
                                         </button>
                                       `
                                     : ''}
@@ -193,17 +199,13 @@ export function SubmissionPanel({
         : ''}
 
       <div class="card mb-4" data-testid="submission-block">
-        <div
-          class="card-header bg-light text-dark d-flex align-items-center submission-header ${!expanded
-            ? ' collapsed'
-            : ''}"
-          data-toggle="collapse"
-          data-target="#submission-${submission.id}-body"
-        >
-          <div class="mr-2">
+        <div class="card-header bg-light text-dark d-flex align-items-center submission-header">
+          <div class="me-2">
             <div>
-              <span class="mr-2">
-                Submitted answer ${submissionCount > 1 ? submission.submission_number : ''}
+              <span class="me-2 d-flex align-items-center">
+                <h2 class="h6 fw-normal mb-0">
+                  Submitted answer ${submissionCount > 1 ? submission.submission_number : ''}
+                </h2>
               </span>
             </div>
             <span class="small">
@@ -212,7 +214,7 @@ export function SubmissionPanel({
                 : `${submission.user_uid} submitted at ${submission.formatted_date}`}
             </span>
           </div>
-          <div class="mr-auto" data-testid="submission-status">
+          <div class="me-auto" data-testid="submission-status">
             ${SubmissionStatusBadge({
               submission,
               question,
@@ -223,13 +225,25 @@ export function SubmissionPanel({
           </div>
           <button
             type="button"
-            class="btn btn-outline-secondary btn-sm mr-2"
+            class="btn btn-outline-dark btn-sm ms-2 me-2"
             data-submission-id="${submission.id}"
+            data-bs-toggle="modal"
+            data-bs-target="#submissionInfoModal-${submission.id}"
+            aria-label="Submission info"
           >
             <i class="fa fa-info-circle fa-fw"></i>
           </button>
-          <button type="button" class="expand-icon-container btn btn-outline-secondary btn-sm">
-            <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+          <button
+            type="button"
+            class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap ${!expanded
+              ? 'collapsed'
+              : ''}"
+            data-bs-toggle="collapse"
+            data-bs-target="#submission-${submission.id}-body"
+            aria-expanded="${expanded ? 'true' : 'false'}"
+            aria-controls="submission-${submission.id}-body"
+          >
+            <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
           </button>
         </div>
 
@@ -240,7 +254,7 @@ export function SubmissionPanel({
             : ''}"
           data-submission-id="${submission.id}"
           id="submission-${submission.id}-body"
-          ${submissionHtml === undefined && question.type === 'Freeform'
+          ${question.type === 'Freeform'
             ? html`
                 data-dynamic-render-url="${renderUrlPrefix}/variant/${variant_id}/submission/${submission.id}"
               `
@@ -250,7 +264,7 @@ export function SubmissionPanel({
             ${submissionHtml == null
               ? html`
                   <div class="spinner-border" role="status">
-                    <span class="sr-only">Loading...</span>
+                    <span class="visually-hidden">Loading...</span>
                   </div>
                 `
               : unsafeHtml(submissionHtml)}
@@ -264,16 +278,6 @@ export function SubmissionPanel({
           course_instance_id,
         })}
       </div>
-
-      <script>
-        $(function () {
-          $('button[data-submission-id="${submission.id}"]').on('click', function (e) {
-            // Prevent this click from also expanding the submission
-            $('#submissionInfoModal-${submission.id}').modal('show');
-            e.stopPropagation();
-          });
-        });
-      </script>
     </div>
   `;
 }
@@ -306,11 +310,11 @@ function SubmissionStatusBadge({
       if (!instance_question || instance_question.requires_manual_grading) {
         if (!submission.gradable && !assessment_question?.max_auto_points) {
           manualGradingBadge = html`
-            <span class="badge badge-danger">invalid, not gradable</span><br />
+            <span class="badge text-bg-danger">invalid, not gradable</span><br />
           `;
         } else {
           manualGradingBadge = html`
-            <span class="badge badge-secondary">manual grading: waiting for grading</span><br />
+            <span class="badge text-bg-secondary">manual grading: waiting for grading</span><br />
           `;
         }
       } else {
@@ -347,62 +351,62 @@ function SubmissionStatusBadge({
       if (submission.grading_requested_at == null) {
         if (submission.gradable) {
           autoGradingBadge = html`
-            <span class="badge badge-info">${autoStatusPrefix} saved, not graded</span>
+            <span class="badge text-bg-info">${autoStatusPrefix} saved, not graded</span>
           `;
         } else {
           autoGradingBadge = html`
-            <span class="badge badge-danger">${autoStatusPrefix} invalid, not gradable</span>
+            <span class="badge text-bg-danger">${autoStatusPrefix} invalid, not gradable</span>
           `;
         }
       } else if (question.grading_method === 'External') {
         if (submission.gradable) {
           autoGradingBadge = html`
-            <span class="badge badge-secondary">
+            <span class="badge text-bg-secondary">
               ${autoStatusPrefix}
               <span id="grading-status-${submission.id}"></span>
             </span>
           `;
         } else {
           autoGradingBadge = html`
-            <span class="badge badge-danger">${autoStatusPrefix} invalid, not gradable</span>
+            <span class="badge text-bg-danger">${autoStatusPrefix} invalid, not gradable</span>
           `;
         }
       } else {
         autoGradingBadge = html`
-          <span class="badge badge-secondary">${autoStatusPrefix} waiting for grading</span>
+          <span class="badge text-bg-secondary">${autoStatusPrefix} waiting for grading</span>
         `;
       }
     } else if (!submission.gradable) {
       // If an error ocurred during grading, there will be a `graded_at` timestamp but the submission will be marked ungradable.
       autoGradingBadge = html`
-        <span class="badge badge-danger">${autoStatusPrefix} invalid, not gradable</span>
+        <span class="badge text-bg-danger">${autoStatusPrefix} invalid, not gradable</span>
       `;
     } else if (submission.score === 1) {
       if (submission.v2_score != null && submission.v2_score < 1) {
         autoGradingBadge = html`
-          <span class="badge badge-success">
+          <span class="badge text-bg-success">
             ${autoStatusPrefix} 100% (rounded up from ${Math.floor(submission.v2_score * 100)}%)
           </span>
         `;
       } else {
         autoGradingBadge = html`
-          <span class="badge badge-success">${autoStatusPrefix} 100%</span>
+          <span class="badge text-bg-success">${autoStatusPrefix} 100%</span>
         `;
       }
     } else if (submission.score != null && submission.score > 0) {
       autoGradingBadge = html`
-        <span class="badge badge-warning">
+        <span class="badge text-bg-warning">
           ${autoStatusPrefix} ${Math.floor(submission.score * 100)}%
         </span>
       `;
     } else if (submission.v2_score != null && submission.v2_score >= 0.01) {
       autoGradingBadge = html`
-        <span class="badge badge-danger">
+        <span class="badge text-bg-danger">
           ${autoStatusPrefix} 0% (rounded down from ${Math.floor(submission.v2_score * 100)}%)
         </span>
       `;
     } else {
-      autoGradingBadge = html`<span class="badge badge-danger">${autoStatusPrefix} 0%</span>`;
+      autoGradingBadge = html`<span class="badge text-bg-danger">${autoStatusPrefix} 0%</span>`;
     }
   }
 
@@ -427,7 +431,10 @@ function SubmissionInfoModal({
     body: !gradingJobStats
       ? html`<p>This submission has not been graded.</p>`
       : html`
-          <table class="table table-sm table-borderless two-column-description mb-0">
+          <table
+            class="table table-sm table-borderless two-column-description mb-0"
+            aria-label="Submission info"
+          >
             <tbody>
               <tr>
                 <th>Submission time</th>
@@ -436,23 +443,23 @@ function SubmissionInfoModal({
               ${question.grading_method === 'External'
                 ? html`
                     <tr>
-                      <th><span class="text-dark mr-2">&bull;</span>Submit duration</th>
+                      <th><span class="text-dark me-2">&bull;</span>Submit duration</th>
                       <td>${gradingJobStats.submitDuration}</td>
                     </tr>
                     <tr>
-                      <th><span class="text-warning mr-2">&bull;</span>Queue duration</th>
+                      <th><span class="text-warning me-2">&bull;</span>Queue duration</th>
                       <td>${gradingJobStats.queueDuration}</td>
                     </tr>
                     <tr>
-                      <th><span class="text-primary mr-2">&bull;</span>Prepare duration</th>
+                      <th><span class="text-primary me-2">&bull;</span>Prepare duration</th>
                       <td>${gradingJobStats.prepareDuration}</td>
                     </tr>
                     <tr>
-                      <th><span class="text-success mr-2">&bull;</span>Run duration</th>
+                      <th><span class="text-success me-2">&bull;</span>Run duration</th>
                       <td>${gradingJobStats.runDuration}</td>
                     </tr>
                     <tr>
-                      <th><span class="text-danger mr-2">&bull;</span>Report duration</th>
+                      <th><span class="text-danger me-2">&bull;</span>Report duration</th>
                       <td>${gradingJobStats.reportDuration}</td>
                     </tr>
                     <tr>
@@ -512,7 +519,7 @@ function SubmissionInfoModal({
             : ''}
         `,
     footer: html`
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }

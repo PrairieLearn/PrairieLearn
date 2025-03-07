@@ -1,15 +1,15 @@
 import { A11yError } from '@sa11y/format';
 import axe from 'axe-core';
-import expressListEndpoints from 'express-list-endpoints';
-import { JSDOM } from 'jsdom';
+import { JSDOM, VirtualConsole } from 'jsdom';
 import { test } from 'mocha';
 import fetch from 'node-fetch';
 
+import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
-import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -26,7 +26,11 @@ async function loadPageJsdom(url: string): Promise<JSDOM> {
     }
     return res.text();
   });
-  return new JSDOM(text);
+  // JSDOM can be very verbose regarding unimplemented features (e.g., canvas).
+  // We don't have a need to see these warnings, so we create a virtual console
+  // that does not log anything.
+  const virtualConsole = new VirtualConsole();
+  return new JSDOM(text, { virtualConsole });
 }
 
 /**
@@ -34,6 +38,24 @@ async function loadPageJsdom(url: string): Promise<JSDOM> {
  */
 async function checkPage(url: string) {
   const page = await loadPageJsdom(SITE_URL + url);
+
+  // We need to mimic what Bootstrap will do at runtime for tooltips and popovers:
+  // it will copy the `data-bs-title` attribute to the `aria-label` attribute if
+  // the element doesn't already have an `aria-label` attribute and if its text
+  // content is empty.
+  //
+  // Without this, we'll get a bunch of false positives that don't reflect
+  // the actual behavior at runtime.
+  page.window.document.querySelectorAll('[data-bs-title]').forEach((el) => {
+    if (el.hasAttribute('aria-label') || el.textContent?.trim() !== '') {
+      return;
+    }
+    const title = el.getAttribute('data-bs-title');
+    if (title) {
+      el.setAttribute('aria-label', title);
+    }
+  });
+
   const results = await axe.run(page.window.document.documentElement, {
     resultTypes: ['violations', 'incomplete'],
   });
@@ -42,12 +64,12 @@ async function checkPage(url: string) {
 
 const STATIC_ROUTE_PARAMS = {
   // These are trivially known because there will only be one course and course
-  // instance in the database after syncing the example course.
+  // instance in the database after syncing the test course.
   course_id: 1,
   course_instance_id: 1,
 };
 
-function getRouteParams(url) {
+function getRouteParams(url: string) {
   const routeParams = url.match(/:([^/]+)/g);
 
   if (!routeParams) return [];
@@ -61,7 +83,7 @@ function getMissingRouteParams(url: string, params: Record<string, any>) {
   return routeParams.filter((p) => !(p in params));
 }
 
-function substituteParams(path, params) {
+function substituteParams(path: string, params: Record<string, string>) {
   const routeParams = getRouteParams(path);
   let newPath = path;
   for (const param of routeParams) {
@@ -86,6 +108,8 @@ const SKIP_ROUTES = [
   /^\/pl\/api\/v1\//,
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/raw_data.json',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/instances.json',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/generation_logs.json',
+  '/pl/course/:course_id/ai_generate_question_drafts/generation_logs.json',
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
@@ -173,6 +197,7 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/cacheableElements/:cachebuster/*',
   '/pl/public/course/:course_id/elements/*',
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
+  '/pl/public/course/:course_id/question/:question_id/file_download/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file/*',
 
@@ -184,11 +209,15 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/time_remaining',
   '/pl/course/:course_id/question/:question_id/preview/variant/:variant_id/submission/:submission_id',
   '/pl/public/course/:course_id/question/:question_id/preview/variant/:variant_id/submission/:submission_id',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_editor/:question_id/variant/:variant_id/submission/:submission_id',
+  '/pl/course/:course_id/ai_generate_editor/:question_id/variant/:variant_id/submission/:submission_id',
 
   // These pages just redirect to other pages and thus don't have to be tested.
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/next_ungraded',
+  '/pl/course_instance/:course_instance_id/instructor/course_admin/questions/qid/*',
   '/pl/course_instance/:course_instance_id/instructor/loadFromDisk',
   '/pl/course_instance/:course_instance_id/loadFromDisk',
+  '/pl/course/:course_id/course_admin/questions/qid/*',
   '/pl/course/:course_id/file_transfer/:file_transfer_id',
   '/pl/course/:course_id/loadFromDisk',
   '/pl/loadFromDisk',
@@ -234,8 +263,9 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/grading_job/:job_id',
 
   // TODO: create a test course with AI generation feature flag enabled to test page
-  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question',
-  '/pl/course/:course_id/ai_generate_question',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_editor/:question_id',
+  '/pl/course/:course_id/ai_generate_editor/:question_id',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/:job_id',
 ];
 
 function shouldSkipPath(path) {
@@ -251,11 +281,13 @@ function shouldSkipPath(path) {
 }
 
 describe('accessibility', () => {
-  let endpoints: expressListEndpoints.Endpoint[] = [];
+  let endpoints: Endpoint[] = [];
   let routeParams: Record<string, any> = {};
   before('set up testing server', async function () {
     config.cronActive = false;
-    await helperServer.before(EXAMPLE_COURSE_PATH).call(this);
+    // We use the test course since editing functionality is disabled in the
+    // example course.
+    await helperServer.before(TEST_COURSE_PATH).call(this);
     config.cronActive = true;
 
     // We want to test a news item page, so we need to "init" them.
@@ -273,17 +305,17 @@ describe('accessibility', () => {
       {},
     );
 
-    const questionGalleryAssessmentResult = await sqldb.queryOneRowAsync(
+    const assessmentResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM assessments WHERE tid = $tid',
       {
-        tid: 'gallery/elements',
+        tid: 'hw1-automaticTestSuite',
       },
     );
 
-    const codeElementQuestionResult = await sqldb.queryOneRowAsync(
+    const questionResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM questions WHERE qid = $qid',
       {
-        qid: 'element/code',
+        qid: 'downloadFile',
       },
     );
 
@@ -292,8 +324,8 @@ describe('accessibility', () => {
     routeParams = {
       ...STATIC_ROUTE_PARAMS,
       news_item_id: firstNewsItemResult.rows[0].id,
-      assessment_id: questionGalleryAssessmentResult.rows[0].id,
-      question_id: codeElementQuestionResult.rows[0].id,
+      assessment_id: assessmentResult.rows[0].id,
+      question_id: questionResult.rows[0].id,
     };
 
     await sqldb.queryOneRowAsync(
@@ -306,8 +338,8 @@ describe('accessibility', () => {
   test('All pages pass accessibility checks', async function () {
     this.timeout(240_000);
 
-    const missingParamsEndpoints: expressListEndpoints.Endpoint[] = [];
-    const failingEndpoints: [expressListEndpoints.Endpoint, any][] = [];
+    const missingParamsEndpoints: Endpoint[] = [];
+    const failingEndpoints: [Endpoint, any][] = [];
 
     for (const endpoint of endpoints) {
       if (shouldSkipPath(endpoint.path)) {

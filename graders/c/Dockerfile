@@ -5,7 +5,7 @@ LABEL maintainer="jonatan@yorku.ca"
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    apt-get install -y python3.12 gcc make python3-pip valgrind check pkg-config && \
+    apt-get install -y python3.12 gcc make python3-pip valgrind check pkg-config clang && \
     apt-get clean
 
 RUN ln -sf /usr/bin/python3.12 /usr/bin/python3
@@ -25,4 +25,3 @@ RUN useradd -g sbuser sbuser
 ENV C_INCLUDE_PATH=/cgrader
 
 COPY cgrader /cgrader
-

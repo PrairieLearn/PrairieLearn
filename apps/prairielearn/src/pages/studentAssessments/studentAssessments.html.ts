@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import {
   AuthzAccessRuleSchema,
@@ -48,27 +49,21 @@ export function StudentAssessments({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals, pageTitle: 'Assessments' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'assessments',
-        })}
+        ${Navbar({ resLocals, navPage: 'assessments', navSubPage: 'assessments' })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Assessments</div>
+            <div class="card-header bg-primary text-white">
+              <h1>Assessments</h1>
+            </div>
 
-            <table class="table table-sm table-hover">
+            <table class="table table-sm table-hover" aria-label="Assessments">
               <thead>
                 <tr>
-                  <th style="width: 1%"><span class="sr-only">Label</span></th>
-                  <th><span class="sr-only">Title</span></th>
+                  <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                  <th><span class="visually-hidden">Title</span></th>
                   <th class="text-center">Available credit</th>
                   <th class="text-center">Score</th>
                 </tr>
@@ -79,7 +74,7 @@ export function StudentAssessments({
                     ${row.start_new_assessment_group
                       ? html`
                           <tr>
-                            <th colspan="4" data-testid="assessment-group-heading">
+                            <th colspan="4" scope="row" data-testid="assessment-group-heading">
                               ${row.assessment_group_heading}
                             </th>
                           </tr>
@@ -87,25 +82,12 @@ export function StudentAssessments({
                       : ''}
                     <tr>
                       <td class="align-middle" style="width: 1%">
-                        ${row.multiple_instance_header ||
-                        (!row.active && row.assessment_instance_id === null)
-                          ? html`
-                              <span
-                                class="badge color-${row.assessment_set_color}"
-                                data-testid="assessment-set-badge"
-                              >
-                                ${row.label}
-                              </span>
-                            `
-                          : html`
-                              <a
-                                href="${urlPrefix}${row.link}"
-                                class="badge color-${row.assessment_set_color} color-hover"
-                                data-testid="assessment-set-badge"
-                              >
-                                ${row.label}
-                              </a>
-                            `}
+                        <span
+                          class="badge color-${row.assessment_set_color}"
+                          data-testid="assessment-set-badge"
+                        >
+                          ${row.label}
+                        </span>
                       </td>
                       <td class="align-middle">
                         ${row.multiple_instance_header ||
@@ -126,8 +108,6 @@ export function StudentAssessments({
                           : 'Assessment closed.'}
                         ${StudentAccessRulesPopover({
                           accessRules: row.access_rules,
-                          assessmentSetName: row.assessment_set_name,
-                          assessmentNumber: row.assessment_number,
                         })}
                       </td>
                       <td class="text-center align-middle">
@@ -158,7 +138,7 @@ export function StudentAssessments({
 function AssessmentScore(row: StudentAssessmentsRow) {
   if (row.assessment_instance_id == null) return 'Not started';
   if (!row.show_closed_assessment_score) return 'Score not shown';
-  return Scorebar(row.assessment_instance_score_perc);
+  return Scorebar(row.assessment_instance_score_perc, { classes: 'mx-auto' });
 }
 
 function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: StudentAssessmentsRow }) {

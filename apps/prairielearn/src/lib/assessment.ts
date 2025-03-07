@@ -7,12 +7,13 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  AssessmentInstanceSchema,
+  ClientFingerprintSchema,
   CourseSchema,
   IdSchema,
   QuestionSchema,
   VariantSchema,
-  ClientFingerprintSchema,
-  AssessmentInstanceSchema,
+  type AssessmentInstance,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
@@ -104,22 +105,26 @@ export async function makeAssessmentInstance(
   user_id: string,
   group_work: boolean,
   authn_user_id: string,
-  mode: 'Exam' | 'Homework',
+  mode: AssessmentInstance['mode'],
   time_limit_min: number | null,
   date: Date,
   client_fingerprint_id: string | null,
 ): Promise<string> {
-  const result = await sqldb.callOneRowAsync('assessment_instances_insert', [
-    assessment_id,
-    user_id,
-    group_work,
-    authn_user_id,
-    mode,
-    time_limit_min,
-    date,
-    client_fingerprint_id,
-  ]);
-  return result.rows[0].assessment_instance_id;
+  const assessment_instance_id = await sqldb.callRow(
+    'assessment_instances_insert',
+    [
+      assessment_id,
+      user_id,
+      group_work,
+      authn_user_id,
+      mode,
+      time_limit_min,
+      date,
+      client_fingerprint_id,
+    ],
+    IdSchema,
+  );
+  return assessment_instance_id;
 }
 
 /**
@@ -127,11 +132,13 @@ export async function makeAssessmentInstance(
  *
  * @param assessment_instance_id - The assessment instance to grade.
  * @param authn_user_id - The current authenticated user.
+ * @param recomputeGrades - Whether to recompute the grades after adding the questions. Should only be false when the caller takes responsibility for grading the assessment instance later.
  * @returns Whether the assessment instance was updated.
  */
-export async function update(
+export async function updateAssessmentInstance(
   assessment_instance_id: string,
   authn_user_id: string,
+  recomputeGrades = true,
 ): Promise<boolean> {
   debug('update()');
   const updated = await sqldb.runInTransactionAsync(async () => {
@@ -142,16 +149,18 @@ export async function update(
     if (!updateResult.rows[0].updated) return false; // skip if not updated
 
     // if updated, regrade to pick up max_points changes, etc.
-    await sqldb.callOneRowAsync('assessment_instances_grade', [
-      assessment_instance_id,
-      authn_user_id,
-      null, // credit
-      true, // only_log_if_score_updated
-    ]);
+    if (recomputeGrades) {
+      await sqldb.callOneRowAsync('assessment_instances_grade', [
+        assessment_instance_id,
+        authn_user_id,
+        null, // credit
+        true, // only_log_if_score_updated
+      ]);
+    }
     return true;
   });
   // Don't try to update LTI score if the assessment wasn't updated.
-  if (updated) {
+  if (updated && recomputeGrades) {
     // NOTE: It's important that this is run outside of `runInTransaction`
     // above. This will hit the network, and as a rule we don't do any
     // potentially long-running work inside of a transaction.
@@ -168,6 +177,7 @@ export async function update(
  * if needed.
  *
  * @param assessment_instance_id - The assessment instance to grade.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The current authenticated user.
  * @param requireOpen - Whether to enforce that the assessment instance is open before grading.
  * @param close - Whether to close the assessment instance after grading.
@@ -175,6 +185,7 @@ export async function update(
  */
 export async function gradeAssessmentInstance(
   assessment_instance_id: string,
+  user_id: string | null,
   authn_user_id: string | null,
   requireOpen: boolean,
   close: boolean,
@@ -225,6 +236,7 @@ export async function gradeAssessmentInstance(
       check_submission_id,
       row.question,
       row.variant_course,
+      user_id,
       authn_user_id,
       overrideGradeRate,
     );
@@ -308,6 +320,7 @@ export async function gradeAllAssessmentInstances(
       const requireOpen = true;
       await gradeAssessmentInstance(
         row.assessment_instance_id,
+        user_id,
         authn_user_id,
         requireOpen,
         close,

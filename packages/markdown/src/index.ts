@@ -1,4 +1,3 @@
-// @ts-check
 import type { Root as HastRoot, Element } from 'hast';
 import type { Root as MdastRoot, Text } from 'mdast';
 import type { Math, InlineMath } from 'mdast-util-math';

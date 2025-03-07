@@ -1,5 +1,71 @@
 # @prairielearn/sentry
 
+## 3.0.0
+
+### Major Changes
+
+- 16c6dd4: Upgrade to v9 of the Sentry SDK
+
+### Patch Changes
+
+- 49bb3fa: Upgrade all JavaScript dependencies
+
+## 2.0.12
+
+### Patch Changes
+
+- 0e1aa6e: Upgrade all Sentry and OpenTelemetry packages
+- 4a8b376: Upgrade all JavaScript dependencies
+
+## 2.0.11
+
+### Patch Changes
+
+- 9d7d790: Upgrade all JavaScript dependencies
+
+## 2.0.10
+
+### Patch Changes
+
+- 85300c4: Upgrade all JavaScript dependencies
+
+## 2.0.9
+
+### Patch Changes
+
+- 315d931: Upgrade all JavaScript dependencies
+
+## 2.0.8
+
+### Patch Changes
+
+- 4b79275: Upgrade all JavaScript dependencies
+
+## 2.0.7
+
+### Patch Changes
+
+- ec01c81: Upgrade `@sentry` dependencies
+
+## 2.0.6
+
+### Patch Changes
+
+- 852c2e2: Upgrade all JavaScript dependencies
+
+## 2.0.5
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+- f33f309: Update Sentry dependencies
+
+## 2.0.4
+
+### Patch Changes
+
+- 68653a6: Handle errors inside request event processor
+
 ## 2.0.3
 
 ### Patch Changes

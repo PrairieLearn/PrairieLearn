@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
-import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import { getJobSequence } from '../../lib/server-jobs.js';
 import * as syncHelpers from '../shared/syncHelpers.js';
 
 import { EditError } from './editError.html.js';
@@ -20,7 +20,7 @@ router.get(
 
     const job_sequence_id = req.params.job_sequence_id;
     const course_id = res.locals.course?.id ?? null;
-    const jobSequence = await getJobSequenceWithFormattedOutput(job_sequence_id, course_id);
+    const jobSequence = await getJobSequence(job_sequence_id, course_id);
 
     if (jobSequence.status === 'Running') {
       // All edits wait for the corresponding job sequence to finish before

@@ -1,4 +1,3 @@
-// @ts-check
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';

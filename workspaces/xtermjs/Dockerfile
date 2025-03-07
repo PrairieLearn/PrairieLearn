@@ -1,4 +1,4 @@
-FROM node:20-bookworm
+FROM node:22-bookworm
 
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y emacs-nox vim tmux
@@ -8,4 +8,4 @@ WORKDIR /xterm
 RUN yarn install --frozen-lockfile
 
 RUN useradd -m student
-ENTRYPOINT node server.js -w /home/student
+ENTRYPOINT ["node", "server.js", "-w", "/home/student"]

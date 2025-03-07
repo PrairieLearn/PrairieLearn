@@ -4,11 +4,12 @@ import fetchCookie from 'fetch-cookie';
 import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 
-import { queryAsync, queryOneRowAsync, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
+import { queryAsync, queryOneRowAsync, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { UserSchema } from '../lib/db-types.js';
+import type { User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -26,22 +27,8 @@ const GROUP_EXAM_2_TID = 'exam16-groupWorkRoles';
 const GROUP_NAME = 'groupBB';
 const GROUP_NAME_ALTERNATIVE = 'groupCC';
 
-const StudentUserSchema = UserSchema.pick({
-  user_id: true,
-  uid: true,
-  name: true,
-  uin: true,
-});
-
-interface StudentUser {
-  user_id: string | null;
-  uid: string;
-  name: string | null;
-  uin: string | null;
-}
-
-async function generateThreeStudentUsers(): Promise<StudentUser[]> {
-  const rows = await queryRows(sql.generate_and_enroll_3_users, StudentUserSchema);
+async function generateThreeStudentUsers() {
+  const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
   assert.lengthOf(rows, 3);
   return rows;
 }
@@ -51,7 +38,7 @@ async function generateThreeStudentUsers(): Promise<StudentUser[]> {
  * token value from a form on the page
  */
 async function switchUserAndLoadAssessment(
-  studentUser: StudentUser,
+  studentUser: User,
   assessmentUrl: string,
   formName: string | null,
   formContainer = 'body',

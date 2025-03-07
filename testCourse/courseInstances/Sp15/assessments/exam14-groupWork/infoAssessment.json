@@ -10,12 +10,7 @@
   "studentGroupCreate": true,
   "studentGroupJoin": true,
   "studentGroupLeave": true,
-  "allowAccess": [
-    {
-      "mode": "Public",
-      "credit": 100
-    }
-  ],
+  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "title": "Hard questions",

@@ -2,8 +2,9 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { GradingJobSchema, QuestionSchema, UserSchema } from '../../lib/db-types.js';
 
 export const GradingJobRowSchema = z.object({
@@ -34,23 +35,20 @@ export function InstructorGradingJob({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
-          ...resLocals,
-          pageTitle: `Grading Job ${gradingJobRow.grading_job.id}`,
-        })}
+        ${HeadContents({ resLocals, pageTitle: `Grading Job ${gradingJobRow.grading_job.id}` })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              Grading Job ${gradingJobRow.grading_job.id}
+              <h1>Grading Job ${gradingJobRow.grading_job.id}</h1>
             </div>
 
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Grading job details"
+            >
               <tbody>
                 <tr>
                   <th>Question</th>
@@ -92,7 +90,7 @@ export function InstructorGradingJob({
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">Downloads</div>
-                  <table class="table table-sm table-hover">
+                  <table class="table table-sm table-hover" aria-label="Grading job downloads">
                     <thead>
                       <tr>
                         <th>File</th>

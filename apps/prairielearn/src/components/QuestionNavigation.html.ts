@@ -1,4 +1,4 @@
-import { HtmlValue, html } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 export function QuestionNavSideGroup({
   urlPrefix,
@@ -66,7 +66,7 @@ export function QuestionNavSideButton({
 
   if (instanceQuestionId == null) {
     return html`
-      <button id="${buttonId}" class="btn mb-3 btn-primary disabled" disabled>
+      <button id="${buttonId}" class="btn btn-primary mb-3 disabled" disabled>
         ${buttonLabel}
       </button>
     `;
@@ -85,15 +85,14 @@ export function QuestionNavSideButton({
     return html`
       <button
         id="${buttonId}"
-        class="btn mb-3 btn-secondary pl-sequence-locked"
-        data-toggle="popover"
-        data-trigger="focus"
-        data-container="body"
-        data-html="true"
-        data-content="${disabledExplanation}"
+        class="btn btn-secondary mb-3 pl-sequence-locked"
+        data-bs-toggle="popover"
+        data-bs-container="body"
+        data-bs-html="true"
+        data-bs-content="${disabledExplanation}"
       >
         ${buttonLabel}
-        <i class="fas fa-lock ml-1" aria-label="Locked"></i>
+        <i class="fas fa-lock ms-1" aria-label="Locked"></i>
       </button>
     `;
   }
@@ -101,7 +100,7 @@ export function QuestionNavSideButton({
   return html`
     <a
       id="${buttonId}"
-      class="btn mb-3 btn-primary"
+      class="btn btn-primary mb-3"
       href="${urlPrefix}/instance_question/${instanceQuestionId}/"
     >
       ${buttonLabel}

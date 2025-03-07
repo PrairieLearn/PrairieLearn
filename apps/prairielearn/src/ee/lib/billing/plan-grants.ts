@@ -1,9 +1,9 @@
 import { type Response } from 'express';
 
 import {
-  CourseInstance,
+  type CourseInstance,
   CourseInstanceSchema,
-  Institution,
+  type Institution,
   InstitutionSchema,
   QuestionSchema,
   UserSchema,
@@ -16,7 +16,7 @@ import {
   planGrantsMatchFeatures,
 } from '../../lib/billing/plans.js';
 
-import { PlanFeatureName, planGrantsMatchPlanFeatures } from './plans-types.js';
+import { type PlanFeatureName, planGrantsMatchPlanFeatures } from './plans-types.js';
 
 type ResLocals = Record<string, any>;
 

@@ -6,13 +6,19 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { IdSchema, UserSchema } from '../../../lib/db-types.js';
+import { IdSchema } from '../../../lib/db-types.js';
+import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
+import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
-import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html.js';
+import {
+  type GradingJobData,
+  GradingJobDataSchema,
+  InstanceQuestion,
+} from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 const router = express.Router();
@@ -34,7 +40,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
   resLocals.manualGradingInterface = true;
-  await getAndRenderVariant(variant_with_submission_id, null, resLocals);
+  await getAndRenderVariant(variant_with_submission_id, null, resLocals as any);
 
   let conflict_grading_job: GradingJobData | null = null;
   if (query.conflict_grading_job_id) {
@@ -51,11 +57,9 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     }
   }
 
-  const graders = await sqldb.queryOptionalRow(
-    sql.select_graders,
-    { course_instance_id: resLocals.course_instance.id },
-    UserSchema.array().nullable(),
-  );
+  const graders = await selectCourseInstanceGraderStaff({
+    course_instance_id: resLocals.course_instance.id,
+  });
   return { resLocals, conflict_grading_job, graders };
 }
 
@@ -73,19 +77,22 @@ router.get(
 router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
+    const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
-      question_id: res.locals.question.id,
-      instance_question_id: res.locals.instance_question.id,
+      question: res.locals.question,
+      instance_question: res.locals.instance_question,
       variant_id: req.params.variant_id,
-      user_id: res.locals.user.user_id,
+      user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'manual_grading',
-      csrfToken: null,
-      authorizedEdit: null,
+      // This is only used by score panels, which are not rendered in this context.
+      authorizedEdit: false,
+      // The score panels never need to be live-updated in this context.
       renderScorePanels: false,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
     });
-    res.send({ submissionPanel, extraHeadersHtml });
+    res.json(panels);
   }),
 );
 
@@ -252,13 +259,23 @@ router.post(
         res.status(500).send({ err: String(err) });
       }
     } else if (typeof body.__action === 'string' && body.__action.startsWith('reassign_')) {
-      const assigned_grader = body.__action.substring(9);
+      const actionPrompt = body.__action.substring(9);
+      const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
+      if (assigned_grader != null) {
+        const courseStaff = await selectCourseInstanceGraderStaff({
+          course_instance_id: res.locals.course_instance.id,
+        });
+        if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
+          throw new error.HttpStatusError(
+            400,
+            'Assigned grader does not have Student Data Editor permission',
+          );
+        }
+      }
       await sqldb.queryAsync(sql.update_assigned_grader, {
-        course_instance_id: res.locals.course_instance.id,
-        assessment_id: res.locals.assessment.id,
         instance_question_id: res.locals.instance_question.id,
-        assigned_grader: ['nobody', 'graded'].includes(assigned_grader) ? null : assigned_grader,
-        requires_manual_grading: assigned_grader !== 'graded',
+        assigned_grader,
+        requires_manual_grading: actionPrompt !== 'graded',
       });
 
       res.redirect(

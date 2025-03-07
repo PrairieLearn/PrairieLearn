@@ -2,7 +2,7 @@ import * as async from 'async';
 
 import { decodeData, onDocumentReady, parseHTML } from '@prairielearn/browser-utils';
 
-import { StatsUpdateData } from '../../src/pages/instructorAssessments/instructorAssessments.types.js';
+import { type StatsUpdateData } from '../../src/pages/instructorAssessments/instructorAssessments.types.js';
 
 import { histmini } from './lib/histmini.js';
 
@@ -14,12 +14,6 @@ const statElements = [
 ];
 
 onDocumentReady(() => {
-  $('.js-sync-popover[data-toggle="popover"]')
-    .popover({ sanitize: false })
-    .on('show.bs.popover', function () {
-      $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
-    });
-
   updatePlots(document.body);
 
   const { assessmentIdsNeedingStatsUpdate, urlPrefix } =

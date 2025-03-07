@@ -1,3 +1,4 @@
+import type { EventEmitter } from 'node:events';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
@@ -8,8 +9,19 @@ import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
 
 import { getRuntimeDirectoryForCourse } from './chunks.js';
-import type { Course, Question, Submission, Variant } from './db-types.js';
+import { type Config } from './config.js';
+import type { GradingJob, Submission, Variant, Question, Course } from './db-types.js';
 
+export interface Grader {
+  handleGradingRequest(
+    grading_job: GradingJob,
+    submission: Submission,
+    variant: Variant,
+    question: Question,
+    course: Course,
+    configOverrides?: Partial<Config>,
+  ): EventEmitter;
+}
 /**
  * Returns the directory where job files should be written to while running
  * with AWS infrastructure.
@@ -82,8 +94,8 @@ export async function buildDirectory(
 
     // This uses the same fields passed v3's server.grade functions
     const data = {
-      params: variant.params,
-      correct_answers: variant.true_answer,
+      params: submission.params ?? {},
+      correct_answers: submission.true_answer ?? {},
       submitted_answers: submission.submitted_answer,
       format_errors: submission.format_errors,
       partial_scores: submission.partial_scores ?? {},
@@ -124,7 +136,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   try {
     // replace NULL with unicode replacement character
     data = JSON.parse(dataStr.replace(/\0/g, '\ufffd'));
-  } catch (e) {
+  } catch {
     return makeGradingFailureWithMessage(jobId, dataStr, 'Could not parse the grading results.');
   }
 

@@ -1,3 +1,7 @@
+.pl-multiple-choice-answer :last-child {
+  margin-bottom: 0 !important;
+}
+
 .pl-multiple-choice-popover {
   width: 340px;
   max-width: 100%;
@@ -15,4 +19,15 @@
   margin-left: 0.75rem;
   margin-right: 0.5rem;
   border-radius: 0.2rem;
+}
+
+.pl-multiple-choice-dropdown .ts-wrapper .ts-control .item {
+  min-width: var(--pl-multiple-choice-dropdown-width, 220px);
+}
+
+.pl-multiple-choice-dropdown .ts-control {
+  cursor: pointer !important;
+
+  /** https://github.com/orchidjs/tom-select/issues/757 */
+  padding-right: 2.5rem !important;
 }

@@ -1,7 +1,7 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { PlanGrant, PlanGrantSchema, EnumPlanGrantType } from '../../lib/db-types.js';
-import { WithRequiredKeys } from '../../lib/types.js';
+import { type PlanGrant, PlanGrantSchema, type EnumPlanGrantType } from '../../lib/db-types.js';
+import { type WithRequiredKeys } from '../../lib/types.js';
 import { insertAuditLog } from '../../models/audit-log.js';
 
 const sql = loadSqlEquiv(import.meta.url);

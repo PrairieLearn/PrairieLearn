@@ -11,7 +11,6 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag, get_wrong_order_lines
-
 from lxml.etree import _Comment
 from typing_extensions import NotRequired, assert_never
 
@@ -68,18 +67,9 @@ class OrderBlocksAnswerData(TypedDict):
     distractor_bin: NotRequired[str]
     distractor_feedback: str | None
     uuid: str
-
-
-    distractor_feedback: str | None
     ordering_feedback: str | None
     check_tag: str | None
     uuid: str
-
-class FeedbackMessageData(TypedDict):
-    condition_tag: str
-    condition: str
-    target_tag: str
-    message: str
 
 FIRST_WRONG_TYPES = frozenset([
     FeedbackType.FIRST_WRONG,
@@ -219,7 +209,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     correct_answers: list[OrderBlocksAnswerData] = []
     incorrect_answers: list[OrderBlocksAnswerData] = []
     used_tags = set()
-    feedback_messages: list[FeedbackMessageData] = []
 
     def prepare_tag(
         html_tags: lxml.html.HtmlElement,
@@ -340,7 +329,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "ordering_feedback": ordering_feedback,  # only used with DAG grader
             "check_tag": check_tag,
             "uuid": pl.get_uuid(),
-            "feedback_messages": [] # only used with DAG grader
         }
         if is_correct:
             correct_answers.append(answer_data_dict)
@@ -367,11 +355,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             for grouped_tag in html_tags:
                 if isinstance(grouped_tag, _Comment):
                     continue
-                else:
-                    prepare_tag(
-                        grouped_tag, index, {"tag": group_tag, "depends": group_depends}
-                    )
-                    index += 1
+                prepare_tag(
+                    grouped_tag, index, {"tag": group_tag, "depends": group_depends}
+                )
+                index += 1
         else:
             prepare_tag(html_tags, index, {"tag": None, "depends": None})
             index += 1

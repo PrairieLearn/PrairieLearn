@@ -7,13 +7,15 @@ import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  type AssessmentQuestion,
   AssessmentQuestionSchema,
   IdSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
-  RubricItem,
+  type RubricItem,
   RubricItemSchema,
   RubricSchema,
+  type Submission,
 } from './db-types.js';
 import { idsEqual } from './id.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
@@ -118,28 +120,34 @@ export async function nextUngradedInstanceQuestionUrl(
   return `${urlPrefix}/assessment/${assessment_id}/manual_grading/assessment_question/${assessment_question_id}`;
 }
 
-/** Populates the locals objects for rubric data. Assigns values to `rubric_data` in the locals.
- *
- * @param locals - The locals data to be retrieved and updated. The `assessment_question` is expected to have been retrieved before this call, as well as any value that impacts the mustache rendering, such as `variant` and `submission`.
+/**
+ * Selects a variety of rubric data for a given assessment question.
+ * Also renders the selected rubric items with the submission data.
  */
-export async function populateRubricData(locals: Record<string, any>): Promise<void> {
+export async function selectRubricData({
+  assessment_question,
+  submission,
+}: {
+  assessment_question?: AssessmentQuestion | null;
+  submission: Submission;
+}): Promise<RubricData | null> {
   // If there is no assessment question (e.g., in question preview), there is no rubric
-  if (!locals.assessment_question?.manual_rubric_id) return;
+  if (!assessment_question?.manual_rubric_id) return null;
 
   const rubric_data = await sqldb.queryOptionalRow(
     sql.select_rubric_data,
     {
-      assessment_question_id: locals.assessment_question.id,
-      rubric_id: locals.assessment_question.manual_rubric_id,
+      assessment_question_id: assessment_question.id,
+      rubric_id: assessment_question.manual_rubric_id,
     },
     RubricDataSchema,
   );
 
   // Render rubric items: description, explanation and grader note
   const mustache_data = {
-    correct_answers: locals.variant?.true_answer,
-    params: locals.variant?.params,
-    submitted_answers: locals.submission?.submitted_answer,
+    correct_answers: submission?.true_answer ?? {},
+    params: submission?.params ?? {},
+    submitted_answers: submission?.submitted_answer,
   };
 
   await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
@@ -155,7 +163,21 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
     );
   });
 
-  locals.rubric_data = rubric_data;
+  return rubric_data;
+}
+
+/**
+ * Populates the locals objects for rubric data. Assigns values to `rubric_data`
+ * in the locals.
+ *
+ * The `assessment_question` is expected to have been retrieved before this call,
+ * as well as any value that impacts the mustache rendering, such as `submission`.
+ */
+export async function populateRubricData(locals: Record<string, any>): Promise<void> {
+  locals.rubric_data = await selectRubricData({
+    assessment_question: locals.assessment_question,
+    submission: locals.submission,
+  });
 }
 
 /** Builds the locals object for rubric grading data. Can be called with any object that contains a
@@ -234,8 +256,8 @@ export async function updateAssessmentQuestionRubric(
     if (use_rubric) {
       const max_points =
         (replace_auto_points
-          ? assessment_question.max_points ?? 0
-          : assessment_question.max_manual_points ?? 0) + Number(max_extra_points);
+          ? (assessment_question.max_points ?? 0)
+          : (assessment_question.max_manual_points ?? 0)) + Number(max_extra_points);
 
       // This test is done inside the transaction to avoid a race condition in case the assessment
       // question's values change.
@@ -512,7 +534,7 @@ export async function updateInstanceQuestionScore(
       score.manual_points =
         manual_rubric_grading.computed_points -
         (manual_rubric_grading.replace_auto_points
-          ? new_auto_points ?? current_submission.auto_points ?? 0
+          ? (new_auto_points ?? current_submission.auto_points ?? 0)
           : 0);
       score.manual_score_perc = undefined;
       manual_rubric_grading_id = manual_rubric_grading.id;

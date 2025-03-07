@@ -11,8 +11,9 @@ import {
 } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { UserSchema, GroupRoleSchema, IdSchema } from '../lib/db-types.js';
+import { GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -31,22 +32,8 @@ const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';
 const GROUP_NAME = 'groupBB';
 
-const StudentUserSchema = UserSchema.pick({
-  user_id: true,
-  uid: true,
-  name: true,
-  uin: true,
-});
-
-interface StudentUser {
-  user_id: string | null;
-  uid: string;
-  name: string | null;
-  uin: string | null;
-}
-
-async function generateThreeStudentUsers(): Promise<StudentUser[]> {
-  const rows = await queryRows(sql.generate_and_enroll_3_users, StudentUserSchema);
+async function generateThreeStudentUsers() {
+  const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
   assert.lengthOf(rows, 3);
   return rows;
 }
@@ -56,7 +43,7 @@ async function generateThreeStudentUsers(): Promise<StudentUser[]> {
  * token value from a form on the page
  */
 async function switchUserAndLoadAssessment(
-  studentUser: StudentUser,
+  studentUser: User,
   assessmentUrl: string,
   formName: string | null,
   formContainer = 'body',
@@ -131,7 +118,7 @@ async function joinGroup(
 async function updateGroupRoles(
   roleUpdates: any[],
   groupRoles: any[],
-  studentUsers: StudentUser[],
+  studentUsers: User[],
   csrfToken: string,
   assessmentUrl: string,
   $: cheerio.CheerioAPI,
@@ -353,7 +340,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       lockedRows.each((_, element) => {
         const rowLabelText = $(element).parent('td').find('span').text();
         assert.match(rowLabelText, /HW5\.[23]\./);
-        const popoverText = $(element).attr('data-content');
+        const popoverText = $(element).attr('data-bs-content');
         assert.strictEqual(
           popoverText,
           'Your current group role (Manager) restricts access to this question.',
@@ -416,7 +403,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       assert.isTrue(firstUserSubmitButton.is(':disabled'));
       const popover = $('.btn[aria-label="Submission blocked"]');
       assert.lengthOf(popover, 1);
-      const popoverContent = popover.data('content');
+      const popoverContent = popover.attr('data-bs-content');
       assert.strictEqual(
         popoverContent,
         'Your group role (Manager) is not allowed to submit this question.',
@@ -518,7 +505,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Assert the correct errors show up on screen
-      let errorNotification = $('span.badge-danger:contains(2)');
+      let errorNotification = $('[data-testid="group-role-config-problems"]:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
@@ -538,7 +525,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       $ = assessmentInstanceSecondUserPage;
 
       // Assert that the same errors still show
-      errorNotification = $('span.badge-danger:contains(2)');
+      errorNotification = $('[data-testid="group-role-config-problems"]:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
@@ -562,7 +549,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Check that the errors no longer show
-      errorNotification = $('span.badge-danger');
+      errorNotification = $('[data-testid="group-role-config-problems"]');
       assert.lengthOf(errorNotification, 0, 'no error notification should appear');
       assertAlert($, 'role configuration is currently invalid', 0);
       assertAlert($, 'too many roles', 0);

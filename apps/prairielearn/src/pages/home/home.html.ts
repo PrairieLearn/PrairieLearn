@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { config } from '../../lib/config.js';
-import { CourseInstanceSchema, CourseSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema, CourseSchema, type Institution } from '../../lib/db-types.js';
 
 export const InstructorCourseSchema = z.object({
   id: CourseSchema.shape.id,
@@ -32,54 +32,53 @@ export function Home({
   resLocals,
   instructorCourses,
   studentCourses,
+  adminInstitutions,
 }: {
   resLocals: Record<string, any>;
   instructorCourses: InstructorCourse[];
   studentCourses: StudentCourse[];
+  adminInstitutions: Institution[];
 }) {
   const { authn_provider_name } = resLocals;
-  return html`
-    <!doctype html>
-    <html lang="en" class="h-100">
-      <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-      </head>
 
-      <body class="d-flex flex-column h-100">
-        <header>
-          ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-            ...resLocals,
-            navPage: 'home',
-          })}
-        </header>
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Home',
+    navContext: {
+      type: 'plain',
+      page: 'home',
+    },
+    options: {
+      fullHeight: true,
+    },
+    content: html`
+      <h1 class="visually-hidden">PrairieLearn Homepage</h1>
+      ${ActionsHeader()}
 
-        <main class="flex-grow-1">
-          ${ActionsHeader()}
-
-          <div id="content" class="container py-5">
-            ${DevModeCard()} ${InstructorCoursesCard({ instructorCourses })}
-            ${StudentCoursesCard({
-              studentCourses,
-              hasInstructorCourses: instructorCourses.length > 0,
-              canAddCourses: authn_provider_name !== 'LTI',
-            })}
-          </div>
-        </main>
-
-        ${config.homepageFooterText && config.homepageFooterTextHref
-          ? html`
-              <footer class="footer font-weight-light text-light text-center small">
-                <div class="bg-secondary p-1">
-                  <a class="text-light" href="${config.homepageFooterTextHref}">
-                    ${config.homepageFooterText}
-                  </a>
-                </div>
-              </footer>
-            `
-          : ''}
-      </body>
-    </html>
-  `.toString();
+      <div id="content" class="container py-5">
+        ${DevModeCard()} ${AdminInstitutionsCard({ adminInstitutions })}
+        ${InstructorCoursesCard({ instructorCourses })}
+        ${StudentCoursesCard({
+          studentCourses,
+          hasInstructorCourses: instructorCourses.length > 0,
+          canAddCourses: authn_provider_name !== 'LTI',
+        })}
+      </div>
+    `,
+    postContent: html`
+      ${config.homepageFooterText && config.homepageFooterTextHref
+        ? html`
+            <footer class="footer fw-light text-light text-center small">
+              <div class="bg-secondary p-1">
+                <a class="text-light" href="${config.homepageFooterTextHref}">
+                  ${config.homepageFooterText}
+                </a>
+              </div>
+            </footer>
+          `
+        : ''}
+    `,
+  });
 }
 
 function ActionsHeader() {
@@ -89,15 +88,13 @@ function ActionsHeader() {
         <div class="col-md-6">
           <div class="card rounded-pill my-1">
             <div class="card-body d-flex align-items-center p-2">
-              <span class="fa-stack fa-1x mr-1" aria-hidden="true">
+              <span class="fa-stack fa-1x me-1" aria-hidden="true">
                 <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                 <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
               </span>
-              <span class="small p-2 font-weight-bold text-uppercase text-secondary">
-                Students
-              </span>
+              <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Students</h2>
               <a href="${config.urlPrefix}/enroll" class="btn btn-xs btn-outline-primary">
-                Enroll course
+                Add or remove courses
               </a>
             </div>
           </div>
@@ -105,19 +102,17 @@ function ActionsHeader() {
         <div class="col-md-6">
           <div class="card rounded-pill my-1">
             <div class="card-body d-flex align-items-center p-2">
-              <span class="fa-stack fa-1x mr-1" aria-hidden="true">
+              <span class="fa-stack fa-1x me-1" aria-hidden="true">
                 <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                 <i class="fas fa-user-tie fa-stack-1x text-light"></i>
               </span>
-              <span class="small p-2 font-weight-bold text-uppercase text-secondary">
-                Instructors
-              </span>
+              <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Instructors</h2>
               <a href="${config.urlPrefix}/request_course" class="btn btn-xs btn-outline-primary">
                 Request course
               </a>
               <a
                 href="https://prairielearn.readthedocs.io/en/latest"
-                class="btn btn-xs btn-outline-primary ml-2"
+                class="btn btn-xs btn-outline-primary ms-2"
               >
                 View docs
               </a>
@@ -133,7 +128,9 @@ function DevModeCard() {
   if (!config.devMode) return '';
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white">Development Mode</div>
+      <div class="card-header bg-primary text-white">
+        <h2>Development Mode</h2>
+      </div>
       <div class="card-body">
         <p>
           PrairieLearn is running in Development Mode. Click the
@@ -155,13 +152,42 @@ function DevModeCard() {
   `;
 }
 
-function InstructorCoursesCard({ instructorCourses }: { instructorCourses: InstructorCourse[] }) {
-  if (instructorCourses.length === 0) return '';
+function AdminInstitutionsCard({ adminInstitutions }: { adminInstitutions: Institution[] }) {
+  if (adminInstitutions.length === 0) return '';
+
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white">Courses with instructor access</div>
+      <div class="card-header bg-primary text-white">
+        <h2>Institutions with admin access</h2>
+      </div>
+      <ul class="list-group list-group-flush">
+        ${adminInstitutions.map(
+          (institution) => html`
+            <li class="list-group-item">
+              <a href="/pl/institution/${institution.id}/admin/courses">
+                ${institution.short_name}: ${institution.long_name}
+              </a>
+            </li>
+          `,
+        )}
+      </ul>
+    </div>
+  `;
+}
 
-      <table class="table table-sm table-hover table-striped">
+function InstructorCoursesCard({ instructorCourses }: { instructorCourses: InstructorCourse[] }) {
+  if (instructorCourses.length === 0) return '';
+
+  return html`
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <h2>Courses with instructor access</h2>
+      </div>
+
+      <table
+        class="table table-sm table-hover table-striped"
+        aria-label="Courses with instructor access"
+      >
         <tbody>
           ${instructorCourses.map(
             (course) => html`
@@ -203,13 +229,14 @@ function StudentCoursesCard({
   hasInstructorCourses: boolean;
   canAddCourses: boolean;
 }) {
+  const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        ${hasInstructorCourses ? 'Courses with student access' : 'Courses'}
+        <h2>${heading}</h2>
         ${canAddCourses
           ? html`
-              <a href="${config.urlPrefix}/enroll" class="btn btn-light btn-sm ml-auto">
+              <a href="${config.urlPrefix}/enroll" class="btn btn-light btn-sm ms-auto">
                 <i class="fa fa-edit" aria-hidden="true"></i>
                 <span class="d-none d-sm-inline">Add or remove courses</span>
               </a>
@@ -242,7 +269,7 @@ function StudentCoursesCard({
                 </div>
               `
         : html`
-            <table class="table table-sm table-hover table-striped">
+            <table class="table table-sm table-hover table-striped" aria-label="${heading}">
               <tbody>
                 ${studentCourses.map(
                   (courseInstance) => html`

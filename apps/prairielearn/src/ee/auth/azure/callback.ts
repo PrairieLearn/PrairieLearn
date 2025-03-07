@@ -1,12 +1,14 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import passport from 'passport';
+
+import { HttpStatusError } from '@prairielearn/error';
 
 import * as authnLib from '../../../lib/authn.js';
 
 const router = Router();
 
-function authenticate(req, res): Promise<any> {
+function authenticate(req: Request, res: Response): Promise<any> {
   return new Promise((resolve, reject) => {
     passport.authenticate(
       'azuread-openidconnect',
@@ -14,11 +16,9 @@ function authenticate(req, res): Promise<any> {
         failureRedirect: '/pl',
         session: false,
       },
-      (err, user) => {
+      (err: any, user: any) => {
         if (err) {
           reject(err);
-        } else if (!user) {
-          reject(new Error('Login failed'));
         } else {
           resolve(user);
         }
@@ -32,6 +32,13 @@ router.post(
   asyncHandler(async (req, res) => {
     const user = await authenticate(req, res);
 
+    if (!user) {
+      // We shouldn't hit this case very often in practice, but if we do, we have
+      // no control over it, so we'll report the error as a 200 to avoid it
+      // contributing to error metrics.
+      throw new HttpStatusError(200, 'Login failed. Please try again.');
+    }
+
     const authnParams = {
       uid: user.upn,
       name: user.displayName,
@@ -42,7 +49,6 @@ router.post(
 
     await authnLib.loadUser(req, res, authnParams, {
       redirect: true,
-      pl_authn_cookie: true,
     });
   }),
 );

@@ -3,12 +3,12 @@ import * as path from 'node:path';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { callRow, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { NewsItemSchema } from '../../lib/db-types.js';
+import { userIsInstructorInAnyCourse } from '../../models/course-permissions.js';
 
 import { NewsItem } from './newsItem.html.js';
 
@@ -40,11 +40,9 @@ router.get(
     );
     const newsItemHtml = await fs.readFile(indexFilename, 'utf8');
 
-    const userIsInstructor = await callRow(
-      'users_is_instructor_in_any_course',
-      [res.locals.authn_user.user_id],
-      z.boolean(),
-    );
+    const userIsInstructor = await userIsInstructorInAnyCourse({
+      user_id: res.locals.authn_user.user_id,
+    });
 
     res.send(NewsItem({ resLocals: res.locals, newsItem, newsItemHtml, userIsInstructor }));
   }),
