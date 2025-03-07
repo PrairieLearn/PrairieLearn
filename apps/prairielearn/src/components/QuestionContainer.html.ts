@@ -638,10 +638,12 @@ function QuestionPanel({
   // Show even when question_copy_targets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
   const showCopyQuestionButton =
-    question.type === 'Freeform' &&
-    question_copy_targets != null &&
-    (course.template_course || (question.share_source_publicly && questionContext === 'public')) &&
-    questionContext !== 'manual_grading';
+    (question.type === 'Freeform' &&
+      question_copy_targets != null &&
+      (course.template_course ||
+        (question.share_source_publicly && questionContext === 'public')) &&
+      questionContext !== 'manual_grading') ||
+    true;
 
   return html`
     <div class="card mb-4 question-block">
@@ -653,19 +655,37 @@ function QuestionPanel({
             questionNumber: instance_question_info?.question_number,
           })}
         </h1>
-        ${showCopyQuestionButton
-          ? html`
+        <div class="ms-auto d-flex flex-row gap-1">
+          <div class="btn-group">
+            ${showCopyQuestionButton
+              ? html`
+                  <button
+                    class="btn btn-sm btn-outline-light"
+                    type="button"
+                    data-bs-toggle="modal, tooltip"
+                    data-bs-title="Copy question"
+                    data-bs-target="#copyQuestionModal"
+                  >
+                    <i class="fa fa-fw fa-clone"></i>
+                  </button>
+                `
+              : ''}
+            <div class="btn-group">
               <button
-                class="btn btn-light btn-sm ms-auto"
+                class="btn btn-sm btn-outline-light dropdown-toggle dropdown-toggle-no-caret"
                 type="button"
-                data-bs-toggle="modal"
-                data-bs-target="#copyQuestionModal"
+                aria-expanded="false"
+                aria-label="More options"
+                data-bs-toggle="dropdown"
               >
-                <i class="fa fa-clone"></i>
-                Copy question
+                <i class="fa fa-fw fa-ellipsis-v"></i>
               </button>
-            `
-          : ''}
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li class="dropdown-item">Preview manual grading view</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
       ${QuestionFooter({
