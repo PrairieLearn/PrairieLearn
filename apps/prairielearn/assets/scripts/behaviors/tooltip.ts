@@ -1,12 +1,21 @@
+import { type Tooltip } from 'bootstrap';
+import { on } from 'delegated-events';
 import { observe } from 'selector-observer';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
+
+const openTooltips = new Set<Tooltip>();
+
+function closeOpenTooltips() {
+  openTooltips.forEach((tooltip) => tooltip.hide());
+  openTooltips.clear();
+}
 
 onDocumentReady(() => {
   observe('[data-bs-toggle~="tooltip"], [data-bs-toggle-tooltip="true"]', {
     constructor: HTMLElement,
     add(el) {
-      new window.bootstrap.Tooltip(el, { trigger: 'hover' });
+      new window.bootstrap.Tooltip(el);
 
       // Bootstrap doesn't support a single element triggering multiple things.
       // There are cases where we want this behavior, e.g. to have a tooltip
@@ -52,5 +61,15 @@ onDocumentReady(() => {
     remove(el) {
       window.bootstrap.Tooltip.getInstance(el)?.dispose();
     },
+  });
+
+  on('show.bs.tooltip', 'body', (event) => {
+    // Close existing tooltips when a new one is shown.
+    closeOpenTooltips();
+
+    const tooltip = window.bootstrap.Tooltip.getInstance(event.target as HTMLElement);
+    if (tooltip) {
+      openTooltips.add(tooltip);
+    }
   });
 });
