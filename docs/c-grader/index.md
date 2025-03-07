@@ -6,7 +6,7 @@ This file documents the default C/C++ autograder included in the `prairielearn/g
 
 ### `info.json`
 
-The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific C/C++ autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-c"` and `"entrypoint"` should point to a test file in the question, which will then invoke the autograder.
+The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific C/C++ autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-c"`. The `"entrypoint"` does not need to be provided.
 
 A full `info.json` file should look something like:
 
@@ -22,13 +22,10 @@ A full `info.json` file should look something like:
   "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-c",
-    "timeout": 100,
-    "entrypoint": "python3 /grade/tests/test.py"
+    "timeout": 100
   }
 }
 ```
-
-Note that the `entrypoint` setting includes a call to `python3` before the test file. This is recommended for cases where the `test.py` file is not properly set as executable in the Git repository.
 
 ### `question.html`
 
