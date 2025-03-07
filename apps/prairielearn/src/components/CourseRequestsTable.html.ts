@@ -125,7 +125,7 @@ export function CourseRequestsTable({
                     ${row.jobs.length > 0
                       ? html`
                           <button
-                            class="show-hide-btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
+                            class="btn btn-secondary btn-xs text-nowrap show-hide-btn collapsed"
                             data-bs-toggle="collapse"
                             data-bs-target="#course-requests-job-list-${row.id}"
                             aria-expanded="false"
