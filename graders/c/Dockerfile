@@ -5,7 +5,7 @@ LABEL maintainer="jonatan@yorku.ca"
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3.12 gcc make python3-pip valgrind check pkg-config clang && \
+    apt-get install -y --no-install-recommends python3.12 gcc g++ gdb make python3-pip valgrind check pkg-config clang && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     ln -sf /usr/bin/python3.12 /usr/bin/python3
