@@ -57,14 +57,20 @@ function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): number {
   if (!usage) {
     return 0;
   }
-  const prompt_tokens = usage.prompt_tokens;
+  const cached_input_tokens = usage.prompt_tokens_details?.cached_tokens ?? 0;
+  const prompt_tokens = usage.prompt_tokens - cached_input_tokens;
   const completion_tokens = usage.completion_tokens;
 
   // Pricings are updated according to https://platform.openai.com/docs/pricing
+  const cached_input_cost = 1.25 / 10 ** 6;
   const prompt_cost = 2.5 / 10 ** 6;
   const completion_cost = 10.0 / 10 ** 6;
 
-  return prompt_tokens * prompt_cost + completion_tokens * completion_cost;
+  return (
+    cached_input_tokens * cached_input_cost +
+    prompt_tokens * prompt_cost +
+    completion_tokens * completion_cost
+  );
 }
 
 async function generatePrompt({
