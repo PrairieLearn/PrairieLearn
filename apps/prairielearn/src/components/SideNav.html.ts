@@ -1,8 +1,8 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 
+import { IssueBadge } from './IssueBadge.html.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
-import { IssueBadge } from './IssueBadge.html.js';
 
 interface SideNavTabInfo {
   /** For the side nav tab to be active, the current navPage must be in activePages. */
