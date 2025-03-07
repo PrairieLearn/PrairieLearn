@@ -91,7 +91,6 @@ async function checkPage(url: string) {
       'long-title': 'off',
       'no-inline-style': 'off',
       'no-trailing-whitespace': 'off',
-      // 'prefer-native-element': ['error', { exclude: ['button'] }],
       'script-type': 'off',
       'unique-landmark': 'off',
       'void-style': 'off',
@@ -384,8 +383,6 @@ describe('accessibility', () => {
     endpoints = expressListEndpoints(app);
     endpoints.sort((a, b) => a.path.localeCompare(b.path));
 
-    // Order by title length to avoid false positives on the `long-title`
-    // HTML validation rule.
     const firstNewsItemResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM news_items ORDER BY id ASC LIMIT 1',
       {},
