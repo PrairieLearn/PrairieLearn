@@ -84,7 +84,7 @@ export function QuestionContainer({
               ? html`
                   <div class="mb-4 d-flex justify-content-center">
                     <button
-                      class="show-hide-btn btn-outline-secondary btn-sm collapsed"
+                      class="btn btn-outline-secondary btn-sm show-hide-btn collapsed"
                       type="button"
                       data-bs-toggle="collapse"
                       data-bs-target="#more-submissions-collapser"

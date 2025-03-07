@@ -183,12 +183,7 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
             : ''}
           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-          <button
-            type="submit"
-            class="btn btn-small btn-primary"
-            name="__action"
-            value="attach_text"
-          >
+          <button type="submit" class="btn btn-sm btn-primary" name="__action" value="attach_text">
             Add note
           </button>
         </form>
