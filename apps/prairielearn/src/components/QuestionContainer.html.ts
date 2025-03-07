@@ -55,7 +55,7 @@ export function QuestionContainer({
       data-variant-token="${variantToken}"
     >
       ${question.type !== 'Freeform'
-        ? html`<div hidden="true" class="question-data">${questionJsonBase64}</div>`
+        ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
       ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
       ${question.type === 'Freeform'
@@ -86,7 +86,7 @@ export function QuestionContainer({
               ? html`
                   <div class="mb-3 d-flex justify-content-center">
                     <button
-                      class="show-hide-btn btn btn-outline-secondary btn-sm collapsed"
+                      class="btn btn-outline-secondary btn-sm show-hide-btn collapsed"
                       type="button"
                       data-bs-toggle="collapse"
                       data-bs-target="#more-submissions-collapser"
@@ -392,6 +392,7 @@ export function QuestionFooterContent({
             ${showSaveButton
               ? html`
                   <button
+                    type="submit"
                     class="btn btn-info question-save disable-on-submit order-2"
                     ${disableSaveButton ? 'disabled' : ''}
                     ${question.type === 'Freeform' ? html`name="__action" value="save"` : ''}
@@ -403,6 +404,7 @@ export function QuestionFooterContent({
             ${showGradeButton
               ? html`
                   <button
+                    type="submit"
                     class="btn btn-primary question-grade disable-on-submit order-1 me-1"
                     ${disableGradeButton ? 'disabled' : ''}
                     ${question.type === 'Freeform' ? html`name="__action" value="grade"` : ''}

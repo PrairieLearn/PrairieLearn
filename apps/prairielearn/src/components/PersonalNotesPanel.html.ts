@@ -164,6 +164,7 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             for your own review purposes. They are not used for grading.
           </p>
           <input
+            type="text"
             class="form-control"
             aria-label="Text filename"
             name="filename"
@@ -182,7 +183,7 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
             : ''}
           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-          <button class="btn btn-small btn-primary" name="__action" value="attach_text">
+          <button type="submit" class="btn btn-sm btn-primary" name="__action" value="attach_text">
             Add note
           </button>
         </form>

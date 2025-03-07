@@ -18,6 +18,7 @@ export function QRCodeModal({
   return Modal({
     id,
     title,
+    form: false,
     body: unsafeHtml(qrCodeSvg),
   });
 }
