@@ -168,6 +168,9 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
               ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
+                options: {
+                  mx1: true
+                }
               }),
             renderCondition: ({ authz_data, course }) =>
               authz_data.has_course_permission_edit && course.show_getting_started,

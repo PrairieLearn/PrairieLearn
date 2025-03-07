@@ -70,7 +70,7 @@ const sideNavPagesTabs = {
       iconClasses: 'fas fa-bug fa-fw',
       tabLabel: 'Issues',
       htmlSuffix: ({ navbarOpenIssueCount }) =>
-        IssueBadge({ count: navbarOpenIssueCount, suppressLink: true, className: 'ml-auto mr-1' }),
+        IssueBadge({ count: navbarOpenIssueCount, suppressLink: true, className: 'ms-auto' }),
     },
     {
       activePages: ['course_admin'],
