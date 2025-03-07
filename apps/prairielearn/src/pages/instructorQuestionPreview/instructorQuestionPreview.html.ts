@@ -7,9 +7,13 @@ import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWar
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 
 export function InstructorQuestionPreview({
+  normalPreviewUrl,
+  manualGradingPreviewEnabled,
   manualGradingPreviewUrl,
   resLocals,
 }: {
+  normalPreviewUrl: string;
+  manualGradingPreviewEnabled: boolean;
   manualGradingPreviewUrl: string;
   resLocals: Record<string, any>;
 }) {
@@ -53,12 +57,28 @@ export function InstructorQuestionPreview({
       </div>
     `,
     content: html`
+      ${manualGradingPreviewEnabled
+        ? html`
+            <div class="alert alert-primary alert-dismissible fade show">
+              You are viewing this question as it will appear in the manual grading interface.
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a>.
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+              ></button>
+            </div>
+          `
+        : ''}
       <div class="row">
         <div class="col-lg-9 col-sm-12">
           ${QuestionContainer({
             resLocals,
             questionContext: 'instructor',
-            manualGradingPreviewUrl,
+            manualGradingPreviewUrl: manualGradingPreviewEnabled
+              ? undefined
+              : manualGradingPreviewUrl,
           })}
         </div>
 

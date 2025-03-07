@@ -78,19 +78,37 @@ router.get(
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
 
+    const searchParams = getSearchParams(req);
+
     // Construct a URL to preview the question as it would appear in the manual
     // grading interface. We need to include the `variant_id` in the URL so that
     // we show the current variant and not a new one.
-    const searchParams = getSearchParams(req);
-    searchParams.set('variant_id', res.locals.variant.id.toString());
-    searchParams.set('manual_grading_preview', 'true');
+    const manualGradingPreviewSearchParams = new URLSearchParams(searchParams);
+    manualGradingPreviewSearchParams.set('variant_id', res.locals.variant.id.toString());
+    manualGradingPreviewSearchParams.set('manual_grading_preview', 'true');
     const manualGradingPreviewUrl = url.format({
       pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
-      search: searchParams.toString(),
+      search: manualGradingPreviewSearchParams.toString(),
+    });
+
+    // Construct a URL for the normal preview. This will be used to exit the manual grading preview.
+    const normalPreviewSearchParams = new URLSearchParams(searchParams);
+    normalPreviewSearchParams.delete('manual_grading_preview');
+    normalPreviewSearchParams.set('variant_id', res.locals.variant.id.toString());
+    const normalPreviewUrl = url.format({
+      pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
+      search: normalPreviewSearchParams.toString(),
     });
 
     setRendererHeader(res);
-    res.send(InstructorQuestionPreview({ manualGradingPreviewUrl, resLocals: res.locals }));
+    res.send(
+      InstructorQuestionPreview({
+        normalPreviewUrl,
+        manualGradingPreviewEnabled,
+        manualGradingPreviewUrl,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
