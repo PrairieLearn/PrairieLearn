@@ -1,5 +1,6 @@
-import { A11yError } from '@sa11y/format';
+import { A11yError, A11yResults } from '@sa11y/format';
 import axe from 'axe-core';
+import { HtmlValidate, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import { test } from 'mocha';
 import fetch from 'node-fetch';
@@ -19,7 +20,7 @@ const SITE_URL = 'http://localhost:' + config.serverPort;
 /**
  * Loads the given URL into a JSDOM object.
  */
-async function loadPageJsdom(url: string): Promise<JSDOM> {
+async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM }> {
   const text = await fetch(url).then((res) => {
     if (!res.ok) {
       throw new Error(`Error loading page: ${res.status}`);
@@ -30,14 +31,14 @@ async function loadPageJsdom(url: string): Promise<JSDOM> {
   // We don't have a need to see these warnings, so we create a virtual console
   // that does not log anything.
   const virtualConsole = new VirtualConsole();
-  return new JSDOM(text, { virtualConsole });
+  return { text, jsdom: new JSDOM(text, { virtualConsole }) };
 }
 
 /**
  * Checks the given URL for accessibility violations.
  */
 async function checkPage(url: string) {
-  const page = await loadPageJsdom(SITE_URL + url);
+  const { text, jsdom } = await loadPageJsdom(SITE_URL + url);
 
   // We need to mimic what Bootstrap will do at runtime for tooltips and popovers:
   // it will copy the `data-bs-title` attribute to the `aria-label` attribute if
@@ -46,7 +47,7 @@ async function checkPage(url: string) {
   //
   // Without this, we'll get a bunch of false positives that don't reflect
   // the actual behavior at runtime.
-  page.window.document.querySelectorAll('[data-bs-title]').forEach((el) => {
+  jsdom.window.document.querySelectorAll('[data-bs-title]').forEach((el) => {
     if (el.hasAttribute('aria-label') || el.textContent?.trim() !== '') {
       return;
     }
@@ -56,10 +57,59 @@ async function checkPage(url: string) {
     }
   });
 
-  const results = await axe.run(page.window.document.documentElement, {
+  let messages = '';
+
+  // Since the accessibility checks are already programmatically loading
+  // pretty much every page in the application, we'll piggyback on them
+  // to also run HTML validation.
+  const validator = new HtmlValidate();
+  const validationResults = await validator.validateString(text, {
+    rules: {
+      'attribute-empty-style': 'off',
+      deprecated: ['error', { exclude: ['tt'] }],
+      'doctype-style': 'off',
+      'no-inline-style': 'off',
+      'no-trailing-whitespace': 'off',
+      'prefer-native-element': ['error', { exclude: ['button'] }],
+      'script-type': 'off',
+      // This rule gets confused by our popover triggers. They use `data-bs-title`
+      // which is used as `aria-label` at runtime, but that isn't clear in the raw HTML.
+      'text-content': 'off',
+      'unique-landmark': 'off',
+      'void-style': 'off',
+      'wcag/h63': 'off',
+    },
+  });
+
+  // Filter out some validation results that don't apply to us.
+  for (const result of validationResults.results) {
+    result.messages = result.messages.filter((m) => {
+      // This doesn't appear to be an actual issue and isn't flagged by
+      // other tools like https://validator.w3.org/nu.
+      if (m.message.match(/<tt> element is not permitted as content under <(small|strong)>/)) {
+        return false;
+      }
+
+      return true;
+    });
+    result.errorCount = result.messages.length;
+  }
+
+  const formatter = formatterFactory('codeframe');
+  messages += formatter(validationResults.results);
+
+  const axeResults = await axe.run(jsdom.window.document.documentElement, {
     resultTypes: ['violations', 'incomplete'],
   });
-  A11yError.checkAndThrow(results.violations);
+  if (axeResults.violations.length > 0) {
+    const err = new A11yError(
+      axeResults.violations,
+      A11yResults.convert(axeResults.violations).sort(),
+    );
+    messages += err.format({});
+  }
+
+  return messages.trim();
 }
 
 const STATIC_ROUTE_PARAMS = {
@@ -339,7 +389,7 @@ describe('accessibility', () => {
     this.timeout(240_000);
 
     const missingParamsEndpoints: Endpoint[] = [];
-    const failingEndpoints: [Endpoint, any][] = [];
+    const failingEndpoints: [Endpoint, string][] = [];
 
     for (const endpoint of endpoints) {
       if (shouldSkipPath(endpoint.path)) {
@@ -358,10 +408,9 @@ describe('accessibility', () => {
       }
 
       const url = substituteParams(endpoint.path, routeParams);
-      try {
-        await checkPage(url);
-      } catch (err) {
-        failingEndpoints.push([endpoint, err]);
+      const messages = await checkPage(url);
+      if (messages !== '') {
+        failingEndpoints.push([endpoint, messages]);
       }
     }
 
@@ -374,8 +423,8 @@ describe('accessibility', () => {
 
     if (failingEndpoints.length > 0) {
       errLines.push('The following endpoints failed accessibility checks:\n');
-      failingEndpoints.forEach(([e, err]) => {
-        errLines.push(e.path, err.message, '');
+      failingEndpoints.forEach(([endpoint, messages]) => {
+        errLines.push(endpoint.path, messages, '');
       });
     }
 

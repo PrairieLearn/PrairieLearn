@@ -353,6 +353,7 @@ function FilterHelpModal() {
   return Modal({
     id: 'filterHelpModal',
     title: 'Filter help',
+    form: false,
     body: html`
       <p>
         Issues can be filtered and searched in a variety of ways. Filtering is done with the
@@ -360,8 +361,10 @@ function FilterHelpModal() {
       </p>
       <table class="table table-bordered" aria-label="Filtering qualifiers">
         <thead>
-          <th>Qualifier</th>
-          <th>Explanation</th>
+          <tr>
+            <th>Qualifier</th>
+            <th>Explanation</th>
+          </tr>
         </thead>
         <tbody>
           <tr>

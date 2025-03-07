@@ -84,7 +84,7 @@ export function QuestionContainer({
               ? html`
                   <div class="mb-4 d-flex justify-content-center">
                     <button
-                      class="show-hide-btn btn btn-outline-secondary btn-sm collapsed"
+                      class="show-hide-btn btn-outline-secondary btn-sm collapsed"
                       type="button"
                       data-bs-toggle="collapse"
                       data-bs-target="#more-submissions-collapser"
@@ -392,7 +392,9 @@ export function QuestionFooterContent({
                   <button
                     class="btn btn-info question-save disable-on-submit order-2"
                     ${disableSaveButton ? 'disabled' : ''}
-                    ${question.type === 'Freeform' ? html`name="__action" value="save"` : ''}
+                    ${question.type === 'Freeform'
+                      ? html`type="submit" name="__action" value="save"`
+                      : ''}
                   >
                     ${showGradeButton ? 'Save only' : 'Save'}
                   </button>
@@ -403,7 +405,9 @@ export function QuestionFooterContent({
                   <button
                     class="btn btn-primary question-grade disable-on-submit order-1 me-1"
                     ${disableGradeButton ? 'disabled' : ''}
-                    ${question.type === 'Freeform' ? html`name="__action" value="grade"` : ''}
+                    ${question.type === 'Freeform'
+                      ? html`type="submit" name="__action" value="grade"`
+                      : ''}
                   >
                     Save &amp; Grade
                     ${variantAttemptsTotal > 0
