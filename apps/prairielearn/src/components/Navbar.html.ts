@@ -931,11 +931,7 @@ function NavbarInstructor({
                           aria-expanded="false"
                           aria-label="Change assessment"
                         ></a>
-                        <div
-                          class="dropdown-menu"
-                          aria-labelledby="navbarDropdownMenuLink"
-                          id="navbarDropwdownMenuInstructorAssessment"
-                        >
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                           ${assessments.map(
                             (a) => html`
                               <a

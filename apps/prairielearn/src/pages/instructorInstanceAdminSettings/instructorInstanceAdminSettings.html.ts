@@ -219,13 +219,18 @@ function CopyCourseInstanceForm({
     <div class="card-footer d-flex flex-wrap align-items-center">
       <form name="copy-course-instance-form" class="me-2" method="POST">
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button name="__action" value="copy_course_instance" class="btn btn-sm btn-primary">
+        <button
+          type="submit"
+          name="__action"
+          value="copy_course_instance"
+          class="btn btn-sm btn-primary"
+        >
           <i class="fa fa-clone"></i> Make a copy of this course instance
         </button>
       </form>
       <button
+        type="button"
         class="btn btn-sm btn-primary"
-        href="#"
         data-bs-toggle="modal"
         data-bs-target="#deleteCourseInstanceModal"
       >
