@@ -1,3 +1,5 @@
+# Process
+
 ## Goals
 
 - For partial sync, be safe
@@ -21,9 +23,9 @@
     - If there is no existing entity with this ID but there was another entity with the same UUID, fall back to full sync
 - Load and validate the relevant `info.json` file
   - If this fails, fail sync with a detailed error message
-- Are we syncing an assessment? If so…
-  _ Load a list of QIDs in the database
-  _ Validate the collection of QIDs used in the assessment against the list of QIDs in the course \* If validation fails, fail sync with an error message
+- Are we syncing an assessment? If so...
+  - Load a list of QIDs in the database
+  - Validate the collection of QIDs used in the assessment against the list of QIDs in the course \* If validation fails, fail sync with an error message
 
 ## Full sync
 
