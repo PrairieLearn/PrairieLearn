@@ -12,7 +12,7 @@ export function ProgressCircle({
     mlAuto?: boolean;
   };
 }) {
-  // Whether or not the ProgressCircle should have mx-1 (horizontal margin) applied to it.
+  // Whether or not the ProgressCircle should have mx-1 added to it.
   const mx1 = options.mx1 ?? false;
 
   // Whether or not the ProgressCircle should have ml-auto (margin-left: auto) applied to it.
