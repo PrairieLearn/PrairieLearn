@@ -112,7 +112,8 @@ export function UserSettings({
                         </span>
                       </label>
                       <div class="small text-muted">
-                        Try out a new navigation experience. TODO sell this better.
+                        Try a new navigation experience for instructors that makes accessing your
+                        course simpler, faster, and more intuitive.
                       </div>
                     </div>
                   </li>

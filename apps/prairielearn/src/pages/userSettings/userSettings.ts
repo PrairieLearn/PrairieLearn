@@ -95,7 +95,7 @@ router.post(
         }
       }
 
-      flash('success', 'Features updated successfully');
+      flash('success', 'Features updated successfully.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'token_generate') {
       const { mode } = await sqldb.callRow(
