@@ -36,6 +36,11 @@ export function InstructorInstanceAdminSettings({
         course: resLocals.course,
         urlPrefix: resLocals.urlPrefix,
       })}
+      ${QRCodeModal({
+        id: 'studentLinkModal',
+        title: 'Student Link QR Code',
+        content: studentLink,
+      })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>
@@ -123,11 +128,6 @@ export function InstructorInstanceAdminSettings({
                 to share with students.
               </small>
             </div>
-            ${QRCodeModal({
-              id: 'studentLinkModal',
-              title: 'Student Link QR Code',
-              content: studentLink,
-            })}
             ${EditConfiguration({
               hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
               hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
