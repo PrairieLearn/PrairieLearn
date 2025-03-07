@@ -3869,6 +3869,7 @@ __metadata:
     google-auth-library: "npm:^9.15.1"
     he: "npm:^1.2.0"
     highlight.js: "npm:^11.11.1"
+    html-rewriter-wasm: "npm:^0.4.1"
     html-validate: "npm:^9.4.2"
     htmx.org: "npm:^1.9.12"
     http-proxy-middleware: "npm:^2.0.7"
@@ -10391,6 +10392,13 @@ __metadata:
   version: 2.0.2
   resolution: "html-escaper@npm:2.0.2"
   checksum: 10c0/208e8a12de1a6569edbb14544f4567e6ce8ecc30b9394fcaa4e7bb1e60c12a7c9a1ed27e31290817157e8626f3a4f29e76c8747030822eb84a6abb15c255f0a0
+  languageName: node
+  linkType: hard
+
+"html-rewriter-wasm@npm:^0.4.1":
+  version: 0.4.1
+  resolution: "html-rewriter-wasm@npm:0.4.1"
+  checksum: 10c0/54b13625578de30cabfea97e564cbb1782ce1087a93c83aa1d43ecb4a3f8a8fcfeaf3d9d0ba9a08b01adc8ce3abcee4b61a9068580b7859ff257dacb0bb64ed2
   languageName: node
   linkType: hard
 

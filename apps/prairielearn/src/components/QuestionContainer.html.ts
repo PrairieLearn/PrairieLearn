@@ -53,7 +53,7 @@ export function QuestionContainer({
       data-variant-token="${variantToken}"
     >
       ${question.type !== 'Freeform'
-        ? html`<div hidden="true" class="question-data">${questionJsonBase64}</div>`
+        ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
       ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
       ${question.type === 'Freeform'

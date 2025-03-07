@@ -110,6 +110,7 @@
     "google-auth-library": "^9.15.1",
     "he": "^1.2.0",
     "highlight.js": "^11.11.1",
+    "html-rewriter-wasm": "^0.4.1",
     "html-validate": "^9.4.2",
     "htmx.org": "^1.9.12",
     "http-proxy-middleware": "^2.0.7",

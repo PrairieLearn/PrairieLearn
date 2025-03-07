@@ -397,7 +397,12 @@ function IssueReportButton({
         </div>
         <input type="hidden" name="__variant_id" value="${variant.id}" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button class="btn btn-small btn-warning" name="__action" value="report_issue">
+        <button
+          type="submit"
+          class="btn btn-small btn-warning"
+          name="__action"
+          value="report_issue"
+        >
           Report issue
         </button>
       </form>

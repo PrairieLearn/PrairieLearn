@@ -264,9 +264,9 @@ function GraderAssignmentModal({
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="__action" value="assign_graders" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      ${courseStaff.length > 0
-        ? html`<button type="submit" class="btn btn-primary">Assign</button>`
-        : ''}
+      <button type="submit" class="btn btn-primary" ${courseStaff.length === 0 ? 'disabled' : ''}>
+        Assign
+      </button>
     `,
   });
 }
