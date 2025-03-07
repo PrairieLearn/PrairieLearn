@@ -8,6 +8,7 @@ SHELL ["/bin/bash", "-c"]
 # This is a prerequisite for the VS Code extensions in the following steps.
 USER coder
 COPY requirements.txt /
+# SC1091: `source` an unknown file is required to activate Conda.
 # hadolint ignore=SC1091
 RUN arch="$(uname -m)" \
     && curl -sfLO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
