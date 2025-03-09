@@ -186,7 +186,7 @@ function CourseNav({
 
   return html`
     <div class="side-nav-section-header-row">
-      <p class="side-nav-section-header-text" class="m-0">Course</p>
+      <p class="side-nav-section-header-text m-0">Course</p>
       <button
         id="side-nav-toggler"
         class="navbar-toggler"
