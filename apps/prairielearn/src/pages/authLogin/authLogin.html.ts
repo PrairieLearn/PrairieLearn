@@ -345,22 +345,34 @@ function DevModeLogin({ csrfToken }: { csrfToken: string }) {
     <form method="POST">
       <div class="mb-3">
         <label class="form-label" for="dev_uid">UID</label>
-        <input class="form-control" id="dev_uid" name="uid" required />
+        <input type="text" class="form-control" id="dev_uid" name="uid" required />
       </div>
       <div class="mb-3">
         <label class="form-label" for="dev_name">Name</label>
-        <input class="form-control" id="dev_name" name="name" required />
+        <input type="text" class="form-control" id="dev_name" name="name" required />
       </div>
       <div class="mb-3">
         <label class="form-label" for="dev_uin">UIN</label>
-        <input class="form-control" id="dev_uin" name="uin" aria-describedby="dev_uin_help" />
+        <input
+          type="text"
+          class="form-control"
+          id="dev_uin"
+          name="uin"
+          aria-describedby="dev_uin_help"
+        />
         <small id="dev_uin_help" class="form-text text-muted">
           Optional; will be set to <tt>null</tt> if not specified.
         </small>
       </div>
       <div class="mb-3">
         <label class="form-label" for="dev_email">Email</label>
-        <input class="form-control" id="dev_email" name="email" aria-describedby="dev_email_help" />
+        <input
+          type="email"
+          class="form-control"
+          id="dev_email"
+          name="email"
+          aria-describedby="dev_email_help"
+        />
         <small id="dev_email_help" class="form-text text-muted">
           Optional; will be set to <tt>null</tt> if not specified.
         </small>
