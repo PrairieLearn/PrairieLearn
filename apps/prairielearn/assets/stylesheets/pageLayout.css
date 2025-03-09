@@ -29,6 +29,9 @@ body:has(div.app-container) {
   position: relative;
   height: 100%;
   width: 100vw;
+  grid-template:
+    'top-nav top-nav' auto
+    'side-nav content' 1fr / 300px 1fr;
 }
 
 .app-container #course-dropdown {
@@ -201,4 +204,3 @@ body:has(div.app-container) {
 .app-container.side-nav-can-show.show-side-nav .side-nav-toggler-icon.close {
   display: none;
 }
-

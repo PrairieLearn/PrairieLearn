@@ -30,7 +30,7 @@ onDocumentReady(async () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({}),
-        })
+        });
       } else if (courseId) {
         await fetch(`/pl/course/${courseId}/side_nav`, {
           method: 'PUT',

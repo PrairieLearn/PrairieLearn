@@ -2,8 +2,6 @@ import { Router } from 'express';
 
 import { html } from '@prairielearn/html';
 
-import { SideNav } from '../../components/SideNav.html.js';
-
 const router = Router();
 
 // TODO: move this out of pages

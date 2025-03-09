@@ -1,5 +1,4 @@
 import { html, type HtmlValue } from '@prairielearn/html';
-import type { Course } from '../lib/db-types.js';
 
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
@@ -195,9 +194,11 @@ function CourseNav({
         aria-expanded="false"
         aria-label="Toggle navigation"
         ${resLocals.course.id ? `data-course-id=${resLocals.course.id}` : ''}
-        ${resLocals.course_instance?.id ? `data-course-instance-id=${resLocals.course_instance.id}` : ''}
+        ${resLocals.course_instance?.id
+          ? `data-course-instance-id=${resLocals.course_instance.id}`
+          : ''}
       >
-        <div 
+        <div
           class="side-nav-toggler-icon open"
           data-toggle="tooltip"
           data-plaement="right"
@@ -207,7 +208,7 @@ function CourseNav({
             showSideNav: true,
           })}
         </div>
-        <div 
+        <div
           class="side-nav-toggler-icon close"
           data-toggle="tooltip"
           data-placement="right"
@@ -222,8 +223,9 @@ function CourseNav({
     <div class="side-nav-group mb-3">
       <div class="dropdown">
         <button
+          id="course-dropdown"
           type="button"
-          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
+          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center mb-2"
           data-toggle="dropdown"
           aria-label="Change course"
           aria-haspopup="true"
@@ -284,8 +286,9 @@ function CourseInstanceNav({
       <div>
         <div class="dropdown">
           <button
+            id="course-instance-dropdown"
             type="button"
-            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
+            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center mb-2"
             data-toggle="dropdown"
             aria-label="Change course instance"
             aria-haspopup="true"
@@ -368,11 +371,9 @@ function SideNavLink({
       data-placement="right"
       title="${tabLabel}"
     >
-      <i class="icon ${iconClasses}"></i>
-      <span class="side-nav-link-text">${tabLabel}</span> 
-      <div class="suffix">
-        ${htmlSuffix?.(resLocals) || ''}
-      </div>
+      <i class="icon flex-shrink-0 ${iconClasses}"></i>
+      <span class="side-nav-link-text">${tabLabel}</span>
+      <div class="suffix">${htmlSuffix?.(resLocals) || ''}</div>
     </a>
   `;
 }
