@@ -1,5 +1,14 @@
 # @prairielearn/browser-utils
 
+## 2.2.6
+
+### Patch Changes
+
+- 11766e0: Prevent scrolling when restoring focus after a focus trap is deactivated
+- 49bb3fa: Upgrade all JavaScript dependencies
+- Updated dependencies [49bb3fa]
+  - @prairielearn/html@4.0.10
+
 ## 2.2.5
 
 ### Patch Changes

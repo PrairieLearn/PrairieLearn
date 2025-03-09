@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import type { Assessment, CourseInstance } from '../lib/db-types.js';
+import { idsEqual } from '../lib/id.js';
 
 /**
  * Dropdown that lets users navigate between assessments in a
@@ -16,12 +17,13 @@ export function AssessmentNavigation({
   assessments: Assessment[];
 }) {
   return html`
-    <div class="dropdown bg-light p-3 pb-0">
+    <div class="dropdown bg-light pt-2 px-3">
       <button
         type="button"
         class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center"
         style="max-width: 100%;"
         data-toggle="dropdown"
+        aria-label="Change assessment"
         aria-haspopup="true"
         aria-expanded="false"
         data-boundary="window"
@@ -33,8 +35,8 @@ export function AssessmentNavigation({
           ${assessments.map((a) => {
             return html`
               <a
-                class="dropdown-item ${`${assessment.id}` === `${a.id}` ? 'active' : ''}"
-                aria-current="${`${assessment.id}` === `${a.id}` ? 'page' : ''}"
+                class="dropdown-item ${idsEqual(assessment.id, a.id) ? 'active' : ''}"
+                aria-current="${idsEqual(assessment.id, a.id) ? 'page' : ''}"
                 href="/pl/course_instance/${courseInstance.id}/instructor/assessment/${a.id}"
               >
                 ${a.title}

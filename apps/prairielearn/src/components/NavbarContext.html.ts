@@ -19,6 +19,7 @@ export function ContextNavigation({
   const navPagesTabs = getNavPageTabs(resLocals.has_enhanced_navigation);
   const navPageTabs = navPagesTabs[navPage];
 
+  // Some navPages do not have tabs
   if (!navPageTabs) return '';
 
   return html`
@@ -28,7 +29,7 @@ export function ContextNavigation({
           nav 
           nav-tabs 
           pl-nav-tabs-bar 
-          ${showSideNav ? 'pt-3' : 'pt-2'} 
+          pt-2
           px-3 
           bg-light
         "
@@ -68,7 +69,7 @@ function NavbarTab({
         class="nav-link d-flex align-items-center ${activeClasses}"
         href="${urlPrefix}${urlSuffix}"
       >
-        <i class="mr-1 ${iconClasses}"></i>${tabLabel}${htmlSuffix?.(resLocals) || ''}
+        <i class="me-1 ${iconClasses}"></i>${tabLabel}${htmlSuffix?.(resLocals) || ''}
       </a>
     </li>
   `;

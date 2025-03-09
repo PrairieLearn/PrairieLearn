@@ -76,7 +76,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   // Now that we know the user has access, parse the authz data
   res.locals.course = result.rows[0].course;
-  res.locals.courses = courses;
 
   const institution = result.rows[0].institution;
   res.locals.institution = institution;

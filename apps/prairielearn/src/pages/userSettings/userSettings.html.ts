@@ -97,8 +97,9 @@ export function UserSettings({
             resetting the MathJax menu settings might help.
           </p>
           <button
+            type="button"
             class="btn btn-md btn-info"
-            onClick="localStorage.removeItem('MathJax-Menu-Settings');alert('MathJax menu settings have been reset');"
+            onclick="localStorage.removeItem('MathJax-Menu-Settings');alert('MathJax menu settings have been reset');"
           >
             Reset MathJax menu settings
           </button>
@@ -112,13 +113,13 @@ export function UserSettings({
             ? html`
                 <button
                   type="button"
-                  class="btn btn-light btn-sm ml-auto"
-                  data-toggle="popover"
-                  data-container="body"
-                  data-html="true"
-                  data-placement="auto"
-                  title="Generate new token"
-                  data-content="${TokenGenerateForm({
+                  class="btn btn-light btn-sm ms-auto"
+                  data-bs-toggle="popover"
+                  data-bs-container="body"
+                  data-bs-html="true"
+                  data-bs-placement="auto"
+                  data-bs-title="Generate new token"
+                  data-bs-content="${TokenGenerateForm({
                     csrfToken: resLocals.__csrf_token,
                   }).toString()}"
                   data-testid="generate-token-button"
@@ -190,7 +191,7 @@ function TokenList({
   return accessTokens.map(
     (token) => html`
       <li class="list-group-item d-flex align-items-center">
-        <div class="d-flex flex-column mr-3">
+        <div class="d-flex flex-column me-3">
           <strong>${token.name}</strong>
           <span class="text-muted">Created at ${token.created_at}</span>
           <span class="text-muted">
@@ -199,13 +200,13 @@ function TokenList({
         </div>
         <button
           type="button"
-          class="btn btn-outline-danger btn-sm ml-auto"
-          data-toggle="popover"
-          data-container="body"
-          data-html="true"
-          data-placement="auto"
-          title="Delete this token"
-          data-content="${TokenDeleteForm({
+          class="btn btn-outline-danger btn-sm ms-auto"
+          data-bs-toggle="popover"
+          data-bs-container="body"
+          data-bs-html="true"
+          data-bs-placement="auto"
+          data-bs-title="Delete this token"
+          data-bs-content="${TokenDeleteForm({
             token_id: token.id,
             csrfToken: resLocals.__csrf_token,
           }).toString()}"
@@ -222,8 +223,8 @@ function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
     <form name="generate-token-form" method="post">
       <input type="hidden" name="__action" value="token_generate" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <div class="form-group">
-        <label for="token_name">Name:</label>
+      <div class="mb-3">
+        <label class="form-label" for="token_name">Name:</label>
         <input
           type="text"
           class="form-control"
@@ -234,7 +235,7 @@ function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Generate token</button>
       </div>
     </form>
@@ -252,7 +253,7 @@ function TokenDeleteForm({ token_id, csrfToken }: { token_id: string; csrfToken:
         API. You cannot undo this action.
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete token</button>
       </div>
     </form>
