@@ -85,7 +85,7 @@ export function InstructorCourseAdminStaff({
           <div class="ms-auto">
             <button
               type="button"
-              class="btn btn-light btn-sm ml-auto"
+              class="btn btn-light btn-sm"
               aria-label="Remove all student data access"
               data-bs-toggle="popover"
               data-bs-container="body"
@@ -104,7 +104,7 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ml-auto"
+              class="btn btn-light btn-sm"
               aria-label="Delete users with no access"
               data-bs-toggle="popover"
               data-bs-container="body"
@@ -123,7 +123,7 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ml-auto"
+              class="btn btn-light btn-sm"
               aria-label="Delete non-owners"
               data-bs-toggle="popover"
               data-bs-container="body"
@@ -142,7 +142,7 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ml-auto"
+              class="btn btn-light btn-sm"
               aria-label="Add users"
               data-bs-toggle="popover"
               data-bs-container="body"

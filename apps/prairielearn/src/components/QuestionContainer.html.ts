@@ -211,7 +211,7 @@ export function IssuePanel({
 
       ${config.devMode || authz_data.has_course_permission_view
         ? html`
-            <div class="card-body border border-bottom-0 border-left-0 border-right-0">
+            <div class="card-body border border-bottom-0 border-start-0 border-end-0">
               ${issue.system_data?.courseErrData
                 ? html`
                     <p><strong>Console log:</strong></p>
