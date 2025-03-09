@@ -5,6 +5,8 @@ import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
@@ -17,6 +19,7 @@ import {
   AssessmentSchema,
   type AssessmentSet,
   AssessmentSetSchema,
+  AssessmentModuleSchema,
 } from '../../lib/db-types.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
@@ -30,7 +33,8 @@ export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
   AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
 ).extend({
   start_new_assessment_group: z.boolean(),
-  assessment_group_heading: AssessmentSetSchema.shape.heading,
+  assessment_set: AssessmentSetSchema,
+  assessment_module: AssessmentModuleSchema,
   label: z.string(),
   open_issue_count: z.coerce.number(),
 });
@@ -118,7 +122,13 @@ export function InstructorAssessments({
                         ${row.start_new_assessment_group
                           ? html`
                               <tr>
-                                <th colspan="7" scope="row">${row.assessment_group_heading}</th>
+                                <th colspan="7" scope="row">
+                                  ${assessmentsGroupBy === 'Set'
+                                    ? AssessmentSetHeading({ assessment_set: row.assessment_set })
+                                    : AssessmentModuleHeading({
+                                        assessment_module: row.assessment_module,
+                                      })}
+                                </th>
                               </tr>
                             `
                           : ''}

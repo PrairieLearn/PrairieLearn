@@ -224,8 +224,7 @@ describe('Assessment set syncing', () => {
     checkAssessmentSet(syncedAssessmentSets[0], {
       abbreviation: 'X',
       name: 'X',
-      heading:
-        'X (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)',
+      heading: 'X',
       color: 'gray1',
       number: 1,
     });
