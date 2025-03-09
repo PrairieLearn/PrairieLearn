@@ -4,7 +4,6 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
 import {
@@ -12,6 +11,7 @@ import {
   CourseSchema,
   IdSchema,
   InstitutionSchema,
+  type User,
 } from '../../lib/db-types.js';
 import { type FeatureName, features } from '../../lib/features/index.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
@@ -123,13 +123,13 @@ async function getEntitiesFromParams(params: AddFeatureGrantModalParams) {
     course_instance = undefined;
   }
 
-  const user = await run(async () => {
-    if (!params.user_uid) return null;
-
-    const user = await selectOptionalUserByUid(params.user_uid);
-    if (!user) throw new error.HttpStatusError(400, `User not found: ${params.user_uid}`);
-    return user;
-  });
+  let user: User | null = null;
+  if (params.user_uid) {
+    user = await selectOptionalUserByUid(params.user_uid);
+    if (!user) {
+      throw new error.HttpStatusError(400, `User not found: ${params.user_uid}`);
+    }
+  }
 
   return { institutions, institution, courses, course, course_instances, course_instance, user };
 }
