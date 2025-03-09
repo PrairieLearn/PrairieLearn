@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 export function ProgressCircle({
   value,
   maxValue,
-  className
+  className,
 }: {
   value: number;
   maxValue: number;
