@@ -824,7 +824,7 @@ function NavbarInstructor({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
                 options: {
-                  mx1: true,
+                  className: 'mx-1'
                 },
               })}
             </a>

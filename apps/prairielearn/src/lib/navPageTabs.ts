@@ -169,7 +169,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
                 options: {
-                  mx1: true,
+                  className: 'mx-1'
                 },
               }),
             renderCondition: ({ authz_data, course }) =>

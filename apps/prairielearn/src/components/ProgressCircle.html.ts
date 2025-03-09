@@ -8,13 +8,10 @@ export function ProgressCircle({
   value: number;
   maxValue: number;
   options?: {
-    mx1?: boolean;
+    className?: string;
     mlAuto?: boolean;
   };
 }) {
-  // Whether or not the ProgressCircle should have mx-1 added to it.
-  const mx1 = options.mx1 ?? false;
-
   // Whether or not the ProgressCircle should have ml-auto (margin-left: auto) applied to it.
   const mlAuto = options.mlAuto ?? false;
 
@@ -52,7 +49,7 @@ export function ProgressCircle({
     width="20px"
     height="20px"
     viewBox="0 0 20 20"
-    class="mx-1 ${mlAuto ? 'ml-auto' : ''}"
+    class="${options.className ? options.className : ''} ${mlAuto ? 'ml-auto' : ''}"
   >
     <circle
       cx="10px"
