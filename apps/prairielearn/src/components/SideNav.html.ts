@@ -40,10 +40,7 @@ const sideNavPagesTabs = {
         ProgressCircle({
           value: navbarCompleteGettingStartedTasksCount,
           maxValue: navbarTotalGettingStartedTasksCount,
-          options: {
-            mlAuto: true,
-            className: 'mx-1'
-          },
+          className: 'ms-auto'
         }),
       renderCondition: ({ authz_data, course }) =>
         authz_data.has_course_permission_edit && course.show_getting_started,

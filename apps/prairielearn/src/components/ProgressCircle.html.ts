@@ -3,18 +3,12 @@ import { html } from '@prairielearn/html';
 export function ProgressCircle({
   value,
   maxValue,
-  options = {},
+  className
 }: {
   value: number;
   maxValue: number;
-  options?: {
-    className?: string;
-    mlAuto?: boolean;
-  };
+  className?: string;
 }) {
-  // Whether or not the ProgressCircle should have ml-auto (margin-left: auto) applied to it.
-  const mlAuto = options.mlAuto ?? false;
-
   // The progress circle has radius of 8px, so its circumference is 2 * PI * 8px.
   const progressCircleCircumference = 2 * Math.PI * 8;
 
@@ -49,7 +43,7 @@ export function ProgressCircle({
     width="20px"
     height="20px"
     viewBox="0 0 20 20"
-    class="${options.className ? options.className : ''} ${mlAuto ? 'ml-auto' : ''}"
+    class="${className ? className : ''}"
   >
     <circle
       cx="10px"
