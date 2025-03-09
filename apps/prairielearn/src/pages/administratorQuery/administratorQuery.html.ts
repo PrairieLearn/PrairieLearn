@@ -92,7 +92,7 @@ export function AdministratorQuery({
         </div>
 
         <div class="card-body">
-          <form name="run-query-form" method="POST">
+          <form method="POST">
             ${info.params
               ? info.params.map(
                   (param) => html`
