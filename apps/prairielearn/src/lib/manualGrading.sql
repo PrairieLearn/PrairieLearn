@@ -420,8 +420,7 @@ INSERT INTO
     manual_points,
     feedback,
     partial_scores,
-    manual_rubric_grading_id,
-    is_ai_graded
+    manual_rubric_grading_id
   )
 VALUES
   (
@@ -429,15 +428,14 @@ VALUES
     $authn_user_id,
     $authn_user_id,
     now(),
-    'Manual',
+    $grading_method,
     $correct,
     $score,
     $auto_points,
     $manual_points,
     $feedback,
     $partial_scores,
-    $manual_rubric_grading_id,
-    $is_ai_graded
+    $manual_rubric_grading_id
   )
 RETURNING
   id;

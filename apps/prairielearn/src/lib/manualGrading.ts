@@ -615,6 +615,7 @@ export async function updateInstanceQuestionScore(
         {
           submission_id: current_submission.submission_id,
           authn_user_id,
+          grading_method: is_ai_graded ? 'AI' : 'Manual',
           correct: new_auto_score_perc == null ? null : new_auto_score_perc > 50,
           score: new_score_perc == null ? null : new_score_perc / 100,
           auto_points: new_auto_points,
@@ -622,7 +623,6 @@ export async function updateInstanceQuestionScore(
           feedback: score?.feedback,
           partial_scores: score?.partial_scores,
           manual_rubric_grading_id,
-          is_ai_graded,
         },
         IdSchema,
       );
