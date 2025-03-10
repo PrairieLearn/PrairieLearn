@@ -31,6 +31,7 @@
                 {{/correct}}
             {{/display-score-badge}}
         {{/parse-error}}
+        {{#parse-error}}
         <span class="small" style="white-space: nowrap">
             <span class="badge text-bg-danger">
                 Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
@@ -47,9 +48,7 @@
             >
             More info…
             </a>
-        </span>
-        {{#parse-error}}
-            
+        </span>   
         {{/parse-error}}
     </span>
 {{/submission}}
