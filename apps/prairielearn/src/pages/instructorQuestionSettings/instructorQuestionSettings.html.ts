@@ -238,6 +238,68 @@ export function InstructorQuestionSettings({
                 </tbody>
               </table>
             </div>
+            <div class="form-group">
+              <label for="grading_method">Grading method</label>
+              <select
+                class="form-select"
+                id="grading_method"
+                name="grading_method"
+                value="${resLocals.question.title}"
+                ${canEdit ? '' : 'disabled'}
+              >
+                <option
+                  value="Internal"
+                  ${resLocals.question.grading_method === 'Internal' ? 'selected' : ''}
+                >
+                  Internal
+                </option>
+                <option
+                  value="External"
+                  ${resLocals.question.grading_method === 'External' ? 'selected' : ''}
+                >
+                  External
+                </option>
+                <option
+                  value="Manual"
+                  ${resLocals.question.grading_method === 'Manual' ? 'selected' : ''}
+                >
+                  Manual
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                The grading method used for this question.
+              </small>
+            </div>
+            <div class="form-group form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="single_variant"
+                name="single_variant"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.question.single_variant ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="single_variant">Single variant</label>
+              <div class="form-text small text-muted">
+                If enabled, students will only be able to try a single variant of this question on
+                any given assessment.
+              </div>
+            </div>
+            <div class="form-group form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="show_correct_answer"
+                name="show_correct_answer"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.question.show_correct_answer ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="show_correct_answer">Show Correct Answer</label>
+              <div class="form-text small text-muted">
+                If enabled, the correct answer panel will be shown after all submission attempts
+                have been exhausted.
+              </div>
+            </div>
             ${canEdit
               ? html`
                   <button
