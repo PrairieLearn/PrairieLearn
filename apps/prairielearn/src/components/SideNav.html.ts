@@ -202,7 +202,7 @@ function CourseNav({
         <div
           class="side-nav-toggler-icon open"
           data-toggle="tooltip"
-          data-plaement="right"
+          data-placement="right"
           title="Collapse side navigation"
         >
           ${SideNavToggleButton({

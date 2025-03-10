@@ -59,7 +59,8 @@ body:has(div.app-container) {
   grid-area: side-nav;
   overflow: hidden;
 
-  /* --bs-primary-bg-subtle from Bootstrap 5.3 */
+  /* This color is --bs-primary-bg-subtle from Bootstrap 5.3 */
+  /* TODO: Use the native CSS variable when we upgrade to 5.3 */
   background-color: #cfe2ff;
   transition: 300ms;
 }

@@ -50,6 +50,7 @@ export function PageLayout({
   const marginBottom = options.marginBottom ?? true;
 
   if (resLocals.has_enhanced_navigation) {
+    // The side navbar is only shown if the user is in a page within a course or course instance.
     const canShowSideNav =
       resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
 

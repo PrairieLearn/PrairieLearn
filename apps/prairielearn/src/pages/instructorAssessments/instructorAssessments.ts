@@ -8,10 +8,10 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
   loadSqlEquiv,
-  queryCursor,
-  queryOptionalRow,
-  queryRow,
   queryRows,
+  queryOptionalRow,
+  queryCursor,
+  queryRow,
 } from '@prairielearn/postgres';
 
 import {

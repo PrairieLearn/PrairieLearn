@@ -5,11 +5,10 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { config } from '../../lib/config.js';
-import { selectInstructorCourses } from '../../lib/course.js';
 import { InstitutionSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 
-import { Home, StudentCourseSchema } from './home.html.js';
+import { Home, InstructorCourseSchema, StudentCourseSchema } from './home.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -24,11 +23,18 @@ router.get(
       await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
     }
 
-    const instructorCourses = await selectInstructorCourses({
-      userId: res.locals.authn_user.user_id,
-      isAdministrator: res.locals.is_administrator,
-      includeExampleCourse: res.locals.is_administrator || config.devMode,
-    });
+    const instructorCourses = await queryRows(
+      sql.select_instructor_courses,
+      {
+        user_id: res.locals.authn_user.user_id,
+        is_administrator: res.locals.is_administrator,
+        // Example courses are only shown to users who are either instructors of
+        // at least one other course, or who are admins. They're also shown
+        // unconditionally in dev mode.
+        include_example_course: res.locals.is_administrator || config.devMode,
+      },
+      InstructorCourseSchema,
+    );
 
     const studentCourses = await queryRows(
       sql.select_student_courses,
