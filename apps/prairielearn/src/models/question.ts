@@ -5,7 +5,12 @@ import { type Question, QuestionSchema } from '../lib/db-types.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectQuestionById(question_id: string): Promise<Question> {
-  return await queryRow(sql.select_question_by_id, { question_id }, QuestionSchema);
+  const question = await queryRow(sql.select_question_by_id, { question_id }, QuestionSchema);
+  // console.log('question in selectQuestionById');
+  // console.log(question);
+  return question;
+
+  // return await queryRow(sql.select_question_by_id, { question_id }, QuestionSchema);
 }
 
 export async function selectQuestionByQid({

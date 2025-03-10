@@ -49,9 +49,9 @@ function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntim
   }
 }
 
-async function callFunction(func, question_course, question, inputData) {
+async function callFunction(func, question_course, question, inputData, zoneInformation) {
   await prepareChunksIfNeeded(question, question_course);
-
+  console.log(zoneInformation)
   const courseHostPath = chunks.getRuntimeDirectoryForCourse(question_course);
   const courseRuntimePath = config.workersExecutionMode === 'native' ? courseHostPath : '/course';
 
@@ -97,8 +97,8 @@ async function callFunction(func, question_course, question, inputData) {
   }
 }
 
-export async function generate(question, course, variant_seed) {
-  return await callFunction('generate', course, question, { variant_seed });
+export async function generate(question, course, variant_seed, zoneInformation) {
+  return await callFunction('generate', course, question, { variant_seed }, zoneInformation);
 }
 
 export async function grade(submission, variant, question, question_course) {

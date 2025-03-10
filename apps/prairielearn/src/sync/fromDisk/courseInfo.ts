@@ -29,6 +29,7 @@ export async function sync(courseData: CourseData, courseId: string) {
     example_course: courseInfo.exampleCourse,
     options: courseInfo.options || {},
     sync_warnings: infofile.stringifyWarnings(courseData.course),
+    question_params: courseInfo.questionParams || {},
   });
   if (res.rowCount !== 1) throw new Error(`Unable to find course with ID ${courseId}`);
   courseInfo.timezone = res.rows[0].display_timezone;

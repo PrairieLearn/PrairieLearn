@@ -143,6 +143,8 @@ async function render(
     question_course,
     locals,
   );
+  console.log('VARIANT');
+  console.log(variant);
 
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
@@ -286,7 +288,17 @@ function buildLocals({
     // ID is coerced to a string so that it matches what we get back from the client
     variantToken: generateSignedToken({ variantId: variant.id.toString() }, config.secretKey),
   };
-
+  console.log('BUILDING LOCALS BELOW :) ');
+  console.log(assessment_question);
+  console.log('variant:', variant);
+  console.log('question:', question);
+  console.log('instance_question:', instance_question);
+  console.log('group_role_permissions:', group_role_permissions);
+  console.log('assessment:', assessment);
+  console.log('assessment_instance:', assessment_instance);
+  console.log('assessment_question:', assessment_question);
+  console.log('group_config:', group_config);
+  console.log('authz_result:', authz_result);
   if (!assessment || !assessment_instance || !assessment_question || !instance_question) {
     // instructor question pages
     locals.showGradeButton = true;
@@ -380,6 +392,9 @@ function buildLocals({
     locals.disableGradeButton = true;
     locals.disableSaveButton = true;
   }
+  // console.log('QUESTION IN BUILING LOCCALS')
+  // console.log(question?.question_params);
+  // locals.questionParams = assessment_question ? assessment_question.question_params : question?.question_params;
 
   return locals;
 }
@@ -420,7 +435,7 @@ export async function getAndRenderVariant(
   // We write a fair amount of unstructured data back into locals,
   // so we'll cast it to `any` once so we don't have to do it every time.
   const resultLocals = locals as any;
-
+  console.log('resultLocals:', resultLocals);
   const question_course = await getQuestionCourse(locals.question, locals.course);
   resultLocals.question_is_shared = await sqldb.queryRow(
     sql.select_is_shared,
@@ -430,6 +445,7 @@ export async function getAndRenderVariant(
 
   const variant = await run(async () => {
     if (variant_id != null) {
+      console.log('SELECTING VARIANTTTT');
       return await sqldb.queryOptionalRow(
         sql.select_variant_for_render,
         {
@@ -444,6 +460,10 @@ export async function getAndRenderVariant(
       const instance_question_id = locals.instance_question?.id ?? null;
       const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
       const options = { variant_seed };
+      // need to get questionParams here!! Woohooooo
+      console.log('LOCALS from varient: ', locals);
+      console.log('QUESTION PARAMS PASSED');
+      // console.log(question_params)
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
@@ -455,6 +475,7 @@ export async function getAndRenderVariant(
         options,
         require_open,
         locals.client_fingerprint_id ?? null,
+        { lower_bound: 10, upper_bound: 12 },
       );
     }
   });
@@ -497,7 +518,8 @@ export async function getAndRenderVariant(
     newLocals.showTrueAnswer = true;
   }
   Object.assign(locals, newLocals);
-
+  // console.log('NEW LOCALS:   --> beeeeeeeeeep')
+  // console.log(newLocals);
   // We only fully render a small number of submissions on initial page
   // load; the rest only require basic information like timestamps. As
   // such, we'll load submissions in two passes: we'll load basic
@@ -557,6 +579,14 @@ export async function getAndRenderVariant(
     submissions: submissions.length > 0,
     answer: resultLocals.showTrueAnswer,
   };
+  // this has workded before idke how
+  // console.log(' getting and rendering variant')
+  // console.log('Variant Params:', variant);
+  // console.log('Question Params:', question);
+  // console.log('Variant Params paramssss:', variant.params);
+
+  // console.log('Submission Params:', submission?.params);
+  // console.log('Submissions Params:', submissions.map(s => s.params));
   const htmls = await render(
     course,
     renderSelection,
@@ -567,6 +597,7 @@ export async function getAndRenderVariant(
     question_course,
     locals,
   );
+  question.question_params = variant.params;
   resultLocals.extraHeadersHtml = htmls.extraHeadersHtml;
   resultLocals.questionHtml = htmls.questionHtml;
   resultLocals.submissionHtmls = htmls.submissionHtmls;
@@ -591,6 +622,7 @@ export async function getAndRenderVariant(
     await manualGrading.populateRubricData(locals);
     await async.eachSeries(submissions, manualGrading.populateManualGradingData);
   }
+  console.log('Setting variant.params:', variant.params);
 
   if (locals.question.type !== 'Freeform') {
     const questionJson = JSON.stringify({

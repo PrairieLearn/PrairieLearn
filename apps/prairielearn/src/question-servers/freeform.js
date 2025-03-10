@@ -1045,8 +1045,17 @@ function getContextOptions(context) {
 export async function generate(question, course, variant_seed) {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
+    // const zoneParams = extractZoneParams(assessmentConfig, question);
+    console.log('question');
+    console.log(question);
+    console.log('context')
+    console.log(context);
+    console.log('LOGGGG: ' + question.question_params);
+    // console.log("Question object:", question);
+    // console.log("Variant seed:", variant_seed);
+    // console.log("zone info: ", zoneInformation)
     const data = {
-      params: {},
+      params: question.question_params || {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
       options: _.defaults({}, course.options, question.options),
@@ -1076,6 +1085,7 @@ export async function prepare(question, course, variant) {
     if (variant.broken_at) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
+    console.log(_.get(variant, 'params', {}));
     const data = {
       params: _.get(variant, 'params', {}),
       correct_answers: _.get(variant, 'true_answer', {}),
@@ -1083,6 +1093,9 @@ export async function prepare(question, course, variant) {
       options: _.get(variant, 'options', {}),
       answers_names: {},
     };
+    console.log('PARAMS IN FRTEEDFORM')
+    console.log(data.params)
+    console.log(variant)
     _.extend(data.options, getContextOptions(context));
 
     return await withCodeCaller(course, async (codeCaller) => {
@@ -1854,6 +1867,7 @@ async function getContext(question, course) {
   const questionDirectory = path.join(courseDirectory, 'questions', question.directory);
   const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);
 
+
   // Load elements and any extensions
   const elements = await loadElementsForCourse(course);
   const extensions = await loadExtensionsForCourse({
@@ -1874,6 +1888,7 @@ async function getContext(question, course) {
     renderer,
   };
 }
+
 
 async function getCacheKey(course, data, context) {
   try {
