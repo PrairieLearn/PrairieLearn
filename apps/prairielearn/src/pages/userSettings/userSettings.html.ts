@@ -205,7 +205,7 @@ export function UserSettings({
           </p>
           <button
             type="button"
-            class="btn btn-md btn-info"
+            class="btn btn-sm btn-primary"
             onclick="localStorage.removeItem('MathJax-Menu-Settings');alert('MathJax menu settings have been reset');"
           >
             Reset MathJax menu settings
