@@ -29,6 +29,7 @@ export function Navbar({
   isInPageLayout?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix } = resLocals;
+
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;

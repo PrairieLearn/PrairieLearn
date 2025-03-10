@@ -3,6 +3,7 @@ import { html, type HtmlValue } from '@prairielearn/html';
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
+import { SideNavToggleButton } from './SideNavToggleButton.html.js';
 
 interface SideNavTabInfo {
   /** For the side nav tab to be active, the current navPage must be in activePages. */
@@ -182,14 +183,50 @@ function CourseNav({
   subPage: NavSubPage;
 }) {
   const courseSideNavPageTabs = sideNavPagesTabs.course_admin;
+  if (!courseSideNavPageTabs) return '';
 
   return html`
-    <div class="side-nav-section-header">Course</div>
+    <div class="side-nav-section-header-row">
+      <p class="side-nav-section-header-text m-0">Course</p>
+      <button
+        id="side-nav-toggler"
+        class="navbar-toggler"
+        type="button"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+        ${resLocals.course.id ? `data-course-id=${resLocals.course.id}` : ''}
+        ${resLocals.course_instance?.id
+          ? `data-course-instance-id=${resLocals.course_instance.id}`
+          : ''}
+      >
+        <div
+          class="side-nav-toggler-icon open"
+          data-toggle="tooltip"
+          data-plaement="right"
+          title="Collapse side navigation"
+        >
+          ${SideNavToggleButton({
+            showSideNav: true,
+          })}
+        </div>
+        <div
+          class="side-nav-toggler-icon close"
+          data-toggle="tooltip"
+          data-placement="right"
+          title="Expand side navigation"
+        >
+          ${SideNavToggleButton({
+            showSideNav: false,
+          })}
+        </div>
+      </button>
+    </div>
     <div class="side-nav-group mb-3">
       <div class="dropdown">
         <button
+          id="course-dropdown"
           type="button"
-          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
+          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center mb-2"
           data-toggle="dropdown"
           aria-label="Change course"
           aria-haspopup="true"
@@ -243,13 +280,16 @@ function CourseInstanceNav({
   const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
 
   return html`
-    <div class="side-nav-section-header">Course instance</div>
+    <div class="side-nav-section-header-row">
+      <div class="side-nav-section-header-text">Course instance</div>
+    </div>
     <div class="side-nav-group mb-3">
       <div>
         <div class="dropdown">
           <button
+            id="course-instance-dropdown"
             type="button"
-            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
+            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center mb-2"
             data-toggle="dropdown"
             aria-label="Change course instance"
             aria-haspopup="true"
@@ -321,14 +361,20 @@ function SideNavLink({
     isActive = activeSubPages.includes(navSubPage);
   }
 
+  const showSideNav = resLocals.show_side_nav;
+
   return html`
     <a
       href="${urlPrefix}${urlSuffix}"
       class="side-nav-link ${isActive ? 'side-nav-link-active' : ''}"
       aria-current="${isActive ? 'page' : ''}"
+      data-toggle="${!showSideNav ? 'tooltip' : ''}"
+      data-placement="right"
+      title="${tabLabel}"
     >
-      <i class="${iconClasses}"></i>
-      ${tabLabel} ${htmlSuffix?.(resLocals) || ''}
+      <i class="icon flex-shrink-0 ${iconClasses}"></i>
+      <span class="side-nav-link-text">${tabLabel}</span>
+      <div class="suffix">${htmlSuffix?.(resLocals) || ''}</div>
     </a>
   `;
 }

@@ -1,4 +1,4 @@
-import { parseISO, isValid } from 'date-fns';
+import { isValid, parseISO } from 'date-fns';
 import debugfn from 'debug';
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -70,6 +70,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   // Now that we know the user has access, parse the authz data
   res.locals.course = result.rows[0].course;
   res.locals.institution = result.rows[0].institution;
+
+  // Show the side nav unless the user intentionally toggles it off.
+  res.locals.show_side_nav = req.session?.show_side_nav ?? true;
 
   const permissions_course = result.rows[0].permissions_course;
   res.locals.authz_data = {
