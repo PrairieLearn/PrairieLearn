@@ -56,7 +56,7 @@ onDocumentReady(() => {
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
     buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'aiGrade'],
-    theadClasses: 'thead-light',
+    theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
@@ -126,11 +126,11 @@ onDocumentReady(() => {
       });
     },
     onPreBody: () => {
-      $('#grading-table [data-toggle="popover"]').popover('dispose');
+      $('#grading-table [data-bs-toggle="popover"]').popover('dispose');
     },
     onPostBody: () => {
       updateGradingTagButton();
-      $('#grading-table [data-toggle="popover"]').on(
+      $('#grading-table [data-bs-toggle="popover"]').on(
         'shown.bs.popover',
         updatePointsPopoverHandlers,
       );
@@ -155,12 +155,12 @@ onDocumentReady(() => {
                 ? html`
                     <a
                       href="#"
-                      class="badge badge-pill badge-danger"
-                      title="Instance question has ${row.open_issue_count} open ${row.open_issue_count >
+                      class="badge rounded-pill text-bg-danger"
+                      data-bs-toggle="tooltip"
+                      data-bs-title="Instance question has ${row.open_issue_count} open ${row.open_issue_count >
                       1
                         ? 'issues'
                         : 'issue'}"
-                      data-toggle="tooltip"
                     >
                       ${row.open_issue_count}
                     </a>
@@ -168,7 +168,11 @@ onDocumentReady(() => {
                 : ''}
               ${row.assessment_open
                 ? html`
-                    <a href="#" title="Assessment instance is still open" data-toggle="tooltip">
+                    <a
+                      href="#"
+                      data-bs-toggle="tooltip"
+                      data-bs-title="Assessment instance is still open"
+                    >
                       <i class="fas fa-exclamation-triangle text-warning"></i>
                     </a>
                   `
@@ -327,13 +331,13 @@ function gradingTagDropdown(courseStaff: User[]) {
       <button
         type="button"
         class="btn btn-secondary dropdown-toggle grading-tag-button"
-        data-toggle="dropdown"
+        data-bs-toggle="dropdown"
         name="status"
         disabled
       >
         <i class="fas fa-tags"></i> Tag for grading
       </button>
-      <div class="dropdown-menu dropdown-menu-right">
+      <div class="dropdown-menu dropdown-menu-end">
         <div class="dropdown-header">Assign for grading</div>
         ${courseStaff?.map(
           (grader) => html`
