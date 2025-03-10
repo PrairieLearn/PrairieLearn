@@ -10,15 +10,16 @@ onDocumentReady(async () => {
 
   sideNavTogglerButton.addEventListener('click', async () => {
     // Check if the app container shows the side nav
-    const appContainerShowsSideNav = appContainerDiv.classList.contains('show-side-nav');
+    const sideNavExpanded = !appContainerDiv.classList.contains('collapsed');
+
     const sideNavButtons = document.querySelectorAll<HTMLButtonElement>('.side-nav-link');
 
     const courseId = sideNavTogglerButton.getAttribute('data-course-id');
     const courseInstanceId = sideNavTogglerButton.getAttribute('data-course-instance-id');
 
-    if (appContainerShowsSideNav) {
+    if (sideNavExpanded) {
       // Collapse the side nav
-      appContainerDiv.classList.remove('show-side-nav');
+      appContainerDiv.classList.add('collapsed');
 
       // Enable tab name tooltips
       sideNavButtons.forEach((button) => {
@@ -26,15 +27,13 @@ onDocumentReady(async () => {
       });
     } else {
       // Expand the side nav
-      appContainerDiv.classList.add('show-side-nav');
+      appContainerDiv.classList.remove('collapsed');
 
       // Disable tab name tooltips
       sideNavButtons.forEach((button) => {
         button.removeAttribute('data-toggle');
       });
     };
-
-    console.log('Course instance id', courseInstanceId, "Course ID", courseId);
 
     if (courseInstanceId || courseId) {
       const url = courseInstanceId ? 
@@ -47,7 +46,7 @@ onDocumentReady(async () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          side_nav_expanded: !appContainerShowsSideNav
+          side_nav_expanded: collapsed 
         }),
       });
     }

@@ -222,11 +222,10 @@ function CourseNav({
       </button>
     </div>
     <div class="side-nav-group mb-3">
-      <div class="dropdown">
+      <div id="course-dropdown" class="dropdown">
         <button
-          id="course-dropdown"
           type="button"
-          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center mb-2"
+          class="btn d-flex dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center mb-2"
           data-toggle="dropdown"
           aria-label="Change course"
           aria-haspopup="true"
@@ -255,15 +254,15 @@ function CourseNav({
             </div>
           </div>
         </div>
-        ${courseSideNavPageTabs.map((tabInfo) =>
-          SideNavLink({
-            resLocals,
-            navPage: page,
-            navSubPage: subPage,
-            tabInfo,
-          }),
-        )}
       </div>
+      ${courseSideNavPageTabs.map((tabInfo) =>
+        SideNavLink({
+          resLocals,
+          navPage: page,
+          navSubPage: subPage,
+          tabInfo,
+        }),
+      )}
     </div>
   `;
 }
@@ -285,9 +284,8 @@ function CourseInstanceNav({
     </div>
     <div class="side-nav-group mb-3">
       <div>
-        <div class="dropdown">
+        <div id="course-instance-dropdown" class="dropdown">
           <button
-            id="course-instance-dropdown"
             type="button"
             class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center mb-2"
             data-toggle="dropdown"
