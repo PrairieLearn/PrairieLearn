@@ -55,7 +55,7 @@ export function PageLayout({
       resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
 
     // Whether the side nav is actually shown.
-    const showSideNav = canShowSideNav && resLocals.show_side_nav;
+    const showSideNav = canShowSideNav && resLocals.side_nav_expanded;
 
     let showContextNavigation = true;
 

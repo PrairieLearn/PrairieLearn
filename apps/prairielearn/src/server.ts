@@ -1423,10 +1423,10 @@ export async function initExpress(): Promise<Express> {
     ],
   );
 
-  // Handles side nav toggling if the user is on a course instance page.
+  // Handles persisting if the side nav is expanded for course instance pages.
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/side_nav',
-    (await import('./pages/sideNav/sideNav.js')).default,
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/side_nav_expanded',
+    (await import('./pages/sideNavExpanded/sideNavExpanded.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -1731,10 +1731,10 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorGradingJob/instructorGradingJob.js')).default,
   );
 
-  // Handles side nav toggling if the user is on a course page.
+  // Handles persisting if the side nav is expanded for course pages.
   app.use(
-    '/pl/course/:course_id(\\d+)/side_nav',
-    (await import('./pages/sideNav/sideNav.js')).default,
+    '/pl/course/:course_id(\\d+)/side_nav_expanded',
+    (await import('./pages/sideNavExpanded/sideNavExpanded.js')).default,
   );
 
   // This route is used to initiate a copy of a question with publicly shared source

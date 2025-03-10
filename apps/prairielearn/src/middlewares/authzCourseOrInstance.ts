@@ -71,8 +71,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.course = result.rows[0].course;
   res.locals.institution = result.rows[0].institution;
 
-  // Show the side nav unless the user intentionally toggles it off.
-  res.locals.show_side_nav = req.session?.show_side_nav ?? true;
+  // Show the expanded side nav unless the user intentionally toggles it off.
+  res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true;
 
   const permissions_course = result.rows[0].permissions_course;
   res.locals.authz_data = {

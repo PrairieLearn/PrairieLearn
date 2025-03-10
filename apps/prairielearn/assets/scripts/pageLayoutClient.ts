@@ -17,54 +17,39 @@ onDocumentReady(async () => {
     const courseInstanceId = sideNavTogglerButton.getAttribute('data-course-instance-id');
 
     if (appContainerShowsSideNav) {
-      // Hide the side nav
+      // Collapse the side nav
       appContainerDiv.classList.remove('show-side-nav');
-      // Show all side nav button tooltips
+
+      // Enable tab name tooltips
       sideNavButtons.forEach((button) => {
         button.setAttribute('data-toggle', 'tooltip');
       });
-      if (courseInstanceId) {
-        await fetch(`/pl/course_instance/${courseInstanceId}/instructor/side_nav`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({}),
-        });
-      } else if (courseId) {
-        await fetch(`/pl/course/${courseId}/side_nav`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({}),
-        });
-      }
     } else {
-      // Show the side nav
+      // Expand the side nav
       appContainerDiv.classList.add('show-side-nav');
-      // Remove all side nav button tooltips
+
+      // Disable tab name tooltips
       sideNavButtons.forEach((button) => {
         button.removeAttribute('data-toggle');
       });
+    };
 
-      if (courseInstanceId) {
-        await fetch(`/pl/course_instance/${courseInstanceId}/instructor/side_nav`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ showSideNav: true }),
-        });
-      } else if (courseId) {
-        await fetch(`/pl/course/${courseId}/side_nav`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ showSideNav: true }),
-        });
-      }
+    console.log('Course instance id', courseInstanceId, "Course ID", courseId);
+
+    if (courseInstanceId || courseId) {
+      const url = courseInstanceId ? 
+        `/pl/course_instance/${courseInstanceId}/instructor/side_nav_expanded` : 
+        `/pl/course/${courseId}/side_nav_expanded`;
+
+      await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          side_nav_expanded: !appContainerShowsSideNav
+        }),
+      });
     }
   });
 });

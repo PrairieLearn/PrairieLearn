@@ -361,7 +361,7 @@ function SideNavLink({
     isActive = activeSubPages.includes(navSubPage);
   }
 
-  const showSideNav = resLocals.show_side_nav;
+  const showSideNav = resLocals.side_nav_expanded;
 
   return html`
     <a
