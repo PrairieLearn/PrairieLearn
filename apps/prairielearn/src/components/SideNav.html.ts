@@ -1,5 +1,6 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 
+import { IssueBadge } from './IssueBadge.html.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 import { SideNavToggleButton } from './SideNavToggleButton.html.js';
@@ -40,9 +41,7 @@ const sideNavPagesTabs = {
         ProgressCircle({
           value: navbarCompleteGettingStartedTasksCount,
           maxValue: navbarTotalGettingStartedTasksCount,
-          options: {
-            mlAuto: true,
-          },
+          className: 'ms-auto',
         }),
       renderCondition: ({ authz_data, course }) =>
         authz_data.has_course_permission_edit && course.show_getting_started,
@@ -69,6 +68,8 @@ const sideNavPagesTabs = {
       urlSuffix: '/course_admin/issues',
       iconClasses: 'fas fa-bug fa-fw',
       tabLabel: 'Issues',
+      htmlSuffix: ({ navbarOpenIssueCount }) =>
+        IssueBadge({ count: navbarOpenIssueCount, suppressLink: true, className: 'ms-auto' }),
     },
     {
       activePages: ['course_admin'],
