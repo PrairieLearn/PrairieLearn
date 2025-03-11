@@ -51,6 +51,7 @@ export function InstructorAiGenerateDraftEditor({
                 navPage: 'course_admin',
                 navSubPage: 'questions',
                 resLocals,
+                marginBottom: true
               })}
             </div>
             <main id="content" class="app-content">
