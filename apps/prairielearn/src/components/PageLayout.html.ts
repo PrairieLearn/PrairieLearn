@@ -181,8 +181,8 @@ export function PageLayout({
           ${headContent}
         </head>
         <body
-          ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
+          hx-ext="${options.hxExt ?? ''}"
         >
           ${Navbar({
             resLocals,

@@ -183,7 +183,6 @@ function CourseNav({
   subPage: NavSubPage;
 }) {
   const courseSideNavPageTabs = sideNavPagesTabs.course_admin;
-  if (!courseSideNavPageTabs) return '';
 
   return html`
     <div class="side-nav-header">

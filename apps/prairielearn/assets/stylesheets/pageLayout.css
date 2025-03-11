@@ -99,7 +99,7 @@ body:has(div.app-container) {
   white-space: nowrap;
 }
 
-.app-container.side-nav-enabled.side-nav-enabled.collapsed .side-nav-link {
+.app-container.side-nav-enabled.collapsed .side-nav-link {
   padding: 0.75rem;
 }
 
