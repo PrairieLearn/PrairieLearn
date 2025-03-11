@@ -21,7 +21,7 @@ onDocumentReady(async () => {
       // Collapse the side nav
       appContainerDiv.classList.add('collapsed');
 
-      // Enable tab name tooltips
+      // Add tab name tooltips
       sideNavButtons.forEach((button) => {
         button.setAttribute('data-toggle', 'tooltip');
       });
@@ -29,7 +29,7 @@ onDocumentReady(async () => {
       // Expand the side nav
       appContainerDiv.classList.remove('collapsed');
 
-      // Disable tab name tooltips
+      // Remove tab name tooltips
       sideNavButtons.forEach((button) => {
         button.removeAttribute('data-toggle');
       });

@@ -186,8 +186,8 @@ function CourseNav({
   if (!courseSideNavPageTabs) return '';
 
   return html`
-    <div class="side-nav-section-header-row">
-      <p class="side-nav-section-header-text m-0">Course</p>
+    <div class="side-nav-header">
+      <p class="header-text m-0">Course</p>
       <button
         id="side-nav-toggler"
         class="navbar-toggler"
@@ -221,7 +221,7 @@ function CourseNav({
         </div>
       </button>
     </div>
-    <div class="side-nav-group mb-3">
+    <div class="side-nav-group">
       <div id="course-dropdown" class="dropdown">
         <button
           type="button"
@@ -279,15 +279,15 @@ function CourseInstanceNav({
   const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
 
   return html`
-    <div class="side-nav-section-header-row">
-      <div class="side-nav-section-header-text">Course instance</div>
+    <div class="side-nav-header">
+      <div class="header-text">Course instance</div>
     </div>
     <div class="side-nav-group mb-3">
       <div>
         <div id="course-instance-dropdown" class="dropdown">
           <button
             type="button"
-            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center mb-2"
+            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center mb-2 d-flex"
             data-toggle="dropdown"
             aria-label="Change course instance"
             aria-haspopup="true"
