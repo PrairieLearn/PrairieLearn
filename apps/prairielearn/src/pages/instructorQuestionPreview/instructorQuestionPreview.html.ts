@@ -70,7 +70,7 @@ export function InstructorQuestionPreview({
         <div class="col-lg-9 col-sm-12">
           ${QuestionContainer({
             resLocals,
-            questionContext: 'instructor',
+            questionContext: manualGradingPreviewEnabled ? 'manual_grading' : 'instructor',
             manualGradingPreviewUrl: manualGradingPreviewEnabled
               ? undefined
               : manualGradingPreviewUrl,
