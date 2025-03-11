@@ -68,6 +68,9 @@ router.get(
   asyncHandler(async (req, res) => {
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
     if (manualGradingPreviewEnabled) {
+      // Setting this flag will set the `manualGrading: true` flag in the data
+      // dictionary passed to element render functions. It will also disable
+      // editing for all elements by settings `editable: false`.
       res.locals.manualGradingInterface = true;
     }
 
