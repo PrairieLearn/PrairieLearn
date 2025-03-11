@@ -447,6 +447,16 @@ jobs:
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-turbo-
+      
+      - name: Set up Prettier and ESLint cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .prettier-cache
+            .eslintcache
+          key: ${{ runner.os }}-prettier-eslint-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-prettier-eslint-
 
       - name: Build all code
         run: make build

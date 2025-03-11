@@ -115,3 +115,9 @@ coverage.xml
 
 ## v8 crash reports
 isolate-*-v8.log
+
+## Prettier cache
+.prettier-cache
+
+## ESLint cache
+.eslintcache
