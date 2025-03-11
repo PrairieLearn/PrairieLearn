@@ -46,7 +46,7 @@ onDocumentReady(async () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          side_nav_expanded: collapsed 
+          side_nav_expanded: !sideNavExpanded 
         }),
       });
     }
