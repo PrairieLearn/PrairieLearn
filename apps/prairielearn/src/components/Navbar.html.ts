@@ -785,8 +785,8 @@ function NavbarInstructor({
         aria-expanded="false"
         ${!authz_data.overrides
           ? html`
-              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show.bs.dropdown once
-              delay:200ms" hx-target="#navbarDropdownMenuCourseAdmin"
+              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="mouseover once, focus
+              once, show.bs.dropdown once delay:200ms" hx-target="#navbarDropdownMenuCourseAdmin"
             `
           : ''}
       ></a>
@@ -823,6 +823,7 @@ function NavbarInstructor({
               ${ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
+                className: 'mx-1',
               })}
             </a>
           </li>
@@ -968,7 +969,7 @@ function NavbarInstructor({
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher"
-              hx-trigger="show.bs.dropdown once delay:200ms"
+              hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceChoose"
             >
               Choose course instance...
