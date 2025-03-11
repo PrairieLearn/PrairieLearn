@@ -7,7 +7,10 @@ export function AssessmentModuleHeading({
 }: {
   assessment_module: AssessmentModule;
 }) {
-  if (!assessment_module.implicit || (assessment_module.heading === 'Default module' && assessment_module.implicit)) {
+  if (
+    !assessment_module.implicit ||
+    (assessment_module.heading === 'Default module' && assessment_module.implicit)
+  ) {
     return assessment_module.heading;
   }
 
