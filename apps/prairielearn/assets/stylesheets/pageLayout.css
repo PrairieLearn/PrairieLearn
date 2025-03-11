@@ -44,6 +44,7 @@ body:has(div.app-container) {
 }
 
 .app-side-nav {
+  grid-area: side-nav;
   padding: 0.75rem;
   overflow-y: auto;
 
@@ -55,7 +56,6 @@ body:has(div.app-container) {
 
 .app-container.side-nav-enabled.collapsed .app-side-nav {
   padding: 0.75rem 0;
-  grid-area: side-nav;
   overflow: hidden;
 }
 

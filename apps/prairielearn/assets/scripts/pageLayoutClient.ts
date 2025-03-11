@@ -1,10 +1,7 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-
 // Handle when the user expands or collapses the side nav
-
 onDocumentReady(async () => {
-
   const sideNavTogglerButton = document.querySelector<HTMLButtonElement>('#side-nav-toggler');
   const appContainerDiv = document.querySelector<HTMLDivElement>('#app-container');
 
