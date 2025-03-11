@@ -1422,7 +1422,7 @@ export async function initExpress(): Promise<Express> {
     ],
   );
 
-  // Handles updating if the side nav is expanded from a course instance page.
+  // Handles updating side nav expanded state from a course instance page.
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/side_nav_expanded',
     (await import('./pages/sideNavExpanded/sideNavExpanded.js')).default,
@@ -1730,7 +1730,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorGradingJob/instructorGradingJob.js')).default,
   );
 
-  // Handles updating if the side nav is expanded from a course page.
+  // Handles updating side nav expanded state from a course page.
   app.use(
     '/pl/course/:course_id(\\d+)/side_nav_expanded',
     (await import('./pages/sideNavExpanded/sideNavExpanded.js')).default,
