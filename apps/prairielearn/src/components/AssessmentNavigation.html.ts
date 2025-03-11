@@ -22,13 +22,13 @@ export function AssessmentNavigation({
         type="button"
         class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center"
         style="max-width: 100%;"
-        data-toggle="dropdown"
         aria-label="Change assessment"
         aria-haspopup="true"
         aria-expanded="false"
-        data-boundary="window"
+        data-bs-toggle="dropdown"
+        data-bs-boundary="window"
       >
-        <span class="h6 mb-0 mr-1 overflow-hidden text-truncate">${assessment.title}</span>
+        <span class="h6 mb-0 me-1 overflow-hidden text-truncate">${assessment.title}</span>
       </button>
       <div class="dropdown-menu py-0 overflow-hidden">
         <div style="max-height: 50vh" class="overflow-auto">

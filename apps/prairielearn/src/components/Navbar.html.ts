@@ -316,7 +316,7 @@ function FlashMessages() {
       <div
         class="alert alert-${globalFlashColors[
           type
-        ]} border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
+        ]} border-start-0 border-end-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
         role="alert"
       >
         ${unsafeHtml(message)}
@@ -783,31 +783,20 @@ function NavbarInstructor({
         aria-label="Change course"
         aria-haspopup="true"
         aria-expanded="false"
-        ${!authz_data.overrides
-          ? html`
-              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="mouseover once, focus
-              once, show.bs.dropdown once delay:200ms" hx-target="#navbarDropdownMenuCourseAdmin"
-            `
-          : ''}
+        hx-get="/pl/navbar/course/${course.id}/switcher"
+        hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
+        hx-target="#navbarDropdownMenuCourseAdmin"
       ></a>
       <div
         class="dropdown-menu"
         aria-labelledby="navbarDropdownMenuCourseAdminLink"
         id="navbarDropdownMenuCourseAdmin"
       >
-        ${authz_data.overrides
-          ? html`
-              <span class="dropdown-item-text small"
-                >Effective users may not switch between courses</span
-              >
-            `
-          : html`
-              <div class="d-flex justify-content-center">
-                <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="visually-hidden">Loading courses...</span>
-                </div>
-              </div>
-            `}
+        <div class="d-flex justify-content-center">
+          <div class="spinner-border spinner-border-sm" role="status">
+            <span class="visually-hidden">Loading courses...</span>
+          </div>
+        </div>
       </div>
     </li>
 
