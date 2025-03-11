@@ -81,7 +81,7 @@ body:has(div.app-container) {
   gap: 4px;
   margin-bottom: 1.5rem;
 }
- 
+
 .app-container.side-nav-enabled.collapsed .side-nav-group {
   margin-bottom: 0;
 }

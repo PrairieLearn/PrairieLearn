@@ -33,12 +33,12 @@ onDocumentReady(async () => {
       sideNavButtons.forEach((button) => {
         button.removeAttribute('data-toggle');
       });
-    };
+    }
 
     if (courseInstanceId || courseId) {
-      const url = courseInstanceId ? 
-        `/pl/course_instance/${courseInstanceId}/instructor/side_nav_expanded` : 
-        `/pl/course/${courseId}/side_nav_expanded`;
+      const url = courseInstanceId
+        ? `/pl/course_instance/${courseInstanceId}/instructor/side_nav_expanded`
+        : `/pl/course/${courseId}/side_nav_expanded`;
 
       await fetch(url, {
         method: 'PUT',
@@ -46,7 +46,7 @@ onDocumentReady(async () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          side_nav_expanded: !sideNavExpanded 
+          side_nav_expanded: !sideNavExpanded,
         }),
       });
     }
