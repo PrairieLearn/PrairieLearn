@@ -59,15 +59,10 @@ export function InstructorQuestionPreview({
     content: html`
       ${manualGradingPreviewEnabled
         ? html`
-            <div class="alert alert-primary alert-dismissible fade show">
+            <div class="alert alert-primary">
               You are viewing this question as it will appear in the manual grading interface.
-              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a>.
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="alert"
-                aria-label="Close"
-              ></button>
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
+              you are done.
             </div>
           `
         : ''}

@@ -666,11 +666,12 @@ function QuestionPanel({
                   <button
                     class="btn btn-sm btn-outline-light"
                     type="button"
-                    data-bs-toggle="modal tooltip"
-                    data-bs-title="Copy question"
+                    aria-label="Copy question"
+                    data-bs-toggle="modal"
                     data-bs-target="#copyQuestionModal"
                   >
                     <i class="fa fa-fw fa-clone"></i>
+                    <span class="d-none d-sm-inline">Copy question</span>
                   </button>
                 `
               : ''}
@@ -678,18 +679,17 @@ function QuestionPanel({
               ? html`
                   <div class="btn-group">
                     <button
-                      class="btn btn-sm btn-outline-light dropdown-toggle dropdown-toggle-no-caret"
+                      class="btn btn-sm btn-outline-light dropdown-toggle"
                       type="button"
                       aria-expanded="false"
-                      data-bs-toggle="dropdown tooltip"
-                      data-bs-title="Preview..."
+                      data-bs-toggle="dropdown"
                     >
-                      <i class="fa fa-fw fa-eye"></i>
+                      View&hellip;
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                       <li>
                         <a class="dropdown-item" href="${manualGradingPreviewUrl}">
-                          Preview manual grading view
+                          Manual grading view
                         </a>
                       </li>
                     </ul>
