@@ -17,6 +17,7 @@ export function SideNavToggleButton({
       data-toggle="tooltip"
       data-placement="right"
       title="${forSideNavExpanded ? 'Collapse side nav' : 'Expand side nav'}"
+      aria-hidden="true"
     >
       ${icon}
     </div>

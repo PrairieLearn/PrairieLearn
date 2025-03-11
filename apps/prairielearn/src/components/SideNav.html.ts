@@ -190,7 +190,7 @@ function CourseNav({
         class="navbar-toggler"
         type="button"
         aria-expanded="false"
-        aria-label="Toggle navigation"
+        aria-label="Toggle sidebar"
         ${resLocals.course.id ? `data-course-id=${resLocals.course.id}` : ''}
         ${resLocals.course_instance?.id
           ? `data-course-instance-id=${resLocals.course_instance.id}`
