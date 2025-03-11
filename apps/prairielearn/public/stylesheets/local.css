@@ -423,7 +423,3 @@ small .user-output-invalid {
 .fixed-table-toolbar div.pagination-detail {
   margin: 0 1em 0 0 !important;
 }
-
-.dropdown-toggle-no-caret::after {
-  display: none;
-}
