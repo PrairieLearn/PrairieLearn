@@ -26,10 +26,12 @@ const MAX_TOP_RECENTS = 3;
 export function QuestionContainer({
   resLocals,
   questionContext,
+  showFooter,
   manualGradingPreviewUrl,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  showFooter?: boolean;
   manualGradingPreviewUrl?: string;
 }) {
   const {
@@ -61,10 +63,10 @@ export function QuestionContainer({
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
-              ${QuestionPanel({ resLocals, questionContext, manualGradingPreviewUrl })}
+              ${QuestionPanel({ resLocals, questionContext, showFooter, manualGradingPreviewUrl })}
             </form>
           `
-        : QuestionPanel({ resLocals, questionContext })}
+        : QuestionPanel({ resLocals, showFooter, questionContext })}
 
       <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
         <div class="card-header bg-secondary text-white">
@@ -317,12 +319,17 @@ interface QuestionFooterResLocals {
 
 function QuestionFooter({
   resLocals,
+  showFooter,
   questionContext,
 }: {
   resLocals: QuestionFooterResLocals;
+  showFooter?: boolean;
   questionContext: QuestionContext;
 }) {
-  if (questionContext === 'manual_grading') return '';
+  if ((questionContext === 'manual_grading' && showFooter !== true) || showFooter === false) {
+    return '';
+  }
+
   if (resLocals.question.type === 'Freeform') {
     return html`
       <div class="card-footer" id="question-panel-footer">
@@ -633,10 +640,12 @@ function AvailablePointsNotes({
 function QuestionPanel({
   resLocals,
   questionContext,
+  showFooter,
   manualGradingPreviewUrl,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  showFooter?: boolean;
   manualGradingPreviewUrl?: string;
 }) {
   const { question, questionHtml, question_copy_targets, course, instance_question_info } =
@@ -704,6 +713,7 @@ function QuestionPanel({
         // TODO: propagate more precise types upwards.
         resLocals: resLocals as any,
         questionContext,
+        showFooter,
       })}
     </div>
   `;
