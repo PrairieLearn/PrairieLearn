@@ -26,7 +26,7 @@ export function InstructorAiGenerateDraftEditor({
 }) {
   // This page has a very custom layout, so we don't use the usual `PageLayout`
   // component here. If we start building other similar pages, we might want to
-  // teach `PageLayout1` how to render this kind of layout.
+  // teach `PageLayout` how to render this kind of layout.
   return html`
     <!doctype html>
     <html lang="en">
