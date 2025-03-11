@@ -70,11 +70,6 @@ body:has(div.app-container) {
   overflow-y: auto;
 }
 
-.side-nav {
-  display: flex;
-  flex-direction: column;
-}
-
 .side-nav-group {
   display: flex;
   flex-direction: column;
@@ -124,12 +119,12 @@ body:has(div.app-container) {
   border-bottom-right-radius: 0.25rem;
 }
 
-/* When the side nav is collapsed, hide the side nav link text  */
+/* Hide side nav link text when the side nav is collapsed */
 .app-container.side-nav-enabled.collapsed .side-nav-link .side-nav-link-text {
   display: none;
 }
 
-/* When the side nav is collapsed, center the icons */
+/* Center the icons when the side nav is collapsed */
 .app-container.side-nav-enabled.collapsed .side-nav-link {
   justify-content: center;
 }
@@ -147,13 +142,18 @@ body:has(div.app-container) {
   white-space: nowrap;
 }
 
+/* Center the side nav toggle button when the side nav is collapsed */
 .app-container.side-nav-enabled.collapsed .side-nav-header {
   justify-content: center;
 }
 
+.app-container.side-nav-enabled .side-nav-header .header-text {
+  margin: 0;
+}
+
+/* Hide the header text when the side nav is collapsed */
 .app-container.side-nav-enabled.collapsed .side-nav-header .header-text {
   display: none;
-  margin: 0;
 }
 
 .side-nav-link .suffix {
@@ -163,6 +163,7 @@ body:has(div.app-container) {
   flex: 1;
 }
 
+/* When the side nav is collapsed, hide the side nav link suffix (e.g. getting started progess circle) */
 .app-container.side-nav-enabled.collapsed .side-nav-link .suffix {
   display: none;
 }

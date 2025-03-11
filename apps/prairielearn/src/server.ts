@@ -596,7 +596,6 @@ export async function initExpress(): Promise<Express> {
   // route handler will only ever display courses for which the user has staff
   // access; the course ID in the URL is only used to determine which course
   // is the currently selected one.
-
   app.use(
     '/pl/navbar/course/:course_id(\\d+)/switcher',
     (await import('./pages/navbarCourseSwitcher/navbarCourseSwitcher.js')).default,
@@ -1423,7 +1422,7 @@ export async function initExpress(): Promise<Express> {
     ],
   );
 
-  // Handles persisting if the side nav is expanded for course instance pages.
+  // Handles updating if the side nav is expanded from a course instance page.
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/side_nav_expanded',
     (await import('./pages/sideNavExpanded/sideNavExpanded.js')).default,
@@ -1731,7 +1730,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorGradingJob/instructorGradingJob.js')).default,
   );
 
-  // Handles persisting if the side nav is expanded for course pages.
+  // Handles updating if the side nav is expanded from a course page.
   app.use(
     '/pl/course/:course_id(\\d+)/side_nav_expanded',
     (await import('./pages/sideNavExpanded/sideNavExpanded.js')).default,

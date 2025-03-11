@@ -156,20 +156,18 @@ export function SideNav({
   subPage: NavSubPage;
 }) {
   return html`
-    <div class="side-nav">
-      ${CourseNav({
-        resLocals,
-        page,
-        subPage,
-      })}
-      ${resLocals.course_instance
-        ? CourseInstanceNav({
-            resLocals,
-            page,
-            subPage,
-          })
-        : ''}
-    </div>
+    ${CourseNav({
+      resLocals,
+      page,
+      subPage,
+    })}
+    ${resLocals.course_instance
+      ? CourseInstanceNav({
+          resLocals,
+          page,
+          subPage,
+        })
+      : ''}
   `;
 }
 
@@ -186,7 +184,7 @@ function CourseNav({
 
   return html`
     <div class="side-nav-header">
-      <p class="header-text m-0">Course</p>
+      <p class="header-text">Course</p>
       <button
         id="side-nav-toggler"
         class="navbar-toggler"
@@ -210,7 +208,7 @@ function CourseNav({
       <div id="course-dropdown" class="dropdown">
         <button
           type="button"
-          class="btn d-flex dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center mb-2"
+          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
           data-toggle="dropdown"
           aria-label="Change course"
           aria-haspopup="true"
@@ -272,7 +270,7 @@ function CourseInstanceNav({
         <div id="course-instance-dropdown" class="dropdown">
           <button
             type="button"
-            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 justify-content-between align-items-center mb-2 d-flex"
+            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
             data-toggle="dropdown"
             aria-label="Change course instance"
             aria-haspopup="true"
