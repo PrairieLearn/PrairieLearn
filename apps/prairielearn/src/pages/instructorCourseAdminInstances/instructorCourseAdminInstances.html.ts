@@ -76,6 +76,7 @@ export function InstructorCourseAdminInstances({
           courseInstances.length > 0
             ? html`
                 <button
+                  type="button"
                   class="btn btn-sm btn-light"
                   data-bs-toggle="modal"
                   data-bs-target="#createCourseInstanceModal"
@@ -100,6 +101,7 @@ export function InstructorCourseAdminInstances({
                       <th id="earliest-access-date">
                         Earliest Access Date
                         <button
+                          type="button"
                           class="btn btn-xs btn-light"
                           aria-label="Information about Earliest Access Date"
                           data-bs-toggle="popover"
@@ -115,6 +117,7 @@ export function InstructorCourseAdminInstances({
                       <th id="latest-access-date">
                         Latest Access Date
                         <button
+                          type="button"
                           class="btn btn-xs btn-light"
                           aria-label="Information about Latest Access Date"
                           data-bs-toggle="popover"
@@ -195,6 +198,7 @@ export function InstructorCourseAdminInstances({
                   }
                   return html`
                     <button
+                      type="button"
                       class="btn btn-sm btn-primary"
                       data-bs-toggle="modal"
                       data-bs-target="#createCourseInstanceModal"
@@ -317,7 +321,7 @@ function CreateCourseInstanceModal({
           </small>
         </label>
       </div>
-      <div id="accessDates" hidden="true">
+      <div id="accessDates" hidden>
         <div class="mb-3">
           <label class="form-label" for="start_access_date">Access start date</label>
           <div class="input-group date-picker">
@@ -358,7 +362,7 @@ function CreateCourseInstanceModal({
       <input type="hidden" name="__action" value="add_course_instance" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button id="add_course_instance_button" type="submit" class="btn btn-primary">Create</button>
+      <button type="submit" id="add_course_instance_button" class="btn btn-primary">Create</button>
     `,
   });
 }

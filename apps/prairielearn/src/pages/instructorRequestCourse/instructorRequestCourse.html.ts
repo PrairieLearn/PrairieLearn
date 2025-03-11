@@ -49,6 +49,7 @@ export function RequestCourse({
       ${Modal({
         id: 'fill-course-request-lti13-modal',
         title: `Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`,
+        form: false,
         body: html`
           <p>
             You appear to be coming from a course in another learning system. Should we partially

@@ -1,5 +1,7 @@
-import { A11yError } from '@sa11y/format';
+import { A11yError, A11yResults } from '@sa11y/format';
 import axe from 'axe-core';
+import { HTMLRewriter } from 'html-rewriter-wasm';
+import { HtmlValidate, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import { test } from 'mocha';
 import fetch from 'node-fetch';
@@ -19,25 +21,21 @@ const SITE_URL = 'http://localhost:' + config.serverPort;
 /**
  * Loads the given URL into a JSDOM object.
  */
-async function loadPageJsdom(url: string): Promise<JSDOM> {
+async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM }> {
   const text = await fetch(url).then((res) => {
     if (!res.ok) {
       throw new Error(`Error loading page: ${res.status}`);
     }
     return res.text();
   });
-  // JSDOM can be very verbose regarding unimplemented features (e.g., canvas).
-  // We don't have a need to see these warnings, so we create a virtual console
-  // that does not log anything.
-  const virtualConsole = new VirtualConsole();
-  return new JSDOM(text, { virtualConsole });
-}
 
-/**
- * Checks the given URL for accessibility violations.
- */
-async function checkPage(url: string) {
-  const page = await loadPageJsdom(SITE_URL + url);
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  let output = '';
+  const rewriter = new HTMLRewriter((chunk) => {
+    output += decoder.decode(chunk);
+  });
 
   // We need to mimic what Bootstrap will do at runtime for tooltips and popovers:
   // it will copy the `data-bs-title` attribute to the `aria-label` attribute if
@@ -46,20 +44,105 @@ async function checkPage(url: string) {
   //
   // Without this, we'll get a bunch of false positives that don't reflect
   // the actual behavior at runtime.
-  page.window.document.querySelectorAll('[data-bs-title]').forEach((el) => {
-    if (el.hasAttribute('aria-label') || el.textContent?.trim() !== '') {
-      return;
-    }
-    const title = el.getAttribute('data-bs-title');
-    if (title) {
-      el.setAttribute('aria-label', title);
-    }
+  rewriter.on('a, button', {
+    element(el) {
+      // This is slightly different than what we do at runtime. In practice, we'll
+      // only add an `aria-label` if the element is empty. But here, we can't
+      // inspect the element's children, so we'll only use the presence of an
+      // `aria-label` attribute to determine if we should add one.
+      if (el.hasAttribute('aria-label')) return;
+      const title = el.getAttribute('data-bs-title');
+      if (title) {
+        el.setAttribute('aria-label', title);
+      }
+    },
   });
 
-  const results = await axe.run(page.window.document.documentElement, {
+  await rewriter.write(encoder.encode(text));
+  await rewriter.end();
+
+  // JSDOM can be very verbose regarding unimplemented features (e.g., canvas).
+  // We don't have a need to see these warnings, so we create a virtual console
+  // that does not log anything.
+  const virtualConsole = new VirtualConsole();
+  return { text: output, jsdom: new JSDOM(output, { virtualConsole }) };
+}
+
+/**
+ * Checks the given URL for accessibility violations.
+ */
+async function checkPage(url: string) {
+  const { text, jsdom } = await loadPageJsdom(SITE_URL + url);
+
+  let messages = '';
+
+  // Since the accessibility checks are already programmatically loading
+  // pretty much every page in the application, we'll piggyback on them
+  // to also run HTML validation.
+  const validator = new HtmlValidate();
+  const validationResults = await validator.validateString(text, {
+    rules: {
+      'attribute-boolean-style': 'off',
+      'attribute-empty-style': 'off',
+      deprecated: ['error', { exclude: ['tt'] }],
+      'doctype-style': 'off',
+      // This rule is mostly relevant for SEO, which doesn't matter since our
+      // pages aren't ever crawled by search engines.
+      'long-title': 'off',
+      'no-inline-style': 'off',
+      'no-trailing-whitespace': 'off',
+      'script-type': 'off',
+      'unique-landmark': 'off',
+      'void-style': 'off',
+      'wcag/h63': 'off',
+    },
+  });
+
+  // Filter out some validation results that don't apply to us.
+  for (const result of validationResults.results) {
+    result.messages = result.messages.filter((m) => {
+      // This doesn't appear to be an actual issue and isn't flagged by
+      // other tools like https://validator.w3.org/nu.
+      if (m.message.match(/<tt> element is not permitted as content under <(small|strong)>/)) {
+        return false;
+      }
+
+      // The way Bootstrap styles navbars means we can't use native `<button>`
+      // elements for the navbar dropdowns.
+      if (
+        m.ruleId === 'prefer-native-element' &&
+        m.selector &&
+        [
+          '#navbarDropdownMenuCourseAdminLink',
+          '#navbarDropdownMenuInstanceAdminLink',
+          '#navbarDropdownMenuInstanceChooseLink',
+          '#navbarDropdownMenuLink',
+          '#navbarDropdown',
+        ].includes(m.selector)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+    result.errorCount = result.messages.length;
+  }
+
+  const formatter = formatterFactory('codeframe');
+  messages += formatter(validationResults.results);
+
+  const axeResults = await axe.run(jsdom.window.document.documentElement, {
     resultTypes: ['violations', 'incomplete'],
   });
-  A11yError.checkAndThrow(results.violations);
+  if (axeResults.violations.length > 0) {
+    const err = new A11yError(
+      axeResults.violations,
+      A11yResults.convert(axeResults.violations).sort(),
+    );
+    messages += err.format({});
+  }
+
+  return messages.trim();
 }
 
 const STATIC_ROUTE_PARAMS = {
@@ -307,16 +390,12 @@ describe('accessibility', () => {
 
     const assessmentResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM assessments WHERE tid = $tid',
-      {
-        tid: 'hw1-automaticTestSuite',
-      },
+      { tid: 'hw1-automaticTestSuite' },
     );
 
     const questionResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM questions WHERE qid = $qid',
-      {
-        qid: 'downloadFile',
-      },
+      { qid: 'downloadFile' },
     );
 
     await features.enable('question-sharing');
@@ -339,7 +418,7 @@ describe('accessibility', () => {
     this.timeout(240_000);
 
     const missingParamsEndpoints: Endpoint[] = [];
-    const failingEndpoints: [Endpoint, any][] = [];
+    const failingEndpoints: [Endpoint, string][] = [];
 
     for (const endpoint of endpoints) {
       if (shouldSkipPath(endpoint.path)) {
@@ -358,10 +437,9 @@ describe('accessibility', () => {
       }
 
       const url = substituteParams(endpoint.path, routeParams);
-      try {
-        await checkPage(url);
-      } catch (err) {
-        failingEndpoints.push([endpoint, err]);
+      const messages = await checkPage(url);
+      if (messages !== '') {
+        failingEndpoints.push([endpoint, messages]);
       }
     }
 
@@ -374,8 +452,8 @@ describe('accessibility', () => {
 
     if (failingEndpoints.length > 0) {
       errLines.push('The following endpoints failed accessibility checks:\n');
-      failingEndpoints.forEach(([e, err]) => {
-        errLines.push(e.path, err.message, '');
+      failingEndpoints.forEach(([endpoint, messages]) => {
+        errLines.push(endpoint.path, messages, '');
       });
     }
 

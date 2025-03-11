@@ -170,7 +170,7 @@ export function InstructorCourseAdminStaff({
           user: resLocals.user,
           isAdministrator: resLocals.is_administrator,
         })}
-        <small class="card-footer">
+        <div class="card-footer small">
           ${hasUnknownUsers(courseUsers)
             ? html`
                 <p class="alert alert-warning">
@@ -194,7 +194,7 @@ export function InstructorCourseAdminStaff({
                 </div>
               `
             : ''}
-        </small>
+        </div>
       </div>
     `,
   });
@@ -373,11 +373,13 @@ function StaffTable({
   return html`
     <table class="table table-sm table-hover table-striped" aria-label="Course staff members">
       <thead>
-        <th>UID</th>
-        <th>Name</th>
-        <th>Course content access</th>
-        <th>Student data access</th>
-        <th>Actions</th>
+        <tr>
+          <th>UID</th>
+          <th>Name</th>
+          <th>Course content access</th>
+          <th>Student data access</th>
+          <th>Actions</th>
+        </tr>
       </thead>
       <tbody>
         ${courseUsers.map((courseUser) => {
@@ -698,41 +700,45 @@ function AccessLevelsTable() {
       style="max-width: 45em"
       aria-label="Recommended access levels"
     >
-      <tr>
-        <th scope="col">Role</th>
-        <th class="text-center" scope="col">Course content access</th>
-        <th class="text-center" scope="col">Student data access</th>
-      </tr>
-      <tr>
-        <td>Instructor</td>
-        <td class="text-center">Course content owner</td>
-        <td class="text-center">Student data editor</td>
-      </tr>
-      <tr>
-        <td>TAs developing course content</td>
-        <td class="text-center">Course content editor</td>
-        <td class="text-center">Student data editor</td>
-      </tr>
-      <tr>
-        <td>Student content developers (not TAs)</td>
-        <td class="text-center">Course content editor</td>
-        <td class="text-center">None</td>
-      </tr>
-      <tr>
-        <td>TAs involved in grading</td>
-        <td class="text-center">None</td>
-        <td class="text-center">Student data editor</td>
-      </tr>
-      <tr>
-        <td>Other TAs</td>
-        <td class="text-center">None</td>
-        <td class="text-center">Student data viewer</td>
-      </tr>
-      <tr>
-        <td>Instructors from other classes</td>
-        <td class="text-center">Course content viewer</td>
-        <td class="text-center">None</td>
-      </tr>
+      <thead>
+        <tr>
+          <th scope="col">Role</th>
+          <th class="text-center" scope="col">Course content access</th>
+          <th class="text-center" scope="col">Student data access</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Instructor</td>
+          <td class="text-center">Course content owner</td>
+          <td class="text-center">Student data editor</td>
+        </tr>
+        <tr>
+          <td>TAs developing course content</td>
+          <td class="text-center">Course content editor</td>
+          <td class="text-center">Student data editor</td>
+        </tr>
+        <tr>
+          <td>Student content developers (not TAs)</td>
+          <td class="text-center">Course content editor</td>
+          <td class="text-center">None</td>
+        </tr>
+        <tr>
+          <td>TAs involved in grading</td>
+          <td class="text-center">None</td>
+          <td class="text-center">Student data editor</td>
+        </tr>
+        <tr>
+          <td>Other TAs</td>
+          <td class="text-center">None</td>
+          <td class="text-center">Student data viewer</td>
+        </tr>
+        <tr>
+          <td>Instructors from other classes</td>
+          <td class="text-center">Course content viewer</td>
+          <td class="text-center">None</td>
+        </tr>
+      </tbody>
     </table>
   `;
 }
