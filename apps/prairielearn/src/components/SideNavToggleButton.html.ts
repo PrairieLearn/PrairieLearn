@@ -1,13 +1,13 @@
 import { html } from '@prairielearn/html';
 
-export function SideNavToggleButton({ 
-   forSideNavExpanded
-}: { 
+export function SideNavToggleButton({
+  forSideNavExpanded,
+}: {
   /**
-   * If true, when the side nav is expanded, the expanded icon and tooltip will render. 
+   * If true, when the side nav is expanded, the expanded icon and tooltip will render.
    * Otherwise, when the side nav is collapsed, the collapsed icon and tooltip will render.
    */
-  forSideNavExpanded: boolean 
+  forSideNavExpanded: boolean;
 }) {
   const icon = forSideNavExpanded ? ExpandedIcon() : CollapsedIcon();
 
@@ -57,7 +57,7 @@ function ExpandedIcon() {
         stroke-linejoin="round"
       />
     </svg>
-  `
+  `;
 }
 
 function CollapsedIcon() {
@@ -93,5 +93,5 @@ function CollapsedIcon() {
         stroke-linejoin="round"
       />
     </svg>
-  `
+  `;
 }
