@@ -124,24 +124,14 @@ body:has(div.app-container) {
   border-bottom-right-radius: 0.25rem;
 }
 
-/* Side nav link content is left-aligned when the side nav is expanded */
-.app-container .side-nav-link {
-  justify-content: flex-start;
-}
-
-/* Centers the icon in the collapsed left nav */
-.app-container.side-nav-enabled.collapsed .side-nav-link {
-  justify-content: center;
-}
-
-/* Side nav link text is shown when the side nav is expanded */
-.app-container .side-nav-link .side-nav-link-text {
-  display: block;
-}
-
-/* Side nav link text is not shown when the side nav is collapsed */
+/* When the side nav is collapsed, hide the side nav link text  */
 .app-container.side-nav-enabled.collapsed .side-nav-link .side-nav-link-text {
   display: none;
+}
+
+/* When the side nav is collapsed, center the icons */
+.app-container.side-nav-enabled.collapsed .side-nav-link {
+  justify-content: center;
 }
 
 .side-nav-header {
