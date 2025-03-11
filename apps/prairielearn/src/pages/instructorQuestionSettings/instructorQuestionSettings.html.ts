@@ -236,13 +236,12 @@ export function InstructorQuestionSettings({
                   : ''}
               </table>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label for="grading_method">Grading method</label>
               <select
                 class="form-select"
                 id="grading_method"
                 name="grading_method"
-                value="${resLocals.question.title}"
                 ${canEdit ? '' : 'disabled'}
               >
                 <option
@@ -268,7 +267,7 @@ export function InstructorQuestionSettings({
                 The grading method used for this question.
               </small>
             </div>
-            <div class="form-group form-check">
+            <div class="mb-3 form-check">
               <input
                 class="form-check-input"
                 type="checkbox"
@@ -283,7 +282,7 @@ export function InstructorQuestionSettings({
                 any given assessment.
               </div>
             </div>
-            <div class="form-group form-check">
+            <div class="mb-3 form-check">
               <input
                 class="form-check-input"
                 type="checkbox"
@@ -292,7 +291,7 @@ export function InstructorQuestionSettings({
                 ${canEdit ? '' : 'disabled'}
                 ${resLocals.question.show_correct_answer ? 'checked' : ''}
               />
-              <label class="form-check-label" for="show_correct_answer">Show Correct Answer</label>
+              <label class="form-check-label" for="show_correct_answer">Show correct answer</label>
               <div class="form-text small text-muted">
                 If enabled, the correct answer panel will be shown after all submission attempts
                 have been exhausted.
