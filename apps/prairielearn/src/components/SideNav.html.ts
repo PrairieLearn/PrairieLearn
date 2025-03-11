@@ -198,26 +198,12 @@ function CourseNav({
           ? `data-course-instance-id=${resLocals.course_instance.id}`
           : ''}
       >
-        <div
-          class="side-nav-toggler-icon open"
-          data-toggle="tooltip"
-          data-placement="right"
-          title="Collapse side navigation"
-        >
-          ${SideNavToggleButton({
-            showSideNav: true,
-          })}
-        </div>
-        <div
-          class="side-nav-toggler-icon close"
-          data-toggle="tooltip"
-          data-placement="right"
-          title="Expand side navigation"
-        >
-          ${SideNavToggleButton({
-            showSideNav: false,
-          })}
-        </div>
+        ${SideNavToggleButton({
+          forSideNavExpanded: true,
+        })}
+        ${SideNavToggleButton({
+          forSideNavExpanded: false,
+        })}
       </button>
     </div>
     <div class="side-nav-group">

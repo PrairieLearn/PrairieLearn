@@ -177,18 +177,17 @@ body:has(div.app-container) {
   display: none;
 }
 
-.side-nav-toggler-icon.open {
-  display: block;
-}
-
-.app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.open {
+/* When the side nav is collapsed, hide the expanded icon */
+.app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.expanded {
   display: none;
 }
 
-.side-nav-toggler-icon.close {
+/* When the side nav is expanded, hide the collapsed icon */
+.side-nav-toggler-icon.collapsed {
   display: none;
 }
 
-.app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.close {
+/* When the side nav is collapsed, show the collapsed icon */
+.app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.collapsed {
   display: block;
 }
