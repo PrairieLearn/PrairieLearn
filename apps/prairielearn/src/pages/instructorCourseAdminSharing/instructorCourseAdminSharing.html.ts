@@ -166,8 +166,8 @@ export function InstructorCourseAdminSharing({
                         type="button"
                         class="btn btn-xs btn-secondary mx-2"
                         aria-label="Choose Sharing Name"
-                        data-toggle="modal"
-                        data-target="#chooseSharingNameModal"
+                        data-bs-toggle="modal"
+                        data-bs-target="#chooseSharingNameModal"
                       >
                         <i class="fas fa-share-nodes" aria-hidden="true"></i>
                         <span class="d-none d-sm-inline">Choose Sharing Name</span>
