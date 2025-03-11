@@ -1,7 +1,9 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+
+// Handle when the user expands or collapses the side nav
+
 onDocumentReady(async () => {
-  // This updates the CSS classes of the app container when side nav toggling occurs.
 
   const sideNavTogglerButton = document.querySelector<HTMLButtonElement>('#side-nav-toggler');
   const appContainerDiv = document.querySelector<HTMLDivElement>('#app-container');
@@ -9,7 +11,6 @@ onDocumentReady(async () => {
   if (!sideNavTogglerButton || !appContainerDiv) return;
 
   sideNavTogglerButton.addEventListener('click', async () => {
-    // Check if the app container shows the side nav
     const sideNavExpanded = !appContainerDiv.classList.contains('collapsed');
 
     const sideNavButtons = document.querySelectorAll<HTMLButtonElement>('.side-nav-link');
@@ -40,6 +41,7 @@ onDocumentReady(async () => {
         ? `/pl/course_instance/${courseInstanceId}/instructor/side_nav_expanded`
         : `/pl/course/${courseId}/side_nav_expanded`;
 
+      // Update the side nav expanded state
       await fetch(url, {
         method: 'PUT',
         headers: {
