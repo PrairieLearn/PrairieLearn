@@ -260,8 +260,8 @@ jobs:
           for image in *; do
             pushd "$image"
             tags="$(cat -- * | uniq | xargs echo -n | tr '\n' ' ' | sed 's/ / -t /g')"
-            echo "Creating manifest list for '$image' with tags '$tags' using digests: '$(printf "$image-prefix-$image@sha256:%s " *)'"
+            echo "Creating manifest list for '$image' with tags '$tags' using digests: '$(printf "${{ inputs.image-prefix }}-$image@sha256:%s " *)'"
             # shellcheck disable=SC2086,SC2046
-            docker buildx imagetools create -t $tags $(printf "$image-prefix-$image@sha256:%s " *)
+            docker buildx imagetools create -t $tags $(printf "${{ inputs.image-prefix }}-$image@sha256:%s " *)
             popd
           done
