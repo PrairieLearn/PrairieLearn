@@ -437,9 +437,6 @@ jobs:
           cache: 'yarn'
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
-      - name: Install Node dependencies
-        run: yarn install --immutable --inline-builds
-
       - name: Set up Turborepo cache
         uses: actions/cache@v4
         with:
@@ -447,6 +444,9 @@ jobs:
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-turbo-
+      - name: Install Node dependencies
+        run: yarn install --immutable --inline-builds
+
 
       - name: Set up Prettier and ESLint cache
         uses: actions/cache@v4
