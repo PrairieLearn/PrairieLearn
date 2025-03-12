@@ -139,7 +139,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             form.
           </p>
 
-          <div class="form-row">
+          <div class="row">
             <div class="mb-3 col-md-6">
               <label class="form-label" for="cr-firstname">First name</label>
               <input
@@ -163,7 +163,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               />
             </div>
           </div>
-          <div class="form-row">
+          <div class="row">
             <div class="mb-3 col-md-6">
               <label class="form-label" for="cr-institution">Institution</label>
               <input
