@@ -147,7 +147,7 @@ export function InstructorQuestionSettings({
             </div>
             <div class="mb-3">
               <h2 class="h4">General</h2>
-              <label for="title" class="form-label">Title</label>
+              <label for="title">Title</label>
               <input
                 type="text"
                 class="form-control"
@@ -168,7 +168,7 @@ export function InstructorQuestionSettings({
                 <tbody>
                   <tr>
                     <th class="align-middle">
-                      <label id="topic-label" for="topic" class="form-label">Topic</label>
+                      <label id="topic-label" for="topic">Topic</label>
                     </th>
                     <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
                     <!-- This is used by tom-select to style the active item in the dropdown -->
@@ -199,7 +199,7 @@ export function InstructorQuestionSettings({
                   </tr>
                   <tr>
                     <th class="align-middle">
-                      <label id="tags-label" for="tags" class="form-label">Tags</label>
+                      <label id="tags-label" for="tags">Tags</label>
                     </th>
                     <td>
                       ${canEdit

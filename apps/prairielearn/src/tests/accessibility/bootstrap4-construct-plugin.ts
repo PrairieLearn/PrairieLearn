@@ -160,6 +160,7 @@ class Bootstrap4ConstructRule extends Rule {
       // must be added to form labels.
       document.querySelectorAll('label').forEach((node) => {
         if (
+          node.closest('.form-group') &&
           !node.classList.contains('form-label') &&
           !node.classList.contains('form-check-label')
         ) {
