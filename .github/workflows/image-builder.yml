@@ -229,8 +229,8 @@ jobs:
         working-directory: ${{ runner.temp }}/digests
         run: |
           for image in *; do
-            pushd $image
-            tags="$(cat * | xargs echo -n | tr '\n' ' ' | sed 's/ / -t /g')"
-            docker buildx imagetools create -t $tags $(printf "$image@sha256:%s " *)
+            pushd "$image"
+            tags="$(cat -- * | xargs echo -n | tr '\n' ' ' | sed 's/ / -t /g')"
+            docker buildx imagetools create -t "$tags" "$(printf "$image@sha256:%s " *)"
             popd
           done
