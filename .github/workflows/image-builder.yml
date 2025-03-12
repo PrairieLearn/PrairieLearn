@@ -71,6 +71,17 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=,format=long
 
+      - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }} Digest
+        id: build-digest
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.directory }}/${{ matrix.image }}
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ inputs.image-prefix }}-${{ matrix.image }}
+          outputs: |
+            type=image,push-by-digest=true,name-canonical=true,push=${{ env.CAN_PUSH_IMAGE == 'true' }}
+
       - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }}
         id: build
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
@@ -82,14 +93,13 @@ jobs:
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           outputs: |
             type=docker,dest=${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
-            type=image,push-by-digest=true,name-canonical=true,push=${{ env.CAN_PUSH_IMAGE == 'true' }}
 
       # Group digests by image name. Tags are associated with each digest, but will be all merged when we push the image.
       - name: Export docker metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
           mkdir -p ${{ runner.temp }}/digests/${{ matrix.image}}
-          digest="${{ steps.build.outputs.digest }}"
+          digest="${{ steps.build-digest.outputs.digest }}"
           echo "${{ steps.meta.outputs.tags }}" > "${{ runner.temp }}/digests/${{ matrix.image }}/${digest#sha256:}"
 
       # Workaround for https://github.com/orgs/community/discussions/17245
@@ -170,25 +180,39 @@ jobs:
           context: git
           images: |
             ${{ inputs.image-prefix }}-${{ matrix.image }}
+          # On the default branch, we'll also tag the image as `latest`
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=,format=long
+
+      - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }} Digest
+        id: build-digest
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.directory }}/${{ matrix.image }}
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ inputs.image-prefix }}-${{ matrix.image }}
+          outputs: |
+            type=image,push-by-digest=true,name-canonical=true,push=${{ env.CAN_PUSH_IMAGE == 'true' }}
 
       - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }}
         id: build
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: docker/build-push-action@v6
-        continue-on-error: true
         with:
           context: ${{ inputs.directory }}/${{ matrix.image }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           outputs: |
-            type=image,push-by-digest=true,name-canonical=true,push=${{ env.CAN_PUSH_IMAGE == 'true' }}
+            type=docker,dest=${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
 
       - name: Export docker metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
           mkdir -p ${{ runner.temp }}/digests/${{ matrix.image}}
-          digest="${{ steps.build.outputs.digest }}"
+          digest="${{ steps.build-digest.outputs.digest }}"
           echo "${{ steps.meta.outputs.tags }}" > "${{ runner.temp }}/digests/${{ matrix.image }}/${digest#sha256:}"
 
       - name: Upload docker metadata
@@ -231,6 +255,6 @@ jobs:
           for image in *; do
             pushd "$image"
             tags="$(cat -- * | xargs echo -n | tr '\n' ' ' | sed 's/ / -t /g')"
-            docker buildx imagetools create -t "$tags" "$(printf "$image@sha256:%s " *)"
+            docker buildx imagetools create -t "$tags" "$(printf "${{ inputs.image-prefix }}-$image@sha256:%s " *)"
             popd
           done
