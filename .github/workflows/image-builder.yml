@@ -260,7 +260,7 @@ jobs:
           for image in *; do
             pushd "$image"
             tags="$(cat -- * | xargs echo -n | tr '\n' ' ' | sed 's/ / -t /g')"
-            # shellcheck disable=SC2086
+            # shellcheck disable=SC2086,SC2046
             docker buildx imagetools create -t $tags $(printf "$image@sha256:%s " *)
             popd
           done
