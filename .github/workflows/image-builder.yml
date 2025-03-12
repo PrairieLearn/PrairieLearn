@@ -86,6 +86,7 @@ jobs:
 
       # Group digests by image name. Tags are associated with each digest, but will be all merged when we push the image.
       - name: Export docker metadata
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
           mkdir -p ${{ runner.temp }}/digests/${{ matrix.image}}
           digest="${{ steps.build.outputs.digest }}"
@@ -93,6 +94,7 @@ jobs:
 
       # Workaround for https://github.com/orgs/community/discussions/17245
       - name: Upload docker metadata
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ matrix.image }}-${{ matrix.os }}
@@ -183,12 +185,14 @@ jobs:
             type=image,push-by-digest=true,name-canonical=true,push=${{ env.CAN_PUSH_IMAGE == 'true' }}
 
       - name: Export docker metadata
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
           mkdir -p ${{ runner.temp }}/digests/${{ matrix.image}}
           digest="${{ steps.build.outputs.digest }}"
           echo "${{ steps.meta.outputs.tags }}" > "${{ runner.temp }}/digests/${{ matrix.image }}/${digest#sha256:}"
 
       - name: Upload docker metadata
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ matrix.image }}-${{ matrix.os }}
