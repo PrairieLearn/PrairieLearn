@@ -29,9 +29,7 @@ export const AssessmentStatsRowSchema = AssessmentSchema.extend({
 });
 type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
 
-export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
+export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
   start_new_assessment_group: z.boolean(),
   assessment_set: AssessmentSetSchema,
   assessment_module: AssessmentModuleSchema,
@@ -133,7 +131,7 @@ export function InstructorAssessments({
                           : ''}
                         <tr id="row-${row.id}">
                           <td class="align-middle" style="width: 1%">
-                            <span class="badge color-${row.color}">${row.label}</span>
+                            <span class="badge color-${row.assessment_set.color}">${row.label}</span>
                           </td>
                           <td class="align-middle">
                             ${row.sync_errors
