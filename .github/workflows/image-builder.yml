@@ -261,6 +261,6 @@ jobs:
             pushd "$image"
             tags="$(cat -- * | xargs echo -n | tr '\n' ' ' | sed 's/ / -t /g')"
             # shellcheck disable=SC2086
-            docker buildx imagetools create -t $tags "$(printf "$image@sha256:%s " *)"
+            docker buildx imagetools create -t $tags $(printf "$image@sha256:%s " *)
             popd
           done
