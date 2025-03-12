@@ -179,6 +179,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          outputs: |
+            type=image,push-by-digest=true,name-canonical=true,push=${{ env.CAN_PUSH_IMAGE == 'true' }}
 
       - name: Export docker metadata
         run: |
