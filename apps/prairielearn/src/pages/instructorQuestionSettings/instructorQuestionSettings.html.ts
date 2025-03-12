@@ -147,7 +147,7 @@ export function InstructorQuestionSettings({
             </div>
             <div class="mb-3">
               <h2 class="h4">General</h2>
-              <label for="title">Title</label>
+              <label class="form-label" for="title">Title</label>
               <input
                 type="text"
                 class="form-control"
@@ -237,7 +237,7 @@ export function InstructorQuestionSettings({
               </table>
             </div>
             <div class="mb-3">
-              <label for="grading_method">Grading method</label>
+              <label class="form-label" for="grading_method">Grading method</label>
               <select
                 class="form-select"
                 id="grading_method"
@@ -277,7 +277,7 @@ export function InstructorQuestionSettings({
                 ${resLocals.question.single_variant ? 'checked' : ''}
               />
               <label class="form-check-label" for="single_variant">Single variant</label>
-              <div class="form-text small text-muted">
+              <div class="small text-muted">
                 If enabled, students will only be able to try a single variant of this question on
                 any given assessment.
               </div>
@@ -292,7 +292,7 @@ export function InstructorQuestionSettings({
                 ${resLocals.question.show_correct_answer ? 'checked' : ''}
               />
               <label class="form-check-label" for="show_correct_answer">Show correct answer</label>
-              <div class="form-text small text-muted">
+              <div class="small text-muted">
                 If enabled, the correct answer panel will be shown after all submission attempts
                 have been exhausted.
               </div>
