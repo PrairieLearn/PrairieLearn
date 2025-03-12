@@ -16,7 +16,7 @@ import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
 
-import Bootstrap4ConstructPlugin from './bootstrap4-rule.js';
+import Bootstrap4ConstructPlugin from './bootstrap4-construct-plugin.js';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
 
