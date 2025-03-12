@@ -70,7 +70,7 @@ lint: lint-js lint-python lint-html lint-links
 # prettier: delete the cache when updating plugins, eslint: no need to delete the cache
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives --cache --cache-strategy content "**/*.{js,ts}"
-	@yarn prettier --check --cache --cache-location=.prettier-cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
+	@yarn prettier --check --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
 lint-python:
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
@@ -91,7 +91,7 @@ lint-actions:
 format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix  --cache --cache-strategy content "**/*.{js,ts}"
-	@yarn prettier --write --cache --cache-location=.prettier-cache  --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
+	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
 format-python:
 	@python3 -m ruff check --fix ./
 	@python3 -m ruff format ./
