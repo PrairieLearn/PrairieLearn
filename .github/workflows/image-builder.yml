@@ -34,7 +34,7 @@ jobs:
         exclude: ${{ fromJSON(inputs.exclude) }}
     runs-on: ${{ matrix.os }}
     env:
-      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' && github.ref_name == github.event.repository.default_branch }}
+      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
     steps:
       # Check out the repository with full depth so we can check if the workspace was modified
       - uses: actions/checkout@v4
@@ -121,7 +121,7 @@ jobs:
         exclude: ${{ fromJSON(inputs.exclude) }}
     runs-on: ${{ matrix.os }}
     env:
-      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' && github.ref_name == github.event.repository.default_branch }}
+      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     # Associate each workspace with requirements
     steps:
@@ -203,7 +203,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [build-images]
     env:
-      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' && github.ref_name == github.event.repository.default_branch }}
+      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
     steps:
       - name: Download digests
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
