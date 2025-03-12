@@ -540,7 +540,7 @@ function AuthnOverrides({
     <h6 class="dropdown-header">Effective user</h6>
 
     <form class="dropdown-item-text d-flex flex-nowrap js-effective-uid-form">
-      <label class="visually-hidden" for="effective-uid">UID</label>
+      <label class="visually-hidden form-label" for="effective-uid">UID</label>
       <input
         id="effective-uid"
         type="email"

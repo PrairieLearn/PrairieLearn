@@ -159,10 +159,14 @@ class Bootstrap4ConstructRule extends Rule {
       // `label` no longer receives a default bottom margin; the `form-label` class
       // must be added to form labels.
       document.querySelectorAll('label').forEach((node) => {
-        if (node.closest('.form-group') && !node.classList.contains('form-label')) {
+        if (
+          !node.classList.contains('form-label') &&
+          !node.classList.contains('form-check-label')
+        ) {
           this.report({
             node,
-            message: 'Bootstrap 5 requires the `form-label` class on form labels.',
+            message:
+              'Bootstrap 5 requires either the `form-label` class or the `form-check-label` class on form labels.',
           });
         }
       });
