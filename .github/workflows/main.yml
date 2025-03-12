@@ -437,13 +437,6 @@ jobs:
           cache: 'yarn'
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
-      # - name: yarn install state cache
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: .yarn/install-state.gz
-      #     key: ${{ runner.os }}-yarn-install-state-${{ github.sha }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-yarn-install-state-
       - name: Install Node dependencies
         run: yarn install --immutable --inline-builds
       - name: Set up Turborepo cache
