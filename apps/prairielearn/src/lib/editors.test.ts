@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { getUniqueNames } from './editors.js';
+import { getUniqueNames, propertyValueWithDefault } from './editors.js';
 
 describe('editors', () => {
   describe('getNamesForAdd', () => {
@@ -175,6 +175,44 @@ describe('editors', () => {
 
         assert.equal(names['shortName'], 'fa19_4');
         assert.equal(names['longName'], 'Fall 2019 Section 2 (4)');
+      });
+    });
+  });
+  describe('getPropertiesForAdd', () => {
+    describe('New value differs from the default value', () => {
+      it('should return the new value if it differs from the default value', () => {
+        const property = propertyValueWithDefault('Existing', 'New', 'Default');
+        assert.equal(property, 'New');
+      });
+    });
+    describe('New value is the same as the default value', () => {
+      it('should return undefined if the new value is the same as the default value', () => {
+        const property = propertyValueWithDefault('Existing', 'Default', 'Default');
+        assert.equal(property, undefined);
+      });
+    });
+    describe('Existing value is undefined', () => {
+      it('should return the new value if it differs from the default value, even if the existing value is undefind', () => {
+        const property = propertyValueWithDefault(undefined, 'New', 'Default');
+        assert.equal(property, 'New');
+      });
+    });
+    describe('Handles null values', () => {
+      it('should return the new value if it differs from the default value, even if the default value is null', () => {
+        const property = propertyValueWithDefault('Existing', null, 'Default');
+        assert.equal(property, null);
+      });
+    });
+    describe('Handles numeric values', () => {
+      it('should return the new value if it differs from the default value, even if the values are numbers', () => {
+        const property = propertyValueWithDefault(0, 1, 0);
+        assert.equal(property, 1);
+      });
+    });
+    describe('Handles boolean values', () => {
+      it('should return the new value if it differs from the default value, even if the values are booleans', () => {
+        const property = propertyValueWithDefault(true, false, true);
+        assert.equal(property, false);
       });
     });
   });

@@ -19,6 +19,7 @@ import {
   AssessmentDeleteEditor,
   FileModifyEditor,
   MultiEditor,
+  propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -29,20 +30,6 @@ import { InstructorAssessmentSettings } from './instructorAssessmentSettings.htm
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-function propertyValueWithDefault(existingValue, newValue, defaultValue) {
-  if (existingValue === undefined) {
-    if (newValue !== defaultValue) {
-      return newValue;
-    }
-  } else {
-    if (existingValue !== defaultValue && newValue === defaultValue) {
-      return undefined;
-    } else {
-      return newValue;
-    }
-  }
-}
 
 router.get(
   '/',
