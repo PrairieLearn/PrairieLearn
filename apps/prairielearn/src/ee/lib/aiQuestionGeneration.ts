@@ -5,15 +5,11 @@ import { loadSqlEquiv, queryRows, queryRow, queryAsync } from '@prairielearn/pos
 
 import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import {
-  type Issue,
-  QuestionGenerationContextEmbeddingSchema,
-  QuestionSchema,
-} from '../../lib/db-types.js';
+import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { selectCourseById } from '../../models/course.js';
-import { selectQuestionById } from '../../models/question.js';
+import { selectQuestionById, selectQuestionByQid } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
@@ -620,11 +616,7 @@ export async function regenerateQuestion(
     authnUserId,
   });
 
-  const question = await queryRow(
-    sql.select_question_by_qid_and_course,
-    { qid: questionQid, course_id: courseId },
-    QuestionSchema,
-  );
+  const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });
 
   const jobData = await serverJob.execute(async (job) => {
     job.data['questionQid'] = questionQid;

@@ -53,7 +53,7 @@ export function QuestionContainer({
       data-variant-token="${variantToken}"
     >
       ${question.type !== 'Freeform'
-        ? html`<div hidden="true" class="question-data">${questionJsonBase64}</div>`
+        ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
       ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
       ${question.type === 'Freeform'
@@ -84,15 +84,15 @@ export function QuestionContainer({
               ? html`
                   <div class="mb-4 d-flex justify-content-center">
                     <button
-                      class="show-hide-btn btn btn-outline-secondary btn-sm collapsed"
+                      class="btn btn-outline-secondary btn-sm show-hide-btn collapsed"
                       type="button"
-                      data-toggle="collapse"
-                      data-target="#more-submissions-collapser"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#more-submissions-collapser"
                       aria-expanded="false"
                       aria-controls="more-submissions-collapser"
                     >
                       Show/hide older submissions
-                      <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+                      <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
                     </button>
                   </div>
 
@@ -211,7 +211,7 @@ export function IssuePanel({
 
       ${config.devMode || authz_data.has_course_permission_view
         ? html`
-            <div class="card-body border border-bottom-0 border-left-0 border-right-0">
+            <div class="card-body border border-bottom-0 border-start-0 border-end-0">
               ${issue.system_data?.courseErrData
                 ? html`
                     <p><strong>Console log:</strong></p>
@@ -225,7 +225,7 @@ ${issue.system_data.courseErrData.outputBoth}</pre
                 <button
                   type="button"
                   class="btn btn-xs btn-secondary"
-                  data-toggle="collapse"
+                  data-bs-toggle="collapse"
                   href="#issue-course-data-${issue.id}"
                   aria-expanded="false"
                   aria-controls="#issue-course-data-${issue.id}"
@@ -245,7 +245,7 @@ ${JSON.stringify(issue.course_data, null, '    ')}</pre
                       <button
                         type="button"
                         class="btn btn-xs btn-secondary"
-                        data-toggle="collapse"
+                        data-bs-toggle="collapse"
                         href="#issue-system-data-${issue.id}"
                         aria-expanded="false"
                         aria-controls="#issue-system-data-${issue.id}"
@@ -390,6 +390,7 @@ export function QuestionFooterContent({
             ${showSaveButton
               ? html`
                   <button
+                    type="submit"
                     class="btn btn-info question-save disable-on-submit order-2"
                     ${disableSaveButton ? 'disabled' : ''}
                     ${question.type === 'Freeform' ? html`name="__action" value="save"` : ''}
@@ -401,7 +402,8 @@ export function QuestionFooterContent({
             ${showGradeButton
               ? html`
                   <button
-                    class="btn btn-primary question-grade disable-on-submit order-1 mr-1"
+                    type="submit"
+                    class="btn btn-primary question-grade disable-on-submit order-1 me-1"
                     ${disableGradeButton ? 'disabled' : ''}
                     ${question.type === 'Freeform' ? html`name="__action" value="grade"` : ''}
                   >
@@ -409,17 +411,17 @@ export function QuestionFooterContent({
                     ${variantAttemptsTotal > 0
                       ? variantAttemptsLeft > 1
                         ? html`
-                            <small class="font-italic ml-2">
+                            <small class="font-italic ms-2">
                               ${variantAttemptsLeft} attempts left
                             </small>
                           `
                         : variantAttemptsLeft === 1 && variantAttemptsTotal > 1
-                          ? html`<small class="font-italic ml-2">Last attempt</small>`
+                          ? html`<small class="font-italic ms-2">Last attempt</small>`
                           : variantAttemptsLeft === 1
-                            ? html`<small class="font-italic ml-2">Single attempt</small>`
+                            ? html`<small class="font-italic ms-2">Single attempt</small>`
                             : ''
                       : questionContext === 'student_homework'
-                        ? html`<small class="font-italic ml-2">Unlimited attempts</small>`
+                        ? html`<small class="font-italic ms-2">Unlimited attempts</small>`
                         : ''}
                   </button>
                 `
@@ -428,9 +430,9 @@ export function QuestionFooterContent({
               ? html`
                   <button
                     type="button"
-                    class="btn btn-xs btn-ghost mr-1"
-                    data-toggle="popover"
-                    data-content="Your group role (${getRoleNamesForUser(group_info, user).join(
+                    class="btn btn-xs btn-ghost me-1"
+                    data-bs-toggle="popover"
+                    data-bs-content="Your group role (${getRoleNamesForUser(group_info, user).join(
                       ', ',
                     )}) is not allowed to submit this question."
                     aria-label="Submission blocked"
@@ -449,13 +451,13 @@ export function QuestionFooterContent({
                 `}
             ${showNewVariantButton
               ? html`
-                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ml-1">
+                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ms-1">
                     New variant
                   </a>
                 `
               : showTryAgainButton
                 ? html`
-                    <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ml-1">
+                    <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
                       ${instance_question_info.previous_variants?.some((variant) => variant.open)
                         ? 'Go to latest variant'
                         : 'Try a new variant'}
@@ -468,14 +470,15 @@ export function QuestionFooterContent({
                       </small>
                       <button
                         type="button"
-                        class="btn btn-xs btn-ghost align-self-center ml-1"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-content="${escapeHtml(
+                        class="btn btn-xs btn-ghost align-self-center ms-1"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-title="Explanation of new variants"
+                        data-bs-content="${escapeHtml(
                           NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
                         )}"
-                        data-placement="auto"
+                        data-bs-placement="auto"
                       >
                         <i class="fa fa-question-circle" aria-hidden="true"></i>
                       </button>
@@ -532,7 +535,7 @@ function SubmitRateFooter({
         <span class="d-flex">
           ${disableGradeButton
             ? html`
-                <small class="font-italic ml-2 mt-1 submission-suspended-msg">
+                <small class="font-italic ms-2 mt-1 submission-suspended-msg">
                   Grading possible in <span id="submission-suspended-display"></span>
                   <div id="submission-suspended-progress" class="border border-info"></div>
                 </small>
@@ -554,11 +557,12 @@ function SubmitRateFooter({
           <button
             type="button"
             class="btn btn-xs btn-ghost"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-content="${escapeHtml(popoverContent)}"
-            data-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-title="Explanation of grading rate limits"
+            data-bs-content="${escapeHtml(popoverContent)}"
+            data-bs-placement="auto"
           >
             <i class="fa fa-question-circle" aria-hidden="true"></i>
           </button>
@@ -654,10 +658,10 @@ function QuestionPanel({
         ${showCopyQuestionButton
           ? html`
               <button
-                class="btn btn-light btn-sm ml-auto"
+                class="btn btn-light btn-sm ms-auto"
                 type="button"
-                data-toggle="modal"
-                data-target="#copyQuestionModal"
+                data-bs-toggle="modal"
+                data-bs-target="#copyQuestionModal"
               >
                 <i class="fa fa-clone"></i>
                 Copy question
@@ -726,7 +730,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
               This question can be copied to any course for which you have editor permissions.
               Select one of your courses to copy this question.
             </p>
-            <select class="custom-select" name="to_course_id" required>
+            <select class="form-select" name="to_course_id" required>
               ${question_copy_targets.map(
                 (course, index) => html`
                   <option
@@ -749,7 +753,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
       />
       <input type="hidden" name="question_id" value="${question.id}" />
       <input type="hidden" name="course_id" value="${course.id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       ${question_copy_targets?.length > 0
         ? html`
             <button type="submit" name="__action" value="copy_question" class="btn btn-primary">

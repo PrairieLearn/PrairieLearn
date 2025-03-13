@@ -37,7 +37,7 @@ The autograder combines several classes to allow these tests to happen:
 
 ### `info.json`
 
-The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific Java autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-java"` and `"entrypoint"` should point to `"autograder.sh"`.
+The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific Java autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-java"`. The `"entrypoint"` does not need to be provided.
 
 A full `info.json` file should look something like:
 
@@ -53,8 +53,7 @@ A full `info.json` file should look something like:
   "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-java",
-    "timeout": 10,
-    "entrypoint": "autograder.sh"
+    "timeout": 10
   }
 }
 ```
@@ -157,7 +156,6 @@ By default the Java compiler will show all compilation warnings to the user, exc
     "enabled": true,
     "image": "prairielearn/grader-java",
     "timeout": 10,
-    "entrypoint": "autograder.sh",
     "environment": { "JDK_JAVAC_OPTIONS": "-Xlint:-static -Xmaxerrs 3", "JDK_JAVA_OPTIONS": "-ea" }
   }
 }
@@ -186,8 +184,7 @@ Some questions may include libraries and base classes that are common across mul
     "enabled": true,
     "image": "prairielearn/grader-java",
     "serverFilesCourse": ["java/libs/"],
-    "timeout": 10,
-    "entrypoint": "autograder.sh"
+    "timeout": 10
   }
 }
 ```

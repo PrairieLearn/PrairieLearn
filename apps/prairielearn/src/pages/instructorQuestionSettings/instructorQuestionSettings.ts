@@ -43,6 +43,25 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+/**
+ * Returns the new value if it differs from the default value. Otherwise, returns undefined.
+ * This is helpful for setting JSON properties that we only want to write to if they are different
+ * than the default value.
+ */
+function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+  if (existingValue === undefined) {
+    if (newValue !== defaultValue) {
+      return newValue;
+    }
+  } else {
+    if (existingValue !== defaultValue && newValue === defaultValue) {
+      return undefined;
+    } else {
+      return newValue;
+    }
+  }
+}
+
 router.post(
   '/test',
   asyncHandler(async (req, res) => {
@@ -137,6 +156,24 @@ router.post(
         if (Array.isArray(req.body.tags)) return req.body.tags;
         return [req.body.tags];
       });
+
+      questionInfo.gradingMethod = propertyValueWithDefault(
+        questionInfo.gradingMethod,
+        req.body.grading_method,
+        'Internal',
+      );
+
+      questionInfo.singleVariant = propertyValueWithDefault(
+        questionInfo.singleVariant,
+        req.body.single_variant === 'on',
+        false,
+      );
+
+      questionInfo.showCorrectAnswer = propertyValueWithDefault(
+        questionInfo.showCorrectAnswer,
+        req.body.show_correct_answer === 'on',
+        true,
+      );
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
@@ -242,7 +279,7 @@ router.get(
     // `originalUrl` so that this router doesn't have to be aware of where it's
     // mounted.
     const host = getCanonicalHost(req);
-    let questionTestPath = new URL(`${host}${req.originalUrl}`).pathname;
+    let questionTestPath = new URL(req.originalUrl, host).pathname;
     if (!questionTestPath.endsWith('/')) {
       questionTestPath += '/';
     }

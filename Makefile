@@ -1,5 +1,3 @@
-SH_FILES := $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
-
 build:
 	@yarn turbo run build
 build-sequential:
@@ -43,11 +41,11 @@ update-database-description:
 
 start-support: start-postgres start-redis start-s3rver
 start-postgres:
-	@docker/start_postgres.sh
+	@scripts/start_postgres.sh
 start-redis:
-	@docker/start_redis.sh
+	@scripts/start_redis.sh
 start-s3rver:
-	@docker/start_s3rver.sh
+	@scripts/start_s3rver.sh
 
 test: test-js test-python
 test-js: start-support
@@ -56,6 +54,7 @@ test-js-dist: start-support
 	@yarn turbo run test:dist
 test-python:
 	@python3 -m pytest
+	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
 
@@ -72,16 +71,17 @@ lint-js:
 lint-python:
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
+# Lint HTML files, and the build output of the docs
 lint-html:
-	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
 lint-markdown:
 	@yarn markdownlint "docs/**/*.md"
 lint-links:
-	@node tools/validate-links.mjs
+	@node scripts/validate-links.mjs
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 lint-shell:
-	@shellcheck -S error $(SH_FILES)
+	@shellcheck -S error $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
 lint-actions:
 	@actionlint
 
@@ -93,13 +93,11 @@ format-python:
 	@python3 -m ruff check --fix ./
 	@python3 -m ruff format ./
 
-typecheck: typecheck-js typecheck-python
-# This is just an alias to our build script, which will perform typechecking
-# as a side-effect.
-# TODO: Do we want to have a separate typecheck command for all packages/apps?
-# Maybe using TypeScript project references?
-typecheck-tools:
-	@yarn tsc
+typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts
+typecheck-contrib:
+	@yarn tsc -p contrib
+typecheck-scripts:
+	@yarn tsc -p scripts
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:
@@ -112,10 +110,14 @@ changeset:
 lint-docs: lint-d2 lint-links lint-markdown
 
 build-docs:
-	@python3 -m venv /tmp/pldocs/venv
-	@/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt
-	@/tmp/pldocs/venv/bin/python3 -m mkdocs build --strict
-
+	@if uv --version >/dev/null 2>&1; then \
+		uv venv /tmp/pldocs/venv; \
+		uv pip install -r docs/requirements.txt --python /tmp/pldocs/venv; \
+	else \
+		python3 -m venv /tmp/pldocs/venv; \
+		/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt; \
+	fi
+	@/tmp/pldocs/venv/bin/mkdocs build --strict
 preview-docs:
 	@mkdocs serve
 
