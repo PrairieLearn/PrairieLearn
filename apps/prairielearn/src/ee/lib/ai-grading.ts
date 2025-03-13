@@ -467,7 +467,7 @@ export async function aiGrade({
             for (const item of selectedRubricDescriptions) {
               job.info(`- ${item}`);
             }
-            await queryAsync(sql.insert_ai_grading_prompt, {
+            await queryAsync(sql.insert_ai_grading_job, {
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               prompt: messages,
@@ -514,7 +514,7 @@ export async function aiGrade({
               user_id,
             );
             job.info(`AI score: ${response.parsed.score}`);
-            await queryAsync(sql.insert_ai_grading_prompt, {
+            await queryAsync(sql.insert_ai_grading_job, {
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               prompt: messages,

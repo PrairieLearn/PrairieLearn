@@ -124,9 +124,9 @@ FROM
 WHERE
   rgi.rubric_grading_id = $manual_rubric_grading_id;
 
--- BLOCK insert_ai_grading_prompt
+-- BLOCK insert_ai_grading_job
 INSERT INTO
-  ai_grading_prompts (
+  ai_grading_jobs (
     grading_job_id,
     job_sequence_id,
     prompt,

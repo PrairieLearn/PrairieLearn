@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS ai_grading_prompts (
+CREATE TABLE IF NOT EXISTS ai_grading_jobs (
   id bigserial PRIMARY KEY,
   grading_job_id BIGINT REFERENCES grading_jobs (id) ON DELETE SET NULL ON UPDATE CASCADE,
   job_sequence_id BIGINT REFERENCES job_sequences (id) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -12,10 +12,10 @@ CREATE TABLE IF NOT EXISTS ai_grading_prompts (
   cost double precision NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS ai_grading_prompts_grading_job_id_idx ON ai_grading_prompts (grading_job_id);
+CREATE INDEX IF NOT EXISTS ai_grading_jobs_grading_job_id_idx ON ai_grading_jobs (grading_job_id);
 
-CREATE INDEX IF NOT EXISTS ai_grading_prompts_job_sequence_id_idx ON ai_grading_prompts (job_sequence_id);
+CREATE INDEX IF NOT EXISTS ai_grading_jobs_job_sequence_id_idx ON ai_grading_jobs (job_sequence_id);
 
-CREATE INDEX IF NOT EXISTS ai_grading_prompts_course_id_idx ON ai_grading_prompts (course_id);
+CREATE INDEX IF NOT EXISTS ai_grading_jobs_course_id_idx ON ai_grading_jobs (course_id);
 
-CREATE INDEX IF NOT EXISTS ai_grading_prompts_course_instance_id_idx ON ai_grading_prompts (course_instance_id);
+CREATE INDEX IF NOT EXISTS ai_grading_jobs_course_instance_id_idx ON ai_grading_jobs (course_instance_id);

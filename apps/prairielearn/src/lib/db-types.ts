@@ -47,7 +47,7 @@ export const AdministratorSchema = z.object({
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
 
-export const AiGradingPromptSchema = z.object({
+export const AiGradingJobSchema = z.object({
   completion: z.any(),
   completion_tokens: z.number(),
   course_id: IdSchema.nullable(),
@@ -60,7 +60,7 @@ export const AiGradingPromptSchema = z.object({
   prompt: z.any(),
   prompt_tokens: z.number(),
 });
-export type AiGradingPrompt = z.infer<typeof AiGradingPromptSchema>;
+export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
 
 export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
