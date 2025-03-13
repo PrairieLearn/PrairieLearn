@@ -162,8 +162,8 @@ ${resLocals.assessment.text}</textarea
                 HTML text shown on the assessment overview page.
               </small>
             </div>
-            <div class="form-group">
-              <div class="form-group form-check">
+            <div class="mb-3">
+              <div class="mb-3 form-check">
                 <input
                   class="form-check-input"
                   type="checkbox"
@@ -175,14 +175,14 @@ ${resLocals.assessment.text}</textarea
                 <label class="form-check-label" for="allow_issue_reporting"
                   >Allow issue reporting</label
                 >
-                <div class="form-text small text-muted">
+                <div class="small text-muted">
                   Whether to allow students to report issues for assessment questions.
                 </div>
               </div>
             </div>
             ${resLocals.assessment.type !== 'Homework'
-              ? html` <div class="form-group">
-                  <div class="form-group form-check">
+              ? html` <div class="mb-3">
+                  <div class="mb-3 form-check">
                     <input
                       class="form-check-input"
                       type="checkbox"
@@ -194,14 +194,14 @@ ${resLocals.assessment.text}</textarea
                     <label class="form-check-label" for="multiple_instance"
                       >Multiple Instances</label
                     >
-                    <div class="form-text small text-muted">
+                    <div class="small text-muted">
                       Whether to allow students to create additional instances of the assessment.
                     </div>
                   </div>
                 </div>`
               : ''}
-            <div class="form-group">
-              <div class="form-group form-check">
+            <div class="mb-3">
+              <div class="mb-3 form-check">
                 <input
                   class="form-check-input"
                   type="checkbox"
@@ -213,13 +213,13 @@ ${resLocals.assessment.text}</textarea
                 <label class="form-check-label" for="allow_personal_notes"
                   >Allow personal notes</label
                 >
-                <div class="form-text small text-muted">
+                <div class="small text-muted">
                   Whether students are allowed to upload personal notes for this assessment.
                 </div>
               </div>
             </div>
-            <div class="form-group">
-              <div class="form-group form-check">
+            <div class="mb-3">
+              <div class="mb-3 form-check">
                 <input
                   class="form-check-input"
                   type="checkbox"
@@ -229,13 +229,13 @@ ${resLocals.assessment.text}</textarea
                   ${resLocals.assessment.auto_close ? 'checked' : ''}
                 />
                 <label class="form-check-label" for="auto_close">Auto close</label>
-                <div class="form-text small text-muted">
+                <div class="small text-muted">
                   Whether to automatically close the assessment after a period of inactivity.
                 </div>
               </div>
             </div>
-            <div class="form-group">
-              <div class="form-group form-check">
+            <div class="mb-3">
+              <div class="mb-3 form-check">
                 <input
                   class="form-check-input"
                   type="checkbox"
@@ -245,12 +245,12 @@ ${resLocals.assessment.text}</textarea
                   ${resLocals.assessment.require_honor_code ? 'checked' : ''}
                 />
                 <label class="form-check-label" for="require_honor_code">Require honor code</label>
-                <div class="form-text small text-muted">
+                <div class="small text-muted">
                   Requires the student to accept an honor code before starting exam assessments.
                 </div>
               </div>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <label class="form-label" for="studentLink">Student Link</label>
               <span class="input-group">
                 <input
