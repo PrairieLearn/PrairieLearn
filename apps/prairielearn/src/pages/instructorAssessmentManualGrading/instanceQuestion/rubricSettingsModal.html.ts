@@ -31,7 +31,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
             <div class="modal-body">
               ${resLocals.assessment_question.max_auto_points
                 ? html`
-                    <div class="form-row">
+                    <div class="row">
                       <div class="col-12 col-lg-6">
                         <div class="form-check">
                           <label class="form-check-label">
@@ -95,7 +95,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     <hr />
                   `
                 : ''}
-              <div class="form-row">
+              <div class="row">
                 <div class="col-12 col-lg-6">
                   <div class="form-check js-rubric-max-points-positive">
                     <label class="form-check-label">

@@ -139,7 +139,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             form.
           </p>
 
-          <div class="form-row">
+          <div class="row">
             <div class="mb-3 col-md-6">
               <label class="form-label" for="cr-firstname">First name</label>
               <input
@@ -163,7 +163,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               />
             </div>
           </div>
-          <div class="form-row">
+          <div class="row">
             <div class="mb-3 col-md-6">
               <label class="form-label" for="cr-institution">Institution</label>
               <input
@@ -264,19 +264,25 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             <ul class="list-group">
               <li class="list-group-item">
                 <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
-                <label for="role-instructor" class="mb-0">Official Course Instructor</label>
+                <label for="role-instructor" class="mb-0 form-check-label">
+                  Official Course Instructor
+                </label>
               </li>
               <li class="list-group-item">
                 <input type="radio" id="role-ta" name="cr-role" value="ta" />
-                <label for="role-ta" class="mb-0">Teaching Assistant or other course staff</label>
+                <label for="role-ta" class="mb-0 form-check-label">
+                  Teaching Assistant or other course staff
+                </label>
               </li>
               <li class="list-group-item">
                 <input type="radio" id="role-admin" name="cr-role" value="admin" />
-                <label for="role-admin" class="mb-0">Institution Administrative Staff</label>
+                <label for="role-admin" class="mb-0 form-check-label">
+                  Institution Administrative Staff
+                </label>
               </li>
               <li class="list-group-item">
                 <input type="radio" id="role-student" name="cr-role" value="student" />
-                <label for="role-student" class="mb-0">Student</label>
+                <label for="role-student" class="mb-0 form-check-label">Student</label>
               </li>
             </ul>
             <div
