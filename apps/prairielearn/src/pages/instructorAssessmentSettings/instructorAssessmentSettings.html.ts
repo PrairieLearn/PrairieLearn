@@ -200,54 +200,48 @@ ${resLocals.assessment.text}</textarea
                   </div>
                 </div>`
               : ''}
-            <div class="mb-3">
-              <div class="mb-3 form-check">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="allow_personal_notes"
-                  name="allow_personal_notes"
-                  ${canEdit ? '' : 'disabled'}
-                  ${resLocals.assessment.allow_personal_notes ? 'checked' : ''}
-                />
-                <label class="form-check-label" for="allow_personal_notes"
-                  >Allow personal notes</label
-                >
-                <div class="small text-muted">
-                  Whether students are allowed to upload personal notes for this assessment.
-                </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="allow_personal_notes"
+                name="allow_personal_notes"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.assessment.allow_personal_notes ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="allow_personal_notes"
+                >Allow personal notes</label
+              >
+              <div class="small text-muted">
+                Whether students are allowed to upload personal notes for this assessment.
               </div>
             </div>
-            <div class="mb-3">
-              <div class="mb-3 form-check">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="auto_close"
-                  name="auto_close"
-                  ${canEdit ? '' : 'disabled'}
-                  ${resLocals.assessment.auto_close ? 'checked' : ''}
-                />
-                <label class="form-check-label" for="auto_close">Auto close</label>
-                <div class="small text-muted">
-                  Whether to automatically close the assessment after a period of inactivity.
-                </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="auto_close"
+                name="auto_close"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.assessment.auto_close ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="auto_close">Auto close</label>
+              <div class="small text-muted">
+                Whether to automatically close the assessment after a period of inactivity.
               </div>
             </div>
-            <div class="mb-3">
-              <div class="mb-3 form-check">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="require_honor_code"
-                  name="require_honor_code"
-                  ${canEdit ? '' : 'disabled'}
-                  ${resLocals.assessment.require_honor_code ? 'checked' : ''}
-                />
-                <label class="form-check-label" for="require_honor_code">Require honor code</label>
-                <div class="small text-muted">
-                  Requires the student to accept an honor code before starting exam assessments.
-                </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="require_honor_code"
+                name="require_honor_code"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.assessment.require_honor_code ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="require_honor_code">Require honor code</label>
+              <div class="small text-muted">
+                Requires the student to accept an honor code before starting exam assessments.
               </div>
             </div>
             <div class="mb-3">
