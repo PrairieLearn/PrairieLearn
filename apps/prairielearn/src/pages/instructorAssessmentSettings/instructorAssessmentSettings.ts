@@ -19,6 +19,7 @@ import {
   AssessmentDeleteEditor,
   FileModifyEditor,
   MultiEditor,
+  propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -159,6 +160,33 @@ router.post(
       if (assessmentInfo.module != null || req.body.module !== 'Default') {
         assessmentInfo.module = req.body.module;
       }
+      assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, req.body.text, '');
+      assessmentInfo.allowIssueReporting = propertyValueWithDefault(
+        assessmentInfo.allowIssueReporting,
+        req.body.allow_issue_reporting === 'on',
+        true,
+      );
+      assessmentInfo.multipleInstance = propertyValueWithDefault(
+        assessmentInfo.multipleInstance,
+        req.body.multiple_instance === 'on',
+        false,
+      );
+      assessmentInfo.allowPersonalNotes = propertyValueWithDefault(
+        assessmentInfo.allowPersonalNotes,
+        req.body.allow_personal_notes === 'on',
+        true,
+      );
+      assessmentInfo.autoClose = propertyValueWithDefault(
+        assessmentInfo.autoClose,
+        req.body.auto_close === 'on',
+        true,
+      );
+      assessmentInfo.requireHonorCode = propertyValueWithDefault(
+        assessmentInfo.requireHonorCode,
+        req.body.require_honor_code === 'on',
+        true,
+      );
+
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
       const tid_new = run(() => {
