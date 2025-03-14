@@ -4,18 +4,18 @@
 # you are testing in the local PrairieLearn Docker container and it attempts
 # to launch workspaces as root.
 
-# This shouldn't be strictly necessary, but it may resolve future edge cases
-# with Jupyter's own entrypoint scripts if they arise in future base image
-# updates. It also quiets some warnings in Jupyter's logging.
+# Exporting these variables shouldn't be strictly necessary, but there are
+# some edge cases where Jupyter's own entrypoint scripts behave better with
+# them set, and it also quiets some warnings.
 export NB_UID=1001 NB_GID=1001
 
 if [ "$(id -u)" -eq 0 ] ; then
-    NORMAL_USER="$(id -un 1001)"
+    NORMAL_USER="$(id -un $NB_UID)"
     set -eu
-    find "/home/${NORMAL_USER:-NO_USER_1001}" -not -user 1001 -exec chown 1001:1001 {} +
+    find "/home/${NORMAL_USER:-NO_USER_1001}" -not -user $NB_UID -exec chown "$NB_UID":"$NB_GID" {} +
     set +eu
-    exec gosu 1001:1001 "$@"
-elif [ "$(id -u)" -eq 1001 ] ; then
+    exec gosu "$NB_UID":"$NB_GID" "$@"
+elif [ "$(id -u)" -eq "$NB_UID" ] ; then
     exec "$@"
 else
     echo " ERROR:" >&2
