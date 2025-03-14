@@ -19,8 +19,8 @@ elif [ "$(id -u)" -eq "$NB_UID" ] ; then
     exec "$@"
 else
     echo " ERROR:" >&2
-    echo "This image can only be executed as user 1001 or as user 0 (root)." >&2
-    echo "Running as user 0 will automatically step down to run as user 1001." >&2
+    echo "This image can only be executed as user $NB_UID or as user 0 (root)." >&2
+    echo "Running as user 0 will automatically step down to run as user $NB_UID." >&2
     echo "Cannot continue as current user $(id -u); exiting." >&2
     exit 1
 fi
