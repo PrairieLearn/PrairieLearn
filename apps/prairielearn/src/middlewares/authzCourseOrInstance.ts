@@ -65,16 +65,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     throw new HttpStatusError(403, 'Access denied');
   }
 
+  debug('authn user is authorized');
+
   // Now that we know the user has access, parse the authz data
   res.locals.course = result.rows[0].course;
-
-  const institution = result.rows[0].institution;
-  res.locals.institution = institution;
-
-  const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
-    institution_id: institution.id,
-  });
-  res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+  res.locals.institution = result.rows[0].institution;
 
   const permissions_course = result.rows[0].permissions_course;
   res.locals.authz_data = {
@@ -120,8 +115,10 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     res.locals.authz_data.has_student_access = permissions_course_instance.has_student_access;
   }
 
-  debug('authn user is authorized');
-
+  res.locals.has_enhanced_navigation = await features.enabledFromLocals(
+    'enhanced-navigation',
+    res.locals,
+  );
   res.locals.question_sharing_enabled = await features.enabledFromLocals(
     'question-sharing',
     res.locals,

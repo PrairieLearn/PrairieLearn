@@ -1,5 +1,6 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 
+import { IssueBadge } from './IssueBadge.html.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
@@ -39,9 +40,7 @@ const sideNavPagesTabs = {
         ProgressCircle({
           value: navbarCompleteGettingStartedTasksCount,
           maxValue: navbarTotalGettingStartedTasksCount,
-          options: {
-            mlAuto: true,
-          },
+          className: 'ms-auto',
         }),
       renderCondition: ({ authz_data, course }) =>
         authz_data.has_course_permission_edit && course.show_getting_started,
@@ -68,6 +67,8 @@ const sideNavPagesTabs = {
       urlSuffix: '/course_admin/issues',
       iconClasses: 'fas fa-bug fa-fw',
       tabLabel: 'Issues',
+      htmlSuffix: ({ navbarOpenIssueCount }) =>
+        IssueBadge({ count: navbarOpenIssueCount, suppressLink: true, className: 'ms-auto' }),
     },
     {
       activePages: ['course_admin'],
@@ -189,18 +190,14 @@ function CourseNav({
         <button
           type="button"
           class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
-          data-toggle="dropdown"
           aria-label="Change course"
           aria-haspopup="true"
           aria-expanded="false"
-          data-boundary="window"
-          ${!resLocals.authz_data.overrides
-            ? html`
-                hx-get="/pl/navbar/course/${resLocals.course.id}/switcher" hx-trigger="mouseover
-                once, focus once, show.bs.dropdown once delay:200ms"
-                hx-target="#sideNavCourseDropdownContent"
-              `
-            : ''}
+          data-bs-toggle="dropdown"
+          data-bs-boundary="window"
+          hx-get="/pl/navbar/course/${resLocals.course.id}/switcher"
+          hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
+          hx-target="#sideNavCourseDropdownContent"
         >
           <span> ${resLocals.course.short_name} </span>
         </button>
@@ -249,11 +246,11 @@ function CourseInstanceNav({
           <button
             type="button"
             class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
-            data-toggle="dropdown"
             aria-label="Change course instance"
             aria-haspopup="true"
             aria-expanded="false"
-            data-boundary="window"
+            data-bs-toggle="dropdown"
+            data-bs-boundary="window"
             hx-get="/pl/navbar/course/${resLocals.course.id}/course_instance_switcher/${resLocals
               .course_instance.id}"
             hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
