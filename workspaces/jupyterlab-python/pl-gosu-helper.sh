@@ -12,7 +12,7 @@ export NB_UID=1001 NB_GID=1001
 if [ "$(id -u)" -eq 0 ] ; then
     NORMAL_USER="$(id -un $NB_UID)"
     set -eu
-    find "/home/${NORMAL_USER:-NO_USER_1001}" -not -user $NB_UID -exec chown "$NB_UID":"$NB_GID" {} +
+    find "/home/${NORMAL_USER:-NO_USER_1001}" -not -user "$NB_UID" -exec chown "$NB_UID":"$NB_GID" {} +
     set +eu
     exec gosu "$NB_UID":"$NB_GID" "$@"
 elif [ "$(id -u)" -eq "$NB_UID" ] ; then
