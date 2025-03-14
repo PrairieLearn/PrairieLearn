@@ -19,7 +19,7 @@ const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 function formatForLikeClause(str: string) {
-  return `%${str}%`;
+  return str.replace('*', '%');
 }
 
 function parseRawQuery(str: string) {
@@ -71,10 +71,10 @@ function parseRawQuery(str: string) {
       case 'user':
         if (!option.negated) {
           filters.filter_users = filters.filter_users || [];
-          filters.filter_users.push(formatForLikeClause(option.value));
+          filters.filter_users.push(option.value);
         } else {
           filters.filter_not_users = filters.filter_not_users || [];
-          filters.filter_not_users.push(formatForLikeClause(option.value));
+          filters.filter_not_users.push(option.value);
         }
         break;
     }

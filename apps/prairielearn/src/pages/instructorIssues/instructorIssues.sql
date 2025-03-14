@@ -62,11 +62,11 @@ WITH
       )
       AND (
         $filter_users::text[] IS NULL
-        OR u.uid ILIKE ANY ($filter_users::text[])
+        OR u.uid = ANY ($filter_users::text[])
       )
       AND (
         $filter_not_users::text[] IS NULL
-        OR u.uid NOT ILIKE ANY ($filter_not_users::text[])
+        OR u.uid != ANY ($filter_not_users::text[])
       )
       AND (
         $filter_query_text::text IS NULL
