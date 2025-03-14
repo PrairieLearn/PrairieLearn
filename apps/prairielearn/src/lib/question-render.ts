@@ -61,10 +61,7 @@ const VariantSelectResultSchema = VariantSchema.extend({
   assessment_instance: AssessmentInstanceSchema.extend({
     formatted_date: z.string().nullable(),
   }).nullable(),
-  instance_question: InstanceQuestionSchema.extend({
-    assigned_grader_name: z.string().nullable(),
-    last_grader_name: z.string().nullable(),
-  }).nullable(),
+  instance_question: InstanceQuestionSchema.nullable(),
   formatted_date: z.string(),
 });
 

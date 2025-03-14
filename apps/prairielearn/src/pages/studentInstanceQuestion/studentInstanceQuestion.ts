@@ -23,6 +23,7 @@ import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import selectAndAuthzInstanceQuestion from '../../middlewares/selectAndAuthzInstanceQuestion.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
+import { selectUserById } from '../../models/user.js';
 import {
   validateVariantAgainstQuestion,
   selectVariantsByInstanceQuestion,
@@ -321,10 +322,18 @@ router.get(
       }
     }
     setRendererHeader(res);
+    const assignedGrader = res.locals.instance_question.assigned_grader
+      ? await selectUserById(res.locals.instance_question.assigned_grader)
+      : null;
+    const lastGrader = res.locals.instance_question.last_grader
+      ? await selectUserById(res.locals.instance_question.last_grader)
+      : null;
     res.send(
       StudentInstanceQuestion({
         resLocals: res.locals,
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+        assignedGrader,
+        lastGrader,
       }),
     );
   }),
