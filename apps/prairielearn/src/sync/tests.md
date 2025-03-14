@@ -149,7 +149,7 @@ The following tables are potentially modified during a sync:
   - The question is set to have `deleted_at = NULL`
   - The question's tags are created in the `question_tags` table
 
-# Observed behavior to maybe test
+## Observed behavior to maybe test
 
 - Questions have a ton of default/implicit behavior, including...
   - `grading_method` is inferred
