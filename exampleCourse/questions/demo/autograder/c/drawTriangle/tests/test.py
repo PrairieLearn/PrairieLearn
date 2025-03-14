@@ -29,7 +29,7 @@ class TestGrader(cgrader.CGrader):
 
             return [" ".join(j) for j in itertools.permutations([l1, l2, l3])]
 
-        self.test_compile_file("drawTri.c", "main", main_file="/grade/tests/main.c")
+        self.test_compile_file("drawTri.c", "main", add_c_file="/grade/tests/main.c")
         self.run_command("touch image.json", sandboxed=False)
         self.change_mode("image.json", "666")
 

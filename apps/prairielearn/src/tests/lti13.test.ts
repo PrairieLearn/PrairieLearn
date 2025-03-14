@@ -12,7 +12,7 @@ import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import { fetchRetry, fetchRetryPaginated, getAccessToken } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
 import { Lti13UserSchema } from '../lib/db-types.js';
-import { selectUserByUid } from '../models/user.js';
+import { selectOptionalUserByUid } from '../models/user.js';
 
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -293,7 +293,7 @@ describe('LTI 1.3', () => {
 
   step('validate login', async () => {
     // There should be a new user.
-    const user = await selectUserByUid('test-user@example.com');
+    const user = await selectOptionalUserByUid('test-user@example.com');
     assert.ok(user);
     assert.equal(user?.uid, 'test-user@example.com');
     assert.equal(user?.name, 'Test User');

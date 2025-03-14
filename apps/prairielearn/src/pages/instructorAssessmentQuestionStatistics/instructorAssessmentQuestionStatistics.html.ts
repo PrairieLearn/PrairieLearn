@@ -134,25 +134,23 @@ export function InstructorAssessmentQuestionStatistics({
                   })}"
                 ></div>
               </div>
-              <div class="card-footer">
-                <small>
-                  <ul>
-                    <li>
-                      <strong>Mean score</strong> of a question is the average score for all
-                      students on the question. It is best to have a range of questions with
-                      different mean scores on the test, with some easy (mean score above 90%) and
-                      some hard (mean score below 50%).
-                    </li>
-                    <li>
-                      <strong>Discrimination</strong> of a question is the correlation coefficient
-                      between the scores on the question and the total assessment scores.
-                      Discrimination values should be above 20%, unless a question is very easy
-                      (mean score above 95%), in which case it is acceptable to have lower
-                      discriminations. It is always better to have higher discriminations for all
-                      questions, and a range of discriminations is not desired.
-                    </li>
-                  </ul>
-                </small>
+              <div class="card-footer small">
+                <ul>
+                  <li>
+                    <strong>Mean score</strong> of a question is the average score for all students
+                    on the question. It is best to have a range of questions with different mean
+                    scores on the test, with some easy (mean score above 90%) and some hard (mean
+                    score below 50%).
+                  </li>
+                  <li>
+                    <strong>Discrimination</strong> of a question is the correlation coefficient
+                    between the scores on the question and the total assessment scores.
+                    Discrimination values should be above 20%, unless a question is very easy (mean
+                    score above 95%), in which case it is acceptable to have lower discriminations.
+                    It is always better to have higher discriminations for all questions, and a
+                    range of discriminations is not desired.
+                  </li>
+                </ul>
               </div>
             `
           : html`<div class="card-body">No student data.</div>`}
@@ -257,7 +255,7 @@ export function InstructorAssessmentQuestionStatistics({
               ${questionStatsCsvFilename}
             </a>
           </p>
-          <small>
+          <div class="small">
             <ul>
               <li>
                 <strong>Mean score</strong> of a question is the average score for all students on
@@ -285,7 +283,7 @@ export function InstructorAssessmentQuestionStatistics({
                 right-most). This is essentially a graphical representation of the discrimination.
               </li>
             </ul>
-          </small>
+          </div>
         </div>
       </div>
 
@@ -541,7 +539,7 @@ export function InstructorAssessmentQuestionStatistics({
               ${questionStatsCsvFilename}
             </a>
           </p>
-          <small>
+          <div class="small">
             <ul>
               ${Object.keys(STAT_DESCRIPTIONS).map((stat) => {
                 return html`
@@ -558,7 +556,7 @@ export function InstructorAssessmentQuestionStatistics({
               averaging over all assessment instances for each student, then averaging over
               students.
             </p>
-          </small>
+          </div>
         </div>
       </div>
     `,

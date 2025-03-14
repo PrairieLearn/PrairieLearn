@@ -1876,6 +1876,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@html-validate/stylish@npm:^4.1.0":
+  version: 4.2.0
+  resolution: "@html-validate/stylish@npm:4.2.0"
+  dependencies:
+    kleur: "npm:^4.0.0"
+  checksum: 10c0/dd5ff56c81e21320a6a14fb7d071bcbe522dcc089e2e0db1bade4371ea3e391a37f87cf394403e71553a3e27b338c3535db28902a339f6e05f3677d6e9a8e3a2
+  languageName: node
+  linkType: hard
+
 "@humanwhocodes/config-array@npm:^0.13.0":
   version: 0.13.0
   resolution: "@humanwhocodes/config-array@npm:0.13.0"
@@ -3860,6 +3869,8 @@ __metadata:
     google-auth-library: "npm:^9.15.1"
     he: "npm:^1.2.0"
     highlight.js: "npm:^11.11.1"
+    html-rewriter-wasm: "npm:^0.4.1"
+    html-validate: "npm:^9.4.2"
     htmx.org: "npm:^1.9.12"
     http-proxy-middleware: "npm:^2.0.7"
     http-status: "npm:^2.1.0"
@@ -4336,6 +4347,17 @@ __metadata:
     "@opentelemetry/sdk-trace-base": ^1.30.1
     "@opentelemetry/semantic-conventions": ^1.28.0
   checksum: 10c0/a2ac1f486225b95a8e0b2f9a4c36f62a6230ce4c9a73605c1308ca664faba690dc14915dd53f3e37119c87160e4450f0f2f7ae3b224e1ae410391bb446f0405a
+  languageName: node
+  linkType: hard
+
+"@sidvind/better-ajv-errors@npm:3.0.1":
+  version: 3.0.1
+  resolution: "@sidvind/better-ajv-errors@npm:3.0.1"
+  dependencies:
+    kleur: "npm:^4.1.0"
+  peerDependencies:
+    ajv: ^6.12.3 || ^7.0.0 || ^8.0.0
+  checksum: 10c0/0d151b0a08bb178ea196025affd8a466621a265778e2214f1e4d2d329e6c1c694b2b61fbb68c3169708f37cb4d116d1c609140de16e23bf35669ce5a34cc488a
   languageName: node
   linkType: hard
 
@@ -6493,7 +6515,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ajv@npm:^8.17.1":
+"ajv@npm:^8.0.0, ajv@npm:^8.17.1":
   version: 8.17.1
   resolution: "ajv@npm:8.17.1"
   dependencies:
@@ -10373,6 +10395,45 @@ __metadata:
   languageName: node
   linkType: hard
 
+"html-rewriter-wasm@npm:^0.4.1":
+  version: 0.4.1
+  resolution: "html-rewriter-wasm@npm:0.4.1"
+  checksum: 10c0/54b13625578de30cabfea97e564cbb1782ce1087a93c83aa1d43ecb4a3f8a8fcfeaf3d9d0ba9a08b01adc8ce3abcee4b61a9068580b7859ff257dacb0bb64ed2
+  languageName: node
+  linkType: hard
+
+"html-validate@npm:^9.4.2":
+  version: 9.4.2
+  resolution: "html-validate@npm:9.4.2"
+  dependencies:
+    "@html-validate/stylish": "npm:^4.1.0"
+    "@sidvind/better-ajv-errors": "npm:3.0.1"
+    ajv: "npm:^8.0.0"
+    glob: "npm:^10.0.0"
+    kleur: "npm:^4.1.0"
+    minimist: "npm:^1.2.0"
+    prompts: "npm:^2.0.0"
+    semver: "npm:^7.0.0"
+  peerDependencies:
+    jest: ^27.1 || ^28.1.3 || ^29.0.3
+    jest-diff: ^27.1 || ^28.1.3 || ^29.0.3
+    jest-snapshot: ^27.1 || ^28.1.3 || ^29.0.3
+    vitest: ^0.34.0 || ^1.0.0 || ^2.0.0 || ^3.0.0
+  peerDependenciesMeta:
+    jest:
+      optional: true
+    jest-diff:
+      optional: true
+    jest-snapshot:
+      optional: true
+    vitest:
+      optional: true
+  bin:
+    html-validate: bin/html-validate.mjs
+  checksum: 10c0/b9f135d73a66483eca26429373a169972735b04a3bc05649e4eb6d18619c5adaede2206a300bf450d2ae14c2cd7b21231f467c412e6285c80c600bc724383a33
+  languageName: node
+  linkType: hard
+
 "html-void-elements@npm:^3.0.0":
   version: 3.0.0
   resolution: "html-void-elements@npm:3.0.0"
@@ -11372,6 +11433,13 @@ __metadata:
   version: 3.0.3
   resolution: "kleur@npm:3.0.3"
   checksum: 10c0/cd3a0b8878e7d6d3799e54340efe3591ca787d9f95f109f28129bdd2915e37807bf8918bb295ab86afb8c82196beec5a1adcaf29042ce3f2bd932b038fe3aa4b
+  languageName: node
+  linkType: hard
+
+"kleur@npm:^4.0.0, kleur@npm:^4.1.0":
+  version: 4.1.5
+  resolution: "kleur@npm:4.1.5"
+  checksum: 10c0/e9de6cb49657b6fa70ba2d1448fd3d691a5c4370d8f7bbf1c2f64c24d461270f2117e1b0afe8cb3114f13bbd8e51de158c2a224953960331904e636a5e4c0f2a
   languageName: node
   linkType: hard
 
@@ -12470,7 +12538,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimist@npm:^1.2.6, minimist@npm:^1.2.8":
+"minimist@npm:^1.2.0, minimist@npm:^1.2.6, minimist@npm:^1.2.8":
   version: 1.2.8
   resolution: "minimist@npm:1.2.8"
   checksum: 10c0/19d3fcdca050087b84c2029841a093691a91259a47def2f18222f41e7645a0b7c44ef4b40e88a1e58a40c84d2ef0ee6047c55594d298146d0eb3f6b737c20ce6
@@ -13931,7 +13999,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prompts@npm:^2.4.2":
+"prompts@npm:^2.0.0, prompts@npm:^2.4.2":
   version: 2.4.2
   resolution: "prompts@npm:2.4.2"
   dependencies:
@@ -14687,7 +14755,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semver@npm:^7.3.5, semver@npm:^7.5.2, semver@npm:^7.5.3, semver@npm:^7.6.0, semver@npm:^7.6.3, semver@npm:^7.7.1":
+"semver@npm:^7.0.0, semver@npm:^7.3.5, semver@npm:^7.5.2, semver@npm:^7.5.3, semver@npm:^7.6.0, semver@npm:^7.6.3, semver@npm:^7.7.1":
   version: 7.7.1
   resolution: "semver@npm:7.7.1"
   bin:

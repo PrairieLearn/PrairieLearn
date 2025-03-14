@@ -36,6 +36,11 @@ export function InstructorInstanceAdminSettings({
         course: resLocals.course,
         urlPrefix: resLocals.urlPrefix,
       })}
+      ${QRCodeModal({
+        id: 'studentLinkModal',
+        title: 'Student Link QR Code',
+        content: studentLink,
+      })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>
@@ -49,28 +54,10 @@ export function InstructorInstanceAdminSettings({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
-              <label class="form-label" for="long_name">Long Name</label>
-              <input
-                type="text"
-                class="form-control"
-                id="long_name"
-                name="long_name"
-                value="${resLocals.course_instance.long_name}"
-                required
-                ${resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course
-                  ? ''
-                  : 'disabled'}
-              />
-              <small class="form-text text-muted">
-                The long name of this course instance (e.g., 'Spring 2015').
-              </small>
-            </div>
-            <div class="mb-3">
               <label class="form-label" for="ciid">CIID</label>
               <input
                 type="text"
-                class="form-control"
+                class="form-control font-monospace"
                 id="ciid"
                 name="ciid"
                 value="${resLocals.course_instance.short_name}"
@@ -87,6 +74,24 @@ export function InstructorInstanceAdminSettings({
                 forward slashes to separate directories. The recommended format is
                 <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple
                 versions, like <code>Fa19honors</code>.
+              </small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="long_name">Long Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="long_name"
+                name="long_name"
+                value="${resLocals.course_instance.long_name}"
+                required
+                ${resLocals.authz_data.has_course_permission_edit &&
+                !resLocals.course.example_course
+                  ? ''
+                  : 'disabled'}
+              />
+              <small class="form-text text-muted">
+                The long name of this course instance (e.g., 'Spring 2015').
               </small>
             </div>
             <div class="mb-3">
@@ -123,11 +128,6 @@ export function InstructorInstanceAdminSettings({
                 to share with students.
               </small>
             </div>
-            ${QRCodeModal({
-              id: 'studentLinkModal',
-              title: 'Student Link QR Code',
-              content: studentLink,
-            })}
             ${EditConfiguration({
               hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
               hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
@@ -219,13 +219,18 @@ function CopyCourseInstanceForm({
     <div class="card-footer d-flex flex-wrap align-items-center">
       <form name="copy-course-instance-form" class="me-2" method="POST">
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button name="__action" value="copy_course_instance" class="btn btn-sm btn-primary">
+        <button
+          type="submit"
+          name="__action"
+          value="copy_course_instance"
+          class="btn btn-sm btn-primary"
+        >
           <i class="fa fa-clone"></i> Make a copy of this course instance
         </button>
       </form>
       <button
+        type="button"
         class="btn btn-sm btn-primary"
-        href="#"
         data-bs-toggle="modal"
         data-bs-target="#deleteCourseInstanceModal"
       >

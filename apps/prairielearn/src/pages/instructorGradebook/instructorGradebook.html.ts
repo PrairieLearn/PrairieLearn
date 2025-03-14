@@ -141,6 +141,7 @@ function RoleDescriptionModal() {
   return Modal({
     id: 'role-help',
     title: 'Roles',
+    form: false,
     body: html`
       <ul>
         <li>

@@ -126,7 +126,7 @@ export function InstructorIssues({
                 `
               : ''}
           </div>
-          <form name="query-form" method="GET">
+          <form method="GET">
             <div class="input-group">
               <button
                 class="btn btn-med-light dropdown-toggle"
@@ -161,6 +161,14 @@ export function InstructorIssues({
                 value="${filterQuery}"
                 aria-label="Search all issues"
               />
+              <button
+                class="btn btn-med-light"
+                type="submit"
+                data-bs-toggle="tooltip"
+                data-bs-title="Search"
+              >
+                <i class="fa fa-search" aria-hidden="true"></i>
+              </button>
               <a
                 class="btn btn-med-light"
                 href="${urlPrefix}/course_admin/issues?q="
@@ -353,6 +361,7 @@ function FilterHelpModal() {
   return Modal({
     id: 'filterHelpModal',
     title: 'Filter help',
+    form: false,
     body: html`
       <p>
         Issues can be filtered and searched in a variety of ways. Filtering is done with the
@@ -360,8 +369,10 @@ function FilterHelpModal() {
       </p>
       <table class="table table-bordered" aria-label="Filtering qualifiers">
         <thead>
-          <th>Qualifier</th>
-          <th>Explanation</th>
+          <tr>
+            <th>Qualifier</th>
+            <th>Explanation</th>
+          </tr>
         </thead>
         <tbody>
           <tr>
@@ -419,7 +430,7 @@ function FilterHelpModal() {
 
       <h3 class="h4">Combining qualifiers</h3>
       <p>These can be combined to form complex searches. An example:</p>
-      <code><pre>is:open qid:vector answer is wrong</pre></code>
+      <pre><code>is:open qid:vector answer is wrong</code></pre>
       <p>
         This would return any open issues with a QID like <code>vector</code> whose message contains
         text like "answer is wrong".

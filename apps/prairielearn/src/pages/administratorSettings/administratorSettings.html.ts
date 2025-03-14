@@ -195,7 +195,7 @@ export function AdministratorSettings({ resLocals }) {
           <div>
             <button type="button" class="btn btn-xs btn-ghost">Extra small</button>
             <button type="button" class="btn btn-sm btn-ghost">Small</button>
-            <button type="button" class="btn btn btn-ghost">Default</button>
+            <button type="button" class="btn btn-ghost">Default</button>
             <button type="button" class="btn btn-lg btn-ghost">Large</button>
           </div>
         </div>

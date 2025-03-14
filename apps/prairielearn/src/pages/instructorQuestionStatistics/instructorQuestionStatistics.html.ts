@@ -275,7 +275,7 @@ export function InstructorQuestionStatistics({
               ${questionStatsCsvFilename}
             </a>
           </p>
-          <small>
+          <div class="small">
             <ul>
               ${Object.keys(STAT_DESCRIPTIONS).map((stat) => {
                 return html`
@@ -292,7 +292,7 @@ export function InstructorQuestionStatistics({
               averaging over all assessment instances for each student, then averaging over
               students.
             </p>
-          </small>
+          </div>
         </div>
       </div>
     `,

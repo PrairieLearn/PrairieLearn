@@ -47,7 +47,7 @@ function AddCourseToSharingSetPopover({
         <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="popover">
           Cancel
         </button>
-        <button class="btn btn-sm btn-primary" type="Submit">Add Course</button>
+        <button type="submit" class="btn btn-sm btn-primary">Add Course</button>
       </div>
     </form>
   `;
@@ -166,8 +166,8 @@ export function InstructorCourseAdminSharing({
                         type="button"
                         class="btn btn-xs btn-secondary mx-2"
                         aria-label="Choose Sharing Name"
-                        data-toggle="modal"
-                        data-target="#chooseSharingNameModal"
+                        data-bs-toggle="modal"
+                        data-bs-target="#chooseSharingNameModal"
                       >
                         <i class="fas fa-share-nodes" aria-hidden="true"></i>
                         <span class="d-none d-sm-inline">Choose Sharing Name</span>
@@ -185,6 +185,7 @@ export function InstructorCourseAdminSharing({
               <td>
                 ${sharingToken}
                 <button
+                  type="button"
                   class="btn btn-xs btn-secondary mx-2"
                   onclick="navigator.clipboard.writeText('${sharingToken}');"
                 >
@@ -214,6 +215,7 @@ export function InstructorCourseAdminSharing({
               <td class="align-middle">
                 <a href="${publicSharingLink}" target="_blank">${publicSharingLink}</a>
                 <button
+                  type="button"
                   class="btn btn-xs btn-secondary mx-2"
                   onclick="navigator.clipboard.writeText('${publicSharingLink}');"
                 >
@@ -232,8 +234,10 @@ export function InstructorCourseAdminSharing({
         </div>
         <table class="table table-sm table-hover table-striped" aria-label="Sharing sets">
           <thead>
-            <th>Sharing Set Name</th>
-            <th>Shared With</th>
+            <tr>
+              <th>Sharing Set Name</th>
+              <th>Shared With</th>
+            </tr>
           </thead>
           <tbody>
             ${sharingSets.map(
@@ -246,27 +250,29 @@ export function InstructorCourseAdminSharing({
                         <span class="badge color-gray1"> ${course_shared_with} </span>
                       `,
                     )}${isCourseOwner
-                      ? html` <div class="btn-group btn-group-sm" role="group">
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-outline-dark"
-                            aria-label="Add course to sharing set"
-                            data-bs-toggle="popover"
-                            data-bs-container="body"
-                            data-bs-html="true"
-                            data-bs-placement="auto"
-                            data-bs-title="Add Course to Sharing Set"
-                            data-bs-content="${escapeHtml(
-                              AddCourseToSharingSetPopover({
-                                resLocals,
-                                sharing_set,
-                              }),
-                            )}"
-                          >
-                            Add...
-                            <i class="fas fa-plus" aria-hidden="true"></i>
-                          </button>
-                        </div>`
+                      ? html`
+                          <div class="btn-group btn-group-sm" role="group">
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-dark"
+                              aria-label="Add course to sharing set"
+                              data-bs-toggle="popover"
+                              data-bs-container="body"
+                              data-bs-html="true"
+                              data-bs-placement="auto"
+                              data-bs-title="Add Course to Sharing Set"
+                              data-bs-content="${escapeHtml(
+                                AddCourseToSharingSetPopover({
+                                  resLocals,
+                                  sharing_set,
+                                }),
+                              )}"
+                            >
+                              Add...
+                              <i class="fas fa-plus" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        `
                       : ''}
                   </td>
                 </tr>

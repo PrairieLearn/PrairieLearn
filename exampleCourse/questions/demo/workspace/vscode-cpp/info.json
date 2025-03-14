@@ -15,7 +15,6 @@
   "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-c",
-    "entrypoint": "python3 /grade/tests/test.py",
     "timeout": 5
   }
 }

@@ -9,6 +9,6 @@
   "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-java",
-    "timeout": 100
+    "timeout": 10
   }
 }

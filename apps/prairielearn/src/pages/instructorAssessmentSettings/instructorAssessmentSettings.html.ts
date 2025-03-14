@@ -43,6 +43,11 @@ export function InstructorAssessmentSettings({
         course: resLocals.course,
         urlPrefix: resLocals.urlPrefix,
       })}
+      ${QRCodeModal({
+        id: 'studentLinkModal',
+        title: 'Student Link QR Code',
+        content: studentLink,
+      })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
@@ -181,11 +186,6 @@ export function InstructorAssessmentSettings({
                 The link that students will use to access this assessment.
               </small>
             </div>
-            ${QRCodeModal({
-              id: 'studentLinkModal',
-              title: 'Student Link QR Code',
-              content: studentLink,
-            })}
             ${resLocals.authz_data.has_course_permission_view
               ? canEdit
                 ? html`
@@ -233,11 +233,17 @@ export function InstructorAssessmentSettings({
               <div class="card-footer d-flex flex-wrap align-items-center">
                 <form name="copy-assessment-form" class="me-2" method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <button name="__action" value="copy_assessment" class="btn btn-sm btn-primary">
+                  <button
+                    type="submit"
+                    name="__action"
+                    value="copy_assessment"
+                    class="btn btn-sm btn-primary"
+                  >
                     <i class="fa fa-clone"></i> Make a copy of this assessment
                   </button>
                 </form>
                 <button
+                  type="button"
                   class="btn btn-sm btn-primary"
                   href="#"
                   data-bs-toggle="modal"
