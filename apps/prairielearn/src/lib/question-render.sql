@@ -249,15 +249,7 @@ SELECT
       )
     )
   ) AS assessment_instance,
-  jsonb_set(
-    jsonb_set(
-      to_jsonb(iq.*),
-      '{assigned_grader_name}',
-      to_jsonb(COALESCE(agu.name, agu.uid))
-    ),
-    '{last_grader_name}',
-    to_jsonb(COALESCE(lgu.name, lgu.uid))
-  ) AS instance_question
+  to_jsonb(iq.*) AS instance_question
 FROM
   variants as v
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
@@ -265,8 +257,6 @@ FROM
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
   JOIN pl_courses AS c ON (c.id = v.course_id)
-  LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
-  LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
 WHERE
   v.id = $variant_id
   AND v.question_id = $question_id
