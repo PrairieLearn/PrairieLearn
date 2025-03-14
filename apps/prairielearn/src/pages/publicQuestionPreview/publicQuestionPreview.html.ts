@@ -43,7 +43,7 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
         </div>
 
         <div class="col-lg-3 col-sm-12">
-          <div class="card mb-4">
+          <div class="card mb-3">
             <div class="card-header bg-secondary text-white">
               <h2>Student view placeholder</h2>
             </div>
