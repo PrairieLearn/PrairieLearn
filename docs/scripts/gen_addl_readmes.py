@@ -1,27 +1,24 @@
+"""
+This script generates copies README files into the PrairieLearn documentation.
+It processes the README files from specified source directories, modifies links to point
+to the corresponding files on GitHub, and creates a navigation structure for the documentation.
+"""
+
 import re
 from pathlib import Path
 from types import SimpleNamespace
 
 import mkdocs_gen_files
 
-EXCLUDE = {
-    "docs",
-    "exampleCourse",
-    ".venv",
-    "node_modules",
-    "dist",
-    ".pytest_cache",
-    ".changeset",
-}
 ROOT = Path.cwd()
-DOC_ROOT = ROOT / "docs"
 SOURCE_ROOT = "https://github.com/PrairieLearn/PrairieLearn/blob/master/"
 
 # Any links need to be replaced with a link to the file on GitHub
 relative_regex = r"\[(.*?)\]\((\..*?)\)"
 relative_regex_img = r"!\[(.*?)\]\((\..*?)\)"
-config = [SimpleNamespace(**v) for v in mkdocs_gen_files.config.extra["addl_readmes"]]
-print(config)
+readmes_mapping = [
+    SimpleNamespace(**v) for v in mkdocs_gen_files.config.extra["addl_readmes"]
+]
 
 
 def build_readme_nav() -> None:
@@ -30,7 +27,7 @@ def build_readme_nav() -> None:
 !!! note
     This file was spliced into the documentation.
 """.strip()
-    for mapping in config:
+    for mapping in readmes_mapping:
         base = Path(mapping.src).absolute()
         doc_path = Path(mapping.dest)
         for path in base.rglob("README.md"):
