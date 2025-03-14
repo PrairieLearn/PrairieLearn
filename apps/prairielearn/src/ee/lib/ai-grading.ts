@@ -4,7 +4,13 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import {
@@ -46,6 +52,26 @@ const GradedExampleSchema = z.object({
   manual_rubric_grading_id: z.string().nullable(),
 });
 type GradedExample = z.infer<typeof GradedExampleSchema>;
+
+function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): number {
+  if (!usage) {
+    return 0;
+  }
+  const cached_input_tokens = usage.prompt_tokens_details?.cached_tokens ?? 0;
+  const prompt_tokens = usage.prompt_tokens - cached_input_tokens;
+  const completion_tokens = usage.completion_tokens;
+
+  // Pricings are updated according to https://platform.openai.com/docs/pricing
+  const cached_input_cost = 1.25 / 10 ** 6;
+  const prompt_cost = 2.5 / 10 ** 6;
+  const completion_cost = 10.0 / 10 ** 6;
+
+  return (
+    cached_input_tokens * cached_input_cost +
+    prompt_tokens * prompt_cost +
+    completion_tokens * completion_cost
+  );
+}
 
 async function generatePrompt({
   questionPrompt,
@@ -425,7 +451,7 @@ export async function aiGrade({
               rubric_id: rubric_items[0].rubric_id,
               applied_rubric_items: appliedRubricItems,
             };
-            await manualGrading.updateInstanceQuestionScore(
+            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
               assessment_question.assessment_id,
               instance_question.id,
               submission.id,
@@ -442,6 +468,16 @@ export async function aiGrade({
             for (const item of selectedRubricDescriptions) {
               job.info(`- ${item}`);
             }
+            await queryAsync(sql.insert_ai_grading_job, {
+              grading_job_id,
+              job_sequence_id: serverJob.jobSequenceId,
+              prompt: messages,
+              completion,
+              model: OPEN_AI_MODEL,
+              prompt_tokens: completion.usage?.prompt_tokens ?? 0,
+              completion_tokens: completion.usage?.completion_tokens ?? 0,
+              cost: calculateApiCost(completion.usage),
+            });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
             job.error(response.refusal);
@@ -467,7 +503,7 @@ export async function aiGrade({
           const response = completion.choices[0].message;
           job.info(`Raw response:\n${response.content}`);
           if (response.parsed) {
-            await manualGrading.updateInstanceQuestionScore(
+            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
               assessment_question.assessment_id,
               instance_question.id,
               submission.id,
@@ -479,6 +515,18 @@ export async function aiGrade({
               user_id,
             );
             job.info(`AI score: ${response.parsed.score}`);
+            await queryAsync(sql.insert_ai_grading_job, {
+              grading_job_id,
+              job_sequence_id: serverJob.jobSequenceId,
+              prompt: messages,
+              completion,
+              model: OPEN_AI_MODEL,
+              prompt_tokens: completion.usage?.prompt_tokens ?? 0,
+              completion_tokens: completion.usage?.completion_tokens ?? 0,
+              cost: calculateApiCost(completion.usage),
+              course_id: course.id,
+              course_instance_id,
+            });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
             job.error(response.refusal);
