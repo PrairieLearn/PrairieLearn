@@ -318,7 +318,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         tabLabel: 'Statistics',
       },
       {
-        activeSubPage: 'instances',
+        activeSubPage: ['instances', 'assessment_instance'],
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/instances`,
         iconClasses: 'fas fa-user-graduate',
         tabLabel: 'Students',
