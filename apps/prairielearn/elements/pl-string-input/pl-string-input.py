@@ -244,7 +244,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         a_sub = "".join(a_sub.split())
 
     # Always simplify multiline characters (if they still exist)
-    a_sub = re.sub("\r*\n", "\n", a_sub)
+    a_sub = re.sub(r"\r*\n", "\n", a_sub)
 
     if not a_sub and not allow_blank:
         data["format_errors"][name] = (
