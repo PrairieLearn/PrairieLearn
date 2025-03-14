@@ -205,15 +205,19 @@
     {{/suffix}}
 {{/multiline}}
 
-<!-- Show submitted answer submission was parsed from -->
-<a href="javascript:void(0);" role="button" class="ml-1 btn btn-sm btn-secondary small border"
-    data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true"
-    title="Raw String" tabindex="0"
-    data-content="Invisible unicode characters are represented as
-    &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:<br>
-    <pre>{{escaped_submitted_answer}}</pre>">
+<!-- Show raw value submitted answer was parsed from -->
+<button
+    class="ml-1 btn btn-sm btn-secondary"
+    data-bs-toggle="popover"
+    data-bs-html="true"
+    data-bs-placement="auto"
+    data-bs-title="Raw string"
+    data-bs-content="&lt;p&gt;Invisible unicode characters are represented as
+    &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
+    &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_correct_answer}}&lt;/pre&gt;"
+>
     <i class="fa fa-question-circle" aria-hidden="true"></i>
-</a>
+</button>
 
 <span>
 {{#correct}}<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
@@ -260,16 +264,19 @@
     {{/suffix}}
 {{/multiline}}
 
-<!-- Show correct answer submission was parsed from -->
-<!-- Show submitted answer submission was parsed from -->
-<a href="javascript:void(0);" role="button" class="ml-1 btn btn-sm btn-secondary small border"
-    data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true"
-    title="Raw String" tabindex="0"
-    data-content="Invisible unicode characters are represented as
-    &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:<br>
-    <pre>{{escaped_correct_answer}}</pre>">
+<!-- Show raw value correct answer was parsed from -->
+<button
+    class="ml-1 btn btn-sm btn-secondary"
+    data-bs-toggle="popover"
+    data-bs-html="true"
+    data-bs-placement="auto"
+    data-bs-title="Raw string"
+    data-bs-content="&lt;p&gt;Invisible unicode characters are represented as
+    &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
+    &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_correct_answer}}&lt;/pre&gt;"
+>
     <i class="fa fa-question-circle" aria-hidden="true"></i>
-</a>
+</button>
 {{#multiline}}
 </span>
 {{/multiline}}
