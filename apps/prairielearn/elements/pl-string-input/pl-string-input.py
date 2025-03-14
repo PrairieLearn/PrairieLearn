@@ -121,11 +121,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         editable = data["editable"]
 
         space_hint = SPACE_HINT_DICT[remove_leading_trailing, remove_spaces]
-        info_params = {
-            "format": True,
-            "space_hint": space_hint,
-        }
-        info = chevron.render(template, info_params).strip()
+        info = f"Your answer must be a piece of text (sequence of letters, numbers, and characters). Any symbolic expressions or numbers will be interpreted as text. {space_hint}"
 
         show_help_text = pl.get_boolean_attrib(
             element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
@@ -188,10 +184,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
-
-        html_params["error"] = html_params["parse_error"] or html_params.get(
-            "missing_input", False
-        )
 
         return chevron.render(template, html_params).strip()
 

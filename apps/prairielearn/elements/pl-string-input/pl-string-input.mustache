@@ -17,6 +17,7 @@
     });
 </script>
 
+<!-- START pl-string-input -->
 {{#question}}
 {{#inline}}<span class="d-inline-block ms-2">{{/inline}}
     {{#multiline}}
@@ -31,9 +32,9 @@
                 wrap="soft"
                 id="pl-string-input-{{uuid}}-area"
                 name="{{name}}"
-                type="text"
                 inputmode="text"
                 class="form-control pl-string-input-input pl-string-input-multiline"
+                {{#parse_error}}aria-invalid="true" aria-describedby="pl-string-input-{{uuid}}-error"{{/parse_error}}
                 cols="{{size}}"
                 rows="2"
                 autocomplete="off"
@@ -124,12 +125,47 @@
 
 {{#submission}}
 {{#inline}}<span class="d-inline-block">{{/inline}}
-{{#error}}
-<span>
-
-{{#parse_error}}
+{{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
+    {{#a_sub}}<code class="user-output">{{a_sub}}</code>{{/a_sub}}
+    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{/multiline}}
+{{#multiline}}
+    {{#label}}
+    <label
+        class="form-label"
+        for="pl-string-input-{{uuid}}-area"
+    >{{{label}}}</label>
+    {{/label}}
+    <span class="input-group">
+        <textarea
+            id="pl-string-input-{{uuid}}-area"
+            wrap="soft"
+            inputmode="text"
+            class="form-control pl-string-input-multiline"
+            style="resize:none;"
+            disabled
+            aria-describedby="pl-string-input-submission-{{uuid}}-suffix"
+        >{{a_sub}}</textarea>
+        {{#a_sub}}
+        <button
+            class="btn btn-sm btn-secondary"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Raw string"
+            data-bs-content="&lt;p&gt;Invisible unicode characters are represented as
+            &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
+            &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_submitted_answer}}&lt;/pre&gt;"
+        >
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+        </button>
+        {{/a_sub}}
+    </span>
+{{/multiline}}
+
+{{#multiline}}<div class="mt-1">{{/multiline}}
+{{#parse_error}}
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-danger">
             Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
@@ -147,10 +183,10 @@
            More info…
         </a>
     </span>
-    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/parse_error}}
+{{#multiline}}</div>{{/multiline}}
+
 {{#missing_input}}
-    {{#label}}<span>{{{label}}}</span>{{/label}}
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-dark border">
             Missing Input 
@@ -169,42 +205,17 @@
            More info…
         </a>
     </span>
-    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/missing_input}}
 
-</span>
-{{/error}}
-{{^error}}
-{{^multiline}}
-    {{#label}}<span>{{{label}}}</span>{{/label}}
-    <code class="user-output">{{a_sub}}</code>
-    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
-{{/multiline}}
 {{#multiline}}
-    <span class="input-group">
-    {{#label}}
-    <label
-        class="form-label"
-        for="pl-string-input-{{uuid}}-area"
-    >{{{label}}}</label>
-    {{/label}}
-    <span class="input-group">
-        <textarea
-            id="pl-string-input-{{uuid}}-area"
-            wrap="soft"
-            type="text"
-            inputmode="text"
-            class="form-control pl-string-input-multiline"
-            style="resize:none;"
-            disabled
-            aria-describedby="pl-string-input-submission-{{uuid}}-suffix"
-        >{{a_sub}}</textarea>
-    </span>
     {{#suffix}}
-    <div class="form-text" id="pl-string-input-submission-{{uuid}}-suffix">{{{suffix}}}</div>
+        <div class="form-text" id="pl-string-input-submission-{{uuid}}-suffix">{{{suffix}}}</div>
     {{/suffix}}
 {{/multiline}}
 
+
+{{^multiline}}
+{{#a_sub}}
 <!-- Show raw value submitted answer was parsed from -->
 <button
     class="ml-1 btn btn-sm btn-secondary"
@@ -214,10 +225,12 @@
     data-bs-title="Raw string"
     data-bs-content="&lt;p&gt;Invisible unicode characters are represented as
     &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
-    &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_correct_answer}}&lt;/pre&gt;"
+    &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_submitted_answer}}&lt;/pre&gt;"
 >
     <i class="fa fa-question-circle" aria-hidden="true"></i>
 </button>
+{{/a_sub}}
+{{/multiline}}
 
 <span>
 {{#correct}}<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
@@ -229,7 +242,6 @@
 </span>
 {{/multiline}}
 
-{{/error}}
 {{#inline}}</span>{{/inline}}
 {{/submission}}
 
@@ -240,7 +252,6 @@
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/multiline}}
 {{#multiline}}
-    <span class="input-group">
     {{#label}}
     <label
         class="form-label"
@@ -251,19 +262,32 @@
         <textarea
             id="pl-string-input-{{uuid}}-area"
             wrap="soft"
-            type="text"
             inputmode="text"
             class="form-control pl-string-input-multiline"
             style="resize:none;"
             disabled
             aria-describedby="pl-string-input-answer-{{uuid}}-suffix"
         >{{a_tru}}</textarea>
+        <!-- Show raw value correct answer was parsed from -->
+        <button
+            class="btn btn-sm btn-secondary"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Raw string"
+            data-bs-content="&lt;p&gt;Invisible unicode characters are represented as
+            &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
+            &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_correct_answer}}&lt;/pre&gt;"
+        >
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+        </button>
     </span>
     {{#suffix}}
     <div class="form-text" id="pl-string-input-answer-{{uuid}}-suffix">{{{suffix}}}</div>
     {{/suffix}}
 {{/multiline}}
 
+{{^multiline}}
 <!-- Show raw value correct answer was parsed from -->
 <button
     class="ml-1 btn btn-sm btn-secondary"
@@ -277,12 +301,9 @@
 >
     <i class="fa fa-question-circle" aria-hidden="true"></i>
 </button>
+{{/multiline}}
 {{#multiline}}
 </span>
 {{/multiline}}
 {{/answer}}
-
-{{#format}}
-Your answer must be a piece of text (sequence of letters, numbers, and characters). Any symbolic expressions or numbers will be interpreted as text.
-{{space_hint}}
-{{/format}}
+<!-- END pl-string-input -->
