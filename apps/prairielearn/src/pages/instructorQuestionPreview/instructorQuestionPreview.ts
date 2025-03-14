@@ -66,6 +66,9 @@ router.get(
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
+    // console.log('Assessment Details:');
+    // console.log(res.locals);
+    // console.log(req);
     await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);

@@ -232,6 +232,7 @@ interface Course {
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
   sharingSets?: SharingSet[];
+  questionParams: Record<string, any>; // unsure about this
 }
 
 interface CourseInstanceAllowAccess {
@@ -253,6 +254,7 @@ export interface CourseInstance {
   allowAccess: CourseInstanceAllowAccess[];
   allowIssueReporting: boolean;
   groupAssessmentsBy: 'Set' | 'Module';
+  questionParams: Record<string, any>;
 }
 
 export interface AssessmentAllowAccess {
@@ -281,6 +283,7 @@ interface QuestionAlternative {
   gradeRateMinutes: number;
   canView: string[];
   canSubmit: string[];
+  questionParams: Record<string, any>;
 }
 
 interface ZoneQuestion {
@@ -298,6 +301,7 @@ interface ZoneQuestion {
   gradeRateMinutes: number;
   canView: string[];
   canSubmit: string[];
+  questionParams: Record<string, any>;
 }
 
 interface Zone {
@@ -310,6 +314,7 @@ interface Zone {
   gradeRateMinutes: number;
   canView: string[];
   canSubmit: string[];
+  questionParams: Record<string, any>;
 }
 
 interface GroupRole {
@@ -393,6 +398,7 @@ export interface Question {
   sharingSets?: string[];
   sharePublicly: boolean;
   shareSourcePublicly: boolean;
+  questionParams: Record<string, any>;
 }
 
 export interface CourseInstanceData {
@@ -847,6 +853,7 @@ export async function loadCourseInfo({
       useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
+    questionParams: info.questionParams,
   };
 
   loadedData.data = course;
