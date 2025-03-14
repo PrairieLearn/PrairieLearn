@@ -87,10 +87,9 @@ export function CourseRequestsTable({
                             class="btn btn-sm btn-danger text-nowrap me-2"
                             data-bs-toggle="popover"
                             data-bs-container="body"
-                            data-boundary="window"
                             data-bs-html="true"
                             data-bs-placement="auto"
-                            title="Deny course request"
+                            data-bs-title="Deny course request"
                             data-bs-content="${escapeHtml(
                               CourseRequestDenyForm({
                                 request: row,
@@ -105,10 +104,9 @@ export function CourseRequestsTable({
                             class="btn btn-sm btn-success text-nowrap"
                             data-bs-toggle="popover"
                             data-bs-container="body"
-                            data-boundary="window"
                             data-bs-html="true"
                             data-bs-placement="auto"
-                            title="Approve course request"
+                            data-bs-title="Approve course request"
                             data-bs-content="${escapeHtml(
                               CourseRequestApproveForm({
                                 request: row,
@@ -127,7 +125,7 @@ export function CourseRequestsTable({
                     ${row.jobs.length > 0
                       ? html`
                           <button
-                            class="show-hide-btn btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
+                            class="btn btn-secondary btn-xs text-nowrap show-hide-btn collapsed"
                             data-bs-toggle="collapse"
                             data-bs-target="#course-requests-job-list-${row.id}"
                             aria-expanded="false"

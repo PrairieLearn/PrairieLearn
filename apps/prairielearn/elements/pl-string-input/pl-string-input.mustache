@@ -8,7 +8,8 @@
             name="{{name}}"
             type="text"
             inputmode="text"
-            class="form-control pl-string-input-input"
+            class="form-control pl-string-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
+            {{#parse_error}}aria-invalid="true" aria-describedby="pl-string-input-{{uuid}}-error"{{/parse_error}}
             size="{{size}}"
             autocomplete="off"
             autocorrect="off"
@@ -41,20 +42,30 @@
                 <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
             </span>
         {{/incorrect}}
-        {{#parse_error}}
-            <button
-                type="button"
-                class="btn btn-light border d-flex align-items-center text-danger"
-                data-bs-toggle="popover"
-                data-bs-html="true"
-                title="Format Error"
-                data-bs-placement="auto"
-                data-bs-content="{{parse_error}}"
-            >
-                <span class="me-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-            </button>
-        {{/parse_error}}
     </span>
+        {{#parse_error}}
+            <span class="invalid-feedback d-block">
+                <span class="badge text-bg-danger">
+                    Invalid 
+                    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                </span>
+                <span id="pl-string-input-{{uuid}}-error">
+                    You must enter a string.
+                </span>
+                <a 
+                    class="link-primary"
+                    tabindex="0"
+                    role="button"
+                    data-bs-placement="auto" 
+                    data-bs-toggle="popover"
+                    data-bs-html="true"
+                    title="Format error"
+                    data-bs-content="{{parse_error}}"
+                >
+                    More info…
+                </a>
+            </span>
+        {{/parse_error}}
 {{#inline}}</span>{{/inline}}
 {{/question}}
 
@@ -66,21 +77,45 @@
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
-    <button
-        class="badge text-danger badge-invalid btn btn-sm btn-secondary small border"
-        data-bs-placement="auto"
-        data-bs-toggle="popover"
-        data-bs-html="true"
-        title="Format Error"
-        data-bs-content="{{parse_error}}"
-    >
-        Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-    </button>
+    <span class="small" style="white-space: nowrap">
+        <span class="badge text-bg-danger">
+            Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+        </span>
+        <a
+            class="link-primary"
+            tabindex="0"
+            role="button"
+            data-bs-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            title="Format error"
+            data-bs-content="{{parse_error}}"
+        >
+           More info…
+        </a>
+    </span>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/parse_error}}
 {{#missing_input}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" title="Missing Input" data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
+    <span class="small" style="white-space: nowrap">
+        <span class="badge text-bg-dark border">
+            Missing Input 
+            <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+        </span>
+        <a 
+            class="link-primary"
+            tabindex="0"
+            role="button"
+            data-bs-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            title="Missing input"
+            data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
+        >
+           More info…
+        </a>
+    </span>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/missing_input}}
 

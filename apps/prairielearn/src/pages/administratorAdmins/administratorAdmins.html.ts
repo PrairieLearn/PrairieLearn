@@ -32,7 +32,7 @@ export function AdministratorAdmins({
             data-bs-container="body"
             data-bs-html="true"
             data-bs-placement="auto"
-            title="Add new administrator"
+            data-bs-title="Add new administrator"
             data-bs-content="${escapeHtml(
               AdministratorInsertForm({
                 csrfToken: resLocals.__csrf_token,
@@ -69,7 +69,7 @@ export function AdministratorAdmins({
                         data-bs-container="body"
                         data-bs-html="true"
                         data-bs-placement="auto"
-                        title="Remove administrator access"
+                        data-bs-title="Remove administrator access"
                         data-bs-content="${escapeHtml(
                           AdministratorDeleteForm({
                             csrfToken: resLocals.__csrf_token,

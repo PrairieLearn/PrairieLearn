@@ -167,7 +167,7 @@ export interface Assessment {
 interface QuestionExternalGradingOptions {
   enabled?: boolean;
   image: string;
-  entrypoint: string | string[];
+  entrypoint?: string | string[];
   serverFilesCourse?: string[];
   timeout?: number;
   enableNetworking?: boolean;

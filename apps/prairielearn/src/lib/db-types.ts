@@ -938,7 +938,6 @@ export const SubmissionSchema = z.object({
   format_errors: z.record(z.string(), z.any()).nullable(),
   gradable: z.boolean().nullable(),
   graded_at: DateFromISOString.nullable(),
-  grading_method: z.enum(['Internal', 'External', 'Manual']).nullable(),
   grading_requested_at: DateFromISOString.nullable(),
   id: IdSchema,
   manual_rubric_grading_id: IdSchema.nullable(),

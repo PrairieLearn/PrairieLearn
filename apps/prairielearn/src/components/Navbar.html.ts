@@ -15,12 +15,18 @@ export function Navbar({
   navSubPage,
   navbarType,
   marginBottom = true,
+  isInPageLayout = false,
 }: {
   resLocals: Record<string, any>;
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
   marginBottom?: boolean;
+  /**
+   * Indicates if the Navbar component is used within the PageLayout component.
+   * Used to ensure that enhanced navigation features are only present on pages that use PageLayout.
+   */
+  isInPageLayout?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix } = resLocals;
   navPage ??= resLocals.navPage;
@@ -76,7 +82,13 @@ export function Navbar({
         </button>
         <div id="course-nav" class="collapse navbar-collapse">
           <ul class="nav navbar-nav me-auto" id="main-nav">
-            ${NavbarByType({ resLocals, navPage, navSubPage, navbarType })}
+            ${NavbarByType({
+              resLocals,
+              navPage,
+              navSubPage,
+              navbarType,
+              isInPageLayout,
+            })}
           </ul>
 
           ${config.devMode
@@ -102,9 +114,13 @@ export function Navbar({
           </div>
         `
       : ''}
-    <div class="${marginBottom ? 'mb-3' : ''}">
-      ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
-    </div>
+    ${resLocals.has_enhanced_navigation && isInPageLayout
+      ? FlashMessages()
+      : html`
+          <div class="${marginBottom ? 'mb-3' : ''}">
+            ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
+          </div>
+        `}
   `;
 }
 
@@ -113,26 +129,40 @@ function NavbarByType({
   navPage,
   navSubPage,
   navbarType,
+  isInPageLayout,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage: NavSubPage;
   navbarType: NavbarType;
+  isInPageLayout?: boolean;
 }) {
-  if (navbarType == null || navbarType === 'plain') {
-    return NavbarPlain({ resLocals, navPage });
-  } else if (navbarType === 'student') {
+  // Student and public navbars remain unchanged
+  // when enhanced navigation is enabled.
+  if (navbarType === 'student') {
     return NavbarStudent({ resLocals, navPage });
-  } else if (navbarType === 'instructor') {
-    return NavbarInstructor({ resLocals, navPage, navSubPage });
-  } else if (navbarType === 'administrator_institution') {
-    return NavbarAdministratorInstitution({ resLocals });
-  } else if (navbarType === 'institution') {
-    return NavbarInstitution({ resLocals });
   } else if (navbarType === 'public') {
     return NavbarPublic({ resLocals });
   } else {
-    throw new Error(`Unknown navbarType: ${navbarType}`);
+    if (resLocals.has_enhanced_navigation && isInPageLayout) {
+      return NavbarButtons({
+        resLocals,
+        navPage,
+        navbarType,
+      });
+    } else {
+      if (navbarType == null || navbarType === 'plain') {
+        return NavbarPlain({ resLocals, navPage });
+      } else if (navbarType === 'instructor') {
+        return NavbarInstructor({ resLocals, navPage, navSubPage });
+      } else if (navbarType === 'administrator_institution') {
+        return NavbarAdministratorInstitution({ resLocals });
+      } else if (navbarType === 'institution') {
+        return NavbarInstitution({ resLocals });
+      } else {
+        throw new Error(`Unknown navbarType: ${navbarType}`);
+      }
+    }
   }
 }
 
@@ -243,7 +273,6 @@ function UserDropdownMenu({
           <a
             class="dropdown-item news-item-link"
             href="${urlPrefix}/news_items"
-            title="News${newsCount ? ` (${newsCount} unread)` : ''}"
             aria-label="News${newsCount ? ` (${newsCount} unread)` : ''}"
           >
             News
@@ -287,7 +316,7 @@ function FlashMessages() {
       <div
         class="alert alert-${globalFlashColors[
           type
-        ]} border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
+        ]} border-start-0 border-end-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
         role="alert"
       >
         ${unsafeHtml(message)}
@@ -568,10 +597,114 @@ function AuthnOverrides({
 
 function NavbarPlain({ resLocals, navPage }: { resLocals: Record<string, any>; navPage: NavPage }) {
   if (!resLocals.is_administrator) return '';
+
   return html`
     <li class="nav-item ${navPage === 'admin' ? 'active' : ''}">
       <a class="nav-link" href="${config.urlPrefix}/administrator/admins">Admin</a>
     </li>
+  `;
+}
+
+function NavbarButton({
+  text,
+  href,
+  active = false,
+  showArrow = true,
+}: {
+  text: string;
+  href: string;
+  active?: boolean;
+  showArrow?: boolean;
+}) {
+  return html`
+    <li class="nav-item">
+      <a class="nav-link ${active ? 'active' : ''}" href="${href}">${text}</a>
+    </li>
+    ${showArrow
+      ? html`<li class="nav-item d-none d-lg-block" aria-hidden="true">
+          <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+            &rarr;
+          </span>
+        </li>`
+      : ''}
+  `;
+}
+
+function NavbarButtons({
+  resLocals,
+  navPage,
+  navbarType,
+}: {
+  resLocals: Record<string, any>;
+  navPage: NavPage;
+  navbarType: NavbarType;
+}) {
+  // When no institution or course is set, show links to the home page and the global admin page.
+  if (
+    !resLocals.institution &&
+    !resLocals.course &&
+    navPage !== 'admin' &&
+    navbarType === 'plain'
+  ) {
+    return html`
+      ${NavbarButton({
+        text: 'Home',
+        href: '/',
+        showArrow: false,
+      })}
+      ${resLocals.is_administrator
+        ? NavbarButton({
+            text: 'Global Admin',
+            href: '/pl/administrator/admins',
+            showArrow: false,
+          })
+        : ''}
+    `;
+  }
+
+  const allNavbarButtons: {
+    text: string;
+    href: string;
+  }[] = [];
+
+  allNavbarButtons.push({ text: 'Home', href: '/' });
+
+  if (resLocals.is_administrator) {
+    allNavbarButtons.push({ text: 'Global Admin', href: '/pl/administrator/admins' });
+  }
+
+  if (resLocals.is_institution_administrator && resLocals.institution) {
+    allNavbarButtons.push(
+      { text: 'Institutions', href: '/pl/administrator/institutions' },
+      {
+        text: resLocals.institution.short_name,
+        href: `/pl/administrator/institution/${resLocals.institution.id}`,
+      },
+    );
+  }
+
+  if (resLocals.course) {
+    allNavbarButtons.push(
+      {
+        text: 'Courses',
+        href: `/pl/administrator/institution/${resLocals.institution.id}/courses`,
+      },
+      {
+        text: resLocals.course.short_name,
+        href: `/pl/course/${resLocals.course.id}/course_admin/instances`,
+      },
+    );
+  }
+
+  return html`
+    ${allNavbarButtons.map((navbarButton, index) =>
+      NavbarButton({
+        text: navbarButton.text,
+        href: navbarButton.href,
+        showArrow: index < allNavbarButtons.length - 1,
+        active: index === allNavbarButtons.length - 1,
+      }),
+    )}
   `;
 }
 
@@ -630,7 +763,6 @@ function NavbarInstructor({
     authz_data,
     urlPrefix,
   } = resLocals;
-
   return html`
     <li class="nav-item btn-group" id="navbar-course-switcher">
       <a
@@ -651,31 +783,20 @@ function NavbarInstructor({
         aria-label="Change course"
         aria-haspopup="true"
         aria-expanded="false"
-        ${!authz_data.overrides
-          ? html`
-              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show.bs.dropdown once
-              delay:200ms" hx-target="#navbarDropdownMenuCourseAdmin"
-            `
-          : ''}
+        hx-get="/pl/navbar/course/${course.id}/switcher"
+        hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
+        hx-target="#navbarDropdownMenuCourseAdmin"
       ></a>
       <div
         class="dropdown-menu"
         aria-labelledby="navbarDropdownMenuCourseAdminLink"
         id="navbarDropdownMenuCourseAdmin"
       >
-        ${authz_data.overrides
-          ? html`
-              <span class="dropdown-item-text small"
-                >Effective users may not switch between courses</span
-              >
-            `
-          : html`
-              <div class="d-flex justify-content-center">
-                <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="visually-hidden">Loading courses...</span>
-                </div>
-              </div>
-            `}
+        <div class="d-flex justify-content-center">
+          <div class="spinner-border spinner-border-sm" role="status">
+            <span class="visually-hidden">Loading courses...</span>
+          </div>
+        </div>
       </div>
     </li>
 
@@ -691,6 +812,7 @@ function NavbarInstructor({
               ${ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
+                className: 'mx-1',
               })}
             </a>
           </li>
@@ -799,11 +921,7 @@ function NavbarInstructor({
                           aria-expanded="false"
                           aria-label="Change assessment"
                         ></a>
-                        <div
-                          class="dropdown-menu"
-                          aria-labelledby="navbarDropdownMenuLink"
-                          id="navbarDropwdownMenuInstructorAssessment"
-                        >
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                           ${assessments.map(
                             (a) => html`
                               <a
@@ -840,7 +958,7 @@ function NavbarInstructor({
               aria-haspopup="true"
               aria-expanded="false"
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher"
-              hx-trigger="show.bs.dropdown once delay:200ms"
+              hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceChoose"
             >
               Choose course instance...
@@ -878,6 +996,7 @@ function NavbarPublic({ resLocals }: { resLocals: Record<string, any> }) {
 
 function NavbarInstitution({ resLocals }: { resLocals: Record<string, any> }) {
   const { institution } = resLocals;
+
   return html`
     <li class="nav-item">
       <a class="nav-link" href="/pl/institution/${institution.id}/admin/courses">
@@ -889,6 +1008,7 @@ function NavbarInstitution({ resLocals }: { resLocals: Record<string, any> }) {
 
 function NavbarAdministratorInstitution({ resLocals }: { resLocals: Record<string, any> }) {
   const { institution } = resLocals;
+
   return html`
     <li class="nav-item">
       <a class="nav-link" href="/pl/administrator/institutions">Admin</a>

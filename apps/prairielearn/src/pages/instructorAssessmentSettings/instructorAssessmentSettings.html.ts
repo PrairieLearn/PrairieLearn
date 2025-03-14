@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
+import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
@@ -41,6 +42,11 @@ export function InstructorAssessmentSettings({
         courseInstance: resLocals.course_instance,
         course: resLocals.course,
         urlPrefix: resLocals.urlPrefix,
+      })}
+      ${QRCodeModal({
+        id: 'studentLinkModal',
+        title: 'Student Link QR Code',
+        content: studentLink,
       })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
@@ -168,10 +174,10 @@ export function InstructorAssessmentSettings({
                 </button>
                 <button
                   type="button"
-                  title="Student Link QR Code"
+                  class="btn btn-sm btn-outline-secondary"
                   aria-label="Student Link QR Code"
-                  class="btn btn-sm btn-outline-secondary js-qrcode-button"
-                  data-qr-code-content="${studentLink}"
+                  data-bs-toggle="modal"
+                  data-bs-target="#studentLinkModal"
                 >
                   <i class="fas fa-qrcode"></i>
                 </button>
@@ -227,11 +233,17 @@ export function InstructorAssessmentSettings({
               <div class="card-footer d-flex flex-wrap align-items-center">
                 <form name="copy-assessment-form" class="me-2" method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <button name="__action" value="copy_assessment" class="btn btn-sm btn-primary">
+                  <button
+                    type="submit"
+                    name="__action"
+                    value="copy_assessment"
+                    class="btn btn-sm btn-primary"
+                  >
                     <i class="fa fa-clone"></i> Make a copy of this assessment
                   </button>
                 </form>
                 <button
+                  type="button"
                   class="btn btn-sm btn-primary"
                   href="#"
                   data-bs-toggle="modal"
