@@ -5,9 +5,7 @@
   "set": "Exam",
   "number": "8",
   "allowRealTimeGrading": false,
-  "allowAccess": [
-    { "mode": "Public", "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }
-  ],
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }],
   "zones": [
     {
       "title": "Hard questions",

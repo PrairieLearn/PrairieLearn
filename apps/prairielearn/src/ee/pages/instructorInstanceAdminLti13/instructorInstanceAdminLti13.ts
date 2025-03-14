@@ -4,7 +4,13 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import {
   AssessmentSchema,
@@ -22,6 +28,7 @@ import {
   createAndLinkLineitem,
   validateLti13CourseInstance,
   Lti13CombinedInstanceSchema,
+  updateLti13Scores,
 } from '../../lib/lti13.js';
 
 import {
@@ -45,6 +52,10 @@ router.use(
 router.get(
   '/:unsafe_lti13_course_instance_id?',
   asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
     const instances = await queryRows(
       sql.select_lti13_instances,
       {
@@ -110,6 +121,10 @@ router.get(
 router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
     const instance = await queryRow(
       sql.select_lti13_instance,
       {
@@ -120,6 +135,7 @@ router.post(
     );
 
     const serverJobOptions = {
+      courseId: res.locals.course.id,
       courseInstanceId: res.locals.course_instance.id,
       userId: res.locals.user.user_id,
       authnUserId: res.locals.authn_user.user_id,
@@ -154,16 +170,15 @@ router.post(
         `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/assessments`,
       );
     } else if (req.body.__action === 'poll_lti13_assessments') {
-      serverJobOptions.description = 'Synchronize external assignment metadata from LMS';
+      serverJobOptions.description = 'Synchronize assignment metadata from LMS';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
         await syncLineitems(instance, job);
       });
-      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+      return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else if (req.body.__action === 'unlink_assessment') {
-      // validate assessment_id off of course_instance here?
-      await unlinkAssessment(instance.lti13_course_instance.id, req.body.assessment_id);
+      await unlinkAssessment(instance.lti13_course_instance.id, req.body.unsafe_assessment_id);
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_link_assessment') {
       serverJobOptions.description = 'create lineitem from PL assessment';
@@ -173,7 +188,7 @@ router.post(
         const assessment = await queryRow(
           sql.select_assessment_to_create,
           {
-            assessment_id: req.body.assessment_id,
+            unsafe_assessment_id: req.body.unsafe_assessment_id,
             course_instance_id: instance.lti13_course_instance.course_instance_id,
           },
           AssessmentSchema.extend({
@@ -189,9 +204,9 @@ router.post(
 
         await createAndLinkLineitem(instance, job, assessment_metadata);
       });
-      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+      return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else if (req.body.__action === 'link_assessment') {
-      await queryAndLinkLineitem(instance, req.body.lineitem_id, req.body.assessment_id);
+      await queryAndLinkLineitem(instance, req.body.lineitem_id, req.body.unsafe_assessment_id);
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'bulk_unlink_assessments') {
       const group_id =
@@ -252,7 +267,32 @@ router.post(
           await createAndLinkLineitem(instance, job, assessment_metadata);
         }
       });
-      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+      return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
+    } else if (req.body.__action === 'send_grades') {
+      const assessment = await queryRow(
+        sql.select_assessment_in_course_instance,
+        {
+          unsafe_assessment_id: req.body.unsafe_assessment_id,
+          course_instance_id: res.locals.course_instance.id,
+        },
+        AssessmentSchema,
+      );
+      if (assessment === null) {
+        throw new error.HttpStatusError(403, 'Invalid assessment.id');
+      }
+
+      serverJobOptions.description = 'LTI 1.3 send assessment grades to LMS';
+      const serverJob = await createServerJob(serverJobOptions);
+
+      serverJob.executeInBackground(async (job) => {
+        await updateLti13Scores(assessment.id, instance, job);
+
+        await queryAsync(sql.update_lti13_assessment_last_activity, {
+          assessment_id: assessment.id,
+        });
+        job.info('Done.');
+      });
+      return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }

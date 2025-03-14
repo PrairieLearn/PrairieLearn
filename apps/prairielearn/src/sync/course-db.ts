@@ -8,6 +8,8 @@ import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
 
+import { run } from '@prairielearn/run';
+
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
@@ -16,6 +18,7 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import * as schemas from '../schemas/index.js';
 
 import * as infofile from './infofile.js';
+import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -184,11 +187,17 @@ type InfoFile<T> = infofile.InfoFile<T>;
 
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
+  devModeFeatures: Record<string, boolean> | string[];
 }
 
 interface Tag {
   name: string;
   color: string;
+  description?: string;
+}
+
+interface SharingSet {
+  name: string;
   description?: string;
 }
 
@@ -222,6 +231,7 @@ interface Course {
   topics: Topic[];
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
+  sharingSets?: SharingSet[];
 }
 
 interface CourseInstanceAllowAccess {
@@ -235,6 +245,8 @@ interface CourseInstanceAllowAccess {
 export interface CourseInstance {
   uuid: string;
   longName: string;
+  /** @deprecated */
+  shortName?: string | null;
   number: number;
   timezone: string;
   hideInEnrollPage: boolean;
@@ -341,7 +353,7 @@ export interface Assessment {
 interface QuestionExternalGradingOptions {
   enabled: boolean;
   image: string;
-  entrypoint: string;
+  entrypoint: string | string[];
   serverFilesCourse: string[];
   timeout: number;
   enableNetworking: boolean;
@@ -352,7 +364,7 @@ interface QuestionWorkspaceOptions {
   image: string;
   port: number;
   home: string;
-  args: string;
+  args: string | string[];
   gradedFiles: string[];
   rewriteUrl: string;
   enableNetworking: boolean;
@@ -378,6 +390,9 @@ export interface Question {
   externalGradingOptions: QuestionExternalGradingOptions;
   workspaceOptions?: QuestionWorkspaceOptions;
   dependencies: Record<string, string>;
+  sharingSets?: string[];
+  sharePublicly: boolean;
+  shareSourcePublicly: boolean;
 }
 
 export interface CourseInstanceData {
@@ -395,10 +410,21 @@ export async function loadFullCourse(
   courseId: string | null,
   courseDir: string,
 ): Promise<CourseData> {
-  const courseInfo = await loadCourseInfo(courseId, courseDir);
   const questions = await loadQuestions(courseDir);
+  const tagsInUse = new Set<string>();
+
+  for (const question of Object.values(questions)) {
+    if (question.data?.tags) {
+      for (const tag of question.data.tags) {
+        tagsInUse.add(tag);
+      }
+    }
+  }
+
   const courseInstanceInfos = await loadCourseInstances(courseDir);
   const courseInstances: Record<string, CourseInstanceData> = {};
+  const assessmentSetsInUse = new Set<string>();
+
   for (const [courseInstanceId, courseInstance] of Object.entries(courseInstanceInfos)) {
     // Check if the course instance is "expired". A course instance is considered
     // expired if it either has zero `allowAccess` rules (in which case it is never
@@ -417,11 +443,25 @@ export async function loadFullCourse(
       questions,
     );
 
+    for (const assessment of Object.values(assessments)) {
+      if (assessment.data?.set) {
+        assessmentSetsInUse.add(assessment.data?.set);
+      }
+    }
+
     courseInstances[courseInstanceId] = {
       courseInstance,
       assessments,
     };
   }
+
+  const courseInfo = await loadCourseInfo({
+    courseId,
+    coursePath: courseDir,
+    assessmentSetsInUse,
+    tagsInUse,
+  });
+
   return {
     course: courseInfo,
     questions,
@@ -636,10 +676,17 @@ export async function loadInfoFile<T extends { uuid: string }>({
   }
 }
 
-export async function loadCourseInfo(
-  courseId: string | null,
-  coursePath: string,
-): Promise<InfoFile<Course>> {
+export async function loadCourseInfo({
+  courseId,
+  coursePath,
+  assessmentSetsInUse,
+  tagsInUse,
+}: {
+  courseId: string | null;
+  coursePath: string;
+  assessmentSetsInUse: Set<string>;
+  tagsInUse: Set<string>;
+}): Promise<InfoFile<Course>> {
   const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
     coursePath,
     filePath: 'infoCourse.json',
@@ -667,7 +714,7 @@ export async function loadCourseInfo(
    * @param entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
    */
   function getFieldWithoutDuplicates<
-    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules',
+    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, entryIdentifier: string, defaults?: Course[K] | undefined): Course[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
@@ -702,17 +749,43 @@ export async function loadCourseInfo(
     return [...known.values()];
   }
 
+  // Assessment sets in DEFAULT_ASSESSMENT_SETS may be in use but not present in the
+  // course info JSON file. This ensures that default assessment sets are added if
+  // an assessment uses them, and removed if not.
+  const defaultAssessmentSetsInUse = DEFAULT_ASSESSMENT_SETS.filter((set) =>
+    assessmentSetsInUse.has(set.name),
+  );
+
   const assessmentSets = getFieldWithoutDuplicates(
     'assessmentSets',
     'name',
-    DEFAULT_ASSESSMENT_SETS,
+    defaultAssessmentSetsInUse,
   );
-  const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
+
+  // Tags in DEFAULT_TAGS may be in use but not present in the course info JSON
+  // file. This ensures that default tags are added if a question uses them, and
+  // removed if not.
+  const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => tagsInUse.has(tag.name));
+
+  const tags = getFieldWithoutDuplicates('tags', 'name', defaultTagsInUse);
   const topics = getFieldWithoutDuplicates('topics', 'name');
+  const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
+
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
-  const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
-  if (devModeFeatures.length > 0) {
+  const devModeFeatures = run(() => {
+    const features = info?.options?.devModeFeatures ?? {};
+
+    // Support for legacy values, where features were an array of strings instead
+    // of an object mapping feature names to booleans.
+    if (Array.isArray(features)) {
+      return Object.fromEntries(features.map((feature) => [feature, true]));
+    }
+
+    return features;
+  });
+
+  if (Object.keys(devModeFeatures).length > 0) {
     if (courseId == null) {
       if (!config.devMode) {
         infofile.addWarning(
@@ -723,7 +796,7 @@ export async function loadCourseInfo(
     } else {
       const institution = await selectInstitutionForCourse({ course_id: courseId });
 
-      for (const feature of new Set(devModeFeatures)) {
+      for (const [feature, overrideEnabled] of Object.entries(devModeFeatures)) {
         // Check if the feature even exists.
         if (!features.hasFeature(feature)) {
           infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
@@ -738,8 +811,16 @@ export async function loadCourseInfo(
           institution_id: institution.id,
           course_id: courseId,
         });
-        if (!featureEnabled) {
-          infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        if (overrideEnabled && !featureEnabled) {
+          infofile.addWarning(
+            loadedData,
+            `Feature "${feature}" is enabled in devModeFeatures, but is actually disabled.`,
+          );
+        } else if (!overrideEnabled && featureEnabled) {
+          infofile.addWarning(
+            loadedData,
+            `Feature "${feature}" is disabled in devModeFeatures, but is actually enabled.`,
+          );
         }
       }
     }
@@ -760,9 +841,10 @@ export async function loadCourseInfo(
     assessmentModules,
     tags,
     topics,
+    sharingSets,
     exampleCourse,
     options: {
-      useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
+      useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
   };
@@ -1080,8 +1162,8 @@ async function validateAssessment(
       const allowAccessWarnings = checkAllowAccessRoles(rule);
       warnings.push(...allowAccessWarnings);
 
-      if (rule.examUuid && rule.mode !== 'Exam') {
-        warnings.push('Invalid allowAccess rule: examUuid can only be used with "mode": "Exam"');
+      if (rule.examUuid && rule.mode === 'Public') {
+        warnings.push('Invalid allowAccess rule: examUuid cannot be used with "mode": "Public"');
       }
     });
   }
@@ -1089,6 +1171,7 @@ async function validateAssessment(
   const foundQids = new Set();
   const duplicateQids = new Set();
   const missingQids = new Set();
+  const draftQids = new Set();
   const checkAndRecordQid = (qid: string): void => {
     if (qid[0] === '@') {
       // Question is being imported from another course. We hold off on validating this until
@@ -1102,6 +1185,10 @@ async function validateAssessment(
       foundQids.add(qid);
     } else {
       duplicateQids.add(qid);
+    }
+
+    if (isDraftQid(qid)) {
+      draftQids.add(qid);
     }
   };
   (assessment.zones || []).forEach((zone) => {
@@ -1204,10 +1291,21 @@ async function validateAssessment(
               'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
             );
           }
+
           if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
             errors.push(
               'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment',
             );
+          }
+
+          if (!courseInstanceExpired) {
+            if (alternative.points === 0 && alternative.maxPoints > 0) {
+              errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
+            }
+
+            if (alternative.autoPoints === 0 && alternative.maxAutoPoints > 0) {
+              errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
+            }
           }
         }
       });
@@ -1223,6 +1321,12 @@ async function validateAssessment(
   if (missingQids.size > 0) {
     errors.push(
       `The following questions do not exist in this course: ${[...missingQids].join(', ')}`,
+    );
+  }
+
+  if (draftQids.size > 0) {
+    errors.push(
+      `The following questions are marked as draft and therefore cannot be used in assessments: ${[...draftQids].join(', ')}`,
     );
   }
 
@@ -1343,6 +1447,18 @@ async function validateCourseInstance(
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );
+    }
+
+    // `shortName` has never been a meaningful property in course instance config.
+    // However, for many years our template course erroneously included it in the
+    // template course instance, so it's been copied around to basically every course.
+    // We didn't set `additionalProperties: false` in the schema, so we never caught
+    // this and for a long time it was silently ignored.
+    //
+    // To avoid breaking existing courses, we added it as a valid property to the schema,
+    // but we'll warn about it for any active or future course instances.
+    if (courseInstance.shortName) {
+      warnings.push('The property "shortName" is not used and should be deleted.');
     }
   }
 

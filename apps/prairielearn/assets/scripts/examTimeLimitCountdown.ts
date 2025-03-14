@@ -4,12 +4,51 @@ import { html } from '@prairielearn/html';
 import { saveQuestionFormData } from './lib/confirmOnUnload.js';
 import { setupCountdown } from './lib/countdown.js';
 
+function showWarningPopup(id: string, message: string) {
+  let popup = document.querySelector('#warning-popup');
+  if (!popup) {
+    popup = parseHTMLElement<HTMLDivElement>(
+      document,
+      html`<div
+        id="warning-popup"
+        class="fixed-bottom d-flex flex-column align-items-center mb-5"
+      ></div>`,
+    );
+    document.body.append(popup);
+  }
+  // Only show one popup with the same ID at the same time
+  if (!document.querySelector('#popup-' + id)) {
+    popup.appendChild(
+      parseHTMLElement<HTMLDivElement>(
+        document,
+        html`<div
+          id="popup-${id}"
+          class="show align-items-center alert alert-warning alert-dismissible pulse"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+        >
+          <div>${message}</div>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+          ></button>
+        </div>`,
+      ),
+    );
+  }
+}
+
 onDocumentReady(() => {
   const timeLimitData = decodeData<{
     serverRemainingMS: number;
     serverTimeLimitMS: number;
     serverUpdateURL: string;
     canTriggerFinish: boolean;
+    showsTimeoutWarning: boolean;
+    reloadOnFail: boolean;
     csrfToken: string;
   }>('time-limit-data');
   setupCountdown({
@@ -36,9 +75,30 @@ onDocumentReady(() => {
         form.submit();
       }
     },
-    onServerUpdateFail: () => {
+    onRemainingTime: {
+      60000: () => {
+        if (timeLimitData.showsTimeoutWarning) {
+          showWarningPopup(
+            'examTimeout',
+            'Your exam is ending soon. Please finish and submit your work.',
+          );
+        }
+      },
+    },
+    onServerUpdateFail: (remainingMS: number) => {
       // On time limit fail, reload the page
-      window.location.reload();
+      if (timeLimitData.reloadOnFail) {
+        window.location.reload();
+      } else {
+        // Once the exam access period finishes, we expect updates of the remaining time
+        // to fail, so we only show a warning popup if time hasn't yet expired.
+        if (remainingMS > 0) {
+          showWarningPopup(
+            'updateFail',
+            'Failed to refresh exam timer. The displayed remaining time might be inaccurate.',
+          );
+        }
+      }
     },
     getBackgroundColor: (remainingSec) => {
       if (remainingSec >= 180) {

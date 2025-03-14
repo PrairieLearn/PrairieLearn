@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { StripeCheckoutSession } from '../../../../lib/db-types.js';
+import { type StripeCheckoutSession } from '../../../../lib/db-types.js';
 import { type Purchase } from '../purchases.js';
 import { formatStripePrice } from '../stripe.js';
 
@@ -72,10 +72,10 @@ function PurchaseTable({ purchases }: { purchases: Purchase[] }) {
 
 function StripeCheckoutSessionPaymentStatus({ session }: { session: StripeCheckoutSession }) {
   if (session.data.payment_status === 'paid') {
-    return html`<span class="badge badge-success">Payment received</span>`;
+    return html`<span class="badge text-bg-success">Payment received</span>`;
   } else if (session.data.payment_status === 'unpaid') {
-    return html`<span class="badge badge-secondary">Pending</span>`;
+    return html`<span class="badge text-bg-secondary">Pending</span>`;
   } else {
-    return html`<span class="badge badge-warning">Unknown</span>`;
+    return html`<span class="badge text-bg-warning">Unknown</span>`;
   }
 }

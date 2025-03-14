@@ -4,7 +4,7 @@
 
 ## Customize your grade function using `server.py`
 
-#### Example 1:
+### Example 1
 
 Ask students to provide a matrix $A$ such that $A^2$ is the zero matrix.
 
@@ -14,11 +14,11 @@ Since there is more than one solution that satisfies this problem, you will need
 
 - [workshop/Lesson4_example1](https://us.prairielearn.com/pl/course/108/question/8211634/preview)
 
-#### Example 2:
+### Example 2
 
 Modify the example from Lesson 3 below:
 
-![](figs/logic-diagram2.png)
+![Circuit logic diagram](figs/logic-diagram2.png)
 
 Now ask students to enter three input values and one output that makes this logic diagram correct. Since there are several solutions that are correct, you will need to customize the grade function.
 
@@ -26,7 +26,7 @@ Now ask students to enter three input values and one output that makes this logi
 
 - [workshop/Lesson4_example2](https://us.prairielearn.com/pl/course/108/question/8211635/preview)
 
-#### Example 3:
+### Example 3
 
 This is an example of a question that expects data collected from an experiment.
 
@@ -47,7 +47,7 @@ Students will calculate the convective heat transfer based on the data described
 
 Take a look at the documentation for the [python auto grader](https://prairielearn.readthedocs.io/en/latest/python-grader/) first.
 
-#### Example 4:
+### Example 4
 
 Write a question that provides students with a matrix $A$, and asks them to compute the following:
 

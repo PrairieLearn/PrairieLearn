@@ -8,7 +8,7 @@ declare global {
   }
 }
 
-const mathjaxPromise = new Promise<void>((resolve) => {
+const mathjaxPromise = new Promise<void>((resolve, reject) => {
   window.MathJax = {
     options: {
       // We previously documented the `tex2jax_ignore` class, so we'll keep
@@ -59,8 +59,10 @@ const mathjaxPromise = new Promise<void>((resolve) => {
         };
       },
       pageReady: () => {
-        window.MathJax.startup.defaultPageReady();
-        resolve();
+        return window.MathJax.startup.defaultPageReady().then(
+          () => resolve(),
+          (err: any) => reject(err),
+        );
       },
     },
   };

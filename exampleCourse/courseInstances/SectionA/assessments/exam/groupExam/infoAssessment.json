@@ -16,9 +16,7 @@
     { "name": "Reflector", "minimum": 1, "maximum": 1 },
     { "name": "Contributor" }
   ],
-  "allowAccess": [
-    { "mode": "Public", "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }
-  ],
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }],
   "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
   "canSubmit": ["Recorder"],
   "zones": [

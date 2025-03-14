@@ -12,13 +12,11 @@ Here are the instructions to install WSL 2 and enable its integration with Docke
 
 - Install WSL 2. For current instructions, [follow the Microsoft documentation](https://learn.microsoft.com/en-us/windows/wsl/install).
 - Enable the Docker Desktop WSL 2 backend. For current instructions, [follow the Docker documentation](https://docs.docker.com/desktop/windows/wsl/).
-- On the shell of your WSL 2 instance, make sure the instance has the `docker` command installed. The installation process may depend on your distribution, but most distributions provide a `docker` package. For example, if you are using Debian, Ubuntu or similar distributions, you may install it with:
+- On the shell of your WSL 2 instance, make sure Docker Engine is installed. The installation process may depend on the distribution of your WSL 2 instance. For current instructions, [follow the Docker documentation](https://docs.docker.com/engine/install/).
 
-  ```sh
-  sudo apt install docker
-  ```
+!!! warning
 
-**NOTE**: We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented. In all cases below, the Windows examples assume that WSL 2 is installed.
+    We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented. In all cases below, the Windows examples assume that WSL 2 is installed.
 
 ## Cloning your course repository
 
@@ -78,8 +76,6 @@ When running the image, you may get an error like `pg_ctl: could not start serve
 
 If Docker's Rosetta option isn't enabled, first check Apple's instructions to [install Rosetta](https://support.apple.com/en-us/102527).
 
-_Note that the use of R in `server.py` is not currently supported on ARM64 hardware._
-
 ### Support for external graders and workspaces
 
 In production, PrairieLearn runs external grading jobs and workspaces on a distributed system that uses a variety of AWS services to efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure, but PrairieLearn allows you to still run external grading jobs and workspaces locally with a few workarounds.
@@ -92,7 +88,7 @@ In production, PrairieLearn runs external grading jobs and workspaces on a distr
 
 In order to run external grading jobs when PrairieLearn is running locally inside Docker, there are a few additional preparation steps that are necessary:
 
-- We need a way of starting up Docker containers on the host machine from within another Docker container. We achieve this by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows us to run 'sibling' containers.
+- We need a way of starting up Docker containers on the host machine from within another Docker container. We achieve this by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows us to run "sibling" containers.
 - We need to get job files from inside the Docker container running PrairieLearn to the host machine so that Docker can mount them to `/grade` on the grading machine. We achieve this by mounting a directory on the host machine to `/jobs` on the grading machine, and setting an environment variable `HOST_JOBS_DIR` containing the absolute path of that directory on the host machine.
 
 To run PrairieLearn locally with external grader and workspace support, create an empty directory to use to share job data between containers. This directory can live anywhere, but needs to be created first and referenced in the docker launch command. This directory only needs to be created once. If you are running Windows, the directory should be created inside the WSL 2 instance. You can create this directory using a command like:
@@ -116,7 +112,7 @@ docker run -it --rm -p 3000:3000 \
     prairielearn/prairielearn
 ```
 
-###### Troubleshooting the --add-host option and network timeouts
+#### Troubleshooting the --add-host option and network timeouts
 
 If you are an advanced Docker user, or if your organization's network policies require it, then you might have previously adjusted the address pool used by Docker. If this conflicts with the Docker defaults, you might get a network timeout error when attempting to launch a workspace locally. In that case, you might need to adjust the IP address for the `--add-host=` option. You can find more technical details here: [PL issue #9805](https://github.com/PrairieLearn/PrairieLearn/issues/9805#issuecomment-2093299949), [moby/moby PR 29376](https://github.com/moby/moby/pull/29376), [docker/docs issue 8663](https://github.com/docker/docs/issues/8663).
 
@@ -136,14 +132,16 @@ After this, run PrairieLearn using the same commands as above.
 
 The commands above will always run the very latest version of PrairieLearn, which might be an unreleased development version. If you would like to run the version that is currently deployed, use the appropriate tag for the server you're using:
 
-- For courses running under https://us.prairielearn.com/ use the tag `us-prod-live`;
-- For courses running under https://ca.prairielearn.com/ use the tag `ca-live`;
+- For courses running under <https://us.prairielearn.com/> use the tag `us-prod-live`;
+- For courses running under <https://ca.prairielearn.com/> use the tag `ca-live`;
 - For institutions with local installations of PrairieLearn, consult your local IT department.
 
 ```sh
 docker run -it --rm -p 3000:3000 --pull=always [other args] prairielearn/prairielearn:us-prod-live
 ```
 
-Note that the command above uses the `--pull=always` option, which will update the local version of the image every time the docker command is restarted. If you keep a long-running container locally, make sure to restart the container when updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements).
+!!! tip
+
+    The command above uses the `--pull=always` option, which will update the local version of the image every time the docker command is restarted. If you keep a long-running container locally, make sure to restart the container when updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements).
 
 Additional tags are available for older versions. The list of available versions is viewable on the [Docker Hub build page](https://hub.docker.com/r/prairielearn/prairielearn/builds/).

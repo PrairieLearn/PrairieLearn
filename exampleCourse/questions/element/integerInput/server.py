@@ -30,8 +30,8 @@ def generate(data):
     data["correct_answers"]["c_7_b16"] = c16
     data["correct_answers"]["c_7_b2"] = c16
 
-    c_large = "9007199254740991999"
-    data["correct_answers"]["c_large"] = c_large
+    c_large = random.randint(0x1000000000000000, 0xFFFFFFFFFFFFFFFF)
+    data["correct_answers"]["c_large"] = f"{c_large:x}"
 
     d = 16
     data["params"]["d"] = d

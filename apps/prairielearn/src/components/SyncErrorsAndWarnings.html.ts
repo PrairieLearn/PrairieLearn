@@ -2,7 +2,12 @@ import { AnsiUp } from 'ansi_up';
 
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { Assessment, Course, CourseInstance, Question } from '../lib/db-types.js';
+import {
+  type Assessment,
+  type Course,
+  type CourseInstance,
+  type Question,
+} from '../lib/db-types.js';
 
 const ansiUp = new AnsiUp();
 

@@ -140,7 +140,7 @@
                     notebookPreview.classList.remove('d-none');
 
                     // Typeset any math that might be in the notebook.
-                    window.MathJax.typesetPromise();
+                    window.MathJax.typesetPromise([notebookPreview]);
                   });
                 } else {
                   code.textContent = text;

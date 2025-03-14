@@ -1,6 +1,7 @@
 columns
     context_id: text not null
     context_label: text
+    context_memberships_url: text
     context_title: text
     course_instance_id: bigint not null
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP

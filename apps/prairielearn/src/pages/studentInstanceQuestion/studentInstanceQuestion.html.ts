@@ -14,6 +14,7 @@ import { QuestionContainer, QuestionTitle } from '../../components/QuestionConta
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { getRoleNamesForUser } from '../../lib/groups.js';
 
 export function StudentInstanceQuestion({
   resLocals,
@@ -39,6 +40,8 @@ export function StudentInstanceQuestion({
                   serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
                   serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                   canTriggerFinish: resLocals.authz_result.authorized_edit,
+                  showsTimeoutWarning: true,
+                  reloadOnFail: true,
                   csrfToken: resLocals.__csrf_token,
                 },
                 'time-limit-data',
@@ -163,7 +166,9 @@ export function StudentInstanceQuestion({
                 prevGroupRolePermissions: resLocals.prev_instance_question_role_permissions,
                 nextGroupRolePermissions: resLocals.next_instance_question_role_permissions,
                 advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
-                userGroupRoles: resLocals.assessment_instance.user_group_roles,
+                userGroupRoles: resLocals.group_info
+                  ? getRoleNamesForUser(resLocals.group_info, resLocals.user).join(', ')
+                  : null,
               })}
               ${resLocals.assessment.allow_personal_notes
                 ? PersonalNotesPanel({
@@ -184,7 +189,6 @@ export function StudentInstanceQuestion({
                 instance_question: resLocals.instance_question,
                 question: resLocals.question,
                 variant: resLocals.variant,
-                user: resLocals.user,
                 instance_group: resLocals.instance_group,
                 instance_group_uid_list: resLocals.instance_group_uid_list,
                 instance_user: resLocals.instance_user,

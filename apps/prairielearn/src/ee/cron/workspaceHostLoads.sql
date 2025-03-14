@@ -7,8 +7,7 @@ INSERT INTO
       NOW(),
       NOW()
   )
-ON CONFLICT (instance_id) DO
-UPDATE
+ON CONFLICT (instance_id) DO UPDATE
 SET
   state = EXCLUDED.state,
   launched_at = EXCLUDED.launched_at,

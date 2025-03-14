@@ -16,20 +16,17 @@ export type AuthzAccessRule = z.infer<typeof AuthzAccessRuleSchema>;
 
 export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzAccessRule[] }) {
   return html`
-    <a
-      tabindex="0"
-      class="btn btn-xs"
-      role="button"
-      data-toggle="popover"
-      data-trigger="focus"
-      data-container="body"
-      data-html="true"
-      title="Access details"
-      data-content="${escapeHtml(StudentAccessRulesPopoverContent({ accessRules }))}"
-      aria-label="Access details"
+    <button
+      type="button"
+      class="btn btn-xs btn-ghost"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-title="Access details"
+      data-bs-content="${escapeHtml(StudentAccessRulesPopoverContent({ accessRules }))}"
     >
       <i class="fa fa-question-circle"></i>
-    </a>
+    </button>
   `;
 }
 

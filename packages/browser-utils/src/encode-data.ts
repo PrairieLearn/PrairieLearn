@@ -1,6 +1,6 @@
 import { encode, decode } from 'js-base64';
 
-import { html, unsafeHtml, HtmlSafeString } from '@prairielearn/html';
+import { html, unsafeHtml, type HtmlSafeString } from '@prairielearn/html';
 
 /**
  * Use this function as an HTML component encode data that will be passed to the client.

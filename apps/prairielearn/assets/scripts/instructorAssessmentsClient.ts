@@ -2,7 +2,7 @@ import * as async from 'async';
 
 import { decodeData, onDocumentReady, parseHTML } from '@prairielearn/browser-utils';
 
-import { StatsUpdateData } from '../../src/pages/instructorAssessments/instructorAssessments.types.js';
+import { type StatsUpdateData } from '../../src/pages/instructorAssessments/instructorAssessments.types.js';
 
 import { histmini } from './lib/histmini.js';
 

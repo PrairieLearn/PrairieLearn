@@ -1,4 +1,3 @@
-import { AnsiUp } from 'ansi_up';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -12,14 +11,13 @@ import {
   AssessmentQuestionRowSchema,
 } from './instructorAssessmentQuestions.html.js';
 
-const ansiUp = new AnsiUp();
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const questionRows = await queryRows(
+    const questions = await queryRows(
       sql.questions,
       {
         assessment_id: res.locals.assessment.id,
@@ -27,11 +25,6 @@ router.get(
       },
       AssessmentQuestionRowSchema,
     );
-    const questions = questionRows.map((row) => {
-      if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
-      if (row.sync_warnings) row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
-      return row;
-    });
     res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
   }),
 );

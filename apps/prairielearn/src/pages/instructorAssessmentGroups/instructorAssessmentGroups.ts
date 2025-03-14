@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { GroupConfigSchema } from '../../lib/db-types.js';
-import { uploadInstanceGroups, autoGroups } from '../../lib/group-update.js';
+import { uploadInstanceGroups, randomGroups } from '../../lib/group-update.js';
 import {
   GroupOperationError,
   addUserToGroup,
@@ -99,13 +99,13 @@ router.post(
         res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-    } else if (req.body.__action === 'auto_assessment_groups') {
-      const job_sequence_id = await autoGroups(
+    } else if (req.body.__action === 'random_assessment_groups') {
+      const job_sequence_id = await randomGroups(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
-        req.body.max_group_size,
-        req.body.min_group_size,
+        Number(req.body.max_group_size),
+        Number(req.body.min_group_size),
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {

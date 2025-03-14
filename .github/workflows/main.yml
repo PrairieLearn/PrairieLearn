@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+      # Build on all code freeze branches since we will deploy from them.
+      - '**-code-freeze'
   pull_request:
   merge_group:
 
@@ -38,10 +40,35 @@ jobs:
           # what images need to be built.
           fetch-depth: 0
 
+      # This is needed to support exporting (loading) multiplatform images to Docker.
+      - name: Use the containerd image store
+        shell: bash
+        run: |
+          [ -f /etc/docker/daemon.json ] || echo "{}" | sudo tee /etc/docker/daemon.json
+          jq '. | .+{"features": {"containerd-snapshotter": true}}' /etc/docker/daemon.json > /tmp/docker-daemon-with-containerd.json
+          sudo mv /tmp/docker-daemon-with-containerd.json /etc/docker/daemon.json
+          cat /etc/docker/daemon.json
+          sudo systemctl restart docker
+          docker info -f '{{ .DriverStatus }}'
+
+      # Because we switch to use the containerd image store, we can't use
+      # Action's support for service containers:
+      # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
+      # After updating the configuration and restarting docker, the old
+      # image (and thus the container) is no longer available.
+      #
+      # Instead, we need to manually run the registry container ourselves.
+      - run: |
+          docker pull registry:2
+          docker run -d -p 5000:5000 --name registry --restart always registry:2
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
+        with:
+          # This is needed to allow pushing to the local registry running on port 5000.
+          driver-opts: network=host
       - name: Login to DockerHub
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
@@ -52,7 +79,7 @@ jobs:
       ######################################################################################################
       # prairielearn/workspace-desktop
       - name: Check whether workspaces/desktop was modified
-        run: tools/check_path_modified.sh workspaces/desktop workspaces_desktop_modified
+        run: scripts/check_path_modified.sh workspaces/desktop workspaces_desktop_modified
       - name: Build and push prairielearn/workspace-desktop
         if: ${{ env.workspaces_desktop_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -66,7 +93,7 @@ jobs:
       ######################################################################################################
       # prairielearn/workspace-jupyterlab
       - name: Check whether workspaces/jupyterlab was modified
-        run: tools/check_path_modified.sh workspaces/jupyterlab workspaces_jupyterlab_modified
+        run: scripts/check_path_modified.sh workspaces/jupyterlab workspaces_jupyterlab_modified
       - name: Build and push prairielearn/workspace-jupyterlab
         if: ${{ env.workspaces_jupyterlab_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -80,7 +107,7 @@ jobs:
       ######################################################################################################
       # prairielearn/workspace-jupyterlab-python
       - name: Check whether workspaces/jupyterlab-python was modified
-        run: tools/check_path_modified.sh workspaces/jupyterlab-python workspaces_jupyterlab_python_modified
+        run: scripts/check_path_modified.sh workspaces/jupyterlab-python workspaces_jupyterlab_python_modified
       - name: Build and push prairielearn/workspace-jupyterlab-python
         if: ${{ env.workspaces_jupyterlab_python_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -94,7 +121,7 @@ jobs:
       ######################################################################################################
       # prairielearn/workspace-rstudio
       - name: Check whether workspaces/rstudio was modified
-        run: tools/check_path_modified.sh workspaces/rstudio workspaces_rstudio_modified
+        run: scripts/check_path_modified.sh workspaces/rstudio workspaces_rstudio_modified
       - name: Build and push prairielearn/workspace-rstudio
         if: ${{ env.workspaces_rstudio_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -108,7 +135,7 @@ jobs:
       ######################################################################################################
       # prairielearn/workspace-xtermjs
       - name: Check whether workspaces/xtermjs was modified
-        run: tools/check_path_modified.sh workspaces/xtermjs workspaces_xtermjs_modified
+        run: scripts/check_path_modified.sh workspaces/xtermjs workspaces_xtermjs_modified
       - name: Build and push prairielearn/workspace-xtermjs
         if: ${{ env.workspaces_xtermjs_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -120,11 +147,37 @@ jobs:
           tags: prairielearn/workspace-xtermjs:${{ env.COMMIT_SHA }}
 
       ######################################################################################################
+      # prairielearn/workspace-vscode-base
+      - name: Check whether workspaces/vscode-base was modified
+        run: scripts/check_path_modified.sh workspaces/vscode-base workspaces_vscode_base_modified
+      - name: Build and push prairielearn/workspace-vscode-base
+        if: ${{ env.workspaces_vscode_base_modified }}
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-base
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          no-cache: true
+          load: true
+          tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+
+      # The container builder doesn't have access to Docker's image store, so
+      # we need to push it to a local registry to make it available to other
+      # containers that need it.
+      # https://github.com/docker/build-push-action/issues/1116
+      - name: Tag prairielearn/workspace-vscode-base for local registry
+        if: ${{ env.workspaces_vscode_base_modified }}
+        run: docker tag prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }} localhost:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+      - name: Push prairielearn/workspace-vscode-base to local registry
+        if: ${{ env.workspaces_vscode_base_modified }}
+        run: docker push localhost:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+
+      ######################################################################################################
       # prairielearn/workspace-vscode-python
       - name: Check whether workspaces/vscode-python was modified
-        run: tools/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
+        run: scripts/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
       - name: Build and push prairielearn/workspace-vscode-python
-        if: ${{ env.workspaces_vscode_python_modified }}
+        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_python_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-python
@@ -132,6 +185,26 @@ jobs:
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           tags: prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}
+          build-args: |
+            BASE_IMAGE=${{ env.workspaces_vscode_base_modified && 'localhost:5000/prairielearn/workspace-vscode-base' || 'prairielearn/workspace-vscode-base' }}
+            BASE_IMAGE_TAG=${{ env.workspaces_vscode_base_modified && env.COMMIT_SHA || 'latest' }}
+
+      ######################################################################################################
+      # prairielearn/workspace-vscode-cpp
+      - name: Check whether workspaces/vscode-cpp was modified
+        run: scripts/check_path_modified.sh workspaces/vscode-cpp workspaces_vscode_cpp_modified
+      - name: Build and push prairielearn/workspace-vscode-cpp
+        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_cpp_modified }}
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-cpp
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          no-cache: true
+          tags: prairielearn/workspace-vscode-cpp:${{ env.COMMIT_SHA }}
+          build-args: |
+            BASE_IMAGE=${{ env.workspaces_vscode_base_modified && 'localhost:5000/prairielearn/workspace-vscode-base' || 'prairielearn/workspace-vscode-base' }}
+            BASE_IMAGE_TAG=${{ env.workspaces_vscode_base_modified && env.COMMIT_SHA || 'latest' }}
 
   build-grader-images:
     runs-on: ubuntu-latest
@@ -163,7 +236,7 @@ jobs:
       ######################################################################################################
       # grader-c
       - name: Check whether graders/c was modified
-        run: tools/check_path_modified.sh graders/c graders_c_modified
+        run: scripts/check_path_modified.sh graders/c graders_c_modified
       - name: Build and push prairielearn/grader-c
         if: ${{ env.graders_c_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -177,7 +250,7 @@ jobs:
       ######################################################################################################
       # grader-java
       - name: Check whether graders/java was modified
-        run: tools/check_path_modified.sh graders/java graders_java_modified
+        run: scripts/check_path_modified.sh graders/java graders_java_modified
       - name: Build and push prairielearn/grader-java
         if: ${{ env.graders_java_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -191,7 +264,7 @@ jobs:
       ######################################################################################################
       # grader-python
       - name: Check whether graders/python was modified
-        run: tools/check_path_modified.sh graders/python graders_python_modified
+        run: scripts/check_path_modified.sh graders/python graders_python_modified
       - name: Build and push prairielearn/grader-python
         if: ${{ env.graders_python_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -205,7 +278,7 @@ jobs:
       ######################################################################################################
       # grader-r
       - name: Check whether graders/r was modified
-        run: tools/check_path_modified.sh graders/r graders_r_modified
+        run: scripts/check_path_modified.sh graders/r graders_r_modified
       - name: Build and push prairielearn/grader-r
         if: ${{ env.graders_r_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -240,7 +313,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Check whether images/plbase was modified
-        run: tools/check_path_modified.sh images/plbase images_plbase_modified
+        run: scripts/check_path_modified.sh images/plbase images_plbase_modified
       - name: Build and push prairielearn/plbase
         if: ${{ env.images_plbase_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -297,39 +370,65 @@ jobs:
         # We put the Postgres data on a tmpfs volume, which should be much faster.
         run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs --tmpfs=/var/postgres -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
       - name: Run the JavaScript tests
-        run: docker exec test_container /PrairieLearn/docker/test_js.sh
+        run: docker exec test_container sh -c "make -s -C /PrairieLearn test-js"
         # The JS tests hang relatively often when someone makes a mistake in a PR,
         # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
         # spinning until it eventually times out. This shorter timeout helps
         # ensure that the tests fail more quickly so that people can fix them.
         timeout-minutes: 30
+      - name: Run the Python tests
+        run: docker exec test_container sh -c "make -s -C /PrairieLearn test-python"
+        timeout-minutes: 1
 
       # Since tests run in the context of the container, we need to copy all
       # the coverage reports out of the container and into the host filesystem.
       - name: Copy coverage reports to the host
-        run: ./tools/copy_docker_coverage_reports.sh test_container
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.5.0
+        run: ./scripts/copy_docker_coverage_reports.sh test_container
+      - name: Upload JavaScript coverage report to Codecov
+        uses: codecov/codecov-action@v5.4.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          exclude: apps/prairielearn/python
+          flags: javascript
+
+      - name: Upload Python coverage report to Codecov
+        uses: codecov/codecov-action@v5.4.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: apps/prairielearn/python
+          flags: python
 
   native-checks:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
       - name: Install OS packages
-        run: sudo apt-get install -y graphviz graphviz-dev
+        uses: awalsh128/cache-apt-pkgs-action@v1.4.3
+        with:
+          packages: graphviz libgraphviz-dev
+          version: 1.0
+          execute_install_scripts: true
 
+      - name: Install additional dependencies
+        run: |-
+          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
+          sudo chmod +x /bin/hadolint && sudo curl -fsSL https://d2lang.com/install.sh | sh -s -- && \
+          sudo apt-get install -y shellcheck && \
+          sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: pip
-          cache-dependency-path: images/plbase/python-requirements.txt
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'images/plbase/python-requirements.txt'
       - name: Install Python dependencies
-        run: pip install -r images/plbase/python-requirements.txt
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv pip install -r images/plbase/python-requirements.txt
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -344,7 +443,7 @@ jobs:
       - name: Set up Turborepo cache
         uses: actions/cache@v4
         with:
-          path: ./node_modules/.cache/turbo
+          path: .turbo/cache
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-turbo-
@@ -353,10 +452,10 @@ jobs:
         run: make build
       - name: Run the JavaScript linter
         run: make lint-js
-      - name: Run the HTML linter
-        run: make lint-html
       - name: Run the links linter
         run: make lint-links
+      - name: Run the d2 diagram linter
+        run: make lint-d2
       - name: Run the Python typechecker
         run: make typecheck-python
       - name: Run the Python linter
@@ -364,15 +463,28 @@ jobs:
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
+      - name: Run the Dockerfile linter
+        run: make lint-docker
+      - name: Run the Shellcheck linter
+        run: make lint-shell
+      - name: Run the Markdown linter
+        run: make lint-markdown
+      - name: Run the GitHub Actions linter
+        run: make lint-actions
       - name: Check for warnings in documentation
         run: make build-docs
+      # Ran after the docs build, so we can lint the generated HTML.
+      - name: Run the HTML linter
+        run: make lint-html
       - name: Check dependency structure
         run: make check-dependencies
 
       # The rest of our code is typechecked in the `build` Makefile target, which
       # is run above.
-      - name: Run the TypeScript typechecker for tools
-        run: make typecheck-tools
+      - name: Run the TypeScript typechecker for contrib
+        run: make typecheck-contrib
+      - name: Run the TypeScript typechecker for scripts
+        run: make typecheck-scripts
 
       # This step runs at the end, since it is common for it to fail in
       # dependabot PRs, but we still want all other tests above to run

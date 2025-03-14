@@ -12,7 +12,7 @@ export interface InstructorFilePaths {
   invalidRootPaths: string[];
   cannotMove: string[];
   clientDir: string;
-  serverDir: string;
+  serverDir?: string;
   testsDir?: string;
   urlPrefix: string;
   workingPath: string;
@@ -61,7 +61,6 @@ function getContextPaths(
       invalidRootPaths: [path.join(rootPath, 'assessments')],
       cannotMove: [path.join(rootPath, 'infoCourseInstance.json')],
       clientDir: path.join(rootPath, 'clientFilesCourseInstance'),
-      serverDir: path.join(rootPath, 'serverFilesCourseInstance'),
       urlPrefix: `${locals.urlPrefix}/instance_admin`,
     };
   } else if (locals.navPage === 'assessment') {
@@ -77,17 +76,15 @@ function getContextPaths(
       invalidRootPaths: [],
       cannotMove: [path.join(rootPath, 'infoAssessment.json')],
       clientDir: path.join(rootPath, 'clientFilesAssessment'),
-      serverDir: path.join(rootPath, 'serverFilesAssessment'),
       urlPrefix: `${locals.urlPrefix}/assessment/${locals.assessment.id}`,
     };
-  } else if (locals.navPage === 'question') {
+  } else if (locals.navPage === 'question' || locals.navPage === 'public_question') {
     const rootPath = path.join(coursePath, 'questions', locals.question.qid);
     return {
       rootPath,
       invalidRootPaths: [],
       cannotMove: [path.join(rootPath, 'info.json')],
       clientDir: path.join(rootPath, 'clientFilesQuestion'),
-      serverDir: path.join(rootPath, 'serverFilesQuestion'),
       testsDir: path.join(rootPath, 'tests'),
       urlPrefix: `${locals.urlPrefix}/question/${locals.question.id}`,
     };
@@ -125,36 +122,37 @@ export function getPaths(
   const workingDirectory = path.dirname(workingPathRelativeToCourse);
   const workingFilename = path.basename(workingPathRelativeToCourse);
 
-  const specialDirs =
-    workingPath === rootPath
-      ? [
-          {
-            label: 'Client',
-            path: clientDir,
-            info: html`This file will be placed in the subdirectory
-              <code>${path.basename(clientDir)}</code> and will be accessible from the student's web
-              browser.`,
-          },
-          {
-            label: 'Server',
-            path: serverDir,
-            info: html`This file will be placed in the subdirectory
-              <code>${path.basename(serverDir)}</code> and will be accessible only from the server.
-              It will not be accessible from the student's web browser.`,
-          },
-        ]
-      : [];
-  if (workingPath === rootPath && testsDir) {
+  const specialDirs: InstructorFilePaths['specialDirs'] = [];
+  if (workingPath === rootPath) {
     specialDirs.push({
-      label: 'Test',
-      path: testsDir,
+      label: 'Client',
+      path: clientDir,
       info: html`This file will be placed in the subdirectory
-        <code>${path.basename(testsDir)}</code> and will be accessible only from the server. It will
-        not be accessible from the student's web browser. This is appropriate for code to support
-        <a href="https://prairielearn.readthedocs.io/en/latest/externalGrading/">
-          externally graded questions</a
-        >.`,
+        <code>${path.basename(clientDir)}</code> and will be accessible from the student's web
+        browser.`,
     });
+    if (serverDir) {
+      specialDirs.push({
+        label: 'Server',
+        path: serverDir,
+        info: html`This file will be placed in the subdirectory
+          <code>${path.basename(serverDir)}</code> and will be accessible only from the server. It
+          will not be accessible from the student's web browser.`,
+      });
+    }
+    if (testsDir) {
+      specialDirs.push({
+        label: 'Test',
+        path: testsDir,
+        info: html`This file will be placed in the subdirectory
+          <code>${path.basename(testsDir)}</code> and will be accessible only from the server. It
+          will not be accessible from the student's web browser. This is appropriate for code to
+          support
+          <a href="https://prairielearn.readthedocs.io/en/latest/externalGrading/">
+            externally graded questions</a
+          >.`,
+      });
+    }
   }
 
   if (!contains(rootPath, workingPath)) {

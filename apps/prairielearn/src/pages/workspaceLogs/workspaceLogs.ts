@@ -10,7 +10,7 @@ import { makeS3ClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
 
 import {
-  WorkspaceLogRow,
+  type WorkspaceLogRow,
   WorkspaceLogRowSchema,
   WorkspaceLogs,
   WorkspaceVersionLogs,

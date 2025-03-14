@@ -4,6 +4,7 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import { type ServerJobLogger } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
@@ -14,25 +15,78 @@ import * as syncAssessments from './fromDisk/assessments.js';
 import * as syncCourseInfo from './fromDisk/courseInfo.js';
 import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
+import * as syncSharingSets from './fromDisk/sharing.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
+import {
+  selectSharedQuestions,
+  getInvalidRenames,
+  checkInvalidSharingSetRemovals,
+  checkInvalidPublicSharingRemovals,
+  checkInvalidSharingSetDeletions,
+  checkInvalidSharingSetAdditions,
+  checkInvalidDraftQuestionSharing,
+} from './sharing.js';
 
-export interface SyncResults {
+interface SyncResultSharingError {
+  status: 'sharing_error';
+  courseId: string;
+}
+
+interface SyncResultComplete {
+  status: 'complete';
   hadJsonErrors: boolean;
   hadJsonErrorsOrWarnings: boolean;
   courseId: string;
   courseData: courseDB.CourseData;
 }
 
-interface Logger {
-  info: (msg: string) => void;
-  verbose: (msg: string) => void;
+export type SyncResults = SyncResultSharingError | SyncResultComplete;
+
+export async function checkSharingConfigurationValid(
+  courseId: string,
+  courseData: courseDB.CourseData,
+  logger: ServerJobLogger,
+): Promise<boolean> {
+  if (!config.checkSharingOnSync) {
+    return true;
+  }
+
+  const sharedQuestions = await selectSharedQuestions(courseId);
+  const existInvalidRenames = getInvalidRenames(sharedQuestions, courseData, logger);
+  const existInvalidPublicSharingRemovals = checkInvalidPublicSharingRemovals(
+    sharedQuestions,
+    courseData,
+    logger,
+  );
+  const existInvalidSharingSetDeletions = await checkInvalidSharingSetDeletions(
+    courseId,
+    courseData,
+    logger,
+  );
+  const existInvalidSharingSetAdditions = checkInvalidSharingSetAdditions(courseData, logger);
+  const existInvalidSharingSetRemovals = await checkInvalidSharingSetRemovals(
+    courseId,
+    courseData,
+    logger,
+  );
+  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
+
+  const sharingConfigurationValid =
+    !existInvalidRenames &&
+    !existInvalidPublicSharingRemovals &&
+    !existInvalidSharingSetDeletions &&
+    !existInvalidSharingSetAdditions &&
+    !existInvalidSharingSetRemovals &&
+    !existInvalidDraftQuestionSharing;
+  return sharingConfigurationValid;
 }
 
 export async function syncDiskToSqlWithLock(
   courseId: string,
   courseDir: string,
-  logger: Logger,
+  logger: ServerJobLogger,
+  courseData?: courseDB.CourseData,
 ): Promise<SyncResults> {
   async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
@@ -47,9 +101,21 @@ export async function syncDiskToSqlWithLock(
 
   logger.info('Loading info.json files from course repository');
 
-  const courseData = await timed('Loaded course data from disk', () =>
-    courseDB.loadFullCourse(courseId, courseDir),
+  if (!courseData) {
+    courseData = await timed('Loaded course data from disk', () =>
+      courseDB.loadFullCourse(courseId, courseDir),
+    );
+  }
+
+  const sharingConfigurationValid = await timed('Validated sharing configuration', () =>
+    checkSharingConfigurationValid(courseId, courseData, logger),
   );
+  if (!sharingConfigurationValid) {
+    return {
+      status: 'sharing_error',
+      courseId,
+    };
+  }
 
   logger.info('Syncing info to database');
 
@@ -63,6 +129,9 @@ export async function syncDiskToSqlWithLock(
       syncQuestions.sync(courseId, courseData),
     );
 
+    await timed('Synced sharing sets', () =>
+      syncSharingSets.sync(courseId, courseData, questionIds),
+    );
     await timed('Synced tags', () => syncTags.sync(courseId, courseData, questionIds));
     await timed('Synced assessment sets', () => syncAssessmentSets.sync(courseId, courseData));
     await timed('Synced assessment modules', () =>
@@ -109,6 +178,7 @@ export async function syncDiskToSqlWithLock(
   );
 
   return {
+    status: 'complete',
     hadJsonErrors: courseDataHasErrors,
     hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
     courseId,
@@ -119,7 +189,7 @@ export async function syncDiskToSqlWithLock(
 export async function syncDiskToSql(
   course_id: string,
   courseDir: string,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): Promise<SyncResults> {
   const lockName = getLockNameForCoursePath(courseDir);
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
@@ -144,7 +214,7 @@ export async function syncDiskToSql(
 
 export async function syncOrCreateDiskToSql(
   courseDir: string,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): Promise<SyncResults> {
   const course = await selectOrInsertCourseByPath(courseDir);
   return await syncDiskToSql(course.id, courseDir, logger);
