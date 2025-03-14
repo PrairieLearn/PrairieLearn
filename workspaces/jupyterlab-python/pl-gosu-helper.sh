@@ -4,6 +4,11 @@
 # you are testing in the local PrairieLearn Docker container and it attempts
 # to launch workspaces as root.
 
+# This shouldn't be strictly necessary, but it may resolve future edge cases
+# with Jupyter's own entrypoint scripts if they arise in future base image
+# updates. It also quiets some warnings in Jupyter's logging.
+export NB_UID=1001 NB_GID=1001
+
 if [ "$(id -u)" -eq 0 ] ; then
     NORMAL_USER="$(id -un 1001)"
     set -eu

@@ -17,4 +17,4 @@ RUN /bin/bash /install.sh
 COPY jupyter_server_config.py /etc/jupyter/
 
 USER jovyan
-CMD ["pl-gosu-helper.sh", "start.sh", "jupyter", "lab"]
+ENTRYPOINT ["tini", "-g", "--", "pl-gosu-helper.sh", "start.sh", "jupyter", "lab"]
