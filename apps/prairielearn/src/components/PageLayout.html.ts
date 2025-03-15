@@ -124,7 +124,7 @@ export function PageLayout({
             </div>
             ${sideNavEnabled
               ? html`
-                  <div id="side-nav" class="app-side-nav">
+                  <div class="app-side-nav">
                     ${SideNav({
                       resLocals,
                       page: navContext.page,
