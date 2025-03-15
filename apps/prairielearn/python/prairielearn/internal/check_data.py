@@ -1,4 +1,4 @@
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, TypeGuard, get_args
 
 Phase = Literal["generate", "prepare", "render", "parse", "grade", "test", "file"]
 
@@ -13,6 +13,10 @@ all_phases: frozenset[Phase] = frozenset({
     "test",
     "file",
 })
+
+
+def is_phase(phase: str) -> TypeGuard[Phase]:
+    return phase in get_args(Phase)
 
 
 class PropInfo(TypedDict):
