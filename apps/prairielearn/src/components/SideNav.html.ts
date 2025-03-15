@@ -3,6 +3,7 @@ import { html, type HtmlValue } from '@prairielearn/html';
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
+import { SideNavToggleButton } from './SideNavToggleButton.html.js';
 
 interface SideNavTabInfo {
   /** For the side nav tab to be active, the current navPage must be in activePages. */
@@ -155,20 +156,18 @@ export function SideNav({
   subPage: NavSubPage;
 }) {
   return html`
-    <div class="side-nav">
-      ${CourseNav({
-        resLocals,
-        page,
-        subPage,
-      })}
-      ${resLocals.course_instance
-        ? CourseInstanceNav({
-            resLocals,
-            page,
-            subPage,
-          })
-        : ''}
-    </div>
+    ${CourseNav({
+      resLocals,
+      page,
+      subPage,
+    })}
+    ${resLocals.course_instance
+      ? CourseInstanceNav({
+          resLocals,
+          page,
+          subPage,
+        })
+      : ''}
   `;
 }
 
@@ -184,9 +183,29 @@ function CourseNav({
   const courseSideNavPageTabs = sideNavPagesTabs.course_admin;
 
   return html`
-    <div class="side-nav-section-header">Course</div>
-    <div class="side-nav-group mb-3">
-      <div class="dropdown">
+    <div class="side-nav-header">
+      <p class="header-text">Course</p>
+      <button
+        id="side-nav-toggler"
+        class="navbar-toggler"
+        type="button"
+        aria-expanded="false"
+        aria-label="Toggle sidebar"
+        ${resLocals.course.id ? `data-course-id=${resLocals.course.id}` : ''}
+        ${resLocals.course_instance?.id
+          ? `data-course-instance-id=${resLocals.course_instance.id}`
+          : ''}
+      >
+        ${SideNavToggleButton({
+          forSideNavExpanded: true,
+        })}
+        ${SideNavToggleButton({
+          forSideNavExpanded: false,
+        })}
+      </button>
+    </div>
+    <div class="side-nav-group">
+      <div id="course-dropdown" class="dropdown">
         <button
           type="button"
           class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
@@ -214,15 +233,15 @@ function CourseNav({
             </div>
           </div>
         </div>
-        ${courseSideNavPageTabs.map((tabInfo) =>
-          SideNavLink({
-            resLocals,
-            navPage: page,
-            navSubPage: subPage,
-            tabInfo,
-          }),
-        )}
       </div>
+      ${courseSideNavPageTabs.map((tabInfo) =>
+        SideNavLink({
+          resLocals,
+          navPage: page,
+          navSubPage: subPage,
+          tabInfo,
+        }),
+      )}
     </div>
   `;
 }
@@ -239,10 +258,12 @@ function CourseInstanceNav({
   const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
 
   return html`
-    <div class="side-nav-section-header">Course instance</div>
+    <div class="side-nav-header">
+      <div class="header-text">Course instance</div>
+    </div>
     <div class="side-nav-group mb-3">
       <div>
-        <div class="dropdown">
+        <div id="course-instance-dropdown" class="dropdown">
           <button
             type="button"
             class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
@@ -317,14 +338,20 @@ function SideNavLink({
     isActive = activeSubPages.includes(navSubPage);
   }
 
+  const showSideNav = resLocals.side_nav_expanded;
+
   return html`
     <a
       href="${urlPrefix}${urlSuffix}"
       class="side-nav-link ${isActive ? 'side-nav-link-active' : ''}"
       aria-current="${isActive ? 'page' : ''}"
+      data-toggle="${!showSideNav ? 'tooltip' : ''}"
+      data-placement="right"
+      title="${tabLabel}"
     >
-      <i class="${iconClasses}"></i>
-      ${tabLabel} ${htmlSuffix?.(resLocals) || ''}
+      <i class="icon flex-shrink-0 ${iconClasses}"></i>
+      <span class="side-nav-link-text">${tabLabel}</span>
+      <div class="suffix">${htmlSuffix?.(resLocals) || ''}</div>
     </a>
   `;
 }

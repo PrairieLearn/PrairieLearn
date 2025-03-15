@@ -1422,6 +1422,12 @@ export async function initExpress(): Promise<Express> {
     ],
   );
 
+  // Handles updating side nav expanded state from a course instance page.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/side_nav_expanded',
+    (await import('./pages/sideNavExpanded/sideNavExpanded.js')).default,
+  );
+
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1722,6 +1728,12 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/grading_job',
     (await import('./pages/instructorGradingJob/instructorGradingJob.js')).default,
+  );
+
+  // Handles updating side nav expanded state from a course page.
+  app.use(
+    '/pl/course/:course_id(\\d+)/side_nav_expanded',
+    (await import('./pages/sideNavExpanded/sideNavExpanded.js')).default,
   );
 
   // This route is used to initiate a copy of a question with publicly shared source
