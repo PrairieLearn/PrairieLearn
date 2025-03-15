@@ -126,6 +126,7 @@ const courseInstanceQuestionHtmlEditUrl =
 const courseInstanceQuestionPythonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionPythonPath)}`;
 const badPathUrl = assessmentUrl + '/file_edit/' + encodePath('../PrairieLearn/config.json');
+const gitPathUrl = courseAdminUrl + '/file_edit/' + encodePath('.git/HEAD');
 const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodePath('infoCourse.json');
 
 const findEditUrlData = [
@@ -299,6 +300,10 @@ describe('test file editor', function () {
 
     describe('disallow edits outside course directory', function () {
       badGet(badPathUrl, 500, false);
+    });
+
+    describe('disallow edits in .git directory', function () {
+      badGet(gitPathUrl, 500, false);
     });
 
     describe('verify file handlers', function () {

@@ -48,7 +48,11 @@ function getContextPaths(
     const rootPath = coursePath;
     return {
       rootPath,
-      invalidRootPaths: [path.join(rootPath, 'questions'), path.join(rootPath, 'courseInstances')],
+      invalidRootPaths: [
+        path.join(rootPath, '.git'),
+        path.join(rootPath, 'questions'),
+        path.join(rootPath, 'courseInstances'),
+      ],
       cannotMove: [path.join(rootPath, 'infoCourse.json')],
       clientDir: path.join(rootPath, 'clientFilesCourse'),
       serverDir: path.join(rootPath, 'serverFilesCourse'),
@@ -174,15 +178,28 @@ export function getPaths(
   const found = invalidRootPaths.find((invalidRootPath) => contains(invalidRootPath, workingPath));
   if (found) {
     throw new error.AugmentedError('Invalid working directory', {
-      info: html`
-        <p>The working directory</p>
-        <div class="container">
-          <pre class="bg-dark text-white rounded p-2">${workingPath}</pre>
-        </div>
-        <p>must <em>not</em> be inside the directory</p>
-        <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
-        <p>when looking at <code>${locals.navPage}</code> files.</p>
-      `,
+      info:
+        found === workingPath
+          ? html`
+              <p>The working directory</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${workingPath}</pre>
+              </div>
+              <p>
+                cannot be accessed directly when looking at <code>${locals.navPage}</code> files.
+              </p>
+            `
+          : html`
+              <p>The working directory</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${workingPath}</pre>
+              </div>
+              <p>must <em>not</em> be inside the directory</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${found}</pre>
+              </div>
+              <p>when looking at <code>${locals.navPage}</code> files.</p>
+            `,
     });
   }
 

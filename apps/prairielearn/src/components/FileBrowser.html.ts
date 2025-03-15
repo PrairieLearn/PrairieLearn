@@ -98,10 +98,6 @@ interface FileRenameInfo {
   dir: string;
 }
 
-function isHidden(item: string) {
-  return item[0] === '.';
-}
-
 export async function browseDirectory({
   paths,
 }: {
@@ -109,10 +105,7 @@ export async function browseDirectory({
 }): Promise<DirectoryListings> {
   const filenames = await fs.readdir(paths.workingPath);
   const all_files = await async.mapLimit(
-    filenames
-      .sort()
-      .map((name, index) => ({ name, index }))
-      .filter((f) => !isHidden(f.name)),
+    filenames.sort().map((name, index) => ({ name, index })),
     3,
     async (file: { name: string; index: number }) => {
       const filepath = path.join(paths.workingPath, file.name);
