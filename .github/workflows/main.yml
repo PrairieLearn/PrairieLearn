@@ -448,6 +448,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-turbo-
 
+      - name: Build all code
+        run: make build
       - name: Set up Prettier and ESLint cache
         uses: actions/cache@v4
         with:
@@ -458,10 +460,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-prettier-eslint-
 
-      - name: Build all code
-        run: make build
       - name: Check cache
         run: |
+          sha256sum node_modules/.cache/prettier/.prettier-cache
           yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
 
       - name: Run the JavaScript linter
@@ -505,7 +506,9 @@ jobs:
       # dependabot PRs, but we still want all other tests above to run
       # in those cases.
       - name: Check for duplicate Node dependencies
-        run: yarn dedupe --check
+        run: |
+          yarn dedupe --check
+          sha256sum node_modules/.cache/prettier/.prettier-cache
 
   report-image-sizes:
     runs-on: ubuntu-latest
