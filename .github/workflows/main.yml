@@ -458,6 +458,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-prettier-eslint-
 
+      - name: Check cache
+        run: |
+          pwd
+          ls -la node_modules/.cache/prettier .eslintcache
+          yarn eslint --ext js --report-unused-disable-directives --cache --cache-strategy content "**/*.{js,ts}" --debug
+          yarn prettier --check --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjsmts,cts,md,sql,json,yml,html,css,scss}"
       - name: Build all code
         run: make build
       - name: Run the JavaScript linter
