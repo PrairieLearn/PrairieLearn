@@ -447,6 +447,8 @@ jobs:
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-turbo-
+      - name: Build all code
+        run: make build
 
       - name: Set up Prettier and ESLint cache
         uses: actions/cache@v4
@@ -457,15 +459,9 @@ jobs:
           key: ${{ runner.os }}-prettier-eslint-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-prettier-eslint-
-
-      - name: Build all code
-        run: make build
-      - name: Check cache
-        run: |
-          ls -la node_modules/.cache/prettier
-          yarn prettier --check --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjsmts,cts,md,sql,json,yml,html,css,scss}"
       - name: Run the JavaScript linter
         run: make lint-js
+
       - name: Run the links linter
         run: make lint-links
       - name: Run the d2 diagram linter
