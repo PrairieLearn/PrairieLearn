@@ -409,8 +409,8 @@ function FilterHelpModal() {
               <code>user:<em>UID</em></code>
             </td>
             <td>
-              Shows all issues that were reported by a user with UID <code>UID</code>. For example,
-              <code>user:student@example.com</code> shows all issues that were reported by
+              Shows all issues that were reported by a user with a UID like <code>UID</code>. For
+              example, <code>user:student@example.com</code> shows all issues that were reported by
               <code>student@example.com</code>.
             </td>
           </tr>
