@@ -9,6 +9,7 @@ import { Navbar } from './Navbar.html.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
 import { SideNav } from './SideNav.html.js';
+import clsx from 'clsx';
 
 export function PageLayout({
   resLocals,
@@ -107,11 +108,13 @@ export function PageLayout({
         >
           <div
             id="app-container"
-            class="
-              app-container 
-              ${sideNavEnabled ? 'side-nav-enabled' : ''} 
-              ${sideNavExpanded ? '' : 'collapsed'}
-            "
+            class="${
+              clsx(
+                'app-container',
+                sideNavEnabled && 'side-nav-enabled',
+                !sideNavExpanded && 'collapsed',
+              )
+            }"
           >
             <div class="app-top-nav">
               ${Navbar({

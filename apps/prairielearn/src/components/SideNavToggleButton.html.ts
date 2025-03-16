@@ -1,4 +1,5 @@
 import { html } from '@prairielearn/html';
+import clsx from 'clsx';
 
 export function SideNavToggleButton({
   forSideNavExpanded,
@@ -13,7 +14,12 @@ export function SideNavToggleButton({
 
   return html`
     <div
-      class="side-nav-toggler-icon ${forSideNavExpanded ? 'expanded' : 'collapsed'}"
+      class="${
+        clsx(
+          'side-nav-toggler-icon',
+          forSideNavExpanded ? 'expanded' : 'collapsed',
+        )
+      }"
       data-toggle="tooltip"
       data-placement="right"
       title="${forSideNavExpanded ? 'Collapse side nav' : 'Expand side nav'}"

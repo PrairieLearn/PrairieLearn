@@ -34,12 +34,8 @@ onDocumentReady(async () => {
     }
 
     if (courseInstanceId || courseId) {
-      const url = courseInstanceId
-        ? `/pl/course_instance/${courseInstanceId}/instructor/side_nav_expanded`
-        : `/pl/course/${courseId}/side_nav_expanded`;
-
       // Update the side nav expanded state
-      await fetch(url, {
+      await fetch('/pl/side_nav/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
