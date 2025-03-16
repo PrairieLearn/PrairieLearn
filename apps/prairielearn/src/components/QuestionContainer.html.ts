@@ -26,7 +26,7 @@ const MAX_TOP_RECENTS = 3;
 export function QuestionContainer({
   resLocals,
   questionContext,
-  showFooter,
+  showFooter = true,
   manualGradingPreviewUrl,
 }: {
   resLocals: Record<string, any>;
@@ -319,17 +319,11 @@ interface QuestionFooterResLocals {
 
 function QuestionFooter({
   resLocals,
-  showFooter,
   questionContext,
 }: {
   resLocals: QuestionFooterResLocals;
-  showFooter?: boolean;
   questionContext: QuestionContext;
 }) {
-  if ((questionContext === 'manual_grading' && showFooter !== true) || showFooter === false) {
-    return '';
-  }
-
   if (resLocals.question.type === 'Freeform') {
     return html`
       <div class="card-footer" id="question-panel-footer">
@@ -645,7 +639,7 @@ function QuestionPanel({
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
-  showFooter?: boolean;
+  showFooter: boolean;
   manualGradingPreviewUrl?: string;
 }) {
   const { question, questionHtml, question_copy_targets, course, instance_question_info } =
@@ -709,12 +703,13 @@ function QuestionPanel({
         </div>
       </div>
       <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
-      ${QuestionFooter({
-        // TODO: propagate more precise types upwards.
-        resLocals: resLocals as any,
-        questionContext,
-        showFooter,
-      })}
+      ${showFooter
+        ? QuestionFooter({
+            // TODO: propagate more precise types upwards.
+            resLocals: resLocals as any,
+            questionContext,
+          })
+        : ''}
     </div>
   `;
 }
