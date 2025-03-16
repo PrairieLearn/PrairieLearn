@@ -17,7 +17,6 @@
     "refresh-workspace-hosts": "yarn workspace @prairielearn/prairielearn start --refresh-workspace-hosts-and-exit"
   },
   "dependencies": {
-    "clsx": "^2.1.1",
     "node-gyp": "^11.1.0"
   },
   "devDependencies": {
