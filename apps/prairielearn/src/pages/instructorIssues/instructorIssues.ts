@@ -71,10 +71,10 @@ function parseRawQuery(str: string) {
       case 'user':
         if (!option.negated) {
           filters.filter_users = filters.filter_users || [];
-          filters.filter_users.push(option.value);
+          filters.filter_users.push(formatForLikeClause(option.value));
         } else {
           filters.filter_not_users = filters.filter_not_users || [];
-          filters.filter_not_users.push(option.value);
+          filters.filter_not_users.push(formatForLikeClause(option.value));
         }
         break;
     }
