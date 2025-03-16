@@ -462,9 +462,7 @@ jobs:
         run: make build
       - name: Check cache
         run: |
-          pwd
-          ls -la node_modules/.cache/prettier .eslintcache
-          yarn eslint --ext js --report-unused-disable-directives --cache --cache-strategy content "**/*.{js,ts}" --debug
+          ls -la node_modules/.cache/prettier
           yarn prettier --check --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjsmts,cts,md,sql,json,yml,html,css,scss}"
       - name: Run the JavaScript linter
         run: make lint-js
