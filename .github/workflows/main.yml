@@ -463,9 +463,7 @@ jobs:
       - name: Check cache
         run: |
           sha256sum node_modules/.cache/prettier/.prettier-cache
-          cat node_modules/.cache/prettier/.prettier-cache
-          yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
-          cat node_modules/.cache/prettier/.prettier-cache
+          yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}" --check --cache --cache-strategy content
           sha256sum node_modules/.cache/prettier/.prettier-cache
       - name: Run the JavaScript linter
         run: make lint-js
