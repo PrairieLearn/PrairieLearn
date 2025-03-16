@@ -19,12 +19,9 @@ export function SideNavToggleButton({
       title="${forSideNavExpanded ? 'Collapse side nav' : 'Expand side nav'}"
       aria-hidden="true"
     >
-      <i 
+      <i
         class="
-          ${clsx(
-            'bi',
-            forSideNavExpanded ? 'bi-arrow-bar-left' : 'bi-arrow-bar-right',
-          )}
+          ${clsx('bi', forSideNavExpanded ? 'bi-arrow-bar-left' : 'bi-arrow-bar-right')}
         "
       >
       </i>
