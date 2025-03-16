@@ -156,12 +156,12 @@ export function PageLayout({
                   id="content"
                   class="
                     ${clsx(
-                      options.fullWidth ? 'container-fluid' : 'container',
-                      marginBottom && 'mb-4',
-                      options.fullHeight && 'flex-grow-1',
-                      'pt-3',
-                      sideNavEnabled && 'px-3',
-                    )}
+                    options.fullWidth ? 'container-fluid' : 'container',
+                    marginBottom && 'mb-4',
+                    options.fullHeight && 'flex-grow-1',
+                    'pt-3',
+                    sideNavEnabled && 'px-3',
+                  )}
                   "
                 >
                   ${content}
