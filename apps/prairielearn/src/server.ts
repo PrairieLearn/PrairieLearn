@@ -610,10 +610,7 @@ export async function initExpress(): Promise<Express> {
   );
 
   // Handles updating side nav settings when enhanced navigation is enabled.
-  app.use(
-    '/pl/side_nav/settings',
-    (await import('./pages/sideNav/sideNavSettings.js')).default,
-  );
+  app.use('/pl/side_nav/settings', (await import('./pages/sideNav/sideNavSettings.js')).default);
 
   app.use('/pl/workspace/:workspace_id(\\d+)', [
     (req: Request, res: Response, next: NextFunction) => {
