@@ -459,7 +459,7 @@ jobs:
             ${{ runner.os }}-prettier-eslint-
       - name: Check cache
         run: |
-          ls node_modules/.cache/prettier
+          ls -la node_modules/.cache/prettier || true
           yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
 
       - name: Build all code
