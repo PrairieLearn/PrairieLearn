@@ -456,7 +456,7 @@ jobs:
           path: |
             node_modules/.cache/prettier
             .eslintcache
-          key: ${{ runner.os }}-prettier-eslint-${{ github.sha }}
+          key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}
           restore-keys: |
             ${{ runner.os }}-prettier-eslint-
       - name: Run the JavaScript linter
