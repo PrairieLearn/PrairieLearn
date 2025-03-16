@@ -133,11 +133,10 @@ body:has(div.app-container) {
   justify-content: space-between;
   align-items: center;
   text-transform: uppercase;
-  font-size: 0.8rem;
   font-weight: bold;
   border-bottom: 1px solid var(--bs-body-color);
-  margin-bottom: 0.5rem;
   padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
   white-space: nowrap;
 }
 
@@ -147,7 +146,12 @@ body:has(div.app-container) {
 }
 
 .app-container.side-nav-enabled .side-nav-header .header-text {
+  font-size: 0.8rem;
   margin: 0;
+}
+
+.app-container.side-nav-enabled.collapsed .side-nav-header {
+  padding-bottom: 0.75rem;
 }
 
 /* Hide the header text when the side nav is collapsed */
