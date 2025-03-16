@@ -68,7 +68,7 @@ lint: lint-js lint-python lint-html lint-links
 # prettier: delete the cache when updating plugins, eslint: no need to delete the cache
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives --cache --cache-strategy content "**/*.{js,ts}"
-	@yarn prettier --check --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
+	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}" --check --cache --cache-strategy content
 lint-python:
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
