@@ -88,7 +88,7 @@ lint-actions:
 
 format: format-js format-python
 format-js:
-	@yarn eslint --ext js --fix  --cache --cache-strategy content "**/*.{js,ts}"
+	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,ts}"
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
 format-python:
 	@python3 -m ruff check --fix ./

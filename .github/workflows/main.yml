@@ -461,7 +461,7 @@ jobs:
             ${{ runner.os }}-prettier-eslint-
       - name: Check cache
         run: |
-          yarn prettier --check --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjsmts,cts,md,sql,json,yml,html,css,scss}"
+          yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
       - name: Run the JavaScript linter
         run: make lint-js
 
