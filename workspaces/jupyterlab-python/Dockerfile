@@ -17,4 +17,8 @@ RUN /bin/bash /install.sh
 COPY jupyter_server_config.py /etc/jupyter/
 
 USER jovyan
+# This is replicating the entrypoint that Jupyter had specified in their base
+# image, but we inject our pl-gosu-helper.sh before the Jupyter start script.
+# Jupyter chose to use tini for benefits like "reaping zombies and performing
+# signal forwarding" (quoting from the tini GitHub page).
 ENTRYPOINT ["tini", "-g", "--", "pl-gosu-helper.sh", "start.sh", "jupyter", "lab"]
