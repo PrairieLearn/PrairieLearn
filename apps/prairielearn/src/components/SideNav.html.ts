@@ -187,7 +187,6 @@ function CourseNav({
       <p class="header-text">Course</p>
       <button
         id="side-nav-toggler"
-        class="navbar-toggler"
         type="button"
         aria-expanded="false"
         aria-label="Toggle sidebar"
