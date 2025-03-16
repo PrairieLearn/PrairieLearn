@@ -10,11 +10,13 @@ export function InstructorQuestionPreview({
   normalPreviewUrl,
   manualGradingPreviewEnabled,
   manualGradingPreviewUrl,
+  renderSubmissionSearchParams,
   resLocals,
 }: {
   normalPreviewUrl: string;
   manualGradingPreviewEnabled: boolean;
   manualGradingPreviewUrl: string;
+  renderSubmissionSearchParams: URLSearchParams;
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
@@ -75,6 +77,7 @@ export function InstructorQuestionPreview({
             manualGradingPreviewUrl: manualGradingPreviewEnabled
               ? undefined
               : manualGradingPreviewUrl,
+            renderSubmissionSearchParams,
           })}
         </div>
 
