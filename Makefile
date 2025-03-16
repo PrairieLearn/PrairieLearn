@@ -106,7 +106,7 @@ typecheck-python:
 
 changeset:
 	@yarn changeset
-	@yarn prettier --write ".changeset/**/*.md"
+	@yarn prettier --write --cache --cache-strategy content ".changeset/**/*.md"
 
 lint-docs: lint-d2 lint-links lint-markdown
 
