@@ -670,25 +670,22 @@ function NavbarButtons({
   allNavbarButtons.push({ text: 'Home', href: '/' });
 
   if (resLocals.is_administrator) {
-    allNavbarButtons.push({ text: 'Global Admin', href: '/pl/administrator/admins' });
-  }
-
-  if (resLocals.is_institution_administrator && resLocals.institution) {
     allNavbarButtons.push(
-      { text: 'Institutions', href: '/pl/administrator/institutions' },
+      { text: 'Global Admin', href: '/pl/administrator/admins' },
+      { text: 'Institutions', href: '/pl/administrator/institutions' }, 
       {
         text: resLocals.institution.short_name,
         href: `/pl/administrator/institution/${resLocals.institution.id}`,
       },
+      {
+        text: 'Courses',
+        href: `/pl/administrator/institution/${resLocals.institution.id}/courses`,
+      }
     );
   }
 
   if (resLocals.course) {
     allNavbarButtons.push(
-      {
-        text: 'Courses',
-        href: `/pl/administrator/institution/${resLocals.institution.id}/courses`,
-      },
       {
         text: resLocals.course.short_name,
         href: `/pl/course/${resLocals.course.id}/course_admin/instances`,
