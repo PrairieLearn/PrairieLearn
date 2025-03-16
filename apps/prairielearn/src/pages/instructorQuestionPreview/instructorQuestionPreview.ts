@@ -89,6 +89,7 @@ router.get(
     const manualGradingPreviewSearchParams = new URLSearchParams(searchParams);
     manualGradingPreviewSearchParams.set('variant_id', res.locals.variant.id.toString());
     manualGradingPreviewSearchParams.set('manual_grading_preview', 'true');
+    manualGradingPreviewSearchParams.delete('variant_seed');
     const manualGradingPreviewUrl = url.format({
       pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
       search: manualGradingPreviewSearchParams.toString(),
@@ -96,8 +97,9 @@ router.get(
 
     // Construct a URL for the normal preview. This will be used to exit the manual grading preview.
     const normalPreviewSearchParams = new URLSearchParams(searchParams);
-    normalPreviewSearchParams.delete('manual_grading_preview');
     normalPreviewSearchParams.set('variant_id', res.locals.variant.id.toString());
+    normalPreviewSearchParams.delete('manual_grading_preview');
+    normalPreviewSearchParams.delete('variant_seed');
     const normalPreviewUrl = url.format({
       pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
       search: normalPreviewSearchParams.toString(),
