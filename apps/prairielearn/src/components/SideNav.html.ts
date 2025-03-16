@@ -337,14 +337,14 @@ function SideNavLink({
     isActive = activeSubPages.includes(navSubPage);
   }
 
-  const showSideNav = resLocals.side_nav_expanded;
+  const sideNavExpanded = resLocals.side_nav_expanded;
 
   return html`
     <a
       href="${urlPrefix}${urlSuffix}"
       class="side-nav-link ${isActive ? 'side-nav-link-active' : ''}"
       aria-current="${isActive ? 'page' : ''}"
-      data-toggle="${!showSideNav ? 'tooltip' : ''}"
+      data-bs-toggle="${!sideNavExpanded ? 'tooltip' : ''}"
       data-placement="right"
       title="${tabLabel}"
     >

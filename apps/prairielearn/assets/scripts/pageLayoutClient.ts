@@ -21,7 +21,7 @@ onDocumentReady(async () => {
 
       // Add tab name tooltips
       sideNavButtons.forEach((button) => {
-        button.setAttribute('data-toggle', 'tooltip');
+        button.setAttribute('data-bs-toggle', 'tooltip');
       });
     } else {
       // Expand the side nav
@@ -29,7 +29,7 @@ onDocumentReady(async () => {
 
       // Remove tab name tooltips
       sideNavButtons.forEach((button) => {
-        button.removeAttribute('data-toggle');
+        button.removeAttribute('data-bs-toggle');
       });
     }
 
