@@ -223,28 +223,30 @@ export function SubmissionPanel({
               instance_question,
             })}
           </div>
-          <button
-            type="button"
-            class="btn btn-outline-dark btn-sm ms-2 me-2"
-            data-submission-id="${submission.id}"
-            data-bs-toggle="modal"
-            data-bs-target="#submissionInfoModal-${submission.id}"
-            aria-label="Submission info"
-          >
-            <i class="fa fa-info-circle fa-fw"></i>
-          </button>
-          <button
-            type="button"
-            class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap ${!expanded
-              ? 'collapsed'
-              : ''}"
-            data-bs-toggle="collapse"
-            data-bs-target="#submission-${submission.id}-body"
-            aria-expanded="${expanded ? 'true' : 'false'}"
-            aria-controls="submission-${submission.id}-body"
-          >
-            <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
-          </button>
+          <div class="btn-group">
+            <button
+              type="button"
+              class="btn btn-outline-dark btn-sm ms-2"
+              data-submission-id="${submission.id}"
+              data-bs-toggle="modal"
+              data-bs-target="#submissionInfoModal-${submission.id}"
+              aria-label="Submission info"
+            >
+              <i class="fa fa-info-circle fa-fw"></i>
+            </button>
+            <button
+              type="button"
+              class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap ${!expanded
+                ? 'collapsed'
+                : ''}"
+              data-bs-toggle="collapse"
+              data-bs-target="#submission-${submission.id}-body"
+              aria-expanded="${expanded ? 'true' : 'false'}"
+              aria-controls="submission-${submission.id}-body"
+            >
+              <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
+            </button>
+          </div>
         </div>
 
         <div
