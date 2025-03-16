@@ -5,6 +5,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { html } from '@prairielearn/html';
 
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
@@ -67,7 +68,8 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
-    if (manualGradingPreviewEnabled) {
+    const aiGradingPreviewEnabled = req.query.ai_grading_preview === 'true';
+    if (manualGradingPreviewEnabled || aiGradingPreviewEnabled) {
       // Setting this flag will set the `manualGrading: true` flag in the data
       // dictionary passed to element render functions. It will also disable
       // editing for all elements by setting `editable: false`.
@@ -81,6 +83,34 @@ router.get(
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
 
+    // TODO: need to apply the same transformations as `ai-grading.ts`, specifically
+    // the stripping of `<script>` tags.
+    //
+    // TODO: need to apply the same rendering rules as `ai-grading.ts`, specifically
+    // the fact that `manualGradingInterface` is true for the question panel but
+    // not for the submission panel.
+    //
+    // TODO: need to ensure that the answer panel is not shown if it's not provided
+    // to the AI grader (I believe it is not).
+    //
+    // TODO: need to ensure that async-rendered submissions follow the same rendering
+    // rules.
+    //
+    // TODO: need to ensure this respects the `ai-grading` feature flag.
+    if (aiGradingPreviewEnabled) {
+      res.locals.questionHtml = html`<pre
+        class="mb-0"
+      ><code>${res.locals.questionHtml.trim()}</code></pre>`;
+      res.locals.answerHtml = html`<pre
+        class="mb-0"
+      ><code>${res.locals.answerHtml.trim()}</code></pre>`;
+      res.locals.submissionHtmls = res.locals.submissionHtmls.map(
+        (submissionHtml) => html`<pre class="mb-0"><code>${submissionHtml.trim()}</code></pre>`,
+      );
+      console.log(res.locals.questionHtml.toString());
+      console.log(res.locals.answerHtml.toString());
+    }
+
     const searchParams = getSearchParams(req);
 
     // Construct a URL to preview the question as it would appear in the manual
@@ -93,6 +123,16 @@ router.get(
     const manualGradingPreviewUrl = url.format({
       pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
       search: manualGradingPreviewSearchParams.toString(),
+    });
+
+    // As above, the AI grading preview needs to include the `variant_id`.
+    const aiGradingPreviewSearchParams = new URLSearchParams(searchParams);
+    aiGradingPreviewSearchParams.set('variant_id', res.locals.variant.id.toString());
+    aiGradingPreviewSearchParams.set('ai_grading_preview', 'true');
+    aiGradingPreviewSearchParams.delete('variant_seed');
+    const aiGradingPreviewUrl = url.format({
+      pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
+      search: aiGradingPreviewSearchParams.toString(),
     });
 
     // Construct a URL for the normal preview. This will be used to exit the manual grading preview.
@@ -111,6 +151,8 @@ router.get(
         normalPreviewUrl,
         manualGradingPreviewEnabled,
         manualGradingPreviewUrl,
+        aiGradingPreviewEnabled,
+        aiGradingPreviewUrl,
         resLocals: res.locals,
       }),
     );

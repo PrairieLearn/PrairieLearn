@@ -28,11 +28,13 @@ export function QuestionContainer({
   questionContext,
   showFooter = true,
   manualGradingPreviewUrl,
+  aiGradingPreviewUrl,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
   showFooter?: boolean;
   manualGradingPreviewUrl?: string;
+  aiGradingPreviewUrl?: string;
 }) {
   const {
     question,
@@ -63,7 +65,13 @@ export function QuestionContainer({
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
-              ${QuestionPanel({ resLocals, questionContext, showFooter, manualGradingPreviewUrl })}
+              ${QuestionPanel({
+                resLocals,
+                questionContext,
+                showFooter,
+                manualGradingPreviewUrl,
+                aiGradingPreviewUrl,
+              })}
             </form>
           `
         : QuestionPanel({ resLocals, showFooter, questionContext })}
@@ -636,11 +644,13 @@ function QuestionPanel({
   questionContext,
   showFooter,
   manualGradingPreviewUrl,
+  aiGradingPreviewUrl,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
   showFooter: boolean;
   manualGradingPreviewUrl?: string;
+  aiGradingPreviewUrl?: string;
 }) {
   const { question, questionHtml, question_copy_targets, course, instance_question_info } =
     resLocals;
@@ -678,7 +688,7 @@ function QuestionPanel({
                   </button>
                 `
               : ''}
-            ${manualGradingPreviewUrl
+            ${manualGradingPreviewUrl || aiGradingPreviewUrl
               ? html`
                   <div class="btn-group">
                     <button
@@ -690,11 +700,24 @@ function QuestionPanel({
                       View&hellip;
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                      <li>
-                        <a class="dropdown-item" href="${manualGradingPreviewUrl}">
-                          Manual grading view
-                        </a>
-                      </li>
+                      ${manualGradingPreviewUrl
+                        ? html`
+                            <li>
+                              <a class="dropdown-item" href="${manualGradingPreviewUrl}">
+                                Manual grading view
+                              </a>
+                            </li>
+                          `
+                        : ''}
+                      ${aiGradingPreviewUrl
+                        ? html`
+                            <li>
+                              <a class="dropdown-item" href="${aiGradingPreviewUrl}">
+                                AI grading view
+                              </a>
+                            </li>
+                          `
+                        : ''}
                     </ul>
                   </div>
                 `

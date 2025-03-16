@@ -10,11 +10,15 @@ export function InstructorQuestionPreview({
   normalPreviewUrl,
   manualGradingPreviewEnabled,
   manualGradingPreviewUrl,
+  aiGradingPreviewEnabled,
+  aiGradingPreviewUrl,
   resLocals,
 }: {
   normalPreviewUrl: string;
   manualGradingPreviewEnabled: boolean;
   manualGradingPreviewUrl: string;
+  aiGradingPreviewEnabled: boolean;
+  aiGradingPreviewUrl: string;
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
@@ -66,6 +70,15 @@ export function InstructorQuestionPreview({
             </div>
           `
         : ''}
+      ${aiGradingPreviewEnabled
+        ? html`
+            <div class="alert alert-primary">
+              You are viewing this question as it will appear to the AI grader.
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
+              you are done.
+            </div>
+          `
+        : ''}
       <div class="row">
         <div class="col-lg-9 col-sm-12">
           ${QuestionContainer({
@@ -75,6 +88,7 @@ export function InstructorQuestionPreview({
             manualGradingPreviewUrl: manualGradingPreviewEnabled
               ? undefined
               : manualGradingPreviewUrl,
+            aiGradingPreviewUrl: aiGradingPreviewEnabled ? undefined : aiGradingPreviewUrl,
           })}
         </div>
 
