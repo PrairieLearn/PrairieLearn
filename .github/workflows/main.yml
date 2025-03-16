@@ -457,12 +457,12 @@ jobs:
           key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}
           restore-keys: |
             ${{ runner.os }}-prettier-eslint-
-      - name: Check cache
-        run: |
-          yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
 
       - name: Build all code
         run: make build
+      - name: Check cache
+        run: |
+          yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
 
       - name: Run the JavaScript linter
         run: make lint-js
