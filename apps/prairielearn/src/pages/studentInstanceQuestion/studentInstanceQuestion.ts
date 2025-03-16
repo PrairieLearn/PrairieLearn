@@ -265,7 +265,9 @@ router.get(
 
     const isAssessmentAvailable =
       res.locals.assessment_instance.open && res.locals.authz_result.active;
-
+    // console.log('Assessment Details:');
+    // console.log(res.locals);
+    // console.log(req);
     if (variant_id === null && !isAssessmentAvailable) {
       // We can't generate a new variant in this case, so we
       // fetch and display the most recent non-broken variant.
@@ -276,6 +278,7 @@ router.get(
         { instance_question_id: res.locals.instance_question.id },
         IdSchema,
       );
+
       if (last_variant_id == null) {
         res.status(403).send(
           StudentInstanceQuestion({
