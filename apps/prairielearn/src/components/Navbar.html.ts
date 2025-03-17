@@ -670,9 +670,7 @@ function NavbarButtons({
   allNavbarButtons.push({ text: 'Home', href: '/' });
 
   if (resLocals.is_administrator) {
-    allNavbarButtons.push(
-      { text: 'Global Admin', href: '/pl/administrator/admins' },
-    );
+    allNavbarButtons.push({ text: 'Global Admin', href: '/pl/administrator/admins' });
     if (resLocals.institution) {
       allNavbarButtons.push(
         { text: 'Institutions', href: '/pl/administrator/institutions' },
@@ -680,7 +678,7 @@ function NavbarButtons({
           text: resLocals.institution.short_name,
           href: `/pl/administrator/institution/${resLocals.institution.id}`,
         },
-      )
+      );
       if (resLocals.course) {
         allNavbarButtons.push({
           text: 'Courses',
