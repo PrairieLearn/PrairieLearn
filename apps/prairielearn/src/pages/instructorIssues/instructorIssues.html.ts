@@ -396,21 +396,22 @@ function FilterHelpModal() {
               <code>qid:<em>QID</em></code>
             </td>
             <td>
-              Shows all issues with a question ID like <code>QID</code>.
-              <br />
-              <strong>Example:</strong> <code>qid:graph</code> shows all issues associated with
-              questions such as <code>graphConnectivity</code> and <code>speedTimeGraph</code>.
+              Shows all issues with a question ID like <code>QID</code>; supports <code>*</code> as
+              a wildcard. For example, <code>qid:graphConnectivity</code> shows all issues
+              associated with the question <code>graphConnectivity</code>, and
+              <code>qid:graph*</code> shows all issues associated with any question that starts with
+              <code>graph</code>, such as <code>graphConnectivity</code> and
+              <code>graphTheory</code>.
             </td>
           </tr>
           <tr>
             <td>
-              <code>user:<em>USER</em></code>
+              <code>user:<em>UID</em></code>
             </td>
             <td>
-              Shows all issues that were reported by a user ID like <code>USER</code>.
-              <br />
-              <strong>Example:</strong> <code>user:student@example.com</code> shows all issues that
-              were reported by <code>student@example.com</code>.
+              Shows all issues that were reported by a user with a UID like <code>UID</code>. For
+              example, <code>user:student@example.com</code> shows all issues that were reported by
+              <code>student@example.com</code>.
             </td>
           </tr>
         </tbody>
