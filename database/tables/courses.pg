@@ -10,5 +10,4 @@ foreign-key constraints
     courses_pl_course_id_fkey: FOREIGN KEY (pl_course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
-    ai_grading_jobs: FOREIGN KEY (course_id) REFERENCES courses(course_id) ON UPDATE CASCADE ON DELETE SET NULL
     exams: FOREIGN KEY (course_id) REFERENCES courses(course_id)

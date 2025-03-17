@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import * as cheerio from 'cheerio';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
@@ -242,7 +244,7 @@ export async function aiGrade({
 }: {
   question: Question;
   course: Course;
-  course_instance_id?: string;
+  course_instance_id: string;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   authn_user_id: string;
@@ -462,6 +464,7 @@ export async function aiGrade({
               },
               user_id,
             );
+            assert(grading_job_id);
 
             job.info('Selected rubric items:');
             for (const item of selectedRubricDescriptions) {
@@ -476,6 +479,8 @@ export async function aiGrade({
               prompt_tokens: completion.usage?.prompt_tokens ?? 0,
               completion_tokens: completion.usage?.completion_tokens ?? 0,
               cost: calculateApiCost(completion.usage),
+              course_id: course.id,
+              course_instance_id,
             });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
@@ -513,6 +518,8 @@ export async function aiGrade({
               },
               user_id,
             );
+            assert(grading_job_id);
+
             job.info(`AI score: ${response.parsed.score}`);
             await queryAsync(sql.insert_ai_grading_job, {
               grading_job_id,

@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS ai_grading_jobs (
   id bigserial PRIMARY KEY,
-  grading_job_id BIGINT REFERENCES grading_jobs (id) ON DELETE SET NULL ON UPDATE CASCADE,
+  grading_job_id BIGINT NOT NULL REFERENCES grading_jobs (id) ON DELETE CASCADE ON UPDATE CASCADE,
   job_sequence_id BIGINT REFERENCES job_sequences (id) ON DELETE SET NULL ON UPDATE CASCADE,
-  course_id BIGINT REFERENCES courses (course_id) ON DELETE SET NULL ON UPDATE CASCADE,
-  course_instance_id BIGINT REFERENCES course_instances (id) ON DELETE SET NULL ON UPDATE CASCADE,
+  course_id BIGINT NOT NULL REFERENCES pl_courses (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE,
   prompt jsonb NOT NULL,
   completion jsonb NOT NULL,
   model text NOT NULL,
