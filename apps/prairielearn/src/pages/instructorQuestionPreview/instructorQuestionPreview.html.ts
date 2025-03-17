@@ -83,7 +83,7 @@ export function InstructorQuestionPreview({
         <div class="col-lg-9 col-sm-12">
           ${QuestionContainer({
             resLocals,
-            showFooter: manualGradingPreviewEnabled ? false : undefined,
+            showFooter: manualGradingPreviewEnabled || aiGradingPreviewEnabled ? false : undefined,
             questionContext: 'instructor',
             manualGradingPreviewUrl: manualGradingPreviewEnabled
               ? undefined

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 
+import { stripHtmlForAiGrading } from '../../lib/ai-grading.js';
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
@@ -22,6 +23,10 @@ import { logPageView } from '../../middlewares/logPageView.js';
 import { InstructorQuestionPreview } from './instructorQuestionPreview.html.js';
 
 const router = Router();
+
+function AiGradingContext(panelHtml: string) {
+  return html`<pre class="mb-0"><code>${stripHtmlForAiGrading(panelHtml).trim()}</code></pre>`;
+}
 
 router.post(
   '/',
@@ -83,9 +88,6 @@ router.get(
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
 
-    // TODO: need to apply the same transformations as `ai-grading.ts`, specifically
-    // the stripping of `<script>` tags.
-    //
     // TODO: need to apply the same rendering rules as `ai-grading.ts`, specifically
     // the fact that `manualGradingInterface` is true for the question panel but
     // not for the submission panel.
@@ -98,17 +100,11 @@ router.get(
     //
     // TODO: need to ensure this respects the `ai-grading` feature flag.
     if (aiGradingPreviewEnabled) {
-      res.locals.questionHtml = html`<pre
-        class="mb-0"
-      ><code>${res.locals.questionHtml.trim()}</code></pre>`;
-      res.locals.answerHtml = html`<pre
-        class="mb-0"
-      ><code>${res.locals.answerHtml.trim()}</code></pre>`;
-      res.locals.submissionHtmls = res.locals.submissionHtmls.map(
-        (submissionHtml) => html`<pre class="mb-0"><code>${submissionHtml.trim()}</code></pre>`,
+      res.locals.questionHtml = AiGradingContext(res.locals.questionHtml);
+      res.locals.answerHtml = AiGradingContext(res.locals.answerHtml);
+      res.locals.submissionHtmls = res.locals.submissionHtmls.map((submissionHtml) =>
+        AiGradingContext(submissionHtml),
       );
-      console.log(res.locals.questionHtml.toString());
-      console.log(res.locals.answerHtml.toString());
     }
 
     const searchParams = getSearchParams(req);
@@ -120,6 +116,7 @@ router.get(
     manualGradingPreviewSearchParams.set('variant_id', res.locals.variant.id.toString());
     manualGradingPreviewSearchParams.set('manual_grading_preview', 'true');
     manualGradingPreviewSearchParams.delete('variant_seed');
+    manualGradingPreviewSearchParams.delete('ai_grading_preview');
     const manualGradingPreviewUrl = url.format({
       pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
       search: manualGradingPreviewSearchParams.toString(),
@@ -130,6 +127,7 @@ router.get(
     aiGradingPreviewSearchParams.set('variant_id', res.locals.variant.id.toString());
     aiGradingPreviewSearchParams.set('ai_grading_preview', 'true');
     aiGradingPreviewSearchParams.delete('variant_seed');
+    aiGradingPreviewSearchParams.delete('manual_grading_preview');
     const aiGradingPreviewUrl = url.format({
       pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
       search: aiGradingPreviewSearchParams.toString(),
@@ -139,6 +137,7 @@ router.get(
     const normalPreviewSearchParams = new URLSearchParams(searchParams);
     normalPreviewSearchParams.set('variant_id', res.locals.variant.id.toString());
     normalPreviewSearchParams.delete('manual_grading_preview');
+    normalPreviewSearchParams.delete('ai_grading_preview');
     normalPreviewSearchParams.delete('variant_seed');
     const normalPreviewUrl = url.format({
       pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,

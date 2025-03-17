@@ -6,6 +6,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
+import { stripHtmlForAiGrading } from '../../lib/ai-grading.js';
 import { config } from '../../lib/config.js';
 import {
   InstanceQuestionSchema,
@@ -187,9 +188,7 @@ async function generateSubmissionEmbedding({
     // don't want to mix in instructions like that with the student's response.
     urls,
   );
-  const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
-  $('script').remove();
-  const submission_text = $.html();
+  const submission_text = stripHtmlForAiGrading(render_submission_results.data.submissionHtmls[0]);
   const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
@@ -317,9 +316,7 @@ export async function aiGrade({
         job.error('Error occurred');
         job.fail('Errors occurred while AI grading, see output for details');
       }
-      const $ = cheerio.load(render_question_results.data.questionHtml, null, false);
-      $('script').remove();
-      const questionPrompt = $.html();
+      const questionPrompt = stripHtmlForAiGrading(render_question_results.data.questionHtml);
 
       let submission_embedding = await queryOptionalRow(
         sql.select_embedding_for_submission,
