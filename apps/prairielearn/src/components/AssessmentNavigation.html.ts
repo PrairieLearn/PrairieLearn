@@ -21,7 +21,7 @@ export function AssessmentNavigation({
   assessment: Assessment;
   assessments: Assessment[];
 }) {
-  // Target subpage for the links to other assessments.
+  // Target subpage for the dropdown links to assessments.
   const targetSubPage = run(() => {
     if (!subPage) {
       return '';
