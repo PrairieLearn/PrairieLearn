@@ -37,10 +37,11 @@ pip3 cache purge
 # https://stackoverflow.com/questions/75511508/how-to-stop-this-message-would-you-like-to-receive-official-jupyter-news
 jupyter labextension disable @jupyterlab/apputils-extension:announcements
 
-# Suppress the "Copy shareable link" context menu item.
-# This confuses instructors by misleading them into thinking that a student
-# would be able to access random workspaces.
+# Remove buttons and menu options that show a "shareable link".
+# These confuse instructors by misleading them into thinking that a student
+# would be able to access random workspaces by these links.
 jupyter labextension disable @jupyterlab/filebrowser-extension:share-file
+jupyter labextension disable @jupyter/collaboration-extension:shared-link
 
 # Delete ourself.
 rm /requirements.txt /install.sh
