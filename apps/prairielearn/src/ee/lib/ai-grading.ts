@@ -12,6 +12,7 @@ import {
   queryOptionalRow,
   queryRow,
   queryRows,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
@@ -431,6 +432,10 @@ export async function aiGrade({
                 selectedRubricDescriptions.add(description);
               }
             });
+            job.info('Selected rubric items:');
+            for (const item of selectedRubricDescriptions) {
+              job.info(`- ${item}`);
+            }
 
             // Build a lookup table for rubric items by description.
             const rubricItemsByDescription: Record<string, RubricItem> = {};
@@ -453,34 +458,32 @@ export async function aiGrade({
               rubric_id: rubric_items[0].rubric_id,
               applied_rubric_items: appliedRubricItems,
             };
-            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
-              assessment_question.assessment_id,
-              instance_question.id,
-              submission.id,
-              null, // check_modified_at
-              {
-                // TODO: consider asking for and recording freeform feedback.
-                manual_rubric_data,
-              },
-              user_id,
-            );
-            assert(grading_job_id);
+            await runInTransactionAsync(async () => {
+              const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+                assessment_question.assessment_id,
+                instance_question.id,
+                submission.id,
+                null, // check_modified_at
+                {
+                  // TODO: consider asking for and recording freeform feedback.
+                  manual_rubric_data,
+                },
+                user_id,
+              );
+              assert(grading_job_id);
 
-            job.info('Selected rubric items:');
-            for (const item of selectedRubricDescriptions) {
-              job.info(`- ${item}`);
-            }
-            await queryAsync(sql.insert_ai_grading_job, {
-              grading_job_id,
-              job_sequence_id: serverJob.jobSequenceId,
-              prompt: messages,
-              completion,
-              model: OPEN_AI_MODEL,
-              prompt_tokens: completion.usage?.prompt_tokens ?? 0,
-              completion_tokens: completion.usage?.completion_tokens ?? 0,
-              cost: calculateApiCost(completion.usage),
-              course_id: course.id,
-              course_instance_id,
+              await queryAsync(sql.insert_ai_grading_job, {
+                grading_job_id,
+                job_sequence_id: serverJob.jobSequenceId,
+                prompt: messages,
+                completion,
+                model: OPEN_AI_MODEL,
+                prompt_tokens: completion.usage?.prompt_tokens ?? 0,
+                completion_tokens: completion.usage?.completion_tokens ?? 0,
+                cost: calculateApiCost(completion.usage),
+                course_id: course.id,
+                course_instance_id,
+              });
             });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
@@ -507,31 +510,36 @@ export async function aiGrade({
           const response = completion.choices[0].message;
           job.info(`Raw response:\n${response.content}`);
           if (response.parsed) {
-            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
-              assessment_question.assessment_id,
-              instance_question.id,
-              submission.id,
-              null, // check_modified_at
-              {
-                score_perc: response.parsed.score,
-                feedback: { manual: response.parsed.feedback },
-              },
-              user_id,
-            );
-            assert(grading_job_id);
+            const score = response.parsed.score;
+            const feedback = response.parsed.feedback;
+            job.info(`AI score: ${score}`);
 
-            job.info(`AI score: ${response.parsed.score}`);
-            await queryAsync(sql.insert_ai_grading_job, {
-              grading_job_id,
-              job_sequence_id: serverJob.jobSequenceId,
-              prompt: messages,
-              completion,
-              model: OPEN_AI_MODEL,
-              prompt_tokens: completion.usage?.prompt_tokens ?? 0,
-              completion_tokens: completion.usage?.completion_tokens ?? 0,
-              cost: calculateApiCost(completion.usage),
-              course_id: course.id,
-              course_instance_id,
+            await runInTransactionAsync(async () => {
+              const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+                assessment_question.assessment_id,
+                instance_question.id,
+                submission.id,
+                null, // check_modified_at
+                {
+                  score_perc: score,
+                  feedback: { manual: feedback },
+                },
+                user_id,
+              );
+              assert(grading_job_id);
+
+              await queryAsync(sql.insert_ai_grading_job, {
+                grading_job_id,
+                job_sequence_id: serverJob.jobSequenceId,
+                prompt: messages,
+                completion,
+                model: OPEN_AI_MODEL,
+                prompt_tokens: completion.usage?.prompt_tokens ?? 0,
+                completion_tokens: completion.usage?.completion_tokens ?? 0,
+                cost: calculateApiCost(completion.usage),
+                course_id: course.id,
+                course_instance_id,
+              });
             });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
