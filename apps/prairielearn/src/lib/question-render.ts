@@ -630,6 +630,7 @@ export async function renderPanelsForSubmission({
   authorizedEdit,
   renderScorePanels,
   groupRolePermissions,
+  localsOverrides,
 }: {
   submission_id: string;
   question: Question;
@@ -641,6 +642,9 @@ export async function renderPanelsForSubmission({
   authorizedEdit: boolean;
   renderScorePanels: boolean;
   groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
+  localsOverrides?: {
+    manualGradingInterface?: boolean;
+  };
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
@@ -700,6 +704,7 @@ export async function renderPanelsForSubmission({
       assessment_question,
       group_config,
     }),
+    ...localsOverrides,
   };
 
   await async.parallel([
