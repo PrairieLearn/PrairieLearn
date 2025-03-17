@@ -671,7 +671,10 @@ function NavbarButtons({
 
   if (resLocals.is_administrator) {
     allNavbarButtons.push({ text: 'Global Admin', href: '/pl/administrator/admins' });
-    if (resLocals.institution) {
+  }
+
+  if (resLocals.institution) {
+    if (resLocals.is_administrator) {
       allNavbarButtons.push(
         { text: 'Institutions', href: '/pl/administrator/institutions' },
         {
@@ -679,16 +682,28 @@ function NavbarButtons({
           href: `/pl/administrator/institution/${resLocals.institution.id}`,
         },
       );
-      if (resLocals.course) {
-        allNavbarButtons.push({
-          text: 'Courses',
-          href: `/pl/administrator/institution/${resLocals.institution.id}/courses`,
-        });
-      }
+    } else if (resLocals.is_institution_administrator) {
+      allNavbarButtons.push({
+        text: resLocals.institution.short_name,
+        href: `/pl/institution/${resLocals.institution.id}/admin/admins`,
+      });
     }
   }
 
   if (resLocals.course) {
+    if (resLocals.institution) {
+      if (resLocals.is_administrator) {
+        allNavbarButtons.push({
+          text: 'Courses',
+          href: `/pl/administrator/institution/${resLocals.institution.id}/courses`,
+        });
+      } else if (resLocals.is_institution_administrator) {
+        allNavbarButtons.push({
+          text: 'Courses',
+          href: `/pl/institution/${resLocals.institution.id}/admin/courses`,
+        });
+      }
+    }
     allNavbarButtons.push({
       text: resLocals.course.short_name,
       href: `/pl/course/${resLocals.course.id}/course_admin/instances`,

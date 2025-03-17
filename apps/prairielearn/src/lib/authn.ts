@@ -117,5 +117,17 @@ export async function loadUser(
   res.locals.access_as_administrator = accessType === 'active';
   res.locals.is_administrator =
     res.locals.authn_is_administrator && res.locals.access_as_administrator;
+
+  res.locals.is_institution_administrator =
+    res.locals.authn_is_administrator ||
+    (await sqldb.queryRow(
+      sql.select_is_institution_admin,
+      {
+        institution_id: res.locals.authn_institution.id,
+        user_id: res.locals.authn_user.user_id,
+      },
+      z.boolean(),
+    ));
+
   res.locals.news_item_notification_count = selectedUser.news_item_notification_count;
 }
