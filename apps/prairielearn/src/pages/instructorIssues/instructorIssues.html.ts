@@ -399,8 +399,8 @@ function FilterHelpModal() {
               Shows all issues with a question ID like <code>QID</code>; supports <code>*</code> as
               a wildcard. For example, <code>qid:graphConnectivity</code> shows all issues
               associated with the question <code>graphConnectivity</code>, and
-              <code>qid:graph*</code> shows all issues associated with any question that starts
-              with <code>graph</code>, such as <code>graphConnectivity</code> and
+              <code>qid:graph*</code> shows all issues associated with any question that starts with
+              <code>graph</code>, such as <code>graphConnectivity</code> and
               <code>graphTheory</code>.
             </td>
           </tr>
