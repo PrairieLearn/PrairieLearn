@@ -136,6 +136,8 @@ export async function browseDirectory({
           sync_warnings: sync_data.warnings,
         } as DirectoryEntryFile;
       } else if (stats.isDirectory()) {
+        // The .git directory is hidden in the browser interface.
+        if (file.name === '.git') return null;
         return {
           id: file.index,
           name: file.name,
