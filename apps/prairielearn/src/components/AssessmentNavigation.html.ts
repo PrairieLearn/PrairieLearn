@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 
 import type { Assessment, CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
+
 import type { NavSubPage } from './Navbar.types.js';
 
 /**
@@ -40,7 +41,8 @@ export function AssessmentNavigation({
               <a
                 class="dropdown-item ${idsEqual(assessment.id, a.id) ? 'active' : ''}"
                 aria-current="${idsEqual(assessment.id, a.id) ? 'page' : ''}"
-                href="/pl/course_instance/${courseInstance.id}/instructor/assessment/${a.id}/${subPage ?? ''}"
+                href="/pl/course_instance/${courseInstance.id}/instructor/assessment/${a.id}/${subPage ??
+                ''}"
               >
                 ${a.title}
               </a>
