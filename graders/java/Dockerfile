@@ -25,3 +25,5 @@ RUN javac -cp '/javagrader:/javagrader/libs:/javagrader/libs/*' -d /javagrader /
 
 COPY autograder.sh /bin
 RUN chmod 700 /bin/autograder.sh
+
+ENTRYPOINT [ "/bin/autograder.sh" ]

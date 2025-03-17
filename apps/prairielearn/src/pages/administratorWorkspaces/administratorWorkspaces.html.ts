@@ -56,7 +56,12 @@ export function AdministratorWorkspaces({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Workspace hosts</h1>
-          <button class="btn btn-light ml-auto" id="toggle-all-workspaces" data-state="collapsed">
+          <button
+            type="button"
+            class="btn btn-light ms-auto"
+            id="toggle-all-workspaces"
+            data-state="collapsed"
+          >
             Expand all
           </button>
         </div>
@@ -68,21 +73,21 @@ export function AdministratorWorkspaces({
             return html`
               <div class="list-group-item">
                 <div class="d-flex flex-row flex-wrap align-items-center">
-                  <div class="d-flex align-items-center mr-auto pr-2 text-monospace">
+                  <div class="d-flex align-items-center me-auto pe-2 font-monospace">
                     <a
                       href="workspaces-${workspaceHost.id}"
-                      class="mr-2"
-                      data-target="#workspaces-${workspaceHost.id}"
-                      data-toggle="collapse"
+                      class="me-2"
+                      data-bs-target="#workspaces-${workspaceHost.id}"
+                      data-bs-toggle="collapse"
                       aria-expanded="false"
                       aria-controls="workspaces-${workspaceHost.id}"
                       >${workspaceHost.hostname}</a
                     >
                     ${instanceId
-                      ? html`<span class="text-muted mr-2">(${instanceId})</span>`
+                      ? html`<span class="text-muted me-2">(${instanceId})</span>`
                       : null}
                     ${WorkspaceHostState({ state: workspaceHost.state })}
-                    <span class="badge badge-secondary">
+                    <span class="badge text-bg-secondary">
                       ${workspaceHostRow.workspace_host_time_in_state}
                     </span>
                   </div>
@@ -109,16 +114,16 @@ export function AdministratorWorkspaces({
                             return html`
                               <div class="list-group-item">
                                 <div class="d-flex align-items-center">
-                                  <span class="mr-2" style="font-variant-numeric: tabular-nums;">
+                                  <span class="me-2" style="font-variant-numeric: tabular-nums;">
                                     ${workspace.id}
                                   </span>
                                   ${WorkspaceState({ state: workspace.state })}
-                                  <span class="badge badge-secondary">
+                                  <span class="badge text-bg-secondary">
                                     ${workspace.time_in_state}
                                   </span>
                                 </div>
                                 <div class="text-muted text-small">
-                                  <span class="text-monospace" title="Question"
+                                  <span class="font-monospace" title="Question"
                                     >${workspace.question_name}</span
                                   >
                                   &bull;
@@ -145,7 +150,7 @@ function Capacity({ total, current }: { total: number; current: number }) {
   const capacity = (current / total) * 100;
   return html`
     <div class="d-flex flex-row align-items-center">
-      <div class="text-muted mr-2" style="font-variant-numeric: tabular-nums;">
+      <div class="text-muted me-2" style="font-variant-numeric: tabular-nums;">
         ${current} / ${total}
       </div>
       <div
@@ -165,7 +170,7 @@ function Capacity({ total, current }: { total: number; current: number }) {
 
 function WorkspaceState({ state }) {
   const color = state === 'running' ? 'success' : 'secondary';
-  return html` <span class="badge badge-${color} mr-2">${state}</span> `;
+  return html` <span class="badge badge-${color} me-2">${state}</span> `;
 }
 
 function WorkspaceHostState({ state }) {
@@ -180,5 +185,5 @@ function WorkspaceHostState({ state }) {
       color = 'danger';
       break;
   }
-  return html`<span class="badge badge-${color} mr-2">${state}</span>`;
+  return html`<span class="badge badge-${color} me-2">${state}</span>`;
 }

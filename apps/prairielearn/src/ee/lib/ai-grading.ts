@@ -467,6 +467,7 @@ export async function aiGrade({
                 {
                   // TODO: consider asking for and recording freeform feedback.
                   manual_rubric_data,
+                  feedback: { manual: '' },
                 },
                 user_id,
               );
@@ -521,7 +522,7 @@ export async function aiGrade({
                 submission.id,
                 null, // check_modified_at
                 {
-                  score_perc: score,
+                  manual_score_perc: score,
                   feedback: { manual: feedback },
                 },
                 user_id,

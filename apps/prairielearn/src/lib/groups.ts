@@ -8,7 +8,7 @@ import { selectCourseInstanceById } from '../models/course-instances.js';
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
 import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
-import { selectUserByUid } from '../models/user.js';
+import { selectOptionalUserByUid } from '../models/user.js';
 
 import {
   GroupSchema,
@@ -199,7 +199,7 @@ async function selectUserInCourseInstance({
   uid: string;
   course_instance_id: string;
 }) {
-  const user = await selectUserByUid(uid);
+  const user = await selectOptionalUserByUid(uid);
   if (!user) return null;
 
   // To be part of a group, the user needs to either be enrolled in the course

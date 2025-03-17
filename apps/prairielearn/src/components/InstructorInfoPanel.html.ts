@@ -70,7 +70,7 @@ export function InstructorInfoPanel({
   const timeZone = course_instance?.display_timezone ?? course.display_timezone;
 
   return html`
-    <div class="card mb-4 border-warning">
+    <div class="card mb-3 border-warning">
       <div class="card-header bg-warning">
         <h2>Staff information</h2>
       </div>
@@ -121,15 +121,15 @@ function InstanceUserInfo({
           ? html`
               <summary><h3 class="card-title h5">Group details</h3></summary>
               <div class="d-flex flex-wrap">
-                <div class="pr-1">${instance_group.name}</div>
-                <div class="pr-1">(${instance_group_uid_list?.join(', ')})</div>
+                <div class="pe-1">${instance_group.name}</div>
+                <div class="pe-1">(${instance_group_uid_list?.join(', ')})</div>
               </div>
             `
           : html`
               <summary><h3 class="card-title d-inline-block h5 mb-0">Student details</h3></summary>
               <div class="d-flex flex-wrap mt-2">
-                <div class="pr-1">${instance_user?.name}</div>
-                <div class="pr-1">${instance_user?.uid}</div>
+                <div class="pe-1">${instance_user?.name}</div>
+                <div class="pe-1">${instance_user?.uid}</div>
               </div>
             `}
       </details>
@@ -176,7 +176,7 @@ function QuestionInfo({
     <h3 class="card-title h5">Question</h3>
 
     <div class="d-flex flex-wrap">
-      <div class="pr-1">QID:</div>
+      <div class="pe-1">QID:</div>
       <div>
         ${questionContext === 'public'
           ? html`<a href="${publicPreviewUrl}?variant_seed=${variant.variant_seed}">
@@ -189,7 +189,7 @@ function QuestionInfo({
     ${question_is_shared && course.sharing_name && questionContext !== 'public'
       ? html`
           <div class="d-flex flex-wrap">
-            <div class="pr-1">Shared As:</div>
+            <div class="pe-1">Shared As:</div>
             ${question.shared_publicly || question.share_source_publicly
               ? html`
                   <div>
@@ -201,7 +201,7 @@ function QuestionInfo({
         `
       : ''}
     <div class="d-flex flex-wrap">
-      <div class="pr-1">Title:</div>
+      <div class="pe-1">Title:</div>
       <div>${question.title}</div>
     </div>
   `;
@@ -231,17 +231,17 @@ function VariantInfo({
     ${questionContext !== 'public'
       ? html`
           <div class="d-flex flex-wrap">
-            <div class="pr-1">Started at:</div>
+            <div class="pe-1">Started at:</div>
             <div>${date ? formatDate(date, timeZone) : '(unknown)'}</div>
           </div>
           <div class="d-flex flex-wrap">
-            <div class="pr-1">Duration:</div>
+            <div class="pe-1">Duration:</div>
             <div>${formatInterval(duration)}</div>
           </div>
         `
       : ''}
     <div class="d-flex flex-wrap">
-      <details class="pr-1">
+      <details class="pe-1">
         <summary>Show/Hide answer</summary>
         <pre class="mt-2 mb-0"><code>${JSON.stringify(variant.true_answer, null, 2)}</code></pre>
       </details>
@@ -275,19 +275,19 @@ function AssessmentInstanceInfo({
   return html`
     <h3 class="card-title h5">Assessment instance</h3>
     <div class="d-flex flex-wrap">
-      <div class="pr-1">AID:</div>
+      <div class="pe-1">AID:</div>
       <div>
         <a href="${instructorUrlPrefix}/assessment/${assessment.id}">${assessment.tid}</a>
       </div>
     </div>
 
     <div class="d-flex flex-wrap">
-      <div class="pr-1">Started at:</div>
+      <div class="pe-1">Started at:</div>
       <div>${date ? formatDate(date, timeZone) : '(unknown)'}</div>
     </div>
 
     <div class="d-flex flex-wrap">
-      <div class="pr-1">Duration:</div>
+      <div class="pe-1">Duration:</div>
       <div>${formatInterval(duration)}</div>
     </div>
 
@@ -325,14 +325,14 @@ function ManualGradingInfo({
     <h3 class="card-title h5">Manual grading</h3>
 
     <div class="d-flex flex-wrap">
-      <div class="pr-1">Status:</div>
+      <div class="pe-1">Status:</div>
       <div>${instance_question.requires_manual_grading ? 'Requires grading' : 'Graded'}</div>
     </div>
 
     ${instance_question.requires_manual_grading
       ? html`
           <div class="d-flex flex-wrap">
-            <div class="pr-1">Assigned to:</div>
+            <div class="pe-1">Assigned to:</div>
             <div>${instance_question.assigned_grader_name ?? 'Unassigned'}</div>
           </div>
         `
@@ -340,7 +340,7 @@ function ManualGradingInfo({
     ${instance_question.last_grader
       ? html`
           <div class="d-flex flex-wrap">
-            <div class="pr-1">Graded by:</div>
+            <div class="pe-1">Graded by:</div>
             <div>${instance_question.last_grader_name}</div>
           </div>
         `
@@ -377,8 +377,8 @@ function IssueReportButton({
     <button
       class="btn btn-sm btn-primary"
       type="button"
-      data-toggle="collapse"
-      data-target="#issueCollapse"
+      data-bs-toggle="collapse"
+      data-bs-target="#issueCollapse"
       aria-expanded="false"
       aria-controls="issueCollapse"
     >
@@ -386,7 +386,7 @@ function IssueReportButton({
     </button>
     <div class="collapse" id="issueCollapse">
       <form method="POST" class="mt-3">
-        <div class="form-group">
+        <div class="mb-3">
           <textarea
             class="form-control"
             rows="5"
@@ -397,7 +397,7 @@ function IssueReportButton({
         </div>
         <input type="hidden" name="__variant_id" value="${variant.id}" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button class="btn btn-small btn-warning" name="__action" value="report_issue">
+        <button type="submit" class="btn btn-sm btn-warning" name="__action" value="report_issue">
           Report issue
         </button>
       </form>

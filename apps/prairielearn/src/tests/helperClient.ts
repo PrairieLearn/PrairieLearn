@@ -63,7 +63,7 @@ export function extractAndSaveCSRFToken(
 
 /**
  * Utility function that extracts a CSRF token from a `__csrf_token` input
- * that is inside the data-content attribute of the parentSelector.
+ * that is inside the `data-bs-content` attribute of the parentSelector.
  * The token will also be persisted to `context.__csrf_token`.
  */
 export function extractAndSaveCSRFTokenFromDataContent(
@@ -73,7 +73,7 @@ export function extractAndSaveCSRFTokenFromDataContent(
 ): string {
   const parent = $(parentSelector);
   assert.lengthOf(parent, 1);
-  const content = parent.attr('data-content');
+  const content = parent.attr('data-bs-content');
   assert(content);
   const inner$ = cheerio.load(content);
   const csrfTokenInput = inner$('input[name="__csrf_token"]');

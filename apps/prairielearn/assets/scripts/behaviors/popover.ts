@@ -6,11 +6,11 @@ import { focusFirstFocusableChild, onDocumentReady, trapFocus } from '@prairiele
 
 import { getPopoverContainerForTrigger, getPopoverTriggerForContainer } from '../lib/popover.js';
 
-const openPopoverTriggers = new Set<Popover>();
+const openPopovers = new Set<Popover>();
 
 function closeOpenPopovers() {
-  openPopoverTriggers.forEach((popover) => popover.hide());
-  openPopoverTriggers.clear();
+  openPopovers.forEach((popover) => popover.hide());
+  openPopovers.clear();
 }
 
 /**
@@ -41,20 +41,31 @@ function isFocusTrigger(trigger: HTMLElement) {
 // `selector-observer` will start running its callbacks immediately, so they'd
 // otherwise execute too soon.
 onDocumentReady(() => {
-  observe('[data-toggle="popover"]', {
+  observe('[data-bs-toggle="popover"]', {
     constructor: HTMLElement,
     add(el) {
       new window.bootstrap.Popover(el, { sanitize: false });
+
+      // Bootstrap will by default copy the `title` attribute to `aria-label`,
+      // but it won't do that for `data-bs-title`. We do that here in the interest
+      // of making things maximally accessible by default. If an `aria-label`
+      // attribute is already present, we leave it alone.
+      if (!el.hasAttribute('aria-label')) {
+        const title = el.dataset.bsTitle;
+        if (title && !el.textContent?.trim()) {
+          el.setAttribute('aria-label', title);
+        }
+      }
     },
     remove(el) {
       window.bootstrap.Popover.getInstance(el)?.dispose();
     },
   });
 
-  // Bootstrap supports `data-dismiss="alert"` and `data-dismiss="modal"`, but not
-  // `data-dismiss="popover"`. This behavior adds support for dismissing popovers
+  // Bootstrap supports `data-bs-dismiss="alert"` and `data-bs-dismiss="modal"`, but not
+  // `data-bs-dismiss="popover"`. This behavior adds support for dismissing popovers
   // in such a declarative way.
-  on('click', '[data-dismiss="popover"]', (event) => {
+  on('click', '[data-bs-dismiss="popover"]', (event) => {
     const popoverContainer = event.currentTarget.closest('.popover');
     if (!popoverContainer || !(popoverContainer instanceof HTMLElement)) return;
 
@@ -75,7 +86,7 @@ onDocumentReady(() => {
   });
 
   on('click', 'body', (e) => {
-    if (openPopoverTriggers.size === 0) return;
+    if (openPopovers.size === 0) return;
 
     // If this click occurred inside a popover, do nothing.
     const closestPopover = (e.target as HTMLElement).closest('.popover');
@@ -104,10 +115,8 @@ onDocumentReady(() => {
   on('shown.bs.popover', 'body', (event) => {
     const target = event.target as HTMLElement;
 
-    const popoverInstance = window.bootstrap.Popover.getInstance(target);
-    if (popoverInstance) {
-      openPopoverTriggers.add(popoverInstance);
-    }
+    const popover = window.bootstrap.Popover.getInstance(target);
+    if (popover) openPopovers.add(popover);
 
     const container = getPopoverContainerForTrigger(target);
 
@@ -132,9 +141,7 @@ onDocumentReady(() => {
   });
 
   on('hide.bs.popover', 'body', (event) => {
-    const popoverInstance = window.bootstrap.Popover.getInstance(event.target as HTMLElement);
-    if (popoverInstance) {
-      openPopoverTriggers.delete(popoverInstance);
-    }
+    const popover = window.bootstrap.Popover.getInstance(event.target as HTMLElement);
+    if (popover) openPopovers.delete(popover);
   });
 });

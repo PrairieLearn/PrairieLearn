@@ -109,7 +109,7 @@ export function WorkspaceVersionLogs({
                 <pre class="bg-dark rounded text-white p-3 mb-3"><code>${containerLogs}</code></pre>
               `
             : html`
-                <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center text-monospace">
+                <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center font-monospace">
                   <div class="mb-2">
                     <i
                       class="fa ${containerLogsEnabled && containerLogsExpired
