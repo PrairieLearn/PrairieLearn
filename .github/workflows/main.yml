@@ -113,7 +113,9 @@ jobs:
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/jupyterlab-python
-          platforms: linux/amd64,linux/arm64
+          # Temp to speed up testing builds.
+          # platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           tags: prairielearn/workspace-jupyterlab-python:${{ env.COMMIT_SHA }}
