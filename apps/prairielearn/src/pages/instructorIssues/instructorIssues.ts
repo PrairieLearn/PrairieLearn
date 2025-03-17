@@ -20,7 +20,11 @@ const sql = loadSqlEquiv(import.meta.url);
 
 function formatForLikeClause(str: string) {
   // https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-LIKE
-  return str.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_').replace('*', '%');
+  return str
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_')
+    .replaceAll('*', '%');
 }
 
 function parseRawQuery(str: string) {
