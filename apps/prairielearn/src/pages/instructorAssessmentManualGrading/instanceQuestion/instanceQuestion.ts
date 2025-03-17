@@ -12,6 +12,7 @@ import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectUserById } from '../../../models/user.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import {
@@ -70,7 +71,19 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
-    res.send(InstanceQuestion(await prepareLocalsForRender(req.query, res.locals)));
+    const assignedGrader = res.locals.instance_question.assigned_grader
+      ? await selectUserById(res.locals.instance_question.assigned_grader)
+      : null;
+    const lastGrader = res.locals.instance_question.last_grader
+      ? await selectUserById(res.locals.instance_question.last_grader)
+      : null;
+    res.send(
+      InstanceQuestion({
+        ...(await prepareLocalsForRender(req.query, res.locals)),
+        assignedGrader,
+        lastGrader,
+      }),
+    );
   }),
 );
 
