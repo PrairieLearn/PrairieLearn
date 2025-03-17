@@ -1,4 +1,5 @@
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import type { Assessment, CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
@@ -20,6 +21,17 @@ export function AssessmentNavigation({
   assessment: Assessment;
   assessments: Assessment[];
 }) {
+  // Target subpage for the links to other assessments.
+  const targetSubPage = run(() => {
+    if (!subPage) {
+      return '';
+    }
+    if (subPage === 'assessment_instance') {
+      return 'instances';
+    }
+    return subPage;
+  })
+
   return html`
     <div class="dropdown bg-light pt-2 px-3">
       <button
@@ -41,8 +53,7 @@ export function AssessmentNavigation({
               <a
                 class="dropdown-item ${idsEqual(assessment.id, a.id) ? 'active' : ''}"
                 aria-current="${idsEqual(assessment.id, a.id) ? 'page' : ''}"
-                href="/pl/course_instance/${courseInstance.id}/instructor/assessment/${a.id}/${subPage ??
-                ''}"
+                href="/pl/course_instance/${courseInstance.id}/instructor/assessment/${a.id}/${targetSubPage}"
               >
                 ${a.title}
               </a>
