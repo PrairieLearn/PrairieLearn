@@ -154,15 +154,13 @@ export function PageLayout({
                 ${preContent}
                 <main
                   id="content"
-                  class="
-                    ${clsx(
+                  class="${clsx(
                     options.fullWidth ? 'container-fluid' : 'container',
                     marginBottom && 'mb-4',
                     options.fullHeight && 'flex-grow-1',
                     'pt-3',
                     sideNavEnabled && 'px-3',
-                  )}
-                  "
+                  )}"
                 >
                   ${content}
                 </main>

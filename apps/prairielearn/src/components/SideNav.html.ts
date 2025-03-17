@@ -1,9 +1,10 @@
+import clsx from 'clsx';
+
 import { html, type HtmlValue } from '@prairielearn/html';
 
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
-import { SideNavToggleButton } from './SideNavToggleButton.html.js';
 
 interface SideNavTabInfo {
   /** For the side nav tab to be active, the current navPage must be in activePages. */
@@ -190,17 +191,23 @@ function CourseNav({
         type="button"
         aria-expanded="false"
         aria-label="Toggle sidebar"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        data-bs-original-title="${resLocals.side_nav_expanded
+          ? 'Collapse side nav'
+          : 'Expand side nav'}"
         ${resLocals.course.id ? `data-course-id=${resLocals.course.id}` : ''}
         ${resLocals.course_instance?.id
           ? `data-course-instance-id=${resLocals.course_instance.id}`
           : ''}
       >
-        ${SideNavToggleButton({
-          forSideNavExpanded: true,
-        })}
-        ${SideNavToggleButton({
-          forSideNavExpanded: false,
-        })}
+        <i
+          id="side-nav-toggler-icon"
+          class="${clsx(
+            'bi',
+            resLocals.side_nav_expanded ? 'bi-arrow-bar-left' : 'bi-arrow-bar-right',
+          )}"
+        ></i>
       </button>
     </div>
     <div class="side-nav-group">
@@ -345,8 +352,8 @@ function SideNavLink({
       class="side-nav-link ${isActive ? 'side-nav-link-active' : ''}"
       aria-current="${isActive ? 'page' : ''}"
       data-bs-toggle="${!sideNavExpanded ? 'tooltip' : ''}"
-      data-placement="right"
-      title="${tabLabel}"
+      data-bs-placement="right"
+      data-bs-title="${tabLabel}"
     >
       <i class="icon flex-shrink-0 ${iconClasses}"></i>
       <span class="side-nav-link-text">${tabLabel}</span>

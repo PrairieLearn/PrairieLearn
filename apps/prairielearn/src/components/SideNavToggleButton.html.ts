@@ -15,7 +15,7 @@ export function SideNavToggleButton({
     <div
       class="${clsx('side-nav-toggler-icon', forSideNavExpanded ? 'expanded' : 'collapsed')}"
       data-toggle="tooltip"
-      data-placement="right"
+      data-bs-placement="right"
       title="${forSideNavExpanded ? 'Collapse side nav' : 'Expand side nav'}"
       aria-hidden="true"
     >
