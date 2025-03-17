@@ -1,3 +1,5 @@
+import * as url from 'node:url';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
@@ -13,6 +15,7 @@ import {
   setRendererHeader,
 } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
+import { getSearchParams } from '../../lib/url.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 
 import { InstructorQuestionPreview } from './instructorQuestionPreview.html.js';
@@ -63,6 +66,14 @@ router.get(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
+    if (manualGradingPreviewEnabled) {
+      // Setting this flag will set the `manualGrading: true` flag in the data
+      // dictionary passed to element render functions. It will also disable
+      // editing for all elements by setting `editable: false`.
+      res.locals.manualGradingInterface = true;
+    }
+
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
@@ -70,8 +81,39 @@ router.get(
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
 
+    const searchParams = getSearchParams(req);
+
+    // Construct a URL to preview the question as it would appear in the manual
+    // grading interface. We need to include the `variant_id` in the URL so that
+    // we show the current variant and not a new one.
+    const manualGradingPreviewSearchParams = new URLSearchParams(searchParams);
+    manualGradingPreviewSearchParams.set('variant_id', res.locals.variant.id.toString());
+    manualGradingPreviewSearchParams.set('manual_grading_preview', 'true');
+    manualGradingPreviewSearchParams.delete('variant_seed');
+    const manualGradingPreviewUrl = url.format({
+      pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
+      search: manualGradingPreviewSearchParams.toString(),
+    });
+
+    // Construct a URL for the normal preview. This will be used to exit the manual grading preview.
+    const normalPreviewSearchParams = new URLSearchParams(searchParams);
+    normalPreviewSearchParams.set('variant_id', res.locals.variant.id.toString());
+    normalPreviewSearchParams.delete('manual_grading_preview');
+    normalPreviewSearchParams.delete('variant_seed');
+    const normalPreviewUrl = url.format({
+      pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
+      search: normalPreviewSearchParams.toString(),
+    });
+
     setRendererHeader(res);
-    res.send(InstructorQuestionPreview({ resLocals: res.locals }));
+    res.send(
+      InstructorQuestionPreview({
+        normalPreviewUrl,
+        manualGradingPreviewEnabled,
+        manualGradingPreviewUrl,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
