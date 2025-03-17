@@ -610,7 +610,7 @@ export async function initExpress(): Promise<Express> {
   );
 
   // Handles updates to the side nav expanded state.
-  app.use('/pl/side_nav/settings', (await import('./pages/sideNav/sideNavSettings.js')).default);
+  app.use('/pl/side_nav/settings', (await import('./pages/sideNavSettings/sideNavSettings.js')).default);
 
   app.use('/pl/workspace/:workspace_id(\\d+)', [
     (req: Request, res: Response, next: NextFunction) => {
