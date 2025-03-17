@@ -92,6 +92,10 @@ router.get(
     // the fact that `manualGradingInterface` is true for the question panel but
     // not for the submission panel.
     //
+    // TODO: need to ensure that the question panel is not rendered in the context of
+    // any particular submission. For the sake of AI grading, it's treated strictly
+    // as a prompt.
+    //
     // TODO: need to ensure that the answer panel is not shown if it's not provided
     // to the AI grader (I believe it is not).
     //
