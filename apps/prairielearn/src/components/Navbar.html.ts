@@ -680,7 +680,7 @@ function NavbarButtons({
       {
         text: 'Courses',
         href: `/pl/administrator/institution/${resLocals.institution.id}/courses`,
-      }
+      },
     );
   }
 
