@@ -161,7 +161,7 @@ export function SideNav({
         page,
         subPage,
       })}
-      ${resLocals.course_has_course_instances
+      ${resLocals.course_instance
         ? CourseInstanceNav({
             resLocals,
             page,
@@ -251,10 +251,8 @@ function CourseInstanceNav({
             aria-expanded="false"
             data-bs-toggle="dropdown"
             data-bs-boundary="window"
-            hx-get="/pl/navbar/course/${resLocals.course
-              .id}/course_instance_switcher/${resLocals.course_instance
-              ? resLocals.course_instance.id
-              : ''}"
+            hx-get="/pl/navbar/course/${resLocals.course.id}/course_instance_switcher/${resLocals
+              .course_instance.id}"
             hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
             hx-target="#sideNavCourseInstancesDropdownContent"
           >
