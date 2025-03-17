@@ -15,6 +15,12 @@ describe('sanitizeObject', () => {
     assert.deepEqual(expected, sanitizeObject(input));
   });
 
+  it('handles multiple null bytes in top-level string', () => {
+    const input = { test: 'test\u0000ing\u0000' };
+    const expected = { test: 'test\\u0000ing\\u0000' };
+    assert.deepEqual(expected, sanitizeObject(input));
+  });
+
   it('handles null byte in nested string', () => {
     const input = {
       test: {
