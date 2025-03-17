@@ -30,7 +30,7 @@ export function AssessmentNavigation({
       return 'instances';
     }
     return subPage;
-  })
+  });
 
   return html`
     <div class="dropdown bg-light pt-2 px-3">
