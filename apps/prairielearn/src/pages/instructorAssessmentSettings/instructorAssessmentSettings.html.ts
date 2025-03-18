@@ -182,25 +182,25 @@ ${resLocals.assessment.text}</textarea
             </div>
             ${resLocals.assessment.type !== 'Homework'
               ? html`
-                <div class="mb-3">
-                  <div class="mb-3 form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="multiple_instance"
-                      name="multiple_instance"
-                      ${canEdit ? '' : 'disabled'}
-                      ${resLocals.assessment.multiple_instance ? 'checked' : ''}
-                    />
-                    <label class="form-check-label" for="multiple_instance"
-                      >Multiple Instances</label
-                    >
-                    <div class="small text-muted">
-                      Whether to allow students to create additional instances of the assessment.
+                  <div class="mb-3">
+                    <div class="mb-3 form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="multiple_instance"
+                        name="multiple_instance"
+                        ${canEdit ? '' : 'disabled'}
+                        ${resLocals.assessment.multiple_instance ? 'checked' : ''}
+                      />
+                      <label class="form-check-label" for="multiple_instance"
+                        >Multiple Instances</label
+                      >
+                      <div class="small text-muted">
+                        Whether to allow students to create additional instances of the assessment.
+                      </div>
                     </div>
                   </div>
-                </div>
-              `
+                `
               : ''}
             <div class="mb-3 form-check">
               <input
@@ -218,34 +218,44 @@ ${resLocals.assessment.text}</textarea
                 Whether students are allowed to upload personal notes for this assessment.
               </div>
             </div>
-            <div class="mb-3 form-check">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                id="auto_close"
-                name="auto_close"
-                ${canEdit ? '' : 'disabled'}
-                ${resLocals.assessment.auto_close ? 'checked' : ''}
-              />
-              <label class="form-check-label" for="auto_close">Auto close</label>
-              <div class="small text-muted">
-                Whether to automatically close the assessment after 6 hours of inactivity.
-              </div>
-            </div>
-            <div class="mb-3 form-check">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                id="require_honor_code"
-                name="require_honor_code"
-                ${canEdit ? '' : 'disabled'}
-                ${resLocals.assessment.require_honor_code ? 'checked' : ''}
-              />
-              <label class="form-check-label" for="require_honor_code">Require honor code</label>
-              <div class="small text-muted">
-                Requires the student to accept an honor code before starting exam assessments.
-              </div>
-            </div>
+            ${resLocals.assessment.type !== 'Homework'
+              ? html`
+                  <div class="mb-3 form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="auto_close"
+                      name="auto_close"
+                      ${canEdit ? '' : 'disabled'}
+                      ${resLocals.assessment.auto_close ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="auto_close">Auto close</label>
+                    <div class="small text-muted">
+                      Whether to automatically close the assessment after 6 hours of inactivity.
+                    </div>
+                  </div>
+                `
+              : ''}
+            ${resLocals.assessment.type !== 'Homework'
+              ? html`
+                  <div class="mb-3 form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="require_honor_code"
+                      name="require_honor_code"
+                      ${canEdit ? '' : 'disabled'}
+                      ${resLocals.assessment.require_honor_code ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="require_honor_code"
+                      >Require honor code</label
+                    >
+                    <div class="small text-muted">
+                      Requires the student to accept an honor code before starting exam assessments.
+                    </div>
+                  </div>
+                `
+              : ''}
             <div class="mb-3">
               <label class="form-label" for="studentLink">Student Link</label>
               <span class="input-group">
