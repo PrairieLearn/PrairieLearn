@@ -132,9 +132,9 @@ export function InstructorAssessments({
                           : ''}
                         <tr id="row-${row.id}">
                           <td class="align-middle" style="width: 1%">
-                            <span class="badge color-${row.assessment_set.color}"
-                              >${row.label}</span
-                            >
+                            <span class="badge color-${row.assessment_set.color}">
+                              ${row.label}
+                            </span>
                           </td>
                           <td class="align-middle">
                             ${row.sync_errors
