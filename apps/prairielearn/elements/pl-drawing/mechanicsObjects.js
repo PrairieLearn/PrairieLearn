@@ -3278,7 +3278,7 @@ mechanicsObjects.byType['pl-distributed-load'] = class extends PLDrawingBaseElem
 
   static get_button_icon(options) {
     let wdef = { w1: 60, w2: 60, anchor_is_tail: false };
-    let opts = _.defaults(_.clone(options), wdef);
+    let opts = _.defaults(structuredClone(options), wdef);
     let w1 = opts['w1'];
     let w2 = opts['w2'];
     let anchor = opts['anchor_is_tail'];
@@ -4196,7 +4196,7 @@ mechanicsObjects.attachHandlersNoClone = function (
 };
 
 mechanicsObjects.cloneMechanicsObject = function (type, options) {
-  var subObj = _.clone(options);
+  var subObj = structuredClone(options);
   if (!('id' in subObj)) {
     subObj.id = window.PLDrawingApi.generateID();
   }
