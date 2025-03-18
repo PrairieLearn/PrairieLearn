@@ -45,10 +45,10 @@ onDocumentReady(async () => {
     const tooltip = window.bootstrap.Tooltip.getInstance(sideNavTogglerButton);
     if (tooltip) {
       // Dispose the current tooltip instance
-      tooltip.dispose(); 
+      tooltip.dispose();
       // Re-initialize the tooltip
-      new window.bootstrap.Tooltip(sideNavTogglerButton); 
-    } 
+      new window.bootstrap.Tooltip(sideNavTogglerButton);
+    }
 
     // Update the side nav expanded state
     await fetch('/pl/side_nav/settings', {

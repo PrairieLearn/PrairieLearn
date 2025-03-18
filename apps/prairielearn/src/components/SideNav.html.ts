@@ -191,9 +191,7 @@ function CourseNav({
         type="button"
         data-bs-toggle="tooltip"
         data-bs-placement="right"
-        data-bs-title="${resLocals.side_nav_expanded
-          ? 'Collapse side nav'
-          : 'Expand side nav'}"
+        data-bs-title="${resLocals.side_nav_expanded ? 'Collapse side nav' : 'Expand side nav'}"
       >
         <i
           id="side-nav-toggler-icon"
