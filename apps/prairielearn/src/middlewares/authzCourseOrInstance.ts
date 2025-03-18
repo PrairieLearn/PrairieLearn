@@ -12,6 +12,7 @@ import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
+import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:authzCourseOrInstance');
@@ -96,6 +97,10 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     has_course_permission_own: permissions_course.has_course_permission_own,
   };
   res.locals.user = res.locals.authz_data.user;
+  res.locals.course_has_course_instances = await selectCourseHasCourseInstances({
+    course_id: res.locals.course.id,
+  });
+
   if (isCourseInstance) {
     res.locals.course_instance = result.rows[0].course_instance;
     const permissions_course_instance = result.rows[0].permissions_course_instance;
