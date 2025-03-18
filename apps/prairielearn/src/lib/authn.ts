@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
 import { clearCookie } from '../lib/cookie.js';
@@ -118,16 +119,20 @@ export async function loadUser(
   res.locals.is_administrator =
     res.locals.authn_is_administrator && res.locals.access_as_administrator;
 
-  res.locals.is_institution_administrator =
-    res.locals.authn_is_administrator ||
-    (await sqldb.queryRow(
+  res.locals.is_institution_administrator = await run(async () => {
+    // Institution admin pages are inaccessible if the user is an administrator not accessing as one.
+    if (res.locals.authn_is_administrator && !res.locals.access_as_administrator) {
+      return false;
+    } 
+    return selectedUser.is_administrator || (await sqldb.queryRow(
       sql.select_is_institution_admin,
       {
         institution_id: res.locals.authn_institution.id,
         user_id: res.locals.authn_user.user_id,
       },
       z.boolean(),
-    ));
+    )); 
+  })
 
   res.locals.news_item_notification_count = selectedUser.news_item_notification_count;
 }
