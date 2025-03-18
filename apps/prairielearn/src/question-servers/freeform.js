@@ -1,5 +1,4 @@
 // @ts-check
-
 import * as path from 'path';
 
 import * as async from 'async';
@@ -16,7 +15,9 @@ import * as parse5 from 'parse5';
 import { cache } from '@prairielearn/cache';
 import { logger } from '@prairielearn/logger';
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
+import { run } from '@prairielearn/run';
 
+import { stripHtmlForAiGrading } from '../lib/ai-grading.js';
 import * as assets from '../lib/assets.js';
 import { canonicalLogger } from '../lib/canonical-logger.js';
 import * as chunks from '../lib/chunks.js';
@@ -1159,8 +1160,22 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     variant_seed: parseInt(variant.variant_seed ?? '0', 36),
     options: variant.options ?? {},
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
-    editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
-    manual_grading: !!locals.manualGradingInterface,
+    editable: !!(
+      locals.allowAnswerEditing &&
+      !['manual_grading', 'ai_grading'].includes(locals.questionRenderContext)
+    ),
+    manual_grading: run(() => {
+      if (locals.questionRenderContext === 'manual_grading') return true;
+      if (locals.questionRenderContext === 'ai_grading') {
+        // We deliberately do not set `manualGradingInterface: true` when rendering
+        // the submission for AI grading. The expectation is that instructors will
+        // use elements like `<pl-manual-grading-only>` to provide extra instructions
+        // to the LLM. We don't want to mix in instructions like that with the
+        // student's response.
+        return panel !== 'submission';
+      }
+      return false;
+    }),
     panel,
     num_valid_submissions: variant.num_tries ?? null,
   };
@@ -1208,6 +1223,12 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
 
   return {
     ...cachedData,
+    // We need to transform the resulting HTML to strip out any data that
+    // isn't relevant during AI grading.
+    html:
+      locals.questionRenderContext === 'ai_grading'
+        ? stripHtmlForAiGrading(cachedData.html)
+        : cachedData.html,
     cacheHit,
   };
 }

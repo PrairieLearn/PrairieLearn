@@ -40,7 +40,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
   if (variant_with_submission_id == null) {
     throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
-  resLocals.manualGradingInterface = true;
+  resLocals.questionRenderContext = 'manual_grading';
   await getAndRenderVariant(variant_with_submission_id, null, resLocals as any);
 
   let conflict_grading_job: GradingJobData | null = null;
@@ -98,15 +98,13 @@ router.get(
       user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'manual_grading',
+      questionRenderContext: 'manual_grading',
       // This is only used by score panels, which are not rendered in this context.
       authorizedEdit: false,
       // The score panels never need to be live-updated in this context.
       renderScorePanels: false,
       // Group role permissions are not used in this context.
       groupRolePermissions: null,
-      localsOverrides: {
-        manualGradingInterface: true,
-      },
     });
     res.json(panels);
   }),

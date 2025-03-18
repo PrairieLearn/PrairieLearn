@@ -1,4 +1,5 @@
 import { html, unsafeHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
@@ -87,6 +88,11 @@ export function InstructorQuestionPreview({
             resLocals,
             showFooter: manualGradingPreviewEnabled || aiGradingPreviewEnabled ? false : undefined,
             questionContext: 'instructor',
+            questionRenderContext: run(() => {
+              if (manualGradingPreviewEnabled) return 'manual_grading';
+              if (aiGradingPreviewEnabled) return 'ai_grading';
+              return undefined;
+            }),
             manualGradingPreviewUrl: manualGradingPreviewEnabled
               ? undefined
               : manualGradingPreviewUrl,

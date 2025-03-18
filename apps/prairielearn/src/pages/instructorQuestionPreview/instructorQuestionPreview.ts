@@ -6,8 +6,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
-import { stripHtmlForAiGrading } from '../../lib/ai-grading.js';
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
@@ -25,7 +25,7 @@ import { InstructorQuestionPreview } from './instructorQuestionPreview.html.js';
 const router = Router();
 
 function AiGradingContext(panelHtml: string) {
-  return html`<pre class="mb-0"><code>${stripHtmlForAiGrading(panelHtml).trim()}</code></pre>`;
+  return html`<pre class="mb-0"><code>${panelHtml}</code></pre>`;
 }
 
 router.post(
@@ -52,11 +52,12 @@ router.get(
   asyncHandler(async (req, res) => {
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
     const aiGradingPreviewEnabled = req.query.ai_grading_preview === 'true';
-    if (manualGradingPreviewEnabled || aiGradingPreviewEnabled) {
-      // Setting this flag will set the `manualGrading: true` flag in the data
-      // dictionary passed to element render functions. It will also disable
-      // editing for all elements by setting `editable: false`.
-      res.locals.manualGradingInterface = true;
+
+    // The `questionRenderContext` flag will be respected by the rendering process.
+    if (aiGradingPreviewEnabled) {
+      res.locals.questionRenderContext = 'ai_grading';
+    } else if (manualGradingPreviewEnabled) {
+      res.locals.questionRenderContext = 'manual_grading';
     }
 
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
@@ -66,10 +67,6 @@ router.get(
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
 
-    // TODO: need to apply the same rendering rules as `ai-grading.ts`, specifically
-    // the fact that `manualGradingInterface` is true for the question panel but
-    // not for the submission panel.
-    //
     // TODO: need to ensure that the question panel is not rendered in the context of
     // any particular submission. For the sake of AI grading, it's treated strictly
     // as a prompt.
@@ -126,10 +123,10 @@ router.get(
     // These will be passed back when submissions are rendered asynchronously.
     // We treat these as mutually exclusive.
     const renderSubmissionSearchParams = new URLSearchParams();
-    if (aiGradingPreviewEnabled) {
-      renderSubmissionSearchParams.set('ai_grading_preview', 'true');
-    } else if (manualGradingPreviewEnabled) {
+    if (manualGradingPreviewEnabled) {
       renderSubmissionSearchParams.set('manual_grading_preview', 'true');
+    } else if (aiGradingPreviewEnabled) {
+      renderSubmissionSearchParams.set('ai_grading_preview', 'true');
     }
 
     setRendererHeader(res);
@@ -150,13 +147,10 @@ router.get(
 router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    // As with the normal route, we need to respect the `manual_grading_preview` flag.
-    //
-    // TODO: we need to handle the `ai_grading_preview` flag here as well. We should
-    // probably pass some conditional down to the rendering function to indicate that
-    // we're in AI grading mode to avoid the need to duplicate the rendering logic
-    // all over the place.
+    // As with the normal route, we need to respect the `manual_grading_preview`
+    // and the `ai_grading_preview` flags.
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
+    const aiGradingPreviewEnabled = req.query.ai_grading_preview === 'true';
 
     const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
@@ -166,16 +160,19 @@ router.get(
       user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'instructor',
+      questionRenderContext: run(() => {
+        if (manualGradingPreviewEnabled) return 'manual_grading';
+        if (aiGradingPreviewEnabled) return 'ai_grading';
+        return undefined;
+      }),
       // This is only used by score panels, which are not rendered in this context.
       authorizedEdit: false,
       // score panels are never rendered on the instructor question preview page.
       renderScorePanels: false,
       // Group role permissions are not used in this context.
       groupRolePermissions: null,
-      localsOverrides: {
-        manualGradingInterface: manualGradingPreviewEnabled,
-      },
     });
+
     res.json(panels);
   }),
 );

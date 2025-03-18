@@ -13,6 +13,7 @@ export function stripHtmlForAiGrading(html: string) {
   $('style').remove();
   $('link').remove();
   $('noscript').remove();
+  $('svg').remove();
 
   // Filter out more irrelevant elements/attributes.
   $('*').each((_, el) => {
@@ -42,5 +43,5 @@ export function stripHtmlForAiGrading(html: string) {
     }
   });
 
-  return $.html();
+  return $.html().trim();
 }

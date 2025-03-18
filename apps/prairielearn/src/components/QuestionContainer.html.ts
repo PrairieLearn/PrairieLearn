@@ -26,6 +26,7 @@ const MAX_TOP_RECENTS = 3;
 export function QuestionContainer({
   resLocals,
   questionContext,
+  questionRenderContext,
   showFooter = true,
   manualGradingPreviewUrl,
   aiGradingPreviewUrl,
@@ -33,6 +34,7 @@ export function QuestionContainer({
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: 'manual_grading' | 'ai_grading';
   showFooter?: boolean;
   manualGradingPreviewUrl?: string;
   aiGradingPreviewUrl?: string;
@@ -90,6 +92,7 @@ export function QuestionContainer({
             ${SubmissionList({
               resLocals,
               questionContext,
+              questionRenderContext,
               submissions: submissions.slice(0, MAX_TOP_RECENTS),
               submissionHtmls,
               submissionCount: submissions.length,
@@ -115,6 +118,7 @@ export function QuestionContainer({
                     ${SubmissionList({
                       resLocals,
                       questionContext,
+                      questionRenderContext,
                       submissions: submissions.slice(MAX_TOP_RECENTS),
                       submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
                       submissionCount: submissions.length,
@@ -744,6 +748,7 @@ function QuestionPanel({
 function SubmissionList({
   resLocals,
   questionContext,
+  questionRenderContext,
   submissions,
   submissionHtmls,
   submissionCount,
@@ -751,6 +756,7 @@ function SubmissionList({
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: 'manual_grading' | 'ai_grading';
   submissions: SubmissionForRender[];
   submissionHtmls: string[];
   submissionCount: number;
@@ -759,6 +765,7 @@ function SubmissionList({
   return submissions.map((submission, idx) =>
     SubmissionPanel({
       questionContext,
+      questionRenderContext,
       question: resLocals.question,
       assessment_question: resLocals.assessment_question,
       instance_question: resLocals.instance_question,
