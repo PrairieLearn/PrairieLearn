@@ -172,9 +172,9 @@ ${resLocals.assessment.text}</textarea
                   ${canEdit ? '' : 'disabled'}
                   ${resLocals.assessment.allow_issue_reporting ? 'checked' : ''}
                 />
-                <label class="form-check-label" for="allow_issue_reporting"
-                  >Allow issue reporting</label
-                >
+                <label class="form-check-label" for="allow_issue_reporting">
+                  Allow issue reporting
+                </label>
                 <div class="small text-muted">
                   Whether to allow students to report issues for assessment questions.
                 </div>
