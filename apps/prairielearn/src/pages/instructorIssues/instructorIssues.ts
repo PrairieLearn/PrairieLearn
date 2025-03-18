@@ -19,7 +19,12 @@ const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 function formatForLikeClause(str: string) {
-  return `%${str}%`;
+  // https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-LIKE
+  return str
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_')
+    .replaceAll('*', '%');
 }
 
 function parseRawQuery(str: string) {

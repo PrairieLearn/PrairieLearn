@@ -1,3 +1,5 @@
+import * as url from 'node:url';
+
 import { differenceInMilliseconds } from 'date-fns';
 import { z } from 'zod';
 
@@ -56,6 +58,7 @@ export function SubmissionPanel({
   rubric_data,
   urlPrefix,
   expanded,
+  renderSubmissionSearchParams,
 }: {
   questionContext: QuestionContext;
   question: Question;
@@ -69,15 +72,22 @@ export function SubmissionPanel({
   rubric_data?: RubricData | null;
   urlPrefix: string;
   expanded?: boolean;
+  renderSubmissionSearchParams?: URLSearchParams;
 }) {
   const isLatestSubmission = submission.submission_number === submissionCount;
   expanded = expanded || isLatestSubmission;
+
   const renderUrlPrefix =
     questionContext === 'instructor' || questionContext === 'public'
       ? `${urlPrefix}/question/${question.id}/preview`
       : questionContext === 'manual_grading'
         ? `${urlPrefix}/assessment/${assessment_question?.assessment_id}/manual_grading/instance_question/${instance_question?.id}`
         : `${urlPrefix}/instance_question/${instance_question?.id}`;
+  const renderUrl = url.format({
+    pathname: `${renderUrlPrefix}/variant/${variant_id}/submission/${submission.id}`,
+    search: renderSubmissionSearchParams?.toString(),
+  });
+
   return html`
     <div
       data-testid="submission-with-feedback"
@@ -256,11 +266,7 @@ export function SubmissionPanel({
             : ''}"
           data-submission-id="${submission.id}"
           id="submission-${submission.id}-body"
-          ${question.type === 'Freeform'
-            ? html`
-                data-dynamic-render-url="${renderUrlPrefix}/variant/${variant_id}/submission/${submission.id}"
-              `
-            : ''}
+          ${question.type === 'Freeform' ? html`data-dynamic-render-url="${renderUrl}" ` : ''}
         >
           <div class="card-body submission-body">
             ${submissionHtml == null

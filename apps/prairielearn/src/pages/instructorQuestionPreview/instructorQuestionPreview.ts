@@ -48,28 +48,6 @@ router.post(
 );
 
 router.get(
-  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
-  asyncHandler(async (req, res) => {
-    const panels = await renderPanelsForSubmission({
-      submission_id: req.params.submission_id,
-      question: res.locals.question,
-      instance_question: null,
-      variant_id: req.params.variant_id,
-      user: res.locals.user,
-      urlPrefix: res.locals.urlPrefix,
-      questionContext: 'instructor',
-      // This is only used by score panels, which are not rendered in this context.
-      authorizedEdit: false,
-      // score panels are never rendered on the instructor question preview page.
-      renderScorePanels: false,
-      // Group role permissions are not used in this context.
-      groupRolePermissions: null,
-    });
-    res.json(panels);
-  }),
-);
-
-router.get(
   '/',
   asyncHandler(async (req, res) => {
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
@@ -148,6 +126,11 @@ router.get(
       search: normalPreviewSearchParams.toString(),
     });
 
+    const renderSubmissionSearchParams = new URLSearchParams();
+    if (manualGradingPreviewEnabled) {
+      renderSubmissionSearchParams.set('manual_grading_preview', 'true');
+    }
+
     setRendererHeader(res);
     res.send(
       InstructorQuestionPreview({
@@ -156,9 +139,38 @@ router.get(
         manualGradingPreviewUrl,
         aiGradingPreviewEnabled,
         aiGradingPreviewUrl,
+        renderSubmissionSearchParams,
         resLocals: res.locals,
       }),
     );
+  }),
+);
+
+router.get(
+  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
+  asyncHandler(async (req, res) => {
+    // As with the normal route, we need to respect the `manual_grading_preview` flag.
+    const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
+
+    const panels = await renderPanelsForSubmission({
+      submission_id: req.params.submission_id,
+      question: res.locals.question,
+      instance_question: null,
+      variant_id: req.params.variant_id,
+      user: res.locals.user,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: 'instructor',
+      // This is only used by score panels, which are not rendered in this context.
+      authorizedEdit: false,
+      // score panels are never rendered on the instructor question preview page.
+      renderScorePanels: false,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
+      localsOverrides: {
+        manualGradingInterface: manualGradingPreviewEnabled,
+      },
+    });
+    res.json(panels);
   }),
 );
 
