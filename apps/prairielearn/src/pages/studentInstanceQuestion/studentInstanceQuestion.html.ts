@@ -14,13 +14,19 @@ import { QuestionContainer, QuestionTitle } from '../../components/QuestionConta
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import type { User } from '../../lib/db-types.js';
+import { getRoleNamesForUser } from '../../lib/groups.js';
 
 export function StudentInstanceQuestion({
   resLocals,
   userCanDeleteAssessmentInstance,
+  assignedGrader,
+  lastGrader,
 }: {
   resLocals: Record<string, any>;
   userCanDeleteAssessmentInstance: boolean;
+  assignedGrader?: User | null;
+  lastGrader?: User | null;
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
@@ -165,7 +171,9 @@ export function StudentInstanceQuestion({
                 prevGroupRolePermissions: resLocals.prev_instance_question_role_permissions,
                 nextGroupRolePermissions: resLocals.next_instance_question_role_permissions,
                 advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
-                userGroupRoles: resLocals.assessment_instance.user_group_roles,
+                userGroupRoles: resLocals.group_info
+                  ? getRoleNamesForUser(resLocals.group_info, resLocals.user).join(', ')
+                  : null,
               })}
               ${resLocals.assessment.allow_personal_notes
                 ? PersonalNotesPanel({
@@ -184,6 +192,8 @@ export function StudentInstanceQuestion({
                 assessment: resLocals.assessment,
                 assessment_instance: resLocals.assessment_instance,
                 instance_question: resLocals.instance_question,
+                assignedGrader,
+                lastGrader,
                 question: resLocals.question,
                 variant: resLocals.variant,
                 instance_group: resLocals.instance_group,

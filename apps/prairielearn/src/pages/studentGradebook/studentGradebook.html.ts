@@ -35,10 +35,10 @@ export function StudentGradebook({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Gradebook' })}
       </head>
       <body>
-        ${Navbar({ resLocals, navPage: 'gradebook' })}
+        ${Navbar({ resLocals, navPage: 'gradebook', navSubPage: 'gradebook' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
@@ -48,8 +48,8 @@ export function StudentGradebook({
             <table class="table table-sm table-hover" aria-label="Gradebook">
               <thead>
                 <tr>
-                  <th style="width: 1%"><span class="sr-only">Label</span></th>
-                  <th><span class="sr-only">Title</span></th>
+                  <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                  <th><span class="visually-hidden">Title</span></th>
                   <th class="text-center">Score</th>
                 </tr>
               </thead>
@@ -75,7 +75,7 @@ export function StudentGradebook({
                       </td>
                       <td class="text-center align-middle">
                         ${row.show_closed_assessment_score
-                          ? Scorebar(row.assessment_instance_score_perc)
+                          ? Scorebar(row.assessment_instance_score_perc, { classes: 'mx-auto' })
                           : 'Score not shown'}
                       </td>
                     </tr>

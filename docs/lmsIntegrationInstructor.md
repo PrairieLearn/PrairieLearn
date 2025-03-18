@@ -1,10 +1,21 @@
 # LMS integration for instructors
 
-Integrating Learning Management Systems (LMSes) with PrairieLearn uses [LTI 1.3](https://www.1edtech.org/standards/lti) technology to connect LMS courses with PrairieLearn course instances. This allows for programmatic assignment linking and grade passback.
+PrairieLearn can connect to Learning Management Systems (LMSes) using [LTI 1.3](https://www.1edtech.org/standards/lti) technology. This allows for assignment linking and grade syncing.
 
-PrairieLearn currently has "Public Preview" support for integration with Learning
-Management Systems, starting with Canvas. General availability of Canvas integration
-support as well as support for other LMS platforms will be coming in the future.
+Canvas integration via LTI 1.3 is currently available as a public preview. General availability of Canvas integration as well as support for other LMS platforms will be coming in the future.
+
+## Make sure you have the right permissions
+
+Linking a PrairieLearn course instance with a Canvas course requires the following permissions:
+
+- Canvas
+  - Teacher or Designer
+- PrairieLearn Course
+  - Editor
+- PrairieLearn Course Instance
+  - [Student Data Editor](course/index.md#course-staff)
+
+To check this, in PrairieLearn go to the "Staff" tab and make sure that the "Student data access" column has an "Editor" badge for the appropriate course instance, in the row corresponding to your name. If you don't have Student Data Editor permission, add this or ask the course owner to do so.
 
 ## Setting up your Canvas course for PrairieLearn
 
@@ -13,7 +24,7 @@ go to "Settings" in the left-hand menu, then choose the "Navigation" tab and fin
 PrairieLearn in the list of hidden items. Drag PrairieLearn to the top visible list and
 click Save. When the page reloads, you should see PrairieLearn in your Canvas course left menu.
 
-If PrairieLearn is not listed under "Settings" / "Navigation" then it needs to be enabled for your university. Please email support@prairielearn.com to get it set up.
+If PrairieLearn is not listed under "Settings" / "Navigation" then it needs to be enabled for your university. Please email <support@prairielearn.com> to get it set up.
 
 The next step is to setup a connection between the Canvas course and a PrairieLearn course
 instance. As a Canvas Teacher, click the PrairieLearn left menu link. You will be presented

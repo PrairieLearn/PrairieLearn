@@ -26,7 +26,7 @@ If you copy questions or assessments from a different course and don't give them
 
 If you incorrectly change the UUID in a `infoCourseInstance.json` file when you didn't mean to, then you will get a sync error like:
 
-```
+```text
 Error: UUID 0339b989-d1f2-4f96-bcba-8717c68a64a9 from assessment exam1 in Sp18 already in use in different course instance (possibly in a different course)
 ```
 
@@ -34,7 +34,7 @@ An error like the one above can be fixed by reverting the UUID in the `infoCours
 
 ## Bulk addition of UUIDs
 
-To add a UUID to all the JSON files in a course you can run the included [`generate_uuids.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/tools/generate_uuids.py) Python script.
+To add a UUID to all the JSON files in a course you can run the included [`generate_uuids.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/contrib/generate_uuids.py) Python script.
 
 This script will add a UUID to the start of every JSON file that doesn't currently have one, so it's safe to run it multiple times. You will then need to commit and push these changes to GitHub.
 
@@ -51,9 +51,5 @@ For example, `python generate_uuids.py ~/git/pl-tam212`.
 If you're using the Docker container, you can avoid downloading the script by running:
 
 ```sh
-docker run --rm -v /path/to/course:/course prairielearn/prairielearn python /PrairieLearn/tools/generate_uuids.py /course
+docker run --rm -v /path/to/course:/course prairielearn/prairielearn python /PrairieLearn/contrib/generate_uuids.py /course
 ```
-
-## Bulk replacement of UUIDs
-
-**Danger warning:** To change all UUIDs in a course, you can use the above `generate_uuids.py` script with the `--new` argument. **This can delete your entire course.**

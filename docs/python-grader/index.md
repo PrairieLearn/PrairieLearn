@@ -6,11 +6,11 @@ This file documents the default Python autograder included in the `prairielearn/
 
 ### `info.json`
 
-The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific Python autograder detailed in this document, `"image"` should be set to `"prairielearn/grader-python"` and `"entrypoint"` should point to `"/python_autograder/run.sh"` in the `"externalGradingOptions"` dictionary.
+The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific Python autograder detailed in this document, `"image"` should be set to `"prairielearn/grader-python"` in the `"externalGradingOptions"` dictionary. The `entrypoint` property does not need to be provided.
 
 A full `info.json` file should look something like:
 
-```json
+```json title="info.json"
 {
   "uuid": "...",
   "title": "...",
@@ -21,8 +21,7 @@ A full `info.json` file should look something like:
   "gradingMethod": "External",
   "externalGradingOptions": {
     "enabled": true,
-    "image": "prairielearn/grader-python",
-    "entrypoint": "/python_autograder/run.sh"
+    "image": "prairielearn/grader-python"
   }
 }
 ```
@@ -33,7 +32,7 @@ The server code in the `generate()` function must define the list of variables o
 
 These are stored as a list of dictionary objects in the `data["params"]` dict. The above `names_for_user` and `names_from_user` lists are stored as separate keys in `params`. For example:
 
-```python
+```python title="server.py"
 def generate(data):
     data["params"]["names_for_user"] = [
         {"name": "x", "description": "Description of the variable", "type": "float"},
@@ -49,7 +48,7 @@ Each variable dictionary has entries `name` (the Python variable name in the cod
 
 At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grader-results` to show the status of grading jobs. These are placed in the question panel and submission panel, respectively. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 
-```html
+```html title="question.html"
 <pl-question-panel>
   <pl-file-editor file-name="user_code.py"></pl-file-editor>
 </pl-question-panel>
@@ -66,7 +65,7 @@ Expected variables can also be displayed to the user with the `<pl-external-grad
 
 Full example:
 
-```html
+```html title="question.html"
 <pl-question-panel>
   <p>... Question prompt ...</p>
 
@@ -101,27 +100,35 @@ The server parameters in `data` can be accessed with `data` in this file.
 
 ### `tests/test.py`
 
-The test cases for each coding problem are defined as methods of a `test` class contained in the aptly named `test.py` file. The class will have one of the following signatures, depending if you require plots from the student:
+The test cases for each coding problem are defined as methods of a `Test` class contained in the `test.py` file. The class will extend from either `PLTestCase` or `PLTestCaseWithPlot`, depending if you require plots from the student:
 
-```python
-## No plot grading
+```python title="tests/test.py"
+from pl_unit_test import PLTestCase, PLTestCaseWithPlot
+
+# No plot grading
 class Test(PLTestCase):
+  pass
 
-## Plot grading enabled
+# Plot grading enabled
 class Test(PLTestCaseWithPlot):
+  pass
 ```
 
 These classes themselves extend `unittest.TestCase`, so any functionality from there is also available.
 
 Each test case is a separate method in the class, the names of these functions must be prefixed with `test_`, but any name that follows is arbitrary. Test cases are run in sorted order by the `unittest` library, so one convention that can be used is to give tests numeric names to ensure their running order.
 
-Adding a name and point value to the test case is done by means of python decorators:
-`@points(val)` and `@name("name of the test case")`. These will control the name of the case and the points awarded in the "Test Results" dropdown menu that are shown when a student submits a solution. An example of a definition:
+Adding a name and point value to the test case is done by means of python decorators: `@points(val)` and `@name("name of the test case")`. These will control the name of the case shown to students and the points awarded. An example of a definition:
 
-```python
-@points(10)
-@name("Cool test case")
-def test_0(self):
+```python title="tests/test.py"
+from pl_unit_test import PLTestCase
+from pl_helpers import name, points
+
+class Test(PLTestCase):
+  @points(10)
+  @name("Check basic math")
+  def test_0(self):
+    assert 1 == 1
 ```
 
 Inside the test case implementation, the student answer variables and reference answer variables can be accessed as children of the tuples `self.st` and `self.ref`, respectively. There are various helper functions to check correctness of different types of variables, these are defined in `code_feedback.py`. These are taken from the RELATE grader, so this may be familiar to those with prior experience with RELATE.
@@ -130,23 +137,28 @@ At the end of the test case, set the correctness of the answer using `feedback.s
 
 The overall structure of a test case should look something like:
 
-```python
+```python title="tests/test.py"
+from pl_unit_test import PLTestCase
+from pl_helpers import name, points
 from code_feedback import Feedback
 
-@points(10)
-@name("name of the test case")
-def test_0(self):
-   if Feedback.check_scalar("name of the variable", self.ref.variable_name, self.st.variable_names):
-       Feedback.set_score(1)
-   else:
-       Feedback.set_score(0)
+class Test(PLTestCase):
+  @points(10)
+  @name("name of the test case")
+  def test_0(self):
+    if Feedback.check_scalar("name of the variable", self.ref.variable_name, self.st.variable_names):
+        Feedback.set_score(1)
+    else:
+        Feedback.set_score(0)
 ```
 
 Note that `Feedback.set_score()` is used to set the correctness of the test case between `0` and `1`, this is then multiplied by the number of points awarded by the test case. For example, if a test case is worth 10 points and `Feedback.set_score(0.5)` is run, the student will be awarded 5 points.
 
 The server parameters in `data` can be accessed from within the test cases using `self.data`.
 
-### Leading and Trailing Code
+See the [code feedback documentation](#code-feedback) for a list of functions that can help you check the correctness of different types of variables.
+
+### Leading and trailing code
 
 If the optional files `tests/leading_code.py` and/or `tests/trailing_code.py` exist, the autograder will automatically prepend and append the contents to the user's submission before grading. This can be useful if alternative input methods are used, e.g. for Parson's problem questions to provide python imports or other code that must be run.
 
@@ -154,24 +166,24 @@ If the optional files `tests/leading_code.py` and/or `tests/trailing_code.py` ex
 
 By default, the student's code does not execute with `__name__` set to `"__main__"`, as is usually the case with Python scripts that are executed as a Python script. This allows students to use code like the following to test and debug their code in their local environment without affecting the autograder functionality:
 
-```python
+```python title="Student handout they are editing"
 if __name__ == "__main__":
     # Student's own debugging code
 ```
 
 If, on the other hand, a question expects a student to write code that checks for the value of `__name__`, this can be achieved by adding a [`tests/leading_code.py` file](#leading-and-trailing-code) with the following content:
 
-```python
+```python title="tests/leading_code.py"
 __name__ = "__main__"
 ```
 
-### Multiple Iterations
+### Multiple iterations
 
 By setting the `total_iters` class variable, the test suite can be run for multiple iterations. To prevent a specific test case from being run multiple times, you can add the `@not_repeated` decorator to it.
 
-### Code Feedback
+### Code feedback
 
-The code feedback library contains built-in functions for checking correctness of various datatypes. Here is a nonexhaustive list of them, for a more complete reference refer to the [autogenerated code docs](sphinx-docs.md) or the [source file on GitHub](https://github.com/PrairieLearn/PrairieLearn/blob/master/graders/python/python_autograder/code_feedback.py). Note that all functions will perform some sort of sanity checking on user input and will not fail if, for example, the student does not define an input variable.
+The code feedback library contains built-in functions for checking correctness of various datatypes. Here is a nonexhaustive list of them, for a more complete reference refer to the [autogenerated code docs](reference-docs.md) or the [source file on GitHub](https://github.com/PrairieLearn/PrairieLearn/blob/master/graders/python/python_autograder/code_feedback.py). Note that all functions will perform some sort of sanity checking on user input and will not fail if, for example, the student does not define an input variable.
 
 - `check_numpy_array_features(name, ref, data)`
   Checks that a numpy array has the same shape and datatype as the reference solution. Does _not_ check values against the reference.
@@ -213,21 +225,76 @@ Now, any time the student tries to use the functions, their code will raise an e
 
 ## Overview
 
-![](grader-structure.png)
+```d2
+direction: right
+setup: "setup_code.py"
+student: "Student Answer"
+reference: "Reference Answer\n(ans.py)"
+test: "Test Cases\n(test.py)"
+
+setup -> student {
+  label: "names_for_user"
+  style: {
+    bold: true
+  }
+}
+setup -> reference {
+  label: "All Variables"
+  style: {
+    bold: true
+  }
+}
+student -> test {
+  label: "names_from_user\n(self.st)"
+  style: {
+    bold: true
+  }
+}
+reference -> test {
+  label: "All Variables\n(self.ref)"
+  style: {
+    bold: true
+  }
+}
+```
 
 ## Course-specific libraries
 
 Some courses may use libraries that are common across multiple questions. For such questions, it is possible to save these libraries and classes in the course's `serverFilesCourse` directory. Any files in this directory are automatically added to the Python PATH, so they can be imported in any of the files above as needed. If this option is used, however, the question's `info.json` file should indicate that these files should be added to the grading container, as below:
 
-```json
+```json title="info.json"
 {
   "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-python",
-    "serverFilesCourse": ["course_lib.py"],
-    "entrypoint": "/python_autograder/run.sh"
+    "serverFilesCourse": ["course_lib.py"]
   }
 }
+```
+
+### Example usage of `serverFilesCourse` for static data
+
+The Python autograder is able to retrieve information from `serverFilesCourse`. This can be used when there are files and other static data that can be shared across multiple questions. For example, assume there is a data file called `chem.json` used in multiple questions. The file can be saved in the `serverFilesCourse` directory within the course root directory, for example at `serverFilesCourse/compounds/chem.json`.
+
+To access `serverFilesCourse` from the autograder, specify the file or its containing directory in the question `info.json`. For example, to copy the `compounds` directory to the autograder, use:
+
+```json title="info.json" hl_lines="6"
+{
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "serverFilesCourse": ["compounds"]
+  }
+}
+```
+
+The tests in `test.py` can then load the `chem.json` file using code such as the following:
+
+```python
+import json
+
+with open("/grade/serverFilesCourse/compounds/chem.json", "r") as f:
+    list_of_compounds = json.load(f)
 ```
 
 ## Security

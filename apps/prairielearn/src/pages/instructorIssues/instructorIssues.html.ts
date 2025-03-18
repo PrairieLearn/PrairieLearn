@@ -5,9 +5,8 @@ import { formatDate } from '@prairielearn/formatter';
 import { html, joinHtml } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { Pager } from '../../components/Pager.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
@@ -77,143 +76,148 @@ export function InstructorIssues({
 }) {
   const { authz_data, __csrf_token, urlPrefix, course } = resLocals;
   const issueCount = issues[0]?.issue_count ?? 0;
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })} ${compiledStylesheetTag('instructorIssues.css')}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
-          ${CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })}
-          ${authz_data.has_course_permission_edit
-            ? CloseMatchingIssuesModal({
-                openFilteredIssuesCount,
-                issues,
-                csrfToken: __csrf_token,
-              })
-            : ''}
-          ${FilterHelpModal()}
 
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <div class="d-flex flex-row align-items-center mb-2">
-                <div class="d-flex flex-column">
-                  <h1 class="h6 font-weight-normal mb-0">Issues</h1>
-                  <small>
-                    <a href="${formattedCommonQueries.allOpenQuery}" class="mr-3 text-white">
-                      <i class="fa fa-exclamation-circle"></i> ${openCount} open
-                    </a>
-                    <a href="${formattedCommonQueries.allClosedQuery}" class="text-white">
-                      <i class="fa fa-check-circle"></i> ${closedCount} closed
-                    </a>
-                  </small>
-                </div>
-                ${authz_data.has_course_permission_edit && openFilteredIssuesCount > 0
-                  ? html`
-                      <button
-                        class="btn btn-sm btn-danger ml-auto"
-                        data-toggle="modal"
-                        data-target="#closeMatchingIssuesModal"
-                      >
-                        <i class="fa fa-times" aria-hidden="true"></i> Close matching issues
-                      </button>
-                    `
-                  : ''}
-              </div>
-              <form name="query-form" method="GET">
-                <div class="input-group">
-                  <div class="input-group-prepend">
-                    <button
-                      class="btn btn-med-light dropdown-toggle"
-                      type="button"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Filters
-                    </button>
-                    <div class="dropdown-menu">
-                      <a class="dropdown-item" href="${formattedCommonQueries.allOpenQuery}">
-                        Open issues
-                      </a>
-                      <a class="dropdown-item" href="${formattedCommonQueries.allClosedQuery}">
-                        Closed issues
-                      </a>
-                      <a
-                        class="dropdown-item"
-                        href="${formattedCommonQueries.allManuallyReportedQuery}"
-                      >
-                        Manually-reported issues
-                      </a>
-                      <a
-                        class="dropdown-item"
-                        href="${formattedCommonQueries.allAutomaticallyReportedQuery}"
-                      >
-                        Automatically-reported issues
-                      </a>
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    class="form-control"
-                    name="q"
-                    value="${filterQuery}"
-                    aria-label="Search all issues"
-                  />
-                  <div class="input-group-append">
-                    <a
-                      class="btn btn-med-light"
-                      href="${urlPrefix}/course_admin/issues?q="
-                      title="Clear filters"
-                    >
-                      <i class="fa fa-times" aria-hidden="true"></i>
-                    </a>
-                    <button
-                      class="btn btn-med-light"
-                      type="button"
-                      title="Show filter help"
-                      data-toggle="modal"
-                      data-target="#filterHelpModal"
-                    >
-                      <i class="fa fa-question-circle" aria-hidden="true"></i>
-                    </button>
-                  </div>
-                </div>
-              </form>
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Issues',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'issues',
+    },
+    options: {
+      fullWidth: true,
+    },
+    headContent: [compiledStylesheetTag('instructorIssues.css')],
+    content: html`
+      ${CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })}
+      ${authz_data.has_course_permission_edit
+        ? CloseMatchingIssuesModal({
+            openFilteredIssuesCount,
+            issues,
+            csrfToken: __csrf_token,
+          })
+        : ''}
+      ${FilterHelpModal()}
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <div class="d-flex flex-row align-items-center mb-2">
+            <div class="d-flex flex-column">
+              <h1 class="h6 fw-normal mb-0">Issues</h1>
+              <small>
+                <a href="${formattedCommonQueries.allOpenQuery}" class="me-3 text-white">
+                  <i class="fa fa-exclamation-circle"></i> ${openCount} open
+                </a>
+                <a href="${formattedCommonQueries.allClosedQuery}" class="text-white">
+                  <i class="fa fa-check-circle"></i> ${closedCount} closed
+                </a>
+              </small>
             </div>
-
-            ${issues.length === 0
+            ${authz_data.has_course_permission_edit && openFilteredIssuesCount > 0
               ? html`
-                  <div class="card-body">
-                    <div class="text-center text-muted">No matching issues found</div>
-                  </div>
-                `
-              : html`
-                  <div class="list-group list-group-flush">
-                    ${issues.map((row) =>
-                      IssueRow({ issue: row, urlPrefix, authz_data, csrfToken: __csrf_token }),
-                    )}
-                  </div>
-                `}
-            ${issueCount > PAGE_SIZE
-              ? html`
-                  <div class="card-body">
-                    ${Pager({
-                      extraQueryParams: `q=${encodeURIComponent(filterQuery)}`,
-                      chosenPage,
-                      count: issueCount,
-                      pageSize: PAGE_SIZE,
-                    })}
-                  </div>
+                  <button
+                    class="btn btn-sm btn-danger ms-auto"
+                    data-bs-toggle="modal"
+                    data-bs-target="#closeMatchingIssuesModal"
+                  >
+                    <i class="fa fa-times" aria-hidden="true"></i> Close matching issues
+                  </button>
                 `
               : ''}
           </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+          <form method="GET">
+            <div class="input-group">
+              <button
+                class="btn btn-med-light dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                Filters
+              </button>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="${formattedCommonQueries.allOpenQuery}">
+                  Open issues
+                </a>
+                <a class="dropdown-item" href="${formattedCommonQueries.allClosedQuery}">
+                  Closed issues
+                </a>
+                <a class="dropdown-item" href="${formattedCommonQueries.allManuallyReportedQuery}">
+                  Manually-reported issues
+                </a>
+                <a
+                  class="dropdown-item"
+                  href="${formattedCommonQueries.allAutomaticallyReportedQuery}"
+                >
+                  Automatically-reported issues
+                </a>
+              </div>
+              <input
+                type="text"
+                class="form-control"
+                name="q"
+                value="${filterQuery}"
+                aria-label="Search all issues"
+              />
+              <button
+                class="btn btn-med-light"
+                type="submit"
+                data-bs-toggle="tooltip"
+                data-bs-title="Search"
+              >
+                <i class="fa fa-search" aria-hidden="true"></i>
+              </button>
+              <a
+                class="btn btn-med-light"
+                href="${urlPrefix}/course_admin/issues?q="
+                data-bs-toggle="tooltip"
+                data-bs-title="Clear filters"
+              >
+                <i class="fa fa-times" aria-hidden="true"></i>
+              </a>
+              <button
+                class="btn btn-med-light"
+                type="button"
+                data-bs-toggle="modal tooltip"
+                data-bs-target="#filterHelpModal"
+                data-bs-title="Filter help"
+              >
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        ${issues.length === 0
+          ? html`
+              <div class="card-body">
+                <div class="text-center text-muted">No matching issues found</div>
+              </div>
+            `
+          : html`
+              <div class="list-group list-group-flush">
+                ${issues.map((row) =>
+                  IssueRow({ issue: row, urlPrefix, authz_data, csrfToken: __csrf_token }),
+                )}
+              </div>
+            `}
+        ${issueCount > PAGE_SIZE
+          ? html`
+              <div class="card-body">
+                ${Pager({
+                  extraQueryParams: `q=${encodeURIComponent(filterQuery)}`,
+                  chosenPage,
+                  count: issueCount,
+                  pageSize: PAGE_SIZE,
+                })}
+              </div>
+            `
+          : ''}
+      </div>
+    `,
+  });
 }
 
 function IssueRow({
@@ -263,9 +267,9 @@ function IssueRow({
                   >)
                   <button
                     type="button"
-                    class="badge badge-warning badge-sm"
-                    data-toggle="tooltip"
-                    data-html="true"
+                    class="badge text-bg-warning badge-sm"
+                    data-bs-toggle="tooltip"
+                    data-bs-html="true"
                     title="This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page."
                   >
                     No student data access
@@ -273,7 +277,7 @@ function IssueRow({
                 `}
         </div>
         <p class="mb-0">${getFormattedMessage(issue)}</p>
-        <small class="text-muted mr-2">
+        <small class="text-muted me-2">
           #${issue.id} reported
           ${issue.date
             ? html`
@@ -292,8 +296,8 @@ function IssueRow({
             : ''}
         </small>
         ${issue.manually_reported
-          ? html`<span class="badge badge-info">Manually reported</span>`
-          : html`<span class="badge badge-warning">Automatically reported</span>`}
+          ? html`<span class="badge text-bg-info">Manually reported</span>`
+          : html`<span class="badge text-bg-warning">Automatically reported</span>`}
         ${issue.assessment && issue.course_instance_id
           ? AssessmentBadge({
               plainUrlPrefix,
@@ -303,11 +307,11 @@ function IssueRow({
             })
           : ''}
         ${issue.course_instance_short_name
-          ? html`<span class="badge badge-dark">${issue.course_instance_short_name}</span>`
+          ? html`<span class="badge text-bg-dark">${issue.course_instance_short_name}</span>`
           : ''}
       </div>
       ${authz_data.has_course_permission_edit
-        ? html`<div class="ml-auto pl-4">${IssueActionButton({ issue, csrfToken })}</div>`
+        ? html`<div class="ms-auto ps-4">${IssueActionButton({ issue, csrfToken })}</div>`
         : ''}
     </div>
   `;
@@ -347,7 +351,7 @@ function CloseMatchingIssuesModal({
         name="unsafe_issue_ids"
         value="${issues.map((issue) => issue.id).join(',')}"
       />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Close issues</button>
     `,
   });
@@ -357,6 +361,7 @@ function FilterHelpModal() {
   return Modal({
     id: 'filterHelpModal',
     title: 'Filter help',
+    form: false,
     body: html`
       <p>
         Issues can be filtered and searched in a variety of ways. Filtering is done with the
@@ -364,8 +369,10 @@ function FilterHelpModal() {
       </p>
       <table class="table table-bordered" aria-label="Filtering qualifiers">
         <thead>
-          <th>Qualifier</th>
-          <th>Explanation</th>
+          <tr>
+            <th>Qualifier</th>
+            <th>Explanation</th>
+          </tr>
         </thead>
         <tbody>
           <tr>
@@ -389,21 +396,22 @@ function FilterHelpModal() {
               <code>qid:<em>QID</em></code>
             </td>
             <td>
-              Shows all issues with a question ID like <code>QID</code>.
-              <br />
-              <strong>Example:</strong> <code>qid:graph</code> shows all issues associated with
-              questions such as <code>graphConnectivity</code> and <code>speedTimeGraph</code>.
+              Shows all issues with a question ID like <code>QID</code>; supports <code>*</code> as
+              a wildcard. For example, <code>qid:graphConnectivity</code> shows all issues
+              associated with the question <code>graphConnectivity</code>, and
+              <code>qid:graph*</code> shows all issues associated with any question that starts with
+              <code>graph</code>, such as <code>graphConnectivity</code> and
+              <code>graphTheory</code>.
             </td>
           </tr>
           <tr>
             <td>
-              <code>user:<em>USER</em></code>
+              <code>user:<em>UID</em></code>
             </td>
             <td>
-              Shows all issues that were reported by a user ID like <code>USER</code>.
-              <br />
-              <strong>Example:</strong> <code>user:student@example.com</code> shows all issues that
-              were reported by <code>student@example.com</code>.
+              Shows all issues that were reported by a user with a UID like <code>UID</code>. For
+              example, <code>user:student@example.com</code> shows all issues that were reported by
+              <code>student@example.com</code>.
             </td>
           </tr>
         </tbody>
@@ -423,13 +431,15 @@ function FilterHelpModal() {
 
       <h3 class="h4">Combining qualifiers</h3>
       <p>These can be combined to form complex searches. An example:</p>
-      <code><pre>is:open qid:vector answer is wrong</pre></code>
+      <pre><code>is:open qid:vector answer is wrong</code></pre>
       <p>
         This would return any open issues with a QID like <code>vector</code> whose message contains
         text like "answer is wrong".
       </p>
     `,
-    footer: html`<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>`,
+    footer: html`<button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+      Close
+    </button>`,
   });
 }
 
@@ -445,7 +455,10 @@ function IssueActionButton({ issue, csrfToken }: { issue: Issue; csrfToken: stri
                 class="btn btn-outline-secondary"
                 name="__action"
                 value="close"
-                title="Close issue"
+                aria-label="Close issue"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                data-bs-title="Close issue"
               >
                 <i class="fa fa-times fa-fw" aria-hidden="true"></i>
               </button>
@@ -455,7 +468,10 @@ function IssueActionButton({ issue, csrfToken }: { issue: Issue; csrfToken: stri
                 class="btn btn-outline-secondary"
                 name="__action"
                 value="open"
-                title="Reopen issue"
+                aria-label="Reopen issue"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                data-bs-title="Reopen issue"
               >
                 <i class="fa fa-rotate-right fa-fw" aria-hidden="true"></i>
               </button>

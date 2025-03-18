@@ -19,7 +19,7 @@ By default, PrairieLearn will auto-grade each question in real-time, and provide
 
 ![](student-retry.png)
 
-This short feedback cycle allows students to reach out to instructors right after the test, enabling them to promptly review and clarify any missed contepts, and consequently make adjustments for upcoming assessments.
+This short feedback cycle allows students to reach out to instructors right after the test, enabling them to promptly review and clarify any missed concepts, and consequently make adjustments for upcoming assessments.
 
 **Question 1** asks students to compute a variable $c$ given two parameters $a$ and $b$. The formula to compute $c$ is randomized (selected from a set of 4 different formulas) and the parameters $a$ and $b$ are randomized as well. Students have two attempts to complete this question: the first attempt for full credit and the second attempt for partial credit (1/3 points).
 

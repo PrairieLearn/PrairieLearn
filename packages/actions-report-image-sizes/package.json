@@ -13,12 +13,12 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.17.5",
-    "typescript": "^5.6.3"
+    "@types/node": "^20.17.23",
+    "typescript": "^5.8.2"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.0",
-    "zod": "^3.23.8"
+    "zod": "^3.24.2"
   }
 }

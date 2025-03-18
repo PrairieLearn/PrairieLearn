@@ -1,7 +1,15 @@
+import TomSelect from 'tom-select';
+
 import { onDocumentReady } from '@prairielearn/browser-utils';
+import { html } from '@prairielearn/html';
 
 import './lib/changeIdButton.js';
+import { TagBadge } from '../../src/components/TagBadge.html.js';
+import { TopicBadge } from '../../src/components/TopicBadge.html.js';
+import { type Topic, type Tag } from '../../src/lib/db-types.js';
+
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
+import { validateId } from './lib/validateId.js';
 
 onDocumentReady(() => {
   const qidField = document.querySelector('input[name="qid"]') as HTMLInputElement;
@@ -11,20 +19,56 @@ onDocumentReady(() => {
   );
   const saveButton = document.querySelector<HTMLButtonElement>('#save-button');
 
-  function validateId() {
-    const newValue = qidField.value;
-
-    if (otherQids.includes(newValue) && newValue !== qidField.defaultValue) {
-      qidField.setCustomValidity('This ID is already in use');
-    } else {
-      qidField.setCustomValidity('');
-    }
-
-    qidField.reportValidity();
+  if (document.getElementById('topic')) {
+    new TomSelect('#topic', {
+      valueField: 'name',
+      searchField: ['name', 'description'],
+      closeAfterSelect: true,
+      plugins: ['no_backspace_delete'],
+      maxItems: 1,
+      render: {
+        option(data: Topic) {
+          return html`
+            <div>
+              ${TopicBadge(data)}
+              <div>
+                <small>${data.description}</small>
+              </div>
+            </div>
+          `.toString();
+        },
+        item(data: Topic) {
+          return TopicBadge(data).toString();
+        },
+      },
+    });
   }
 
-  qidField.addEventListener('input', validateId);
-  qidField.addEventListener('change', validateId);
+  if (document.getElementById('tags')) {
+    new TomSelect('#tags', {
+      valueField: 'name',
+      searchField: ['name', 'description'],
+      plugins: ['remove_button'],
+      render: {
+        option(data: Tag) {
+          return html`
+            <div>
+              ${TagBadge(data)}
+              <div>
+                <small>${data.description}</small>
+              </div>
+            </div>
+          `.toString();
+        },
+        item(data: Tag) {
+          return html`<span class="badge color-${data.color} me-1">${data.name}</span>`.toString();
+        },
+      },
+    });
+  }
+
+  qidField.addEventListener('input', () => validateId({ input: qidField, otherIds: otherQids }));
+  qidField.addEventListener('change', () => validateId({ input: qidField, otherIds: otherQids }));
 
   if (!questionSettingsForm || !saveButton) return;
   saveButtonEnabling(questionSettingsForm, saveButton);

@@ -49,10 +49,10 @@ export function StudentAssessments({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Assessments' })}
       </head>
       <body>
-        ${Navbar({ resLocals, navPage: 'assessments' })}
+        ${Navbar({ resLocals, navPage: 'assessments', navSubPage: 'assessments' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
@@ -62,8 +62,8 @@ export function StudentAssessments({
             <table class="table table-sm table-hover" aria-label="Assessments">
               <thead>
                 <tr>
-                  <th style="width: 1%"><span class="sr-only">Label</span></th>
-                  <th><span class="sr-only">Title</span></th>
+                  <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                  <th><span class="visually-hidden">Title</span></th>
                   <th class="text-center">Available credit</th>
                   <th class="text-center">Score</th>
                 </tr>
