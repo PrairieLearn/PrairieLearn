@@ -1,6 +1,15 @@
+import { type Tooltip } from 'bootstrap';
+import { on } from 'delegated-events';
 import { observe } from 'selector-observer';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
+
+const openTooltips = new Set<Tooltip>();
+
+function closeOpenTooltips() {
+  openTooltips.forEach((tooltip) => tooltip.hide());
+  openTooltips.clear();
+}
 
 onDocumentReady(() => {
   observe('[data-bs-toggle~="tooltip"], [data-bs-toggle-tooltip="true"]', {
@@ -52,5 +61,20 @@ onDocumentReady(() => {
     remove(el) {
       window.bootstrap.Tooltip.getInstance(el)?.dispose();
     },
+  });
+
+  // Hide other open tooltips when a new one is shown.
+  on('show.bs.tooltip', 'body', () => {
+    closeOpenTooltips();
+  });
+
+  on('shown.bs.tooltip', 'body', (event) => {
+    const tooltip = window.bootstrap.Tooltip.getInstance(event.target as HTMLElement);
+    if (tooltip) openTooltips.add(tooltip);
+  });
+
+  on('hide.bs.tooltip', 'body', (event) => {
+    const tooltip = window.bootstrap.Tooltip.getInstance(event.target as HTMLElement);
+    if (tooltip) openTooltips.delete(tooltip);
   });
 });

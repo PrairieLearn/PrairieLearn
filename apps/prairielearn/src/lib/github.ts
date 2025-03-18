@@ -320,7 +320,7 @@ export async function createCourseRepoJob(
  * @param short_name Course shortname
  */
 export function reponameFromShortname(short_name: string) {
-  return 'pl-' + short_name.replace(' ', '').toLowerCase();
+  return 'pl-' + short_name.replaceAll(' ', '').toLowerCase();
 }
 
 /**
