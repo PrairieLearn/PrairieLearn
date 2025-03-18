@@ -189,8 +189,6 @@ function CourseNav({
       <button
         id="side-nav-toggler"
         type="button"
-        aria-expanded="false"
-        aria-label="Toggle sidebar"
         data-bs-toggle="tooltip"
         data-bs-placement="right"
         data-bs-title="${resLocals.side_nav_expanded

@@ -22,8 +22,9 @@ onDocumentReady(async () => {
         button.setAttribute('data-bs-toggle', 'tooltip');
       });
 
-      // Update the side nav toggler button icon and tooltip
+      // Update the side nav toggler button icon, aria-label, and tooltip
       sideNavTogglerButton.setAttribute('data-bs-title', 'Expand side nav');
+      sideNavTogglerButton.setAttribute('aria-label', 'Expand side nav');
       sideNavTogglerIcon.classList.replace('bi-arrow-bar-left', 'bi-arrow-bar-right');
     } else {
       // Expand the side nav
@@ -34,11 +35,11 @@ onDocumentReady(async () => {
         button.removeAttribute('data-bs-toggle');
       });
 
-      // Update the side nav toggler button icon and tooltip
+      // Update the side nav toggler button icon, aria-label, and tooltip
       sideNavTogglerButton.setAttribute('data-bs-title', 'Collapse side nav');
+      sideNavTogglerButton.setAttribute('aria-label', 'Collapse side nav');
       sideNavTogglerIcon.classList.replace('bi-arrow-bar-right', 'bi-arrow-bar-left');
     }
-
 
     // Update the tooltip title
     const tooltip = window.bootstrap.Tooltip.getInstance(sideNavTogglerButton);
