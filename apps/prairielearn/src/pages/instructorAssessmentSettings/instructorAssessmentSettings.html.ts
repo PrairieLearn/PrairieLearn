@@ -229,7 +229,7 @@ ${resLocals.assessment.text}</textarea
               />
               <label class="form-check-label" for="auto_close">Auto close</label>
               <div class="small text-muted">
-                Whether to automatically close the assessment after a period of inactivity.
+                Whether to automatically close the assessment after 6 hours of inactivity.
               </div>
             </div>
             <div class="mb-3 form-check">
