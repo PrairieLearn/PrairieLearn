@@ -196,7 +196,7 @@ window.PLDrawingApi = {
         if (!elem_options.editable) {
           btn.disabled = true;
         }
-        let cloned_opts = structuredClone(opts || {});
+        let cloned_opts = _.clone(opts || {});
         $(btn).click(() => elem.button_press(canvas, cloned_opts, submittedAnswer));
       }
     });
@@ -359,7 +359,7 @@ class PLDrawingAnswerState {
    * @removeHandler {optional} Function that is run whenever the canvas object is deleted.
    */
   registerAnswerObject(options, object, modifyHandler, removeHandler) {
-    let submitted_object = structuredClone(options);
+    let submitted_object = _.clone(options);
     if (!('id' in submitted_object)) {
       if (!('id' in object)) {
         submitted_object.id = window.PLDrawingApi.generateID();
