@@ -181,7 +181,8 @@ ${resLocals.assessment.text}</textarea
               </div>
             </div>
             ${resLocals.assessment.type !== 'Homework'
-              ? html` <div class="mb-3">
+              ? html`
+                <div class="mb-3">
                   <div class="mb-3 form-check">
                     <input
                       class="form-check-input"
@@ -198,7 +199,8 @@ ${resLocals.assessment.text}</textarea
                       Whether to allow students to create additional instances of the assessment.
                     </div>
                   </div>
-                </div>`
+                </div>
+              `
               : ''}
             <div class="mb-3 form-check">
               <input
