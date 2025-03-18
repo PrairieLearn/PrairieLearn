@@ -23,12 +23,8 @@ export function AssessmentNavigation({
 }) {
   // Target subpage for the dropdown links to assessments.
   const targetSubPage = run(() => {
-    if (!subPage) {
-      return '';
-    }
-    if (subPage === 'assessment_instance') {
-      return 'instances';
-    }
+    if (!subPage) return '';
+    if (subPage === 'assessment_instance') return 'instances';
     return subPage;
   });
 
