@@ -1,11 +1,13 @@
 import * as cheerio from 'cheerio';
 
+import { formatHtmlWithPrettier } from './prettier.js';
+
 /**
  * Processes rendered question HTML to make it suitable for AI grading.
  * This includes removing scripts/stylesheets and attributes that aren't
  * relevant to grading.
  */
-export function stripHtmlForAiGrading(html: string) {
+export async function stripHtmlForAiGrading(html: string) {
   const $ = cheerio.load(html, null, false);
 
   // Remove elements that are guaranteed to be irrelevant to grading.
@@ -43,5 +45,12 @@ export function stripHtmlForAiGrading(html: string) {
     }
   });
 
-  return $.html().trim();
+  const result = $.html();
+  if (result.length > 10000) {
+    // Prevent denial of service attacks by skipping Prettier formatting
+    // if the HTML is too large. 10,000 characters was chosen arbitrarily.
+    return html.trim();
+  }
+
+  return (await formatHtmlWithPrettier(result)).trim();
 }

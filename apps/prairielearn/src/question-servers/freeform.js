@@ -1147,6 +1147,13 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     }
   }
 
+  if (panel === 'question' && locals.questionRenderContext === 'ai_grading') {
+    // For AI grading, the question panel is always rendered without a specific
+    // submission. The question panel is meant to provide context to the LLM;
+    // all student submissions will be provided by rendering the submission panel.
+    submission = null;
+  }
+
   const data = {
     // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
     // so we'll use the submission's values if they exist.
@@ -1227,7 +1234,7 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     // isn't relevant during AI grading.
     html:
       locals.questionRenderContext === 'ai_grading'
-        ? stripHtmlForAiGrading(cachedData.html)
+        ? await stripHtmlForAiGrading(cachedData.html)
         : cachedData.html,
     cacheHit,
   };
