@@ -77,9 +77,6 @@ router.get(
     // TODO: need to ensure that the answer panel is not shown if it's not provided
     // to the AI grader (I believe it is not).
     //
-    // TODO: need to ensure that async-rendered submissions follow the same rendering
-    // rules.
-    //
     // TODO: need to ensure this respects the `ai-grading` feature flag.
     if (aiGradingPreviewEnabled) {
       res.locals.questionHtml = AiGradingContext(res.locals.questionHtml);
@@ -126,8 +123,12 @@ router.get(
       search: normalPreviewSearchParams.toString(),
     });
 
+    // These will be passed back when submissions are rendered asynchronously.
+    // We treat these as mutually exclusive.
     const renderSubmissionSearchParams = new URLSearchParams();
-    if (manualGradingPreviewEnabled) {
+    if (aiGradingPreviewEnabled) {
+      renderSubmissionSearchParams.set('ai_grading_preview', 'true');
+    } else if (manualGradingPreviewEnabled) {
       renderSubmissionSearchParams.set('manual_grading_preview', 'true');
     }
 
@@ -150,6 +151,11 @@ router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
     // As with the normal route, we need to respect the `manual_grading_preview` flag.
+    //
+    // TODO: we need to handle the `ai_grading_preview` flag here as well. We should
+    // probably pass some conditional down to the rendering function to indicate that
+    // we're in AI grading mode to avoid the need to duplicate the rendering logic
+    // all over the place.
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
 
     const panels = await renderPanelsForSubmission({
