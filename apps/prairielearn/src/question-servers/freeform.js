@@ -294,7 +294,7 @@ function getElementController(elementName, context) {
  * Returns a copy of data with the new urls inserted.
  */
 function getElementClientFiles(data, elementName, context) {
-  let dataCopy = _.cloneDeep(data);
+  let dataCopy = structuredClone(data);
   // The options field wont contain URLs unless in the 'render' stage, so
   // check if it is populated before adding the element url
   if ('base_url' in data.options) {
@@ -1382,8 +1382,9 @@ export async function render(
       // Gather dependencies for all rendered elements
       allRenderedElementNames.forEach((elementName) => {
         let resolvedElement = resolveElement(elementName, context);
-        const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
-        const elementDynamicDependencies = _.cloneDeep(resolvedElement.dynamicDependencies || {});
+        const elementDependencies = structuredClone(resolvedElement.dependencies) ?? {};
+        const elementDynamicDependencies =
+          structuredClone(resolvedElement.dynamicDependencies) ?? {};
 
         // Transform non-global dependencies to be prefixed by the element name,
         // since they'll be served from their element's directory
@@ -1474,10 +1475,10 @@ export async function render(
               continue;
             }
 
-            const extension = _.cloneDeep(extensions[elementName][extensionName]).dependencies;
-            const extensionDynamic = _.cloneDeep(
-              extensions[elementName][extensionName],
-            ).dynamicDependencies;
+            const extension =
+              structuredClone(extensions[elementName][extensionName]).dependencies ?? {};
+            const extensionDynamic =
+              structuredClone(extensions[elementName][extensionName]).dynamicDependencies ?? {};
             if ('extensionStyles' in extension) {
               extension.extensionStyles = extension.extensionStyles.map(
                 (dep) => `${elementName}/${extensionName}/${dep}`,
