@@ -193,13 +193,9 @@ function CourseNav({
         aria-label="Toggle sidebar"
         data-bs-toggle="tooltip"
         data-bs-placement="right"
-        data-bs-original-title="${resLocals.side_nav_expanded
+        data-bs-title="${resLocals.side_nav_expanded
           ? 'Collapse side nav'
           : 'Expand side nav'}"
-        ${resLocals.course.id ? `data-course-id=${resLocals.course.id}` : ''}
-        ${resLocals.course_instance?.id
-          ? `data-course-instance-id=${resLocals.course_instance.id}`
-          : ''}
       >
         <i
           id="side-nav-toggler-icon"

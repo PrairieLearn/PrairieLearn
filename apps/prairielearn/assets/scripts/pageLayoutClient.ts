@@ -13,9 +13,6 @@ onDocumentReady(async () => {
 
     const sideNavButtons = document.querySelectorAll<HTMLButtonElement>('.side-nav-link');
 
-    const courseId = sideNavTogglerButton.getAttribute('data-course-id');
-    const courseInstanceId = sideNavTogglerButton.getAttribute('data-course-instance-id');
-
     if (sideNavExpanded) {
       // Collapse the side nav
       appContainerDiv.classList.add('collapsed');
@@ -26,7 +23,7 @@ onDocumentReady(async () => {
       });
 
       // Update the side nav toggler button icon and tooltip
-      sideNavTogglerButton.setAttribute('data-bs-original-title', 'Expand side nav');
+      sideNavTogglerButton.setAttribute('data-bs-title', 'Expand side nav');
       sideNavTogglerIcon.classList.replace('bi-arrow-bar-left', 'bi-arrow-bar-right');
     } else {
       // Expand the side nav
@@ -38,26 +35,29 @@ onDocumentReady(async () => {
       });
 
       // Update the side nav toggler button icon and tooltip
-      sideNavTogglerButton.setAttribute('data-bs-original-title', 'Collapse side nav');
+      sideNavTogglerButton.setAttribute('data-bs-title', 'Collapse side nav');
       sideNavTogglerIcon.classList.replace('bi-arrow-bar-right', 'bi-arrow-bar-left');
     }
 
+
+    // Update the tooltip title
     const tooltip = window.bootstrap.Tooltip.getInstance(sideNavTogglerButton);
     if (tooltip) {
-      tooltip.hide();
-    }
+      // Dispose the current tooltip instance
+      tooltip.dispose(); 
+      // Re-initialize the tooltip
+      new window.bootstrap.Tooltip(sideNavTogglerButton); 
+    } 
 
-    if (courseInstanceId || courseId) {
-      // Update the side nav expanded state
-      await fetch('/pl/side_nav/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          side_nav_expanded: !sideNavExpanded,
-        }),
-      });
-    }
+    // Update the side nav expanded state
+    await fetch('/pl/side_nav/settings', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        side_nav_expanded: !sideNavExpanded,
+      }),
+    });
   });
 });
