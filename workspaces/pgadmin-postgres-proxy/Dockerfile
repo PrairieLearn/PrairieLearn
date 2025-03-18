@@ -8,7 +8,7 @@ RUN apt-get update \
   && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg \
   && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
   && apt-get update \
-  && apt-get install caddy \
+  && apt-get install -y caddy \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -26,7 +26,7 @@ RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get -yq install postgresql-16 postgresql-client-16 postgresql-contrib-16 \
   && rm -rf /var/lib/apt/lists/* \
   && python3 -m pip install --upgrade pip==24 \
-  && python3 -m pip install sqlparse psycopg2 \
+  && python3 -m pip install sqlparse==0.5.3 psycopg2==2.9.10 \
   # && python3 -m pip install rstr \
   && python3 -m pip install pgadmin4==8.14 \
   && mkdir /sql-scripts \
