@@ -29,7 +29,7 @@ export async function selectAndAuthzInstitutionAsAdmin({
   if (
     result == null ||
     (!result.administrator && !result.institution_administrator) ||
-    (result.administrator && !access_as_administrator)
+    (result.administrator && !access_as_administrator && !result.institution_administrator)
   ) {
     throw new HttpStatusError(403, 'Not authorized');
   }
