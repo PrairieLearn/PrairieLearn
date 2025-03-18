@@ -1,88 +1,9 @@
-import parsePostgresInterval from 'postgres-interval';
 import { z } from 'zod';
 
-const INTERVAL_MS_PER_SECOND = 1000;
-const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
-const INTERVAL_MS_PER_HOUR = 60 * INTERVAL_MS_PER_MINUTE;
-const INTERVAL_MS_PER_DAY = 24 * INTERVAL_MS_PER_HOUR;
-const INTERVAL_MS_PER_MONTH = 30 * INTERVAL_MS_PER_DAY;
-const INTERVAL_MS_PER_YEAR = 365.25 * INTERVAL_MS_PER_DAY;
+import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
-/**
- * IDs are always coerced to strings. This ensures consistent handling when an
- * ID is fetched directly or via `to_jsonb`, which returns a number.
- *
- * The `refine` step is important to ensure that the thing we've coerced to a
- * string is actually a number. If it's not, we want to fail quickly.
- */
-export const IdSchema = z
-  .string({ coerce: true })
-  .refine((val) => /^\d+$/.test(val), { message: 'ID is not a non-negative integer' });
-
-/**
- * This is a schema for the objects produced by the `postgres-interval` library.
- */
-const PostgresIntervalSchema = z.object({
-  years: z.number().default(0),
-  months: z.number().default(0),
-  days: z.number().default(0),
-  hours: z.number().default(0),
-  minutes: z.number().default(0),
-  seconds: z.number().default(0),
-  milliseconds: z.number().default(0),
-});
-
-/**
- * This schema handles two representations of an interval:
- *
- * - A string like "1 year 2 days", which is how intervals will be represented
- *   if they go through `to_jsonb` in a query.
- * - A {@link PostgresIntervalSchema} object, which is what we'll get if a
- *   query directly returns an interval column. The interval will already be
- *   parsed by `postgres-interval` by way of `pg-types`.
- *
- * In either case, we convert the interval to a number of milliseconds.
- */
-export const IntervalSchema = z
-  .union([z.string(), PostgresIntervalSchema])
-  .transform((interval) => {
-    if (typeof interval === 'string') {
-      interval = parsePostgresInterval(interval);
-    }
-
-    // This calculation matches Postgres's behavior when computing the number of
-    // milliseconds in an interval with `EXTRACT(epoch from '...'::interval) * 1000`.
-    // The noteworthy parts of this conversion are that 1 year = 365.25 days and
-    // 1 month = 30 days.
-    return (
-      interval.years * INTERVAL_MS_PER_YEAR +
-      interval.months * INTERVAL_MS_PER_MONTH +
-      interval.days * INTERVAL_MS_PER_DAY +
-      interval.hours * INTERVAL_MS_PER_HOUR +
-      interval.minutes * INTERVAL_MS_PER_MINUTE +
-      interval.seconds * INTERVAL_MS_PER_SECOND +
-      interval.milliseconds
-    );
-  });
-
-/**
- * Accepts either a string or a Date object. If a string is passed, it is
- * validated and parsed as an ISO date string.
- *
- * Useful for parsing dates from JSON, which are always strings.
- */
-export const DateFromISOString = z
-  .union([z.string(), z.date()])
-  .refine(
-    (s) => {
-      const date = new Date(s);
-      return !Number.isNaN(date.getTime());
-    },
-    {
-      message: 'must be a valid ISO date string',
-    },
-  )
-  .transform((s) => new Date(s));
+// re-export schemas for backwards compatibility
+export { DateFromISOString, IdSchema, IntervalSchema };
 
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
@@ -239,7 +160,7 @@ export const AssessmentModuleSchema = z.object({
   id: IdSchema,
   course_id: IdSchema,
   name: z.string(),
-  heading: z.string().nullable(),
+  heading: z.string(),
   number: z.number().nullable(),
   implicit: z.boolean(),
 });
@@ -372,6 +293,7 @@ export const CourseSchema = z.object({
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
   short_name: z.string().nullable(),
+  show_getting_started: z.boolean(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
@@ -460,7 +382,7 @@ export type DraftQuestionMetadata = z.infer<typeof DraftQuestionMetadataSchema>;
 
 export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
-  created_at: DateFromISOString,
+  created_at: DateFromISOString.nullable(),
   id: IdSchema,
   user_id: IdSchema,
 });
@@ -499,13 +421,19 @@ export const FileEditSchema = z.object({
 });
 export type FileEdit = z.infer<typeof FileEditSchema>;
 
-export const AiGenerationPromptSchema = z.object({
+export const AiQuestionGenerationPromptSchema = z.object({
   completion: z.any(),
   system_prompt: z.string().nullable(),
   errors: z.array(z.string()),
   html: z.string().nullable(),
   id: z.string(),
-  prompt_type: z.enum(['initial', 'human_revision', 'auto_revision']),
+  prompt_type: z.enum([
+    'initial',
+    'human_revision',
+    'auto_revision',
+    'manual_change',
+    'manual_revert',
+  ]),
   prompting_user_id: z.string(),
   python: z.string().nullable(),
   question_id: z.string(),
@@ -514,7 +442,7 @@ export const AiGenerationPromptSchema = z.object({
   job_sequence_id: z.string().nullable(),
 });
 
-export type AiGenerationPrompt = z.infer<typeof AiGenerationPromptSchema>;
+export type AiQuestionGenerationPrompt = z.infer<typeof AiQuestionGenerationPromptSchema>;
 
 export const FileTransferSchema = z.object({
   created_at: DateFromISOString,
@@ -1007,7 +935,6 @@ export const SubmissionSchema = z.object({
   format_errors: z.record(z.string(), z.any()).nullable(),
   gradable: z.boolean().nullable(),
   graded_at: DateFromISOString.nullable(),
-  grading_method: z.enum(['Internal', 'External', 'Manual']).nullable(),
   grading_requested_at: DateFromISOString.nullable(),
   id: IdSchema,
   manual_rubric_grading_id: IdSchema.nullable(),
@@ -1025,23 +952,23 @@ export const SubmissionSchema = z.object({
 export type Submission = z.infer<typeof SubmissionSchema>;
 
 export const TagSchema = z.object({
-  color: z.string().nullable(),
+  color: z.string(),
   course_id: IdSchema,
-  description: z.string().nullable(),
+  description: z.string(),
   id: IdSchema,
   implicit: z.boolean(),
-  name: z.string().nullable(),
+  name: z.string(),
   number: z.number().nullable(),
 });
 export type Tag = z.infer<typeof TagSchema>;
 
 export const TopicSchema = z.object({
-  color: z.string().nullable(),
+  color: z.string(),
   course_id: IdSchema,
-  description: z.string().nullable(),
+  description: z.string(),
   id: IdSchema,
   implicit: z.boolean(),
-  name: z.string().nullable(),
+  name: z.string(),
   number: z.number().nullable(),
 });
 export type Topic = z.infer<typeof TopicSchema>;
@@ -1074,7 +1001,7 @@ export const UserSessionSchema = z.object({
 export type UserSession = z.infer<typeof UserSessionSchema>;
 
 export const VariantSchema = z.object({
-  authn_user_id: IdSchema.nullable(),
+  authn_user_id: IdSchema,
   broken: z.boolean().nullable(),
   broken_at: DateFromISOString.nullable(),
   broken_by: IdSchema.nullable(),
@@ -1094,7 +1021,7 @@ export const VariantSchema = z.object({
   question_id: IdSchema,
   true_answer: z.record(z.string(), z.any()).nullable(),
   user_id: IdSchema.nullable(),
-  variant_seed: z.string().nullable(),
+  variant_seed: z.string(),
   workspace_id: IdSchema.nullable(),
 });
 export type Variant = z.infer<typeof VariantSchema>;

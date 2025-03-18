@@ -11,16 +11,15 @@ import { Modal } from './Modal.html.js';
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
   // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way
+
   return html`
     <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
-    <script src="${nodeModulesAssetPath(
-        'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-      )}"></script>
     <script src="${nodeModulesAssetPath(
         'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js',
       )}"></script>
 
     ${compiledScriptTag('instructorQuestionsClient.ts')}
+    ${compiledScriptTag('bootstrap-table-sticky-header.js')}
     ${compiledStylesheetTag('questionsTable.css')}
   `;
 }
@@ -78,17 +77,12 @@ export function QuestionsTable({
 
       ${questions.length > 0
         ? html`
-            <form class="ml-1 btn-group" name="add-question-form" method="POST">
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-              <input type="hidden" name="__action" value="add_question" />
-            </form>
-
             <table
               id="questionsTable"
               aria-label="Questions"
               data-data="${JSON.stringify(questions)}"
               data-classes="table table-sm table-hover table-bordered"
-              data-thead-classes="thead-light"
+              data-thead-classes="table-light"
               data-filter-control="true"
               data-show-columns="true"
               data-show-columns-toggle-all="true"
@@ -228,7 +222,7 @@ export function QuestionsTable({
           `
         : html`
             <div class="my-4 card-body text-center" style="text-wrap: balance;">
-              <p class="font-weight-bold">No questions found.</p>
+              <p class="fw-bold">No questions found.</p>
               <p class="mb-0">
                 A question is a problem or task that tests a student's understanding of a specific
                 concept.
@@ -239,12 +233,32 @@ export function QuestionsTable({
                   >question documentation</a
                 >.
               </p>
-              <form class="ml-1 btn-group" method="POST">
-                <button class="btn btn-sm btn-primary">
-                  <i class="fa fa-plus" aria-hidden="true"></i>
-                  <span>Add question</span>
-                </button>
-              </form>
+              ${showAddQuestionButton
+                ? html`
+                    <div class="d-flex flex-row flex-wrap justify-content-center gap-3">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#createQuestionModal"
+                      >
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        Add question
+                      </button>
+                      ${showAiGenerateQuestionButton
+                        ? html`
+                            <a
+                              class="btn btn-sm btn-primary"
+                              href="${urlPrefix}/ai_generate_question_drafts"
+                            >
+                              <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+                              Generate question with AI
+                            </a>
+                          `
+                        : ''}
+                    </div>
+                  `
+                : ''}
             </div>
           `}
     </div>
@@ -263,8 +277,8 @@ function CreateQuestionModal({
     title: 'Create question',
     formMethod: 'POST',
     body: html`
-      <div class="form-group">
-        <label for="title">Title</label>
+      <div class="mb-3">
+        <label class="form-label" for="title">Title</label>
         <input
           type="text"
           class="form-control"
@@ -277,8 +291,8 @@ function CreateQuestionModal({
           The full name of the question, visible to users.
         </small>
       </div>
-      <div class="form-group">
-        <label for="qid">Question identifier (QID)</label>
+      <div class="mb-3">
+        <label class="form-label" for="qid">Question identifier (QID)</label>
         <input
           type="text"
           class="form-control"
@@ -293,8 +307,8 @@ function CreateQuestionModal({
           Use only letters, numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
-      <div class="form-group">
-        <label for="start_from">Start from</label>
+      <div class="mb-3">
+        <label class="form-label" for="start_from">Start from</label>
         <select
           class="form-select"
           id="start_from"
@@ -310,8 +324,8 @@ function CreateQuestionModal({
         </small>
       </div>
 
-      <div id="templateContainer" class="form-group" hidden>
-        <label for="template_qid">Template</label>
+      <div id="templateContainer" class="mb-3" hidden>
+        <label class="form-label" for="template_qid">Template</label>
         <select
           class="form-select"
           id="template_qid"
@@ -332,7 +346,7 @@ function CreateQuestionModal({
     footer: html`
       <input type="hidden" name="__action" value="add_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Create</button>
     `,
   });

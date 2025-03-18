@@ -2,7 +2,7 @@
 
 See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/elements) for example elements.
 
-Element code uses the libraries in [the `python/` module](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/python).
+Element code uses the [`prairielearn` module](https://prairielearn.readthedocs.io/en/latest/python-reference/) for common functionality like parsing attributes and computing scores.
 
 ## Anatomy of an element
 
@@ -25,7 +25,7 @@ parsing the student's submission, and optionally grading the submission.
 As a simple example, element `pl-my-element` would have the following file
 structure:
 
-```
+```text
 pl-my-element
 +-- info.json
 |-- pl-my-element.py

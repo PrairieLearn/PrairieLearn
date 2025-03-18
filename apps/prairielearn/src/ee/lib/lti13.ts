@@ -140,6 +140,8 @@ export const Lti13ClaimSchema = z.object({
 });
 export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
+export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
+
 export class Lti13Claim {
   private claims: Lti13ClaimType;
   private req: Request;
@@ -215,11 +217,8 @@ export class Lti13Claim {
   /**
    * Return if user claim has roles for Instructor. Can toggle if a TA is considered an
    * instructor or not.
-   *
-   * @param {boolean} taIsInstructor [false]
-   * @returns boolean
    */
-  isRoleInstructor(taIsInstructor = false) {
+  isRoleInstructor(): boolean {
     this.assertValid();
     /*
      TA roles from Canvas development system
@@ -229,15 +228,32 @@ export class Lti13Claim {
       'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
       'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
       'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
+     ]
+    Student roles
+    [
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner',
+      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
+    ]
+    Designer roles
+    [
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
+      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
     ]
     */
 
     let role_instructor = this.roles.some((val: string) =>
-      ['Instructor', 'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'].includes(val),
+      [
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
+      ].includes(val),
     );
 
+    // TA roles may also have Instructor roles, so check this next. We don't
+    // currently consider TAs to be instructors.
     if (
-      !taIsInstructor &&
       this.roles.includes(
         'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
       )

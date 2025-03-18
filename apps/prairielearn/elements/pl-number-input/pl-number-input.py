@@ -97,6 +97,14 @@ def format_true_ans(
             element, "comparison", ComparisonType, COMPARISON_DEFAULT
         )
 
+        # Correct answers may be specified as strings, so we need to convert them
+        # to numbers for formatting. See the note in `grade()` for why we cast to
+        # these specific types.
+        if np.iscomplexobj(correct_answer):
+            correct_answer = np.complex128(correct_answer)
+        else:
+            correct_answer = np.float64(correct_answer)
+
         if custom_format is not None:
             correct_answer = ("{:" + custom_format + "}").format(correct_answer)
         elif comparison is ComparisonType.RELABS:
@@ -351,13 +359,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_answer = data["submitted_answers"].get(name, None)
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
         submitted_answer = blank_value
-    value, newdata = pl.string_fraction_to_number(
+
+    res = pl.string_fraction_to_number(
         submitted_answer, allow_fractions=allow_fractions, allow_complex=allow_complex
     )
-
-    if value is not None:
+    if res[0] is not None:
+        _, newdata = res
         data["submitted_answers"][name] = newdata["submitted_answers"]
     else:
+        _, newdata = res
         data["format_errors"][name] = get_format_string(
             allow_complex, allow_fractions, newdata["format_errors"]
         )
@@ -496,7 +506,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             # Get max error according to numpy.allclose()
-            eps = np.absolute(correct_answer) * rtol + atol
+            eps = np.absolute(correct_answer_converted) * rtol + atol
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])
         elif comparison is ComparisonType.SIGFIG:
@@ -505,7 +515,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             if correct_answer == 0:
                 n = digits - 1
             else:
-                n = -int(np.floor(np.log10(np.abs(correct_answer)))) + (digits - 1)
+                n = -int(np.floor(np.log10(np.abs(correct_answer_converted)))) + (
+                    digits - 1
+                )
             eps = 0.51 * (10**-n)
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])

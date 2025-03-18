@@ -12,7 +12,6 @@ import * as path from 'node:path';
 import * as util from 'node:util';
 import * as url from 'url';
 
-import * as async from 'async';
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
 import bodyParser from 'body-parser';
@@ -49,12 +48,14 @@ import {
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
+import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
 import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
+import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
@@ -68,12 +69,12 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { LocalCache } from './lib/local-cache.js';
-import * as nodeMetrics from './lib/node-metrics.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
+import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
@@ -579,31 +580,9 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl', (await import('./pages/home/home.js')).default);
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
-  app.use('/pl/password', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'password';
-      next();
-    },
-    (await import('./pages/authPassword/authPassword.js')).default,
-  ]);
-  app.use('/pl/news_items', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'news';
-      next();
-    },
-    (await import('./pages/newsItems/newsItems.js')).default,
-  ]);
-  app.use('/pl/news_item', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'news';
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'news_item';
-      next();
-    },
-    (await import('./pages/newsItem/newsItem.js')).default,
-  ]);
+  app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
+  app.use('/pl/news_items', (await import('./pages/newsItems/newsItems.js')).default);
+  app.use('/pl/news_item', (await import('./pages/newsItem/newsItem.js')).default);
   app.use(
     '/pl/request_course',
     (await import('./pages/instructorRequestCourse/instructorRequestCourse.js')).default,
@@ -726,6 +705,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor', [
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
     (await import('./middlewares/selectOpenIssueCount.js')).default,
+    (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       next();
@@ -766,6 +746,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course/:course_id(\\d+)', [
     (await import('./middlewares/authzCourseOrInstance.js')).default, // set res.locals.course
     (await import('./middlewares/selectOpenIssueCount.js')).default,
+    (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       next();
@@ -1012,23 +993,11 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_edit',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'file_edit';
-        next();
-      },
-      (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
-    ],
+    (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_view',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'file_view';
-        next();
-      },
-      (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
-    ],
+    (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_download',
@@ -1124,6 +1093,7 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
+      (await import('./middlewares/selectAssessments.js')).default,
       (await import('./pages/instructorAssessmentInstance/instructorAssessmentInstance.js'))
         .default,
     ],
@@ -1144,7 +1114,7 @@ export async function initExpress(): Promise<Express> {
       res.redirect(
         url.format({
           pathname: `${req.params[0]}/preview`,
-          search: url.parse(req.originalUrl).search,
+          search: getSearchParams(req).toString(),
         }),
       );
     },
@@ -1158,23 +1128,11 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/settings',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'settings';
-        next();
-      },
-      (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
-    ],
+    (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/preview',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'preview';
-        next();
-      },
-      (await import('./pages/instructorQuestionPreview/instructorQuestionPreview.js')).default,
-    ],
+    (await import('./pages/instructorQuestionPreview/instructorQuestionPreview.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/statistics',
@@ -1189,23 +1147,11 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_edit',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'file_edit';
-        next();
-      },
-      (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
-    ],
+    (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_view',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'file_view';
-        next();
-      },
-      (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
-    ],
+    (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_download',
@@ -1240,116 +1186,77 @@ export async function initExpress(): Promise<Express> {
       next();
     },
   );
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/settings', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'settings';
-      next();
-    },
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/settings',
     (await import('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings.js'))
       .default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/sharing', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'sharing';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/sharing',
     (await import('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/staff', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'staff';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/staff',
     (await import('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/sets', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'sets';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/sets',
     (await import('./pages/instructorCourseAdminSets/instructorCourseAdminSets.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/modules', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'modules';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/modules',
     (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/instances', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'instances';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/instances',
     (await import('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances.js'))
       .default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/issues', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'issues';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/issues',
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'questions';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions',
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
-  ]);
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/getting_started',
+    (
+      await import(
+        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
+      )
+    ).default,
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
-
     (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
       .default,
   );
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts', [
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'questions';
-      next();
-    },
-    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js'))
-      .default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'syncs';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/topics', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'topics';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/topics',
     (await import('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/tags', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'tags';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/tags',
     (await import('./pages/instructorCourseAdminTags/instructorCourseAdminTags.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_edit', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'file_edit';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_edit',
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'file_view';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view',
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
-  ]);
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_download',
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
@@ -1379,70 +1286,46 @@ export async function initExpress(): Promise<Express> {
       next();
     }),
   );
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/settings', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'settings';
-      next();
-    },
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/settings',
     (await import('./pages/instructorInstanceAdminSettings/instructorInstanceAdminSettings.js'))
       .default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/access', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'access';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/access',
     (await import('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess.js'))
       .default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'assessments';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'gradebook';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook',
     (await import('./pages/instructorGradebook/instructorGradebook.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/lti', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'lti';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/lti',
     (await import('./pages/instructorInstanceAdminLti/instructorInstanceAdminLti.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_edit', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'file_edit';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_edit',
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'file_view';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view',
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
-  ]);
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_download',
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
   );
   if (isEnterprise()) {
-    app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/billing', [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'billing';
-        next();
-      },
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/billing',
       (await import('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling.js'))
         .default,
-    ]);
+    );
     app.use(
       '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13_instance',
       (await import('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13.js'))
@@ -1703,7 +1586,7 @@ export async function initExpress(): Promise<Express> {
     res.redirect(
       url.format({
         pathname: `${req.params[0]}/preview`,
-        search: new URL(req.originalUrl, `${req.protocol}://${req.headers.host}/`).search,
+        search: getSearchParams(req).toString(),
       }),
     );
   });
@@ -1711,41 +1594,26 @@ export async function initExpress(): Promise<Express> {
     res.locals.navPage = 'question';
     next();
   });
-  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/settings', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'settings';
-      next();
-    },
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/settings',
     (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'preview';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/preview',
     (await import('./pages/instructorQuestionPreview/instructorQuestionPreview.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/statistics', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'statistics';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/statistics',
     (await import('./pages/instructorQuestionStatistics/instructorQuestionStatistics.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_edit', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'file_edit';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_edit',
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'file_view';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view',
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
-  ]);
+  );
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_download',
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
@@ -1764,120 +1632,80 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/course_admin',
     (await import('./pages/instructorCourseAdmin/instructorCourseAdmin.js')).default,
   );
-
   app.use('/pl/course/:course_id(\\d+)/course_admin', function (req, res, next) {
     res.locals.navPage = 'course_admin';
     next();
   });
-  app.use('/pl/course/:course_id(\\d+)/course_admin/settings', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'settings';
-      next();
-    },
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/settings',
     (await import('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings.js'))
       .default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/sharing', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'sharing';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/sharing',
     (await import('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/staff', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'staff';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/staff',
     (await import('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/sets', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'sets';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/sets',
     (await import('./pages/instructorCourseAdminSets/instructorCourseAdminSets.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/modules', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'modules';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/modules',
     (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/instances', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'instances';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/instances',
     (await import('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances.js'))
       .default,
+  );
+  app.use('/pl/course/:course_id(\\d+)/course_admin/getting_started', [
+    (
+      await import(
+        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
+      )
+    ).default,
   ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/issues', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'issues';
-      next();
-    },
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/issues',
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/questions', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'questions';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/questions',
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
-  ]);
+  );
   app.use(
     '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
     (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
       .default,
   );
-  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_drafts', [
+  app.use(
+    '/pl/course/:course_id(\\d+)/ai_generate_question_drafts',
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'questions';
-      next();
-    },
-    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js'))
-      .default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/syncs', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'syncs';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/topics', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'topics';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/topics',
     (await import('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/tags', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'tags';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/tags',
     (await import('./pages/instructorCourseAdminTags/instructorCourseAdminTags.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/file_edit', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'file_edit';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/file_edit',
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/course_admin/file_view', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navSubPage = 'file_view';
-      next();
-    },
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/file_view',
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
-  ]);
+  );
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/file_download',
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
@@ -1970,22 +1798,25 @@ export async function initExpress(): Promise<Express> {
       next();
     },
   ]);
-  app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
-    function (req: Request, res: Response, next: NextFunction) {
+  app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
+    function (req, res, next) {
       res.locals.navPage = 'public_question';
-      res.locals.navSubPage = 'preview';
       next();
     },
+    (await import('./pages/publicQuestionFileBrowser/publicQuestionFileBrowser.js')).default,
+  ]);
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_download',
+    (await import('./pages/publicQuestionFileDownload/publicQuestionFileDownload.js')).default,
+  );
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview',
     (await import('./pages/publicQuestionPreview/publicQuestionPreview.js')).default,
-  ]);
-  app.use('/pl/public/course/:course_id(\\d+)/questions', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'public_questions';
-      res.locals.navSubPage = 'questions';
-      next();
-    },
+  );
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/questions',
     (await import('./pages/publicQuestions/publicQuestions.js')).default,
-  ]);
+  );
   app.use(
     '/pl/public/course/:course_id(\\d+)/cacheableElements/:cachebuster',
     (await import('./pages/elementFiles/elementFiles.js')).default({
@@ -2040,6 +1871,18 @@ export async function initExpress(): Promise<Express> {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
+
+  app.use(
+    '/pl/administrator',
+    asyncHandler(async (req, res, next) => {
+      const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
+        user_id: res.locals.authn_user.user_id,
+      });
+      res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+      next();
+    }),
+  );
+
   app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
@@ -2271,478 +2114,460 @@ export async function insertDevUser() {
   await sqldb.queryAsync(adminSql, { user_id });
 }
 
-if (esMain(import.meta) && config.startServer) {
-  async.series(
-    [
-      async () => {
-        logger.verbose('PrairieLearn server start');
-
-        // For backwards compatibility, we'll default to trying to load config
-        // files from both the application and repository root.
-        //
-        // We'll put the app config file second so that it can override anything
-        // in the repository root config file.
-        let configPaths = [
-          path.join(REPOSITORY_ROOT_PATH, 'config.json'),
-          path.join(APP_ROOT_PATH, 'config.json'),
-        ];
-
-        // If a config file was specified on the command line, we'll use that
-        // instead of the default locations.
-        if ('config' in argv) {
-          configPaths = [argv['config']];
-        }
-
-        // Load config immediately so we can use it configure everything else.
-        await loadConfig(configPaths);
-
-        // This should be done as soon as we load our config so that we can
-        // start exporting spans.
-        await opentelemetry.init({
-          ...config,
-          serviceName: 'prairielearn',
-          // For Sentry to work correctly, it needs to hook into our OpenTelemetry setup.
-          // https://docs.sentry.io/platforms/javascript/guides/node/tracing/instrumentation/opentelemetry/
-          //
-          // However, despite what their documentation claims, only the `SentryContextManager`
-          // is necessary if one isn't using Sentry for tracing. In fact, if `SentrySpanProcessor`
-          // is used, 100% of traces will be sent to Sentry, despite us never having set
-          // `tracesSampleRate` in the Sentry configuration.
-          contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
-        });
-
-        // Same with Sentry configuration.
-        if (config.sentryDsn) {
-          await Sentry.init({
-            dsn: config.sentryDsn,
-            environment: config.sentryEnvironment,
-
-            // Sentry (specifically `import-in-the-middle`, which Sentry uses)
-            // is known to cause issues with loading `openai` as ESM. Their
-            // recommended workaround it to exclude the module from their hooks.
-            // See related issues:
-            // https://github.com/openai/openai-node/issues/903
-            // https://github.com/getsentry/sentry-javascript/issues/12414
-            registerEsmLoaderHooks: {
-              exclude: [/openai/],
-            },
-
-            // We have our own OpenTelemetry setup, so ensure Sentry doesn't
-            // try to set that up for itself, but only if OpenTelemetry is
-            // enabled. Otherwise, allow Sentry to install its own stuff so
-            // that request isolation works correctly.
-            skipOpenTelemetrySetup: config.openTelemetryEnabled,
-
-            beforeSend: (event) => {
-              // This will be necessary until we can consume the following change:
-              // https://github.com/chimurai/http-proxy-middleware/pull/823
-              //
-              // The following error message should match the error that's thrown
-              // from the `router` function in our `http-proxy-middleware` config.
-              if (
-                event.exception?.values?.some(
-                  (value) => value.type === 'Error' && value.value === 'Workspace is not running',
-                )
-              ) {
-                return null;
-              }
-
-              return event;
-            },
-          });
-        }
-
-        // Start capturing profiling information as soon as possible.
-        if (config.pyroscopeEnabled) {
-          if (
-            !config.pyroscopeServerAddress ||
-            !config.pyroscopeBasicAuthUser ||
-            !config.pyroscopeBasicAuthPassword
-          ) {
-            throw new Error('Pyroscope configuration is incomplete');
-          }
-
-          const Pyroscope = await import('@pyroscope/nodejs');
-          Pyroscope.init({
-            appName: 'prairielearn',
-            serverAddress: config.pyroscopeServerAddress,
-            basicAuthUser: config.pyroscopeBasicAuthUser,
-            basicAuthPassword: config.pyroscopeBasicAuthPassword,
-            tags: {
-              instanceId: config.instanceId,
-              ...config.pyroscopeTags,
-            },
-          });
-          Pyroscope.start();
-        }
-
-        if (config.logFilename) {
-          addFileLogging({ filename: config.logFilename });
-        }
-
-        if (config.logErrorFilename) {
-          addFileLogging({ filename: config.logErrorFilename, level: 'error' });
-        }
-      },
-      async () => {
-        if (config.blockedAtWarnEnable) {
-          blockedAt(
-            (time, stack) => {
-              const msg = `BLOCKED-AT: Blocked for ${time}ms`;
-              logger.verbose(msg, { time, stack });
-              console.log(msg + '\n' + stack.join('\n'));
-            },
-            { threshold: config.blockedWarnThresholdMS },
-          ); // threshold in milliseconds
-        } else if (config.blockedWarnEnable) {
-          blocked(
-            (time) => {
-              const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
-              logger.verbose(msg, { time });
-              console.log(msg);
-            },
-            { threshold: config.blockedWarnThresholdMS },
-          ); // threshold in milliseconds
-        }
-      },
-      async () => {
-        if (isEnterprise() && config.hasAzure) {
-          const { getAzureStrategy } = await import('./ee/auth/azure/index.js');
-          passport.use(getAzureStrategy());
-        }
-      },
-      async () => {
-        if (isEnterprise()) {
-          const { strategy } = await import('./ee/auth/saml/index.js');
-          passport.use(strategy);
-        }
-      },
-      async function () {
-        const pgConfig = {
-          user: config.postgresqlUser,
-          database: config.postgresqlDatabase,
-          host: config.postgresqlHost,
-          password: config.postgresqlPassword ?? undefined,
-          max: config.postgresqlPoolSize,
-          idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
-          ssl: config.postgresqlSsl,
-          errorOnUnusedParameters: config.devMode,
-        };
-        function idleErrorHandler(err: Error) {
-          logger.error('idle client error', err);
-          Sentry.captureException(err, {
-            level: 'fatal',
-            tags: {
-              // This may have been set by `@prairielearn/postgres`. We include this in the
-              // Sentry tags to more easily debug idle client errors.
-              last_query: (err as any)?.data?.lastQuery ?? undefined,
-            },
-          });
-          Sentry.close().finally(() => process.exit(1));
-        }
-
-        logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
-
-        await sqldb.initAsync(pgConfig, idleErrorHandler);
-
-        // Our named locks code maintains a separate pool of database connections.
-        // This ensures that we avoid deadlocks.
-        await namedLocks.init(pgConfig, idleErrorHandler, {
-          renewIntervalMs: config.namedLocksRenewIntervalMs,
-        });
-
-        logger.verbose('Successfully connected to database');
-      },
-      async () => {
-        if (argv['refresh-workspace-hosts-and-exit']) {
-          logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
-
-          const hosts = await markAllWorkspaceHostsUnhealthy('refresh-workspace-hosts-and-exit');
-
-          const pluralHosts = hosts.length === 1 ? 'host' : 'hosts';
-          logger.info(`${hosts.length} ${pluralHosts} marked unhealthy`);
-          hosts.forEach((host) => logger.info(`- ${host.instance_id} (${host.hostname})`));
-
-          process.exit(0);
-        }
-      },
-      async () => {
-        // We need to do this before we run migrations, as some migrations will
-        // call `enqueueBatchedMigration` which requires this to be initialized.
-        const runner = initBatchedMigrations({
-          project: 'prairielearn',
-          directories: [path.join(import.meta.dirname, 'batched-migrations')],
-        });
-
-        runner.on('error', (err) => {
-          logger.error('Batched migration runner error', err);
-          Sentry.captureException(err);
-        });
-      },
-      async () => {
-        // Using the `--migrate-and-exit` flag will override the value of
-        // `config.runMigrations`. This allows us to use the same config when
-        // running migrations as we do when we start the server.
-        if (config.runMigrations || argv['migrate-and-exit']) {
-          await migrations.init(
-            [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-            'prairielearn',
-          );
-
-          if (argv['migrate-and-exit']) {
-            logger.info('option --migrate-and-exit passed, running DB setup and exiting');
-            process.exit(0);
-          }
-        }
-      },
-      async () => {
-        // Collect metrics on our Postgres connection pools.
-        const meter = opentelemetry.metrics.getMeter('prairielearn');
-
-        const pools = [
-          {
-            name: 'default',
-            pool: sqldb.defaultPool,
-          },
-          {
-            name: 'named-locks',
-            pool: namedLocks.pool,
-          },
-        ];
-
-        pools.forEach(({ name, pool }) => {
-          opentelemetry.createObservableValueGauges(
-            meter,
-            `postgres.pool.${name}.total`,
-            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-            () => pool.totalCount,
-          );
-
-          opentelemetry.createObservableValueGauges(
-            meter,
-            `postgres.pool.${name}.idle`,
-            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-            () => pool.idleCount,
-          );
-
-          opentelemetry.createObservableValueGauges(
-            meter,
-            `postgres.pool.${name}.waiting`,
-            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-            () => pool.waitingCount,
-          );
-
-          const queryCounter = opentelemetry.getObservableCounter(
-            meter,
-            `postgres.pool.${name}.query.count`,
-            { valueType: opentelemetry.ValueType.INT },
-          );
-          queryCounter.addCallback((observableResult) => {
-            observableResult.observe(pool.queryCount);
-          });
-        });
-      },
-      async () => {
-        // Collect metrics on our code callers.
-        const meter = opentelemetry.metrics.getMeter('prairielearn');
-
-        opentelemetry.createObservableValueGauges(
-          meter,
-          'code-caller.pool.size',
-          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-          () => codeCaller.getMetrics().size,
-        );
-        opentelemetry.createObservableValueGauges(
-          meter,
-          'code-caller.pool.available',
-          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-          () => codeCaller.getMetrics().available,
-        );
-        opentelemetry.createObservableValueGauges(
-          meter,
-          'code-caller.pool.borrowed',
-          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-          () => codeCaller.getMetrics().borrowed,
-        );
-        opentelemetry.createObservableValueGauges(
-          meter,
-          'code-caller.pool.pending',
-          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-          () => codeCaller.getMetrics().pending,
-        );
-      },
-      async () => {
-        // We create and activate a random DB schema name
-        // (https://www.postgresql.org/docs/current/ddl-schemas.html)
-        // after we have run the migrations but before we create
-        // the sprocs. This means all tables (from migrations) are
-        // in the public schema, but all sprocs are in the random
-        // schema. Every server invocation thus has its own copy
-        // of its sprocs, allowing us to update servers while old
-        // servers are still running. See docs/dev-guide.md for
-        // more info.
-        //
-        // We use the combination of instance ID and port number to uniquely
-        // identify each server; in some cases, we're running multiple instances
-        // on the same physical host.
-        //
-        // The schema prefix should not exceed 28 characters; this is due to
-        // the underlying Postgres limit of 63 characters for schema names.
-        // Currently, EC2 instance IDs are 19 characters long, and we use
-        // 4-digit port numbers, so this will be safe (19+1+4=24). If either
-        // of those ever get longer, we have a little wiggle room. Nonetheless,
-        // we'll check to make sure we don't exceed the limit and fail fast if
-        // we do.
-        const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
-        if (schemaPrefix.length > 28) {
-          throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
-        }
-        await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
-        await sprocs.init();
-      },
-      async () => {
-        if (config.runBatchedMigrations) {
-          // Now that all migrations have been run, we can start executing any
-          // batched migrations that may have been enqueued by migrations.
-          //
-          // Note that we don't do this until sprocs have been created because
-          // some batched migrations may depend on sprocs.
-          startBatchedMigrations({
-            workDurationMs: config.batchedMigrationsWorkDurationMs,
-            sleepDurationMs: config.batchedMigrationsSleepDurationMs,
-          });
-        }
-      },
-      async () => {
-        if ('sync-course' in argv) {
-          logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
-          const { jobSequenceId, jobPromise } = await pullAndUpdateCourse({
-            courseId: argv['sync-course'],
-            authnUserId: null,
-            userId: null,
-          });
-          logger.info(`Course sync job sequence ${jobSequenceId} created.`);
-          logger.info('Waiting for job to finish...');
-          await jobPromise;
-          (await serverJobs.selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
-            logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
-          });
-          process.exit(0);
-        }
-      },
-      async () => {
-        if (!config.initNewsItems) return;
-
-        // We initialize news items asynchronously so that servers can boot up
-        // in production as quickly as possible.
-        news_items.initInBackground({
-          // Always notify in production environments.
-          notifyIfPreviouslyEmpty: !config.devMode,
-        });
-      },
-      // We need to initialize these first, as the code callers require these
-      // to be set up.
-      function (callback) {
-        load.initEstimator('request', 1);
-        load.initEstimator('authed_request', 1);
-        load.initEstimator('python', 1, false);
-        load.initEstimator('python_worker_active', 1);
-        load.initEstimator('python_worker_idle', 1, false);
-        load.initEstimator('python_callback_waiting', 1);
-        callback(null);
-      },
-      async () => await codeCaller.init(),
-      async () => await assets.init(),
-      async () =>
-        await cache.init({
-          type: config.cacheType,
-          keyPrefix: config.cacheKeyPrefix,
-          redisUrl: config.redisUrl,
-        }),
-      async () => await freeformServer.init(),
-      async () => {
-        if (!config.devMode) return;
-
-        await insertDevUser();
-      },
-      async () => {
-        logger.verbose('Starting server...');
-        await startServer();
-      },
-      async () => socketServer.init(server),
-      async () => externalGradingSocket.init(),
-      async () => externalGrader.init(),
-      async () => workspace.init(),
-      async () => serverJobs.init(),
-      async () => nodeMetrics.init(),
-      // These should be the last things to start before we actually start taking
-      // requests, as they may actually end up executing course code.
-      async () => {
-        if (!config.externalGradingEnableResults) return;
-        await externalGraderResults.init();
-      },
-      async () => await cron.init(),
-      async () => lifecycleHooks.completeInstanceLaunch(),
-    ],
-    function (err, data) {
-      if (err) {
-        logger.error('Error initializing PrairieLearn server:', err, data);
-        throw err;
-      } else {
-        logger.info('PrairieLearn server ready, press Control-C to quit');
-        if (config.devMode) {
-          logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
-        }
-
-        // SIGTERM can be used to gracefully shut down the process. This signal
-        // may come from another process, but we also send it to ourselves if
-        // we want to gracefully shut down. This is used below in the ASG
-        // lifecycle handler, and also within the "terminate" webhook.
-        process.once('SIGTERM', async () => {
-          // By this point, we should no longer be attached to the load balancer,
-          // so there's no point shutting down the HTTP server or the socket.io
-          // server.
-          //
-          // We use `allSettled()` here to ensure that all tasks can gracefully
-          // shut down, even if some of them fail.
-          logger.info('Shutting down async processing');
-          const results = await Promise.allSettled([
-            externalGraderResults.stop(),
-            cron.stop(),
-            serverJobs.stop(),
-            stopBatchedMigrations(),
-          ]);
-          results.forEach((r) => {
-            if (r.status === 'rejected') {
-              logger.error('Error shutting down async processing', r.reason);
-              Sentry.captureException(r.reason);
-            }
-          });
-
-          try {
-            await lifecycleHooks.completeInstanceTermination();
-          } catch (err) {
-            logger.error('Error completing instance termination', err);
-            Sentry.captureException(err);
-          }
-
-          logger.info('Terminating...');
-          // Shut down OpenTelemetry exporting.
-          try {
-            await opentelemetry.shutdown();
-          } catch (err) {
-            logger.error('Error shutting down OpenTelemetry', err);
-            Sentry.captureException(err);
-          }
-
-          // Flush all events to Sentry.
-          try {
-            await Sentry.flush();
-          } finally {
-            process.exit(0);
-          }
-        });
-      }
+function idleErrorHandler(err: Error) {
+  logger.error('idle client error', err);
+  Sentry.captureException(err, {
+    level: 'fatal',
+    tags: {
+      // This may have been set by `@prairielearn/postgres`. We include this in the
+      // Sentry tags to more easily debug idle client errors.
+      last_query: (err as any)?.data?.lastQuery ?? undefined,
     },
-  );
+  });
+  Sentry.close().finally(() => process.exit(1));
+}
+
+if (esMain(import.meta) && config.startServer) {
+  try {
+    logger.verbose('PrairieLearn server start');
+
+    // For backwards compatibility, we'll default to trying to load config
+    // files from both the application and repository root.
+    //
+    // We'll put the app config file second so that it can override anything
+    // in the repository root config file.
+    let configPaths = [
+      path.join(REPOSITORY_ROOT_PATH, 'config.json'),
+      path.join(APP_ROOT_PATH, 'config.json'),
+    ];
+
+    // If a config file was specified on the command line, we'll use that
+    // instead of the default locations.
+    if ('config' in argv) {
+      configPaths = [argv['config']];
+    }
+
+    // Load config immediately so we can use it configure everything else.
+    await loadConfig(configPaths);
+
+    // This should be done as soon as we load our config so that we can
+    // start exporting spans.
+    await opentelemetry.init({
+      ...config,
+      serviceName: 'prairielearn',
+      // For Sentry to work correctly, it needs to hook into our OpenTelemetry setup.
+      // https://docs.sentry.io/platforms/javascript/guides/node/tracing/instrumentation/opentelemetry/
+      //
+      // However, despite what their documentation claims, only the `SentryContextManager`
+      // is necessary if one isn't using Sentry for tracing. In fact, if `SentrySpanProcessor`
+      // is used, 100% of traces will be sent to Sentry, despite us never having set
+      // `tracesSampleRate` in the Sentry configuration.
+      contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
+    });
+
+    // Same with Sentry configuration.
+    if (config.sentryDsn) {
+      await Sentry.init({
+        dsn: config.sentryDsn,
+        environment: config.sentryEnvironment,
+
+        // We have our own OpenTelemetry setup, so ensure Sentry doesn't
+        // try to set that up for itself, but only if OpenTelemetry is
+        // enabled. Otherwise, allow Sentry to install its own stuff so
+        // that request isolation works correctly.
+        skipOpenTelemetrySetup: config.openTelemetryEnabled,
+
+        beforeSend: (event) => {
+          // This will be necessary until we can consume the following change:
+          // https://github.com/chimurai/http-proxy-middleware/pull/823
+          //
+          // The following error message should match the error that's thrown
+          // from the `router` function in our `http-proxy-middleware` config.
+          if (
+            event.exception?.values?.some(
+              (value) => value.type === 'Error' && value.value === 'Workspace is not running',
+            )
+          ) {
+            return null;
+          }
+
+          return event;
+        },
+      });
+    }
+
+    // Start capturing profiling information as soon as possible.
+    if (config.pyroscopeEnabled) {
+      if (
+        !config.pyroscopeServerAddress ||
+        !config.pyroscopeBasicAuthUser ||
+        !config.pyroscopeBasicAuthPassword
+      ) {
+        throw new Error('Pyroscope configuration is incomplete');
+      }
+
+      const Pyroscope = await import('@pyroscope/nodejs');
+      Pyroscope.init({
+        appName: 'prairielearn',
+        serverAddress: config.pyroscopeServerAddress,
+        basicAuthUser: config.pyroscopeBasicAuthUser,
+        basicAuthPassword: config.pyroscopeBasicAuthPassword,
+        tags: {
+          instanceId: config.instanceId,
+          ...config.pyroscopeTags,
+        },
+      });
+      Pyroscope.start();
+    }
+
+    if (config.logFilename) {
+      addFileLogging({ filename: config.logFilename });
+    }
+
+    if (config.logErrorFilename) {
+      addFileLogging({ filename: config.logErrorFilename, level: 'error' });
+    }
+
+    if (config.blockedAtWarnEnable) {
+      blockedAt(
+        (time, stack) => {
+          const msg = `BLOCKED-AT: Blocked for ${time}ms`;
+          logger.verbose(msg, { time, stack });
+          console.log(msg + '\n' + stack.join('\n'));
+        },
+        { threshold: config.blockedWarnThresholdMS },
+      ); // threshold in milliseconds
+    } else if (config.blockedWarnEnable) {
+      blocked(
+        (time) => {
+          const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
+          logger.verbose(msg, { time });
+          console.log(msg);
+        },
+        { threshold: config.blockedWarnThresholdMS },
+      ); // threshold in milliseconds
+    }
+
+    if (isEnterprise() && config.hasAzure) {
+      const { getAzureStrategy } = await import('./ee/auth/azure/index.js');
+      passport.use(getAzureStrategy());
+    }
+
+    if (isEnterprise()) {
+      const { strategy } = await import('./ee/auth/saml/index.js');
+      passport.use(strategy);
+    }
+
+    const pgConfig = {
+      user: config.postgresqlUser,
+      database: config.postgresqlDatabase,
+      host: config.postgresqlHost,
+      password: config.postgresqlPassword ?? undefined,
+      max: config.postgresqlPoolSize,
+      idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+      ssl: config.postgresqlSsl,
+      errorOnUnusedParameters: config.devMode,
+    };
+
+    logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+
+    await sqldb.initAsync(pgConfig, idleErrorHandler);
+
+    // Our named locks code maintains a separate pool of database connections.
+    // This ensures that we avoid deadlocks.
+    await namedLocks.init(pgConfig, idleErrorHandler, {
+      renewIntervalMs: config.namedLocksRenewIntervalMs,
+    });
+
+    logger.verbose('Successfully connected to database');
+
+    if (argv['refresh-workspace-hosts-and-exit']) {
+      logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
+
+      const hosts = await markAllWorkspaceHostsUnhealthy('refresh-workspace-hosts-and-exit');
+
+      const pluralHosts = hosts.length === 1 ? 'host' : 'hosts';
+      logger.info(`${hosts.length} ${pluralHosts} marked unhealthy`);
+      hosts.forEach((host) => logger.info(`- ${host.instance_id} (${host.hostname})`));
+
+      process.exit(0);
+    }
+
+    // We need to do this before we run migrations, as some migrations will
+    // call `enqueueBatchedMigration` which requires this to be initialized.
+    const runner = initBatchedMigrations({
+      project: 'prairielearn',
+      directories: [path.join(import.meta.dirname, 'batched-migrations')],
+    });
+
+    runner.on('error', (err) => {
+      logger.error('Batched migration runner error', err);
+      Sentry.captureException(err);
+    });
+
+    // Using the `--migrate-and-exit` flag will override the value of
+    // `config.runMigrations`. This allows us to use the same config when
+    // running migrations as we do when we start the server.
+    if (config.runMigrations || argv['migrate-and-exit']) {
+      await migrations.init(
+        [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
+        'prairielearn',
+      );
+
+      if (argv['migrate-and-exit']) {
+        logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+        process.exit(0);
+      }
+    }
+
+    // Collect metrics on our Postgres connection pools.
+    const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+    const pools = [
+      {
+        name: 'default',
+        pool: sqldb.defaultPool,
+      },
+      {
+        name: 'named-locks',
+        pool: namedLocks.pool,
+      },
+    ];
+
+    pools.forEach(({ name, pool }) => {
+      opentelemetry.createObservableValueGauges(
+        meter,
+        `postgres.pool.${name}.total`,
+        { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+        () => pool.totalCount,
+      );
+
+      opentelemetry.createObservableValueGauges(
+        meter,
+        `postgres.pool.${name}.idle`,
+        { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+        () => pool.idleCount,
+      );
+
+      opentelemetry.createObservableValueGauges(
+        meter,
+        `postgres.pool.${name}.waiting`,
+        { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+        () => pool.waitingCount,
+      );
+
+      const queryCounter = opentelemetry.getObservableCounter(
+        meter,
+        `postgres.pool.${name}.query.count`,
+        { valueType: opentelemetry.ValueType.INT },
+      );
+      queryCounter.addCallback((observableResult) => {
+        observableResult.observe(pool.queryCount);
+      });
+    });
+
+    // Collect metrics on our code callers.
+    opentelemetry.createObservableValueGauges(
+      meter,
+      'code-caller.pool.size',
+      { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+      () => codeCaller.getMetrics().size,
+    );
+    opentelemetry.createObservableValueGauges(
+      meter,
+      'code-caller.pool.available',
+      { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+      () => codeCaller.getMetrics().available,
+    );
+    opentelemetry.createObservableValueGauges(
+      meter,
+      'code-caller.pool.borrowed',
+      { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+      () => codeCaller.getMetrics().borrowed,
+    );
+    opentelemetry.createObservableValueGauges(
+      meter,
+      'code-caller.pool.pending',
+      { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+      () => codeCaller.getMetrics().pending,
+    );
+
+    // We create and activate a random DB schema name
+    // (https://www.postgresql.org/docs/current/ddl-schemas.html)
+    // after we have run the migrations but before we create
+    // the sprocs. This means all tables (from migrations) are
+    // in the public schema, but all sprocs are in the random
+    // schema. Every server invocation thus has its own copy
+    // of its sprocs, allowing us to update servers while old
+    // servers are still running. See docs/dev-guide.md for
+    // more info.
+    //
+    // We use the combination of instance ID and port number to uniquely
+    // identify each server; in some cases, we're running multiple instances
+    // on the same physical host.
+    //
+    // The schema prefix should not exceed 28 characters; this is due to
+    // the underlying Postgres limit of 63 characters for schema names.
+    // Currently, EC2 instance IDs are 19 characters long, and we use
+    // 4-digit port numbers, so this will be safe (19+1+4=24). If either
+    // of those ever get longer, we have a little wiggle room. Nonetheless,
+    // we'll check to make sure we don't exceed the limit and fail fast if
+    // we do.
+    const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
+    if (schemaPrefix.length > 28) {
+      throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
+    }
+    await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
+    await sprocs.init();
+
+    if (config.runBatchedMigrations) {
+      // Now that all migrations have been run, we can start executing any
+      // batched migrations that may have been enqueued by migrations.
+      //
+      // Note that we don't do this until sprocs have been created because
+      // some batched migrations may depend on sprocs.
+      startBatchedMigrations({
+        workDurationMs: config.batchedMigrationsWorkDurationMs,
+        sleepDurationMs: config.batchedMigrationsSleepDurationMs,
+      });
+    }
+
+    if ('sync-course' in argv) {
+      logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
+      const { jobSequenceId, jobPromise } = await pullAndUpdateCourse({
+        courseId: argv['sync-course'],
+        authnUserId: null,
+        userId: null,
+      });
+      logger.info(`Course sync job sequence ${jobSequenceId} created.`);
+      logger.info('Waiting for job to finish...');
+      await jobPromise;
+      (await serverJobs.selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
+        logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
+      });
+      process.exit(0);
+    }
+
+    if (config.initNewsItems) {
+      // We initialize news items asynchronously so that servers can boot up
+      // in production as quickly as possible.
+      news_items.initInBackground({
+        // Always notify in production environments.
+        notifyIfPreviouslyEmpty: !config.devMode,
+      });
+    }
+
+    // We need to initialize these first, as the code callers require these
+    // to be set up.
+    load.initEstimator('request', 1);
+    load.initEstimator('authed_request', 1);
+    load.initEstimator('python', 1, false);
+    load.initEstimator('python_worker_active', 1);
+    load.initEstimator('python_worker_idle', 1, false);
+    load.initEstimator('python_callback_waiting', 1);
+
+    await codeCaller.init();
+    await assets.init();
+    await cache.init({
+      type: config.cacheType,
+      keyPrefix: config.cacheKeyPrefix,
+      redisUrl: config.redisUrl,
+    });
+    await freeformServer.init();
+
+    if (config.devMode) {
+      await insertDevUser();
+    }
+
+    logger.verbose('Starting server...');
+    const server = await startServer();
+
+    await socketServer.init(server);
+
+    externalGradingSocket.init();
+    externalGrader.init();
+
+    await workspace.init();
+    serverJobs.init();
+
+    if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
+      nodeMetrics.start({
+        awsConfig: makeAwsClientConfig(),
+        intervalSeconds: config.nodeMetricsIntervalSec,
+        dimensions: [
+          { Name: 'Server Group', Value: config.groupName },
+          { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },
+        ],
+        onError(err) {
+          logger.error('Error reporting Node metrics', err);
+          Sentry.captureException(err);
+        },
+      });
+    }
+
+    // These should be the last things to start before we actually start taking
+    // requests, as they may actually end up executing course code.
+    if (config.externalGradingEnableResults) {
+      await externalGraderResults.init();
+    }
+
+    await cron.init();
+    await lifecycleHooks.completeInstanceLaunch();
+  } catch (err) {
+    logger.error('Error initializing PrairieLearn server:', err);
+    throw err;
+  }
+  logger.info('PrairieLearn server ready, press Control-C to quit');
+  if (config.devMode) {
+    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+  }
+
+  // SIGTERM can be used to gracefully shut down the process. This signal
+  // may come from another process, but we also send it to ourselves if
+  // we want to gracefully shut down. This is used below in the ASG
+  // lifecycle handler, and also within the "terminate" webhook.
+  process.once('SIGTERM', async () => {
+    // By this point, we should no longer be attached to the load balancer,
+    // so there's no point shutting down the HTTP server or the socket.io
+    // server.
+    //
+    // We use `allSettled()` here to ensure that all tasks can gracefully
+    // shut down, even if some of them fail.
+    logger.info('Shutting down async processing');
+    const results = await Promise.allSettled([
+      externalGraderResults.stop(),
+      cron.stop(),
+      serverJobs.stop(),
+      stopBatchedMigrations(),
+    ]);
+    results.forEach((r) => {
+      if (r.status === 'rejected') {
+        logger.error('Error shutting down async processing', r.reason);
+        Sentry.captureException(r.reason);
+      }
+    });
+
+    try {
+      await lifecycleHooks.completeInstanceTermination();
+    } catch (err) {
+      logger.error('Error completing instance termination', err);
+      Sentry.captureException(err);
+    }
+
+    logger.info('Terminating...');
+    // Shut down OpenTelemetry exporting.
+    try {
+      await opentelemetry.shutdown();
+    } catch (err) {
+      logger.error('Error shutting down OpenTelemetry', err);
+      Sentry.captureException(err);
+    }
+
+    // Flush all events to Sentry.
+    try {
+      await Sentry.flush();
+    } finally {
+      process.exit(0);
+    }
+  });
 }

@@ -53,7 +53,7 @@ function LoginPageContainer({
           @media (min-width: 576px) {
             html,
             body {
-              background-color: var(--bs-dark, #212529);
+              background-color: var(--bs-dark);
             }
 
             .login-container-wrapper {
@@ -153,7 +153,7 @@ function LoginPageContainer({
         </main>
         ${config.homepageFooterText && config.homepageFooterTextHref
           ? html`
-              <footer class="footer small font-weight-light text-light text-center">
+              <footer class="footer small fw-light text-light text-center">
                 <div class="bg-secondary p-1">
                   <a class="text-light" href="${config.homepageFooterTextHref}">
                     ${config.homepageFooterText}
@@ -173,7 +173,7 @@ function ShibLoginButton() {
       ${config.shibLinkLogo != null
         ? html`<img src="${config.shibLinkLogo}" class="social-icon" />`
         : html`<span class="social-icon"></span>`}
-      <span class="font-weight-bold">${config.shibLinkText}</span>
+      <span class="fw-bold">${config.shibLinkText}</span>
     </a>
   `;
 }
@@ -182,7 +182,7 @@ function GoogleLoginButton() {
   return html`
     <a class="btn btn-primary d-block position-relative" href="/pl/oauth2login">
       <img src="${assetPath('/images/google_logo.svg')}" class="social-icon" />
-      <span class="font-weight-bold">Sign in with Google</span>
+      <span class="fw-bold">Sign in with Google</span>
     </a>
   `;
 }
@@ -191,7 +191,7 @@ function MicrosoftLoginButton() {
   return html`
     <a class="btn btn-dark d-block position-relative" href="/pl/azure_login">
       <img src="${assetPath('/images/ms_logo.svg')}" class="social-icon" />
-      <span class="font-weight-bold">Sign in with Microsoft</span>
+      <span class="fw-bold">Sign in with Microsoft</span>
     </a>
   `;
 }
@@ -199,7 +199,7 @@ function MicrosoftLoginButton() {
 function SamlLoginButton({ institutionId }) {
   return html`
     <a class="btn btn-primary d-block" href="${`/pl/auth/institution/${institutionId}/saml/login`}">
-      <span class="font-weight-bold">Sign in with institution single sign-on</span>
+      <span class="fw-bold">Sign in with institution single sign-on</span>
     </a>
   `;
 }
@@ -236,8 +236,8 @@ export function AuthLogin({
             <div class="login-methods">
               ${institutionAuthnProviders.map(
                 (provider) => html`
-                  <a href="${provider.url}" class="btn btn-outline-dark btn-block">
-                    <span class="font-weight-bold">${provider.name}</span>
+                  <a href="${provider.url}" class="btn btn-outline-dark d-block w-100">
+                    <span class="fw-bold">${provider.name}</span>
                   </a>
                 `,
               )}
@@ -334,7 +334,7 @@ export function AuthLoginUnsupportedProvider({
 function DevModeBypass() {
   return html`
     <a class="btn btn-success w-100" href="/pl/dev_login">
-      <span class="font-weight-bold">Dev Mode Bypass</span>
+      <span class="fw-bold">Dev Mode Bypass</span>
     </a>
     <small class="text-muted">You will be authenticated as <tt>${config.authUid}</tt>.</small>
   `;
@@ -343,31 +343,43 @@ function DevModeBypass() {
 function DevModeLogin({ csrfToken }: { csrfToken: string }) {
   return html`
     <form method="POST">
-      <div class="form-group">
-        <label for="dev_uid">UID</label>
-        <input class="form-control" id="dev_uid" name="uid" required />
+      <div class="mb-3">
+        <label class="form-label" for="dev_uid">UID</label>
+        <input type="text" class="form-control" id="dev_uid" name="uid" required />
       </div>
-      <div class="form-group">
-        <label for="dev_name">Name</label>
-        <input class="form-control" id="dev_name" name="name" required />
+      <div class="mb-3">
+        <label class="form-label" for="dev_name">Name</label>
+        <input type="text" class="form-control" id="dev_name" name="name" required />
       </div>
-      <div class="form-group">
-        <label for="dev_uin">UIN</label>
-        <input class="form-control" id="dev_uin" name="uin" aria-describedby="dev_uin_help" />
+      <div class="mb-3">
+        <label class="form-label" for="dev_uin">UIN</label>
+        <input
+          type="text"
+          class="form-control"
+          id="dev_uin"
+          name="uin"
+          aria-describedby="dev_uin_help"
+        />
         <small id="dev_uin_help" class="form-text text-muted">
           Optional; will be set to <tt>null</tt> if not specified.
         </small>
       </div>
-      <div class="form-group">
-        <label for="dev_email">Email</label>
-        <input class="form-control" id="dev_email" name="email" aria-describedby="dev_email_help" />
+      <div class="mb-3">
+        <label class="form-label" for="dev_email">Email</label>
+        <input
+          type="email"
+          class="form-control"
+          id="dev_email"
+          name="email"
+          aria-describedby="dev_email_help"
+        />
         <small id="dev_email_help" class="form-text text-muted">
           Optional; will be set to <tt>null</tt> if not specified.
         </small>
       </div>
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="submit" class="btn btn-primary btn-block" name="__action" value="dev_login">
-        <span class="font-weight-bold">Dev Mode Login</span>
+      <button type="submit" class="btn btn-primary d-block w-100" name="__action" value="dev_login">
+        <span class="fw-bold">Dev Mode Login</span>
       </button>
     </form>
   `;

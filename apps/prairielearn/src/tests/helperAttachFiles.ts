@@ -126,33 +126,33 @@ export function deleteAttachedFile(locals) {
       elemList = locals.$('[data-testid="delete-personal-note-button"]');
       assert.lengthOf(elemList, 1);
     });
-    it('should have data-content', () => {
-      assert.isString(elemList[0].attribs['data-content']);
+    it('should have data-bs-content', () => {
+      assert.isString(elemList[0].attribs['data-bs-content']);
     });
-    it('data-content should parse', () => {
-      locals.data$ = cheerio.load(elemList[0].attribs['data-content']);
+    it('data-bs-content should parse', () => {
+      locals.data$ = cheerio.load(elemList[0].attribs['data-bs-content']);
     });
-    it('data-content should have a CSRF token', () => {
+    it('data-bs-content should have a CSRF token', () => {
       elemList = locals.data$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('data-content should have an __action', () => {
+    it('data-bs-content should have an __action', () => {
       elemList = locals.data$('form input[name="__action"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__action = elemList[0].attribs.value;
       assert.isString(locals.__action);
     });
-    it('data-content should have an file_id', () => {
+    it('data-bs-content should have an file_id', () => {
       elemList = locals.data$('form input[name="file_id"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.file_id = Number.parseInt(elemList[0].attribs.value);
     });
-    it('data-content might have a variant', () => {
+    it('data-bs-content might have a variant', () => {
       elemList = locals.data$('form input[name="__variant_id"]');
       delete locals.__variant_id;
       if (elemList.length === 0) return; // assessment_instance page does not have variant_id

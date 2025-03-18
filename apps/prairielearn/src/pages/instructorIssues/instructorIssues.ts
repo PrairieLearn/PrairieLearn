@@ -19,12 +19,16 @@ const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 function formatForLikeClause(str: string) {
-  return `%${str}%`;
+  // https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-LIKE
+  return str
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_')
+    .replaceAll('*', '%');
 }
 
 function parseRawQuery(str: string) {
-  // https://github.com/mixmaxhq/search-string/issues/44
-  const parsedQuery = SearchString.default.parse(str);
+  const parsedQuery = SearchString.parse(str);
   const filters = {
     filter_is_open: null as boolean | null,
     filter_is_closed: null as boolean | null,

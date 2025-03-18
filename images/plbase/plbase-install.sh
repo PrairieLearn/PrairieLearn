@@ -35,6 +35,10 @@ dnf -y install \
     texlive-type1cm \
     tmux
 
+# Redis 7 isn't available on Amazon Linux 2023. Symlink the versioned
+# executables to make them work with scripts that expect unversioned ones.
+ln -s /usr/bin/redis6-cli /usr/bin/redis-cli && ln -s /usr/bin/redis6-server /usr/bin/redis-server
+
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm
 cd /nvm

@@ -1,3 +1,5 @@
+# pyright: reportUnusedImport=false
+
 # This program is the glue between python-runner JavaScript code and Python code
 #
 # It will enter an infinite loop waiting for input. For each input, it
@@ -29,12 +31,12 @@ from importlib.abc import MetaPathFinder
 from inspect import signature
 from typing import Any
 
-import question_phases
-import zygote_utils as zu
+import prairielearn.internal.zygote_utils as zu
+from prairielearn.internal import question_phases
 
 saved_path = copy.copy(sys.path)
 
-drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
+drop_privileges = int(os.environ.get("DROP_PRIVILEGES", "0")) == 1
 
 # If we're configured to drop privileges (that is, if we're running in a
 # Docker container), various tools like matplotlib and fontconfig will be
@@ -67,7 +69,6 @@ import logging
 logging.getLogger("matplotlib.font_manager").disabled = True
 
 # Pre-load commonly used modules
-sys.path.insert(0, os.path.abspath("../question-servers/freeformPythonLib"))
 import html
 import math
 import random
@@ -141,7 +142,7 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
 # helpful because the object - which contains something that cannot be converted
 # to JSON - would otherwise never be displayed to the developer, making it hard to
 # debug the problem.
-def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False):
+def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> str:
     try:
         zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
@@ -325,12 +326,7 @@ def worker_loop() -> None:
                 # check if the desired function is a legacy element function - if
                 # so, we add an argument for element_index
                 arg_names = list(signature(method).parameters.keys())
-                if (
-                    len(arg_names) == 3
-                    and arg_names[0] == "element_html"
-                    and arg_names[1] == "element_index"
-                    and arg_names[2] == "data"
-                ):
+                if arg_names == ["element_html", "element_index", "data"]:
                     args.insert(1, None)
 
                 # call the desired function in the loaded module
