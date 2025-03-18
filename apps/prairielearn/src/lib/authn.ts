@@ -123,16 +123,19 @@ export async function loadUser(
     // Institution admin pages are inaccessible if the user is an administrator not accessing as one.
     if (res.locals.authn_is_administrator && !res.locals.access_as_administrator) {
       return false;
-    } 
-    return selectedUser.is_administrator || (await sqldb.queryRow(
-      sql.select_is_institution_admin,
-      {
-        institution_id: res.locals.authn_institution.id,
-        user_id: res.locals.authn_user.user_id,
-      },
-      z.boolean(),
-    )); 
-  })
+    }
+    return (
+      selectedUser.is_administrator ||
+      (await sqldb.queryRow(
+        sql.select_is_institution_admin,
+        {
+          institution_id: res.locals.authn_institution.id,
+          user_id: res.locals.authn_user.user_id,
+        },
+        z.boolean(),
+      ))
+    );
+  });
 
   res.locals.news_item_notification_count = selectedUser.news_item_notification_count;
 }
