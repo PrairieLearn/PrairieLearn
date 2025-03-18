@@ -247,9 +247,9 @@ ${resLocals.assessment.text}</textarea
                       ${canEdit ? '' : 'disabled'}
                       ${resLocals.assessment.require_honor_code ? 'checked' : ''}
                     />
-                    <label class="form-check-label" for="require_honor_code"
-                      >Require honor code</label
-                    >
+                    <label class="form-check-label" for="require_honor_code">
+                      Require honor code
+                    </label>
                     <div class="small text-muted">
                       Requires the student to accept an honor code before starting exam assessments.
                     </div>
