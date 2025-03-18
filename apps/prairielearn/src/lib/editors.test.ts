@@ -178,7 +178,8 @@ describe('editors', () => {
       });
     });
   });
-  describe('getPropertiesForAdd', () => {
+
+  describe('propertyValueWithDefault', () => {
     describe('New value differs from the default value', () => {
       it('should return the new value if it differs from the default value', () => {
         const property = propertyValueWithDefault('Existing', 'New', 'Default');
