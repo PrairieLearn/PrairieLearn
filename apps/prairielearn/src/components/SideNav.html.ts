@@ -251,14 +251,12 @@ function CourseInstanceNav({
             aria-expanded="false"
             data-bs-toggle="dropdown"
             data-bs-boundary="window"
-            hx-get="/pl/navbar/course/${resLocals.course
-              .id}/course_instance_switcher/${resLocals.course_instance?.id ?? ''}"
+            hx-get="/pl/navbar/course/${resLocals.course.id}/course_instance_switcher/${resLocals
+              .course_instance?.id ?? ''}"
             hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
             hx-target="#sideNavCourseInstancesDropdownContent"
           >
-            <span>
-              ${resLocals.course_instance?.short_name ?? 'Select a course instance...'}
-            </span>
+            <span> ${resLocals.course_instance?.short_name ?? 'Select a course instance...'} </span>
           </button>
           <div class="dropdown-menu py-0 overflow-hidden">
             <div
