@@ -252,9 +252,7 @@ function CourseInstanceNav({
             data-bs-toggle="dropdown"
             data-bs-boundary="window"
             hx-get="/pl/navbar/course/${resLocals.course
-              .id}/course_instance_switcher/${resLocals.course_instance
-              ? resLocals.course_instance.id
-              : ''}"
+              .id}/course_instance_switcher/${resLocals.course_instance?.id ?? ''}"
             hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
             hx-target="#sideNavCourseInstancesDropdownContent"
           >
