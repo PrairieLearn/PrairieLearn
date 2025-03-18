@@ -140,6 +140,7 @@ export function PageLayout({
                 ${resLocals.assessment &&
                 resLocals.assessments &&
                 AssessmentNavigation({
+                  subPage: navContext.subPage,
                   courseInstance: resLocals.course_instance,
                   assessment: resLocals.assessment,
                   assessments: resLocals.assessments,
