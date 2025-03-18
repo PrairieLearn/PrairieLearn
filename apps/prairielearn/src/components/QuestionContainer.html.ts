@@ -16,6 +16,7 @@ import type {
 import { getRoleNamesForUser, type GroupInfo } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
 import { Modal } from './Modal.html.js';
 import type { QuestionContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.html.js';
@@ -72,6 +73,7 @@ export function QuestionContainer({
               ${QuestionPanel({
                 resLocals,
                 questionContext,
+                questionRenderContext,
                 showFooter,
                 manualGradingPreviewUrl,
                 aiGradingPreviewUrl,
@@ -79,14 +81,22 @@ export function QuestionContainer({
             </form>
           `
         : QuestionPanel({ resLocals, showFooter, questionContext })}
-
-      <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
-        <div class="card-header bg-secondary text-white">
-          <h2>Correct answer</h2>
-        </div>
-        <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
-      </div>
-
+      ${
+        // The correct answer isn't used when performing AI grading, so we hide
+        // it here to avoid confusion.
+        questionRenderContext !== 'ai_grading'
+          ? html`
+              <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
+                <div class="card-header bg-secondary text-white">
+                  <h2>Correct answer</h2>
+                </div>
+                <div class="card-body answer-body">
+                  ${showTrueAnswer ? unsafeHtml(answerHtml) : ''}
+                </div>
+              </div>
+            `
+          : ''
+      }
       ${submissions.length > 0
         ? html`
             ${SubmissionList({
@@ -650,12 +660,14 @@ function AvailablePointsNotes({
 function QuestionPanel({
   resLocals,
   questionContext,
+  questionRenderContext,
   showFooter,
   manualGradingPreviewUrl,
   aiGradingPreviewUrl,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: 'manual_grading' | 'ai_grading';
   showFooter: boolean;
   manualGradingPreviewUrl?: string;
   aiGradingPreviewUrl?: string;
@@ -733,7 +745,11 @@ function QuestionPanel({
           </div>
         </div>
       </div>
-      <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
+      <div class="card-body question-body">
+        ${questionRenderContext === 'ai_grading'
+          ? AiGradingHtmlPreview(questionHtml)
+          : unsafeHtml(questionHtml)}
+      </div>
       ${showFooter
         ? QuestionFooter({
             // TODO: propagate more precise types upwards.

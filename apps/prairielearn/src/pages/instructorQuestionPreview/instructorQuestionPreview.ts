@@ -5,11 +5,11 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import {
   getAndRenderVariant,
@@ -23,10 +23,6 @@ import { logPageView } from '../../middlewares/logPageView.js';
 import { InstructorQuestionPreview } from './instructorQuestionPreview.html.js';
 
 const router = Router();
-
-function AiGradingContext(panelHtml: string) {
-  return html`<pre class="mb-0"><code>${panelHtml}</code></pre>`;
-}
 
 router.post(
   '/',
@@ -50,8 +46,9 @@ router.post(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
-    const aiGradingPreviewEnabled = req.query.ai_grading_preview === 'true';
+    const aiGradingPreviewEnabled = aiGradingEnabled && req.query.ai_grading_preview === 'true';
 
     // The `questionRenderContext` flag will be respected by the rendering process.
     if (aiGradingPreviewEnabled) {
@@ -66,18 +63,6 @@ router.get(
     await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
-
-    // TODO: need to ensure that the answer panel is not shown if it's not provided
-    // to the AI grader (I believe it is not).
-    //
-    // TODO: need to ensure this respects the `ai-grading` feature flag.
-    if (aiGradingPreviewEnabled) {
-      res.locals.questionHtml = AiGradingContext(res.locals.questionHtml);
-      res.locals.answerHtml = AiGradingContext(res.locals.answerHtml);
-      res.locals.submissionHtmls = res.locals.submissionHtmls.map((submissionHtml) =>
-        AiGradingContext(submissionHtml),
-      );
-    }
 
     const searchParams = getSearchParams(req);
 
@@ -100,10 +85,12 @@ router.get(
     aiGradingPreviewSearchParams.set('ai_grading_preview', 'true');
     aiGradingPreviewSearchParams.delete('variant_seed');
     aiGradingPreviewSearchParams.delete('manual_grading_preview');
-    const aiGradingPreviewUrl = url.format({
-      pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
-      search: aiGradingPreviewSearchParams.toString(),
-    });
+    const aiGradingPreviewUrl = aiGradingEnabled
+      ? url.format({
+          pathname: `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`,
+          search: aiGradingPreviewSearchParams.toString(),
+        })
+      : undefined;
 
     // Construct a URL for the normal preview. This will be used to exit the manual grading preview.
     const normalPreviewSearchParams = new URLSearchParams(searchParams);
@@ -143,10 +130,12 @@ router.get(
 router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+
     // As with the normal route, we need to respect the `manual_grading_preview`
     // and the `ai_grading_preview` flags.
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
-    const aiGradingPreviewEnabled = req.query.ai_grading_preview === 'true';
+    const aiGradingPreviewEnabled = aiGradingEnabled && req.query.ai_grading_preview === 'true';
 
     const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,

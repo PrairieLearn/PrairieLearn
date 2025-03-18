@@ -20,7 +20,7 @@ export function InstructorQuestionPreview({
   manualGradingPreviewEnabled: boolean;
   manualGradingPreviewUrl: string;
   aiGradingPreviewEnabled: boolean;
-  aiGradingPreviewUrl: string;
+  aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams: URLSearchParams;
   resLocals: Record<string, any>;
 }) {
