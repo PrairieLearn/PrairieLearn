@@ -1,1 +1,1 @@
-File must exist in this directory for Github to keep this directory and to allow for Docker to build; workspace wide .SQL or .dump go here - see README.md for more details
+File must exist in this directory for GitHub to keep this directory and to allow for Docker to build; workspace wide .SQL or .dump go here - see README.md for more details

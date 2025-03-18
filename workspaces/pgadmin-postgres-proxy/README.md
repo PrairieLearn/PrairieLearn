@@ -8,7 +8,7 @@ This workspace provides a [pgadmin 4 8.14](https://www.pgadmin.org/docs/pgadmin4
 
 #### Logging
 
-This image will log all queries made by the student inside the `/pgdata/log` directory of the container. This can be used to verify student work as needed. This is **not maintained across reboots**.
+This image will log all queries made by the student inside the `/pgdata/log` directory of the container. You can be use this to verify student work as needed but it is **not maintained across reboots**.
 
 #### Additional Notes
 
