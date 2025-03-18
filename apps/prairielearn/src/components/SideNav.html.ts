@@ -259,9 +259,7 @@ function CourseInstanceNav({
             hx-target="#sideNavCourseInstancesDropdownContent"
           >
             <span>
-              ${resLocals.course_instance
-                ? resLocals.course_instance.short_name
-                : 'Select a course instance...'}
+              ${resLocals.course_instance?.short_name ?? 'Select a course instance...'}
             </span>
           </button>
           <div class="dropdown-menu py-0 overflow-hidden">
