@@ -2,7 +2,6 @@ import { setTimeout as sleep } from 'timers/promises';
 
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
 import fetch, { FormData } from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -205,7 +204,7 @@ export function postInstanceQuestion(locals: Record<string, any>) {
           __csrf_token: locals.__csrf_token,
           __variant_id: locals.variant?.id,
         };
-        _.assign(form, locals.submittedAnswer);
+        Object.assign(form, locals.submittedAnswer);
       } else {
         assert.fail('bad question.type:' + locals.question?.type);
       }
@@ -281,7 +280,7 @@ export function postInstanceQuestionAndFail(locals: Record<string, any>) {
           __csrf_token: locals.__csrf_token,
           variant_id: locals.variant?.id,
         };
-        _.assign(form, locals.submittedAnswer);
+        Object.assign(form, locals.submittedAnswer);
       } else {
         assert.fail('bad question.type:' + locals.question?.type);
       }
@@ -316,7 +315,7 @@ export function checkSubmissionScore(locals: Record<string, any>) {
 export function checkQuestionScore(locals: Record<string, any>) {
   describe('check question score', function () {
     it('should have the submission', async function () {
-      if (_.has(locals.expectedResult, 'submission_score')) {
+      if ('submission_score' in locals.expectedResult) {
         const result = await sqldb.queryOneRowAsync(
           sql.select_last_submission_for_instance_question,
           {
@@ -327,12 +326,12 @@ export function checkQuestionScore(locals: Record<string, any>) {
       }
     });
     it('should be graded with expected score', function () {
-      if (_.has(locals.expectedResult, 'submission_score')) {
+      if ('submission_score' in locals.expectedResult) {
         assert.equal(locals.submission?.score, locals.expectedResult?.submission_score);
       }
     });
     it('should be graded with expected correctness', function () {
-      if (_.has(locals.expectedResult, 'submission_correct')) {
+      if ('submission_correct' in locals.expectedResult) {
         assert.equal(locals.submission?.correct, locals.expectedResult?.submission_correct);
       }
     });
@@ -394,7 +393,7 @@ export function checkQuestionStats(locals: Record<string, any>) {
           assert.isNull(locals.instance_question?.[key]);
         } else if (typeof expected_value === 'number') {
           assert.approximately(locals.instance_question?.[key], expected_value, 1e-6);
-        } else if (_.isArray(expected_value)) {
+        } else if (Array.isArray(expected_value)) {
           assert.lengthOf(locals.instance_question?.[key], expected_value.length);
           expected_value.forEach((item, i) => {
             if (item == null) {
