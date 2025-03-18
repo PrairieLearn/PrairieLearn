@@ -9,7 +9,10 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
 import { QuestionFooterContent } from '../components/QuestionContainer.html.js';
-import { type QuestionContext } from '../components/QuestionContainer.types.js';
+import {
+  type QuestionContext,
+  type QuestionRenderContext,
+} from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
 import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
 import {
@@ -408,7 +411,7 @@ export async function getAndRenderVariant(
     authz_data?: Record<string, any>;
     authz_result?: Record<string, any>;
     client_fingerprint_id?: string | null;
-    questionRenderContext?: 'manual_grading' | 'ai_grading';
+    questionRenderContext?: QuestionRenderContext;
   },
   options?: {
     urlOverrides?: Partial<QuestionUrls>;
@@ -640,7 +643,7 @@ export async function renderPanelsForSubmission({
   user: User;
   urlPrefix: string;
   questionContext: QuestionContext;
-  questionRenderContext?: 'manual_grading' | 'ai_grading';
+  questionRenderContext?: QuestionRenderContext;
   authorizedEdit: boolean;
   renderScorePanels: boolean;
   groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;

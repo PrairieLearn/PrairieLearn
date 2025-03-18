@@ -18,7 +18,7 @@ import { idsEqual } from '../lib/id.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
 import { Modal } from './Modal.html.js';
-import type { QuestionContext } from './QuestionContainer.types.js';
+import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.html.js';
 
 // Only shows this many recent submissions by default
@@ -35,7 +35,7 @@ export function QuestionContainer({
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
-  questionRenderContext?: 'manual_grading' | 'ai_grading';
+  questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
   manualGradingPreviewUrl?: string;
   aiGradingPreviewUrl?: string;
@@ -667,7 +667,7 @@ function QuestionPanel({
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
-  questionRenderContext?: 'manual_grading' | 'ai_grading';
+  questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
   manualGradingPreviewUrl?: string;
   aiGradingPreviewUrl?: string;
@@ -772,7 +772,7 @@ function SubmissionList({
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
-  questionRenderContext?: 'manual_grading' | 'ai_grading';
+  questionRenderContext?: QuestionRenderContext;
   submissions: SubmissionForRender[];
   submissionHtmls: string[];
   submissionCount: number;

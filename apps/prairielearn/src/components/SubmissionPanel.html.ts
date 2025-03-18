@@ -19,7 +19,7 @@ import { gradingJobStatus } from '../models/grading-job.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
 import { Modal } from './Modal.html.js';
-import type { QuestionContext } from './QuestionContainer.types.js';
+import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 
 const detailedSubmissionColumns = {
   feedback: true,
@@ -63,7 +63,7 @@ export function SubmissionPanel({
   renderSubmissionSearchParams,
 }: {
   questionContext: QuestionContext;
-  questionRenderContext?: 'manual_grading' | 'ai_grading';
+  questionRenderContext?: QuestionRenderContext;
   question: Question;
   assessment_question?: AssessmentQuestion | null;
   instance_question?: InstanceQuestion | null;
