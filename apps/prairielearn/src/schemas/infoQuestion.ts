@@ -113,7 +113,10 @@ export const ExternalGradingOptionsJsonSchema = z
       ),
     entrypoint: z
       .union([z.string(), z.array(z.string())])
-      .describe('Program or command to run as the entrypoint to your grader.'),
+      .describe(
+        'Program or command to run as the entrypoint to your grader. If not provided, the default entrypoint for the image will be used.',
+      )
+      .optional(),
     serverFilesCourse: z
       .array(
         z

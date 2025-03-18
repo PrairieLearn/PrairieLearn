@@ -126,6 +126,7 @@ const courseInstanceQuestionHtmlEditUrl =
 const courseInstanceQuestionPythonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionPythonPath)}`;
 const badPathUrl = assessmentUrl + '/file_edit/' + encodePath('../PrairieLearn/config.json');
+const gitPathUrl = courseAdminUrl + '/file_edit/' + encodePath('.git/HEAD');
 const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodePath('infoCourse.json');
 
 const findEditUrlData = [
@@ -299,6 +300,10 @@ describe('test file editor', function () {
 
     describe('disallow edits outside course directory', function () {
       badGet(badPathUrl, 500, false);
+    });
+
+    describe('disallow edits in .git directory', function () {
+      badGet(gitPathUrl, 500, false);
     });
 
     describe('verify file handlers', function () {
@@ -944,7 +949,7 @@ function testUploadFile(params: {
         elemList = row.find('button[id^="instructorFileUploadForm-"]');
       }
       assert.lengthOf(elemList, 1);
-      const $ = cheerio.load(elemList[0].attribs['data-content']);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
@@ -1026,7 +1031,7 @@ function testRenameFile(params: {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
       elemList = row.find('button[data-testid="rename-file-button"]');
       assert.lengthOf(elemList, 1);
-      const $ = cheerio.load(elemList[0].attribs['data-content']);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
@@ -1078,7 +1083,7 @@ function testDeleteFile(params: { url: string; path: string }) {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
       elemList = row.find('button[data-testid="delete-file-button"]');
       assert.lengthOf(elemList, 1);
-      const $ = cheerio.load(elemList[0].attribs['data-content']);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);

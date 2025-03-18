@@ -34,7 +34,7 @@ An error like the one above can be fixed by reverting the UUID in the `infoCours
 
 ## Bulk addition of UUIDs
 
-To add a UUID to all the JSON files in a course you can run the included [`generate_uuids.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/tools/generate_uuids.py) Python script.
+To add a UUID to all the JSON files in a course you can run the included [`generate_uuids.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/contrib/generate_uuids.py) Python script.
 
 This script will add a UUID to the start of every JSON file that doesn't currently have one, so it's safe to run it multiple times. You will then need to commit and push these changes to GitHub.
 
@@ -51,5 +51,5 @@ For example, `python generate_uuids.py ~/git/pl-tam212`.
 If you're using the Docker container, you can avoid downloading the script by running:
 
 ```sh
-docker run --rm -v /path/to/course:/course prairielearn/prairielearn python /PrairieLearn/tools/generate_uuids.py /course
+docker run --rm -v /path/to/course:/course prairielearn/prairielearn python /PrairieLearn/contrib/generate_uuids.py /course
 ```

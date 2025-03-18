@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/named-locks",
-  "version": "3.0.11",
+  "version": "3.0.12",
   "type": "module",
   "main": "./dist/index.js",
   "repository": {
@@ -14,11 +14,11 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.17.16",
-    "typescript": "^5.7.3"
+    "@types/node": "^20.17.23",
+    "typescript": "^5.8.2"
   },
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",
-    "pg": "^8.13.1"
+    "pg": "^8.13.3"
   }
 }

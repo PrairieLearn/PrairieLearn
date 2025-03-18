@@ -29,7 +29,7 @@ export const AdministratorInstitutionSso = ({
     },
     content: html`
       <form method="POST">
-        <div class="form-group">
+        <div class="mb-3">
           <h2 class="h4">Enabled single sign-on providers</h2>
           ${supportedAuthenticationProviders.map((provider) => {
             const isEnabled = institutionAuthenticationProviders.some((p) => p.id === provider.id);
@@ -61,7 +61,7 @@ export const AdministratorInstitutionSso = ({
             `;
           })}
         </div>
-        <div class="form-group">
+        <div class="mb-3">
           <h2 class="h4 mb-0" id="defaultProviderLabel">Default single sign-on provider</h2>
           <small class="form-text text-muted mt-0 mb-2">
             When a default single sign-on provider is configured, users can click on your
@@ -69,7 +69,7 @@ export const AdministratorInstitutionSso = ({
             provider. Note that LTI cannot be set as the default provider.
           </small>
           <select
-            class="custom-select js-default-authentication-provider"
+            class="form-select js-default-authentication-provider"
             id="defaultProvider"
             name="default_authn_provider_id"
             aria-labelledby="defaultProviderLabel"

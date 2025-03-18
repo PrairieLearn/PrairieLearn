@@ -26,7 +26,7 @@ jobs:
       ######################################################################################################
       # plbase
       - name: Check whether images/plbase was modified
-        run: tools/check_path_modified.sh images/plbase images_plbase_modified
+        run: scripts/check_path_modified.sh images/plbase images_plbase_modified
       - name: Build and push prairielearn/plbase
         if: ${{ env.images_plbase_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -58,7 +58,7 @@ jobs:
       ######################################################################################################
       # grader-c
       - name: Check whether graders/c was modified
-        run: tools/check_path_modified.sh graders/c graders_c_modified
+        run: scripts/check_path_modified.sh graders/c graders_c_modified
       - name: Build and push prairielearn/grader-c
         if: ${{ env.graders_c_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -72,7 +72,7 @@ jobs:
       ######################################################################################################
       # grader-java
       - name: Check whether graders/java was modified
-        run: tools/check_path_modified.sh graders/java graders_java_modified
+        run: scripts/check_path_modified.sh graders/java graders_java_modified
       - name: Build and push prairielearn/grader-java
         if: ${{ env.graders_java_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -86,7 +86,7 @@ jobs:
       ######################################################################################################
       # grader-python
       - name: Check whether graders/python was modified
-        run: tools/check_path_modified.sh graders/python graders_python_modified
+        run: scripts/check_path_modified.sh graders/python graders_python_modified
       - name: Build and push prairielearn/grader-python
         if: ${{ env.graders_python_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -100,7 +100,7 @@ jobs:
       ######################################################################################################
       # grader-r
       - name: Check whether graders/r was modified
-        run: tools/check_path_modified.sh graders/r graders_r_modified
+        run: scripts/check_path_modified.sh graders/r graders_r_modified
       - name: Build and push prairielearn/grader-r
         if: ${{ env.graders_r_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -114,7 +114,7 @@ jobs:
       ######################################################################################################
       # workspace-desktop
       - name: Check whether workspaces/desktop was modified
-        run: tools/check_path_modified.sh workspaces/desktop workspaces_desktop_modified
+        run: scripts/check_path_modified.sh workspaces/desktop workspaces_desktop_modified
       - name: Build and push prairielearn/workspace-desktop
         if: ${{ env.workspaces_desktop_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -128,7 +128,7 @@ jobs:
       ######################################################################################################
       # workspace-jupyterlab
       - name: Check whether workspaces/jupyterlab was modified
-        run: tools/check_path_modified.sh workspaces/jupyterlab workspaces_jupyterlab_modified
+        run: scripts/check_path_modified.sh workspaces/jupyterlab workspaces_jupyterlab_modified
       - name: Build and push prairielearn/workspace-jupyterlab
         if: ${{ env.workspaces_jupyterlab_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -142,7 +142,7 @@ jobs:
       ######################################################################################################
       # workspace-jupyterlab-python
       - name: Check whether workspaces/jupyterlab-python was modified
-        run: tools/check_path_modified.sh workspaces/jupyterlab-python workspaces_jupyterlab_python_modified
+        run: scripts/check_path_modified.sh workspaces/jupyterlab-python workspaces_jupyterlab_python_modified
       - name: Build and push prairielearn/workspace-jupyterlab-python
         if: ${{ env.workspaces_jupyterlab_python_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -156,7 +156,7 @@ jobs:
       ######################################################################################################
       # workspace-rstudio
       - name: Check whether workspaces/rstudio was modified
-        run: tools/check_path_modified.sh workspaces/rstudio workspaces_rstudio_modified
+        run: scripts/check_path_modified.sh workspaces/rstudio workspaces_rstudio_modified
       - name: Build and push prairielearn/workspace-rstudio
         if: ${{ env.workspaces_rstudio_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -170,7 +170,7 @@ jobs:
       ######################################################################################################
       # workspace-xtermjs
       - name: Check whether workspaces/xtermjs was modified
-        run: tools/check_path_modified.sh workspaces/xtermjs workspaces_xtermjs_modified
+        run: scripts/check_path_modified.sh workspaces/xtermjs workspaces_xtermjs_modified
       - name: Build and push prairielearn/workspace-xtermjs
         if: ${{ env.workspaces_xtermjs_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
@@ -182,11 +182,25 @@ jobs:
           tags: prairielearn/workspace-xtermjs:latest,prairielearn/workspace-xtermjs:${{ github.sha }}
 
       ######################################################################################################
+      # workspace-vscode-base
+      - name: Check whether workspaces/vscode-base was modified
+        run: scripts/check_path_modified.sh workspaces/vscode-base workspaces_vscode_base_modified
+      - name: Build and push prairielearn/vscode-base
+        if: ${{ env.workspaces_vscode_base_modified }}
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-base
+          platforms: linux/amd64,linux/arm64
+          push: true
+          no-cache: true
+          tags: prairielearn/workspace-vscode-base:latest,prairielearn/workspace-vscode-base:${{ github.sha }}
+
+      ######################################################################################################
       # workspace-vscode-python
       - name: Check whether workspaces/vscode-python was modified
-        run: tools/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
+        run: scripts/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
       - name: Build and push prairielearn/vscode-python
-        if: ${{ env.workspaces_vscode_python_modified }}
+        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_python_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-python
@@ -194,3 +208,17 @@ jobs:
           push: true
           no-cache: true
           tags: prairielearn/workspace-vscode-python:latest,prairielearn/workspace-vscode-python:${{ github.sha }}
+
+      ######################################################################################################
+      # workspace-vscode-cpp
+      - name: Check whether workspaces/vscode-cpp was modified
+        run: scripts/check_path_modified.sh workspaces/vscode-cpp workspaces_vscode_cpp_modified
+      - name: Build and push prairielearn/vscode-cpp
+        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_cpp_modified }}
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-cpp
+          platforms: linux/amd64,linux/arm64
+          push: true
+          no-cache: true
+          tags: prairielearn/workspace-vscode-cpp:latest,prairielearn/workspace-vscode-cpp:${{ github.sha }}

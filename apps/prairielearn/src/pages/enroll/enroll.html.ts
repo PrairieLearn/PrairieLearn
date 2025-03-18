@@ -50,7 +50,7 @@ export function Enroll({
                   ${course_instance.instructor_access
                     ? html`
                         <td class="align-middle text-center" colspan="2">
-                          <span class="badge badge-info">instructor access</span>
+                          <span class="badge text-bg-info">instructor access</span>
                         </td>
                       `
                     : html`
@@ -60,8 +60,8 @@ export function Enroll({
                                 <button
                                   type="button"
                                   class="btn btn-sm btn-info"
-                                  data-toggle="modal"
-                                  data-target="#add-course-modal"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#add-course-modal"
                                   data-course-instance-id="${course_instance.course_instance_id}"
                                   data-course-instance-short-label="${course_instance.short_label}"
                                 >
@@ -76,8 +76,8 @@ export function Enroll({
                                 <button
                                   type="button"
                                   class="btn btn-sm btn-danger"
-                                  data-toggle="modal"
-                                  data-target="#remove-course-modal"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#remove-course-modal"
                                   data-course-instance-id="${course_instance.course_instance_id}"
                                   data-course-instance-short-label="${course_instance.short_label}"
                                 >
@@ -178,7 +178,7 @@ function AddCourseModal({ csrfToken }: { csrfToken: string }) {
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="course_instance_id" class="js-course-instance-id" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-info" name="__action" value="enroll">
         Add <span class="js-course-instance-short-label"></span>
       </button>
@@ -200,7 +200,7 @@ function RemoveCourseModal({ csrfToken }: { csrfToken: string }) {
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="course_instance_id" class="js-course-instance-id" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger" name="__action" value="unenroll">
         Remove <span class="js-course-instance-short-label"></span>
       </button>

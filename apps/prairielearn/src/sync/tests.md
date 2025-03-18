@@ -154,5 +154,5 @@ The following tables are potentially modified during a sync:
 - Questions have a ton of default/implicit behavior, including...
   - `grading_method` is inferred
   - `client_files` defaults to `[ 'client.js', 'question.html', 'answer.html' ]`
-  - `single_varient` defaults to false
+  - `single_variant` defaults to false
   - `partial_credit` defaults to true for `v3`

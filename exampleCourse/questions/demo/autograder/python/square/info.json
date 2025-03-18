@@ -10,7 +10,6 @@
     "comment": "testing comments in external grading blocks",
     "enabled": true,
     "image": "prairielearn/grader-python",
-    "entrypoint": "/python_autograder/run.sh",
     "timeout": 60
   }
 }
