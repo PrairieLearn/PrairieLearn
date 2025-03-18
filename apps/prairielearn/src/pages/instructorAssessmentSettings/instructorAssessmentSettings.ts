@@ -176,16 +176,18 @@ router.post(
         req.body.allow_personal_notes === 'on',
         true,
       );
-      assessmentInfo.autoClose = propertyValueWithDefault(
-        assessmentInfo.autoClose,
-        req.body.auto_close === 'on',
-        true,
-      );
-      assessmentInfo.requireHonorCode = propertyValueWithDefault(
-        assessmentInfo.requireHonorCode,
-        req.body.require_honor_code === 'on',
-        true,
-      );
+      if (res.locals.assessment.type !== 'Homework') {
+        assessmentInfo.autoClose = propertyValueWithDefault(
+          assessmentInfo.autoClose,
+          req.body.auto_close === 'on',
+          true,
+        );
+        assessmentInfo.requireHonorCode = propertyValueWithDefault(
+          assessmentInfo.requireHonorCode,
+          req.body.require_honor_code === 'on',
+          true,
+        );
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 

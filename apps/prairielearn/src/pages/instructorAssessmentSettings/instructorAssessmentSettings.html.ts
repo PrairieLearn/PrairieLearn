@@ -182,22 +182,20 @@ ${resLocals.assessment.text}</textarea
             </div>
             ${resLocals.assessment.type !== 'Homework'
               ? html`
-                  <div class="mb-3">
-                    <div class="mb-3 form-check">
-                      <input
-                        class="form-check-input"
-                        type="checkbox"
-                        id="multiple_instance"
-                        name="multiple_instance"
-                        ${canEdit ? '' : 'disabled'}
-                        ${resLocals.assessment.multiple_instance ? 'checked' : ''}
-                      />
-                      <label class="form-check-label" for="multiple_instance">
-                        Multiple Instances
-                      </label>
-                      <div class="small text-muted">
-                        Whether to allow students to create additional instances of the assessment.
-                      </div>
+                  <div class="mb-3 form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="multiple_instance"
+                      name="multiple_instance"
+                      ${canEdit ? '' : 'disabled'}
+                      ${resLocals.assessment.multiple_instance ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="multiple_instance">
+                      Multiple Instances
+                    </label>
+                    <div class="small text-muted">
+                      Whether to allow students to create additional instances of the assessment.
                     </div>
                   </div>
                 `
