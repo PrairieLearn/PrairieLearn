@@ -424,34 +424,34 @@ function checkData(data, origData, phase) {
   const checkProp = (prop, type, presentPhases, editPhases) => {
     if (!presentPhases.includes(phase)) return null;
     if (!Object.prototype.hasOwnProperty.call(data, prop)) {
-      return '"' + prop + '" is missing from "data"';
+      return `"${prop}" is missing from "data"`;
     }
     if (type === 'integer') {
       if (!_.isInteger(data[prop])) {
-        return 'data.' + prop + ' is not an integer: ' + String(data[prop]);
+        return `data.${prop} is not an integer: ${String(data[prop])}`;
       }
     } else if (type === 'number') {
       if (!_.isFinite(data[prop])) {
-        return 'data.' + prop + ' is not a number: ' + String(data[prop]);
+        return `data.${prop} is not a number: ${String(data[prop])}`;
       }
     } else if (type === 'string') {
       if (!_.isString(data[prop])) {
-        return 'data.' + prop + ' is not a string: ' + String(data[prop]);
+        return `data.${prop} is not a string: ${String(data[prop])}`;
       }
     } else if (type === 'boolean') {
       if (!_.isBoolean(data[prop])) {
-        return 'data.' + prop + ' is not a boolean: ' + String(data[prop]);
+        return `data.${prop} is not a boolean: ${String(data[prop])}`;
       }
     } else if (type === 'object') {
       if (!_.isObject(data[prop])) {
-        return 'data.' + prop + ' is not an object: ' + String(data[prop]);
+        return `data.${prop} is not an object: ${String(data[prop])}`;
       }
     } else {
-      return 'invalid type: ' + String(type);
+      return `invalid type: ${String(type)}`;
     }
     if (!editPhases.includes(phase)) {
       if (!Object.prototype.hasOwnProperty.call(origData, prop)) {
-        return '"' + prop + '" is missing from "origData"';
+        return `"${prop}" is missing from "origData"`;
       }
       if (!_.isEqual(data[prop], origData[prop])) {
         return `data.${prop} has been illegally modified, new value: "${JSON.stringify(
@@ -495,7 +495,7 @@ function checkData(data, origData, phase) {
   if (err) return err;
 
   const extraProps = _.difference(_.keys(data), checked);
-  if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
+  if (extraProps.length > 0) return `"data" has invalid extra keys: ${extraProps.join(', ')}`;
 
   return null;
 }
@@ -734,17 +734,17 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
         delete result.extensions;
         if (_.isString(output) && output.length > 0) {
           courseIssues.push(
-            new CourseIssueError(
-              elementFile + ': output logged on console during ' + phase + '()',
-              { data: { outputBoth: output }, fatal: false },
-            ),
+            new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
+              data: { outputBoth: output },
+              fatal: false,
+            }),
           );
         }
 
         if (phase === 'render') {
           if (!_.isString(output)) {
             const courseIssue = new CourseIssueError(
-              elementFile + ': Error calling ' + phase + '(): return value is not a string',
+              `${elementFile}: Error calling ${phase}(): return value is not a string`,
               { data: { result }, fatal: true },
             );
             courseIssues.push(courseIssue);
@@ -833,7 +833,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     ({ html, $ } = await execTemplate(htmlFilename, data));
   } catch (err) {
     return {
-      courseIssues: [new CourseIssueError(htmlFilename + ': ' + err.toString(), { fatal: true })],
+      courseIssues: [new CourseIssueError(`${htmlFilename}: ${err.toString()}`, { fatal: true })],
       data,
       html: '',
       fileData: Buffer.from(''),
