@@ -22,10 +22,12 @@ onDocumentReady(async () => {
         button.setAttribute('data-bs-toggle', 'tooltip');
       });
 
-      // Update the side nav toggler button icon, aria-label, and tooltip
+      // Update the side nav toggler button tooltip and icon
       sideNavTogglerButton.setAttribute('data-bs-title', 'Expand side nav');
-      sideNavTogglerButton.setAttribute('aria-label', 'Expand side nav');
       sideNavTogglerIcon.classList.replace('bi-arrow-bar-left', 'bi-arrow-bar-right');
+
+      // Bootstrap won't update aria-label if data-bs-title changes, so we update it explicitly
+      sideNavTogglerButton.setAttribute('aria-label', 'Expand side nav');
     } else {
       // Expand the side nav
       appContainerDiv.classList.remove('collapsed');
@@ -35,10 +37,12 @@ onDocumentReady(async () => {
         button.removeAttribute('data-bs-toggle');
       });
 
-      // Update the side nav toggler button icon, aria-label, and tooltip
+      // Update the side nav toggler button tooltip and icon
       sideNavTogglerButton.setAttribute('data-bs-title', 'Collapse side nav');
-      sideNavTogglerButton.setAttribute('aria-label', 'Collapse side nav');
       sideNavTogglerIcon.classList.replace('bi-arrow-bar-right', 'bi-arrow-bar-left');
+      
+      // Bootstrap won't update aria-label if data-bs-title changes, so we update it explicitly
+      sideNavTogglerButton.setAttribute('aria-label', 'Collapse side nav');
     }
 
     // Update the tooltip title
