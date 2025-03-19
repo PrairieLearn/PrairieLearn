@@ -6,10 +6,12 @@ import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import type { NarrowPayloadBlobTypes } from '@smithy/types';
 
 export function InstructorAssessmentSettings({
   resLocals,
   origHash,
+  assessmentGHLink,
   tids,
   studentLink,
   infoAssessmentPath,
@@ -19,6 +21,7 @@ export function InstructorAssessmentSettings({
 }: {
   resLocals: Record<string, any>;
   origHash: string;
+  assessmentGHLink: string | null;
   tids: string[];
   studentLink: string;
   infoAssessmentPath: string;
@@ -58,6 +61,9 @@ export function InstructorAssessmentSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="aid">AID</label>
+              ${assessmentGHLink
+                ? html`<a target="_blank" href="${assessmentGHLink}"> view on GitHub </a>`
+                : 'aa'}
               <input
                 type="text"
                 class="form-control font-monospace"
