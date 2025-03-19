@@ -162,7 +162,7 @@ export async function init() {
 
   logger.verbose(
     'initializing cron',
-    jobs.map((j) => _.pick(j, ['name', 'intervalSec'])),
+    jobs.map(({ name, intervalSec }) => ({ name, intervalSec })),
   );
 
   const jobsByPeriodSec = _.groupBy(jobs, 'intervalSec');
