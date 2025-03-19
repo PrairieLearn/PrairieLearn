@@ -1055,7 +1055,7 @@ export async function generate(question, course, variant_seed) {
       variant_seed: parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options },
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
 
     return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
@@ -1087,7 +1087,7 @@ export async function prepare(question, course, variant) {
       options: variant.options ?? {},
       answers_names: {},
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
 
     return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
@@ -1193,7 +1193,7 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
   data.options.workspace_url = locals.workspaceUrl || null;
 
   // Put key paths in data.options
-  _.extend(data.options, getContextOptions(context));
+  Object.assign(data.options, getContextOptions(context));
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
     course,
@@ -1656,7 +1656,7 @@ export async function file(filename, variant, question, course) {
       options: variant.options ?? {},
       filename,
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
 
     const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
       course,
@@ -1702,7 +1702,7 @@ export async function parse(submission, variant, question, course) {
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
     return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'parse',
@@ -1750,7 +1750,7 @@ export async function grade(submission, variant, question, question_course) {
       raw_submitted_answers: submission.raw_submitted_answer,
       gradable: submission.gradable,
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
     return withCodeCaller(question_course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'grade',
@@ -1797,7 +1797,7 @@ export async function test(variant, question, course, test_type) {
       gradable: true,
       test_type,
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
     return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'test',

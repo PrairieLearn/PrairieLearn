@@ -121,7 +121,6 @@ module.exports = {
 
     // These lodash functions are still useful.
     'you-dont-need-lodash-underscore/omit': 'off',
-    'you-dont-need-lodash-underscore/flatten': 'off',
   },
   overrides: [
     {
