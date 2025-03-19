@@ -2,7 +2,6 @@ import { parseISO, isValid } from 'date-fns';
 import debugfn from 'debug';
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
@@ -77,7 +76,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   const permissions_course = result.rows[0].permissions_course;
   res.locals.authz_data = {
-    authn_user: _.cloneDeep(res.locals.authn_user),
+    authn_user: structuredClone(res.locals.authn_user),
     authn_mode: result.rows[0].mode,
     authn_mode_reason: result.rows[0].mode_reason,
     authn_is_administrator: res.locals.is_administrator,
@@ -86,7 +85,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     authn_has_course_permission_view: permissions_course.has_course_permission_view,
     authn_has_course_permission_edit: permissions_course.has_course_permission_edit,
     authn_has_course_permission_own: permissions_course.has_course_permission_own,
-    user: _.cloneDeep(res.locals.authn_user),
+    user: structuredClone(res.locals.authn_user),
     mode: result.rows[0].mode,
     mode_reason: result.rows[0].mode_reason,
     is_administrator: res.locals.is_administrator,
@@ -272,7 +271,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       });
     }
 
-    user = _.cloneDeep(result.rows[0].user);
+    user = structuredClone(result.rows[0].user);
     is_administrator = result.rows[0].is_administrator;
     user_with_requested_uid_has_instructor_access_to_course_instance = result.rows[0].is_instructor;
     debug(
