@@ -8,7 +8,7 @@
                     autocomplete="off"
                     autocorrect="off"
                     class="form-control big-o-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
-                    {{#parse_error}}aria-invalid="true" aria-describedby="pl-big-o-input-{{uuid}}-error"{{/parse_error}}
+                    {{#parse_error}}aria-invalid="true"{{/parse_error}}
                     size="{{size}}"
                     {{^editable}}disabled{{/editable}}
                     {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
@@ -45,9 +45,6 @@
                         <span class="badge text-bg-danger">
                             Invalid 
                             <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-                        </span>
-                        <span id="pl-big-o-input-{{uuid}}-error">
-                            You must enter a symbolic expression.
                         </span>
                         <a 
                             class="link-primary"
