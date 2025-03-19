@@ -148,7 +148,7 @@ export function getUniqueNames({
     // if oldLongName matches {longName} ({number from 0-9})
 
     oldLongNames.forEach((oldLongName) => {
-      if (!_.isString(oldLongName)) return;
+      if (typeof oldLongName !== 'string') return;
       const found =
         oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
       if (found) {
@@ -528,7 +528,7 @@ export abstract class Editor {
     }
 
     function getBaseLongName(oldname: string | null): string {
-      if (!_.isString(oldname)) return 'Unknown';
+      if (typeof oldname != 'string') return 'Unknown';
       debug(oldname);
       const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
       debug(found);
@@ -556,7 +556,7 @@ export abstract class Editor {
     function getNumberLongName(basename: string, oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
-        if (!_.isString(oldname)) return;
+        if (typeof oldname !== 'string') return;
         const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
         if (found) {
           const foundNumber = parseInt(found[1]);

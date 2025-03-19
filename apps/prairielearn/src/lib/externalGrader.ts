@@ -199,7 +199,7 @@ export async function processGradingResult(content: any): Promise<void> {
         content.grading.score = 0;
         gradable = false;
       }
-      if (!_.isFinite(content.grading.score)) {
+      if (!Number.isFinite(content.grading.score)) {
         content.grading.feedback = {
           results: { succeeded: false, gradable: false },
           message: 'Error parsing external grading results: score is not a number.',

@@ -1,6 +1,5 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';

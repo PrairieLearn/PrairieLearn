@@ -299,7 +299,7 @@ class PLDrawingAnswerState {
 
   _updateAnswerInput() {
     // Correctly escape double back-slashes... (\\)
-    let temp = JSON.stringify(_.values(this._answerData)).replaceAll('\\\\', '\\\\\\\\');
+    let temp = JSON.stringify(Object.values(this._answerData)).replaceAll('\\\\', '\\\\\\\\');
     this._htmlInput.val(temp);
   }
 

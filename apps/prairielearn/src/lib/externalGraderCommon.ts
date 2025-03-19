@@ -141,10 +141,10 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   }
 
   function replaceNull(d: any) {
-    if (_.isString(d)) {
+    if (typeof d === 'string') {
       // replace NULL with unicode replacement character
       return d.replace(/\0/g, '\ufffd');
-    } else if (_.isArray(d)) {
+    } else if (Array.isArray(d)) {
       return _.map(d, (x) => replaceNull(x));
     } else if (_.isObject(d)) {
       return _.mapValues(d, (x) => replaceNull(x));

@@ -1,5 +1,4 @@
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 
 import { loadSqlEquiv, queryZeroOrOneRowAsync } from '@prairielearn/postgres';
 
