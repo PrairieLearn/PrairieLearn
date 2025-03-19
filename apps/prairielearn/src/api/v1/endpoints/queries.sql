@@ -229,6 +229,8 @@ FROM
 WITH
   object_data AS (
     SELECT
+      z.number as zone_number,
+      z.title as zone_title,
       q.id AS question_id,
       q.qid AS question_name,
       iq.id AS instance_question_id,
@@ -251,6 +253,8 @@ WITH
       JOIN questions AS q ON (q.id = aq.question_id)
       JOIN assessments AS a ON (a.id = aq.assessment_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+      JOIN zones AS z ON (z.id = ag.zone_id)
     WHERE
       ai.id = $unsafe_assessment_instance_id
       AND ci.id = $course_instance_id
