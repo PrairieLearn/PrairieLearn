@@ -20,7 +20,7 @@ curl -H "Private-Token: TOKEN" https://us.prairielearn.com/pl/api/v1/<REST_OF_PA
 
 ## Example access script
 
-An example script that will download all API data for a course instance is at [api_download.py](https://github.com/PrairieLearn/PrairieLearn/blob/master/tools/api_download.py). You can use it like this:
+An example script that will download all API data for a course instance is at [`api_download.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/contrib/api_download.py). You can use it like this:
 
 ```sh
 python api_download.py --token 9a6932a1-e356-4ddc-ad82-4cf30ad896ac --course-instance-id 29832 --output-dir tam212fa18

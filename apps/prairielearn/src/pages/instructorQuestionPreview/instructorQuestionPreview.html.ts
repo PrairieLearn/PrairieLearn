@@ -6,7 +6,19 @@ import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 
-export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<string, any> }) {
+export function InstructorQuestionPreview({
+  normalPreviewUrl,
+  manualGradingPreviewEnabled,
+  manualGradingPreviewUrl,
+  renderSubmissionSearchParams,
+  resLocals,
+}: {
+  normalPreviewUrl: string;
+  manualGradingPreviewEnabled: boolean;
+  manualGradingPreviewUrl: string;
+  renderSubmissionSearchParams: URLSearchParams;
+  resLocals: Record<string, any>;
+}) {
   return PageLayout({
     resLocals,
     pageTitle: 'Question Preview',
@@ -47,13 +59,30 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
       </div>
     `,
     content: html`
+      ${manualGradingPreviewEnabled
+        ? html`
+            <div class="alert alert-primary">
+              You are viewing this question as it will appear in the manual grading interface.
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
+              you are done.
+            </div>
+          `
+        : ''}
       <div class="row">
         <div class="col-lg-9 col-sm-12">
-          ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+          ${QuestionContainer({
+            resLocals,
+            showFooter: manualGradingPreviewEnabled ? false : undefined,
+            questionContext: 'instructor',
+            manualGradingPreviewUrl: manualGradingPreviewEnabled
+              ? undefined
+              : manualGradingPreviewUrl,
+            renderSubmissionSearchParams,
+          })}
         </div>
 
         <div class="col-lg-3 col-sm-12">
-          <div class="card mb-4">
+          <div class="card mb-3">
             <div class="card-header bg-secondary text-white">
               <h2>Student view placeholder</h2>
             </div>

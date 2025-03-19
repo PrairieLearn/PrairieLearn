@@ -329,6 +329,8 @@ The `focus` attribute defaults to `false`. Setting this to true will cause the f
 
 This element supports additional preview options through [element extensions](elementExtensions.md). To provide this functionality, the extension must assign, to `window.PLFileEditor.prototype.preview.PREVIEW_TYPE` (where `PREVIEW_TYPE` is the value of the `preview` attribute), a function that converts a string representing the editor's content into suitable HTML content.
 
+The contents of the file editor are only displayed by default in the question panel. If the contents are expected to be listed in the submission panel, they should be explicitly added using other elements such as [`pl-file-preview`](#pl-file-preview-element) or [`pl-xss-safe`](#pl-xss-safe-element).
+
 #### Example implementations
 
 - [element/fileEditor]
@@ -362,6 +364,10 @@ in the format expected by externally graded questions.
 | Attribute    | Type     | Default | description                                                                                                                                    |
 | ------------ | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `file-names` | CSV list | —       | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes. |
+
+#### Details
+
+The `pl-file-upload` element and the contents of the uploaded file(s) are only displayed by default in the question panel. If the contents are expected to be listed in the submission panel, they should be explicitly added using other elements such as [`pl-file-preview`](#pl-file-preview-element) or [`pl-xss-safe`](#pl-xss-safe-element).
 
 #### Example implementations
 
@@ -899,7 +905,7 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 | `source-file-name`   | string                              | —                    | Name of the source file with existing content to be displayed in the editor. The format of this file must match the format specified in the `format` attribute.                                                                                                                                                                                                                                                                                           |
 | `directory`          | string                              | See description      | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `"clientFilesCourse"` or `"serverFilesCourse"`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
 | `placeholder`        | string                              | `"Your answer here"` | Text to be shown in the editor as a placeholder when there is no student input.                                                                                                                                                                                                                                                                                                                                                                           |
-| `format`             | `"html"` or `"markdown"`            | `"html"`             | Format used to save the student's response. This format also affects how the source file name or inner HTML is interpreted.                                                                                                                                                                                                                                                                                                                               |
+| `format`             | `"html"` or `"markdown"`            | `"html"`             | Format used to interpret the specified source file or starting content. This option does not affect the output format.                                                                                                                                                                                                                                                                                                                                    |
 | `markdown-shortcuts` | boolean                             | true                 | Whether or not the editor accepts shortcuts based on markdown format (e.g., typing `_word_` causes the word to become italic).                                                                                                                                                                                                                                                                                                                            |
 | `counter`            | `"word"`, `"character"` or `"none"` | `"none"`             | Whether a word or character count should be displayed at the bottom of the editor.                                                                                                                                                                                                                                                                                                                                                                        |
 | `allow-blank`        | boolean                             | false                | Whether or not an empty input box is allowed. By default, empty submissions will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                          |
@@ -1161,6 +1167,7 @@ def square(x):
 | `highlight-lines-color` | text    | `"#b3d7ff"`     | Specifies the color of highlighted lines of code.                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `copy-code-button`      | boolean | false           | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                                   |
 | `show-line-numbers`     | boolean | false           | Whether to show line numbers in code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                                           |
+| `normalize-whitespace`  | boolean | false           | Whether to strip trailing whitespace and remove extra indentation of the contents. Recommended for cases where the code is inline in the question file.                                                                                                                                                                                                                                                                                                   |
 
 #### Details
 
@@ -1782,8 +1789,8 @@ Along with the sample usage of the element, we include a sample template file. T
   <div class="card-header" style="cursor: pointer">
     <div
       class="card-title d-flex justify-content-between"
-      data-toggle="collapse"
-      data-target="#collapse-{{uuid}}"
+      data-bs-toggle="collapse"
+      data-bs-target="#collapse-{{uuid}}"
     >
       <div>{{section_header}}</div>
       <div class="fa fa-angle-down"></div>
