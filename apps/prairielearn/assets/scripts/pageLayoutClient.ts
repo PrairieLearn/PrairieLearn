@@ -40,7 +40,7 @@ onDocumentReady(async () => {
       // Update the side nav toggler button tooltip and icon
       sideNavTogglerButton.setAttribute('data-bs-title', 'Collapse side nav');
       sideNavTogglerIcon.classList.replace('bi-arrow-bar-right', 'bi-arrow-bar-left');
-      
+
       // Bootstrap won't update aria-label if data-bs-title changes, so we update it explicitly
       sideNavTogglerButton.setAttribute('aria-label', 'Collapse side nav');
     }
