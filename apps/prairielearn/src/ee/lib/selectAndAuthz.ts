@@ -33,5 +33,5 @@ export async function selectAndAuthzInstitutionAsAdmin({
     return result.institution;
   }
 
-  throw new HttpStatusError(403, 'Not authorized');
+  throw new HttpStatusError(403, 'Not authorized');//
 }
