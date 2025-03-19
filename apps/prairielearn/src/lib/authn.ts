@@ -30,6 +30,49 @@ export interface LoadUserAuth {
   institution_id?: number | string | null;
 }
 
+async function handlePendingLti13User({
+  user,
+  uin,
+  sub,
+  lti13_instance_id,
+}: {
+  user: User;
+  uin: string | undefined;
+  sub: string | undefined;
+  lti13_instance_id: string | undefined;
+}) {
+  // Bail early if we're not in enterprise mode.
+  if (!isEnterprise()) return;
+
+  // Bail early if we're missing any attributes.
+  if (!uin || !sub || !lti13_instance_id) return;
+
+  const { updateLti13UserSub } = await import('../ee/models/lti13-user.js');
+  const { selectLti13Instance } = await import('../ee/models/lti13Instance.js');
+
+  const lti13Instance = await selectLti13Instance(lti13_instance_id);
+
+  // Bail early if the LTI 1.3 instance doesn't exist.
+  if (!lti13Instance) return;
+
+  if (user.uin !== uin) {
+    throw new Error(`UIN from LTI (${uin}) does not match user UIN (${user.uin})`);
+  }
+
+  if (lti13Instance.institution_id !== user.institution_id) {
+    throw new Error(
+      `Institution ID from LTI (${lti13Instance.institution_id}) does not match user institution ID (${user.institution_id})`,
+    );
+  }
+
+  // Store the `sub` claim.
+  await updateLti13UserSub({
+    user_id: user.user_id,
+    lti13_instance_id: lti13Instance.id,
+    sub,
+  });
+}
+
 export async function loadUser(
   req: Request,
   res: Response,
@@ -37,6 +80,17 @@ export async function loadUser(
   optionsParams: LoadUserOptions = {},
 ): Promise<{ user: User }> {
   const options = { redirect: false, ...optionsParams };
+
+  const lti13_pending_uin = req.session.lti13_pending_uin;
+  const lti13_pending_sub = req.session.lti13_pending_sub;
+  const lti13_pending_instance_id = req.session.lti13_pending_instance_id;
+
+  // Immediately clear these values from the session. They're only used once,
+  // and on the unlikely chance that they contain bad data, we want to
+  // aggressively clear them so they don't interfere with future logins.
+  req.session.lti13_pending_uin = undefined;
+  req.session.lti13_pending_sub = undefined;
+  req.session.lti13_pending_instance_id = undefined;
 
   let user_id: number | string;
   if (authnParams.user_id !== undefined) {
@@ -76,6 +130,16 @@ export async function loadUser(
   if (!selectedUser) {
     throw new Error('user not found with user_id ' + user_id);
   }
+
+  // If the student is authing as part of an LTI 1.3 launch, we need to associate
+  // the pending `sub` claim with the user. We'll take care to ensure that the
+  // UIN and institution ID match.
+  await handlePendingLti13User({
+    user: selectedUser.user,
+    uin: lti13_pending_uin,
+    sub: lti13_pending_sub,
+    lti13_instance_id: lti13_pending_instance_id,
+  });
 
   // The session store will pick this up and store it in the `user_sessions.user_id` column.
   req.session.user_id = user_id;

@@ -15,6 +15,7 @@ import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import * as authnLib from '../../../lib/authn.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { Lti13ClaimSchema, Lti13Claim } from '../../lib/lti13.js';
+import { updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
 import { Lti13Test } from './lti13Auth.html.js';
@@ -47,14 +48,21 @@ router.post(
 
     const inStateTest = req.body.state.endsWith(STATE_TEST);
 
-    // UID checking
     let uid: string;
-    if (!lti13_instance.uid_attribute) {
-      throw new HttpStatusError(
-        500,
-        'LTI 1.3 instance configuration missing required UID attribute',
-      );
-    } else {
+    if (lti13_instance.uid_attribute) {
+      uid = ltiClaim.get(lti13_instance.uid_attribute);
+    }
+
+    // UIN checking, if attribute defined value must be present
+    let uin: string | null = null;
+    if (lti13_instance.uin_attribute) {
+      // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
+      // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
+      uin = ltiClaim.get(lti13_instance.uin_attribute);
+    }
+
+    // UID checking
+    if (lti13_instance.uid_attribute) {
       // Reasonable default is "email"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
       uid = ltiClaim.get(lti13_instance.uid_attribute);
@@ -73,20 +81,38 @@ router.post(
           );
         }
       }
+    } else if (!uin) {
+      // If we have neither a UIN or a UID, we're in a weird state and something
+      // is almost certainly misconfigured. We'll just bail.
+      throw new HttpStatusError(500, 'Missing both UID and UIN data from LTI 1.3 login');
+    } else {
+      // If there's no configured `uid_attribute`, we can't use the LTI 1.3
+      // auth flow to create a user. Instead, there are two things that can happen:
+      //
+      // - The user could have already authenticated before via SAML or another
+      //   auth provider. In this case, we'll look them up by UIN and assert that
+      //   the `institution_id` matches that of the LTI 1.3 instance.
+      // - The user has never authed via another auth provider. We'll have to
+      //   force them through another auth provider. We'll shove their UIN and
+      //   LTI 1.3 `sub` into the session so that, after they've authed, we can
+      //   check that the UINs match, create the user, and then add the LTI 1.3
+      //   `sub` to the user.
+
+      // Remember the user's details for after auth.
+      req.session.lti13_pending_uin = uin;
+      req.session.lti13_pending_sub = ltiClaim.get('sub');
+      req.session.lti13_pending_instance_id = lti13_instance.id;
+
+      // Render a page prompting them to auth first.
+      return;
     }
 
-    // UIN checking, if attribute defined value must be present
-    let uin: string | null = null;
-    if (lti13_instance.uin_attribute) {
-      // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
-      // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
-      uin = ltiClaim.get(lti13_instance.uin_attribute);
-      if (!uin && !inStateTest) {
-        throw new HttpStatusError(
-          500,
-          `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
-        );
-      }
+    // Now that we're clear of UID handling, we'll validate the UIN.
+    if (!uin && !inStateTest) {
+      throw new HttpStatusError(
+        500,
+        `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
+      );
     }
 
     // Name checking, not an error
@@ -134,8 +160,8 @@ router.post(
     const { user } = await authnLib.loadUser(req, res, userInfo);
 
     // Record the LTI 1.3 user's subject id
-    await queryAsync(sql.update_lti13_users, {
-      user_id: res.locals.authn_user.user_id,
+    await updateLti13UserSub({
+      user_id: user.user_id,
       lti13_instance_id: lti13_instance.id,
       sub: ltiClaim.get('sub'),
     });
