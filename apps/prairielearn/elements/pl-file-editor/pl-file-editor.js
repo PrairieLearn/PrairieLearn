@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax, DOMPurify */
+/* global ace, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -292,12 +292,50 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
 window.PLFileEditor.prototype.preview = {
   html: (value) => value,
   markdown: (() => {
-    let markdownRenderer = new showdown.Converter({
-      literalMidWordUnderscores: true,
-      literalMidWordAsterisks: true,
-    });
-
-    return async (value) => markdownRenderer.makeHtml(value);
+    let marked = null;
+    return async (value) => {
+      if (marked == null) {
+        marked = (await import('marked')).marked;
+        const startMath = /(\$|\\\(|\\\[)/;
+        const mathjaxInput = MathJax.startup.getInputJax() ?? [];
+        marked.use({
+          extensions: [
+            {
+              name: 'math',
+              level: 'inline',
+              start: (src) => src.match(startMath)?.index,
+              tokenizer(src) {
+                // Check if the string starts with a math delimiter. If the
+                // delimiter is further in the string, start() will take care of
+                // calling the tokenizer again.
+                if (src.match(startMath)?.index !== 0) return false;
+                // Use MathJax API to retrieve the math content.
+                for (const inputJax of mathjaxInput) {
+                  const foundMath = inputJax.findMath([src])?.find((math) => math.start?.n === 0);
+                  if (foundMath) {
+                    const raw = src.substring(0, foundMath.end.n);
+                    // The escape type will take care of Markdown-specific
+                    // characters (e.g., `_` or `*`). However HTML-specific
+                    // encoding still needs to be manually handled.
+                    return {
+                      type: 'escape',
+                      raw,
+                      text: raw
+                        .replaceAll('&', '&amp;')
+                        .replaceAll('<', '&lt;')
+                        .replaceAll('>', '&gt;')
+                        .replaceAll('"', '&quot;')
+                        .replaceAll("'", '&#39;'),
+                    };
+                  }
+                }
+              },
+            },
+          ],
+        });
+      }
+      return await marked.parse(value);
+    };
   })(),
   dot: (() => {
     let vizPromise = null;
