@@ -30,7 +30,7 @@ export default asyncHandler(async (req, res, next) => {
     throw new HttpStatusError(403, 'Access denied');
   }
 
-  _.assign(res.locals, result.rows[0]);
+  Object.assign(res.locals, result.rows[0]);
 
   if (res.locals.course_instance_id) {
     req.params.course_instance_id = res.locals.course_instance_id;

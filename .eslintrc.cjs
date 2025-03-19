@@ -24,6 +24,7 @@ module.exports = {
     'plugin:@eslint-react/recommended-legacy',
     'plugin:@typescript-eslint/stylistic',
     'plugin:@typescript-eslint/strict',
+    'plugin:you-dont-need-lodash-underscore/compatible-warn',
     'prettier',
   ],
   plugins: [
@@ -34,6 +35,7 @@ module.exports = {
     '@eslint-react',
     '@prairielearn',
     '@typescript-eslint',
+    'you-dont-need-lodash-underscore',
   ],
   parserOptions: {
     ecmaVersion: 13,

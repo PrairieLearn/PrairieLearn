@@ -47,7 +47,7 @@ export class PostgresError extends Error {
  * Formats a string for debugging.
  */
 function debugString(s: string): string {
-  if (!_.isString(s)) return 'NOT A STRING';
+  if (typeof s !== 'string') return 'NOT A STRING';
   s = s.replace(/\n/g, '\\n');
   if (s.length > 78) s = s.substring(0, 75) + '...';
   s = '"' + s + '"';

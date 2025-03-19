@@ -24,7 +24,7 @@ router.get(
     const result = await sqldb.queryAsync(sql.lti_data, {
       course_instance_id: res.locals.course_instance.id,
     });
-    _.assign(res.locals, result.rows[0]);
+    Object.assign(res.locals, result.rows[0]);
 
     res.send(InstructorInstanceAdminLti({ resLocals: res.locals }));
   }),

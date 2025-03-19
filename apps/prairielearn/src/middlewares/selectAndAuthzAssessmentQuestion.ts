@@ -12,6 +12,6 @@ export default asyncHandler(async (req, res, next) => {
     assessment_id: res.locals.assessment.id,
   });
   if (result.rowCount === 0) throw new HttpStatusError(403, 'Access denied');
-  _.assign(res.locals, result.rows[0]);
+  Object.assign(res.locals, result.rows[0]);
   next();
 });

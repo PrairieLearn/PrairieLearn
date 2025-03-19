@@ -427,15 +427,15 @@ function checkData(data, origData, phase) {
       return `"${prop}" is missing from "data"`;
     }
     if (type === 'integer') {
-      if (!_.isInteger(data[prop])) {
+      if (!Number.isInteger(data[prop])) {
         return `data.${prop} is not an integer: ${String(data[prop])}`;
       }
     } else if (type === 'number') {
-      if (!_.isFinite(data[prop])) {
+      if (!Number.isFinite(data[prop])) {
         return `data.${prop} is not a number: ${String(data[prop])}`;
       }
     } else if (type === 'string') {
-      if (!_.isString(data[prop])) {
+      if (typeof data[prop] !== 'string') {
         return `data.${prop} is not a string: ${String(data[prop])}`;
       }
     } else if (type === 'boolean') {
@@ -494,7 +494,7 @@ function checkData(data, origData, phase) {
        || checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
   if (err) return err;
 
-  const extraProps = _.difference(_.keys(data), checked);
+  const extraProps = _.difference(Object.keys(data), checked);
   if (extraProps.length > 0) return `"data" has invalid extra keys: ${extraProps.join(', ')}`;
 
   return null;
@@ -561,8 +561,8 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
   const courseIssues = [];
   let fileData = Buffer.from('');
   const questionElements = new Set([
-    ..._.keys(coreElementsCache),
-    ..._.keys(context.course_elements),
+    ...Object.keys(coreElementsCache),
+    ...Object.keys(context.course_elements),
   ]);
 
   const visitNode = async (node) => {
@@ -605,7 +605,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
       // We'll be sneaky and remove the extensions, since they're not used elsewhere.
       delete data.extensions;
       delete ret_val.extensions;
-      if (_.isString(consoleLog) && consoleLog.length > 0) {
+      if (typeof consoleLog === 'string' && consoleLog.length > 0) {
         courseIssues.push(
           new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
             data: { outputBoth: consoleLog },
@@ -614,7 +614,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
         );
       }
       if (phase === 'render') {
-        if (!_.isString(ret_val)) {
+        if (typeof ret_val !== 'string') {
           throw new CourseIssueError(
             `${elementFile}: Error calling ${phase}(): return value is not a string`,
             { data: ret_val, fatal: true },
@@ -688,8 +688,8 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
   const courseIssues = [];
   let fileData = Buffer.from('');
   const questionElements = new Set([
-    ..._.keys(coreElementsCache),
-    ..._.keys(context.course_elements),
+    ...Object.keys(coreElementsCache),
+    ...Object.keys(context.course_elements),
   ]).values();
 
   try {
@@ -732,7 +732,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
 
         delete data.extensions;
         delete result.extensions;
-        if (_.isString(output) && output.length > 0) {
+        if (typeof output === 'string' && output.length > 0) {
           courseIssues.push(
             new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
               data: { outputBoth: output },
@@ -742,7 +742,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
         }
 
         if (phase === 'render') {
-          if (!_.isString(output)) {
+          if (typeof output !== 'string') {
             const courseIssue = new CourseIssueError(
               `${elementFile}: Error calling ${phase}(): return value is not a string`,
               { data: { result }, fatal: true },
@@ -924,7 +924,7 @@ async function processQuestionServer(phase, codeCaller, data, html, fileData, co
     return { courseIssues, data };
   }
 
-  if (_.isString(output) && output.length > 0) {
+  if (typeof output === 'string' && output.length > 0) {
     const serverFile = path.join(context.question_dir, 'server.py');
     courseIssues.push(
       new CourseIssueError(`${serverFile}: output logged on console`, {
@@ -1053,7 +1053,7 @@ export async function generate(question, course, variant_seed) {
       params: {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
-      options: _.defaults({}, course.options, question.options),
+      options: { ...course.options, ...question.options },
     };
     _.extend(data.options, getContextOptions(context));
 

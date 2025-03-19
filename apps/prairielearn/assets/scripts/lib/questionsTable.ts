@@ -184,7 +184,7 @@ onDocumentReady(() => {
       _.flatten(_.map(data, (row) => row.assessments)),
       (row) => row && row.course_instance_id === ci_id,
     );
-    return _.assign(_.keyBy(_.map(assessments, (row) => row.label)), { '(None)': '(None)' });
+    return Object.assign(_.keyBy(_.map(assessments, (row) => row.label)), { '(None)': '(None)' });
   };
 
   course_instance_ids.forEach((courseInstanceId: string) => {

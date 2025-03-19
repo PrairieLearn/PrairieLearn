@@ -45,8 +45,14 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
   const description2 = await loadDescription(db2);
 
   // Determine if both databases have the same tables
-  const tablesMissingFrom1 = _.difference(_.keys(description2.tables), _.keys(description1.tables));
-  const tablesMissingFrom2 = _.difference(_.keys(description1.tables), _.keys(description2.tables));
+  const tablesMissingFrom1 = _.difference(
+    Object.keys(description2.tables),
+    Object.keys(description1.tables),
+  );
+  const tablesMissingFrom2 = _.difference(
+    Object.keys(description1.tables),
+    Object.keys(description2.tables),
+  );
 
   if (tablesMissingFrom1.length > 0) {
     result += formatText(`Tables added to ${db2NameBold} (${db2.type})\n`, chalk.underline);
@@ -65,8 +71,14 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
   }
 
   // Determine if both databases have the same enums
-  const enumsMissingFrom1 = _.difference(_.keys(description2.enums), _.keys(description1.enums));
-  const enumsMissingFrom2 = _.difference(_.keys(description1.enums), _.keys(description2.enums));
+  const enumsMissingFrom1 = _.difference(
+    Object.keys(description2.enums),
+    Object.keys(description1.enums),
+  );
+  const enumsMissingFrom2 = _.difference(
+    Object.keys(description1.enums),
+    Object.keys(description2.enums),
+  );
 
   if (enumsMissingFrom1.length > 0) {
     result += formatText(`Enums added to ${db2NameBold} (${db1.type})\n`, chalk.underline);
@@ -85,7 +97,10 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
   }
 
   // Determine if the columns of any table differ
-  const intersection = _.intersection(_.keys(description1.tables), _.keys(description2.tables));
+  const intersection = _.intersection(
+    Object.keys(description1.tables),
+    Object.keys(description2.tables),
+  );
   _.forEach(intersection, (table) => {
     const patch = structuredPatch(
       `tables/${table}`,
@@ -114,7 +129,10 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
   });
 
   // Determine if the values of any enums differ
-  const enumsIntersection = _.intersection(_.keys(description1.enums), _.keys(description2.enums));
+  const enumsIntersection = _.intersection(
+    Object.keys(description1.enums),
+    Object.keys(description2.enums),
+  );
   _.forEach(enumsIntersection, (enumName) => {
     // We don't need to do a particularly fancy diff here, since
     // enums are just represented here as strings

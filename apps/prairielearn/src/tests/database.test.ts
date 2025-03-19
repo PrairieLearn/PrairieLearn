@@ -55,7 +55,7 @@ describe('database', function () {
     const tableHasDeletedAtColumn = (table) =>
       _.some(data.tables[table].columns, { name: 'deleted_at' });
     const [softDeleteTables, hardDeleteTables] = _.partition(
-      _.keys(data.tables),
+      Object.keys(data.tables),
       tableHasDeletedAtColumn,
     );
 

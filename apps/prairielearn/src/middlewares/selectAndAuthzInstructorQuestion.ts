@@ -14,14 +14,14 @@ export async function selectAndAuthzInstructorQuestion(req: Request, res: Respon
       course_instance_id: res.locals.course_instance.id,
     });
     if (result.rowCount === 0) throw new error.HttpStatusError(403, 'Access denied');
-    _.assign(res.locals, result.rows[0]);
+    Object.assign(res.locals, result.rows[0]);
   } else {
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_and_auth, {
       question_id: req.params.question_id,
       course_id: res.locals.course.id,
     });
     if (result.rowCount === 0) throw new error.HttpStatusError(403, 'Access denied');
-    _.assign(res.locals, result.rows[0]);
+    Object.assign(res.locals, result.rows[0]);
   }
 }
 

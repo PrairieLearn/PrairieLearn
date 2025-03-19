@@ -437,8 +437,7 @@ class PLDrawingAnswerState {
         padding: 10,
         graded: false,
       };
-      let opts = _.defaults(options, def);
-      opts.type = 'pl-line';
+      let opts = { ...def, ...options, type: 'pl-line' };
       window.PLDrawingApi.createElement(canvas, opts, submittedAnswer);
     }
     static get_button_icon() {

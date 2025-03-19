@@ -84,13 +84,13 @@ describeDatabase(argv._[0].toString(), options).then(
 
 function printDescription(description: DatabaseDescription) {
   const formattedDescription = formatDatabaseDescription(description, { coloredOutput });
-  _.forEach(_.sortBy(_.keys(formattedDescription.tables)), (tableName) => {
+  _.forEach(_.sortBy(Object.keys(formattedDescription.tables)), (tableName) => {
     process.stdout.write(formatText(`[table] ${tableName}\n`, chalk.bold));
     process.stdout.write(formattedDescription.tables[tableName]);
     process.stdout.write('\n\n');
   });
 
-  _.forEach(_.sortBy(_.keys(formattedDescription.enums)), (enumName) => {
+  _.forEach(_.sortBy(Object.keys(formattedDescription.enums)), (enumName) => {
     process.stdout.write(formatText(`[enum] ${enumName}\n`, chalk.bold));
     process.stdout.write(formattedDescription.enums[enumName]);
     process.stdout.write('\n\n');
