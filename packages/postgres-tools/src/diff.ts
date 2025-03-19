@@ -109,7 +109,7 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
       description2.tables[table],
     );
 
-    if (patch.hunks.length === 0) break;
+    if (patch.hunks.length === 0) continue;
 
     const boldTable = formatText(table, chalk.bold);
     result += formatText(`Differences in ${boldTable} table\n`, chalk.underline);
