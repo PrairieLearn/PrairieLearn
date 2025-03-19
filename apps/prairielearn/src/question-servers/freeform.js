@@ -742,7 +742,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
         }
 
         if (phase === 'render') {
-          if (typeof output !== 'string') {
+          if (typeof result !== 'string') {
             const courseIssue = new CourseIssueError(
               `${elementFile}: Error calling ${phase}(): return value is not a string`,
               { data: { result }, fatal: true },
