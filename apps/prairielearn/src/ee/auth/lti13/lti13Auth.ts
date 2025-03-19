@@ -131,7 +131,7 @@ router.post(
     }
 
     // AUTHENTICATE
-    await authnLib.loadUser(req, res, userInfo);
+    const { user } = await authnLib.loadUser(req, res, userInfo);
 
     // Record the LTI 1.3 user's subject id
     await queryAsync(sql.update_lti13_users, {
@@ -139,6 +139,26 @@ router.post(
       lti13_instance_id: lti13_instance.id,
       sub: ltiClaim.get('sub'),
     });
+
+    // TODO: make this configurable.
+    //
+    // TODO: We also need to handle the case where LTI doesn't provide a UID.
+    //
+    // Certain institutions aren't able to provide either UIDs or UINs via
+    // their LTI integration. This is particularly problematic for institutions
+    // where the `email` field (which is used in roster requests) isn't a UID
+    // and thus can't be matched during roster syncing.
+    //
+    // To support these institutions, we'll support a flow that essentially treats
+    // LTI as a second-class auth provider. If someone logs in with LTI 1.3 but we're
+    // missing either a UID or a UIN from them, we'll prompt them to log in with
+    // their institution's default auth provider.
+    //
+    // TODO: document the other flow (SAML first, missing LTI 1.3 user ID).
+    const requireUinAndUid = true;
+    if (requireUinAndUid && (!user.uin || !user.uid)) {
+      throw new HttpStatusError(403, 'Missing UIN or UID');
+    }
 
     // Get the target_link out of the LTI request and redirect
     res.redirect(ltiClaim.target_link_uri ?? '/pl');

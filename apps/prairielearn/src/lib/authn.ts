@@ -8,7 +8,7 @@ import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
 import { clearCookie } from '../lib/cookie.js';
 
 import { config } from './config.js';
-import { InstitutionSchema, UserSchema } from './db-types.js';
+import { InstitutionSchema, UserSchema, type User } from './db-types.js';
 import { isEnterprise } from './license.js';
 import { HttpRedirect } from './redirect.js';
 
@@ -35,7 +35,7 @@ export async function loadUser(
   res: Response,
   authnParams: LoadUserAuth,
   optionsParams: LoadUserOptions = {},
-) {
+): Promise<{ user: User }> {
   const options = { redirect: false, ...optionsParams };
 
   let user_id: number | string;
@@ -102,32 +102,33 @@ export async function loadUser(
     }
 
     res.redirect(redirUrl);
-    return;
+  } else {
+    // We're being run as middleware. Set `res.locals` values.
+
+    res.locals.authn_user = selectedUser.user;
+    res.locals.authn_institution = selectedUser.institution;
+    res.locals.authn_provider_name = authnParams.provider;
+    res.locals.authn_is_administrator = selectedUser.is_administrator;
+
+    const defaultAccessType = config.devMode ? 'active' : 'inactive';
+    const accessType = req.cookies.pl2_access_as_administrator || defaultAccessType;
+    res.locals.access_as_administrator = accessType === 'active';
+    res.locals.is_administrator =
+      res.locals.authn_is_administrator && res.locals.access_as_administrator;
+
+    res.locals.is_institution_administrator =
+      res.locals.is_administrator ||
+      (await sqldb.queryRow(
+        sql.select_is_institution_admin,
+        {
+          institution_id: res.locals.authn_institution.id,
+          user_id: res.locals.authn_user.user_id,
+        },
+        z.boolean(),
+      ));
+
+    res.locals.news_item_notification_count = selectedUser.news_item_notification_count;
   }
 
-  // If we fall-through here, set the res.locals.authn_user variables (middleware)
-
-  res.locals.authn_user = selectedUser.user;
-  res.locals.authn_institution = selectedUser.institution;
-  res.locals.authn_provider_name = authnParams.provider;
-  res.locals.authn_is_administrator = selectedUser.is_administrator;
-
-  const defaultAccessType = config.devMode ? 'active' : 'inactive';
-  const accessType = req.cookies.pl2_access_as_administrator || defaultAccessType;
-  res.locals.access_as_administrator = accessType === 'active';
-  res.locals.is_administrator =
-    res.locals.authn_is_administrator && res.locals.access_as_administrator;
-
-  res.locals.is_institution_administrator =
-    res.locals.is_administrator ||
-    (await sqldb.queryRow(
-      sql.select_is_institution_admin,
-      {
-        institution_id: res.locals.authn_institution.id,
-        user_id: res.locals.authn_user.user_id,
-      },
-      z.boolean(),
-    ));
-
-  res.locals.news_item_notification_count = selectedUser.news_item_notification_count;
+  return { user: selectedUser.user };
 }
