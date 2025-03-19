@@ -99,9 +99,9 @@ function paramsToArray(
       if (Array.isArray(params[v])) {
         map[v] =
           'ARRAY[' +
-          _.map(_.range(nParams + 1, nParams + params[v].length + 1), function (n) {
-            return '$' + n;
-          }).join(',') +
+          Array.prototype.map
+            .call(_.range(nParams + 1, nParams + params[v].length + 1), (n) => '$' + n)
+            .join(',') +
           ']';
         nParams += params[v].length;
         paramsArray = paramsArray.concat(params[v]);
@@ -599,7 +599,9 @@ export class PostgresPool {
   async callAsync(functionName: string, params: any[]): Promise<pg.QueryResult> {
     debug('call()', 'function:', functionName);
     debug('call()', 'params:', debugParams(params));
-    const placeholders = _.map(_.range(1, params.length + 1), (v) => '$' + v).join();
+    const placeholders = Array.prototype.map
+      .call(_.range(1, params.length + 1), (v) => '$' + v)
+      .join();
     const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders});`;
     const result = await this.queryAsync(sql, params);
     debug('call() success', 'rowCount:', result.rowCount);
@@ -669,7 +671,9 @@ export class PostgresPool {
   ): Promise<pg.QueryResult> {
     debug('callWithClient()', 'function:', functionName);
     debug('callWithClient()', 'params:', debugParams(params));
-    const placeholders = _.map(_.range(1, params.length + 1), (v) => '$' + v).join();
+    const placeholders = Array.prototype.map
+      .call(_.range(1, params.length + 1), (v) => '$' + v)
+      .join();
     const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders})`;
     const result = await this.queryWithClientAsync(client, sql, params);
     debug('callWithClient() success', 'rowCount:', result.rowCount);

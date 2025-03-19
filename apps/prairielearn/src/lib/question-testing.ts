@@ -72,7 +72,7 @@ async function createTestSubmission(
     question_course,
     test_type,
   );
-  const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+  const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
   const studentMessage = 'Error creating test submission';
   const courseData = { variant, question, course: variant_course };

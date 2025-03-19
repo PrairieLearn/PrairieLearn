@@ -52,11 +52,8 @@ describe('database', function () {
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
     const data = await describeDatabase(dbName);
 
-    const tableHasDeletedAtColumn = (table) =>
-      _.some(data.tables[table].columns, { name: 'deleted_at' });
-    const [softDeleteTables, hardDeleteTables] = _.partition(
-      Object.keys(data.tables),
-      tableHasDeletedAtColumn,
+    const [softDeleteTables, hardDeleteTables] = _.partition(Object.keys(data.tables), (table) =>
+      data.tables[table].columns.some((column) => column.name === 'deleted_at'),
     );
 
     for (const table of softDeleteTables) {
@@ -68,7 +65,7 @@ describe('database', function () {
           throw new Error(`Failed to match foreign key for ${table}: ${constraint.def}`);
         }
         const [, keyName, otherTable, deleteAction] = match;
-        if (deleteAction === 'CASCADE' && _.includes(hardDeleteTables, otherTable)) {
+        if (deleteAction === 'CASCADE' && hardDeleteTables.includes(otherTable)) {
           throw new Error(
             `Soft-delete table "${table}" has ON DELETE CASCADE foreign key "${keyName}" to hard-delete table "${otherTable}"`,
           );

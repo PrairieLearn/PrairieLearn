@@ -373,7 +373,7 @@ async function updateInstanceQuestionFromJson(
       feedback: getFeedbackOrNull(json),
       partial_scores: getPartialScoresOrNull(json),
     };
-    if (_.some(Object.values(new_score), (value) => value != null)) {
+    if (Object.values(new_score).some((value) => value != null)) {
       await manualGrading.updateInstanceQuestionScore(
         assessment_id,
         submission_data.instance_question_id,

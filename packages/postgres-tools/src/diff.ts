@@ -101,7 +101,7 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
     Object.keys(description1.tables),
     Object.keys(description2.tables),
   );
-  _.forEach(intersection, (table) => {
+  for (const table of intersection) {
     const patch = structuredPatch(
       `tables/${table}`,
       `tables/${table}`,
@@ -109,7 +109,7 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
       description2.tables[table],
     );
 
-    if (patch.hunks.length === 0) return;
+    if (patch.hunks.length === 0) break;
 
     const boldTable = formatText(table, chalk.bold);
     result += formatText(`Differences in ${boldTable} table\n`, chalk.underline);
@@ -126,14 +126,14 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
     });
 
     result += '\n\n';
-  });
+  }
 
   // Determine if the values of any enums differ
   const enumsIntersection = _.intersection(
     Object.keys(description1.enums),
     Object.keys(description2.enums),
   );
-  _.forEach(enumsIntersection, (enumName) => {
+  for (const enumName of enumsIntersection) {
     // We don't need to do a particularly fancy diff here, since
     // enums are just represented here as strings
     if (description1.enums[enumName].trim() !== description2.enums[enumName].trim()) {
@@ -143,7 +143,7 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
       result += formatText(`+ ${description2.enums[enumName].trim()}\n`, chalk.green);
       result += '\n\n';
     }
-  });
+  }
 
   return result;
 }

@@ -569,7 +569,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
     if (node.tagName && questionElements.has(node.tagName)) {
       const elementName = node.tagName;
       const elementFile = getElementController(elementName, context);
-      if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
+      if (phase === 'render' && !renderedElementNames.includes(elementName)) {
         renderedElementNames.push(elementName);
       }
       // Populate the extensions used by this element.
@@ -695,7 +695,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
   try {
     await async.eachSeries(questionElements, async (elementName) => {
       await async.eachSeries($(elementName).toArray(), async (element) => {
-        if (phase === 'render' && !_.includes(renderedElementNames, element)) {
+        if (phase === 'render' && !renderedElementNames.includes(element)) {
           renderedElementNames.push(elementName);
         }
 
@@ -867,6 +867,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     if (context.question.partial_credit) {
       let total_weight = 0,
         total_weight_score = 0;
+      // eslint-disable-next-line you-dont-need-lodash-underscore/each
       _.each(resultData.partial_scores, (value) => {
         const score = value.score ?? 0;
         const weight = value.weight ?? 1;
@@ -877,8 +878,10 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     } else {
       let score = 0;
       if (
+        // eslint-disable-next-line you-dont-need-lodash-underscore/size
         _.size(resultData.partial_scores) > 0 &&
-        _.every(resultData.partial_scores, (value) => _.get(value, 'score', 0) >= 1)
+        // eslint-disable-next-line you-dont-need-lodash-underscore/every
+        _.every(resultData.partial_scores, (value) => (value?.score ?? 0) >= 1)
       ) {
         score = 1;
       }
@@ -998,7 +1001,7 @@ async function processQuestion(phase, codeCaller, data, context) {
           fileData,
           renderedElementNames,
         } = await processQuestionHtml(phase, codeCaller, data, context);
-        const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
+        const hasFatalError = courseIssues.some((issue) => issue.fatal);
         if (hasFatalError) {
           return {
             courseIssues,
@@ -1262,7 +1265,7 @@ export async function render(
     const htmls = {
       extraHeadersHtml: '',
       questionHtml: '',
-      submissionHtmls: _.map(submissions, () => ''),
+      submissionHtmls: submissions.map(() => ''),
       answerHtml: '',
     };
     let allRenderedElementNames = [];
@@ -1373,7 +1376,7 @@ export async function render(
         if (!(type in dependencies)) continue;
 
         for (let dep of question.dependencies[type]) {
-          if (!_.includes(dependencies[type], dep)) {
+          if (!dependencies[type].includes(dep)) {
             dependencies[type].push(dep);
           }
         }
@@ -1441,7 +1444,7 @@ export async function render(
           if (!(type in dependencies)) continue;
 
           for (const dep of elementDependencies[type]) {
-            if (!_.includes(dependencies[type], dep)) {
+            if (!dependencies[type].includes(dep)) {
               dependencies[type].push(dep);
             }
           }
@@ -1500,7 +1503,7 @@ export async function render(
               if (!(type in dependencies)) continue;
 
               for (const dep of extension[type]) {
-                if (!_.includes(dependencies[type], dep)) {
+                if (!dependencies[type].includes(dep)) {
                   dependencies[type].push(dep);
                 }
               }
@@ -1710,6 +1713,7 @@ export async function parse(submission, variant, question, course) {
         data,
         context,
       );
+      // eslint-disable-next-line you-dont-need-lodash-underscore/size
       if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
       return {
         courseIssues,
@@ -1757,6 +1761,7 @@ export async function grade(submission, variant, question, question_course) {
         data,
         context,
       );
+      // eslint-disable-next-line you-dont-need-lodash-underscore/size
       if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
       return {
         courseIssues,
@@ -1803,6 +1808,7 @@ export async function test(variant, question, course, test_type) {
         data,
         context,
       );
+      // eslint-disable-next-line you-dont-need-lodash-underscore/size
       if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
       return {
         courseIssues,

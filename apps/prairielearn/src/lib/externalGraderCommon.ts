@@ -145,7 +145,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
       // replace NULL with unicode replacement character
       return d.replace(/\0/g, '\ufffd');
     } else if (Array.isArray(d)) {
-      return _.map(d, (x) => replaceNull(x));
+      return d.map((x) => replaceNull(x));
     } else if (_.isObject(d)) {
       return _.mapValues(d, (x) => replaceNull(x));
     } else {

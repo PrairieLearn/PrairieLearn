@@ -48,19 +48,19 @@ onDocumentReady(() => {
   } = decodeData('questions-table-data');
 
   window.topicList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
-    return _.keyBy(_.map(data, (row) => row.topic.name));
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    return _.keyBy(data.map((row) => row.topic.name));
   };
 
   window.tagsList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
-    return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name));
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    return _.keyBy(data.flatMap((row) => row.tags ?? []).map((row) => row.name));
   };
 
   window.sharingSetsList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
     const sharing_sets = _.keyBy(
-      _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
+      data.flatMap((row) => row.sharing_sets ?? []).map((row) => row.name),
     );
     sharing_sets['Public'] = 'Public';
     sharing_sets['Public source'] = 'Public source';
@@ -68,8 +68,8 @@ onDocumentReady(() => {
   };
 
   window.versionList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
-    return _.keyBy(_.map(data, (row) => row.display_type));
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    return _.keyBy(data.map((row) => row.display_type));
   };
 
   window.qidFormatter = function (_qid: any, question: QuestionsPageData) {
@@ -179,12 +179,11 @@ onDocumentReady(() => {
   };
 
   const assessmentsByCourseInstanceList = function (ci_id: string) {
-    const data = $('#questionsTable').bootstrapTable('getData');
-    const assessments = _.filter(
-      _.flatten(_.map(data, (row) => row.assessments)),
-      (row) => row && row.course_instance_id === ci_id,
-    );
-    return Object.assign(_.keyBy(_.map(assessments, (row) => row.label)), { '(None)': '(None)' });
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    const assessments = data
+      .flatMap((row) => row.assessments ?? [])
+      .filter((row) => row && row.course_instance_id === ci_id);
+    return { ..._.keyBy(assessments.map((row) => row.label)), '(None)': '(None)' };
   };
 
   course_instance_ids.forEach((courseInstanceId: string) => {

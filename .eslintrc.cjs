@@ -24,7 +24,7 @@ module.exports = {
     'plugin:@eslint-react/recommended-legacy',
     'plugin:@typescript-eslint/stylistic',
     'plugin:@typescript-eslint/strict',
-    'plugin:you-dont-need-lodash-underscore/compatible-warn',
+    'plugin:you-dont-need-lodash-underscore/compatible',
     'prettier',
   ],
   plugins: [

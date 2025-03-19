@@ -367,7 +367,7 @@ function buildRubricItemFields(items: RubricItem[]): Record<string, string> {
         _.mapKeys(items, (item, index) => (item.id ? `cur${item.id}` : `new${index}`)),
       ),
       ([key, item], order) =>
-        _.map(Object.entries({ order, ...item }), ([field, value]) => [
+        Object.entries({ order, ...item }).map(([field, value]) => [
           `rubric_item[${key}][${field}]`,
           value,
         ]),
