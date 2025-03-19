@@ -318,13 +318,13 @@ export async function updateAssessmentQuestionRubric(
           number,
           rubric_id: new_rubric_id,
         })),
-        async (item) => {
+        async ({ order: _order, id, ...item }) => {
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
-          if (item.id == null) {
-            await sqldb.queryAsync(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
+          if (id == null) {
+            await sqldb.queryAsync(sql.insert_rubric_item, item);
           } else {
-            await sqldb.queryRow(sql.update_rubric_item, _.omit(item, ['order']), IdSchema);
+            await sqldb.queryRow(sql.update_rubric_item, { ...item, id }, IdSchema);
           }
         },
       );

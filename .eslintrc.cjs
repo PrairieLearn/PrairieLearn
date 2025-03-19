@@ -118,9 +118,6 @@ module.exports = {
     // Blocks double-quote strings (unless a single quote is present in the
     // string) and backticks (unless there is a tag or substitution in place).
     quotes: ['error', 'single', { avoidEscape: true }],
-
-    // These lodash functions are still useful.
-    'you-dont-need-lodash-underscore/omit': 'off',
   },
   overrides: [
     {

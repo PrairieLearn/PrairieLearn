@@ -2338,6 +2338,7 @@ mechanicsObjects.byType['pl-line'] = class extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
     let obj = new fabric.Line(
       [options.x1, options.y1, options.x2, options.y2],
+      // eslint-disable-next-line you-dont-need-lodash-underscore/omit
       _.omit(options, 'left', 'top'),
     );
     obj.setControlVisible('bl', false);
