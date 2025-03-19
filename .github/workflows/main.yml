@@ -312,13 +312,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Check whether images/plbase was modified
-        run: scripts/check_path_modified.sh images/plbase images_plbase_modified
+      # TODO: wait for caching PR
       - name: Build and push prairielearn/plbase
-        if: ${{ env.images_plbase_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
-          context: images/plbase
+          context: .
+          file: images/plbase/Dockerfile
           platforms: linux/amd64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
@@ -329,7 +328,6 @@ jobs:
       # if we actually built it; if it wasn't built, we don't tag it, so Docker will
       # correctly fall back to pulling the `latest` version from the registry.
       - name: Tag plbase image as latest
-        if: ${{ env.images_plbase_modified }}
         run: docker tag prairielearn/plbase:${{ env.COMMIT_SHA }} prairielearn/plbase:latest
 
       - name: Build the prairielearn docker image

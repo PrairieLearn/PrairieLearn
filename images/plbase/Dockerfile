@@ -1,8 +1,8 @@
 FROM amazonlinux:2023
 
 # plbase-install.sh: script to install all needed packages and dependencies
-# python-requirements.txt: list of python packages to be installed by pip
-COPY plbase-install.sh python-requirements.txt /
+# pyproject.toml: dependencies for the Python portions of PrairieLearn
+COPY scripts/plbase-install.sh pyproject.toml /
 
 RUN /bin/bash /plbase-install.sh
 

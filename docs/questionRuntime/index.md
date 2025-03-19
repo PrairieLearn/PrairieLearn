@@ -4,7 +4,7 @@ Since PrairieLearn executes your question code in an environment that is not ful
 
 ## General information
 
-All `server.py` files for questions are executed in a Docker container created from the `prairielearn/prairielearn` image. This image includes the Python version that is bundled with the [latest version of Miniconda](https://docs.conda.io/en/latest/miniconda.html), as well as the packages in [`images/plbase/python-requirements.txt`](https://github.com/PrairieLearn/PrairieLearn/blob/master/images/plbase/python-requirements.txt). The only packages guaranteed to be installed are those listed in the requirements file.
+All `server.py` files for questions are executed in a Docker container created from the `prairielearn/prairielearn` image. This image includes the Python version that is bundled with the [latest version of Miniconda](https://docs.conda.io/en/latest/miniconda.html), as well as the packages in [`pyproject.toml`](https://github.com/PrairieLearn/PrairieLearn/blob/master/pyproject.toml). The only packages guaranteed to be installed are those listed in the requirements file.
 
 To run a command line version of this Python environment, you may start it with the following command:
 

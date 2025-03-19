@@ -3,7 +3,7 @@ build:
 build-sequential:
 	@yarn turbo run --concurrency 1 build
 python-deps:
-	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
+	@python3 -m pip install . --root-user-action=ignore
 deps:
 	@yarn
 	@$(MAKE) python-deps build
@@ -112,10 +112,10 @@ lint-docs: lint-d2 lint-links lint-markdown
 build-docs:
 	@if uv --version >/dev/null 2>&1; then \
 		uv venv /tmp/pldocs/venv; \
-		uv pip install -r docs/requirements.txt --python /tmp/pldocs/venv; \
+		uv pip install --group docs --python /tmp/pldocs/venv; \
 	else \
 		python3 -m venv /tmp/pldocs/venv; \
-		/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt; \
+		/tmp/pldocs/venv/bin/python3 -m pip install --group docs; \
 	fi
 	@/tmp/pldocs/venv/bin/mkdocs build --strict
 preview-docs:

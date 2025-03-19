@@ -76,6 +76,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 .coverage
+*.egg-info
+uv.lock
 
 ### R
 .Rproj.user
