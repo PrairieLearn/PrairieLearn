@@ -42,7 +42,7 @@ class LoadEstimator {
   startJob(id: string) {
     debug(`LoadEstimator.startJob(): jobType = ${this.jobType}, id = ${id}`);
     this._addIntegratedLoad();
-    if (_.has(this.currentJobs, id)) {
+    if (Object.prototype.hasOwnProperty.call(this.currentJobs, id)) {
       logger.error(`load.startJob(): ${this.jobType} id already running: ${id}`);
     }
     this.currentJobs[id] = { startMS: Date.now() };
@@ -51,7 +51,7 @@ class LoadEstimator {
   endJob(id: string) {
     debug(`LoadEstimator.endJob(): jobType = ${this.jobType}, id = ${id}`);
     this._addIntegratedLoad();
-    if (_.has(this.currentJobs, id)) {
+    if (Object.prototype.hasOwnProperty.call(this.currentJobs, id)) {
       delete this.currentJobs[id];
     } else {
       logger.error(`load.endJob(): ${this.jobType} no such id: ${id}`);
@@ -147,13 +147,15 @@ export function initEstimator(jobType: string, maxJobCount: number, warnOnOldJob
   debug(
     `initEstimator(): jobType = ${jobType}, maxJobCount = ${maxJobCount}, warnOnOldJobs = ${warnOnOldJobs}`,
   );
-  if (_.has(estimators, jobType)) throw new Error(`duplicate jobType: ${jobType}`);
+  if (Object.prototype.hasOwnProperty.call(estimators, jobType)) {
+    throw new Error(`duplicate jobType: ${jobType}`);
+  }
   estimators[jobType] = new LoadEstimator(jobType, maxJobCount, warnOnOldJobs);
 }
 
 export function startJob(jobType: string, id: string, maxJobCount?: number) {
   debug(`startJob(): jobType = ${jobType}, id = ${id}, maxJobCount = ${maxJobCount}`);
-  if (!_.has(estimators, jobType)) {
+  if (!Object.prototype.hasOwnProperty.call(estimators, jobType)) {
     // lazy estimator creation, needed for unit tests
     estimators[jobType] = new LoadEstimator(jobType, maxJobCount);
   }
