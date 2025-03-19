@@ -867,7 +867,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     if (context.question.partial_credit) {
       let total_weight = 0,
         total_weight_score = 0;
-      for (const value of resultData.partial_scores) {
+      for (const value of Object.values(resultData.partial_scores ?? {})) {
         const score = value.score ?? 0;
         const weight = value.weight ?? 1;
         total_weight += weight;
@@ -877,8 +877,8 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     } else {
       let score = 0;
       if (
-        Object.keys(resultData.partial_scores).length > 0 &&
-        Object.values(resultData.partial_scores).every((value) => (value?.score ?? 0) >= 1)
+        Object.keys(resultData.partial_scores ?? {}).length > 0 &&
+        Object.values(resultData.partial_scores ?? {}).every((value) => (value?.score ?? 0) >= 1)
       ) {
         score = 1;
       }
