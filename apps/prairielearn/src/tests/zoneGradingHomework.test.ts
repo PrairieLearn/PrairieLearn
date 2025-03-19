@@ -332,7 +332,7 @@ describe('Zone grading homework assessment', function () {
             helperQuestion.getInstanceQuestion(locals);
             describe('saving submission data', function () {
               it('should succeed', function () {
-                locals.question.savedVariant = _.clone(locals.variant);
+                locals.question.savedVariant = structuredClone(locals.variant);
                 locals.question.questionSavedCsrfToken = locals.__csrf_token;
               });
             });
@@ -340,7 +340,7 @@ describe('Zone grading homework assessment', function () {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'save';
-                locals.variant = _.clone(locals.question.savedVariant);
+                locals.variant = structuredClone(locals.question.savedVariant);
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
@@ -349,7 +349,7 @@ describe('Zone grading homework assessment', function () {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'grade';
-                locals.variant = _.clone(locals.question.savedVariant);
+                locals.variant = structuredClone(locals.question.savedVariant);
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });

@@ -57,7 +57,7 @@ async function makeVariant(
   variant: VariantCreationData;
 }> {
   let variant_seed: string;
-  if (_.has(options, 'variant_seed') && options.variant_seed != null) {
+  if (options.variant_seed != null) {
     variant_seed = options.variant_seed;
   } else {
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);

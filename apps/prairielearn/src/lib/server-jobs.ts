@@ -2,7 +2,6 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import { AnsiUp } from 'ansi_up';
 import { execa } from 'execa';
-import _ from 'lodash';
 import * as shlex from 'shlex';
 import { z } from 'zod';
 
@@ -367,7 +366,7 @@ export async function stop() {
 
 export function connection(socket) {
   socket.on('joinJob', function (msg, callback) {
-    if (!_.has(msg, 'job_id')) {
+    if (!('job_id' in msg)) {
       logger.error('socket.io joinJob called without job_id');
       return;
     }
@@ -396,7 +395,7 @@ export function connection(socket) {
   });
 
   socket.on('joinJobSequence', function (msg, callback) {
-    if (!_.has(msg, 'job_sequence_id')) {
+    if (!('job_sequence_id' in msg)) {
       logger.error('socket.io joinJobSequence called without job_sequence_id');
       return;
     }
