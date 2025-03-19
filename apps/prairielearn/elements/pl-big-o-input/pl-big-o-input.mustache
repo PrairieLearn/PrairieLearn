@@ -94,12 +94,24 @@
         </span>
     {{/parse_error}}
     {{#missing_input}}
-        ${{type}}($
-        <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
-
-        <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" title="Missing Input" data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
-        </button>
-        $)$
+        <span class="small" style="white-space: nowrap">
+            <span class="badge text-bg-dark border">
+                Missing Input 
+                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            </span>
+            <a 
+                class="link-primary"
+                tabindex="0"
+                role="button"
+                data-bs-placement="auto"
+                data-bs-toggle="popover"
+                data-bs-html="true"
+                title="Missing input"
+                data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
+            >
+            More info…
+            </a>
+        </span>
     {{/missing_input}}
 
     </span>
