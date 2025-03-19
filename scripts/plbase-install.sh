@@ -1,10 +1,6 @@
 #!/bin/bash
 set -ex
 
-# If you need to rebuild this image without actually changing anything,
-# add a dot to the following line:
-# .
-
 dnf update -y
 
 # Notes:
@@ -79,7 +75,8 @@ curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Min
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
 echo "installing Python packages..."
-python3 -m pip install --no-cache-dir -r /python-requirements.txt
+# Installs dependencies from the pyproject.toml file in the root of the repository
+python3 -m pip install --no-cache-dir .
 
 # Clear various caches to minimize the final image size.
 dnf clean all
