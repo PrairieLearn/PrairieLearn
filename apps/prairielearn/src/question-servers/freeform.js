@@ -1476,9 +1476,9 @@ export async function render(
             }
 
             const extension =
-              structuredClone(extensions[elementName][extensionName]).dependencies ?? {};
+              structuredClone(extensions[elementName][extensionName].dependencies) ?? {};
             const extensionDynamic =
-              structuredClone(extensions[elementName][extensionName]).dynamicDependencies ?? {};
+              structuredClone(extensions[elementName][extensionName].dynamicDependencies) ?? {};
             if ('extensionStyles' in extension) {
               extension.extensionStyles = extension.extensionStyles.map(
                 (dep) => `${elementName}/${extensionName}/${dep}`,
