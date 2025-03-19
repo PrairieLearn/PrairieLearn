@@ -74,6 +74,7 @@ export function AssessmentQuestion({
           aiGradingEnabled,
           courseStaff,
           csrfToken: __csrf_token,
+          aiGradingUrl: `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessment_question.id}/ai_grading_runs`,
         },
         'instance-question-table-data',
       )}

@@ -205,6 +205,107 @@ async function generateSubmissionEmbedding({
   return new_submission_embedding;
 }
 
+export async function aiGradeTest({
+  course,
+  course_instance_id,
+  question,
+  assessment_question,
+  urlPrefix,
+  authn_user_id,
+  user_id,
+}: {
+  question: Question;
+  course: Course;
+  course_instance_id?: string;
+  assessment_question: AssessmentQuestion;
+  urlPrefix: string;
+  authn_user_id: string;
+  user_id: string;
+}): Promise<string> {
+  // If OpenAI API Key and Organization are not provided, throw error
+  if (!config.openAiApiKey || !config.openAiOrganization) {
+    throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+  }
+  const openai = new OpenAI({
+    apiKey: config.openAiApiKey,
+    organization: config.openAiOrganization,
+  });
+
+  const question_course = await getQuestionCourse(question, course);
+
+  const serverJob = await createServerJob({
+    courseId: course.id,
+    courseInstanceId: course_instance_id,
+    assessmentId: assessment_question.assessment_id,
+    authnUserId: authn_user_id,
+    userId: user_id,
+    type: 'ai_grading_test',
+    description: 'Test accuracy for AI grading',
+  });
+
+  serverJob.executeInBackground(async (job) => {
+    job.info(question_course.repository ?? ''); // TODO: Remove this
+    const instance_questions = await queryRows(
+      sql.select_instance_questions_for_assessment_question,
+      {
+        assessment_question_id: assessment_question.id,
+      },
+      InstanceQuestionSchema,
+    );
+
+    job.info('Checking for embeddings for all submissions.');
+    let newEmbeddingsCount = 0;
+    for (const instance_question of instance_questions) {
+      const submission_id = await queryRow(
+        sql.select_last_submission_id,
+        { instance_question_id: instance_question.id },
+        IdSchema,
+      );
+      const submission_embedding = await queryOptionalRow(
+        sql.select_embedding_for_submission,
+        { submission_id },
+        SubmissionGradingContextEmbeddingSchema,
+      );
+      if (!submission_embedding) {
+        await generateSubmissionEmbedding({
+          course,
+          question,
+          instance_question,
+          urlPrefix,
+          openai,
+        });
+        newEmbeddingsCount++;
+      }
+    }
+    job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
+
+    let number_to_test = 0;
+    for (const instance_question of instance_questions) {
+      if (!instance_question.requires_manual_grading && instance_question.status !== 'unanswered') {
+        number_to_test++;
+      }
+    }
+    job.info(`Found ${number_to_test} submissions to test!`);
+
+    let error_count = 0;
+
+    // Grade each instance question
+    for (const instance_question of instance_questions) {
+      if (instance_question.requires_manual_grading || instance_question.status === 'unanswered') {
+        continue;
+      }
+
+      error_count++;
+    }
+
+    if (error_count > 0) {
+      job.error('Number of errors: ' + error_count);
+      job.fail('Errors occurred while AI grading, see output for details');
+    }
+  });
+  return serverJob.jobSequenceId;
+}
+
 export async function aiGrade({
   course,
   course_instance_id,
