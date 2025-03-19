@@ -40,9 +40,9 @@ export function AdministratorInstitutions({
           <h1>Institutions</h1>
           <button
             type="button"
-            class="btn btn-sm btn-light ml-auto"
-            data-toggle="modal"
-            data-target="#add-institution-modal"
+            class="btn btn-sm btn-light ms-auto"
+            data-bs-toggle="modal"
+            data-bs-target="#add-institution-modal"
           >
             <i class="fas fa-plus"></i>
             <span class="d-none d-sm-inline">Add institution</span>
@@ -54,8 +54,8 @@ export function AdministratorInstitutions({
           body: html`
             <input type="hidden" name="__action" value="add_institution" />
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <div class="form-group">
-              <label for="short_name">Short name</label>
+            <div class="mb-3">
+              <label class="form-label" for="short_name">Short name</label>
               <input
                 type="text"
                 class="form-control"
@@ -67,8 +67,8 @@ export function AdministratorInstitutions({
                 Use an abbreviation or short name. E.g., "UIUC" or "Berkeley".
               </small>
             </div>
-            <div class="form-group">
-              <label for="long_name">Long name</label>
+            <div class="mb-3">
+              <label class="form-label" for="long_name">Long name</label>
               <input
                 type="text"
                 class="form-control"
@@ -81,9 +81,9 @@ export function AdministratorInstitutions({
                 Urbana-Champaign".
               </small>
             </div>
-            <div class="form-group">
-              <label for="display_timezone">Timezone</label>
-              <select class="custom-select" id="display_timezone" name="display_timezone">
+            <div class="mb-3">
+              <label class="form-label" for="display_timezone">Timezone</label>
+              <select class="form-select" id="display_timezone" name="display_timezone">
                 <option value="" selected disabled hidden>Timezone</option>
                 ${availableTimezones.map(
                   (tz, i) => html`
@@ -101,8 +101,8 @@ export function AdministratorInstitutions({
                 "America/Chicago".
               </small>
             </div>
-            <div class="form-group">
-              <label for="uid_regexp">UID regexp</label>
+            <div class="mb-3">
+              <label class="form-label" for="uid_regexp">UID regexp</label>
               <input
                 type="text"
                 class="form-control"
@@ -116,7 +116,7 @@ export function AdministratorInstitutions({
             </div>
           `,
           footer: html`
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             <button type="submit" class="btn btn-primary">Add institution</button>
           `,
         })}

@@ -48,12 +48,14 @@ import {
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
+import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
 import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
+import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
@@ -67,12 +69,12 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { LocalCache } from './lib/local-cache.js';
-import * as nodeMetrics from './lib/node-metrics.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
+import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
@@ -1091,6 +1093,7 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
+      (await import('./middlewares/selectAssessments.js')).default,
       (await import('./pages/instructorAssessmentInstance/instructorAssessmentInstance.js'))
         .default,
     ],
@@ -1111,7 +1114,7 @@ export async function initExpress(): Promise<Express> {
       res.redirect(
         url.format({
           pathname: `${req.params[0]}/preview`,
-          search: url.parse(req.originalUrl).search,
+          search: getSearchParams(req).toString(),
         }),
       );
     },
@@ -1583,7 +1586,7 @@ export async function initExpress(): Promise<Express> {
     res.redirect(
       url.format({
         pathname: `${req.params[0]}/preview`,
-        search: new URL(req.originalUrl, `${req.protocol}://${req.headers.host}/`).search,
+        search: getSearchParams(req).toString(),
       }),
     );
   });
@@ -1868,6 +1871,18 @@ export async function initExpress(): Promise<Express> {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
+
+  app.use(
+    '/pl/administrator',
+    asyncHandler(async (req, res, next) => {
+      const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
+        user_id: res.locals.authn_user.user_id,
+      });
+      res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+      next();
+    }),
+  );
+
   app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
@@ -2155,16 +2170,6 @@ if (esMain(import.meta) && config.startServer) {
       await Sentry.init({
         dsn: config.sentryDsn,
         environment: config.sentryEnvironment,
-
-        // Sentry (specifically `import-in-the-middle`, which Sentry uses)
-        // is known to cause issues with loading `openai` as ESM. Their
-        // recommended workaround it to exclude the module from their hooks.
-        // See related issues:
-        // https://github.com/openai/openai-node/issues/903
-        // https://github.com/getsentry/sentry-javascript/issues/12414
-        registerEsmLoaderHooks: {
-          exclude: [/openai/],
-        },
 
         // We have our own OpenTelemetry setup, so ensure Sentry doesn't
         // try to set that up for itself, but only if OpenTelemetry is
@@ -2484,7 +2489,21 @@ if (esMain(import.meta) && config.startServer) {
 
     await workspace.init();
     serverJobs.init();
-    nodeMetrics.init();
+
+    if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
+      nodeMetrics.start({
+        awsConfig: makeAwsClientConfig(),
+        intervalSeconds: config.nodeMetricsIntervalSec,
+        dimensions: [
+          { Name: 'Server Group', Value: config.groupName },
+          { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },
+        ],
+        onError(err) {
+          logger.error('Error reporting Node metrics', err);
+          Sentry.captureException(err);
+        },
+      });
+    }
 
     // These should be the last things to start before we actually start taking
     // requests, as they may actually end up executing course code.

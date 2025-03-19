@@ -17,7 +17,7 @@ export function AuthPassword({
       page: 'password',
     },
     content: html`
-      <h1 class="sr-only">Assessment Password</h1>
+      <h1 class="visually-hidden">Assessment Password</h1>
       <div class="card mb-4">
         <div class="card-body">
           <p class="text-center">A password is required to access this assessment.</p>
@@ -32,8 +32,8 @@ export function AuthPassword({
 
           <form method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <div class="form-group">
-              <label for="password">Password</label>
+            <div class="mb-3">
+              <label class="form-label" for="password">Password</label>
               <input type="password" class="form-control" id="password" name="password" />
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>

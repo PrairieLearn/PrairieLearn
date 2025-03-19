@@ -46,7 +46,6 @@ theme:
   features:
     - navigation.sections
     - navigation.indexes
-    - navigation.expand
     - navigation.path
     - navigation.instant
     - navigation.instant.prefetch
@@ -61,6 +60,12 @@ theme:
     # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/#adding-annotations
     - content.code.annotate
 plugins:
+  - exclude:
+      glob:
+        - scripts/**
+        - overrides/**
+        - mkdocstrings/**
+        - requirements.txt
   - gen-files:
       scripts:
         - docs/scripts/gen_python_nav.py
@@ -99,6 +104,7 @@ plugins:
             separate_signature: true
             signature_crossrefs: true
             show_if_no_docstring: false # ignore undocumented members
+            show_overloads: false
 
             show_symbol_type_toc: true
             show_root_full_path: true # prairielearn.core
@@ -107,7 +113,7 @@ plugins:
             group_by_category: false # e.g. 'classes', 'functions'
             members_order: source # source, alphabetical
 
-          import:
+          inventories:
             - url: https://numpy.org/doc/stable/objects.inv
             - url: https://pandas.pydata.org/pandas-docs/stable/objects.inv
             - url: https://matplotlib.org/objects.inv
@@ -160,6 +166,12 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
   - md_in_html
+  # https://facelessuser.github.io/pymdown-extensions/extensions/betterem/
+  - pymdownx.betterem
+  # https://facelessuser.github.io/pymdown-extensions/extensions/caret/
+  - pymdownx.caret # h^2^o
+  # https://facelessuser.github.io/pymdown-extensions/extensions/tilde/
+  - pymdownx.tilde # ~~deleted~~
 
 extra_javascript:
   - assets/mathjax-config.js
@@ -218,11 +230,11 @@ nav:
       - 'Running in Docker with local source': 'installingLocal.md'
       - 'Running natively': 'installingNative.md'
       - 'Server configuration': 'configJson.md'
-      - 'Question element writing': 'devElements.md'
-      - 'Element extensions': 'elementExtensions.md'
+      - 'Building question elements': 'devElements.md'
+      - 'Building element extensions': 'elementExtensions.md'
       - 'Code execution': 'codeExecution.md'
       - 'Docker packaging': 'docker.md'
-      - 'Contributing to PL development': 'contributing.md'
+      - 'Contributing': 'contributing.md'
   - Administrators:
       - 'SAML SSO configuration': 'saml.md'
       - 'LTI 1.3 configuration': 'lti13.md'
@@ -249,4 +261,4 @@ validation:
   unrecognized_links: warn
   anchors: warn
 hooks:
-  - docs/hooks/d2-svg-file.py
+  - docs/scripts/d2-svg-file.py
