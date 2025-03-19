@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 
 import { features } from '../../../lib/features/index.js';
-import { aiGrade } from '../../lib/ai-grading.js';
+import { aiGrade, aiGradeTest } from '../../lib/ai-grading.js';
 
 import { InstructorAIGradingRuns } from './instructorAiGradingRuns.html.js';
 
@@ -39,7 +39,16 @@ router.post(
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'ai_grade_assessment_test') {
-      throw new error.HttpStatusError(501, 'Not implemented');
+      const jobSequenceId = await aiGradeTest({
+        question: res.locals.question,
+        course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
+        assessment_question: res.locals.assessment_question,
+        urlPrefix: res.locals.urlPrefix,
+        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.user_id,
+      });
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }

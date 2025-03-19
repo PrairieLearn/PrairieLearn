@@ -22,31 +22,34 @@ export function InstructorAIGradingRuns({ resLocals }: { resLocals: Record<strin
         </a>
       </div>
       <div id="ai-grading-card" class="card mb-5 mx-auto overflow-hidden" style="max-width: 700px">
-        <h3 class="text-center">AI Grading</h3>
-        <form id="ai-grading-form" name="ai-grading-form" method="POST">
-          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-          <small class="form-text text-muted"
-            >More customizations will be enabled here in the future.</small
-          >
-          <div>
-            <button
-              type="submit"
-              class="btn btn-success"
-              name="__action"
-              value="ai_grade_assessment"
+        <div class="card-body position-relative">
+          <h1 class="h3 text-center">AI Grading</h1>
+          <form id="ai-grading-form" name="ai-grading-form" method="POST">
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <small class="form-text text-muted">
+              Grading student work using AI. More customizations will be enabled here in the future.
+              Select an option below to begin.</small
             >
-              Grade All
-            </button>
-            <button
-              type="submit"
-              class="btn btn-primary"
-              name="__action"
-              value="ai_grade_assessment_test"
-            >
-              Test All
-            </button>
-          </div>
-        </form>
+            <div class="d-flex gap-2 mt-3">
+              <button
+                type="submit"
+                class="btn btn-success"
+                name="__action"
+                value="ai_grade_assessment"
+              >
+                Grade All
+              </button>
+              <button
+                type="submit"
+                class="btn btn-primary"
+                name="__action"
+                value="ai_grade_assessment_test"
+              >
+                Test All
+              </button>
+            </div>
+          </form>
+        </div>
       </div>`,
   });
 }
