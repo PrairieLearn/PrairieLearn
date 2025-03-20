@@ -26,7 +26,7 @@ onDocumentReady(async () => {
       sideNavTogglerButton.setAttribute('data-bs-title', 'Expand side nav');
       sideNavTogglerIcon.classList.replace('bi-arrow-bar-left', 'bi-arrow-bar-right');
 
-      // Bootstrap won't update aria-label if data-bs-title changes, so we update it explicitly
+      // Bootstrap does not update aria-label when data-bs-title changes, so we update it explicitly
       sideNavTogglerButton.setAttribute('aria-label', 'Expand side nav');
     } else {
       // Expand the side nav
@@ -41,7 +41,7 @@ onDocumentReady(async () => {
       sideNavTogglerButton.setAttribute('data-bs-title', 'Collapse side nav');
       sideNavTogglerIcon.classList.replace('bi-arrow-bar-right', 'bi-arrow-bar-left');
 
-      // Bootstrap won't update aria-label if data-bs-title changes, so we update it explicitly
+      // Bootstrap does not update aria-label when data-bs-title changes, so we update it explicitly
       sideNavTogglerButton.setAttribute('aria-label', 'Collapse side nav');
     }
 
