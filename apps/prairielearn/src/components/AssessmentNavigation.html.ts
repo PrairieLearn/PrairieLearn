@@ -28,7 +28,7 @@ export function AssessmentNavigation({
         aria-expanded="false"
         data-bs-toggle="dropdown"
         data-bs-boundary="window"
-        hx-get="/pl/course_instance/${courseInstanceId}/assessments_switcher/${assessment.id}${subPage
+        hx-get="/pl/assessments_switcher/course_instance/${courseInstanceId}/assessment/${assessment.id}${subPage
           ? `?subPage=${subPage}`
           : ''}"
         hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"

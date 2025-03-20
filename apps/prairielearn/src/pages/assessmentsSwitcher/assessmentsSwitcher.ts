@@ -43,7 +43,7 @@ router.get(
     res.send(
       AssessmentSwitcher({
         assessmentDropdownItemsData,
-        selectedAssessmentId: req.params.assessment_id,
+        currentAssessmentId: req.params.assessment_id,
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
         plainUrlPrefix: res.locals.plainUrlPrefix,
         courseInstanceId: res.locals.course_instance.id,

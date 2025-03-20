@@ -609,10 +609,9 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/assessments_switcher/:assessment_id(\\d+)?',
+    '/pl/assessments_switcher/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)?',
     [
       (await import('./middlewares/authzCourseOrInstance.js')).default,
-      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
       (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js')).default,
     ],
   );

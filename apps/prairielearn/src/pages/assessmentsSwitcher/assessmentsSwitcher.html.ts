@@ -24,23 +24,31 @@ type AssessmentDropdownItemData = z.infer<typeof AssessmentDropdownItemDataSchem
 
 export function AssessmentSwitcher({
   assessmentDropdownItemsData,
-  selectedAssessmentId,
+  currentAssessmentId,
   assessmentsGroupBy,
   plainUrlPrefix,
   courseInstanceId,
   targetSubPage,
 }: {
   assessmentDropdownItemsData: AssessmentDropdownItemData[];
-  selectedAssessmentId: string;
+  currentAssessmentId?: string;
   assessmentsGroupBy: 'Set' | 'Module';
   plainUrlPrefix: string;
   courseInstanceId: string;
   /* The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
 }) {
+  if (assessmentDropdownItemsData.length === 0) {
+    return html`
+      <button class="dropdown-item disabled" disabled>No assessments</button>
+    `.toString();
+  }
+
   return html`
     ${assessmentDropdownItemsData.map((assessmentDropdownItemData) => {
-      const isSelected = idsEqual(selectedAssessmentId, assessmentDropdownItemData.id);
+      const isActive = currentAssessmentId
+        ? idsEqual(currentAssessmentId, assessmentDropdownItemData.id)
+        : false;
       return html`
         ${assessmentDropdownItemData.start_new_assessment_group
           ? html`
@@ -56,8 +64,8 @@ export function AssessmentSwitcher({
             `
           : ''}
         <a
-          class="dropdown-item ${isSelected ? 'active' : ''} d-flex align-items-center gap-3"
-          aria-current="${isSelected ? 'page' : ''}"
+          class="dropdown-item ${isActive ? 'active' : ''} d-flex align-items-center gap-3"
+          aria-current="${isActive ? 'page' : ''}"
           aria-label="${assessmentDropdownItemData.title}"
           href="${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${assessmentDropdownItemData.id}/${targetSubPage ??
           ''}"
