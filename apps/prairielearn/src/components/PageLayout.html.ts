@@ -125,13 +125,13 @@ export function PageLayout({
               : ''}
             <div class="${showSideNav ? 'app-main' : ''}">
               <div class="${showSideNav ? 'app-main-container' : ''}">
-                ${resLocals.assessment && resLocals.course_instance &&
-                  AssessmentNavigation({
-                    courseInstanceId: resLocals.course_instance.id,
-                    subPage: navContext.subPage,
-                    assessment: resLocals.assessment,
-                  })
-                }
+                ${resLocals.assessment &&
+                resLocals.course_instance &&
+                AssessmentNavigation({
+                  courseInstanceId: resLocals.course_instance.id,
+                  subPage: navContext.subPage,
+                  assessment: resLocals.assessment,
+                })}
                 ${showContextNavigation
                   ? ContextNavigation({
                       resLocals,

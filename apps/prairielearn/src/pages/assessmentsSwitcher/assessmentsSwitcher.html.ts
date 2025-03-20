@@ -5,7 +5,11 @@ import { html } from '@prairielearn/html';
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import type { NavSubPage } from '../../components/Navbar.types.js';
-import { AssessmentModuleSchema, AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
+import {
+  AssessmentModuleSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+} from '../../lib/db-types.js';
 
 export const AssessmentDropdownItemSchema = AssessmentSchema.extend({
   label: z.string(),
@@ -27,7 +31,7 @@ export function AssessmentSwitcher({
   rows: AssessmentDropdownItem[];
   selectedAssessmentId: string;
   assessmentsGroupBy: 'Set' | 'Module';
-  urlPrefix: string; 
+  urlPrefix: string;
   targetSubPage?: NavSubPage;
 }) {
   return html`
