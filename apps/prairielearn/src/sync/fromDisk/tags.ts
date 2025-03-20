@@ -56,7 +56,7 @@ export async function sync(
     makeImplicitEntity: (name) => ({
       name,
       color: 'gray1',
-      description: null,
+      description: name,
     }),
     comparisonProperties: ['color', 'description'],
     isInfoCourseValid,

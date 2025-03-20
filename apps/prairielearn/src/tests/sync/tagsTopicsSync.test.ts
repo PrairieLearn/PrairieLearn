@@ -138,12 +138,11 @@ async function testImplicit(entityName: 'tags' | 'topics') {
   await util.writeAndSyncCourseData(courseData);
   const syncedEntities = await util.dumpTable(entityName);
   const syncedEntity = syncedEntities.find((as) => as.name === 'implicit');
-  // Previously used to return type of entity as string
-  // const singularEntityName = entityName.slice(0, -1);
+  const singularEntityName = entityName.slice(0, -1);
   checkEntity(syncedEntity, {
     name: 'implicit',
     color: 'gray1',
-    description: '',
+    description: `<span class="text-muted">Auto-generated from use in a question; add this ${singularEntityName} to your infoCourse.json file to customize</span>`,
     implicit: true,
     // Implicit entities should come last.
     number: syncedEntities.length,
