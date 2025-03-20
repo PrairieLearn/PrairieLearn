@@ -6,19 +6,24 @@ import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { encodePath } from '../../lib/uri-util.js';
+import { formatTimezone, type Timezone } from '../../lib/timezones.js';
 
 export function InstructorInstanceAdminSettings({
   resLocals,
   shortNames,
   studentLink,
   infoCourseInstancePath,
+  availableTimezones,
   origHash,
+  canEdit,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
   studentLink: string;
   infoCourseInstancePath: string;
+  availableTimezones: Timezone[];
   origHash: string;
+  canEdit: boolean;
 }) {
   return PageLayout({
     resLocals,
@@ -64,10 +69,7 @@ export function InstructorInstanceAdminSettings({
                 pattern="[\\-A-Za-z0-9_\\/]+"
                 required
                 data-other-values="${shortNames.join(',')}"
-                ${resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course
-                  ? ''
-                  : 'disabled'}
+                ${canEdit ? '' : 'disabled'}
               />
               <small class="form-text text-muted">
                 Use only letters, numbers, dashes, and underscores, with no spaces. You may use
@@ -85,14 +87,78 @@ export function InstructorInstanceAdminSettings({
                 name="long_name"
                 value="${resLocals.course_instance.long_name}"
                 required
-                ${resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course
-                  ? ''
-                  : 'disabled'}
+                ${canEdit ? '' : 'disabled'}
               />
               <small class="form-text text-muted">
                 The long name of this course instance (e.g., 'Spring 2015').
               </small>
+            </div>
+            <div class="mb-3">
+              <label for="display_timezone">Timezone</label>
+              <select
+                class="custom-select"
+                id="display_timezone"
+                name="display_timezone"
+                ${canEdit ? '' : 'disabled'}
+              >
+                ${availableTimezones.map(
+                  (tz) => html`
+                    <option
+                      value="${tz.name}"
+                      ${tz.name === resLocals.course_instance.display_timezone ? 'selected' : ''}
+                    >
+                      ${formatTimezone(tz)}
+                    </option>
+                  `,
+                )}
+              </select>
+              <small class="form-text text-muted">
+                The allowable timezones are from the tz database. It's best to use a city-based
+                timezone that has the same times as you.
+              </small>
+            </div>
+            <div class="mb-3">
+              <label for="group_assessments_by">Group assessments by</label>
+              <select
+                class="custom-select"
+                id="group_assessments_by"
+                name="group_assessments_by"
+                ${canEdit ? '' : 'disabled'}
+              >
+                <option
+                  value="Set"
+                  ${resLocals.course_instance.assessments_group_by === 'Set' ? 'selected' : ''}
+                >
+                  Set
+                </option>
+                <option
+                  value="Module"
+                  ${resLocals.course_instance.assessments_group_by === 'Module' ? 'selected' : ''}
+                >
+                  Module
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                The allowable timezones are from the tz database. It's best to use a city-based
+                timezone that has the same times as you.
+              </small>
+            </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="hide_in_enroll_page"
+                name="hide_in_enroll_page"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.course_instance.hide_in_enroll_page ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="show_correct_answer"
+                >Hide in enrollment page</label
+              >
+              <div class="small text-muted">
+                If enabled, hides the course instance in the enrollment page, so that only direct
+                links to the course can be used for enrollment.
+              </div>
             </div>
             <div class="mb-3">
               <label class="form-label" for="student_link">Student Link</label>
