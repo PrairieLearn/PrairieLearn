@@ -18,6 +18,8 @@ import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const CLIENT_ID = 'prairielearn_test_lms';
+const USER_SUB = 'a555090c-8355-4b58-b315-247612cc22f0';
+const USER_WITHOUT_UID_SUB = '03745213-6fe3-4c29-a7c3-d31013202f95';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
@@ -49,6 +51,7 @@ async function makeLoginExecutor({
     name: string;
     email: string;
     uin: string;
+    sub: string;
   };
   fetchWithCookies: typeof fetch;
   oidcProviderPort: number;
@@ -95,7 +98,7 @@ async function makeLoginExecutor({
     'https://purl.imsglobal.org/spec/lti/claim/deployment_id':
       '7fdce954-4c33-47c9-97b4-e435dbbed9bb',
     // This MUST match the value in the login request.
-    'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': `${siteUrl}/pl/lti13_instance/1/course_navigation`,
+    'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': targetLinkUri,
     'https://purl.imsglobal.org/spec/lti/claim/resource_link': {
       id: 'f6bc7a50-448c-4469-94f7-54d6ea882c2a',
       title: 'Test Course',
@@ -132,7 +135,7 @@ async function makeLoginExecutor({
     .setIssuer(`http://localhost:${oidcProviderPort}`)
     .setIssuedAt()
     .setExpirationTime('1h')
-    .setSubject('a555090c-8355-4b58-b315-247612cc22f0')
+    .setSubject(user.sub)
     .setAudience(CLIENT_ID)
     .sign(joseKey);
 
@@ -337,6 +340,7 @@ describe('LTI 1.3', () => {
         name: 'Test User',
         email: 'test-user@example.com',
         uin: '123456789',
+        sub: USER_SUB,
       },
       fetchWithCookies,
       oidcProviderPort,
@@ -362,21 +366,19 @@ describe('LTI 1.3', () => {
     // There should be a new user.
     const user = await selectOptionalUserByUid('test-user@example.com');
     assert.ok(user);
-    assert.equal(user?.uid, 'test-user@example.com');
-    assert.equal(user?.name, 'Test User');
-    assert.equal(user?.uin, '123456789');
-    assert.equal(user?.institution_id, '1');
+    assert.equal(user.uid, 'test-user@example.com');
+    assert.equal(user.name, 'Test User');
+    assert.equal(user.uin, '123456789');
+    assert.equal(user.institution_id, '1');
 
     // The new user should have an entry in `lti13_users`.
     const ltiUser = await queryOptionalRow(
       'SELECT * FROM lti13_users WHERE user_id = $user_id',
-      {
-        user_id: user?.user_id,
-      },
+      { user_id: user.user_id },
       Lti13UserSchema,
     );
     assert.ok(ltiUser);
-    assert.equal(ltiUser?.sub, 'a555090c-8355-4b58-b315-247612cc22f0');
+    assert.equal(ltiUser?.sub, USER_SUB);
     assert.equal(ltiUser?.lti13_instance_id, '1');
   });
 
@@ -472,46 +474,124 @@ describe('LTI 1.3', () => {
     });
   });
 
-  step('create second LTI 1.3 instance', async () => {
-    await createLti13Instance({
-      issuer_params: {
-        issuer: `http://localhost:${oidcProviderPort}`,
-        authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
-        jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
-        token_endpoint: `http://localhost:${oidcProviderPort}/token`,
-      },
-      attributes: {
-        // Intentionally leave this blank.
-        uid_attribute: '',
-        uin_attribute: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
-        email_attribute: 'email',
-        name_attribute: 'name',
-      },
-    });
-  });
-
-  step('test login for LTI 1.3 instance that does not provide UIDs', async () => {
+  describe('LTI 1.3 instance that does not provide UIDs', () => {
+    // We need to share this across all tests here, as we need to maintain the same session.
     const fetchWithCookies = fetchCookie(fetch);
-    const executor = await makeLoginExecutor({
-      user: {
-        name: 'Test User 2',
-        email: 'test-user-2@example.com',
-        uin: '987654321',
-      },
-      fetchWithCookies,
-      oidcProviderPort,
-      keystore,
-      loginUrl: `${siteUrl}/pl/lti13_instance/2/auth/login`,
-      callbackUrl: `${siteUrl}/pl/lti13_instance/2/auth/callback`,
-      targetLinkUri: `${siteUrl}/pl/lti13_instance/2/course_navigation`,
+
+    step('create second LTI 1.3 instance', async () => {
+      await createLti13Instance({
+        issuer_params: {
+          issuer: `http://localhost:${oidcProviderPort}`,
+          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+        },
+        attributes: {
+          // Intentionally leave this blank.
+          uid_attribute: '',
+          uin_attribute: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
+          email_attribute: 'email',
+          name_attribute: 'name',
+        },
+      });
     });
 
-    const res = await executor.login();
-    assert.equal(res.status, 200);
+    step('perform LTI 1.3 login without prior auth', async () => {
+      const callbackUrl = `${siteUrl}/pl/lti13_instance/2/auth/callback`;
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Test User 2',
+          email: 'test-user-2@example.com',
+          uin: '987654321',
+          sub: USER_WITHOUT_UID_SUB,
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/2/auth/login`,
+        callbackUrl,
+        targetLinkUri: `${siteUrl}/pl/lti13_instance/2/course_navigation`,
+      });
 
-    // The user should not exist until they log in via SAML.
-    const user = await selectOptionalUserByUid('test-user-2@example.com');
-    assert.isNull(user);
+      const res = await executor.login();
+      assert.equal(res.status, 200);
+
+      // Assert that they're still on the callback page.
+      // TODO: this should be redirected somewhere else.
+      assert.equal(res.url, callbackUrl);
+
+      // The user should not exist until they log in via SAML.
+      const user = await selectOptionalUserByUid('test-user-2@example.com');
+      assert.isNull(user);
+    });
+
+    step('authenticate with dev mode login', async () => {
+      const res = await fetchCheerio(`${siteUrl}/pl/login`);
+      assert.equal(res.status, 200);
+
+      const loginRes = await fetchWithCookies(`${siteUrl}/pl/login`, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __csrf_token: res.$('input[name=__csrf_token]').val() as string,
+          __action: 'dev_login',
+          uid: 'test-user-2@example.com',
+          name: 'Test User 2',
+          email: 'test-user-2@example.com',
+          uin: '987654321',
+        }),
+      });
+      assert.equal(loginRes.status, 200);
+
+      // The user should have been redirected to the homepage.
+      assert.equal(loginRes.url, siteUrl + '/');
+
+      // The user should now exist.
+      const user = await selectOptionalUserByUid('test-user-2@example.com');
+      assert.ok(user);
+      assert.equal(user.uid, 'test-user-2@example.com');
+      assert.equal(user.name, 'Test User 2');
+      assert.equal(user.uin, '987654321');
+      assert.equal(user.institution_id, '1');
+      assert.equal(user.email, 'test-user-2@example.com');
+
+      // The new user should have an entry in `lti13_users`.
+      const ltiUser = await queryOptionalRow(
+        'SELECT * FROM lti13_users WHERE user_id = $user_id',
+        { user_id: user.user_id },
+        Lti13UserSchema,
+      );
+      assert.ok(ltiUser);
+      assert.equal(ltiUser.sub, USER_WITHOUT_UID_SUB);
+      assert.equal(ltiUser.lti13_instance_id, '2');
+    });
+
+    step('perform LTI 1.3 login after prior auth', async () => {
+      // We use a new set of cookies to simulate a new session.
+      const fetchWithCookies = fetchCookie(fetch);
+
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/2/course_navigation`;
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Test User 2',
+          email: 'test-user-2@example.com',
+          uin: '987654321',
+          sub: USER_WITHOUT_UID_SUB,
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/2/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/2/auth/callback`,
+        targetLinkUri,
+      });
+
+      const res = await executor.login();
+      assert.equal(res.status, 200);
+
+      // Assert that they've been redirected to the course navigation page.
+      // This means that the login succeeded.
+      assert.equal(res.url, targetLinkUri);
+    });
   });
 });
 

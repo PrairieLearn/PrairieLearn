@@ -14,6 +14,7 @@ import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 import * as authnLib from '../../../lib/authn.js';
 import { getCanonicalHost } from '../../../lib/url.js';
+import { selectOptionalUserByUin } from '../../../models/user.js';
 import { Lti13ClaimSchema, Lti13Claim } from '../../lib/lti13.js';
 import { updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
@@ -98,20 +99,29 @@ router.post(
       //   check that the UINs match, create the user, and then add the LTI 1.3
       //   `sub` to the user.
 
-      // Remember the user's details for after auth.
-      req.session.lti13_pending_uin = uin;
-      req.session.lti13_pending_sub = ltiClaim.get('sub');
-      req.session.lti13_pending_instance_id = lti13_instance.id;
+      const user = await selectOptionalUserByUin({
+        uin,
+        institution_id: lti13_instance.institution_id,
+      });
 
-      // TODO: this should actually be a redirect to another URL so that we're not
-      // responding to a `POST` with HTML.
-      res.send(
-        Lti13AuthRequire({
-          institution_id: lti13_instance.institution_id,
-          resLocals: res.locals,
-        }),
-      );
-      return;
+      if (user) {
+        uid = user.uid;
+      } else {
+        // Remember the user's details for after auth.
+        req.session.lti13_pending_uin = uin;
+        req.session.lti13_pending_sub = ltiClaim.get('sub');
+        req.session.lti13_pending_instance_id = lti13_instance.id;
+
+        // TODO: this should actually be a redirect to another URL so that we're not
+        // responding to a `POST` with HTML.
+        res.send(
+          Lti13AuthRequire({
+            institution_id: lti13_instance.institution_id,
+            resLocals: res.locals,
+          }),
+        );
+        return;
+      }
     }
 
     // Now that we're clear of UID handling, we'll validate the UIN.
