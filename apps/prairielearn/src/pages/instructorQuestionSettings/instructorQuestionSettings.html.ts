@@ -189,7 +189,13 @@ export function InstructorQuestionSettings({
                                     value="${topic.name}"
                                     data-color="${topic.color}"
                                     data-name="${topic.name}"
-                                    data-description="${TopicDescription({ topic_description: topic })}"
+                                    ${topic.implicit
+                                      ? ''
+                                      : html`
+                                          data-description="${TopicDescription({
+                                            topic_description: topic,
+                                          })}"
+                                        `}
                                     ${topic.name === resLocals.topic.name ? 'selected' : ''}
                                   ></option>
                                 `;
@@ -220,7 +226,13 @@ export function InstructorQuestionSettings({
                                         value="${tag.name}"
                                         data-color="${tag.color}"
                                         data-name="${tag.name}"
-                                        data-description="${TagDescription({ tag_description: tag, raw: true })}"
+                                        ${tag.implicit
+                                          ? ''
+                                          : html`
+                                              data-description="${TagDescription({
+                                                tag_description: tag,
+                                              })}"
+                                            `}
                                         ${selectedTags.has(tag.name) ? 'selected' : ''}
                                       ></option>
                                     `;
