@@ -355,12 +355,12 @@ WITH
         )
       ) = 1 AS best_submission_per_variant,
       (
-        SELECT 
+        SELECT
           JSONB_AGG(tg.name)
         FROM
           question_tags AS qt
           JOIN tags AS tg ON (tg.id = qt.tag_id)
-        WHERE 
+        WHERE
           q.id = qt.question_id
       ) AS question_tags
     FROM
