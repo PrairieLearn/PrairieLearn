@@ -91,8 +91,8 @@ router.post(
       // auth flow to create a user. Instead, there are two things that can happen:
       //
       // - The user could have already authenticated before via SAML or another
-      //   auth provider. In this case, we'll look them up by UIN and assert that
-      //   the `institution_id` matches that of the LTI 1.3 instance.
+      //   auth provider. In this case, we'll look them up by UIN/institution_id.
+      //   If we find them, we use that UID and proceed as normal.
       // - The user has never authed via another auth provider. We'll have to
       //   force them through another auth provider. We'll shove their UIN and
       //   LTI 1.3 `sub` into the session so that, after they've authed, we can
@@ -170,37 +170,17 @@ router.post(
       return;
     }
 
-    // AUTHENTICATE
+    // Authenticate the user.
     const { user } = await authnLib.loadUser(req, res, userInfo);
 
-    // Record the LTI 1.3 user's subject id
+    // Record the LTI 1.3 user's subject id.
     await updateLti13UserSub({
       user_id: user.user_id,
       lti13_instance_id: lti13_instance.id,
       sub: ltiClaim.get('sub'),
     });
 
-    // TODO: make this configurable.
-    //
-    // TODO: We also need to handle the case where LTI doesn't provide a UID.
-    //
-    // Certain institutions aren't able to provide either UIDs or UINs via
-    // their LTI integration. This is particularly problematic for institutions
-    // where the `email` field (which is used in roster requests) isn't a UID
-    // and thus can't be matched during roster syncing.
-    //
-    // To support these institutions, we'll support a flow that essentially treats
-    // LTI as a second-class auth provider. If someone logs in with LTI 1.3 but we're
-    // missing either a UID or a UIN from them, we'll prompt them to log in with
-    // their institution's default auth provider.
-    //
-    // TODO: document the other flow (SAML first, missing LTI 1.3 user ID).
-    const requireUinAndUid = true;
-    if (requireUinAndUid && (!user.uin || !user.uid)) {
-      throw new HttpStatusError(403, 'Missing UIN or UID');
-    }
-
-    // Get the target_link out of the LTI request and redirect
+    // Get the target_link out of the LTI request and redirect.
     res.redirect(ltiClaim.target_link_uri ?? '/pl');
   }),
 );
