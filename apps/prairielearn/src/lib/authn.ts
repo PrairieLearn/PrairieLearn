@@ -50,10 +50,8 @@ async function handlePendingLti13User({
   const { updateLti13UserSub } = await import('../ee/models/lti13-user.js');
   const { selectLti13Instance } = await import('../ee/models/lti13Instance.js');
 
+  // This will error if the LTI 1.3 instance doesn't exist.
   const lti13Instance = await selectLti13Instance(lti13_instance_id);
-
-  // Bail early if the LTI 1.3 instance doesn't exist.
-  if (!lti13Instance) return;
 
   if (user.uin !== uin) {
     throw new Error(`UIN from LTI (${uin}) does not match user UIN (${user.uin})`);
