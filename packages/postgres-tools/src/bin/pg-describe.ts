@@ -5,7 +5,6 @@ import path from 'path';
 import async from 'async';
 import chalk from 'chalk';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import yargs from 'yargs';
 
 import {
@@ -84,13 +83,13 @@ describeDatabase(argv._[0].toString(), options).then(
 
 function printDescription(description: DatabaseDescription) {
   const formattedDescription = formatDatabaseDescription(description, { coloredOutput });
-  for (const tableName of _.sortBy(Object.keys(formattedDescription.tables))) {
+  for (const tableName of Object.keys(formattedDescription.tables).sort()) {
     process.stdout.write(formatText(`[table] ${tableName}\n`, chalk.bold));
     process.stdout.write(formattedDescription.tables[tableName]);
     process.stdout.write('\n\n');
   }
 
-  for (const enumName of _.sortBy(Object.keys(formattedDescription.enums))) {
+  for (const enumName of Object.keys(formattedDescription.enums).sort()) {
     process.stdout.write(formatText(`[enum] ${enumName}\n`, chalk.bold));
     process.stdout.write(formattedDescription.enums[enumName]);
     process.stdout.write('\n\n');

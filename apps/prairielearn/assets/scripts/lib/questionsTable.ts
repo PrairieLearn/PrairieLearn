@@ -1,5 +1,3 @@
-import _ from 'lodash';
-
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
