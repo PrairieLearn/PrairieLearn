@@ -49,18 +49,20 @@ onDocumentReady(() => {
 
   window.topicList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
-    return _.keyBy(data.map((row) => row.topic.name));
+    return Object.fromEntries(data.map((row) => [row.topic.name, row.topic.name]));
   };
 
   window.tagsList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
-    return _.keyBy(data.flatMap((row) => row.tags ?? []).map((row) => row.name));
+    return Object.fromEntries(
+      data.flatMap((row) => row.tags ?? []).map((row) => [row.name, row.name]),
+    );
   };
 
   window.sharingSetsList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
-    const sharing_sets = _.keyBy(
-      data.flatMap((row) => row.sharing_sets ?? []).map((row) => row.name),
+    const sharing_sets = Object.fromEntries(
+      data.flatMap((row) => row.sharing_sets ?? []).map((row) => [row.name, row.name]),
     );
     sharing_sets['Public'] = 'Public';
     sharing_sets['Public source'] = 'Public source';
@@ -69,7 +71,7 @@ onDocumentReady(() => {
 
   window.versionList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
-    return _.keyBy(data.map((row) => row.display_type));
+    return Object.fromEntries(data.map((row) => [row.display_type, row.display_type]));
   };
 
   window.qidFormatter = function (_qid: any, question: QuestionsPageData) {
@@ -183,7 +185,10 @@ onDocumentReady(() => {
     const assessments = data
       .flatMap((row) => row.assessments ?? [])
       .filter((row) => row && row.course_instance_id === ci_id);
-    return { ..._.keyBy(assessments.map((row) => row.label)), '(None)': '(None)' };
+    return {
+      ...Object.fromEntries(assessments.map((row) => [row.label, row.label])),
+      '(None)': '(None)',
+    };
   };
 
   course_instance_ids.forEach((courseInstanceId: string) => {
