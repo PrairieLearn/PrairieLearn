@@ -142,7 +142,7 @@ async function testImplicit(entityName: 'tags' | 'topics') {
   checkEntity(syncedEntity, {
     name: 'implicit',
     color: 'gray1',
-    description: `<span class="text-muted">Auto-generated from use in a question; add this ${singularEntityName} to your infoCourse.json file to customize</span>`,
+    description: null,
     implicit: true,
     // Implicit entities should come last.
     number: syncedEntities.length,
