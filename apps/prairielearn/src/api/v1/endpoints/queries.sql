@@ -353,7 +353,16 @@ WITH
             s.score DESC,
             s.id DESC
         )
-      ) = 1 AS best_submission_per_variant
+      ) = 1 AS best_submission_per_variant,
+      (
+        SELECT 
+          JSONB_AGG(tg.name)
+        FROM
+          question_tags AS qt
+          JOIN tags AS tg ON (tg.id = qt.tag_id)
+        WHERE 
+          q.id = question_id
+      ) AS question_tags
     FROM
       assessments AS a
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
