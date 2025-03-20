@@ -13,26 +13,26 @@ import { HttpStatusError, AugmentedError } from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 import * as authnLib from '../../../lib/authn.js';
+import { setCookie } from '../../../lib/cookie.js';
+import { HttpRedirect } from '../../../lib/redirect.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectOptionalUserByUin } from '../../../models/user.js';
 import { Lti13ClaimSchema, Lti13Claim } from '../../lib/lti13.js';
 import { updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
-import { Lti13AuthRequire, Lti13Test } from './lti13Auth.html.js';
+import { Lti13AuthRequired, Lti13Test } from './lti13Auth.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 const STATE_TEST = '-StateTest';
 
-//
-// Express routes
-//
 // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
 // Can be POST or GET
 router.get('/login', asyncHandler(launchFlow));
 router.post('/login', asyncHandler(launchFlow));
+
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
@@ -112,15 +112,12 @@ router.post(
         req.session.lti13_pending_sub = ltiClaim.get('sub');
         req.session.lti13_pending_instance_id = lti13_instance.id;
 
-        // TODO: this should actually be a redirect to another URL so that we're not
-        // responding to a `POST` with HTML.
-        res.send(
-          Lti13AuthRequire({
-            institution_id: lti13_instance.institution_id,
-            resLocals: res.locals,
-          }),
-        );
-        return;
+        // Remember where the user was headed so we can redirect them after auth.
+        if (ltiClaim.target_link_uri) {
+          setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], ltiClaim.target_link_uri);
+        }
+
+        throw new HttpRedirect(`/pl/lti13_instance/${lti13_instance.id}/auth/auth_required`);
       }
     }
 
@@ -205,6 +202,19 @@ router.post(
 
     // Get the target_link out of the LTI request and redirect
     res.redirect(ltiClaim.target_link_uri ?? '/pl');
+  }),
+);
+
+router.get(
+  '/auth_required',
+  asyncHandler(async (req, res) => {
+    const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
+    res.send(
+      Lti13AuthRequired({
+        institution_id: lti13_instance.institution_id,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 

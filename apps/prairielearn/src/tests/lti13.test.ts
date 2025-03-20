@@ -516,9 +516,8 @@ describe('LTI 1.3', () => {
       const res = await executor.login();
       assert.equal(res.status, 200);
 
-      // Assert that they're still on the callback page.
-      // TODO: this should be redirected somewhere else.
-      assert.equal(res.url, callbackUrl);
+      // Assert that they've landed on the page prompting them to auth another way.
+      assert.equal(res.url, `${siteUrl}/pl/lti13_instance/2/auth/auth_required`);
 
       // The user should not exist until they log in via SAML.
       const user = await selectOptionalUserByUid('test-user-2@example.com');
@@ -542,8 +541,9 @@ describe('LTI 1.3', () => {
       });
       assert.equal(loginRes.status, 200);
 
-      // The user should have been redirected to the homepage.
-      assert.equal(loginRes.url, siteUrl + '/');
+      // The user should have been redirected to the course navigation page,
+      // which is what was originally specified in `target_link_uri`.
+      assert.equal(loginRes.url, `${siteUrl}/pl/lti13_instance/2/course_navigation`);
 
       // The user should now exist.
       const user = await selectOptionalUserByUid('test-user-2@example.com');

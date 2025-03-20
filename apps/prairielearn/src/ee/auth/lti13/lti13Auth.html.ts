@@ -47,7 +47,7 @@ export function Lti13Test({
   `.toString();
 }
 
-export function Lti13AuthRequire({
+export function Lti13AuthRequired({
   institution_id,
   resLocals,
 }: {
