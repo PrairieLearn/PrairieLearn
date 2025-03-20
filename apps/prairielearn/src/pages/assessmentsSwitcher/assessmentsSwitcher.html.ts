@@ -1,26 +1,34 @@
-import type { z } from 'zod';
+import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import type { NavSubPage } from '../../components/Navbar.types.js';
-import type { AssessmentRowSchema } from '../instructorAssessments/instructorAssessments.html.js';
+import { AssessmentModuleSchema, AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 
-type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
+export const AssessmentDropdownItemSchema = AssessmentSchema.extend({
+  label: z.string(),
+  start_new_assessment_group: z.boolean(),
+  assessment_set: AssessmentSetSchema,
+  assessment_module: AssessmentModuleSchema,
+  open_issue_count: z.coerce.number(),
+});
+
+type AssessmentDropdownItem = z.infer<typeof AssessmentDropdownItemSchema>;
 
 export function AssessmentSwitcher({
-  urlPrefix,
   rows,
   selectedAssessmentId,
   assessmentsGroupBy,
-  subPage,
+  urlPrefix,
+  targetSubPage,
 }: {
-  urlPrefix: string;
-  rows: AssessmentRow[];
+  rows: AssessmentDropdownItem[];
   selectedAssessmentId: string;
   assessmentsGroupBy: 'Set' | 'Module';
-  subPage?: NavSubPage;
+  urlPrefix: string; 
+  targetSubPage?: NavSubPage;
 }) {
   return html`
     ${rows.map(
@@ -40,10 +48,10 @@ export function AssessmentSwitcher({
           class="dropdown-item ${selectedAssessmentId === row.id
             ? 'active'
             : ''} d-flex align-items-center gap-3"
-          href="${urlPrefix}/assessment/${row.id}/${subPage ?? ''}"
+          href="${urlPrefix}/assessment/${row.id}/${targetSubPage ?? ''}"
         >
-          <div style="width: 50px; min-width: 50px;">
-            <span class="badge color-${row.assessment_set.color}"> ${row.label} </span>
+          <div class="d-flex align-items-center" style="width: 50px; min-width: 50px;">
+            <span class="badge color-${row.assessment_set.color} mb-auto"> ${row.label} </span>
           </div>
           <p class="m-0 text-wrap">
             ${row.title}

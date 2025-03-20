@@ -1,4 +1,5 @@
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import type { Assessment } from '../lib/db-types.js';
 
@@ -36,7 +37,7 @@ export function AssessmentNavigation({
         aria-expanded="false"
         data-bs-toggle="dropdown"
         data-bs-boundary="window"
-        hx-get="/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/assessments_switcher?subPage=${subPage}"
+        hx-get="/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/assessments_switcher?targetSubPage=${targetSubPage}"
         hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
         hx-target="#assessmentNavigationDropdownContent"
       >

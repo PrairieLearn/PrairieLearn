@@ -16,18 +16,6 @@ WITH
   )
 SELECT
   a.*,
-  EXISTS (
-    SELECT
-      1
-    FROM
-      assessment_instances AS ai
-    WHERE
-      ai.assessment_id = a.id
-      AND ai.modified_at > a.statistics_last_updated_at - interval '1 minute'
-  ) AS needs_statistics_update,
-  aset.abbreviation,
-  aset.name,
-  aset.color,
   (aset.abbreviation || a.number) as label,
   to_jsonb(aset) as assessment_set,
   to_jsonb(am) as assessment_module,

@@ -4,13 +4,12 @@ import asyncHandler from 'express-async-handler';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import type { NavSubPage } from '../../components/Navbar.types.js';
-import { AssessmentRowSchema } from '../instructorAssessments/instructorAssessments.html.js';
 
-import { AssessmentSwitcher } from './assessmentsSwitcher.html.js';
+import { AssessmentDropdownItemSchema, AssessmentSwitcher } from './assessmentsSwitcher.html.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const router = Router({
-  mergeParams: true, // Ensures that assessmentsSwitcher can retrieve req.params.course_id from the parent router
+  mergeParams: true, // Ensures that assessmentsSwitcher can retrieve req.locals.course_instance and req.params.assessment_id from the parent router
 });
 
 router.get(
@@ -24,16 +23,16 @@ router.get(
         req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       },
-      AssessmentRowSchema,
+      AssessmentDropdownItemSchema,
     );
 
     res.send(
       AssessmentSwitcher({
-        urlPrefix: res.locals.urlPrefix,
         rows,
         selectedAssessmentId: req.params.assessment_id,
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
-        subPage: req.query.subPage as NavSubPage,
+        urlPrefix: res.locals.urlPrefix,
+        targetSubPage: req.query.targetSubPage as NavSubPage,
       }),
     );
   }),
