@@ -293,10 +293,7 @@ WITH
       q.qid AS question_name,
       (
         SELECT
-          COALESCE(
-            JSONB_AGG(tg.name),
-            '[]'::jsonb
-          ) AS tags
+          COALESCE(JSONB_AGG(tg.name), '[]'::jsonb) AS tags
         FROM
           question_tags AS qt
           JOIN tags AS tg ON (tg.id = qt.tag_id)
