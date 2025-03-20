@@ -427,8 +427,10 @@ export async function getQuestionCourse(
   variant_course: Course,
 ): Promise<Course> {
   if (question.course_id === variant_course.id) {
+    console.log("EQUALS in question variant")
     return variant_course;
   } else {
+    console.log("NOt equals in question variant")
     return selectCourseById(question.course_id);
   }
 }

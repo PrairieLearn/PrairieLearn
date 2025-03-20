@@ -432,6 +432,7 @@ export async function getAndRenderVariant(
     urlOverrides?: Partial<QuestionUrls>;
   },
 ) {
+  console.log('In get and render varient');
   // We write a fair amount of unstructured data back into locals,
   // so we'll cast it to `any` once so we don't have to do it every time.
   const resultLocals = locals as any;
@@ -442,6 +443,7 @@ export async function getAndRenderVariant(
     { question_id: locals.question.id },
     z.boolean(),
   );
+
 
   const variant = await run(async () => {
     if (variant_id != null) {
@@ -461,7 +463,7 @@ export async function getAndRenderVariant(
       const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
       const options = { variant_seed };
       // need to get questionParams here!! Woohooooo
-      console.log('LOCALS from varient: ', locals);
+      console.log('LLS from varient: ', locals);
       console.log('QUESTION PARAMS PASSED');
       // console.log(question_params)
       return await ensureVariant(

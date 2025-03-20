@@ -54,6 +54,7 @@ export const AlternativeGroupSchema = z.object({
   number: z.number().nullable(),
   number_choose: z.number().nullable(),
   zone_id: IdSchema,
+  question_params: z.any().nullable(),
 });
 export type AlternativeGroup = z.infer<typeof AlternativeGroupSchema>;
 

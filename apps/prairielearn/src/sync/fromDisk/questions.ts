@@ -37,6 +37,9 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
     workspace_args = shlex.join(workspace_args);
   }
 
+  console.log("getting params for question")
+  console.log(q)
+
   return {
     type: q.type === 'v3' ? 'Freeform' : q.type,
     title: q.title,

@@ -6,7 +6,12 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectQuestionById(question_id: string): Promise<Question> {
   const question = await queryRow(sql.select_question_by_id, { question_id }, QuestionSchema);
-  // console.log('question in selectQuestionById');
+  console.log('question in selectQuestionById');
+
+  if (question.qid === 'addNumbersParameterized/2') {
+    console.log('Question with qid addNumbersParameterized/2 selected');
+    console.log(question);
+  }
   // console.log(question);
   return question;
 

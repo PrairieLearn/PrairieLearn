@@ -217,9 +217,9 @@ function getParamsForAssessment(
       const questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
         assessmentQuestionNumber++;
         const questionId = questionIds[alternative.qid];
-        console.log('Alternative Question Params:', alternative.questionParams);
+        // console.log('Alternative Question Params:', alternative.questionParams);
         console.log('Question Question Params:', question.questionParams);
-        console.log('Zone Question Params:', zone.questionParams);
+        // console.log('Zone Question Params:', zone.questionParams);
         return {
           number: assessmentQuestionNumber,
           has_split_points: alternative.hasSplitPoints,
@@ -241,7 +241,7 @@ function getParamsForAssessment(
             zone.advanceScorePerc ??
             assessment.advanceScorePerc ??
             0,
-          question_params: alternative.questionParams ?? question.questionParams,
+          question_params: question.questionParams,
         };
       });
       // console.log('Returning alternative group data:', {
@@ -258,7 +258,7 @@ function getParamsForAssessment(
         number_choose: question.numberChoose,
         advance_score_perc: question.advanceScorePerc,
         questions,
-        question_params: question.questionParams,
+        question_params: question.questionParams, // this is correct here!
       };
     });
   });
@@ -479,24 +479,21 @@ export async function sync(
   }
   // console.log('params!!')
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
-    // console.log('paramsforassessment');
-    // console.log(getParamsForAssessment(assessment, questionIds));
-    console.log('TID:', tid);
-    console.log('UUID:', assessment.uuid);
-    console.log('Errors:', infofile.stringifyErrors(assessment));
-    console.log('Warnings:', infofile.stringifyWarnings(assessment));
-    console.log('Params:', getParamsForAssessment(assessment, questionIds));
+    const params = getParamsForAssessment(assessment, questionIds);
+    const questionParamsList = params?.alternativeGroups?.map(group => group.map(item => item.question_params));
+    console.log('Alternative Groups Question Params:', questionParamsList);
     return JSON.stringify([
       tid,
       assessment.uuid,
       infofile.stringifyErrors(assessment),
       infofile.stringifyWarnings(assessment),
-      getParamsForAssessment(assessment, questionIds),
+      params,
     ]);
   });
   console.log('AssessmentParams!CLOCKIT');
-  console.log(assessmentParams);
-  // console.log('paramsforassessment')
+  console.log(assessmentParams); // contains question params correctly inside params
+
+  // params -> question_params
 
 
   await sqldb.callOneRowAsync('sync_assessments', [

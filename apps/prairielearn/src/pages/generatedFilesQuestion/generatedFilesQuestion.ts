@@ -19,7 +19,7 @@ export default function (options = { publicEndpoint: false }) {
       if (options.publicEndpoint) {
         res.locals.course = await selectCourseById(req.params.course_id);
         res.locals.question = await selectQuestionById(req.params.question_id);
-
+        
         if (
           !(res.locals.question.shared_publicly || res.locals.question.share_source_publicly) ||
           res.locals.course.id !== res.locals.question.course_id
