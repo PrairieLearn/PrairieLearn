@@ -19,8 +19,9 @@ const router = Router({
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    // Target subpage for the dropdown links to assessments.
     const subPage = req.query.subPage as NavSubPage | undefined;
+
+    // Target subpage for the assessment dropdown links
     const targetSubPage = run(() => {
       if (!subPage) return '';
       if (subPage === 'assessment_instance') return 'instances';

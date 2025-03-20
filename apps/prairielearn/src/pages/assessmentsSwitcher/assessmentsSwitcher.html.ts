@@ -35,12 +35,13 @@ export function AssessmentSwitcher({
   assessmentsGroupBy: 'Set' | 'Module';
   plainUrlPrefix: string;
   courseInstanceId: string;
-  /* The subPage that assessment links should start on. */
+  /* The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
 }) {
   return html`
-    ${assessmentDropdownItemsData.map(
-      (assessmentDropdownItemData) => html`
+    ${assessmentDropdownItemsData.map((assessmentDropdownItemData) => {
+      const isSelected = idsEqual(selectedAssessmentId, assessmentDropdownItemData.id);
+      return html`
         ${assessmentDropdownItemData.start_new_assessment_group
           ? html`
               <h6 class="dropdown-header">
@@ -55,12 +56,8 @@ export function AssessmentSwitcher({
             `
           : ''}
         <a
-          class="dropdown-item ${idsEqual(selectedAssessmentId, assessmentDropdownItemData.id)
-            ? 'active'
-            : ''} d-flex align-items-center gap-3"
-          aria-current="${idsEqual(selectedAssessmentId, assessmentDropdownItemData.id)
-            ? 'page'
-            : ''}"
+          class="dropdown-item ${isSelected ? 'active' : ''} d-flex align-items-center gap-3"
+          aria-current="${isSelected ? 'page' : ''}"
           aria-label="${assessmentDropdownItemData.title}"
           href="${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${assessmentDropdownItemData.id}/${targetSubPage ??
           ''}"
@@ -84,7 +81,7 @@ export function AssessmentSwitcher({
               `
             : ''}
         </a>
-      `,
-    )}
+      `;
+    })}
   `.toString();
 }
