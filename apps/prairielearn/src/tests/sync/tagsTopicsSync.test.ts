@@ -138,7 +138,7 @@ async function testImplicit(entityName: 'tags' | 'topics') {
   await util.writeAndSyncCourseData(courseData);
   const syncedEntities = await util.dumpTable(entityName);
   const syncedEntity = syncedEntities.find((as) => as.name === 'implicit');
-  const singularEntityName = entityName.slice(0, -1);
+  // const singularEntityName = entityName.slice(0, -1);
   checkEntity(syncedEntity, {
     name: 'implicit',
     color: 'gray1',
