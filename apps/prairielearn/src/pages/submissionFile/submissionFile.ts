@@ -2,11 +2,14 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { isBinaryFile } from 'isbinaryfile';
 import mime from 'mime';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { IdSchema, UserSchema } from '../../lib/db-types.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
+import { selectAndAuthzVariant } from '../../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -38,6 +41,7 @@ export default function (options = { publicEndpoint: false }) {
       if (options.publicEndpoint) {
         res.locals.course = await selectCourseById(req.params.course_id);
         res.locals.question = await selectQuestionById(req.params.question_id);
+        res.locals.user = UserSchema.parse(res.locals.authn_user);
 
         if (
           !(res.locals.question.shared_publicly || res.locals.question.share_source_publicly) ||
@@ -48,28 +52,57 @@ export default function (options = { publicEndpoint: false }) {
         }
       }
 
-      const submissionId = req.params.submission_id;
       const fileName = req.params[0];
 
-      const fileRes = await sqldb.queryZeroOrOneRowAsync(sql.select_submission_file, {
+      const unsafe_variant_id = await sqldb.queryOptionalRow(
+        sql.select_variant_id_by_submission_id,
+        {
+          submission_id: req.params.unsafe_submission_id,
+        },
+        IdSchema,
+      );
+
+      if (!unsafe_variant_id) {
+        res.sendStatus(404);
+        return;
+      }
+
+      // This doesn't perform any authorization for the submission itself. We
+      // assume that anyone with access to the variant should be able to access
+      // its submitted files.
+      await selectAndAuthzVariant({
+        unsafe_variant_id,
+        variant_course: res.locals.course,
         question_id: res.locals.question.id,
-        instance_question_id: res.locals.instance_question?.id ?? null,
-        submission_id: submissionId,
-        file_name: fileName,
+        course_instance_id: res.locals.course_instance?.id,
+        instance_question_id: res.locals.instance_question?.id,
+        authz_data: res.locals.authz_data,
+        authn_user: res.locals.authn_user,
+        user: res.locals.user,
+        is_administrator: res.locals.is_administrator,
+        publicQuestionPreview: options.publicEndpoint,
       });
 
-      if (fileRes.rowCount === 0) {
+      const fileRes = await sqldb.queryOptionalRow(
+        sql.select_submission_file,
+        {
+          // We used the submission ID to get and authorize the variant, so the
+          // submission ID is now considered safe.
+          submission_id: req.params.unsafe_submission_id,
+          file_name: fileName,
+        },
+        z.object({
+          contents: z.string().nullable(),
+          variant_id: z.string(),
+        }),
+      );
+
+      if (!fileRes?.contents) {
         res.sendStatus(404);
         return;
       }
 
-      const contents = fileRes.rows[0].contents;
-      if (contents == null) {
-        res.sendStatus(404);
-        return;
-      }
-
-      const buffer = Buffer.from(contents, 'base64');
+      const buffer = Buffer.from(fileRes.contents, 'base64');
 
       // To avoid having to do expensive content checks on the client, we'll do
       // our best to guess a mime type for the file.
