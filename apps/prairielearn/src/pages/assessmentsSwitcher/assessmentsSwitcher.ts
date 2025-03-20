@@ -6,7 +6,10 @@ import { run } from '@prairielearn/run';
 
 import type { NavSubPage } from '../../components/Navbar.types.js';
 
-import { AssessmentDropdownItemDataSchema, AssessmentSwitcher } from './assessmentsSwitcher.html.js';
+import {
+  AssessmentDropdownItemDataSchema,
+  AssessmentSwitcher,
+} from './assessmentsSwitcher.html.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const router = Router({
@@ -24,7 +27,6 @@ router.get(
       if (subPage === 'file_edit') return 'file_view';
       return subPage;
     });
-
 
     const assessmentDropdownItemsData = await queryRows(
       sql.select_assessment_dropdown_items_data,

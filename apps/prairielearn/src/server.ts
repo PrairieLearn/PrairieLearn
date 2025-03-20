@@ -613,10 +613,9 @@ export async function initExpress(): Promise<Express> {
     [
       (await import('./middlewares/authzCourseOrInstance.js')).default,
       (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-      (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js')).default
+      (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js')).default,
     ],
   );
-
 
   app.use('/pl/workspace/:workspace_id(\\d+)', [
     (req: Request, res: Response, next: NextFunction) => {

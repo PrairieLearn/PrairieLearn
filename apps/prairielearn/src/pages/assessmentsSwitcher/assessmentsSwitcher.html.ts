@@ -45,7 +45,9 @@ export function AssessmentSwitcher({
           ? html`
               <h6 class="dropdown-header">
                 ${assessmentsGroupBy === 'Set'
-                  ? AssessmentSetHeading({ assessment_set: assessmentDropdownItemData.assessment_set })
+                  ? AssessmentSetHeading({
+                      assessment_set: assessmentDropdownItemData.assessment_set,
+                    })
                   : AssessmentModuleHeading({
                       assessment_module: assessmentDropdownItemData.assessment_module,
                     })}
@@ -56,19 +58,30 @@ export function AssessmentSwitcher({
           class="dropdown-item ${idsEqual(selectedAssessmentId, assessmentDropdownItemData.id)
             ? 'active'
             : ''} d-flex align-items-center gap-3"
-          aria-current="${idsEqual(selectedAssessmentId, assessmentDropdownItemData.id) ? 'page' : ''}"
+          aria-current="${idsEqual(selectedAssessmentId, assessmentDropdownItemData.id)
+            ? 'page'
+            : ''}"
           aria-label="${assessmentDropdownItemData.title}"
-          href="${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${assessmentDropdownItemData.id}/${targetSubPage ?? ''}"
+          href="${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${assessmentDropdownItemData.id}/${targetSubPage ??
+          ''}"
         >
           <div class="d-flex align-items-center" style="width: 50px; min-width: 50px;">
-            <span class="badge color-${assessmentDropdownItemData.assessment_set.color} mb-auto"> ${assessmentDropdownItemData.label} </span>
+            <span class="badge color-${assessmentDropdownItemData.assessment_set.color} mb-auto">
+              ${assessmentDropdownItemData.label}
+            </span>
           </div>
           <p class="m-0 text-wrap">
             ${assessmentDropdownItemData.title}
-            ${assessmentDropdownItemData.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
+            ${assessmentDropdownItemData.group_work
+              ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+              : ''}
           </p>
           ${assessmentDropdownItemData.open_issue_count > 0
-            ? html` <div class="badge rounded-pill text-bg-danger">${assessmentDropdownItemData.open_issue_count}</div> `
+            ? html`
+                <div class="badge rounded-pill text-bg-danger">
+                  ${assessmentDropdownItemData.open_issue_count}
+                </div>
+              `
             : ''}
         </a>
       `,
