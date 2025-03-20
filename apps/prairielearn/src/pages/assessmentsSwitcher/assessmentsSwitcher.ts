@@ -5,7 +5,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import type { NavSubPage } from '../../components/Navbar.types.js';
 
-import { AssessmentDropdownItemSchema, AssessmentSwitcher } from './assessmentsSwitcher.html.js';
+import { AssessmentDropdownRowSchema, AssessmentSwitcher } from './assessmentsSwitcher.html.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const router = Router({
@@ -15,7 +15,7 @@ const router = Router({
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const rows = await queryRows(
+    const assessmentDropdownRows = await queryRows(
       sql.select_assessments,
       {
         course_instance_id: res.locals.course_instance.id,
@@ -23,12 +23,12 @@ router.get(
         req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       },
-      AssessmentDropdownItemSchema,
+      AssessmentDropdownRowSchema,
     );
 
     res.send(
       AssessmentSwitcher({
-        rows,
+        assessmentDropdownRows,
         selectedAssessmentId: req.params.assessment_id,
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
         urlPrefix: res.locals.urlPrefix,

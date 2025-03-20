@@ -10,8 +10,9 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
 } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
 
-export const AssessmentDropdownItemSchema = AssessmentSchema.extend({
+export const AssessmentDropdownRowSchema = AssessmentSchema.extend({
   label: z.string(),
   start_new_assessment_group: z.boolean(),
   assessment_set: AssessmentSetSchema,
@@ -19,23 +20,23 @@ export const AssessmentDropdownItemSchema = AssessmentSchema.extend({
   open_issue_count: z.coerce.number(),
 });
 
-type AssessmentDropdownItem = z.infer<typeof AssessmentDropdownItemSchema>;
+type AssessmentDropdownRow = z.infer<typeof AssessmentDropdownRowSchema>;
 
 export function AssessmentSwitcher({
-  rows,
+  assessmentDropdownRows,
   selectedAssessmentId,
   assessmentsGroupBy,
   urlPrefix,
   targetSubPage,
 }: {
-  rows: AssessmentDropdownItem[];
+  assessmentDropdownRows: AssessmentDropdownRow[];
   selectedAssessmentId: string;
   assessmentsGroupBy: 'Set' | 'Module';
   urlPrefix: string;
   targetSubPage?: NavSubPage;
 }) {
   return html`
-    ${rows.map(
+    ${assessmentDropdownRows.map(
       (row) => html`
         ${row.start_new_assessment_group
           ? html`
@@ -49,9 +50,11 @@ export function AssessmentSwitcher({
             `
           : ''}
         <a
-          class="dropdown-item ${selectedAssessmentId === row.id
+          class="dropdown-item ${idsEqual(selectedAssessmentId, row.id)
             ? 'active'
             : ''} d-flex align-items-center gap-3"
+          aria-current="${idsEqual(selectedAssessmentId, row.id) ? 'page' : ''}"
+          aria-label="${row.title}"
           href="${urlPrefix}/assessment/${row.id}/${targetSubPage ?? ''}"
         >
           <div class="d-flex align-items-center" style="width: 50px; min-width: 50px;">
