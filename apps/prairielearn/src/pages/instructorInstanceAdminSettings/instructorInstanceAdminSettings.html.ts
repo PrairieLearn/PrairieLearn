@@ -94,9 +94,9 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div class="mb-3">
-              <label for="display_timezone">Timezone</label>
+              <label class="form-label" for="display_timezone">Timezone</label>
               <select
-                class="custom-select"
+                class="form-select"
                 id="display_timezone"
                 name="display_timezone"
                 ${canEdit ? '' : 'disabled'}
@@ -118,9 +118,9 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div class="mb-3">
-              <label for="group_assessments_by">Group assessments by</label>
+              <label class="form-label" for="group_assessments_by">Group assessments by</label>
               <select
-                class="custom-select"
+                class="form-select"
                 id="group_assessments_by"
                 name="group_assessments_by"
                 ${canEdit ? '' : 'disabled'}
@@ -152,7 +152,7 @@ export function InstructorInstanceAdminSettings({
                 ${canEdit ? '' : 'disabled'}
                 ${resLocals.course_instance.hide_in_enroll_page ? 'checked' : ''}
               />
-              <label class="form-check-label" for="show_correct_answer"
+              <label class="form-check-label" for="hide_in_enroll_page"
                 >Hide in enrollment page</label
               >
               <div class="small text-muted">
