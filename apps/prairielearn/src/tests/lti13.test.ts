@@ -41,6 +41,9 @@ async function makeLoginExecutor({
   fetchWithCookies,
   oidcProviderPort,
   keystore,
+  loginUrl,
+  callbackUrl,
+  targetLinkUri,
 }: {
   user: {
     name: string;
@@ -50,13 +53,16 @@ async function makeLoginExecutor({
   fetchWithCookies: typeof fetch;
   oidcProviderPort: number;
   keystore: nodeJose.JWK.KeyStore;
+  loginUrl: string;
+  callbackUrl: string;
+  targetLinkUri: string;
 }) {
-  const startLoginResponse = await fetchWithCookies(`${siteUrl}/pl/lti13_instance/1/auth/login`, {
+  const startLoginResponse = await fetchWithCookies(loginUrl, {
     method: 'POST',
     body: new URLSearchParams({
       iss: siteUrl,
       login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
-      target_link_uri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
+      target_link_uri: targetLinkUri,
     }),
     redirect: 'manual',
   });
@@ -69,10 +75,7 @@ async function makeLoginExecutor({
   assert.equal(redirectUrl.searchParams.get('scope'), 'openid');
   assert.equal(redirectUrl.searchParams.get('response_type'), 'id_token');
   assert.equal(redirectUrl.searchParams.get('response_mode'), 'form_post');
-  assert.equal(
-    redirectUrl.searchParams.get('redirect_uri'),
-    `${siteUrl}/pl/lti13_instance/1/auth/callback`,
-  );
+  assert.equal(redirectUrl.searchParams.get('redirect_uri'), callbackUrl);
   assert.equal(redirectUrl.searchParams.get('login_hint'), 'fef15674-ae78-4763-b915-6fe3dbf42c67');
   assert.ok(redirectUrl.searchParams.get('nonce'));
   assert.ok(redirectUrl.searchParams.get('state'));
@@ -159,12 +162,19 @@ async function makeLoginExecutor({
 
 async function createLti13Instance({
   issuer_params,
+  attributes,
 }: {
   issuer_params: {
     issuer: string;
     authorization_endpoint: string;
     jwks_uri: string;
     token_endpoint: string;
+  };
+  attributes?: {
+    uid_attribute: string;
+    uin_attribute: string;
+    email_attribute: string;
+    name_attribute: string;
   };
 }) {
   // Load the LTI admin page.
@@ -177,16 +187,13 @@ async function createLti13Instance({
   const newInstanceForm = newInstanceButton.closest('form');
 
   // Create a new LTI instance.
-  const createInstanceResponse = await fetchCheerio(
-    `${siteUrl}/pl/administrator/institution/1/lti13`,
-    {
-      method: 'POST',
-      body: new URLSearchParams({
-        __csrf_token: newInstanceForm.find('input[name=__csrf_token]').val() as string,
-        __action: newInstanceButton.attr('value') as string,
-      }),
-    },
-  );
+  const createInstanceResponse = await fetchCheerio(ltiInstancesResponse.url, {
+    method: 'POST',
+    body: new URLSearchParams({
+      __csrf_token: newInstanceForm.find('input[name=__csrf_token]').val() as string,
+      __action: newInstanceButton.attr('value') as string,
+    }),
+  });
   assert.equal(createInstanceResponse.status, 200);
   const instanceUrl = createInstanceResponse.url;
 
@@ -204,7 +211,9 @@ async function createLti13Instance({
       __action: platformOptionsForm.find('input[name=__action]').val() as string,
       platform: 'Unknown',
       issuer_params: JSON.stringify(issuer_params),
-      custom_fields: '{}',
+      custom_fields: JSON.stringify({
+        uin: '$Canvas.user.sisIntegrationId',
+      }),
       client_id: CLIENT_ID,
     }),
   });
@@ -212,6 +221,28 @@ async function createLti13Instance({
 
   const addKeyButton = updatePlatformOptionsResponse.$('button:contains(Add key to keystore)');
   const keystoreForm = addKeyButton.closest('form');
+
+  // Update the attributes if needed.
+  if (attributes) {
+    const savePrairieLearnConfigButton = ltiInstanceResponse.$(
+      'button:contains(Save PrairieLearn config)',
+    );
+    const prairieLearnOptionsForm = savePrairieLearnConfigButton.closest('form');
+
+    // Update the instance's attribute settings.
+    const updateRes = await fetchCheerio(instanceUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'save_pl_config',
+        __csrf_token: prairieLearnOptionsForm.find('input[name=__csrf_token]').val() as string,
+        uid_attribute: attributes.uid_attribute,
+        uin_attribute: attributes.uin_attribute,
+        email_attribute: attributes.email_attribute,
+        name_attribute: attributes.name_attribute,
+      }),
+    });
+    assert.equal(updateRes.status, 200);
+  }
 
   // Create a key
   const createKeyResponse = await fetchCheerio(instanceUrl, {
@@ -284,6 +315,18 @@ describe('LTI 1.3', () => {
     assert.equal(enableLtiResponse.status, 200);
   });
 
+  step('validate metadata', async () => {
+    const url = `${siteUrl}/pl/lti13_instance/1/config`;
+    const data = await fetch(url).then((res) => res.json() as any);
+
+    assert.equal(data.title, 'PrairieLearn');
+    assert.equal(data.oidc_initiation_url, `${siteUrl}/pl/lti13_instance/1/auth/login`);
+    assert.equal(data.target_link_uri, `${siteUrl}/pl/lti13_instance/1/auth/callback`);
+    assert.equal(data.public_jwk_url, `${siteUrl}/pl/lti13_instance/1/jwks`);
+    assert.isObject(data.custom_fields);
+    assert.equal(data.custom_fields.uin, '$Canvas.user.sisIntegrationId');
+  });
+
   step('perform login', async () => {
     // `openid-client` relies on the session to store state, so we need to use
     // a cookie-aware version of fetch.
@@ -298,6 +341,9 @@ describe('LTI 1.3', () => {
       fetchWithCookies,
       oidcProviderPort,
       keystore,
+      loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+      callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+      targetLinkUri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
     });
 
     const res = await executor.login();
@@ -425,6 +471,48 @@ describe('LTI 1.3', () => {
       assert.equal(result, ACCESS_TOKEN);
     });
   });
+
+  step('create second LTI 1.3 instance', async () => {
+    await createLti13Instance({
+      issuer_params: {
+        issuer: `http://localhost:${oidcProviderPort}`,
+        authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+        jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+        token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+      },
+      attributes: {
+        // Intentionally leave this blank.
+        uid_attribute: '',
+        uin_attribute: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
+        email_attribute: 'email',
+        name_attribute: 'name',
+      },
+    });
+  });
+
+  step('test login for LTI 1.3 instance that does not provide UIDs', async () => {
+    const fetchWithCookies = fetchCookie(fetch);
+    const executor = await makeLoginExecutor({
+      user: {
+        name: 'Test User 2',
+        email: 'test-user-2@example.com',
+        uin: '987654321',
+      },
+      fetchWithCookies,
+      oidcProviderPort,
+      keystore,
+      loginUrl: `${siteUrl}/pl/lti13_instance/2/auth/login`,
+      callbackUrl: `${siteUrl}/pl/lti13_instance/2/auth/callback`,
+      targetLinkUri: `${siteUrl}/pl/lti13_instance/2/course_navigation`,
+    });
+
+    const res = await executor.login();
+    assert.equal(res.status, 200);
+
+    // The user should not exist until they log in via SAML.
+    const user = await selectOptionalUserByUid('test-user-2@example.com');
+    assert.isNull(user);
+  });
 });
 
 describe('fetchRetry()', async () => {
@@ -493,8 +581,7 @@ describe('fetchRetry()', async () => {
     res.json(returning);
   };
 
-  function respond403(res) {
-    console.warn('Throwing 403, attempt ' + apiCount);
+  function respond403(res: express.Response) {
     res.status(403).json([]);
   }
 

@@ -18,7 +18,7 @@ import { Lti13ClaimSchema, Lti13Claim } from '../../lib/lti13.js';
 import { updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
-import { Lti13Test } from './lti13Auth.html.js';
+import { Lti13AuthRequire, Lti13Test } from './lti13Auth.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -103,7 +103,14 @@ router.post(
       req.session.lti13_pending_sub = ltiClaim.get('sub');
       req.session.lti13_pending_instance_id = lti13_instance.id;
 
-      // Render a page prompting them to auth first.
+      // TODO: this should actually be a redirect to another URL so that we're not
+      // responding to a `POST` with HTML.
+      res.send(
+        Lti13AuthRequire({
+          institution_id: lti13_instance.institution_id,
+          resLocals: res.locals,
+        }),
+      );
       return;
     }
 
