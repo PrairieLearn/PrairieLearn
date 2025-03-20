@@ -1,4 +1,4 @@
--- BLOCK select_assessments
+-- BLOCK select_assessment_dropdown_items_data
 WITH
   issue_count AS (
     SELECT

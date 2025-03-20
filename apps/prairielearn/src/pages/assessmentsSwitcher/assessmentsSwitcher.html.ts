@@ -12,7 +12,7 @@ import {
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 
-export const AssessmentDropdownRowSchema = AssessmentSchema.extend({
+export const AssessmentDropdownItemDataSchema = AssessmentSchema.extend({
   label: z.string(),
   start_new_assessment_group: z.boolean(),
   assessment_set: AssessmentSetSchema,
@@ -20,52 +20,55 @@ export const AssessmentDropdownRowSchema = AssessmentSchema.extend({
   open_issue_count: z.coerce.number(),
 });
 
-type AssessmentDropdownRow = z.infer<typeof AssessmentDropdownRowSchema>;
+type AssessmentDropdownItemData = z.infer<typeof AssessmentDropdownItemDataSchema>;
 
 export function AssessmentSwitcher({
-  assessmentDropdownRows,
+  assessmentDropdownItemsData,
   selectedAssessmentId,
   assessmentsGroupBy,
-  urlPrefix,
+  plainUrlPrefix,
+  courseInstanceId,
   targetSubPage,
 }: {
-  assessmentDropdownRows: AssessmentDropdownRow[];
+  assessmentDropdownItemsData: AssessmentDropdownItemData[];
   selectedAssessmentId: string;
   assessmentsGroupBy: 'Set' | 'Module';
-  urlPrefix: string;
+  plainUrlPrefix: string;
+  courseInstanceId: string;
+  /* The subPage that assessment links should start on. */
   targetSubPage?: NavSubPage;
 }) {
   return html`
-    ${assessmentDropdownRows.map(
-      (row) => html`
-        ${row.start_new_assessment_group
+    ${assessmentDropdownItemsData.map(
+      (assessmentDropdownItemData) => html`
+        ${assessmentDropdownItemData.start_new_assessment_group
           ? html`
               <h6 class="dropdown-header">
                 ${assessmentsGroupBy === 'Set'
-                  ? AssessmentSetHeading({ assessment_set: row.assessment_set })
+                  ? AssessmentSetHeading({ assessment_set: assessmentDropdownItemData.assessment_set })
                   : AssessmentModuleHeading({
-                      assessment_module: row.assessment_module,
+                      assessment_module: assessmentDropdownItemData.assessment_module,
                     })}
               </h6>
             `
           : ''}
         <a
-          class="dropdown-item ${idsEqual(selectedAssessmentId, row.id)
+          class="dropdown-item ${idsEqual(selectedAssessmentId, assessmentDropdownItemData.id)
             ? 'active'
             : ''} d-flex align-items-center gap-3"
-          aria-current="${idsEqual(selectedAssessmentId, row.id) ? 'page' : ''}"
-          aria-label="${row.title}"
-          href="${urlPrefix}/assessment/${row.id}/${targetSubPage ?? ''}"
+          aria-current="${idsEqual(selectedAssessmentId, assessmentDropdownItemData.id) ? 'page' : ''}"
+          aria-label="${assessmentDropdownItemData.title}"
+          href="${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${assessmentDropdownItemData.id}/${targetSubPage ?? ''}"
         >
           <div class="d-flex align-items-center" style="width: 50px; min-width: 50px;">
-            <span class="badge color-${row.assessment_set.color} mb-auto"> ${row.label} </span>
+            <span class="badge color-${assessmentDropdownItemData.assessment_set.color} mb-auto"> ${assessmentDropdownItemData.label} </span>
           </div>
           <p class="m-0 text-wrap">
-            ${row.title}
-            ${row.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
+            ${assessmentDropdownItemData.title}
+            ${assessmentDropdownItemData.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
           </p>
-          ${row.open_issue_count > 0
-            ? html` <div class="badge rounded-pill text-bg-danger">${row.open_issue_count}</div> `
+          ${assessmentDropdownItemData.open_issue_count > 0
+            ? html` <div class="badge rounded-pill text-bg-danger">${assessmentDropdownItemData.open_issue_count}</div> `
             : ''}
         </a>
       `,

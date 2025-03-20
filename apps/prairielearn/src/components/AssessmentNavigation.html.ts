@@ -1,5 +1,4 @@
 import { html } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
 
 import type { Assessment } from '../lib/db-types.js';
 
@@ -18,14 +17,6 @@ export function AssessmentNavigation({
   subPage: NavSubPage;
   assessment: Assessment;
 }) {
-  // Target subpage for the dropdown links to assessments.
-  const targetSubPage = run(() => {
-    if (!subPage) return '';
-    if (subPage === 'assessment_instance') return 'instances';
-    if (subPage === 'file_edit') return 'file_view';
-    return subPage;
-  });
-
   return html`
     <div class="dropdown bg-light pt-2 px-3">
       <button
@@ -37,7 +28,7 @@ export function AssessmentNavigation({
         aria-expanded="false"
         data-bs-toggle="dropdown"
         data-bs-boundary="window"
-        hx-get="/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/assessments_switcher?targetSubPage=${targetSubPage}"
+        hx-get="/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/assessments_switcher${subPage ? `?subPage=${subPage}` : ''}"
         hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
         hx-target="#assessmentNavigationDropdownContent"
       >
