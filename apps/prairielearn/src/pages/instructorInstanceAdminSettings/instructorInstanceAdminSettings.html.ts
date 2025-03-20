@@ -5,8 +5,8 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { encodePath } from '../../lib/uri-util.js';
 import { formatTimezone, type Timezone } from '../../lib/timezones.js';
+import { encodePath } from '../../lib/uri-util.js';
 
 export function InstructorInstanceAdminSettings({
   resLocals,
@@ -139,8 +139,8 @@ export function InstructorInstanceAdminSettings({
                 </option>
               </select>
               <small class="form-text text-muted">
-                The allowable timezones are from the tz database. It's best to use a city-based
-                timezone that has the same times as you.
+                Determines which assessment category will be used to group assessments on the
+                student assessments page.
               </small>
             </div>
             <div class="mb-3 form-check">
