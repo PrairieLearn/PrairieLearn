@@ -25,7 +25,7 @@
     }
   },
 
-  "[html][css][scss][json][yaml][sql][markdown]": {
+  "[html][css][scss][json][yaml][sql][markdown][jsonc][github-actions-workflow]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
