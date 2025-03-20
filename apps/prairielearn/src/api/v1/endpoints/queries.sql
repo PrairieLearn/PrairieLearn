@@ -361,7 +361,7 @@ WITH
           question_tags AS qt
           JOIN tags AS tg ON (tg.id = qt.tag_id)
         WHERE 
-          q.id = question_id
+          q.id = qt.question_id
       ) AS question_tags
     FROM
       assessments AS a
