@@ -1,8 +1,6 @@
 import { html } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
 
-import type { Assessment, CourseInstance } from '../lib/db-types.js';
-import { idsEqual } from '../lib/id.js';
+import type { Assessment } from '../lib/db-types.js';
 
 import type { NavSubPage } from './Navbar.types.js';
 
@@ -11,23 +9,14 @@ import type { NavSubPage } from './Navbar.types.js';
  * course instance.
  */
 export function AssessmentNavigation({
+  courseInstanceId,
   subPage,
-  courseInstance,
   assessment,
-  assessments,
 }: {
+  courseInstanceId: string;
   subPage: NavSubPage;
-  courseInstance: CourseInstance;
   assessment: Assessment;
-  assessments: Assessment[];
 }) {
-  // Target subpage for the dropdown links to assessments.
-  const targetSubPage = run(() => {
-    if (!subPage) return '';
-    if (subPage === 'assessment_instance') return 'instances';
-    return subPage;
-  });
-
   return html`
     <div class="dropdown bg-light pt-2 px-3">
       <button
@@ -39,22 +28,23 @@ export function AssessmentNavigation({
         aria-expanded="false"
         data-bs-toggle="dropdown"
         data-bs-boundary="window"
+        hx-get="/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/assessments_switcher?subPage=${subPage}"
+        hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
+        hx-target="#assessmentNavigationDropdownContent"
       >
         <span class="h6 mb-0 me-1 overflow-hidden text-truncate">${assessment.title}</span>
       </button>
       <div class="dropdown-menu py-0 overflow-hidden">
-        <div style="max-height: 50vh" class="overflow-auto">
-          ${assessments.map((a) => {
-            return html`
-              <a
-                class="dropdown-item ${idsEqual(assessment.id, a.id) ? 'active' : ''}"
-                aria-current="${idsEqual(assessment.id, a.id) ? 'page' : ''}"
-                href="/pl/course_instance/${courseInstance.id}/instructor/assessment/${a.id}/${targetSubPage}"
-              >
-                ${a.title}
-              </a>
-            `;
-          })}
+        <div
+          id="assessmentNavigationDropdownContent"
+          style="max-height: 50vh"
+          class="overflow-auto py-2"
+        >
+          <div class="d-flex justify-content-center">
+            <div class="spinner-border spinner-border-sm" role="status">
+              <span class="visually-hidden">Loading assessments...</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

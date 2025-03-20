@@ -1035,6 +1035,14 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessments_switcher',
+    [
+      (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js'))
+        .default,
+    ],
+  );
+
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/clientFilesCourse',
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
