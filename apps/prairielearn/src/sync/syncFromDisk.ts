@@ -191,6 +191,7 @@ export async function syncDiskToSql(
   courseDir: string,
   logger: ServerJobLogger,
 ): Promise<SyncResults> {
+  logger.setVerbose(config.verboseSync);
   const lockName = getLockNameForCoursePath(courseDir);
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
   const result = await namedLocks.doWithLock(
