@@ -25,7 +25,6 @@ export default makeBatchedMigration({
     await queryAsync(sql.update_course_instance_usages_for_workspaces, {
       start,
       end,
-
       END_DATE,
     });
   },
