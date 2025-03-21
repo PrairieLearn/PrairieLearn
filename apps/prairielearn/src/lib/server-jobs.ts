@@ -43,8 +43,6 @@ export interface ServerJobLogger {
   warn(msg: string): void;
   info(msg: string): void;
   verbose(msg: string): void;
-  isVerbose(): boolean;
-  setVerbose(verbose: boolean): void;
 }
 
 export interface ServerJob extends ServerJobLogger {
@@ -91,7 +89,6 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   private finished = false;
   public output = '';
   private lastSent = Date.now();
-  private printVerbose = true;
 
   constructor(jobSequenceId: string, jobId: string) {
     this.jobSequenceId = jobSequenceId;
@@ -116,15 +113,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   }
 
   verbose(msg: string) {
-    if (this.printVerbose) this.addToOutput(chalkDim(msg) + '\n');
-  }
-
-  isVerbose(): boolean {
-    return this.printVerbose;
-  }
-
-  setVerbose(verbose: boolean): void {
-    this.printVerbose = verbose;
+    this.addToOutput(chalkDim(msg) + '\n');
   }
 
   async exec(
