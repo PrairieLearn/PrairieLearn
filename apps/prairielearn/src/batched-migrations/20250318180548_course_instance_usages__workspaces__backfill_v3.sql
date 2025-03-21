@@ -2,7 +2,6 @@
 DELETE FROM course_instance_usages
 WHERE
   type = 'Workspace'
-  AND date >= $START_DATE
   AND date < $END_DATE;
 
 -- BLOCK select_max_bound
@@ -53,7 +52,6 @@ FROM
 WHERE
   w.id >= $start
   AND w.id <= $end
-  AND w.state_updated_at >= $START_DATE
   AND w.state_updated_at < $END_DATE
 GROUP BY
   -- We need to aggregate by all columns in the unique constraint because INSERT
