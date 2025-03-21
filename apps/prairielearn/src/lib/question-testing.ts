@@ -1,4 +1,3 @@
-import * as async from 'async';
 import jsonStringifySafe from 'json-stringify-safe';
 import _ from 'lodash';
 import { z } from 'zod';
@@ -449,7 +448,7 @@ export async function startTestQuestion(
   const stats: TestResultStats[] = [];
 
   serverJob.executeInBackground(async (job) => {
-    await async.eachSeries(_.range(count * test_types.length), async (iter) => {
+    for (const iter of Array(count * test_types.length).keys()) {
       const type = test_types[iter % test_types.length];
       job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
       const result = await runTest(
@@ -466,7 +465,7 @@ export async function startTestQuestion(
       if (result.stats) {
         stats.push(result.stats);
       }
-    });
+    }
 
     function printStats(label: string, key: keyof TestResultStats) {
       let min = Number.MAX_SAFE_INTEGER;
