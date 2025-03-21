@@ -31,16 +31,6 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK select_bounds
-SELECT
-  min(id),
-  max(id)
-FROM
-  submissions
-WHERE
-  date >= $START_DATE
-  AND date < $END_DATE;
-
 -- BLOCK update_course_instance_usages_for_submissions
 INSERT INTO
   course_instance_usages (
