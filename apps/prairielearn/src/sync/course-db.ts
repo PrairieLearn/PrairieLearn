@@ -1324,7 +1324,7 @@ async function validateAssessment(
 
   if (missingQids.size > 0) {
     errors.push(
-      `The following questions do not exist in this course: ${[...missingQids].join(', ')}`,
+      `The following questions do not exist in this course: "${[...missingQids].join('", "')}"`,
     );
   }
 

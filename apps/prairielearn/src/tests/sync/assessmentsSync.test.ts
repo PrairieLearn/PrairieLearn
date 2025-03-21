@@ -1783,7 +1783,7 @@ describe('Assessment syncing', () => {
       title: 'test zone',
       questions: [
         {
-          id: 'i do not exist',
+          id: 'i do not exist ',
           points: [1, 2, 3],
         },
       ],
@@ -1793,7 +1793,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment?.sync_errors,
-      /The following questions do not exist in this course: i do not exist/,
+      /The following questions do not exist in this course: "i do not exist "/,
     );
   });
 
