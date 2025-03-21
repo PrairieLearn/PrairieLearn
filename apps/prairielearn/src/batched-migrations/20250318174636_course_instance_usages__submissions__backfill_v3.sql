@@ -67,6 +67,9 @@ FROM
 WHERE
   s.id >= $start
   AND s.id <= $end
+  -- The ID range we are backfilling is deliberately a superset of the rows in
+  -- the exact date range, because date and ID are not strictly correlated.
+  -- Because of this we additionally filter on the date range.
   AND s.date >= $START_DATE
   AND s.date < $END_DATE
 ON CONFLICT (

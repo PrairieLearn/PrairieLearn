@@ -52,6 +52,9 @@ FROM
 WHERE
   w.id >= $start
   AND w.id <= $end
+  -- The ID range we are backfilling is deliberately a superset of the rows in
+  -- the exact date range, because date and ID are not strictly correlated.
+  -- Because of this we additionally filter on the date range.
   AND w.state_updated_at < $END_DATE
 GROUP BY
   -- We need to aggregate by all columns in the unique constraint because INSERT
