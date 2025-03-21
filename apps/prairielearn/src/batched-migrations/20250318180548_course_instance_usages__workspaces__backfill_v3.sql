@@ -62,6 +62,8 @@ FROM
 WHERE
   w.id >= $start
   AND w.id <= $end
+  AND w.state_updated_at >= $START_DATE
+  AND w.state_updated_at < $END_DATE
 GROUP BY
   -- We need to aggregate by all columns in the unique constraint because INSERT
   -- ... ON CONFLICT DO UPDATE can't update a row multiple times.

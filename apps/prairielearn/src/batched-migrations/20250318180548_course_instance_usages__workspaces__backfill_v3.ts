@@ -25,6 +25,11 @@ export default makeBatchedMigration({
     return { min, max, batchSize: 10_000 };
   },
   async execute(start: bigint, end: bigint): Promise<void> {
-    await queryAsync(sql.update_course_instance_usages_for_workspaces, { start, end });
+    await queryAsync(sql.update_course_instance_usages_for_workspaces, {
+      start,
+      end,
+      START_DATE,
+      END_DATE,
+    });
   },
 });

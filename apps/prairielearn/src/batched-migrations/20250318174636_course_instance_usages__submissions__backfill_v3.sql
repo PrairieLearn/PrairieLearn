@@ -77,6 +77,8 @@ FROM
 WHERE
   s.id >= $start
   AND s.id <= $end
+  AND s.date >= $START_DATE
+  AND s.date < $END_DATE
 ON CONFLICT (
   type,
   course_id,

@@ -69,6 +69,8 @@ WHERE
   AND gj.grading_finished_at > gj.grading_received_at
   AND gj.id >= $start
   AND gj.id <= $end
+  AND gj.grading_finished_at >= $START_DATE
+  AND gj.grading_finished_at < $END_DATE
 GROUP BY
   -- We need to aggregate by all columns in the unique constraint because INSERT
   -- ... ON CONFLICT DO UPDATE can't update a row multiple times.
