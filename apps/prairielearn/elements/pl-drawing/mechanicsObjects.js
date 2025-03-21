@@ -4173,7 +4173,7 @@ mechanicsObjects.attachHandlersNoClone = function (
 };
 
 mechanicsObjects.cloneMechanicsObject = function (type, options) {
-  var subObj = _.clone(options);
+  var subObj = { ...options };
   if (!('id' in subObj)) {
     subObj.id = window.PLDrawingApi.generateID();
   }
