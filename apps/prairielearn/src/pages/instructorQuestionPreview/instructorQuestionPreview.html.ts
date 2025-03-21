@@ -1,4 +1,5 @@
 import { html, unsafeHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
@@ -10,12 +11,16 @@ export function InstructorQuestionPreview({
   normalPreviewUrl,
   manualGradingPreviewEnabled,
   manualGradingPreviewUrl,
+  aiGradingPreviewEnabled,
+  aiGradingPreviewUrl,
   renderSubmissionSearchParams,
   resLocals,
 }: {
   normalPreviewUrl: string;
   manualGradingPreviewEnabled: boolean;
   manualGradingPreviewUrl: string;
+  aiGradingPreviewEnabled: boolean;
+  aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams: URLSearchParams;
   resLocals: Record<string, any>;
 }) {
@@ -68,15 +73,30 @@ export function InstructorQuestionPreview({
             </div>
           `
         : ''}
+      ${aiGradingPreviewEnabled
+        ? html`
+            <div class="alert alert-primary">
+              You are viewing this question as it will appear to the AI grader.
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
+              you are done.
+            </div>
+          `
+        : ''}
       <div class="row">
         <div class="col-lg-9 col-sm-12">
           ${QuestionContainer({
             resLocals,
-            showFooter: manualGradingPreviewEnabled ? false : undefined,
+            showFooter: manualGradingPreviewEnabled || aiGradingPreviewEnabled ? false : undefined,
             questionContext: 'instructor',
+            questionRenderContext: run(() => {
+              if (manualGradingPreviewEnabled) return 'manual_grading';
+              if (aiGradingPreviewEnabled) return 'ai_grading';
+              return undefined;
+            }),
             manualGradingPreviewUrl: manualGradingPreviewEnabled
               ? undefined
               : manualGradingPreviewUrl,
+            aiGradingPreviewUrl: aiGradingPreviewEnabled ? undefined : aiGradingPreviewUrl,
             renderSubmissionSearchParams,
           })}
         </div>
