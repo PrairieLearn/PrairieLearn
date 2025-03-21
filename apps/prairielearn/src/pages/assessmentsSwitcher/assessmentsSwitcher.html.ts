@@ -24,17 +24,17 @@ type AssessmentDropdownItemData = z.infer<typeof AssessmentDropdownItemDataSchem
 
 export function AssessmentSwitcher({
   assessmentDropdownItemsData,
-  currentAssessmentId,
   assessmentsGroupBy,
-  plainUrlPrefix,
+  currentAssessmentId,
   courseInstanceId,
+  plainUrlPrefix,
   targetSubPage,
 }: {
   assessmentDropdownItemsData: AssessmentDropdownItemData[];
-  currentAssessmentId?: string;
   assessmentsGroupBy: 'Set' | 'Module';
-  plainUrlPrefix: string;
+  currentAssessmentId?: string;
   courseInstanceId: string;
+  plainUrlPrefix: string;
   /* The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
 }) {
