@@ -10,7 +10,7 @@ SELECT
 FROM
   workspaces
 WHERE
-  AND state_updated_at < $END_DATE;
+  state_updated_at < $END_DATE;
 
 -- BLOCK update_course_instance_usages_for_workspaces
 INSERT INTO
