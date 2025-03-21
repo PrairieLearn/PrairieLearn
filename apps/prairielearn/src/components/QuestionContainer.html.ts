@@ -287,7 +287,7 @@ export function QuestionTitle({
   if (questionContext === 'student_homework') {
     return `${questionNumber}. ${question.title}`;
   } else if (questionContext === 'student_exam') {
-    return `Question ${questionNumber}: ${question.title}`;
+    return `Question ${questionNumber}`;
   } else {
     return question.title;
   }
