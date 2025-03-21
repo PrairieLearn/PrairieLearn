@@ -128,7 +128,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   // which Postgres doesn't like
   const dataStr = Buffer.isBuffer(rawData)
     ? rawData.toString('utf-8')
-    : _.isObject(rawData)
+    : typeof rawData === 'object'
       ? JSON.stringify(rawData)
       : rawData;
 
@@ -146,7 +146,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
       return d.replace(/\0/g, '\ufffd');
     } else if (Array.isArray(d)) {
       return d.map((x) => replaceNull(x));
-    } else if (_.isObject(d)) {
+    } else if (d != null && typeof d === 'object') {
       return _.mapValues(d, (x) => replaceNull(x));
     } else {
       return d;

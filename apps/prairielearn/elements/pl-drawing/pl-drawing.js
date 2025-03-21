@@ -337,7 +337,7 @@ class PLDrawingAnswerState {
    * @param object The object to delete, or its ID.
    */
   deleteObject(object) {
-    if (_.isObject(object)) {
+    if (object != null && typeof object === 'object') {
       object = object.id;
     }
     delete this._answerData[object];

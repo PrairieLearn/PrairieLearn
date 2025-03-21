@@ -443,7 +443,7 @@ function checkData(data, origData, phase) {
         return `data.${prop} is not a boolean: ${String(data[prop])}`;
       }
     } else if (type === 'object') {
-      if (!_.isObject(data[prop])) {
+      if (data[prop] == null || typeof data[prop] !== 'object') {
         return `data.${prop} is not an object: ${String(data[prop])}`;
       }
     } else {

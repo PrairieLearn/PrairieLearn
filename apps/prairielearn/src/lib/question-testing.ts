@@ -384,13 +384,13 @@ async function runTest(
       'true_answer',
     ];
     logger.verbose('variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    '));
-    if (_.isObject(expected_submission)) {
+    if (expected_submission) {
       logger.verbose(
         'expected_submission:\n' +
           jsonStringifySafe(_.pick(expected_submission, submissionKeys), null, '    '),
       );
     }
-    if (_.isObject(test_submission)) {
+    if (test_submission) {
       logger.verbose(
         'test_submission:\n' +
           jsonStringifySafe(_.pick(test_submission, submissionKeys), null, '    '),
