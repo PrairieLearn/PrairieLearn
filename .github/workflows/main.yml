@@ -450,12 +450,28 @@ jobs:
 
       - name: Build all code
         run: make build
+      - name: Set up Prettier and ESLint cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache/prettier/.prettier-cache
+            .eslintcache
+          key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}
+          restore-keys: |
+            ${{ runner.os }}-prettier-eslint-
+
+      - name: Check cache
+        run: |
+          sha256sum node_modules/.cache/prettier/.prettier-cache
+          yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}" --check --cache --cache-strategy content
+          sha256sum node_modules/.cache/prettier/.prettier-cache
       - name: Run the JavaScript linter
         run: make lint-js
       - name: Run the links linter
         run: make lint-links
       - name: Run the d2 diagram linter
         run: make lint-d2
+
       - name: Run the Python typechecker
         run: make typecheck-python
       - name: Run the Python linter
@@ -490,7 +506,9 @@ jobs:
       # dependabot PRs, but we still want all other tests above to run
       # in those cases.
       - name: Check for duplicate Node dependencies
-        run: yarn dedupe --check
+        run: |
+          yarn dedupe --check
+          sha256sum node_modules/.cache/prettier/.prettier-cache
 
   report-image-sizes:
     runs-on: ubuntu-latest
