@@ -123,7 +123,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     return this.printVerbose;
   }
 
-  setVerbose(verbose: true): void {
+  setVerbose(verbose: boolean): void {
     this.printVerbose = verbose;
   }
 
