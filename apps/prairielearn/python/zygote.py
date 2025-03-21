@@ -29,10 +29,12 @@ import types
 from collections.abc import Iterable, Sequence
 from importlib.abc import MetaPathFinder
 from inspect import signature
-from typing import Any
+from typing import Any, Literal, cast, get_args
 
 import prairielearn.internal.zygote_utils as zu
 from prairielearn.internal import question_phases
+from prairielearn.internal.check_data import is_phase
+from prairielearn.internal.question_phases import Phase
 
 saved_path = copy.copy(sys.path)
 
@@ -151,6 +153,9 @@ def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> 
         raise
 
 
+Function = Phase | Literal["ping", "restart"]
+
+
 def worker_loop() -> None:
     # Whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
@@ -177,16 +182,19 @@ def worker_loop() -> None:
             inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
 
             # get the contents of the JSON input
-            file = inp.get("file", None)
-            fcn = inp.get("fcn", None)
-            args = inp.get("args", None)
-            cwd = inp.get("cwd", None)
-            paths = inp.get("paths", None)
-            forbidden_modules = inp.get("forbidden_modules", None)
+            file: str | None = inp.get("file", None)
+            fcn: Function | None = inp.get("fcn", None)
+            args: list[Any] | None = inp.get("args", None)
+            cwd: str | None = inp.get("cwd", None)
+            paths: list[str] | None = inp.get("paths", None)
+            forbidden_modules: list[str] | None = inp.get("forbidden_modules", None)
 
             # Wire up the custom importer to forbid modules as needed.
             path_finder.reset_forbidden_modules()
-            if forbidden_modules is not None and isinstance(forbidden_modules, list):
+            if forbidden_modules is not None:
+                if not isinstance(forbidden_modules, list):
+                    sys.stderr.write("forbidden_modules must be a list")
+                    continue
                 path_finder.forbid_modules(forbidden_modules)
 
             # "ping" is a special fake function name that the parent process
@@ -215,6 +223,20 @@ def worker_loop() -> None:
                 # care about graceful termination, we just want to get out of here as
                 # fast as possible.
                 os._exit(0)
+
+            if file is None:
+                sys.stderr.write("file is required")
+                continue
+
+            if args is None or len(args) == 0:
+                sys.stderr.write(
+                    f"args is required for {file=} {fcn=}, and is None or empty"
+                )
+                continue
+
+            if cwd is None:
+                sys.stderr.write(f"cwd is required for {file=} {fcn=}, and is None")
+                continue
 
             if file.endswith(".js"):
                 # We've shoehorned legacy v2 questions into the v3 code caller
@@ -254,6 +276,20 @@ def worker_loop() -> None:
                 outf.flush()
                 continue
 
+            # At this point, we are dealing with a Python file and should assert that our expected arguments are present.
+
+            if fcn is None:
+                sys.stderr.write("fcn is required and is None")
+                continue
+
+            if not is_phase(fcn):
+                sys.stderr.write(f"fcn type {fcn} must be one of {get_args(Phase)}")
+                continue
+
+            if paths is None:
+                sys.stderr.write("paths is required and is None")
+                continue
+
             # Here, we re-seed the PRNGs if not already seeded in this worker_loop() call.
             # We only want to seed the PRNGs once per worker_loop() call, so that if a
             # question happens to contain multiple occurrences of the same element, the
@@ -268,6 +304,7 @@ def worker_loop() -> None:
 
             # reset and then set up the path
             sys.path = copy.copy(saved_path)
+
             for path in reversed(paths):
                 sys.path.insert(0, path)
             sys.path.insert(0, cwd)
