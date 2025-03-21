@@ -191,6 +191,7 @@ export async function syncDiskToSql(
   courseDir: string,
   logger: ServerJobLogger,
 ): Promise<SyncResults> {
+  const previousVerbose = logger.isVerbose();
   logger.setVerbose(config.verboseSync);
   const lockName = getLockNameForCoursePath(courseDir);
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
@@ -210,6 +211,7 @@ export async function syncDiskToSql(
   );
 
   logger.verbose(chalkDim(`Released lock ${lockName}`));
+  logger.setVerbose(previousVerbose);
   return result;
 }
 

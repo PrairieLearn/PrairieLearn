@@ -43,6 +43,7 @@ export interface ServerJobLogger {
   warn(msg: string): void;
   info(msg: string): void;
   verbose(msg: string): void;
+  isVerbose(): boolean;
   setVerbose(verbose: boolean): void;
 }
 
@@ -116,6 +117,10 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   verbose(msg: string) {
     if (this.printVerbose) this.addToOutput(chalkDim(msg) + '\n');
+  }
+
+  isVerbose(): boolean {
+    return this.printVerbose;
   }
 
   setVerbose(verbose: true): void {
