@@ -439,7 +439,7 @@ function checkData(data, origData, phase) {
         return `data.${prop} is not a string: ${String(data[prop])}`;
       }
     } else if (type === 'boolean') {
-      if (!_.isBoolean(data[prop])) {
+      if (data[prop] !== true && data[prop] !== false) {
         return `data.${prop} is not a boolean: ${String(data[prop])}`;
       }
     } else if (type === 'object') {
