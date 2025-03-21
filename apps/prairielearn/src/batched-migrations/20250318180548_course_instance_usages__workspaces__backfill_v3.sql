@@ -5,21 +5,12 @@ WHERE
   AND date >= $START_DATE
   AND date < $END_DATE;
 
--- BLOCK select_bounds
+-- BLOCK select_max_bound
 SELECT
-  min(id),
   max(id)
 FROM
   workspaces
 WHERE
-  -- Use `launched_at` for the index. We start earlier than $START_DATE because
-  -- we really care about `state_updated_at` and we don't want to miss any rows
-  -- that have `launched_at` just before $START_DATE. We'll cap it at 1 week, so
-  -- we shouldn't miss too many rows.
-  launched_at >= $START_DATE::timestamptz - interval '1 week'
-  AND launched_at < $END_DATE
-  -- also check `state_updated_at` so we don't double-count
-  AND state_updated_at >= $START_DATE
   AND state_updated_at < $END_DATE;
 
 -- BLOCK update_course_instance_usages_for_workspaces

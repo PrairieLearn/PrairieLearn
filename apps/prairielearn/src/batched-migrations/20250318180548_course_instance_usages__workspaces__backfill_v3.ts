@@ -5,22 +5,19 @@ import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const START_DATE = '2025-02-15T00:00:00Z';
 const END_DATE = '2025-03-21T00:00:00Z';
 
 export default makeBatchedMigration({
   async getParameters() {
     // First delete old usage data
-    await queryAsync(sql.delete_old_usages, { START_DATE, END_DATE });
+    await queryAsync(sql.delete_old_usages, { END_DATE });
 
     // Only backfill from workspaces within the date range
-    const { min, max } = await queryRow(
-      sql.select_bounds,
-      { START_DATE, END_DATE },
-      z.object({
-        min: z.bigint({ coerce: true }).nullable(),
-        max: z.bigint({ coerce: true }).nullable(),
-      }),
+    const min = 1n;
+    const max = await queryRow(
+      sql.select_max_bound,
+      { END_DATE },
+      z.bigint({ coerce: true }).nullable(),
     );
     return { min, max, batchSize: 10_000 };
   },
@@ -28,7 +25,7 @@ export default makeBatchedMigration({
     await queryAsync(sql.update_course_instance_usages_for_workspaces, {
       start,
       end,
-      START_DATE,
+
       END_DATE,
     });
   },
