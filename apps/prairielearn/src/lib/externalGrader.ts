@@ -1,6 +1,5 @@
 import assert from 'node:assert';
 
-import _ from 'lodash';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -160,11 +159,11 @@ async function updateJobReceivedTime(grading_job_id: string, receivedTime: strin
  */
 export async function processGradingResult(content: any): Promise<void> {
   try {
-    if (!_.isObject(content.grading)) {
+    if (content.grading == null || typeof content.grading !== 'object') {
       throw new error.AugmentedError('invalid grading', { data: { content } });
     }
 
-    if ('feedback' in content.grading && !_.isObject(content.grading.feedback)) {
+    if (content.grading.feedback != null && typeof content.grading.feedback !== 'object') {
       throw new error.AugmentedError('invalid grading.feedback', { data: { content } });
     }
 
@@ -199,7 +198,7 @@ export async function processGradingResult(content: any): Promise<void> {
         content.grading.score = 0;
         gradable = false;
       }
-      if (!_.isFinite(content.grading.score)) {
+      if (!Number.isFinite(content.grading.score)) {
         content.grading.feedback = {
           results: { succeeded: false, gradable: false },
           message: 'Error parsing external grading results: score is not a number.',

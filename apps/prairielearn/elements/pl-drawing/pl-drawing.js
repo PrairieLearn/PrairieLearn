@@ -196,7 +196,7 @@ window.PLDrawingApi = {
         if (!elem_options.editable) {
           btn.disabled = true;
         }
-        let cloned_opts = _.clone(opts || {});
+        let cloned_opts = { ...opts };
         $(btn).click(() => elem.button_press(canvas, cloned_opts, submittedAnswer));
       }
     });
@@ -299,7 +299,7 @@ class PLDrawingAnswerState {
 
   _updateAnswerInput() {
     // Correctly escape double back-slashes... (\\)
-    let temp = JSON.stringify(_.values(this._answerData)).replaceAll('\\\\', '\\\\\\\\');
+    let temp = JSON.stringify(Object.values(this._answerData)).replaceAll('\\\\', '\\\\\\\\');
     this._htmlInput.val(temp);
   }
 
@@ -337,7 +337,7 @@ class PLDrawingAnswerState {
    * @param object The object to delete, or its ID.
    */
   deleteObject(object) {
-    if (_.isObject(object)) {
+    if (object != null && typeof object === 'object') {
       object = object.id;
     }
     delete this._answerData[object];
@@ -359,7 +359,7 @@ class PLDrawingAnswerState {
    * @removeHandler {optional} Function that is run whenever the canvas object is deleted.
    */
   registerAnswerObject(options, object, modifyHandler, removeHandler) {
-    let submitted_object = _.clone(options);
+    let submitted_object = { ...options };
     if (!('id' in submitted_object)) {
       if (!('id' in object)) {
         submitted_object.id = window.PLDrawingApi.generateID();
@@ -437,8 +437,7 @@ class PLDrawingAnswerState {
         padding: 10,
         graded: false,
       };
-      let opts = _.defaults(options, def);
-      opts.type = 'pl-line';
+      let opts = { ...def, ...options, type: 'pl-line' };
       window.PLDrawingApi.createElement(canvas, opts, submittedAnswer);
     }
     static get_button_icon() {
