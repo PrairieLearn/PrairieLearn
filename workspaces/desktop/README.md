@@ -13,12 +13,14 @@ This image is using Ubuntu 24.04 and provides a desktop environment that users c
 
 ## Workspace Options
 
-```
-"workspaceOptions": {
+```json
+{
+  "workspaceOptions": {
     "image": "prairielearn/workspace-desktop",
     "port": 8080,
     "home": "/home/prairielearner"
-    ...
+    // ...
+  }
 }
 ```
 
