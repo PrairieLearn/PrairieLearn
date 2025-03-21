@@ -1,6 +1,5 @@
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 import { CloudWatch, type Dimension } from '@aws-sdk/client-cloudwatch';
-import _ from 'lodash';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
