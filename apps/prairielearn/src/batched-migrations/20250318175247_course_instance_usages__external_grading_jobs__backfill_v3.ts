@@ -6,7 +6,7 @@ import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 const sql = loadSqlEquiv(import.meta.url);
 
 const START_DATE = '2025-02-15T00:00:00Z';
-const END_DATE = '2025-03-18T00:00:00Z';
+const END_DATE = '2025-03-21T00:00:00Z';
 
 export default makeBatchedMigration({
   async getParameters() {
