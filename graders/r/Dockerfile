@@ -31,12 +31,13 @@ ENV PYTHONIOENCODING=UTF-8
 # tidyverse'. Switching to using the CRAN package names may make it easier to other R
 # users to adapt and adjust the package list.  We also install sqlite3 to support the
 # SQL lectures. (Adding a duckdb binary may be an option too.)
-RUN apt update \
-    && apt install -y curl \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
                       git \
                       pandoc \
                       sqlite3 \
                       sudo \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
     && install.r bench \        
                  data.table \
                  devtools \
