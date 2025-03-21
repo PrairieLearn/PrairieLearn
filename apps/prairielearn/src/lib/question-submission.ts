@@ -15,7 +15,6 @@ export async function processSubmission(
   let variant_id: string, submitted_answer: Record<string, any>;
   if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;
-    // eslint-disable-next-line you-dont-need-lodash-underscore/omit
     submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
     if (!req.body.postData) {
