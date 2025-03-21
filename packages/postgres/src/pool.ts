@@ -1173,9 +1173,9 @@ export class PostgresPool {
     const timestamp = new Date().toISOString();
     // random 6-character suffix to avoid clashes (approx 2 billion possible values)
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const suffix = _.times(6, function () {
-      return _.sample(chars);
-    }).join('');
+    const suffix = Array.from({ length: 6 })
+      .map(() => chars[Math.floor(Math.random() * chars.length)])
+      .join('');
 
     // Schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6),
     // which is the default PostgreSQL identifier limit.
