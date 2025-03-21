@@ -83,7 +83,9 @@ function paramsToArray(
       paramsArray: params,
     };
   }
-  if (!_.isObjectLike(params)) throw new Error('params must be array or object');
+  if (params == null || typeof params !== 'object') {
+    throw new Error('params must be array or object');
+  }
 
   const re = /\$([-_a-zA-Z0-9]+)/;
   let result;
