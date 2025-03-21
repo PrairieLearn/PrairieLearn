@@ -518,6 +518,8 @@ const ConfigSchema = z.object({
       'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000',
     ),
   features: z.record(z.string(), z.boolean()).default({}),
+  /** Determines if debugging information should be included in sync output. */
+  verboseSync: z.boolean().default(false),
   /**
    * Determines if QIDs of shared questions being imported should be validated.
    * Turn off in dev mode to enable successful syncs when you don't have access
