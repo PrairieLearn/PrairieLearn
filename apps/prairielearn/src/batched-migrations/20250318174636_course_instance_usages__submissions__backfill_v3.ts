@@ -14,13 +14,15 @@ export default makeBatchedMigration({
     await queryAsync(sql.delete_old_usages, { START_DATE, END_DATE });
 
     // Only backfill from submissions within the date range
-    const { min, max } = await queryRow(
-      sql.select_bounds,
-      { START_DATE, END_DATE },
-      z.object({
-        min: z.bigint({ coerce: true }).nullable(),
-        max: z.bigint({ coerce: true }).nullable(),
-      }),
+    const min = await queryRow(
+      sql.select_min_bound,
+      { START_DATE },
+      z.bigint({ coerce: true }).nullable(),
+    );
+    const max = await queryRow(
+      sql.select_max_bound,
+      { END_DATE },
+      z.bigint({ coerce: true }).nullable(),
     );
     return { min, max, batchSize: 100_000 };
   },
