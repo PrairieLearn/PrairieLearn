@@ -125,7 +125,7 @@ export function CourseRequestsTable({
                     ${row.jobs.length > 0
                       ? html`
                           <button
-                            class="show-hide-btn btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
+                            class="btn btn-secondary btn-xs text-nowrap show-hide-btn collapsed"
                             data-bs-toggle="collapse"
                             data-bs-target="#course-requests-job-list-${row.id}"
                             aria-expanded="false"
@@ -209,7 +209,7 @@ function CourseRequestApproveForm({
   coursesRoot: string;
   csrfToken: string;
 }) {
-  const repo_name = 'pl-' + request.short_name.replace(' ', '').toLowerCase();
+  const repo_name = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
   return html`
     <form name="create-course-from-request-form-${request.id}" method="POST">
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />

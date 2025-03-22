@@ -168,6 +168,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
               ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
+                className: 'mx-1',
               }),
             renderCondition: ({ authz_data, course }) =>
               authz_data.has_course_permission_edit && course.show_getting_started,
@@ -317,7 +318,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         tabLabel: 'Statistics',
       },
       {
-        activeSubPage: 'instances',
+        activeSubPage: ['instances', 'assessment_instance'],
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/instances`,
         iconClasses: 'fas fa-user-graduate',
         tabLabel: 'Students',

@@ -310,14 +310,12 @@ function DeleteQuestionsModal({ csrfToken }: { csrfToken: string }) {
     title: 'Delete all draft questions',
     body: 'Are you sure you want to permanently delete all draft questions?',
     footer: html`
-      <form method="POST" class="me-2">
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button class="btn btn-danger" name="__action" value="delete_drafts">
-          <i class="fa fa-trash" aria-hidden="true"></i>
-          Delete all drafts
-        </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </form>
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="submit" class="btn btn-danger" name="__action" value="delete_drafts">
+        <i class="fa fa-trash" aria-hidden="true"></i>
+        Delete all drafts
+      </button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }

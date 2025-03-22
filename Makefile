@@ -1,5 +1,3 @@
-SH_FILES := $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
-
 build:
 	@yarn turbo run build
 build-sequential:
@@ -83,7 +81,7 @@ lint-links:
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 lint-shell:
-	@shellcheck -S error $(SH_FILES)
+	@shellcheck -S error $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
 lint-actions:
 	@actionlint
 

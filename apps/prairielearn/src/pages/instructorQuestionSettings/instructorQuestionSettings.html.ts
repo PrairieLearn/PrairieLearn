@@ -147,7 +147,7 @@ export function InstructorQuestionSettings({
             </div>
             <div class="mb-3">
               <h2 class="h4">General</h2>
-              <label for="title">Title</label>
+              <label class="form-label" for="title">Title</label>
               <input
                 type="text"
                 class="form-control"
@@ -165,76 +165,139 @@ export function InstructorQuestionSettings({
                 class="table two-column-description"
                 aria-label="Question topic, tags, and assessments"
               >
-                <tr>
-                  <th class="align-middle">
-                    <label id="topic-label" for="topic">Topic</label>
-                  </th>
-                  <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
-                  <!-- This is used by tom-select to style the active item in the dropdown -->
-                  <td style="--bs-tertiary-bg: #f8f9fa">
-                    ${canEdit
-                      ? html`
-                          <select
-                            id="topic"
-                            name="topic"
-                            placeholder="Select a topic"
-                            aria-labelledby="topic-label"
-                          >
-                            ${courseTopics.map((topic) => {
-                              return html`
-                                <option
-                                  value="${topic.name}"
-                                  data-color="${topic.color}"
-                                  data-name="${topic.name}"
-                                  data-description="${topic.description}"
-                                  ${topic.name === resLocals.topic.name ? 'selected' : ''}
-                                ></option>
-                              `;
-                            })}
-                          </select>
-                        `
-                      : TopicBadge(resLocals.topic)}
-                  </td>
-                </tr>
-                <tr>
-                  <th class="align-middle">
-                    <label id="tags-label" for="tags">Tags</label>
-                  </th>
-                  <td>
-                    ${canEdit
-                      ? html`
-                          <select
-                            id="tags"
-                            name="tags"
-                            placeholder="Select tags"
-                            aria-labelledby="tags-label"
-                            multiple
-                          >
-                            ${courseTags.length > 0
-                              ? courseTags.map((tag) => {
-                                  return html`
-                                    <option
-                                      value="${tag.name}"
-                                      data-color="${tag.color}"
-                                      data-name="${tag.name}"
-                                      data-description="${tag.description}"
-                                      ${selectedTags.has(tag.name) ? 'selected' : ''}
-                                    ></option>
-                                  `;
-                                })
-                              : ''}
-                          </select>
-                        `
-                      : TagBadgeList(resLocals.tags)}
-                  </td>
-                </tr>
-                ${shouldShowAssessmentsList
-                  ? html`<tr>
-                      <th class="align-middle">Assessments</th>
-                      <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
-                    </tr>`
-                  : ''}
+                <tbody>
+                  <tr>
+                    <th class="align-middle">
+                      <label id="topic-label" for="topic">Topic</label>
+                    </th>
+                    <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
+                    <!-- This is used by tom-select to style the active item in the dropdown -->
+                    <td style="--bs-tertiary-bg: #f8f9fa">
+                      ${canEdit
+                        ? html`
+                            <select
+                              id="topic"
+                              name="topic"
+                              placeholder="Select a topic"
+                              aria-labelledby="topic-label"
+                            >
+                              ${courseTopics.map((topic) => {
+                                return html`
+                                  <option
+                                    value="${topic.name}"
+                                    data-color="${topic.color}"
+                                    data-name="${topic.name}"
+                                    data-description="${topic.description}"
+                                    ${topic.name === resLocals.topic.name ? 'selected' : ''}
+                                  ></option>
+                                `;
+                              })}
+                            </select>
+                          `
+                        : TopicBadge(resLocals.topic)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th class="align-middle">
+                      <label id="tags-label" for="tags">Tags</label>
+                    </th>
+                    <td>
+                      ${canEdit
+                        ? html`
+                            <select
+                              id="tags"
+                              name="tags"
+                              placeholder="Select tags"
+                              aria-labelledby="tags-label"
+                              multiple
+                            >
+                              ${courseTags.length > 0
+                                ? courseTags.map((tag) => {
+                                    return html`
+                                      <option
+                                        value="${tag.name}"
+                                        data-color="${tag.color}"
+                                        data-name="${tag.name}"
+                                        data-description="${tag.description}"
+                                        ${selectedTags.has(tag.name) ? 'selected' : ''}
+                                      ></option>
+                                    `;
+                                  })
+                                : ''}
+                            </select>
+                          `
+                        : TagBadgeList(resLocals.tags)}
+                    </td>
+                  </tr>
+                  ${shouldShowAssessmentsList
+                    ? html`<tr>
+                        <th class="align-middle">Assessments</th>
+                        <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
+                      </tr>`
+                    : ''}
+                </tbody>
               </table>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="grading_method">Grading method</label>
+              <select
+                class="form-select"
+                id="grading_method"
+                name="grading_method"
+                ${canEdit ? '' : 'disabled'}
+              >
+                <option
+                  value="Internal"
+                  ${resLocals.question.grading_method === 'Internal' ? 'selected' : ''}
+                >
+                  Internal
+                </option>
+                <option
+                  value="External"
+                  ${resLocals.question.grading_method === 'External' ? 'selected' : ''}
+                >
+                  External
+                </option>
+                <option
+                  value="Manual"
+                  ${resLocals.question.grading_method === 'Manual' ? 'selected' : ''}
+                >
+                  Manual
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                The grading method used for this question.
+              </small>
+            </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="single_variant"
+                name="single_variant"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.question.single_variant ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="single_variant">Single variant</label>
+              <div class="small text-muted">
+                If enabled, students will only be able to try a single variant of this question on
+                any given assessment.
+              </div>
+            </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="show_correct_answer"
+                name="show_correct_answer"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.question.show_correct_answer ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="show_correct_answer">Show correct answer</label>
+              <div class="small text-muted">
+                If enabled, the correct answer panel will be shown after all submission attempts
+                have been exhausted.
+              </div>
             </div>
             ${canEdit
               ? html`
@@ -314,58 +377,52 @@ export function InstructorQuestionSettings({
         </div>
         ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) || canEdit
           ? html`
-            <div class="card-footer">
-                ${
-                  editableCourses.length > 0 &&
-                  resLocals.authz_data.has_course_permission_view &&
-                  resLocals.question.course_id === resLocals.course.id
-                    ? html`
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-primary"
-                          id="copyQuestionButton"
-                          data-bs-toggle="popover"
-                          data-bs-container="body"
-                          data-bs-html="true"
-                          data-bs-placement="auto"
-                          data-bs-title="Copy this question"
-                          data-bs-content="${escapeHtml(
-                            CopyForm({
-                              csrfToken: resLocals.__csrf_token,
-                              editableCourses,
-                              courseId: resLocals.course.id,
-                            }),
-                          )}"
-                        >
-                          <i class="fa fa-clone"></i>
-                          <span>Make a copy of this question</span>
-                        </button>
-                      `
-                    : ''
-                }
-                ${
-                  canEdit
-                    ? html`
-                        <button
-                          class="btn btn-sm btn-primary"
-                          id
-                          href="#"
-                          data-bs-toggle="modal"
-                          data-bs-target="#deleteQuestionModal"
-                        >
-                          <i class="fa fa-times" aria-hidden="true"></i> Delete this question
-                        </button>
-                        ${DeleteQuestionModal({
-                          qid: resLocals.question.qid,
-                          assessmentsWithQuestion,
-                          csrfToken: resLocals.__csrf_token,
-                        })}
-                      `
-                    : ''
-                }
+              <div class="card-footer">
+                ${editableCourses.length > 0 &&
+                resLocals.authz_data.has_course_permission_view &&
+                resLocals.question.course_id === resLocals.course.id
+                  ? html`
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        id="copyQuestionButton"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-placement="auto"
+                        data-bs-title="Copy this question"
+                        data-bs-content="${escapeHtml(
+                          CopyForm({
+                            csrfToken: resLocals.__csrf_token,
+                            editableCourses,
+                            courseId: resLocals.course.id,
+                          }),
+                        )}"
+                      >
+                        <i class="fa fa-clone"></i>
+                        <span>Make a copy of this question</span>
+                      </button>
+                    `
+                  : ''}
+                ${canEdit
+                  ? html`
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#deleteQuestionModal"
+                      >
+                        <i class="fa fa-times" aria-hidden="true"></i> Delete this question
+                      </button>
+                      ${DeleteQuestionModal({
+                        qid: resLocals.question.qid,
+                        assessmentsWithQuestion,
+                        csrfToken: resLocals.__csrf_token,
+                      })}
+                    `
+                  : ''}
               </div>
-            </div>
-          `
+            `
           : ''}
       </div>
     `,
@@ -470,10 +527,15 @@ function QuestionTestsForm({
   return html`
     <form name="question-tests-form" method="POST" action="${questionTestPath}">
       <input type="hidden" name="__csrf_token" value="${questionTestCsrfToken}" />
-      <button class="btn btn-sm btn-outline-primary" name="__action" value="test_once">
+      <button
+        type="submit"
+        class="btn btn-sm btn-outline-primary"
+        name="__action"
+        value="test_once"
+      >
         Test once with full details
       </button>
-      <button class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
+      <button type="submit" class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
         Test 100 times with only results
       </button>
     </form>

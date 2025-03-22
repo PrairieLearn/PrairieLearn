@@ -162,7 +162,7 @@ function AssessmentQuestionsTable({
             <th>Auto Points</th>
             <th>Manual Points</th>
             ${showAdvanceScorePercCol ? html`<th>Advance Score</th>` : ''}
-            <th width="100">Mean score</th>
+            <th>Mean score</th>
             <th>Num. Submissions Histogram</th>
             <th>Other Assessments</th>
             <th class="text-right">Actions</th>
@@ -306,6 +306,7 @@ function AssessmentQuestionsTable({
                       ${hasCourseInstancePermissionEdit
                         ? html`
                             <button
+                              type="button"
                               class="dropdown-item"
                               data-bs-toggle="modal"
                               data-bs-target="#resetQuestionVariantsModal"
@@ -315,7 +316,7 @@ function AssessmentQuestionsTable({
                             </button>
                           `
                         : html`
-                            <button class="dropdown-item disabled" disabled>
+                            <button type="button" class="dropdown-item disabled" disabled>
                               Must have editor permission
                             </button>
                           `}

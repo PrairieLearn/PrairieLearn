@@ -164,7 +164,7 @@ export async function processGradingResult(content: any): Promise<void> {
       throw new error.AugmentedError('invalid grading', { data: { content } });
     }
 
-    if (_.has(content.grading, 'feedback') && !_.isObject(content.grading.feedback)) {
+    if ('feedback' in content.grading && !_.isObject(content.grading.feedback)) {
       throw new error.AugmentedError('invalid grading.feedback', { data: { content } });
     }
 
