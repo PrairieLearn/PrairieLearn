@@ -150,6 +150,7 @@ def add_edges_for_groups(
     for group_tag in groups:
         graph.remove_node(group_tag)
 
+
 def grade_dag(
     submission: Sequence[str | None],
     depends_graph: Mapping[str, list[str]],
@@ -289,6 +290,7 @@ def lcs_partial_credit(
                 ):
                     mvc_size = len(subset)
                     break
+                    
             if mvc_size < problematic_subgraph.number_of_nodes() - 1:
                 break
 
