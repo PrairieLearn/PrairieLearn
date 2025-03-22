@@ -431,7 +431,7 @@ class CGrader:
         highlight_matches: bool = False,  # noqa: FBT001
     ) -> TestResult:
         if args is not None:
-            if isinstance(args, str | float | int):
+            if isinstance(args, (str, float, int)):
                 args = [args]
             args = list(map(str, args))
             assert is_str_list(args)
@@ -448,12 +448,12 @@ class CGrader:
         if exp_output is None:
             exp_output = []
             must_match_all_outputs = True
-        elif isinstance(exp_output, str | re.Pattern):
+        elif isinstance(exp_output, (str, re.Pattern)):
             exp_output = [exp_output]
 
         if reject_output is None:
             reject_output = []
-        elif isinstance(reject_output, str | re.Pattern):
+        elif isinstance(reject_output, (str, re.Pattern)):
             reject_output = [reject_output]
 
         if must_match_all_outputs is True:
@@ -598,7 +598,7 @@ class CGrader:
             "output": output,
             "message": msg or "",
         }
-        if images and isinstance(images, str | dict):
+        if images and isinstance(images, (str, dict)):
             test["images"] = [images]
         elif images:
             test["images"] = list(images)

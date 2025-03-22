@@ -417,7 +417,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_sub = pl.from_json(a_sub)
 
             # If submitted answer is not a of valid type, score is zero
-            if isinstance(a_sub, Expr | dict):
+            if isinstance(a_sub, (Expr, dict)):
                 data["partial_scores"][name] = {"score": 0, "weight": weight}
                 return
 
