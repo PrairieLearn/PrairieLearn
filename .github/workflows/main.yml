@@ -402,6 +402,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # We need accurate timestamps to avoid prettier cache invalidation (https://github.com/jaredwray/cacheable/issues/1047)
+          fetch-depth: 0
 
       - name: Install OS packages
         uses: awalsh128/cache-apt-pkgs-action@v1.4.3
