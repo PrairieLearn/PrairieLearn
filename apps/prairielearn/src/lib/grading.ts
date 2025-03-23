@@ -9,6 +9,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import * as questionServers from '../question-servers/index.js';
 
+import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   type Course,
   DateFromISOString,
@@ -358,6 +359,19 @@ export async function gradeVariant(
     // For external grading we just need to trigger the grading job to start.
     // We haven't actually graded this question yet - don't attempt
     // to update the grading job or submission.
+    //
+    // Before starting the grading process, we need to ensure that any relevant
+    // chunks are available on disk. This uses the same list of chunks as
+    // `getContext` in `freeform.js`. We technically probably don't need to
+    // load element and element extension chunks, but we do so anyway to be
+    // consistent with the other code path.
+    await ensureChunksForCourseAsync(question_course.id, [
+      { type: 'question', questionId: question.id },
+      { type: 'clientFilesCourse' },
+      { type: 'serverFilesCourse' },
+      { type: 'elements' },
+      { type: 'elementExtensions' },
+    ]);
     await externalGrader.beginGradingJob(grading_job.id);
   } else {
     // For Internal grading we call the grading code. For Manual grading, if the question

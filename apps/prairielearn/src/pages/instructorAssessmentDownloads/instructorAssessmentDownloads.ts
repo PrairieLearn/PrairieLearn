@@ -235,7 +235,10 @@ async function pipeCursorToArchive<T>(
   extractFiles: (row: T) => ArchiveFile[] | null,
 ) {
   const archive = archiver('zip');
-  const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(' ', '');
+  const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replaceAll(
+    ' ',
+    '',
+  );
   const prefix = `${dirname}/`;
   archive.append('', { name: prefix });
   archive.pipe(res);

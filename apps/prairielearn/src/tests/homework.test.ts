@@ -698,7 +698,7 @@ describe('Homework assessment', function () {
     helperQuestion.getInstanceQuestion(locals);
     describe('save data for later submission', function () {
       it('should succeed', function () {
-        locals.savedVariant = _.clone(locals.variant);
+        locals.savedVariant = structuredClone(locals.variant);
         locals.questionSavedCsrfToken = locals.__csrf_token;
       });
     });
@@ -748,7 +748,7 @@ describe('Homework assessment', function () {
     });
     describe('restore saved data for submission', function () {
       it('should succeed', function () {
-        locals.variant = _.clone(locals.savedVariant);
+        locals.variant = structuredClone(locals.savedVariant);
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
@@ -1338,7 +1338,7 @@ describe('Homework assessment', function () {
             helperQuestion.getInstanceQuestion(locals);
             describe('saving submission data', function () {
               it('should succeed', function () {
-                locals.question.savedVariant = _.clone(locals.variant);
+                locals.question.savedVariant = structuredClone(locals.variant);
                 locals.question.questionSavedCsrfToken = locals.__csrf_token;
               });
             });
@@ -1346,7 +1346,7 @@ describe('Homework assessment', function () {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'save';
-                locals.variant = _.clone(locals.question.savedVariant);
+                locals.variant = structuredClone(locals.question.savedVariant);
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
@@ -1355,7 +1355,7 @@ describe('Homework assessment', function () {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'grade';
-                locals.variant = _.clone(locals.question.savedVariant);
+                locals.variant = structuredClone(locals.question.savedVariant);
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
