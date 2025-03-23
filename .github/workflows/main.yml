@@ -461,11 +461,6 @@ jobs:
             .eslintcache
           key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
 
-      # - name: Check cache
-      #   run: |
-      #     sha256sum node_modules/.cache/prettier/.prettier-cache
-      #     yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}" --check --cache --cache-strategy content
-      #     sha256sum node_modules/.cache/prettier/.prettier-cache
       - name: Run the JavaScript linter
         run: |
           git restore-mtime
