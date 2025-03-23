@@ -29,6 +29,8 @@ The `info.json` file is structurally similar to the element info file and may co
 }
 ```
 
+!!! info "[`infoElementExtension.json` reference](./schemas/infoElementExtension.md) :robot:"
+
 ### Python Controller
 
 The main Python controller script has no general structure and is instead defined by the element that is being extended. Any global functions and variables are available for use by the host element.

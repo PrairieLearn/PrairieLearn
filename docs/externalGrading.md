@@ -74,6 +74,8 @@ External grading configuration is done on a per-question basis. All configuratio
 
 - `environment`: Environment variables to set inside the grading container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`). This property is optional.
 
+!!! info "[`infoQuestion.json` `externalGradingOptions` reference](schemas/infoQuestion.md/#properties/externalGradingOptions) :robot:"
+
 Here's an example of a complete `externalGradingOptions` portion of a question's `info.json`:
 
 ```json title="info.json"

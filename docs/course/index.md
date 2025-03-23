@@ -130,11 +130,7 @@ This file specifies basic information about the course:
     }
     ```
 
-??? note "Format specification for `infoCourse.json`"
-
-    ```json
-    --8<-- "apps/prairielearn/src/schemas/schemas/infoCourse.json"
-    ```
+!!! info "[`infoCourse.json` reference](../schemas/infoCourse.md) :robot:"
 
 ## Course-wide options
 

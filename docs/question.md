@@ -75,7 +75,7 @@ The `info.json` file for each question defines properties of the question. For e
 | `shareSourcePublicly`    | boolean | Whether the the source code of the question should be available                                                                                                        |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                             |
 
-For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoQuestion.json)
+!!! info "[`infoQuestion.json` reference](schemas/infoQuestion.md) :robot:"
 
 ### Question Dependencies
 

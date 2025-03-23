@@ -130,3 +130,16 @@ foreignObject .md pre {
 .doc-heading > .md-content__button {
   margin: 0;
 }
+
+/* Override details blocks inside list elements for schema reference pages */
+[dir='ltr'] .md-typeset li > details {
+  margin: 0em 0;
+}
+
+[dir='ltr'] .md-typeset li > details > summary {
+  padding-left: 0.6em;
+}
+
+[dir='ltr'] .md-typeset li > details > summary::before {
+  display: none;
+}
