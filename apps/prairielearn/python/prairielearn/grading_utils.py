@@ -1,3 +1,11 @@
+"""Utilities for grading and comparing answers in PrairieLearn.
+
+```python
+from prairielearn import ... # recommended
+from prairielearn.grading_utils import ... # unstable, not recommended
+```
+"""
+
 import math
 from collections.abc import Callable
 from typing import Any, Literal

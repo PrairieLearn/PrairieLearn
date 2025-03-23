@@ -1,3 +1,10 @@
+"""Conversion utilities for numbers to a specified precision and notation.
+
+```python
+from prairielearn.to_precision import ... # recommended
+```
+"""
+
 __author__ = "William Rusnack github.com/BebeSparkelSparkel linkedin.com/in/williamrusnack williamrusnack@gmail.com"
 
 import math

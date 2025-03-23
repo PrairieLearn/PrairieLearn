@@ -1,4 +1,10 @@
-"""Utilities for working with unicode strings."""
+"""Utilities for working with unicode strings.Miscellaneous utilities for building questions and elements in PrairieLearn.
+
+```python
+from prairielearn import ... # recommended
+from prairielearn.unicode_utils import ... # unstable, not recommended
+```
+"""
 
 import unicodedata
 

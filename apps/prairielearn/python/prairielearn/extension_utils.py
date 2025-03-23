@@ -1,3 +1,11 @@
+"""Utilities for element extensions in PrairieLearn.
+
+```python
+from prairielearn import ... # recommended
+from prairielearn.extension_utils import ... # unstable, not recommended
+```
+"""
+
 import collections
 import importlib
 import importlib.util
