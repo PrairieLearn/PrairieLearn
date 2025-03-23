@@ -457,8 +457,6 @@ jobs:
             node_modules/.cache/prettier/.prettier-cache
             .eslintcache
           key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
-          restore-keys: |
-            ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
 
       # - name: Check cache
       #   run: |
@@ -512,7 +510,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: prettier-cache
-          path: node_modules/.cache/prettier/.prettier-cache
+          path: ${{ github.workspace }}/node_modules/.cache/prettier/.prettier-cache
 
   report-image-sizes:
     runs-on: ubuntu-latest
