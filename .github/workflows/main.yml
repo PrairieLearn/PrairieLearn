@@ -403,13 +403,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # We need accurate timestamps to avoid prettier cache invalidation (https://github.com/jaredwray/cacheable/issues/1047)
+          # We need accurate timestamps to avoid prettier cache invalidation -- we will use git restore-mtime to do this (https://github.com/prettier/prettier/issues/17278)
           fetch-depth: 0
 
       - name: Install OS packages
         uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
-          packages: graphviz libgraphviz-dev
+          packages: graphviz libgraphviz-dev git-restore-mtime
           version: 1.0
           execute_install_scripts: true
 
@@ -467,7 +467,9 @@ jobs:
       #     yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}" --check --cache --cache-strategy content
       #     sha256sum node_modules/.cache/prettier/.prettier-cache
       - name: Run the JavaScript linter
-        run: make lint-js
+        run: |
+          git restore-mtime
+          make lint-js
       - name: Run the links linter
         run: make lint-links
       - name: Run the d2 diagram linter
