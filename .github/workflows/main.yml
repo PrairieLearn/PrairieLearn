@@ -456,15 +456,15 @@ jobs:
           path: |
             node_modules/.cache/prettier/.prettier-cache
             .eslintcache
-          key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}
+          key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
           restore-keys: |
-            ${{ runner.os }}-prettier-eslint-
+            ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
 
-      - name: Check cache
-        run: |
-          sha256sum node_modules/.cache/prettier/.prettier-cache
-          yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}" --check --cache --cache-strategy content
-          sha256sum node_modules/.cache/prettier/.prettier-cache
+      # - name: Check cache
+      #   run: |
+      #     sha256sum node_modules/.cache/prettier/.prettier-cache
+      #     yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}" --check --cache --cache-strategy content
+      #     sha256sum node_modules/.cache/prettier/.prettier-cache
       - name: Run the JavaScript linter
         run: make lint-js
       - name: Run the links linter
@@ -508,7 +508,11 @@ jobs:
       - name: Check for duplicate Node dependencies
         run: |
           yarn dedupe --check
-          sha256sum node_modules/.cache/prettier/.prettier-cache
+      - name: Upload prettier cache
+        uses: actions/upload-artifact@v3
+        with:
+          name: prettier-cache
+          path: node_modules/.cache/prettier/.prettier-cache
 
   report-image-sizes:
     runs-on: ubuntu-latest
