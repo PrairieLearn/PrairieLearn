@@ -7,3 +7,5 @@ PrairieLearn is an online problem-driven learning system for creating homeworks 
 Documentation: [https://prairielearn.readthedocs.io/](https://prairielearn.readthedocs.io/)
 
 Paid hosting and support: [https://www.prairielearn.com/](https://www.prairielearn.com/)
+
+[![Star History Chart](https://api.star-history.com/svg?repos=PrairieLearn/PrairieLearn&type=Date)](https://www.star-history.com/#PrairieLearn/PrairieLearn&Date)
