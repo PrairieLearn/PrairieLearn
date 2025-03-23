@@ -267,15 +267,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         distractor_feedback = pl.get_string_attrib(
             html_tags, "distractor-feedback", None
         )
-
-        distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
         ordering_feedback = pl.get_string_attrib(
             html_tags, "ordering-feedback", None
         )
-        
+
+        distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
+
         if distractor_for is not None and is_correct:
             raise ValueError(
                 "The distractor-for attribute may only be used on blocks with correct=false."
+            )
+        
+        if ordering_feedback is not None and not is_correct:
+            raise ValueError(
+                "The ordering-feedback attribute may only be used on blocks with correct=true."
             )
 
         tag, depends = get_graph_info(html_tags)
