@@ -97,3 +97,9 @@ body:has(div.app-container) {
   border-bottom: 1px solid var(--bs-body-color);
   margin-bottom: 0.5rem;
 }
+
+/* When an assessment navigation dropdown item is pressed, explicitly
+   set its AID text to bs-light to ensure it is still visible. */
+#assessmentNavigationDropdownContent .dropdown-item:active #aid { 
+  color: var(--bs-light) !important;
+}

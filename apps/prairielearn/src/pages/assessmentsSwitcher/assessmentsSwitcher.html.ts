@@ -89,7 +89,7 @@ export function AssessmentSwitcher({
                   `
                 : ''}
             </p>
-            <p class="m-0 ${isActive ? 'text-light' : 'text-muted'} small">
+            <p id="aid" class="m-0 ${isActive ? 'text-light' : 'text-muted'} small">
               ${assessmentDropdownItemData.tid}
             </p>
           </div>
