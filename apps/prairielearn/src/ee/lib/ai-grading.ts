@@ -241,6 +241,36 @@ function parseAiRubricItems({
   return { appliedRubricItems, selectedRubricDescriptions };
 }
 
+function pearsonCorrelation(x: number[], y: number[]): number | null {
+  if (x.length !== y.length || x.length === 0) {
+    throw new Error('Both arrays must have the same nonzero length.');
+  }
+
+  const n = x.length;
+  const sumX = x.reduce((acc, val) => acc + val, 0);
+  const sumY = y.reduce((acc, val) => acc + val, 0);
+  const sumXY = x.reduce((acc, _, i) => acc + x[i] * y[i], 0);
+  const sumX2 = x.reduce((acc, val) => acc + val * val, 0);
+  const sumY2 = y.reduce((acc, val) => acc + val * val, 0);
+
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt((n * sumX2 - sumX ** 2) * (n * sumY2 - sumY ** 2));
+
+  return denominator === 0 ? null : numerator / denominator;
+}
+
+function rootMeanSquaredError(actual: number[], predicted: number[]): number {
+  if (actual.length !== predicted.length || actual.length === 0) {
+    throw new Error('Both arrays must have the same nonzero length.');
+  }
+
+  const n = actual.length;
+  const squaredErrors = actual.map((a, i) => (a - predicted[i]) ** 2);
+  const meanSquaredError = squaredErrors.reduce((acc, val) => acc + val, 0) / n;
+
+  return Math.sqrt(meanSquaredError);
+}
+
 export async function aiGradeTest({
   course,
   course_instance_id,
@@ -334,15 +364,14 @@ export async function aiGradeTest({
     let error_count = 0;
     const testRubricResults: {
       instance_question_id: string;
-      type: 'Reference' | 'AI';
-      items: Set<string>;
+      reference_items: Set<string>;
+      ai_items: Set<string>;
     }[] = [];
     const testScoreResults: {
       instance_question_id: string;
-      type: 'Reference' | 'AI';
-      score: number;
+      reference_score: number;
+      ai_score: number;
     }[] = [];
-    const testedInstanceQuestions: string[] = [];
 
     // Grade each instance question
     for (const instance_question of instance_questions) {
@@ -370,7 +399,6 @@ export async function aiGradeTest({
         );
         continue;
       }
-      testedInstanceQuestions.push(instance_question.id);
 
       const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
       const locals = { ...urls, manualGradingInterface: true };
@@ -438,11 +466,6 @@ export async function aiGradeTest({
         rubric_grading_items.forEach((item) => {
           referenceRubricDescriptions.add(item.description);
         });
-        testRubricResults.push({
-          instance_question_id: instance_question.id,
-          type: 'Reference',
-          items: referenceRubricDescriptions,
-        });
 
         // Dynamically generate the rubric schema based on the rubric items.
         let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
@@ -477,8 +500,8 @@ export async function aiGradeTest({
             });
             testRubricResults.push({
               instance_question_id: instance_question.id,
-              type: 'AI',
-              items: selectedRubricDescriptions,
+              reference_items: referenceRubricDescriptions,
+              ai_items: selectedRubricDescriptions,
             });
 
             job.info('Reference rubric items:');
@@ -501,11 +524,6 @@ export async function aiGradeTest({
         }
       } else {
         const score_perc = instance_question.score_perc ?? 0;
-        testScoreResults.push({
-          instance_question_id: instance_question.id,
-          type: 'Reference',
-          score: score_perc,
-        });
         const completion = await openai.beta.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
@@ -522,8 +540,8 @@ export async function aiGradeTest({
           if (response.parsed) {
             testScoreResults.push({
               instance_question_id: instance_question.id,
-              type: 'AI',
-              score: response.parsed.score,
+              reference_score: score_perc,
+              ai_score: response.parsed.score,
             });
 
             job.info(`Reference score: ${score_perc}`);
@@ -544,6 +562,39 @@ export async function aiGradeTest({
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
       job.fail('Errors occurred while AI grading, see output for details');
+    } else {
+      job.info('\n----------------Test results----------------');
+      if (rubric_id) {
+        job.info(`Test size: ${testRubricResults.length}`);
+        const rubricItemResults: Record<string, number> = {};
+        rubric_items.forEach((item) => {
+          rubricItemResults[item.description] = 0;
+          testRubricResults.forEach((test) => {
+            if (
+              (test.ai_items.has(item.description) && test.reference_items.has(item.description)) ||
+              (!test.ai_items.has(item.description) && !test.reference_items.has(item.description))
+            ) {
+              rubricItemResults[item.description]++;
+            }
+          });
+          const accuracy =
+            Math.round((10000 * rubricItemResults[item.description]) / testRubricResults.length) /
+            100;
+          job.info(`Rubric item: ${item.description}, accuracy: ${accuracy}%`);
+        });
+      } else {
+        job.info(`Test size: ${testScoreResults.length}`);
+        const rmse = rootMeanSquaredError(
+          testScoreResults.map((item) => item.reference_score),
+          testScoreResults.map((item) => item.ai_score),
+        );
+        job.info(`RMSE: ${Math.round(rmse * 100) / 100}`);
+        const r = pearsonCorrelation(
+          testScoreResults.map((item) => item.reference_score),
+          testScoreResults.map((item) => item.ai_score),
+        );
+        job.info(`Pearson's r: ${r ? Math.round(r * 10000) / 10000 : 'N/A'}`);
+      }
     }
   });
   return serverJob.jobSequenceId;
