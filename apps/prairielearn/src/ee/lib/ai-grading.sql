@@ -123,3 +123,13 @@ FROM
   JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
 WHERE
   rgi.rubric_grading_id = $manual_rubric_grading_id;
+
+-- BLOCK select_rubric_id_from_grading
+SELECT
+  rubric_id
+FROM
+  rubric_gradings
+WHERE
+  id = $manual_rubric_grading_id
+LIMIT
+  1;
