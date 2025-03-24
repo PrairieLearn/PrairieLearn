@@ -75,19 +75,24 @@ export function AssessmentSwitcher({
               ${assessmentDropdownItemData.label}
             </span>
           </div>
-          <p class="m-0 text-wrap">
-            ${assessmentDropdownItemData.title}
-            ${assessmentDropdownItemData.group_work
-              ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-              : ''}
-          </p>
-          ${assessmentDropdownItemData.open_issue_count > 0
-            ? html`
-                <div class="badge rounded-pill text-bg-danger">
-                  ${assessmentDropdownItemData.open_issue_count}
-                </div>
-              `
-            : ''}
+          <div>
+            <p class="m-0 text-wrap">
+              <span>${assessmentDropdownItemData.title}</span>
+              ${assessmentDropdownItemData.group_work
+                ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                : ''}
+              ${assessmentDropdownItemData.open_issue_count > 0
+                ? html`
+                    <span class="badge rounded-pill text-bg-danger">
+                      ${assessmentDropdownItemData.open_issue_count}
+                    </span>
+                  `
+                : ''}
+            </p>
+            <p class="m-0 ${isActive ? 'text-light' : 'text-muted'} small">
+              ${assessmentDropdownItemData.tid}
+            </p>
+          </div>
         </a>
       `;
     })}
