@@ -8,8 +8,6 @@ You can use
 
 ```python
 from prairielearn import ...
-#
-
 ```
 
 to use any of these helpers.
