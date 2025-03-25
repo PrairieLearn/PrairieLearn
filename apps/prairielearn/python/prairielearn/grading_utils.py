@@ -18,23 +18,24 @@ from prairielearn.question_utils import QuestionData
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_dd(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_sf(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_ra(*args, **kwargs)
 
 
 def is_correct_ndarray2d_dd(
     a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a certain number of decimal digits after the decimal place."""
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -50,6 +51,7 @@ def is_correct_ndarray2d_dd(
 def is_correct_ndarray2d_sf(
     a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a certain number of significant figures."""
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -68,6 +70,7 @@ def is_correct_ndarray2d_ra(
     rtol: float = 1e-5,
     atol: float = 1e-8,
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a relative and absolute tolerance."""
     # Check if each element is correct
     return np.allclose(a_sub, a_tru, rtol, atol)
 
