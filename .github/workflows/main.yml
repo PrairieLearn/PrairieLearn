@@ -293,7 +293,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-workspace-images
-      - build-grader-images-results
+      - build-grader-images
       - build-core-images
     if: ${{ always() }}
 
