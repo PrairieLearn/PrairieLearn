@@ -37,6 +37,7 @@ RUN yarn dlx node-gyp install && yarn install --immutable --inline-builds && yar
 COPY . .
 
 # set up PrairieLearn and run migrations to initialize the DB
+# hadolint ignore=SC3009
 RUN chmod +x /PrairieLearn/scripts/init.sh \
     && mkdir /course{,{2..9}} \
     && mkdir -p /workspace_{main,host}_zips \
