@@ -2,5 +2,4 @@
 ignored:
   - DL3007 # latest tag is not recommended
   - DL3008 # pin versions in apt get install
-  - DL3025 # TODO: https://github.com/PrairieLearn/PrairieLearn/issues/11232
   - DL4006 # TODO: SHELL option -o pipefail before RUN with a pipe in it
