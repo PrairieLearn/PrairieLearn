@@ -123,7 +123,6 @@ convention = "google"
     "D103"
 ]
 "apps/prairielearn/python/**/*.py" = [
-    "D103", # TODO: undocumented-public-function
     "N803"
 ]
 # Do not require self in method params

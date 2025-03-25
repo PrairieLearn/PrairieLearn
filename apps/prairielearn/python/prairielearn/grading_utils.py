@@ -20,22 +20,35 @@ from prairielearn.misc_utils import QuestionData
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
 def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+    """Check if a submitted 2D numpy array is correct within a certain number of decimal digits after the decimal place.
+
+    This function is deprecated. Use is_correct_ndarray2d_dd instead.
+    """
     return is_correct_ndarray2d_dd(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
 def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+    """Check if a submitted 2D numpy array is correct within a certain number of significant figures.
+
+    This function is deprecated. Use is_correct_ndarray2d_sf instead.
+    """
     return is_correct_ndarray2d_sf(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
 def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+    """Check if a submitted 2D numpy array is correct within a relative and absolute tolerance.
+
+    This function is deprecated. Use is_correct_ndarray2d_ra instead.
+    """
     return is_correct_ndarray2d_ra(*args, **kwargs)
 
 
 def is_correct_ndarray2d_dd(
     a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a certain number of decimal digits after the decimal place."""
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -51,6 +64,7 @@ def is_correct_ndarray2d_dd(
 def is_correct_ndarray2d_sf(
     a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a certain number of significant figures."""
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -69,6 +83,7 @@ def is_correct_ndarray2d_ra(
     rtol: float = 1e-5,
     atol: float = 1e-8,
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a relative and absolute tolerance."""
     # Check if each element is correct
     return np.allclose(a_sub, a_tru, rtol, atol)
 
@@ -234,6 +249,10 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
 
 
 def is_int_json_serializable(n: int) -> bool:
+    """Check if an integer is less than Number.MAX_SAFE_INTEGER and greater than Number.MIN_SAFE_INTEGER.
+
+    See <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER>.
+    """
     return -((2**53) - 1) <= n <= 2**53 - 1
 
 
