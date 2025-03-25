@@ -9,7 +9,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { type User } from '../../lib/db-types.js';
-import { httpPrefixForCourseRepo } from '../../lib/github.js';
+import { gitHubUrlForCourse } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { parseUidsString } from '../../lib/user.js';
 import {
@@ -68,10 +68,7 @@ router.get(
 
     let githubAccessLink: string | null = null;
     if (!res.locals.course.example_course) {
-      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
-      if (githubPrefix) {
-        githubAccessLink = `${githubPrefix}/settings/access`;
-      }
+      githubAccessLink = gitHubUrlForCourse(res.locals.course, 'settings/access');
     }
 
     res.send(

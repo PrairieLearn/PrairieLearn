@@ -23,7 +23,7 @@ import {
   MultiEditor,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
-import { httpPrefixForCourseRepo } from '../../lib/github.js';
+import { gitHubUrlForCourseFile } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -292,16 +292,10 @@ router.get(
       config.secretKey,
     );
 
-    let questionGHLink: string | null = null;
-    if (res.locals.course.example_course) {
-      // The example course is not found at the root of its repository, so its path is hardcoded
-      questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
-    } else if (res.locals.course.repository) {
-      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
-      if (githubPrefix) {
-        questionGHLink = `${githubPrefix}/tree/${res.locals.course.branch}/questions/${res.locals.question.qid}`;
-      }
-    }
+    const questionGHLink = gitHubUrlForCourseFile(
+      res.locals.course,
+      `questions/${res.locals.question.qid}`,
+    );
 
     const qids = await sqldb.queryRows(sql.qids, { course_id: res.locals.course.id }, z.string());
 

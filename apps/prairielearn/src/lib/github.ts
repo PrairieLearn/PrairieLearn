@@ -13,7 +13,7 @@ import { syncDiskToSql } from '../sync/syncFromDisk.js';
 
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
-import { type User } from './db-types.js';
+import { type Course, type User } from './db-types.js';
 import { sendCourseRequestMessage } from './opsbot.js';
 import { TEMPLATE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -331,12 +331,37 @@ export function reponameFromShortname(short_name: string) {
  * @param repository The repository associated to the course
  * @returns The HTTP prefix to access course information on GitHub
  */
-export function httpPrefixForCourseRepo(repository: string | null): string | null {
-  if (repository) {
-    const githubRepoMatch = repository.match(/^git@github.com:\/?(.+?)(\.git)?\/?$/);
-    if (githubRepoMatch) {
-      return `https://github.com/${githubRepoMatch[1]}`;
-    }
-  }
-  return null;
+export function httpPrefixForCourseRepo(
+  course: Pick<Course, 'repository' | 'example_course'>,
+): string | null {
+  if (course.example_course) return 'https://github.com/PrairieLearn/PrairieLearn';
+  if (!course.repository) return null;
+
+  const githubRepoMatch = course.repository.match(/^git@github.com:\/?(.+?)(\.git)?\/?$/);
+  if (!githubRepoMatch) return null;
+
+  return `https://github.com/${githubRepoMatch[1]}`;
+}
+
+export function gitHubUrlForCourse(
+  course: Pick<Course, 'repository' | 'example_course'>,
+  path: string,
+): string | null {
+  const prefix = httpPrefixForCourseRepo(course);
+  if (!prefix) return null;
+
+  return `${prefix}/${path}`;
+}
+
+export function gitHubUrlForCourseFile(
+  course: Pick<Course, 'repository' | 'example_course' | 'branch'>,
+  filePath: string,
+): string | null {
+  const prefix = httpPrefixForCourseRepo(course);
+  if (!prefix) return null;
+
+  // The example course is not found at the root of its repository, so its path is hardcoded.
+  if (course.example_course) return `${prefix}/tree/master/exampleCourse/${filePath}`;
+
+  return `${prefix}/tree/${course.branch}/${filePath}`;
 }

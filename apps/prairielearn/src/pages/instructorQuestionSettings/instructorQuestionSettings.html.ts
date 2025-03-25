@@ -117,13 +117,24 @@ export function InstructorQuestionSettings({
         urlPrefix: resLocals.urlPrefix,
       })}
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Question Settings</h1>
+          <div class="ms-auto">
+            <a
+              class="btn btn-sm btn-light"
+              href="${questionGHLink}"
+              data-bs-toggle="tooltip"
+              data-bs-title="View on GitHub"
+            >
+              <i class="fa-brands fa-github"></i>
+            </a>
+          </div>
         </div>
         <div class="card-body">
           <form name="edit-question-settings-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
+            <h2 class="h4">General</h2>
             <div class="mb-3">
               <label class="form-label" for="qid">QID</label>
               ${questionGHLink
@@ -146,7 +157,6 @@ export function InstructorQuestionSettings({
               </small>
             </div>
             <div class="mb-3">
-              <h2 class="h4">General</h2>
               <label class="form-label" for="title">Title</label>
               <input
                 type="text"
