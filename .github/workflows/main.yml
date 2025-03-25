@@ -164,7 +164,7 @@ jobs:
       directory: graders
       image-prefix: prairielearn/grader
       base-images: "[]"
-      images: "['d', 'java', 'python', 'r']"
+      images: "['c', 'java', 'python', 'r']"
       exclude: "[]"
     secrets: inherit
   build-grader-images-results:
