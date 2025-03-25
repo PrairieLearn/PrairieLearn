@@ -19,29 +19,17 @@ from prairielearn.misc_utils import QuestionData
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
-    """Check if a submitted 2D numpy array is correct within a certain number of decimal digits after the decimal place.
-
-    This function is deprecated. Use is_correct_ndarray2d_dd instead.
-    """
+def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_dd(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
-    """Check if a submitted 2D numpy array is correct within a certain number of significant figures.
-
-    This function is deprecated. Use is_correct_ndarray2d_sf instead.
-    """
+def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_sf(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
-    """Check if a submitted 2D numpy array is correct within a relative and absolute tolerance.
-
-    This function is deprecated. Use is_correct_ndarray2d_ra instead.
-    """
+def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_ra(*args, **kwargs)
 
 
