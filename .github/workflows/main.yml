@@ -135,7 +135,6 @@ jobs:
   build-grader-images-results:
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    name: Final Results of Grader Image Builds
     needs: [build-grader-images]
     steps:
       - run: |
