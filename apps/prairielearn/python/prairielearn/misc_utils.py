@@ -76,6 +76,7 @@ def get_unit_registry() -> UnitRegistry:
 
 
 def inner_html(element: lxml.html.HtmlElement) -> str:
+    """Get the inner HTML of an lxml element."""
     inner = element.text
     if inner is None:
         inner = ""

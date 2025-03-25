@@ -81,7 +81,6 @@ ignore = [
   "D100", # undocumented-public-module
   "D101", # undocumented-public-class
   "D102", # undocumented-public-method
-  "D103", # undocumented-public-function
   "D104", # undocumented-public-package
   "D107", # undocumented-public-init
 ]

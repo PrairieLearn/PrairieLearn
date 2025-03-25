@@ -553,6 +553,7 @@ def string_from_2darray(
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
+    """Return the 2D array 'A' as a string in the specified language."""
     result = string_from_numpy(A, language, presentation_type, digits)
     return result
 
@@ -879,6 +880,7 @@ def latex_from_2darray(
 def string_partition_first_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
+    """Split a string at the first occurrence of left and right delimiters."""
     # Split at first left delimiter
     (s_before_left, _, s) = s.partition(left)
     # Split at first right delimiter
@@ -890,6 +892,7 @@ def string_partition_first_interval(
 def string_partition_outer_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
+    """Split a string at the first left delimiter and last right delimiter."""
     # Split at first left delimiter
     (s_before_left, _, s) = s.partition(left)
     # Split at last right delimiter

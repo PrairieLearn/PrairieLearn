@@ -49,6 +49,7 @@ class SympyJson(TypedDict):
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
+    """Check if the input is a valid sympy json dict."""
     return (
         isinstance(json, dict)
         and json.get("_type") == "sympy"
@@ -333,6 +334,10 @@ class CheckAST(ast.NodeVisitor):
 
 
 def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
+    """Check the AST of the expression for security, whitelisting only certain nodes.
+
+    This prevents the user from executing arbitrary code through `eval_expr`.
+    """
     # Disallow escape character
     ind = expr.find("\\")
     if ind != -1:
@@ -380,6 +385,7 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
 def sympy_check(
     expr: sympy.Expr, locals_for_eval: LocalsForEval, *, allow_complex: bool
 ) -> None:
+    """Check the sympy expression for complex numbers, invalid symbols, and floats."""
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
@@ -403,12 +409,14 @@ def sympy_check(
 def evaluate(
     expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> sympy.Expr:
+    """Evaluate a sympy expression string with a given set of locals, and return only the result."""
     return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
 
 
 def evaluate_with_source(
     expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> tuple[sympy.Expr, str]:
+    """Evaluate a sympy expression string with a given set of locals."""
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
     expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
@@ -517,6 +525,12 @@ def convert_string_to_sympy_with_source(
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
 ) -> tuple[sympy.Expr, str]:
+    """
+    Convert a string to a sympy expression, with optional restrictions on
+    the variables and functions that can be used. If the string is invalid,
+    raise an exception with a message that can be displayed to the user.
+    Returns a tuple of the sympy expression and the source code that was used to generate it.
+    """
     const = _Constants()
 
     # Create a whitelist of valid functions and variables (and a special flag
@@ -601,6 +615,7 @@ def point_to_error(expr: str, ind: int, w: int = 5) -> str:
 def sympy_to_json(
     a: sympy.Expr, *, allow_complex: bool = True, allow_trig_functions: bool = True
 ) -> SympyJson:
+    """Convert a sympy expression to a json-seralizable dictionary."""
     const = _Constants()
 
     # Get list of variables in the sympy expression
@@ -650,6 +665,7 @@ def json_to_sympy(
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
 ) -> sympy.Expr:
+    """Convert a json-seralizable dictionary created by [sympy_to_json][prairielearn.sympy_utils.sympy_to_json] to a sympy expression."""
     if "_type" not in sympy_expr_dict:
         raise ValueError("json must have key _type for conversion to sympy")
     if sympy_expr_dict["_type"] != "sympy":
@@ -776,6 +792,7 @@ def validate_string_as_sympy(
 
 
 def get_items_list(items_string: str | None) -> list[str]:
+    """Return a list of items from a comma-separated string."""
     if items_string is None:
         return []
 

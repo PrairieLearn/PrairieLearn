@@ -58,6 +58,7 @@ def get_enum_attrib(
 
 
 def compat_array(arr: list[str]) -> list[str]:
+    """Convert elements to maintain backward compatibility with both hyphen and underscore formats."""
     new_arr = []
     for i in arr:
         new_arr.extend((i, i.replace("-", "_")))
@@ -69,6 +70,7 @@ def check_attribs(
     required_attribs: list[str],
     optional_attribs: list[str],
 ) -> None:
+    """Verify that the element has all required attributes and no unknown attributes."""
     for name in required_attribs:
         if not has_attrib(element, name):
             raise ValueError(f'Required attribute "{name}" missing')
