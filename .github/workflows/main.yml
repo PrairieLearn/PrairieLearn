@@ -403,7 +403,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # We need accurate timestamps to avoid prettier cache invalidation
+          # We need accurate timestamps to avoid prettier cache invalidation.
+          # We'll use `git restore-mtime`, which requires the full history.
           fetch-depth: 0
 
       - name: Install OS packages
