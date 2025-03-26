@@ -19,8 +19,3 @@ github_actions:
 autograder-python:
   - changed-files:
       - any-glob-to-any-file: ['graders/python/**']
-
-# Mark any PRs not targeting master with 'do not merge'.
-# This can be used to easily identify PRs that are dependent on another PR.
-'do not merge':
-  - base-branch: '!master'
