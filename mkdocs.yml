@@ -279,3 +279,4 @@ validation:
   anchors: warn
 hooks:
   - docs/scripts/d2-svg-file.py
+  - docs/scripts/mdx_details_fix.py
