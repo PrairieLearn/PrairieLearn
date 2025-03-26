@@ -504,14 +504,7 @@ jobs:
       # dependabot PRs, but we still want all other tests above to run
       # in those cases.
       - name: Check for duplicate Node dependencies
-        run: |
-          yarn dedupe --check
-      - name: Upload prettier cache
-        uses: actions/upload-artifact@v4
-        with:
-          name: prettier-cache
-          include-hidden-files: true
-          path: ${{ github.workspace }}/node_modules/.cache/prettier/.prettier-cache
+        run: yarn dedupe --check
 
   report-image-sizes:
     runs-on: ubuntu-latest
