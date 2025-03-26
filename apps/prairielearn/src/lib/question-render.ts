@@ -143,9 +143,9 @@ async function render(
     question_course,
     locals,
   );
-  console.log('VARIANT');
+  console.log('VARIANT okur');
   console.log(variant);
-
+  console.log(locals)
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
   // user information may not be populated when rendering a panel.
@@ -297,16 +297,21 @@ function buildLocals({
   console.log('assessment:', assessment);
   console.log('assessment_instance:', assessment_instance);
   console.log('assessment_question:', assessment_question);
+  // questionParams are assessment_question.question_params
   console.log('group_config:', group_config);
   console.log('authz_result:', authz_result);
   if (!assessment || !assessment_instance || !assessment_question || !instance_question) {
     // instructor question pages
+    console.log("INSTRUCTOR QUESTION")
     locals.showGradeButton = true;
     locals.showSaveButton = true;
     locals.allowAnswerEditing = true;
     locals.showNewVariantButton = true;
   } else {
     // student question pages
+    console.log("Student QUESTION")
+    variant.params = { ...variant.params, ...assessment_question.question_params };
+    console.log('New variant.params:', variant.params);
     if (assessment.type === 'Homework') {
       locals.showGradeButton = true;
       locals.showSaveButton = true;
@@ -395,7 +400,9 @@ function buildLocals({
   // console.log('QUESTION IN BUILING LOCCALS')
   // console.log(question?.question_params);
   // locals.questionParams = assessment_question ? assessment_question.question_params : question?.question_params;
-
+  if (assessment_question) {
+    question.question_params = assessment_question.question_params;
+  }
   return locals;
 }
 
@@ -463,6 +470,8 @@ export async function getAndRenderVariant(
       const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
       const options = { variant_seed };
       // need to get questionParams here!! Woohooooo
+      // make an assessment with test question, access as a student, make new variant, see if assessment question exists in that context
+      // if not make a query to get it!
       console.log('LLS from varient: ', locals);
       console.log('QUESTION PARAMS PASSED');
       // console.log(question_params)
@@ -477,7 +486,7 @@ export async function getAndRenderVariant(
         options,
         require_open,
         locals.client_fingerprint_id ?? null,
-        { lower_bound: 10, upper_bound: 12 },
+        locals.assessment_question?.question_params,
       );
     }
   });
@@ -520,8 +529,8 @@ export async function getAndRenderVariant(
     newLocals.showTrueAnswer = true;
   }
   Object.assign(locals, newLocals);
-  // console.log('NEW LOCALS:   --> beeeeeeeeeep')
-  // console.log(newLocals);
+  console.log('NEW LOCALS:   --> beeeeeeeeeep')
+  console.log(newLocals);
   // We only fully render a small number of submissions on initial page
   // load; the rest only require basic information like timestamps. As
   // such, we'll load submissions in two passes: we'll load basic

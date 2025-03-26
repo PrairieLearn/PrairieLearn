@@ -70,8 +70,9 @@ router.get(
     console.log("HERE! IN INStRUCTOR")
     console.log('Assessment Details:');
     console.log(res.locals);
-    // console.log(req);
-    
+
+    // res.locals.question doesnt contain question_params
+
     await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);

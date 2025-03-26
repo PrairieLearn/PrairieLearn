@@ -1,0 +1,30 @@
+{
+  "uuid": "7bd8dc96-16dd-41c4-8e3a-1b2a11259cee",
+  "type": "Homework",
+  "title": "Testing Question Params",
+  "set": "Homework",
+  "number": "12",
+  "allowAccess": [
+    { "mode": "Public", "credit": 100, "timeLimitMin": 50 },
+    {
+      "mode": "Exam",
+      "credit": 100,
+      "startDate": "1900-07-07T23:59:59",
+      "endDate": "2300-07-10T23:59:59",
+      "timeLimitMin": 50
+    }
+  ],
+  "zones": [
+    {
+      "title": "Parameters",
+
+      "questions": [
+        {
+          "id": "addNumbersParameterized/2",
+          "points": 1,
+          "questionParams": { "lower_bound": 5, "upper_bound": 15 }
+        }
+      ]
+    }
+  ]
+}
