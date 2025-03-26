@@ -1,0 +1,28 @@
+version: v1
+
+labels:
+  - label: 'bug'
+    sync: true
+    matcher:
+      title:
+        - '.*fix.*/i'
+        - '.*bug.*/i'
+        - '.*correctly.*/i'
+        - '.*use correct.*/i'
+  - label: 'chore'
+    sync: true
+    matcher:
+      title:
+        - '.*upgrade.*/i'
+  - label: 'enhancement'
+    sync: true
+    matcher:
+      title:
+        - '.*improve.*/i'
+        - '.*enhance.*/i'
+        - '.*refine.*/i'
+  - label: 'feature'
+    sync: true
+    matcher:
+      title:
+        - '.*add support.*/i'
