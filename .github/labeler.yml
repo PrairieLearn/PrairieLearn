@@ -1,8 +1,6 @@
 documentation:
-  - all:
-      - changed-files:
-          - any-glob-to-any-file: ['docs/*', 'mkdocs.yml']
-          - all-globs-to-all-files: '!docs/requirements.txt'
+  - changed-files:
+      - any-glob-to-any-file: ['docs/*', 'mkdocs.yml']
 docker:
   - changed-files:
       - any-glob-to-any-file: ['**/Dockerfile', 'docker-compose.yml']
@@ -14,7 +12,7 @@ SQL:
       - any-glob-to-any-file: ['**/*.sql']
 python:
   - changed-files:
-      - any-glob-to-any-file: ['apps/prairielearn/elements/*']
+      - any-glob-to-any-file: ['apps/prairielearn/python/*']
 javascript:
   - changed-files:
       - any-glob-to-any-file: ['**/*.js', '**/*.ts']
