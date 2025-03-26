@@ -464,7 +464,7 @@ jobs:
       - name: Run the JavaScript linter
         run: |
           git restore-mtime
-          make lint-js
+          make lint-js-cached
       - name: Run the links linter
         run: make lint-links
       - name: Run the d2 diagram linter
