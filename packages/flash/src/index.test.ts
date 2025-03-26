@@ -7,7 +7,9 @@ import { flashMiddleware, flash } from './index.js';
 describe('flash', () => {
   it('throws an error if no session present', () => {
     assert.throw(() => {
-      flashMiddleware()({} as any, {} as any, () => {});
+      flashMiddleware()({} as any, {} as any, () => {
+        flash('notice', 'Hello world');
+      });
     });
   });
 
