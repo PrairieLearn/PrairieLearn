@@ -373,10 +373,10 @@ export async function aiGradeTest({
       ai_score: number;
     }[] = [];
 
-    // Grade each instance question
+    // Test each instance question
     for (const instance_question of instance_questions) {
       if (instance_question.requires_manual_grading || instance_question.status === 'unanswered') {
-        continue;
+        continue; // TODO: Add filter on human-graded submissions only after merging PR#11383
       }
 
       job.info(`\nInstance question ${instance_question.id}`);
@@ -504,6 +504,9 @@ export async function aiGradeTest({
               ai_items: selectedRubricDescriptions,
             });
 
+            // TODO: Insert grading job, possibly calculate score based on rubric
+            // TODO: Insert AI grading job after merging PR#11431
+
             job.info('Reference rubric items:');
             for (const item of referenceRubricDescriptions) {
               job.info(`- ${item}`);
@@ -543,6 +546,9 @@ export async function aiGradeTest({
               reference_score: score_perc,
               ai_score: response.parsed.score,
             });
+
+            // TODO: Insert grading job
+            // TODO: Insert AI grading job after merging PR#11431
 
             job.info(`Reference score: ${score_perc}`);
             job.info(`AI score: ${response.parsed.score}`);
