@@ -226,13 +226,13 @@ nav:
       - 'API': 'api.md'
       - 'LMS Integration': 'lmsIntegrationInstructor.md'
       - 'Schema Reference':
-          - schemas/infoCourse.md
-          - schemas/infoQuestion.md
-          - schemas/infoAssessment.md
-          - schemas/infoCourseInstance.md
-          - schemas/infoElementCore.md
-          - schemas/infoElementCourse.md
-          - schemas/infoElementExtension.md
+          - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Course': schemas/infoCourse.md
+          - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Question': schemas/infoQuestion.md
+          - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Assessment': schemas/infoAssessment.md
+          - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Course Instance': schemas/infoCourseInstance.md
+          - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element': schemas/infoElementCore.md
+          - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element (Course)': schemas/infoElementCourse.md
+          - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element Extension': schemas/infoElementExtension.md
   - Developer Guide:
       - developer-guide/index.md
       - 'Developer guide': 'dev-guide/index.md'

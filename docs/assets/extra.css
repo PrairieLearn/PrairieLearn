@@ -121,17 +121,11 @@ foreignObject .md pre {
   margin-bottom: 0;
 }
 
-/* .doc-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-} */
-
 .doc-heading > .md-content__button {
   margin: 0;
 }
 
-/* Override details blocks inside list elements for schema reference pages */
+/* Override details blocks inside list elements for schema reference pages. We want a more condensed block in these scenarios. */
 [dir='ltr'] .md-typeset li > details {
   margin: 0em 0;
 }
@@ -142,4 +136,19 @@ foreignObject .md pre {
 
 [dir='ltr'] .md-typeset li > details > summary::before {
   display: none;
+}
+
+/* Remove flow-root from ul elements that contain details elements to decrease spacing */
+.md-typeset ul:not([hidden]):has(li > details > summary) {
+  display: block;
+}
+
+/* This custom CSS is modeled after the mkdocstrings CSS for the same purpose */
+code.doc-symbol-json {
+  color: var(--doc-symbol-function-fg-color);
+  background-color: var(--doc-symbol-function-bg-color);
+}
+
+code.doc-symbol-json::after {
+  content: 'json';
 }
