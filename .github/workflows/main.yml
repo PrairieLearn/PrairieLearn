@@ -403,7 +403,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # We need accurate timestamps to avoid prettier cache invalidation -- we will use git restore-mtime to do this (https://github.com/prettier/prettier/issues/17278)
+          # We need accurate timestamps to avoid prettier cache invalidation
           fetch-depth: 0
 
       - name: Install OS packages
@@ -462,6 +462,7 @@ jobs:
           key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
 
       - name: Run the JavaScript linter
+        # Use git-restore-mtime due to a bug in prettier's content cache (https://github.com/prettier/prettier/issues/17278)
         run: |
           git restore-mtime
           make lint-js-cached
