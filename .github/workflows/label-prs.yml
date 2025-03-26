@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/labeler@v5
         with:
-          sync-labels: true
+          sync-labels: false
   # labeler cannot label PRs by title: https://github.com/actions/labeler/issues/55
   title_labeler:
     name: 'Tag PRs by title'
