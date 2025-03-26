@@ -7,9 +7,6 @@ docker:
 element:
   - changed-files:
       - any-glob-to-any-file: ['apps/prairielearn/elements/**']
-SQL:
-  - changed-files:
-      - any-glob-to-any-file: ['**/*.sql']
 python:
   - changed-files:
       - any-glob-to-any-file: ['apps/prairielearn/python/**']
