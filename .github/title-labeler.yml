@@ -4,25 +4,16 @@ labels:
   - label: 'bug'
     sync: true
     matcher:
-      title:
-        - '.*fix.*/i'
-        - '.*bug.*/i'
-        - '.*correctly.*/i'
-        - '.*use correct.*/i'
+      title: '.*(fix|bug|correctly|use correct).*/i'
   - label: 'chore'
     sync: true
     matcher:
-      title:
-        - '.*upgrade.*/i'
+      title: '.*upgrade.*/i'
   - label: 'enhancement'
     sync: true
     matcher:
-      title:
-        - '.*improve.*/i'
-        - '.*enhance.*/i'
-        - '.*refine.*/i'
+      title: '.*(improve|enhance|refine).*/i'
   - label: 'feature'
     sync: true
     matcher:
-      title:
-        - '.*add support.*/i'
+      title: '.*add support.*/i'
