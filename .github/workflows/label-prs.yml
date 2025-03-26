@@ -12,3 +12,10 @@ jobs:
       - uses: actions/labeler@v5
         with:
           sync-labels: true
+  update_release_draft:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@v6
