@@ -20,7 +20,12 @@ async function getAvailableTimezonesFromDB(): Promise<Timezone[]> {
 
 export async function getAvailableTimezones(): Promise<Timezone[]> {
   if (memoizedAvailableTimezones == null) {
-    memoizedAvailableTimezones = await getAvailableTimezonesFromDB();
+    // Different portions of the code use the timezone in either PostgreSQL or
+    // Intl, so we return only those timezones that are supported by both.
+    const jsSupportedTimezones = Intl.supportedValuesOf('timeZone');
+    memoizedAvailableTimezones = (await getAvailableTimezonesFromDB()).filter(({ name }) =>
+      jsSupportedTimezones.includes(name),
+    );
   }
   return memoizedAvailableTimezones;
 }
