@@ -25,15 +25,11 @@ After setting up authentication we can elevate a user that's logged into the sys
         1 | dev@example.com | 000000000 | Dev User |                        |             |                |              1 |
   ```
 
-- Add the desired user to the administrators table by running
+- Add the desired user to the administrators table by running the following (substitute the `1` with your desired `user_id`):
 
   ```sql
   INSERT INTO
     administrators (user_id)
   VALUES
-    (
-      user_id
-      from
-        users table
-    );
+    (1);
   ```
