@@ -504,8 +504,7 @@ jobs:
       # dependabot PRs, but we still want all other tests above to run
       # in those cases.
       - name: Check for duplicate Node dependencies
-        run: |
-          yarn dedupe --check
+        run: yarn dedupe --check
       - name: Upload prettier cache
         uses: actions/upload-artifact@v4
         with:
