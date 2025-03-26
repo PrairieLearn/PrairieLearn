@@ -1,27 +1,27 @@
 documentation:
   - changed-files:
-      - any-glob-to-any-file: ['docs/*', 'mkdocs.yml']
+      - any-glob-to-any-file: ['docs/**', 'mkdocs.yml']
 docker:
   - changed-files:
       - any-glob-to-any-file: ['**/Dockerfile', 'docker-compose.yml']
 element:
   - changed-files:
-      - any-glob-to-any-file: ['apps/prairielearn/elements/*']
+      - any-glob-to-any-file: ['apps/prairielearn/elements/**']
 SQL:
   - changed-files:
       - any-glob-to-any-file: ['**/*.sql']
 python:
   - changed-files:
-      - any-glob-to-any-file: ['apps/prairielearn/python/*']
+      - any-glob-to-any-file: ['apps/prairielearn/python/**']
 javascript:
   - changed-files:
       - any-glob-to-any-file: ['**/*.js', '**/*.ts']
 github_actions:
   - changed-files:
-      - any-glob-to-any-file: ['.github/*']
+      - any-glob-to-any-file: ['.github/**']
 autograder-python:
   - changed-files:
-      - any-glob-to-any-file: ['graders/python/*']
+      - any-glob-to-any-file: ['graders/python/**']
 
 # Mark any PRs not targeting master with 'do not merge'.
 # This can be used to easily identify PRs that are dependent on another PR.
