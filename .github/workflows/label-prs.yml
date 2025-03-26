@@ -4,6 +4,7 @@ on:
 
 jobs:
   labeler:
+    name: 'Tag PRs by code changes'
     permissions:
       contents: read
       pull-requests: write
@@ -13,9 +14,12 @@ jobs:
         with:
           sync-labels: true
   update_release_draft:
+    name: 'Tag PRs by title'
     permissions:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@v6
+      - uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5 # v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
