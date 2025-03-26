@@ -21,11 +21,22 @@ async function getAvailableTimezonesFromDB(): Promise<Timezone[]> {
 export async function getAvailableTimezones(): Promise<Timezone[]> {
   if (memoizedAvailableTimezones == null) {
     // Different portions of the code use the timezone in either PostgreSQL or
-    // Intl, so we return only those timezones that are supported by both.
-    const jsSupportedTimezones = Intl.supportedValuesOf('timeZone');
-    memoizedAvailableTimezones = (await getAvailableTimezonesFromDB()).filter(({ name }) =>
-      jsSupportedTimezones.includes(name),
-    );
+    // Intl, so we return only those timezones that are supported by both. While
+    // Intl provides a list of supported timezones via Intl.supportedValuesOf(),
+    // the list is not exhaustive and may not include some timezones supported
+    // by JS as aliases. Instead, we attempt to create a new DateTimeFormat
+    // element and filter out timezones for which this process returns and
+    // error.
+    const pgSupportedTimezones = await getAvailableTimezonesFromDB();
+    memoizedAvailableTimezones = pgSupportedTimezones.filter(({ name }) => {
+      try {
+        new Intl.DateTimeFormat('en-US', { timeZone: name });
+        return true;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (e) {
+        return false;
+      }
+    });
   }
   return memoizedAvailableTimezones;
 }
