@@ -4,16 +4,17 @@ labels:
   - label: 'bug'
     sync: true
     matcher:
-      title: '.*(fix|bug|correctly|use correct).*/i'
+      # no case-insensitive flag (https://github.com/fuxingloh/multi-labeler/issues/341)
+      title: '.*(fix|Fix|bug|Bug|correctly|Correctly|use correct|Use correct).*'
   - label: 'chore'
     sync: true
     matcher:
-      title: '.*upgrade.*/i'
+      title: '.*(upgrade|Upgrade).*'
   - label: 'enhancement'
     sync: true
     matcher:
-      title: '.*(improve|enhance|refine).*/i'
+      title: '.*(improve|Improve|enhance|Enhance|refine|Refine).*'
   - label: 'feature'
     sync: true
     matcher:
-      title: '.*add support.*/i'
+      title: '.*(add support|Add support).*'
