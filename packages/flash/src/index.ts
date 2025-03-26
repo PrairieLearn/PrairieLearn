@@ -76,6 +76,7 @@ function makeFlashStorage(req: Request): FlashStorage {
 
   function getSession() {
     const req = reqRef.deref();
+    if (!req) throw new Error('Request has been garbage collected');
     const session = (req as any).session;
     if (!session) throw new Error('No session found on request');
     return session;
