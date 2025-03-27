@@ -6,6 +6,7 @@
     "dbaeumer.vscode-eslint",
     "ms-python.python",
     "ms-python.vscode-pylance",
-    "redhat.vscode-yaml"
+    "redhat.vscode-yaml",
+    "editorconfig.editorconfig"
   ]
 }
