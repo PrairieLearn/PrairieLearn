@@ -10,10 +10,10 @@ def generate(data):
     x = sympy.symbols("x")
 
     # Randomize the degree
-    degree = np.random.random_integers(1, 5)
+    degree = np.random.randint(1, 5)
 
     # Randomize the coefficients (make sure the leading coefficient is non-zero)
-    coeffs = np.random.random_integers(coeff_lower_bound, coeff_upper_bound, degree + 1)
+    coeffs = np.random.randint(coeff_lower_bound, coeff_upper_bound, degree + 1)
     if coeffs[0] == 0:
         coeffs[0] = 1
 
