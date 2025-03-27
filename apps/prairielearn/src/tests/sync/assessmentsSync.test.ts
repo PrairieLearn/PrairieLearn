@@ -2301,7 +2301,7 @@ describe('Assessment syncing', () => {
     console.log(syncedData.assessment.sync_errors);
     assert.match(
       syncedData.assessment?.sync_errors,
-      /The following questions are marked as draft and therefore cannot be used in assessments: __drafts__\/draft_1/,
+      /The following questions are marked as draft and therefore cannot be used in assessments: "__drafts__\/draft_1"/,
     );
   });
 
