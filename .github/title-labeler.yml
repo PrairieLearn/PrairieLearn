@@ -13,8 +13,4 @@ labels:
   - label: 'enhancement'
     sync: false
     matcher:
-      title: '.*(improve|Improve|enhance|Enhance|refine|Refine).*'
-  - label: 'feature'
-    sync: false
-    matcher:
-      title: '.*(add support|Add support).*'
+      title: '.*(improve|Improve|enhance|Enhance|refine|Refine|add support|Add support).*'
