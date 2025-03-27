@@ -1849,7 +1849,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment?.sync_errors,
-      /The following questions are used more than once: test/,
+      /The following questions are used more than once: "test"/,
     );
   });
 
