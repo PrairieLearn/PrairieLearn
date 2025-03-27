@@ -142,7 +142,7 @@ async function render(
   );
   console.log('VARIANT okur');
   console.log(variant);
-  console.log(locals)
+  console.log(locals);
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
   // user information may not be populated when rendering a panel.
@@ -256,10 +256,7 @@ function buildLocals({
   variant: Variant;
   question: Question;
   instance_question?: InstanceQuestionWithAllowGrade | null;
-  group_role_permissions?: {
-    can_view: boolean;
-    can_submit: boolean;
-  } | null;
+  group_role_permissions?: { can_view: boolean; can_submit: boolean } | null;
   assessment?: Assessment | null;
   assessment_instance?: AssessmentInstance | null;
   assessment_question?: AssessmentQuestion | null;
@@ -285,30 +282,15 @@ function buildLocals({
     // ID is coerced to a string so that it matches what we get back from the client
     variantToken: generateSignedToken({ variantId: variant.id.toString() }, config.secretKey),
   };
-  console.log('BUILDING LOCALS BELOW :) ');
-  console.log(assessment_question);
-  console.log('variant:', variant);
-  console.log('question:', question);
-  console.log('instance_question:', instance_question);
-  console.log('group_role_permissions:', group_role_permissions);
-  console.log('assessment:', assessment);
-  console.log('assessment_instance:', assessment_instance);
-  console.log('assessment_question:', assessment_question);
-  // questionParams are assessment_question.question_params
-  console.log('group_config:', group_config);
-  console.log('authz_result:', authz_result);
   if (!assessment || !assessment_instance || !assessment_question || !instance_question) {
     // instructor question pages
-    console.log("INSTRUCTOR QUESTION")
     locals.showGradeButton = true;
     locals.showSaveButton = true;
     locals.allowAnswerEditing = true;
     locals.showNewVariantButton = true;
   } else {
     // student question pages
-    console.log("Student QUESTION")
     variant.params = { ...variant.params, ...assessment_question.question_params };
-    console.log('New variant.params:', variant.params);
     if (assessment.type === 'Homework') {
       locals.showGradeButton = true;
       locals.showSaveButton = true;
@@ -394,9 +376,6 @@ function buildLocals({
     locals.disableGradeButton = true;
     locals.disableSaveButton = true;
   }
-  // console.log('QUESTION IN BUILING LOCCALS')
-  // console.log(question?.question_params);
-  // locals.questionParams = assessment_question ? assessment_question.question_params : question?.question_params;
   if (assessment_question) {
     question.question_params = assessment_question.question_params;
   }
@@ -432,22 +411,18 @@ export async function getAndRenderVariant(
     client_fingerprint_id?: string | null;
     manualGradingInterface?: boolean;
   },
-  options?: {
-    urlOverrides?: Partial<QuestionUrls>;
-  },
+  options?: { urlOverrides?: Partial<QuestionUrls> },
 ) {
   console.log('In get and render varient');
   // We write a fair amount of unstructured data back into locals,
   // so we'll cast it to `any` once so we don't have to do it every time.
   const resultLocals = locals as any;
-  console.log('resultLocals:', resultLocals);
   const question_course = await getQuestionCourse(locals.question, locals.course);
   resultLocals.question_is_shared = await sqldb.queryRow(
     sql.select_is_shared,
     { question_id: locals.question.id },
     z.boolean(),
   );
-
 
   const variant = await run(async () => {
     if (variant_id != null) {
@@ -466,12 +441,6 @@ export async function getAndRenderVariant(
       const instance_question_id = locals.instance_question?.id ?? null;
       const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
       const options = { variant_seed };
-      // need to get questionParams here!! Woohooooo
-      // make an assessment with test question, access as a student, make new variant, see if assessment question exists in that context
-      // if not make a query to get it!
-      console.log('LLS from varient: ', locals);
-      console.log('QUESTION PARAMS PASSED');
-      // console.log(question_params)
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
@@ -526,8 +495,6 @@ export async function getAndRenderVariant(
     newLocals.showTrueAnswer = true;
   }
   Object.assign(locals, newLocals);
-  console.log('NEW LOCALS:   --> beeeeeeeeeep')
-  console.log(newLocals);
   // We only fully render a small number of submissions on initial page
   // load; the rest only require basic information like timestamps. As
   // such, we'll load submissions in two passes: we'll load basic
@@ -618,11 +585,7 @@ export async function getAndRenderVariant(
   const loadExtraData = config.devMode || authz_data?.has_course_permission_view;
   resultLocals.issues = await sqldb.queryRows(
     sql.select_issues,
-    {
-      variant_id: variant.id,
-      load_course_data: loadExtraData,
-      load_system_data: loadExtraData,
-    },
+    { variant_id: variant.id, load_course_data: loadExtraData, load_system_data: loadExtraData },
     IssueRenderDataSchema,
   );
 
@@ -639,10 +602,7 @@ export async function getAndRenderVariant(
       effectiveQuestionType,
       course,
       courseInstance: course_instance,
-      variant: {
-        id: variant.id,
-        params: variant.params,
-      },
+      variant: { id: variant.id, params: variant.params },
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
       trueAnswer: resultLocals.showTrueAnswer ? variant.true_answer : null,
@@ -682,9 +642,7 @@ export async function renderPanelsForSubmission({
   authorizedEdit: boolean;
   renderScorePanels: boolean;
   groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
-  localsOverrides?: {
-    manualGradingInterface?: boolean;
-  };
+  localsOverrides?: { manualGradingInterface?: boolean };
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
@@ -725,10 +683,7 @@ export async function renderPanelsForSubmission({
           instance_question_id: variant.instance_question_id,
         });
 
-  const panels: SubmissionPanels = {
-    submissionPanel: null,
-    extraHeadersHtml: null,
-  };
+  const panels: SubmissionPanels = { submissionPanel: null, extraHeadersHtml: null };
 
   const locals = {
     urlPrefix,
@@ -766,10 +721,7 @@ export async function renderPanelsForSubmission({
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
       panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
-      const rubric_data = await manualGrading.selectRubricData({
-        assessment_question,
-        submission,
-      });
+      const rubric_data = await manualGrading.selectRubricData({ assessment_question, submission });
       await manualGrading.populateManualGradingData(submission);
 
       panels.submissionPanel = SubmissionPanel({
