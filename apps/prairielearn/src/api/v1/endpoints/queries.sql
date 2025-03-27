@@ -291,6 +291,15 @@ WITH
       ai.number AS assessment_instance_number,
       q.id AS question_id,
       q.qid AS question_name,
+      (
+        SELECT
+          COALESCE(JSONB_AGG(tg.name), '[]'::jsonb) AS tags
+        FROM
+          question_tags AS qt
+          JOIN tags AS tg ON (tg.id = qt.tag_id)
+        WHERE
+          q.id = qt.question_id
+      ) AS question_tags,
       iq.id AS instance_question_id,
       iq.number AS instance_question_number,
       aq.max_points AS assessment_question_max_points,
