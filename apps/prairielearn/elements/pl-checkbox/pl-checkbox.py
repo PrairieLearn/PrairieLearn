@@ -11,9 +11,7 @@ from typing_extensions import assert_never
 
 
 class PartialCreditType(Enum):
-    """
-    Stands for 'COV' (Coverage), 'EDC' (Every Decision Counts), and 'PC' (Percent Correct)
-    """
+    """Stands for 'COV' (Coverage), 'EDC' (Every Decision Counts), and 'PC' (Percent Correct)"""
 
     NONE = "none"
     COVERAGE = "coverage"
@@ -116,9 +114,7 @@ def validate_min_max_options(
     max_select: int,
     min_select_default: int,
 ) -> None:
-    """
-    Raise an exception if any of these are invalid. TODO do a better job comparmentalizing the logic here.
-    """
+    """Raise an exception if any of these are invalid. TODO do a better job comparmentalizing the logic here."""
     if not (0 <= min_correct <= max_correct <= len_correct):
         raise ValueError(
             f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
@@ -176,7 +172,7 @@ def categorize_options(
                 correct_answers.append(answer_tuple)
             else:
                 incorrect_answers.append(answer_tuple)
-        elif child.tag is lxml.etree.Comment:
+        elif isinstance(child, lxml.etree._Comment):
             continue
 
         else:
@@ -250,10 +246,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     number_answers = max(0, min(len_total, number_answers))
     min_correct = min(
-        len_correct,
-        min(number_answers, max(0, max(number_answers - len_incorrect, min_correct))),
+        len_correct, number_answers, max(0, number_answers - len_incorrect, min_correct)
     )
-    max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
+    max_correct = min(len_correct, number_answers, max(min_correct, max_correct))
 
     min_select_default = MIN_SELECT_BLANK if allow_blank else MIN_SELECT_DEFAULT
     min_select = pl.get_integer_attrib(element, "min-select", min_select_default)
@@ -554,7 +549,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 )
                 answers.append(answer_item)
 
-            html_params = {
+            html_params: dict[str, Any] = {
                 "submission": True,
                 "display_score_badge": (score is not None),
                 "answers": answers,
@@ -655,29 +650,31 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     number_answers = len(data["params"][name])
     partial_credit_mode = get_partial_credit_mode(element)
 
-    submittedSet = set(data["submitted_answers"].get(name, []))
-    correctSet = {answer["key"] for answer in data["correct_answers"].get(name, [])}
+    submitted_set = set(data["submitted_answers"].get(name, []))
+    correct_set = {answer["key"] for answer in data["correct_answers"].get(name, [])}
     feedback = {
         option["key"]: option.get("feedback", None) for option in data["params"][name]
     }
 
     score = 0
     if partial_credit_mode is PartialCreditType.NONE:
-        score = 1 if submittedSet == correctSet else 0
+        score = 1 if submitted_set == correct_set else 0
     elif partial_credit_mode is PartialCreditType.PERCENT_CORRECT:
-        if submittedSet == correctSet:
+        if submitted_set == correct_set:
             score = 1
         else:
-            n_correct_answers = len(correctSet) - len(correctSet - submittedSet)
-            points = n_correct_answers - len(submittedSet - correctSet)
-            score = max(0, points / len(correctSet))
+            n_correct_answers = len(correct_set) - len(correct_set - submitted_set)
+            points = n_correct_answers - len(submitted_set - correct_set)
+            score = max(0, points / len(correct_set))
     elif partial_credit_mode is PartialCreditType.EVERY_DECISION_COUNTS:
-        number_wrong = len(submittedSet - correctSet) + len(correctSet - submittedSet)
+        number_wrong = len(submitted_set - correct_set) + len(
+            correct_set - submitted_set
+        )
         score = 1 - 1.0 * number_wrong / number_answers
     elif partial_credit_mode is PartialCreditType.COVERAGE:
-        n_correct_answers = len(correctSet & submittedSet)
-        base_score = n_correct_answers / len(correctSet)
-        guessing_factor = n_correct_answers / len(submittedSet)
+        n_correct_answers = len(correct_set & submitted_set)
+        base_score = n_correct_answers / len(correct_set)
+        guessing_factor = n_correct_answers / len(submitted_set)
         score = base_score * guessing_factor
     else:
         assert_never(partial_credit_mode)

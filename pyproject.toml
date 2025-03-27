@@ -157,7 +157,6 @@ convention = "google"
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-threejs/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
-"apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
 "apps/prairielearn/python/test/**/*.py" = ["D", "ANN"]
 # Issues rebuilding workspace
 "workspaces/jupyterlab-python/jupyter_server_config.py" = ["PLW1508"]
