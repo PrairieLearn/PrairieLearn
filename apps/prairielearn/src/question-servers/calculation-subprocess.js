@@ -51,7 +51,6 @@ function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntim
 
 async function callFunction(func, question_course, question, inputData, zoneInformation) {
   await prepareChunksIfNeeded(question, question_course);
-  console.log(zoneInformation)
   const courseHostPath = chunks.getRuntimeDirectoryForCourse(question_course);
   const courseRuntimePath = config.workersExecutionMode === 'native' ? courseHostPath : '/course';
 
