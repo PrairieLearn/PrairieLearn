@@ -1,3 +1,4 @@
+import { assert } from 'chai';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -95,6 +96,15 @@ describe('Shared Question Preview', function () {
       testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
       testFileDownloads(previewPageInfo, downloadFile, false);
       testElementClientFiles(previewPageInfo, customElement);
+
+      it('blocks access in Exam mode', async () => {
+        const res = await fetch(`${previewPageInfo.questionBaseUrl}/${addNumbers.id}/preview`, {
+          headers: {
+            Cookie: 'pl_test_mode=Exam',
+          },
+        });
+        assert.equal(res.status, 403);
+      });
     });
 
     describe('When questions are shared_publicly', () => {
@@ -106,6 +116,15 @@ describe('Shared Question Preview', function () {
       testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
       testFileDownloads(previewPageInfo, downloadFile, false);
       testElementClientFiles(previewPageInfo, customElement);
+
+      it('blocks access in Exam mode', async () => {
+        const res = await fetch(`${previewPageInfo.questionBaseUrl}/${addNumbers.id}/preview`, {
+          headers: {
+            Cookie: 'pl_test_mode=Exam',
+          },
+        });
+        assert.equal(res.status, 403);
+      });
     });
   });
 

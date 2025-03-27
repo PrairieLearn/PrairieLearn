@@ -24,11 +24,8 @@ SELECT
     SELECT
       1
     FROM
-      institutions AS i
-      LEFT JOIN institution_administrators AS ia ON (
-        ia.institution_id = i.id
-        AND ia.user_id = $user_id
-      )
+      institution_administrators
     WHERE
-      i.id = $institution_id
+      user_id = $user_id
+      AND institution_id = $institution_id
   );

@@ -79,6 +79,7 @@ WITH
     SELECT
       u.user_id,
       u.uid,
+      u.uin,
       u.name,
       users_get_displayed_role (u.user_id, $course_instance_id) AS role
     FROM
@@ -89,6 +90,7 @@ WITH
     SELECT
       u.user_id,
       u.uid AS user_uid,
+      u.uin AS user_uin,
       u.name AS user_name,
       u.role AS user_role,
       a.assessment_id,
@@ -116,6 +118,7 @@ WITH
     SELECT
       user_id,
       user_uid,
+      user_uin,
       user_name,
       user_role,
       ARRAY_AGG(
@@ -155,6 +158,7 @@ WITH
     GROUP BY
       user_id,
       user_uid,
+      user_uin,
       user_name,
       user_role
   )
