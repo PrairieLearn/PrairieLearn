@@ -77,7 +77,7 @@ router.get(
     let assessmentGHLink: string | null = null;
     if (res.locals.course.example_course) {
       // The example course is not found at the root of its repository, so its path is hardcoded
-      assessmentGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/courseInstances/SectionA/assessments/${res.locals.assessment.tid}`;
+      assessmentGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/courseInstances/${res.locals.course_instance.short_name}/assessments/${res.locals.assessment.tid}`;
     } else if (res.locals.course.repository) {
       const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
       if (githubPrefix) {
