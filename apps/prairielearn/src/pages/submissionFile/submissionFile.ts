@@ -83,7 +83,7 @@ export default function (options = { publicEndpoint: false }) {
         publicQuestionPreview: options.publicEndpoint,
       });
 
-      const fileRes = await sqldb.queryOptionalRow(
+      const contents = await sqldb.queryOptionalRow(
         sql.select_submission_file,
         {
           // We used the submission ID to get and authorize the variant, so the
@@ -91,18 +91,15 @@ export default function (options = { publicEndpoint: false }) {
           submission_id: req.params.unsafe_submission_id,
           file_name: fileName,
         },
-        z.object({
-          contents: z.string().nullable(),
-          variant_id: z.string(),
-        }),
+        z.string().nullable(),
       );
 
-      if (!fileRes?.contents) {
+      if (!contents) {
         res.sendStatus(404);
         return;
       }
 
-      const buffer = Buffer.from(fileRes.contents, 'base64');
+      const buffer = Buffer.from(contents, 'base64');
 
       // To avoid having to do expensive content checks on the client, we'll do
       // our best to guess a mime type for the file.

@@ -10,8 +10,6 @@ WHERE
 WITH
   submission_with_file AS (
     SELECT
-      s.id,
-      s.variant_id,
       jsonb_array_elements(s.submitted_answer -> '_files') AS file
     FROM
       submissions AS s
@@ -20,8 +18,7 @@ WITH
       s.id = $submission_id
   )
 SELECT
-  file -> 'contents' AS contents,
-  variant_id
+  file -> 'contents' AS contents
 FROM
   submission_with_file AS s
 WHERE
