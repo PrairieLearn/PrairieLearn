@@ -1,4 +1,4 @@
-name: Feature request / Enhancement
+name: Feature request / enhancement
 description: A request, idea, or new functionality
 body:
   - type: textarea
