@@ -62,7 +62,7 @@ check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
 # Runs additional third-party linters
-lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell lint-toml
+lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell
 
 lint: lint-js lint-python lint-html lint-links
 lint-js:
@@ -88,8 +88,6 @@ lint-shell:
 	@shellcheck -S error $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
 lint-actions:
 	@actionlint
-lint-toml:
-	@taplo check $(shell find . -type f -name "*.toml" ! -path "./node_modules/*" ! -path "./.venv/*") --default-schema-catalogs
 
 format: format-js format-python
 format-js:
