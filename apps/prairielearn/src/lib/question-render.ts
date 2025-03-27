@@ -140,9 +140,6 @@ async function render(
     question_course,
     locals,
   );
-  console.log('VARIANT okur');
-  console.log(variant);
-  console.log(locals);
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
   // user information may not be populated when rendering a panel.
@@ -413,7 +410,6 @@ export async function getAndRenderVariant(
   },
   options?: { urlOverrides?: Partial<QuestionUrls> },
 ) {
-  console.log('In get and render varient');
   // We write a fair amount of unstructured data back into locals,
   // so we'll cast it to `any` once so we don't have to do it every time.
   const resultLocals = locals as any;
@@ -426,7 +422,6 @@ export async function getAndRenderVariant(
 
   const variant = await run(async () => {
     if (variant_id != null) {
-      console.log('SELECTING VARIANTTTT');
       return await sqldb.queryOptionalRow(
         sql.select_variant_for_render,
         {
@@ -554,14 +549,6 @@ export async function getAndRenderVariant(
     submissions: submissions.length > 0,
     answer: resultLocals.showTrueAnswer,
   };
-  // this has workded before idke how
-  // console.log(' getting and rendering variant')
-  // console.log('Variant Params:', variant);
-  // console.log('Question Params:', question);
-  // console.log('Variant Params paramssss:', variant.params);
-
-  // console.log('Submission Params:', submission?.params);
-  // console.log('Submissions Params:', submissions.map(s => s.params));
   const htmls = await render(
     course,
     renderSelection,
@@ -593,7 +580,6 @@ export async function getAndRenderVariant(
     await manualGrading.populateRubricData(locals);
     await async.eachSeries(submissions, manualGrading.populateManualGradingData);
   }
-  console.log('Setting variant.params:', variant.params);
 
   if (locals.question.type !== 'Freeform') {
     const questionJson = JSON.stringify({
