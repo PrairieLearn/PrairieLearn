@@ -50,10 +50,10 @@ export type Administrator = z.infer<typeof AdministratorSchema>;
 export const AiGradingJobSchema = z.object({
   completion: z.any(),
   completion_tokens: z.number(),
-  course_id: IdSchema.nullable(),
-  course_instance_id: IdSchema.nullable(),
+  course_id: IdSchema,
+  course_instance_id: IdSchema,
   cost: z.number(),
-  grading_job_id: IdSchema.nullable(),
+  grading_job_id: IdSchema,
   id: IdSchema,
   job_sequence_id: IdSchema.nullable(),
   model: z.string(),
