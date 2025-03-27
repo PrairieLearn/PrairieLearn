@@ -12,6 +12,7 @@ import requests
 
 
 def file_name_only(name: str) -> str:
+    """Remove all non-alphanumeric characters from a string."""
     return re.sub(r"[\W_]+", "", name)
 
 
@@ -91,13 +92,16 @@ pl_quiz_questions = []
 
 
 def clean_question_text(text: str) -> str:
-    # Some Canvas plugins like DesignPlus inject custom CSS and JavaScript into
-    # all questions. This code is not needed in PrairieLearn, and in fact can
-    # cause problems in CBTF environments since they'll be forbidden from loading
-    # by most firewalls/proxies. We just remove them.
-    #
-    # We use regex instead of a proper HTML parser because we want to limit this
-    # script to only using the Python standard library.
+    """Remove external CSS and JavaScript from the question text.
+
+    Some Canvas plugins like DesignPlus inject custom CSS and JavaScript into
+    all questions. This code is not needed in PrairieLearn, and in fact can
+    cause problems in CBTF environments since they'll be forbidden from loading
+    by most firewalls/proxies. We just remove them.
+
+    We use regex instead of a proper HTML parser because we want to limit this
+    script to only using the Python standard library.
+    """
     text = re.sub(r"<link[^>]*>", "", text)
     text = re.sub(r"<script[^>]*>.*?</script>", "", text)
 
@@ -105,6 +109,7 @@ def clean_question_text(text: str) -> str:
 
 
 def image_file_extension(content_type: str) -> str:
+    """Determine the file extension for an image based on its `Content-Type` header."""
     match content_type:
         case "image/x-icon":
             return "ico"
@@ -115,9 +120,7 @@ def image_file_extension(content_type: str) -> str:
 
 
 def handle_images(question_dir: str, text: str) -> str:
-    # Links to images will still point to Canvas. We need to download them and
-    # replace them with `pl-figure` elements.
-    #
+    """Download canvas image links and replace them with `pl-figure` elements."""
     # We use regex instead of a proper HTML parser because we want to limit this
     # script to only using the Python standard library.
     image_count = count(1)

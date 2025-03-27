@@ -85,7 +85,6 @@ ignore = [
     "D100", # undocumented-public-module
     "D101", # undocumented-public-class
     "D102", # undocumented-public-method
-    "D103", # undocumented-public-function
     "D104", # undocumented-public-package
     "D107", # undocumented-public-init
 ]
@@ -123,7 +122,10 @@ convention = "google"
     # ignore docstring linting on functions (has no public API)
     "D103"
 ]
-"apps/prairielearn/python/**/*.py" = ["N803"]
+"apps/prairielearn/python/**/*.py" = [
+    "D103", # TODO: undocumented-public-function
+    "N803"
+]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]

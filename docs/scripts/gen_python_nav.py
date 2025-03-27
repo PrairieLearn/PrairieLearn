@@ -13,6 +13,7 @@ IGNORE = [
 
 
 def build_and_write_nav() -> None:
+    """Build the navigation for the Python reference and write it to the SUMMARY.md file."""
     nav = mkdocs_gen_files.Nav()
     # Currently, we have a flat structure, so we don't need to recurse.
     for path in sorted(PRAIRIELEARN_ROOT.glob("*.py")):
