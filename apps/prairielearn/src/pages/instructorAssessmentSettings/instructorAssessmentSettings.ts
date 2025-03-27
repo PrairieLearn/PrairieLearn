@@ -81,7 +81,7 @@ router.get(
     } else if (res.locals.course.repository) {
       const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
       if (githubPrefix) {
-        assessmentGHLink = `${githubPrefix}/tree/${res.locals.course.branch}/courseInstances/${res.locals.course_instance.long_name}/assessments/${res.locals.assessment.tid}`;
+        assessmentGHLink = `${githubPrefix}/tree/${res.locals.course.branch}/courseInstances/${res.locals.course_instance.short_name}/assessments/${res.locals.assessment.tid}`;
       }
     }
 
