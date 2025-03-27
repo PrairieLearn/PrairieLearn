@@ -143,7 +143,7 @@ def grade_answer_parameterized(
     # Try converting partial score
     if isinstance(result, bool):
         partial_score = 1.0 if result else 0.0
-    elif isinstance(result, float | int):
+    elif isinstance(result, (float, int)):
         assert 0.0 <= result <= 1.0
         partial_score = result
     else:
@@ -401,7 +401,7 @@ def to_json(
             }
     elif isinstance(v, sympy.Expr):
         return sympy_to_json(v)
-    elif isinstance(v, sympy.Matrix | sympy.ImmutableMatrix):
+    elif isinstance(v, (sympy.Matrix, sympy.ImmutableMatrix)):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
         matrix = []
@@ -450,7 +450,7 @@ def to_json(
             raise ValueError(
                 f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2"
             )
-    elif isinstance(v, nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph):
+    elif isinstance(v, (nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)):
         return {"_type": "networkx_graph", "_value": nx.adjacency_data(v)}
     else:
         return v
@@ -980,7 +980,7 @@ def string_from_numpy(
     """
     # if A is a scalar
     if np.isscalar(A):
-        assert not isinstance(A, memoryview | str | bytes)
+        assert not isinstance(A, (memoryview, str, bytes))
         if presentation_type == "sigfig":
             return string_from_number_sigfig(A, digits=digits)
         else:
@@ -1063,7 +1063,7 @@ def string_from_number_sigfig(a: _NumericScalarType | str, digits: int = 2) -> s
     number, have digits significant digits. This function assumes that "a" is of type float or complex.
     """
     assert np.isscalar(a)
-    assert not isinstance(a, memoryview | bytes)
+    assert not isinstance(a, (memoryview, bytes))
 
     if np.iscomplexobj(a):
         # `np.iscomplexobj` isn't a proper type guard, so we need to use
@@ -1108,7 +1108,7 @@ def numpy_to_matlab_sf(
     - space: formats all arrays with spaces
     """
     if np.isscalar(A):
-        assert not isinstance(A, memoryview | str | bytes)
+        assert not isinstance(A, (memoryview, str, bytes))
         if np.iscomplexobj(A):
             # `np.iscomplexobj` isn't a proper type guard, so we need to use
             # casting to call this function
@@ -1673,7 +1673,7 @@ def latex_from_2darray(
     """
     # if A is a scalar
     if np.isscalar(A):
-        assert not isinstance(A, memoryview | str | bytes)
+        assert not isinstance(A, (memoryview, str, bytes))
         if presentation_type == "sigfig":
             return string_from_number_sigfig(A, digits=digits)
         else:
@@ -1968,15 +1968,17 @@ def add_submitted_file(
     data: QuestionData,
     file_name: str,
     base64_contents: str,
+    *,
+    mimetype: str | None = None,
 ) -> None:
     """Add a submitted file to the data dictionary."""
     if data["submitted_answers"].get("_files") is None:
         data["submitted_answers"]["_files"] = []
     if isinstance(data["submitted_answers"]["_files"], list):
-        data["submitted_answers"]["_files"].append({
-            "name": file_name,
-            "contents": base64_contents,
-        })
+        submitted_file = {"name": file_name, "contents": base64_contents}
+        if mimetype is not None:
+            submitted_file["mimetype"] = mimetype
+        data["submitted_answers"]["_files"].append(submitted_file)
     else:
         add_files_format_error(
             data, '"_files" is present in "submitted_answers" but is not an array'

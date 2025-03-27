@@ -673,27 +673,41 @@ function NavbarButtons({
     allNavbarButtons.push({ text: 'Global Admin', href: '/pl/administrator/admins' });
   }
 
-  if (resLocals.is_institution_administrator && resLocals.institution) {
-    allNavbarButtons.push(
-      { text: 'Institutions', href: '/pl/administrator/institutions' },
-      {
+  if (resLocals.institution) {
+    if (resLocals.is_administrator) {
+      allNavbarButtons.push(
+        { text: 'Institutions', href: '/pl/administrator/institutions' },
+        {
+          text: resLocals.institution.short_name,
+          href: `/pl/administrator/institution/${resLocals.institution.id}`,
+        },
+      );
+    } else if (resLocals.is_institution_administrator) {
+      allNavbarButtons.push({
         text: resLocals.institution.short_name,
-        href: `/pl/administrator/institution/${resLocals.institution.id}`,
-      },
-    );
+        href: `/pl/institution/${resLocals.institution.id}/admin/admins`,
+      });
+    }
   }
 
   if (resLocals.course) {
-    allNavbarButtons.push(
-      {
-        text: 'Courses',
-        href: `/pl/administrator/institution/${resLocals.institution.id}/courses`,
-      },
-      {
-        text: resLocals.course.short_name,
-        href: `/pl/course/${resLocals.course.id}/course_admin/instances`,
-      },
-    );
+    if (resLocals.institution) {
+      if (resLocals.is_administrator) {
+        allNavbarButtons.push({
+          text: 'Courses',
+          href: `/pl/administrator/institution/${resLocals.institution.id}/courses`,
+        });
+      } else if (resLocals.is_institution_administrator) {
+        allNavbarButtons.push({
+          text: 'Courses',
+          href: `/pl/institution/${resLocals.institution.id}/admin/courses`,
+        });
+      }
+    }
+    allNavbarButtons.push({
+      text: resLocals.course.short_name,
+      href: `/pl/course/${resLocals.course.id}/course_admin/instances`,
+    });
   }
 
   return html`

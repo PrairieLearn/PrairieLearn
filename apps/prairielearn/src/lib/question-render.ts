@@ -61,10 +61,7 @@ const VariantSelectResultSchema = VariantSchema.extend({
   assessment_instance: AssessmentInstanceSchema.extend({
     formatted_date: z.string().nullable(),
   }).nullable(),
-  instance_question: InstanceQuestionSchema.extend({
-    assigned_grader_name: z.string().nullable(),
-    last_grader_name: z.string().nullable(),
-  }).nullable(),
+  instance_question: InstanceQuestionSchema.nullable(),
   formatted_date: z.string(),
 });
 
@@ -673,6 +670,7 @@ export async function renderPanelsForSubmission({
   authorizedEdit,
   renderScorePanels,
   groupRolePermissions,
+  localsOverrides,
 }: {
   submission_id: string;
   question: Question;
@@ -684,6 +682,9 @@ export async function renderPanelsForSubmission({
   authorizedEdit: boolean;
   renderScorePanels: boolean;
   groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
+  localsOverrides?: {
+    manualGradingInterface?: boolean;
+  };
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
@@ -743,6 +744,7 @@ export async function renderPanelsForSubmission({
       assessment_question,
       group_config,
     }),
+    ...localsOverrides,
   };
 
   await async.parallel([

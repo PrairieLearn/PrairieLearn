@@ -268,6 +268,8 @@ export interface AssessmentAllowAccess {
   active: boolean;
   timeLimitMin: number;
   password: string;
+  showClosedAssessment: boolean;
+  showClosedAssessmentScore: boolean;
 }
 
 interface QuestionAlternative {
@@ -353,6 +355,8 @@ export interface Assessment {
   canSubmit: string[];
   advanceScorePerc: number;
   gradeRateMinutes: number;
+  requireHonorCode: boolean;
+  allowPersonalNotes: boolean;
 }
 
 interface QuestionExternalGradingOptions {
@@ -959,7 +963,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
               `Missing JSON file: ${infoFilePath}`,
             );
           }
-          _.assign(infoFiles, subInfoFiles);
+          Object.assign(infoFiles, subInfoFiles);
         } catch (e) {
           if (e.code === 'ENOTDIR') {
             // This wasn't a directory; ignore it.
@@ -1135,7 +1139,7 @@ async function validateAssessment(
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  const allowRealTimeGrading = _.get(assessment, 'allowRealTimeGrading', true);
+  const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
   if (assessment.type === 'Homework') {
     // Because of how Homework-type assessments work, we don't allow
     // real-time grading to be disabled for them.
@@ -1423,7 +1427,7 @@ async function validateCourseInstance(
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  if (_.has(courseInstance, 'allowIssueReporting')) {
+  if ('allowIssueReporting' in courseInstance) {
     if (courseInstance.allowIssueReporting) {
       warnings.push('"allowIssueReporting" is no longer needed.');
     } else {
@@ -1450,7 +1454,7 @@ async function validateCourseInstance(
       warnings.push(...allowAccessWarnings);
     });
 
-    if (_.has(courseInstance, 'userRoles')) {
+    if ('userRoles' in courseInstance) {
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );
