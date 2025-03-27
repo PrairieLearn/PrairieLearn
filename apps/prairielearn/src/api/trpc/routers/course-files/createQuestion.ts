@@ -31,7 +31,10 @@ export const createQuestion = privateProcedure
         question_id: z.string(),
         question_qid: z.string(),
       }),
-      z.object({ status: z.literal('error'), job_sequence_id: z.string() }),
+      z.object({
+        status: z.literal('error'),
+        job_sequence_id: z.string(),
+      }),
     ]),
   )
   .mutation(async (opts) => {
@@ -62,10 +65,16 @@ export const createQuestion = privateProcedure
     try {
       await editor.executeWithServerJob(serverJob);
     } catch {
-      return { status: 'error', job_sequence_id: serverJob.jobSequenceId };
+      return {
+        status: 'error',
+        job_sequence_id: serverJob.jobSequenceId,
+      };
     }
 
-    const question = await selectQuestionByUuid({ course_id: course.id, uuid: editor.uuid });
+    const question = await selectQuestionByUuid({
+      course_id: course.id,
+      uuid: editor.uuid,
+    });
 
     if (question.qid) {
       return {
@@ -75,6 +84,9 @@ export const createQuestion = privateProcedure
         question_qid: question.qid,
       };
     } else {
-      return { status: 'error', job_sequence_id: serverJob.jobSequenceId };
+      return {
+        status: 'error',
+        job_sequence_id: serverJob.jobSequenceId,
+      };
     }
   });
