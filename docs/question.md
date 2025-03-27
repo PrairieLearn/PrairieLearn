@@ -324,7 +324,6 @@ In general, it is _strongly_ recommended to leave partial credit enabled for all
 
 HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text. To enable this, PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html` that utilizes this element:
 
-
 <!-- prettier-ignore -->
 ```html
 
@@ -347,7 +346,6 @@ A few special behaviors have been added to enable Markdown to work better within
 ## Markdown code blocks
 
 Fenced code blocks (those using triple-backticks ` ``` `) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following markdown:
-
 
 <!-- prettier-ignore -->
 ````html

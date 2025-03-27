@@ -16,7 +16,6 @@ WHERE
   AND qid = $qid
   AND deleted_at IS NULL;
 
-
 -- BLOCK select_question_by_uuid
 SELECT
   *

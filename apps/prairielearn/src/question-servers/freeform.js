@@ -1858,7 +1858,6 @@ async function getContext(question, course) {
   const questionDirectory = path.join(courseDirectory, 'questions', question.directory);
   const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);
 
-
   // Load elements and any extensions
   const elements = await loadElementsForCourse(course);
   const extensions = await loadExtensionsForCourse({
@@ -1879,7 +1878,6 @@ async function getContext(question, course) {
     renderer,
   };
 }
-
 
 async function getCacheKey(course, data, context) {
   try {

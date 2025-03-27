@@ -374,7 +374,10 @@ function buildLocals({
     locals.disableSaveButton = true;
   }
   if (assessment_question) {
-    question.question_params = { ...question.question_params, ...assessment_question.question_params };
+    question.question_params = {
+      ...question.question_params,
+      ...assessment_question.question_params,
+    };
   }
   return locals;
 }

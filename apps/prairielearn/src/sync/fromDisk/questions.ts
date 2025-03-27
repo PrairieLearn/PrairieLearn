@@ -30,7 +30,6 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
     workspace_args = shlex.join(workspace_args);
   }
 
-
   return {
     type: q.type === 'v3' ? 'Freeform' : q.type,
     title: q.title,
@@ -70,7 +69,6 @@ export async function sync(
   courseId: string,
   courseData: CourseData,
 ): Promise<Record<string, string>> {
-
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
     return JSON.stringify([
       qid,
