@@ -15,10 +15,7 @@
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
-    "type": {
-      "description": "Type of the assessment.",
-      "enum": ["Homework", "Exam"]
-    },
+    "type": { "description": "Type of the assessment.", "enum": ["Homework", "Exam"] },
     "title": {
       "description": "The title of the assessment (e.g., 'Derivatives and anti-derivatives').",
       "type": "string"
@@ -49,14 +46,9 @@
     "allowAccess": {
       "description": "List of access rules for the assessment. Access is permitted if any access rule is satisfied.",
       "type": "array",
-      "items": {
-        "$ref": "#/definitions/accessRule"
-      }
+      "items": { "$ref": "#/definitions/accessRule" }
     },
-    "text": {
-      "description": "HTML text shown on the assessment overview page.",
-      "type": "string"
-    },
+    "text": { "description": "HTML text shown on the assessment overview page.", "type": "string" },
     "maxPoints": {
       "description": "The number of points that must be earned in this assessment to achieve a score of 100%.",
       "type": "number"
@@ -80,19 +72,13 @@
       "items": {
         "$ref": "#/definitions/zone",
         "properties": {
-          "title": {
-            "type": "string"
-          },
+          "title": { "type": "string" },
           "questionParams": {
             "description": "Parameters to pass down to questions in this zone.",
             "type": "object",
             "properties": {
-              "lower_bound": {
-                "type": "number"
-              },
-              "upper_bound": {
-                "type": "number"
-              }
+              "lower_bound": { "type": "number" },
+              "upper_bound": { "type": "number" }
             },
             "additionalProperties": false
           }
@@ -120,36 +106,24 @@
       "type": "boolean",
       "default": false
     },
-    "groupMaxSize": {
-      "description": "Maximum number of students in a group.",
-      "type": "number"
-    },
-    "groupMinSize": {
-      "description": "Minimum number of students in a group.",
-      "type": "number"
-    },
+    "groupMaxSize": { "description": "Maximum number of students in a group.", "type": "number" },
+    "groupMinSize": { "description": "Minimum number of students in a group.", "type": "number" },
     "groupRoles": {
       "description": "Array of custom user roles in a group.",
       "type": "array",
-      "items": {
-        "$ref": "#/definitions/groupRole"
-      }
+      "items": { "$ref": "#/definitions/groupRole" }
     },
     "canSubmit": {
       "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
       "type": "array",
-      "items": {
-        "type": "string"
-      },
+      "items": { "type": "string" },
       "uniqueItems": true,
       "default": []
     },
     "canView": {
       "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
       "type": "array",
-      "items": {
-        "type": "string"
-      },
+      "items": { "type": "string" },
       "uniqueItems": true,
       "default": []
     },
@@ -168,9 +142,7 @@
       "type": "boolean",
       "default": false
     },
-    "advanceScorePerc": {
-      "$ref": "#/definitions/advanceScorePerc"
-    },
+    "advanceScorePerc": { "$ref": "#/definitions/advanceScorePerc" },
     "gradeRateMinutes": {
       "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
       "type": "number",
@@ -232,9 +204,7 @@
         "uids": {
           "description": "A list of UIDs (like 'username@example.com', one of which is required for access",
           "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "items": { "type": "string" }
         },
         "credit": {
           "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
@@ -307,9 +277,7 @@
           "items": {
             "$ref": "#/definitions/zoneQuestion",
             "properties": {
-              "id": {
-                "type": "string"
-              },
+              "id": { "type": "string" },
               "points": {
                 "oneOf": [
                   {
@@ -335,21 +303,15 @@
                 "description": "Parameters specific to this question.",
                 "type": "object",
                 "properties": {
-                  "lower_bound": {
-                    "type": "number"
-                  },
-                  "upper_bound": {
-                    "type": "number"
-                  }
+                  "lower_bound": { "type": "number" },
+                  "upper_bound": { "type": "number" }
                 },
                 "additionalProperties": false
               }
             }
           }
         },
-        "advanceScorePerc": {
-          "$ref": "#/definitions/advanceScorePerc"
-        },
+        "advanceScorePerc": { "$ref": "#/definitions/advanceScorePerc" },
         "gradeRateMinutes": {
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
@@ -358,25 +320,16 @@
         "canSubmit": {
           "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": { "type": "string" },
           "uniqueItems": true,
           "default": []
         },
         "canView": {
           "description": "A list of group role names that can view questions in this zone. Only applicable for group assessments.",
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": { "type": "string" },
           "uniqueItems": true,
           "default": []
-        },
-        "questionParams": {
-          "description": "Parameters to pass down to questions in this zone.",
-          "type": "object",
-          "default": {}
         }
       },
       "required": ["questions"]
@@ -388,34 +341,18 @@
           "description": "Arbitrary comment for reference purposes.",
           "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
         },
-        "points": {
-          "$ref": "#/definitions/points"
-        },
-        "autoPoints": {
-          "$ref": "#/definitions/points"
-        },
-        "maxPoints": {
-          "$ref": "#/definitions/pointsSingle"
-        },
-        "maxAutoPoints": {
-          "$ref": "#/definitions/pointsSingle"
-        },
-        "manualPoints": {
-          "$ref": "#/definitions/pointsSingle"
-        },
-        "id": {
-          "$ref": "#/definitions/questionId"
-        },
-        "forceMaxPoints": {
-          "$ref": "#/definitions/forceMaxPoints"
-        },
+        "points": { "$ref": "#/definitions/points" },
+        "autoPoints": { "$ref": "#/definitions/points" },
+        "maxPoints": { "$ref": "#/definitions/pointsSingle" },
+        "maxAutoPoints": { "$ref": "#/definitions/pointsSingle" },
+        "manualPoints": { "$ref": "#/definitions/pointsSingle" },
+        "id": { "$ref": "#/definitions/questionId" },
+        "forceMaxPoints": { "$ref": "#/definitions/forceMaxPoints" },
         "alternatives": {
           "description": "Array of question alternatives to choose from.",
           "type": "array",
           "minItems": 1,
-          "items": {
-            "$ref": "#/definitions/questionAlternative"
-          }
+          "items": { "$ref": "#/definitions/questionAlternative" }
         },
         "numberChoose": {
           "description": "Number of questions to choose from this group.",
@@ -428,9 +365,7 @@
           "type": "number",
           "default": 1
         },
-        "advanceScorePerc": {
-          "$ref": "#/definitions/advanceScorePerc"
-        },
+        "advanceScorePerc": { "$ref": "#/definitions/advanceScorePerc" },
         "gradeRateMinutes": {
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
@@ -439,18 +374,14 @@
         "canSubmit": {
           "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": { "type": "string" },
           "uniqueItems": true,
           "default": []
         },
         "canView": {
           "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": { "type": "string" },
           "uniqueItems": true,
           "default": []
         },
@@ -468,35 +399,19 @@
           "description": "Arbitrary comment for reference purposes.",
           "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
         },
-        "points": {
-          "$ref": "#/definitions/points"
-        },
-        "autoPoints": {
-          "$ref": "#/definitions/points"
-        },
-        "maxPoints": {
-          "$ref": "#/definitions/pointsSingle"
-        },
-        "maxAutoPoints": {
-          "$ref": "#/definitions/pointsSingle"
-        },
-        "manualPoints": {
-          "$ref": "#/definitions/pointsSingle"
-        },
-        "id": {
-          "$ref": "#/definitions/questionId"
-        },
-        "forceMaxPoints": {
-          "$ref": "#/definitions/forceMaxPoints"
-        },
+        "points": { "$ref": "#/definitions/points" },
+        "autoPoints": { "$ref": "#/definitions/points" },
+        "maxPoints": { "$ref": "#/definitions/pointsSingle" },
+        "maxAutoPoints": { "$ref": "#/definitions/pointsSingle" },
+        "manualPoints": { "$ref": "#/definitions/pointsSingle" },
+        "id": { "$ref": "#/definitions/questionId" },
+        "forceMaxPoints": { "$ref": "#/definitions/forceMaxPoints" },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
           "type": "number",
           "default": 1
         },
-        "advanceScorePerc": {
-          "$ref": "#/definitions/advanceScorePerc"
-        },
+        "advanceScorePerc": { "$ref": "#/definitions/advanceScorePerc" },
         "gradeRateMinutes": {
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
@@ -510,14 +425,7 @@
       }
     },
     "points": {
-      "oneOf": [
-        {
-          "$ref": "#/definitions/pointsSingle"
-        },
-        {
-          "$ref": "#/definitions/pointsList"
-        }
-      ]
+      "oneOf": [{ "$ref": "#/definitions/pointsSingle" }, { "$ref": "#/definitions/pointsList" }]
     },
     "pointsSingle": {
       "description": "A single point value.",
@@ -529,9 +437,7 @@
       "description": "An array of point values.",
       "type": "array",
       "minItems": 1,
-      "items": {
-        "$ref": "#/definitions/points"
-      }
+      "items": { "$ref": "#/definitions/points" }
     },
     "questionId": {
       "description": "Question ID (directory name of the question).",
