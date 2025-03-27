@@ -16,10 +16,6 @@
       "source.organizeImports": "explicit"
     }
   },
-  "[toml]": {
-    "editor.defaultFormatter": "tamasfe.even-better-toml",
-    "editor.formatOnSave": true
-  },
   "[javascript][typescript][javascriptreact][typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
@@ -28,7 +24,7 @@
     }
   },
 
-  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][markdown]": {
+  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][markdown][toml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },

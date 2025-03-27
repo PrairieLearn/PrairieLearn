@@ -5056,6 +5056,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@taplo/core@npm:^0.1.0":
+  version: 0.1.1
+  resolution: "@taplo/core@npm:0.1.1"
+  checksum: 10c0/c36f761431b2e959742d8e186e74306fb8991d84589e2f03b6481244cc407275fa448a217ef87b8aa1e226615fd7ba85c60e6f0221f01d891b90dd30b45cb13b
+  languageName: node
+  linkType: hard
+
+"@taplo/lib@npm:^0.4.0-alpha.2":
+  version: 0.4.0-alpha.2
+  resolution: "@taplo/lib@npm:0.4.0-alpha.2"
+  dependencies:
+    "@taplo/core": "npm:^0.1.0"
+  checksum: 10c0/650ed35ba949054eb8dcfbaf77d6154d9639f5d8fa96d89546c399a95e699d7e01f65e308f89478d41e0120baa3572f25595fe088d19e62cc56ad3eb2b5acbb5
+  languageName: node
+  linkType: hard
+
 "@tokenizer/inflate@npm:^0.2.6":
   version: 0.2.7
   resolution: "@tokenizer/inflate@npm:0.2.7"
@@ -13905,7 +13921,8 @@ __metadata:
     htmlhint: "npm:^1.1.4"
     markdownlint-cli: "npm:^0.44.0"
     node-gyp: "npm:^11.1.0"
-    prettier: "npm:3.5.3"
+    prettier: "npm:^3.5.3"
+    prettier-plugin-toml: "npm:^2.0.2"
     pyright: "npm:^1.1.396"
     s3rver: "npm:^3.7.1"
     turbo: "npm:^2.4.4"
@@ -13927,7 +13944,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:3.5.3":
+"prettier-plugin-toml@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "prettier-plugin-toml@npm:2.0.2"
+  dependencies:
+    "@taplo/lib": "npm:^0.4.0-alpha.2"
+  peerDependencies:
+    prettier: ^3.0.3
+  checksum: 10c0/e48c8d4e6eaf422a09adab7fe0b7edb23bac703a1d15e462f2c8531c3b0edaf4e00a5a1f794732aaf7788628f40d7c704d82e2d72ccdba00741f94128cb67aa3
+  languageName: node
+  linkType: hard
+
+"prettier@npm:3.5.3, prettier@npm:^3.5.3":
   version: 3.5.3
   resolution: "prettier@npm:3.5.3"
   bin:

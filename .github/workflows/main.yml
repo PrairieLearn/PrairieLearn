@@ -419,9 +419,7 @@ jobs:
           sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
           sudo chmod +x hadolint && sudo curl -fsSL https://d2lang.com/install.sh | sh -s -- && \
           sudo apt-get install -y shellcheck && \
-          sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin && \
-          curl -fsSL https://github.com/tamasfe/taplo/releases/0.9.3/download/taplo-full-linux-x86_64.gz \
-            | gzip -d - | install -m 755 /dev/stdin /bin/taplo
+          sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -481,8 +479,6 @@ jobs:
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
-      - name: Run the TOML linter
-        run: make lint-toml
       - name: Run the Dockerfile linter
         run: make lint-docker
       - name: Run the Shellcheck linter
