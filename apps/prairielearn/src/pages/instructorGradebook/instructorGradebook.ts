@@ -18,7 +18,7 @@ import { InstructorGradebook } from './instructorGradebook.html.js';
 import {
   AssessmentInstanceScoreResultSchema,
   CourseAssessmentRowSchema,
-  GradebookRow,
+  type GradebookRow,
   GradebookRowSchema,
 } from './instructorGradebook.types.js';
 

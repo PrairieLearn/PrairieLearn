@@ -57,9 +57,9 @@ describe('API', function () {
       assert(button);
 
       // Load the popover content
-      assert.isString(button.attribs['data-content']);
+      assert.isString(button.attribs['data-bs-content']);
 
-      const data$ = cheerio.load(button.attribs['data-content']);
+      const data$ = cheerio.load(button.attribs['data-bs-content']);
 
       // Validate that the CSRF token is present
       const csrfInput = data$('form input[name="__csrf_token"]').get(0);

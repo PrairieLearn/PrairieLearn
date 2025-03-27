@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),
@@ -21,213 +24,77 @@ export function Enroll({
   courseInstances: CourseInstance[];
   resLocals: Record<string, any>;
 }) {
-  // Temporary for testing.
-  courseInstances.forEach((ci) => {
-    ci.instructor_access = false;
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Enrollment - Courses',
+    navContext: {
+      type: 'plain',
+      page: 'enroll',
+    },
+    headContent: [compiledScriptTag('enrollClient.ts')],
+    preContent: html`
+      ${AddCourseModal({ csrfToken: resLocals.__csrf_token })}
+      ${RemoveCourseModal({ csrfToken: resLocals.__csrf_token })}
+    `,
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h1>Courses</h1>
+        </div>
+        <table class="table table-sm table-hover table-striped" aria-label="Courses">
+          <tbody>
+            ${courseInstances.map((course_instance) => {
+              return html`
+                <tr>
+                  <td class="align-middle">${course_instance.label}</td>
+                  ${course_instance.instructor_access
+                    ? html`
+                        <td class="align-middle text-center" colspan="2">
+                          <span class="badge text-bg-info">instructor access</span>
+                        </td>
+                      `
+                    : html`
+                        <td>
+                          ${!course_instance.enrolled
+                            ? html`
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-info"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#add-course-modal"
+                                  data-course-instance-id="${course_instance.course_instance_id}"
+                                  data-course-instance-short-label="${course_instance.short_label}"
+                                >
+                                  Add course
+                                </button>
+                              `
+                            : ''}
+                        </td>
+                        <td>
+                          ${course_instance.enrolled
+                            ? html`
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-danger"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#remove-course-modal"
+                                  data-course-instance-id="${course_instance.course_instance_id}"
+                                  data-course-instance-short-label="${course_instance.short_label}"
+                                >
+                                  Remove course
+                                </button>
+                              `
+                            : ''}
+                        </td>
+                      `}
+                </tr>
+              `;
+            })}
+          </tbody>
+        </table>
+      </div>
+    `,
   });
-
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
-      </head>
-      <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'enroll',
-        })}
-        <main id="content" class="container">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <h1>Courses</h1>
-            </div>
-            <table class="table table-sm table-hover table-striped" aria-label="Courses">
-              <tbody>
-                ${courseInstances.map((course_instance, idx) => {
-                  return html`
-                    <tr>
-                      <td class="align-middle">${course_instance.label}</td>
-                      ${course_instance.instructor_access
-                        ? html`
-                            <td class="align-middle text-center" colspan="2">
-                              <span class="badge badge-info">instructor access</span>
-                            </td>
-                          `
-                        : html`
-                            <td>
-                              ${!course_instance.enrolled
-                                ? html`
-                                    <button
-                                      type="button"
-                                      class="btn btn-sm btn-info"
-                                      data-toggle="modal"
-                                      data-target="#addModal${idx}"
-                                    >
-                                      Add course
-                                    </button>
-                                    <div
-                                      class="modal fade"
-                                      id="addModal${idx}"
-                                      tabindex="-1"
-                                      role="dialog"
-                                      aria-labelledby="addModal${idx}Title"
-                                      aria-hidden="true"
-                                    >
-                                      <div
-                                        class="modal-dialog modal-dialog-centered"
-                                        role="document"
-                                      >
-                                        <div class="modal-content">
-                                          <div class="modal-header">
-                                            <h5 class="modal-title" id="addModal${idx}Title">
-                                              Confirm add course
-                                            </h5>
-                                            <button
-                                              type="button"
-                                              class="close"
-                                              data-dismiss="modal"
-                                              aria-label="Close"
-                                            >
-                                              <span aria-hidden="true">&times;</span>
-                                            </button>
-                                          </div>
-                                          <div class="modal-body">
-                                            <p>
-                                              Are you sure you want to add this course content to
-                                              your PrairieLearn account?
-                                            </p>
-                                            <p>
-                                              Adding or removing courses here only affects what is
-                                              visible to you on PrairieLearn. This does not change
-                                              your university course registration.
-                                            </p>
-                                          </div>
-                                          <div class="modal-footer">
-                                            <form name="enroll-form" method="POST">
-                                              <input type="hidden" name="__action" value="enroll" />
-                                              <input
-                                                type="hidden"
-                                                name="__csrf_token"
-                                                value="${resLocals.__csrf_token}"
-                                              />
-                                              <input
-                                                type="hidden"
-                                                name="course_instance_id"
-                                                value="${course_instance.course_instance_id}"
-                                              />
-                                              <button
-                                                type="button"
-                                                class="btn btn-secondary"
-                                                data-dismiss="modal"
-                                              >
-                                                Cancel
-                                              </button>
-                                              <button type="submit" class="btn btn-info">
-                                                Add ${course_instance.short_label}
-                                              </button>
-                                            </form>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  `
-                                : null}
-                            </td>
-                            <td>
-                              ${course_instance.enrolled
-                                ? html`
-                                    <button
-                                      type="button"
-                                      class="btn btn-sm btn-danger"
-                                      data-toggle="modal"
-                                      data-target="#removeModal${idx}"
-                                    >
-                                      Remove course
-                                    </button>
-                                    <div
-                                      class="modal fade"
-                                      id="removeModal${idx}"
-                                      tabindex="-1"
-                                      role="dialog"
-                                      aria-labelledby="removeModal${idx}Title"
-                                      aria-hidden="true"
-                                    >
-                                      <div
-                                        class="modal-dialog modal-dialog-centered"
-                                        role="document"
-                                      >
-                                        <div class="modal-content">
-                                          <div class="modal-header">
-                                            <h5 class="modal-title" id="removeModal${idx}Title">
-                                              Confirm remove course
-                                            </h5>
-                                            <button
-                                              type="button"
-                                              class="close"
-                                              data-dismiss="modal"
-                                              aria-label="Close"
-                                            >
-                                              <span aria-hidden="true">&times;</span>
-                                            </button>
-                                          </div>
-                                          <div class="modal-body">
-                                            <p>
-                                              Are you sure you want to remove this course content
-                                              from your PrairieLearn account?
-                                            </p>
-                                            <p>
-                                              Adding or removing courses here only affects what is
-                                              visible to you on PrairieLearn. This does not change
-                                              your university course registration.
-                                            </p>
-                                          </div>
-                                          <div class="modal-footer">
-                                            <form name="unenroll-form" method="POST">
-                                              <input
-                                                type="hidden"
-                                                name="__action"
-                                                value="unenroll"
-                                              />
-                                              <input
-                                                type="hidden"
-                                                name="__csrf_token"
-                                                value="${resLocals.__csrf_token}"
-                                              />
-                                              <input
-                                                type="hidden"
-                                                name="course_instance_id"
-                                                value="${course_instance.course_instance_id}"
-                                              />
-                                              <button
-                                                type="button"
-                                                class="btn btn-secondary"
-                                                data-dismiss="modal"
-                                              >
-                                                Cancel
-                                              </button>
-                                              <button type="submit" class="btn btn-danger">
-                                                Remove ${course_instance.short_label}
-                                              </button>
-                                            </form>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  `
-                                : null}
-                            </td>
-                          `}
-                    </tr>
-                  `;
-                })}
-              </tbody>
-            </table>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
 }
 
 export function EnrollLtiMessage({
@@ -244,10 +111,7 @@ export function EnrollLtiMessage({
         ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'enroll',
-        })}
+        ${Navbar({ resLocals, navPage: 'enroll' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
@@ -281,27 +145,65 @@ export function EnrollLtiMessage({
 }
 
 export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Record<string, any> }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
-      </head>
-      <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'enroll',
-        })}
-        <main id="content" class="container">
-          <div class="card mb-4">
-            <div class="card-header bg-danger text-white">Enrollment limit exceeded</div>
-            <div class="card-body">
-              This course has reached its enrollment limit. Please contact the course staff for more
-              information.
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Enrollment - Courses',
+    navContext: {
+      type: 'plain',
+      page: 'enroll',
+    },
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-danger text-white">Enrollment limit exceeded</div>
+        <div class="card-body">
+          This course has reached its enrollment limit. Please contact the course staff for more
+          information.
+        </div>
+      </div>
+    `,
+  });
+}
+
+function AddCourseModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'add-course-modal',
+    title: 'Confirm add course',
+    body: html`
+      <p>Are you sure you want to add this course content to your PrairieLearn account?</p>
+      <p>
+        Adding or removing courses here only affects what is visible to you on PrairieLearn. This
+        does not change your university course registration.
+      </p>
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="course_instance_id" class="js-course-instance-id" />
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-info" name="__action" value="enroll">
+        Add <span class="js-course-instance-short-label"></span>
+      </button>
+    `,
+  });
+}
+
+function RemoveCourseModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'remove-course-modal',
+    title: 'Confirm remove course',
+    body: html`
+      <p>Are you sure you want to remove this course content from your PrairieLearn account?</p>
+      <p>
+        Adding or removing courses here only affects what is visible to you on PrairieLearn. This
+        does not change your university course registration.
+      </p>
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="course_instance_id" class="js-course-instance-id" />
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger" name="__action" value="unenroll">
+        Remove <span class="js-course-instance-short-label"></span>
+      </button>
+    `,
+  });
 }

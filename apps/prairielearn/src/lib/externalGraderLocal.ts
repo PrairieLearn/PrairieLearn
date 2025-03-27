@@ -6,17 +6,20 @@ import byline from 'byline';
 import Docker from 'dockerode';
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import * as shlex from 'shlex';
 
 import { logger } from '@prairielearn/logger';
+import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from './config.js';
 import type { Course, GradingJob, Question, Submission, Variant } from './db-types.js';
+import { type Grader } from './externalGraderCommon.js';
 import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export class ExternalGraderLocal {
+export class ExternalGraderLocal implements Grader {
   handleGradingRequest(
     grading_job: GradingJob,
     submission: Submission,
@@ -71,17 +74,23 @@ export class ExternalGraderLocal {
 
       await buildDirectory(dir, submission, variant, question, course);
 
-      if (question.external_grading_entrypoint?.includes('serverFilesCourse')) {
-        // Mark the entrypoint as executable if it lives in serverFilesCourse.
-        // If it is living in the docker container then we don't have access to it before
-        // we actually run it.
-        try {
-          await execa('chmod', [
-            '+x',
-            path.join(dir, question.external_grading_entrypoint.slice(6)),
-          ]);
-        } catch (e) {
-          logger.error('Could not make file executable; continuing execution anyways');
+      if (question.external_grading_entrypoint != null) {
+        const entrypointFirstToken = shlex.split(question.external_grading_entrypoint)[0];
+        if (
+          path.isAbsolute(entrypointFirstToken) &&
+          contains('/grade', entrypointFirstToken, false)
+        ) {
+          // Mark the entrypoint as executable if it lives in the mounted volume.
+          // If it is living in the docker container then we don't have access to
+          // it before we actually run it.
+          try {
+            await execa('chmod', [
+              '+x',
+              path.resolve(dir, path.relative('/grade', entrypointFirstToken)),
+            ]);
+          } catch {
+            logger.error('Could not make file executable; continuing execution anyways');
+          }
         }
       }
 
@@ -130,7 +139,9 @@ export class ExternalGraderLocal {
             },
           ],
         },
-        Entrypoint: question.external_grading_entrypoint?.split(' '),
+        Entrypoint: question.external_grading_entrypoint
+          ? shlex.split(question.external_grading_entrypoint)
+          : undefined,
       });
 
       const stream = await container.attach({
@@ -189,12 +200,12 @@ export class ExternalGraderLocal {
             try {
               results.results = JSON.parse(data.toString('utf8'));
               results.succeeded = true;
-            } catch (e) {
+            } catch {
               results.succeeded = false;
               results.message = 'Could not parse the grading results.';
             }
           }
-        } catch (err) {
+        } catch {
           logger.error('Could not read results.json');
           results.succeeded = false;
         }

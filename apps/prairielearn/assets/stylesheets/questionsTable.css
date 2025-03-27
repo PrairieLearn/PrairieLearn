@@ -1,26 +1,3 @@
 @import url('bootstrap-table/dist/bootstrap-table.min.css');
 @import url('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css');
 @import url('bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.css');
-
-.table > :not(caption) > * > .sticky-column {
-  position: sticky;
-  left: 0;
-  background-color: var(--bs-body-bg, white);
-  background-clip: padding-box;
-  box-shadow: inset -1px 0 #dee2e6;
-}
-
-.table.table-hover > tbody > tr:hover > td.sticky-column {
-  color: var(--bs-table-hover-color, #212529);
-  /* This cannot be transparent, to ensure the cell shows on top of others. TODO: handle a non-white background by combining --bs-body-bg with --bs-table-hover-bg. */
-  background-color: #efefef;
-}
-
-.fixed-table-toolbar {
-  padding: 0 1em 0 1em;
-}
-
-.fixed-table-toolbar div.pagination,
-.fixed-table-toolbar div.pagination-detail {
-  margin: 0 1em 0 0 !important;
-}

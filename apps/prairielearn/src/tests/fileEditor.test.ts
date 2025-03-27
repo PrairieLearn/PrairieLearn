@@ -126,12 +126,13 @@ const courseInstanceQuestionHtmlEditUrl =
 const courseInstanceQuestionPythonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionPythonPath)}`;
 const badPathUrl = assessmentUrl + '/file_edit/' + encodePath('../PrairieLearn/config.json');
+const gitPathUrl = courseAdminUrl + '/file_edit/' + encodePath('.git/HEAD');
 const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodePath('infoCourse.json');
 
 const findEditUrlData = [
   {
     name: 'assessment',
-    selector: 'a:contains("infoAssessment.json") + a:contains("Edit")',
+    selector: '[data-testid="edit-assessment-configuration-link"]',
     url: assessmentSettingsUrl,
     expectedEditUrl: assessmentEditUrl,
   },
@@ -149,7 +150,7 @@ const findEditUrlData = [
   },
   {
     name: 'instance admin',
-    selector: 'a:contains("infoCourseInstance.json") + a:contains("Edit")',
+    selector: '[data-testid="edit-course-instance-configuration-link"]',
     url: courseInstanceInstanceAdminSettingsUrl,
     expectedEditUrl: courseInstanceInstanceAdminEditUrl,
   },
@@ -224,7 +225,6 @@ const verifyFileData = [
     url: courseInstanceQuestionUrl + '/file_view',
     path: questionPath,
     clientFilesDir: 'clientFilesQuestion',
-    serverFilesDir: 'serverFilesQuestion',
     testFilesDir: 'tests',
   },
   {
@@ -232,14 +232,12 @@ const verifyFileData = [
     url: assessmentUrl + '/file_view',
     path: assessmentPath,
     clientFilesDir: 'clientFilesAssessment',
-    serverFilesDir: 'serverFilesAssessment',
   },
   {
     title: 'course instance',
     url: courseInstanceInstanceAdminUrl + '/file_view',
     path: courseInstancePath,
     clientFilesDir: 'clientFilesCourseInstance',
-    serverFilesDir: 'serverFilesCourseInstance',
   },
   {
     title: 'course (through course instance)',
@@ -302,6 +300,10 @@ describe('test file editor', function () {
 
     describe('disallow edits outside course directory', function () {
       badGet(badPathUrl, 500, false);
+    });
+
+    describe('disallow edits in .git directory', function () {
+      badGet(gitPathUrl, 500, false);
     });
 
     describe('verify file handlers', function () {
@@ -758,7 +760,7 @@ function doFiles(data: {
   url: string;
   path: string;
   clientFilesDir: string;
-  serverFilesDir: string;
+  serverFilesDir?: string;
   testFilesDir?: string;
 }) {
   describe(`test file handlers for ${data.title}`, function () {
@@ -823,34 +825,36 @@ function doFiles(data: {
       });
     });
     describe('Server Files', function () {
-      testUploadFile({
-        fileViewBaseUrl: data.url,
-        url: data.url,
-        path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
-        newButtonId: 'NewServer',
-        contents: 'This is a line of text.',
-        filename: 'testfile.txt',
-      });
+      if (data.serverFilesDir) {
+        testUploadFile({
+          fileViewBaseUrl: data.url,
+          url: data.url,
+          path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
+          newButtonId: 'NewServer',
+          contents: 'This is a line of text.',
+          filename: 'testfile.txt',
+        });
 
-      testUploadFile({
-        fileViewBaseUrl: data.url,
-        url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
-        path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
-        contents: 'This is a different line of text.',
-        filename: 'anotherfile.txt',
-      });
+        testUploadFile({
+          fileViewBaseUrl: data.url,
+          url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
+          path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
+          contents: 'This is a different line of text.',
+          filename: 'anotherfile.txt',
+        });
 
-      testRenameFile({
-        url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
-        path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
-        contents: 'This is a different line of text.',
-        new_file_name: path.join('subdir', 'testfile.txt'),
-      });
+        testRenameFile({
+          url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
+          path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
+          contents: 'This is a different line of text.',
+          new_file_name: path.join('subdir', 'testfile.txt'),
+        });
 
-      testDeleteFile({
-        url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir, 'subdir')),
-        path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
-      });
+        testDeleteFile({
+          url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir, 'subdir')),
+          path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
+        });
+      }
     });
     if (data.testFilesDir) {
       describe('Test Files', function () {
@@ -945,7 +949,7 @@ function testUploadFile(params: {
         elemList = row.find('button[id^="instructorFileUploadForm-"]');
       }
       assert.lengthOf(elemList, 1);
-      const $ = cheerio.load(elemList[0].attribs['data-content']);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
@@ -1027,7 +1031,7 @@ function testRenameFile(params: {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
       elemList = row.find('button[data-testid="rename-file-button"]');
       assert.lengthOf(elemList, 1);
-      const $ = cheerio.load(elemList[0].attribs['data-content']);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
@@ -1050,14 +1054,16 @@ function testRenameFile(params: {
 
   describe(`POST to ${params.url} with action rename_file`, function () {
     it('should load successfully', async () => {
-      const form = {
-        __action: 'rename_file',
-        __csrf_token: locals.__csrf_token,
-        working_path: locals.working_path,
-        old_file_name: locals.old_file_name,
-        new_file_name: params.new_file_name,
-      };
-      const res = await fetch(params.url, { method: 'POST', body: new URLSearchParams(form) });
+      const res = await fetch(params.url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'rename_file',
+          __csrf_token: locals.__csrf_token,
+          working_path: locals.working_path,
+          old_file_name: locals.old_file_name,
+          new_file_name: params.new_file_name,
+        }),
+      });
       assert.isOk(res.ok);
       locals.$ = cheerio.load(await res.text());
     });
@@ -1077,7 +1083,7 @@ function testDeleteFile(params: { url: string; path: string }) {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
       elemList = row.find('button[data-testid="delete-file-button"]');
       assert.lengthOf(elemList, 1);
-      const $ = cheerio.load(elemList[0].attribs['data-content']);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
@@ -1095,12 +1101,14 @@ function testDeleteFile(params: { url: string; path: string }) {
 
   describe(`POST to ${params.url} with action delete_file`, function () {
     it('should load successfully', async () => {
-      const form = {
-        __action: 'delete_file',
-        __csrf_token: locals.__csrf_token,
-        file_path: locals.file_path,
-      };
-      const res = await fetch(params.url, { method: 'POST', body: new URLSearchParams(form) });
+      const res = await fetch(params.url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'delete_file',
+          __csrf_token: locals.__csrf_token,
+          file_path: locals.file_path,
+        }),
+      });
       assert.isOk(res.ok);
     });
   });

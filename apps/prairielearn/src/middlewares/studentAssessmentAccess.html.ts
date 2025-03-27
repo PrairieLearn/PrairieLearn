@@ -1,7 +1,11 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import {
+  RegenerateInstanceAlert,
+  RegenerateInstanceModal,
+} from '../components/AssessmentRegenerate.html.js';
 import { HeadContents } from '../components/HeadContents.html.js';
+import { Navbar } from '../components/Navbar.html.js';
 import { Scorebar } from '../components/Scorebar.html.js';
 import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.html.js';
 import type { Assessment, AssessmentInstance, AssessmentSet } from '../lib/db-types.js';
@@ -11,10 +15,12 @@ export function StudentAssessmentAccess({
   resLocals,
   showClosedScore = true,
   showTimeLimitExpiredModal = false,
+  userCanDeleteAssessmentInstance = false,
 }: {
   resLocals: Record<string, any>;
   showClosedScore?: boolean;
   showTimeLimitExpiredModal?: boolean;
+  userCanDeleteAssessmentInstance?: boolean;
 }) {
   const { assessment, assessment_set, assessment_instance, authz_result } = resLocals as {
     assessment: Assessment;
@@ -29,12 +35,13 @@ export function StudentAssessmentAccess({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../pages/partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
+        ${userCanDeleteAssessmentInstance
+          ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+          : ''}
         <main id="content" class="container">
+          ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               ${assessment_set.abbreviation}${assessment.number}: ${assessment.title}

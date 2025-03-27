@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { WorkspaceLogSchema } from '../../lib/db-types.js';
 
 export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
@@ -40,10 +40,7 @@ export function WorkspaceLogs({
         ${HeadContents({ resLocals, pageTitle: 'Workspace logs' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'plain',
-        })}
+        ${Navbar({ resLocals, navbarType: 'plain' })}
 
         <main id="content" class="container">
           <h1 class="mb-4">Workspace logs</h1>
@@ -101,10 +98,7 @@ export function WorkspaceVersionLogs({
         ${HeadContents({ resLocals, pageTitle: 'Workspace version logs' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'plain',
-        })}
+        ${Navbar({ resLocals, navbarType: 'plain' })}
 
         <main id="content" class="container mb-4">
           <h1 class="mb-4">Workspace version logs</h1>
@@ -115,7 +109,7 @@ export function WorkspaceVersionLogs({
                 <pre class="bg-dark rounded text-white p-3 mb-3"><code>${containerLogs}</code></pre>
               `
             : html`
-                <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center text-monospace">
+                <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center font-monospace">
                   <div class="mb-2">
                     <i
                       class="fa ${containerLogsEnabled && containerLogsExpired

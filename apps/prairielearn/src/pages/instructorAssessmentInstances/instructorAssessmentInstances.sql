@@ -109,6 +109,7 @@ WITH
       auto_close = FALSE,
       date_limit = CASE
         WHEN $base_time = 'null' THEN NULL
+        WHEN $base_time = 'exact_date' THEN $exact_date
         ELSE GREATEST(
           current_timestamp,
           (
@@ -117,13 +118,7 @@ WITH
               WHEN $base_time = 'current_date' THEN current_timestamp
               ELSE ai.date_limit
             END
-          ) + (
-            CASE
-              WHEN $time_ref = 'minutes' THEN make_interval(mins => $time_add)
-              WHEN $time_ref = 'percent' THEN (ai.date_limit - ai.date) * $time_add / 100
-              ELSE make_interval(secs => 0)
-            END
-          )
+          ) + make_interval(mins => $time_add)
         )
       END,
       modified_at = now()
@@ -160,6 +155,7 @@ WITH
       auto_close = FALSE,
       date_limit = CASE
         WHEN $base_time = 'null' THEN NULL
+        WHEN $base_time = 'exact_date' THEN $exact_date
         ELSE GREATEST(
           current_timestamp,
           (
@@ -168,13 +164,7 @@ WITH
               WHEN $base_time = 'current_date' THEN current_timestamp
               ELSE ai.date_limit
             END
-          ) + (
-            CASE
-              WHEN $time_ref = 'minutes' THEN make_interval(mins => $time_add)
-              WHEN $time_ref = 'percent' THEN (ai.date_limit - ai.date) * $time_add / 100
-              ELSE make_interval(secs => 0)
-            END
-          )
+          ) + make_interval(mins => $time_add)
         )
       END,
       modified_at = now()
@@ -186,10 +176,7 @@ WITH
       AND ai.assessment_id = $assessment_id
       AND (
         ai.date_limit IS NOT NULL
-        OR (
-          $base_time != 'date_limit'
-          AND $time_ref != 'percent'
-        )
+        OR $base_time != 'date_limit'
       )
     RETURNING
       ai.open,

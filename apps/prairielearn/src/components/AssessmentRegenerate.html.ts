@@ -15,29 +15,25 @@ export function RegenerateInstanceModal({ csrfToken }: { csrfToken: string }) {
       <p>Are you sure you want to regenerate the assessment instance?</p>
     `,
     footer: html`
-      <form method="POST">
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <input type="hidden" name="__action" value="regenerate_instance" />
-        <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
-        <button type="submit" class="btn btn-danger">Regenerate assessment instance</button>
-      </form>
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__action" value="regenerate_instance" />
+      <button type="button" data-bs-dismiss="modal" class="btn btn-secondary">Cancel</button>
+      <button type="submit" class="btn btn-danger">Regenerate assessment instance</button>
     `,
   });
 }
 
 export function RegenerateInstanceAlert() {
   return html`
-    <div class="alert alert-warning alert-dismissible fade show">
-      You are viewing your own assessment instance and have instructor permissions.
-      <a href="#" role="button" data-toggle="modal" data-target="#regenerateInstanceModal">
-        Regenerate this assessment instance
-      </a>
-      to pick up any changes to the underlying assessment or if you want to get a fresh set of
-      questions.
+    <div class="alert alert-warning border-warning alert-dismissible fade show">
+      Course staff:
+      <!-- [html-validate-disable-block prefer-native-element] -->
+      <a href="#" role="button" data-bs-toggle="modal" data-bs-target="#regenerateInstanceModal">
+        Regenerate your assessment instance</a
+      >
+      to pick up changes to the assessment or to get a fresh set of questions.
 
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   `;
 }

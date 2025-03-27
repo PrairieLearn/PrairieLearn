@@ -13,7 +13,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { Course, CourseSchema } from '../lib/db-types.js';
+import { type Course, CourseSchema } from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';
 
@@ -204,5 +204,21 @@ export async function insertCourse({
       course_id: course.id,
     });
     return course;
+  });
+}
+
+/**
+ * Update the show_getting_started field for a course.
+ */
+export async function updateCourseShowGettingStarted({
+  course_id,
+  show_getting_started,
+}: {
+  course_id: string;
+  show_getting_started: boolean;
+}) {
+  await queryAsync(sql.update_course_show_getting_started, {
+    course_id,
+    show_getting_started,
   });
 }

@@ -4,8 +4,11 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
+import { selectCourseById } from '../models/course.js';
 import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
-import { selectUserByUid } from '../models/user.js';
+import { selectOptionalUserByUid } from '../models/user.js';
 
 import {
   GroupSchema,
@@ -189,6 +192,46 @@ export async function getUserRoles(group_id: string, user_id: string) {
   return await sqldb.queryRows(sql.select_user_roles, { group_id, user_id }, GroupRoleSchema);
 }
 
+async function selectUserInCourseInstance({
+  uid,
+  course_instance_id,
+}: {
+  uid: string;
+  course_instance_id: string;
+}) {
+  const user = await selectOptionalUserByUid(uid);
+  if (!user) return null;
+
+  // To be part of a group, the user needs to either be enrolled in the course
+  // instance, or be an instructor
+  if (
+    (await sqldb.callRow(
+      'users_is_instructor_in_course_instance',
+      [user.user_id, course_instance_id],
+      z.boolean(),
+    )) ||
+    (await getEnrollmentForUserInCourseInstance({
+      course_instance_id,
+      user_id: user.user_id,
+    }))
+  ) {
+    return user;
+  }
+
+  // In the example course, any user with instructor access in any other
+  // course should have access and thus be allowed to be added to a group.
+  const course_instance = await selectCourseInstanceById(course_instance_id);
+  if (course_instance) {
+    const course = await selectCourseById(course_instance.course_id);
+    if (course?.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+      return user;
+    }
+  }
+
+  // We do not distinguish between an invalid user and a user that is not in the course instance
+  return null;
+}
+
 export async function addUserToGroup({
   assessment_id,
   group_id,
@@ -212,24 +255,11 @@ export async function addUserToGroup({
       throw new GroupOperationError('Group does not exist.');
     }
 
-    const user = await selectUserByUid(uid);
-    const userIsInstructor =
-      user &&
-      (await sqldb.callRow(
-        'users_is_instructor_in_course_instance',
-        [user.user_id, group.course_instance_id],
-        z.boolean(),
-      ));
-    const userIsStudent =
-      user &&
-      !userIsInstructor &&
-      !!(await getEnrollmentForUserInCourseInstance({
-        course_instance_id: group.course_instance_id,
-        user_id: user.user_id,
-      }));
-    // To be part of a group, the user needs to either be enrolled in the course
-    // instance, or be an instructor
-    if (!userIsStudent && !userIsInstructor) {
+    const user = await selectUserInCourseInstance({
+      uid,
+      course_instance_id: group.course_instance_id,
+    });
+    if (!user) {
       throw new GroupOperationError(`User ${uid} is not enrolled in this course.`);
     }
 
@@ -278,7 +308,6 @@ export async function joinGroup(
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
     // the join code input by user is not valid (not in format of groupname+4-character)
     throw new GroupOperationError('The join code has an incorrect format');
-    return;
   }
 
   const group_name = splitJoinCode[0];
@@ -632,4 +661,8 @@ export async function deleteAllGroups(assessmentId: string, authnUserId: string)
     assessment_id: assessmentId,
     authn_user_id: authnUserId,
   });
+}
+
+export function getRoleNamesForUser(groupInfo: GroupInfo, user: User): string[] {
+  return groupInfo.rolesInfo?.roleAssignments[user.uid]?.map((r) => r.role_name) ?? ['None'];
 }

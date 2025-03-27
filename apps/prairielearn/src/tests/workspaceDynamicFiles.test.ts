@@ -16,6 +16,7 @@ describe('Workspace dynamic files', function () {
   it('succeeds with valid dynamic files', async () => {
     const targetPath = await tmp.dir({ unsafeCleanup: true });
     const { fileGenerationErrors } = await generateWorkspaceFiles({
+      serverFilesCoursePath: join(TEST_COURSE_PATH, 'serverFilesCourse'),
       questionBasePath: join(TEST_COURSE_PATH, 'questions', 'workspace'),
       params: {
         a: 'WORD',
@@ -40,6 +41,10 @@ describe('Workspace dynamic files', function () {
           {
             name: 'reference_to_subdir.txt',
             questionFile: 'path/with/another/file.txt',
+          },
+          {
+            name: 'server_file.txt',
+            serverFilesCourseFile: 'workspace_file.txt',
           },
           {
             name: 'path/../not_normalized.txt',
@@ -97,6 +102,7 @@ describe('Workspace dynamic files', function () {
       'This is included in the workspace.\n',
     );
     await checkFileContents(targetPath.path, 'reference_to_subdir.txt', 'Test file.\n');
+    await checkFileContents(targetPath.path, 'server_file.txt', 'Content in server files\n');
     await checkFileContents(
       targetPath.path,
       'not_normalized.txt',
@@ -117,6 +123,7 @@ describe('Workspace dynamic files', function () {
   it('fails with invalid dynamic files', async () => {
     const targetPath = await tmp.dir({ unsafeCleanup: true });
     const { fileGenerationErrors } = await generateWorkspaceFiles({
+      serverFilesCoursePath: join(TEST_COURSE_PATH, 'serverFilesCourse'),
       questionBasePath: join(TEST_COURSE_PATH, 'questions', 'workspaceInvalidDynamicFiles'),
       params: {
         a: 'STRING',
@@ -158,6 +165,11 @@ describe('Workspace dynamic files', function () {
             questionFile: '../workspace/server.py',
           },
           {
+            // File that points outside the serverFilesCourse directory in serverFilesCourseFile
+            name: 'course.json',
+            serverFilesCourseFile: '../infoCourse.json',
+          },
+          {
             // File without contents or questionFile
             name: 'no_contents.txt',
           },
@@ -181,7 +193,12 @@ describe('Workspace dynamic files', function () {
       { file: 'path/../../outside_home.txt', msg: 'traverses outside the home directory' },
       { file: '/home/prairie/absolute.txt', msg: 'has an absolute path' },
       { file: 'server.py', msg: 'local file outside the question directory' },
-      { file: 'no_contents.txt', msg: 'has neither "contents" nor "questionFile"', contents: '' },
+      { file: 'course.json', msg: 'local file outside the serverFilesCourse directory' },
+      {
+        file: 'no_contents.txt',
+        msg: 'has neither "contents" nor "questionFile" nor "serverFilesCourseFile"',
+        contents: '',
+      },
     ];
 
     for (const expectedError of expectedErrors) {
@@ -198,6 +215,6 @@ describe('Workspace dynamic files', function () {
       }
     }
 
-    assert.lengthOf(fileGenerationErrors, 7);
+    assert.lengthOf(fileGenerationErrors, 8);
   });
 });

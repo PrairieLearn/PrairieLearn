@@ -1,7 +1,7 @@
 import { html, escapeHtml } from '@prairielearn/html';
 
-import { CourseRequestRow } from '../lib/course-request.js';
-import { Institution } from '../lib/db-types.js';
+import { type CourseRequestRow } from '../lib/course-request.js';
+import { type Institution } from '../lib/db-types.js';
 
 import { JobStatus } from './JobStatus.html.js';
 
@@ -29,7 +29,7 @@ export function CourseRequestsTable({
           ? ''
           : html`
               <a
-                class="btn btn-sm btn-light ml-auto"
+                class="btn btn-sm btn-light ms-auto"
                 href="${urlPrefix}/administrator/courseRequests"
               >
                 <i class="fa fa-search" aria-hidden="true"></i>
@@ -84,14 +84,13 @@ export function CourseRequestsTable({
                       ? html`
                           <button
                             type="button"
-                            class="btn btn-sm btn-danger text-nowrap mr-2"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-boundary="window"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Deny course request"
-                            data-content="${escapeHtml(
+                            class="btn btn-sm btn-danger text-nowrap me-2"
+                            data-bs-toggle="popover"
+                            data-bs-container="body"
+                            data-bs-html="true"
+                            data-bs-placement="auto"
+                            data-bs-title="Deny course request"
+                            data-bs-content="${escapeHtml(
                               CourseRequestDenyForm({
                                 request: row,
                                 csrfToken,
@@ -103,13 +102,12 @@ export function CourseRequestsTable({
                           <button
                             type="button"
                             class="btn btn-sm btn-success text-nowrap"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-boundary="window"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Approve course request"
-                            data-content="${escapeHtml(
+                            data-bs-toggle="popover"
+                            data-bs-container="body"
+                            data-bs-html="true"
+                            data-bs-placement="auto"
+                            data-bs-title="Approve course request"
+                            data-bs-content="${escapeHtml(
                               CourseRequestApproveForm({
                                 request: row,
                                 institutions,
@@ -127,9 +125,9 @@ export function CourseRequestsTable({
                     ${row.jobs.length > 0
                       ? html`
                           <button
-                            class="show-hide-btn btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
-                            data-toggle="collapse"
-                            data-target="#course-requests-job-list-${row.id}"
+                            class="btn btn-secondary btn-xs text-nowrap show-hide-btn collapsed"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#course-requests-job-list-${row.id}"
                             aria-expanded="false"
                             aria-controls="course-requests-job-list-${row.id}"
                           >
@@ -171,7 +169,7 @@ export function CourseRequestsTable({
                                       <td>
                                         <a
                                           href="${urlPrefix}/administrator/jobSequence/${job.id}"
-                                          class="btn btn-xs btn-info float-right"
+                                          class="btn btn-xs btn-info float-end"
                                         >
                                           Details
                                         </a>
@@ -211,18 +209,18 @@ function CourseRequestApproveForm({
   coursesRoot: string;
   csrfToken: string;
 }) {
-  const repo_name = 'pl-' + request.short_name.replace(' ', '').toLowerCase();
+  const repo_name = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
   return html`
     <form name="create-course-from-request-form-${request.id}" method="POST">
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="__action" value="create_course_from_request" />
       <input type="hidden" name="request_id" value="${request.id}" />
 
-      <div class="form-group">
-        <label>Institution:</label>
+      <div class="mb-3">
+        <label class="form-label">Institution:</label>
         <select
           name="institution_id"
-          class="custom-select"
+          class="form-select"
           onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
         >
           ${institutions.map((i) => {
@@ -232,8 +230,8 @@ function CourseRequestApproveForm({
           })}
         </select>
       </div>
-      <div class="form-group">
-        <label for="courseRequestAddInputShortName">Short name:</label>
+      <div class="mb-3">
+        <label class="form-label" for="courseRequestAddInputShortName">Short name:</label>
         <input
           type="text"
           class="form-control"
@@ -243,8 +241,8 @@ function CourseRequestApproveForm({
           value="${request.short_name}"
         />
       </div>
-      <div class="form-group">
-        <label for="courseRequestAddInputTitle">Title:</label>
+      <div class="mb-3">
+        <label class="form-label" for="courseRequestAddInputTitle">Title:</label>
         <input
           type="text"
           class="form-control"
@@ -254,8 +252,8 @@ function CourseRequestApproveForm({
           value="${request.title}"
         />
       </div>
-      <div class="form-group">
-        <label for="courseRequestAddInputTimezone">Timezone:</label>
+      <div class="mb-3">
+        <label class="form-label" for="courseRequestAddInputTimezone">Timezone:</label>
         <input
           type="text"
           class="form-control"
@@ -264,8 +262,8 @@ function CourseRequestApproveForm({
           value="${institutions[0]?.display_timezone}"
         />
       </div>
-      <div class="form-group">
-        <label for="courseRequestAddInputPath">Path:</label>
+      <div class="mb-3">
+        <label class="form-label" for="courseRequestAddInputPath">Path:</label>
         <input
           type="text"
           class="form-control"
@@ -274,8 +272,8 @@ function CourseRequestApproveForm({
           value="${coursesRoot + '/' + repo_name}"
         />
       </div>
-      <div class="form-group">
-        <label for="courseRequestAddInputRepositoryName">Repository Name:</label>
+      <div class="mb-3">
+        <label class="form-label" for="courseRequestAddInputRepositoryName">Repository Name:</label>
         <input
           type="text"
           class="form-control"
@@ -284,7 +282,7 @@ function CourseRequestApproveForm({
           value="${repo_name}"
         />
       </div>
-      <div class="form-group">
+      <div class="mb-3">
         <label for="courseRequestAddInputGithubUser">GitHub Username:</label>
         <input
           type="text"
@@ -296,7 +294,7 @@ function CourseRequestApproveForm({
       </div>
 
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Create course</button>
       </div>
     </form>
@@ -316,7 +314,7 @@ function CourseRequestDenyForm({
       <input type="hidden" name="__action" value="approve_deny_course_request" />
       <input type="hidden" name="approve_deny_action" value="deny" />
       <input type="hidden" name="request_id" value="${request.id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Deny</button>
     </form>
   `;
@@ -325,14 +323,16 @@ function CourseRequestDenyForm({
 function CourseRequestStatusIcon({ status }: { status: CourseRequestRow['approved_status'] }) {
   switch (status) {
     case 'pending':
-      return html`<span class="badge badge-secondary"><i class="fa fa-clock"></i> Pending</span>`;
+      return html`<span class="badge text-bg-secondary"><i class="fa fa-clock"></i> Pending</span>`;
     case 'creating':
-      return html`<span class="badge badge-info"><i class="fa fa-sync"></i> Job in progress</span>`;
+      return html`<span class="badge text-bg-info"
+        ><i class="fa fa-sync"></i> Job in progress</span
+      >`;
     case 'failed':
-      return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Job failed</span>`;
+      return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Job failed</span>`;
     case 'approved':
-      return html`<span class="badge badge-success"><i class="fa fa-check"></i> Approved</span>`;
+      return html`<span class="badge text-bg-success"><i class="fa fa-check"></i> Approved</span>`;
     case 'denied':
-      return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Denied</span>`;
+      return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
   }
 }

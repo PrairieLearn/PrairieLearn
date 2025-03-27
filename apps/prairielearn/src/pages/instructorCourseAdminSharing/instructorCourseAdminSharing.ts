@@ -76,11 +76,6 @@ router.post(
       await sqldb.queryZeroOrOneRowAsync(sql.update_sharing_token, {
         course_id: res.locals.course.id,
       });
-    } else if (req.body.__action === 'sharing_set_create') {
-      await sqldb.queryZeroOrOneRowAsync(sql.sharing_set_create, {
-        sharing_set_name: req.body.sharing_set_name.trim(),
-        course_id: res.locals.course.id,
-      });
     } else if (req.body.__action === 'course_sharing_set_add') {
       const consuming_course_id = await sqldb.queryOptionalRow(
         sql.course_sharing_set_add,

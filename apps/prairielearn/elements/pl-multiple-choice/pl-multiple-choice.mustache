@@ -4,10 +4,11 @@
 {{#inline}}
 <span>
 {{/inline}}
+    <span role="group" aria-label="Multiple choice options">
     {{#answers}}
         <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1 gap-2">
             <input
-                class="form-check-input mt-0"
+                class="form-check-input mt-0 flex-shrink-0"
                 type="radio"
                 name="{{name}}"
                 value="{{key}}"
@@ -18,7 +19,7 @@
 
             <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
                 {{^hide_letter_keys}}<div class="pl-multiple-choice-key-label">({{key}})</div>{{/hide_letter_keys}}
-                <div class="ml-1 mr-1">{{{html}}}</div>
+                <div class="ms-1 me-1 pl-multiple-choice-answer">{{{html}}}</div>
             </label>
 
             {{#display_feedback}}
@@ -29,27 +30,28 @@
 
             {{#display_score_badge}}
                 {{#correct}}
-                    <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
+                    <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>
                 {{/correct}}
                 {{#incorrect}}
-                    <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
+                    <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
                 {{/incorrect}}
                 {{#partial}}
-                    <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i></span>
+                    <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i></span>
                 {{/partial}}
             {{/display_score_badge}}
         </div>
     {{/answers}}
+    </span>
 
 {{#display_score_badge}}
     {{#correct}}
-        <span class="badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+        <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
     {{/correct}}
     {{#incorrect}}
-        <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+        <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
     {{/incorrect}}
     {{#partial}}
-        <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+        <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
     {{/partial}}
 {{/display_score_badge}}
 
@@ -71,8 +73,9 @@
         id="pl-multiple-choice-select-{{uuid}}"
         class="d-inline-flex"
         {{^editable}}disabled{{/editable}}
+        aria-label="Multiple choice options"
     >
-        <option value="" disabled selected data-content="Select an option"></option>
+        <option value="" disabled selected data-content="{{placeholder}}"></option>
         {{#answers}}
             <option
                 value="{{key}}"
@@ -91,13 +94,13 @@
 
     {{#display_score_badge}}
         {{#correct}}
-            <span class="ml-1 badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+            <span class="ms-1 badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
         {{#incorrect}}
-            <span class="ml-1 badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+            <span class="ms-1 badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
         {{/incorrect}}
         {{#partial}}
-            <span class="ml-1 badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+            <span class="ms-1 badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
         {{/partial}}
     {{/display_score_badge}}
 </span>
@@ -107,19 +110,17 @@
 {{#submission}}
 {{#parse_error}}
 <span>
-    <a
-        href="javascript:void(0);"
-        role="button"
+    <button
+        type="button"
         class="badge text-danger badge-invalid btn btn-sm btn-secondary small border"
-        data-placement="auto"
-        data-trigger="focus"
-        data-toggle="popover"
-        data-html="true"
+        data-bs-placement="auto"
+        data-bs-toggle="popover"
+        data-bs-html="true"
         title="Format Error"
-        tabindex="0"
-        data-content="{{parse_error}}"
-    > Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-    </a>
+        data-bs-content="{{parse_error}}"
+    >
+        Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+    </button>
 </span>
 {{/parse_error}}
 {{^parse_error}}
@@ -137,13 +138,13 @@
 
     {{#display_score_badge}}
         {{#correct}}
-            <span class="ml-1 badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+            <span class="ms-1 badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
         {{#incorrect}}
-            <span class="ml-1 badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+            <span class="ms-1 badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
         {{/incorrect}}
         {{#partial}}
-            <span class="ml-1 badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+            <span class="ms-1 badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
         {{/partial}}
     {{/display_score_badge}}
 

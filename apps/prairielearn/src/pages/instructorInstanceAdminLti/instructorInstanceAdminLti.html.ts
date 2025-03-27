@@ -1,7 +1,6 @@
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { config } from '../../lib/config.js';
 import type { LtiCredentials, User } from '../../lib/db-types.js';
@@ -20,85 +19,88 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
     urlPrefix,
   } = resLocals;
 
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'LTI' })}
-      </head>
-      <body>
-        <script>
-          function copyToClipboard(element) {
-            var $temp = $('<input>');
-            $('body').append($temp);
-            $temp.val($(element).text()).select();
-            document.execCommand('copy');
-            $temp.remove();
-          }
-        </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
-        <main id="content" class="container-fluid">
-          ${CourseInstanceSyncErrorsAndWarnings({ authz_data, courseInstance, course, urlPrefix })}
-          ${!authz_data.has_course_permission_edit
-            ? html`
-                <div class="card mb-4">
-                  <div class="card-header bg-danger text-white">
-                    <h1>LTI configuration</h1>
-                  </div>
-                  <div class="card-body">
-                    <h2>Insufficient permissions</h2>
-                    <p>You must have at least &quot;Editor&quot; permissions for this course.</p>
-                    ${course_owners.length > 0
-                      ? html`
-                          <p>Contact one of the below course owners to request access.</p>
-                          <ul>
-                            ${course_owners.map(
-                              (owner: User) => html`
-                                <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li>
-                              `,
-                            )}
-                          </ul>
-                        `
-                      : ''}
-                  </div>
-                </div>
-              `
-            : html`
-                <div class="card mb-4">
-                  <div class="card-header bg-primary text-white">
-                    <h1>LTI configuration</h1>
-                  </div>
-                  <div class="card-body">
-                    <p>
-                      The LTI (Learning Tools Interoperability) standard allows other online
-                      learning websites to embed PrairieLearn assessments within them. PrairieLearn
-                      acts as a <em>Tool Provider</em> for LTI. See the
-                      <a href="https://www.imsglobal.org/basic-overview-how-lti-works">
-                        LTI overview
-                      </a>
-                      for more information.
-                    </p>
-                    <p>
-                      <strong>
-                        This version of LTI is deprecated. Check with PrairieLearn admins before
-                        enabling to ensure it is appropriate for your course.
-                      </strong>
-                    </p>
-                    ${!config.hasLti ? html`<p><em>LTI not enabled on this server.</em></p>` : ''}
-                  </div>
-                </div>
-
-                ${config.hasLti
+  return PageLayout({
+    resLocals,
+    pageTitle: 'LTI',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'lti',
+    },
+    options: {
+      fullWidth: true,
+    },
+    preContent: html`
+      <script>
+        function copyToClipboard(element) {
+          var $temp = $('<input>');
+          $('body').append($temp);
+          $temp.val($(element).text()).select();
+          document.execCommand('copy');
+          $temp.remove();
+        }
+      </script>
+    `,
+    content: html`
+      ${CourseInstanceSyncErrorsAndWarnings({ authz_data, courseInstance, course, urlPrefix })}
+      ${!authz_data.has_course_permission_edit
+        ? html`
+            <div class="card mb-4">
+              <div class="card-header bg-danger text-white">
+                <h1>LTI configuration</h1>
+              </div>
+              <div class="card-body">
+                <h2>Insufficient permissions</h2>
+                <p>You must have at least &quot;Editor&quot; permissions for this course.</p>
+                ${course_owners.length > 0
                   ? html`
-                      ${LtiCredentialsCard({ lti_credentials, csrfToken })}
-                      ${LtiLinkTargetsCard({ lti_links, assessments, csrfToken })}
+                      <p>Contact one of the below course owners to request access.</p>
+                      <ul>
+                        ${course_owners.map(
+                          (owner: User) => html`
+                            <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li>
+                          `,
+                        )}
+                      </ul>
                     `
                   : ''}
-              `}
-        </main>
-      </body>
-    </html>
-  `.toString();
+              </div>
+            </div>
+          `
+        : html`
+            <div class="card mb-4">
+              <div class="card-header bg-primary text-white">
+                <h1>LTI configuration</h1>
+              </div>
+              <div class="card-body">
+                <p>
+                  The LTI (Learning Tools Interoperability) standard allows other online learning
+                  websites to embed PrairieLearn assessments within them. PrairieLearn acts as a
+                  <em>Tool Provider</em> for LTI. See the
+                  <a href="https://www.imsglobal.org/basic-overview-how-lti-works">
+                    LTI overview
+                  </a>
+                  for more information.
+                </p>
+                <p>
+                  <strong>
+                    This version of LTI is deprecated. Check with PrairieLearn admins before
+                    enabling to ensure it is appropriate for your course.
+                  </strong>
+                </p>
+                ${!config.hasLti ? html`<p><em>LTI not enabled on this server.</em></p>` : ''}
+              </div>
+            </div>
+
+            ${config.hasLti
+              ? html`
+                  ${LtiCredentialsCard({ lti_credentials, csrfToken })}
+                  ${LtiLinkTargetsCard({ lti_links, assessments, csrfToken })}
+                `
+              : ''}
+          `}
+    `,
+  });
 }
 
 function LtiCredentialsCard({
@@ -138,43 +140,50 @@ function LtiCredentialsCard({
                   <tr>
                     <td>
                       <code>${config.ltiRedirectUrl}</code>
-                      <i
-                        class="far fa-copy"
-                        title="Copy to clipboard"
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-ghost"
+                        aria-label="Copy redirect URL to clipboard"
                         onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
-                      ></i>
+                      >
+                        <i class="far fa-copy"></i>
+                      </button>
                     </td>
                     <td>
                       <code>${tc.consumer_key}</code>
-                      <i
-                        class="far fa-copy"
-                        title="Copy to clipboard"
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-ghost"
+                        aria-label="Copy consumer key to clipboard"
                         onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
-                      ></i>
+                      >
+                        <i class="far fa-copy"></i>
+                      </button>
                     </td>
                     <td>
                       <code>${tc.secret}</code>
-                      <i
-                        class="far fa-copy"
-                        title="Copy to clipboard"
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-ghost"
+                        aria-label="Copy shared secret to clipboard"
                         onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
-                      ></i>
+                      >
+                        <i class="far fa-copy"></i>
+                      </button>
                     </td>
                     <td>${tc.created}</td>
                     <td>
                       ${tc.deleted ||
                       html`
-                        <a
-                          tabindex="0"
+                        <button
+                          type="button"
                           class="btn btn-sm btn-danger"
-                          role="button"
-                          data-toggle="popover"
-                          data-trigger="focus"
-                          data-container="body"
-                          data-html="true"
-                          data-placement="auto"
-                          title="Confirm delete"
-                          data-content="${escapeHtml(html`
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Confirm delete"
+                          data-bs-content="${escapeHtml(html`
                             <form method="post">
                               <input type="hidden" name="__action" value="lti_del_cred" />
                               <input type="hidden" name="__csrf_token" value="${csrfToken}" />
@@ -184,7 +193,7 @@ function LtiCredentialsCard({
                           `)}"
                         >
                           Delete
-                        </a>
+                        </button>
                       `}
                     </td>
                   </tr>
@@ -264,7 +273,7 @@ function LtiLinkTargetsCard({
                         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
                         <input type="hidden" name="lti_link_id" value="${link.id}" />
                         <select
-                          class="custom-select"
+                          class="form-select"
                           onChange="this.form.submit();"
                           name="newAssessment"
                         >

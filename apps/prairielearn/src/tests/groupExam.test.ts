@@ -4,14 +4,15 @@ import fetchCookie from 'fetch-cookie';
 import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 
-import { queryAsync, queryOneRowAsync, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
+import { queryAsync, queryOneRowAsync, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { UserSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { switchUserAndLoadAssessment } from './utils/group.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -26,55 +27,10 @@ const GROUP_EXAM_2_TID = 'exam16-groupWorkRoles';
 const GROUP_NAME = 'groupBB';
 const GROUP_NAME_ALTERNATIVE = 'groupCC';
 
-const StudentUserSchema = UserSchema.pick({
-  user_id: true,
-  uid: true,
-  name: true,
-  uin: true,
-});
-
-interface StudentUser {
-  user_id: string | null;
-  uid: string;
-  name: string | null;
-  uin: string | null;
-}
-
-async function generateThreeStudentUsers(): Promise<StudentUser[]> {
-  const rows = await queryRows(sql.generate_and_enroll_3_users, StudentUserSchema);
+async function generateThreeStudentUsers() {
+  const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
   assert.lengthOf(rows, 3);
   return rows;
-}
-
-/**
- * Switches active user and loads assessment, returning the user's CSRF
- * token value from a form on the page
- */
-async function switchUserAndLoadAssessment(
-  studentUser: StudentUser,
-  assessmentUrl: string,
-  formName: string | null,
-  formContainer = 'body',
-): Promise<{ $: cheerio.CheerioAPI; csrfToken: string }> {
-  // Load config
-  config.authUid = studentUser.uid;
-  config.authName = studentUser.name;
-  config.authUin = studentUser.uin;
-
-  // Load assessment
-  const res = await fetch(assessmentUrl);
-  assert.isOk(res.ok);
-  const page = await res.text();
-  const $ = cheerio.load(page);
-
-  // Check that the correct CSRF form exists
-  const elementQuery = `${formContainer} form${formName ? `[name="${formName}"]` : ''} input[name="__csrf_token"]`;
-  const csrfTokenElement = $(elementQuery);
-  assert.nestedProperty(csrfTokenElement[0], 'attribs.value');
-  assert.isString(csrfTokenElement.attr('value'));
-  const csrfToken = csrfTokenElement.attr('value') as string; // guaranteed to be string by assertion
-
-  return { $, csrfToken };
 }
 
 /**

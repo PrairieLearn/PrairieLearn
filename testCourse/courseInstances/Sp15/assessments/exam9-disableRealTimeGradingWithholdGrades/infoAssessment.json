@@ -7,7 +7,6 @@
   "allowRealTimeGrading": false,
   "allowAccess": [
     {
-      "mode": "Public",
       "credit": 100,
       "timeLimitMin": 50,
       "showClosedAssessment": false,

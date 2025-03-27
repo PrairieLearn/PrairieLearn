@@ -6,13 +6,14 @@ import * as sqldb from '@prairielearn/postgres';
 import * as groupUpdate from '../lib/group-update.js';
 import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const locals: Record<string, any> = {};
 
-describe('test auto group and delete groups', function () {
+describe('test random groups and delete groups', function () {
   this.timeout(20000);
   before('set up testing server', helperServer.before(TEST_COURSE_PATH));
   after('shut down testing server', helperServer.after);
@@ -25,16 +26,16 @@ describe('test auto group and delete groups', function () {
   });
 
   step('create 500 users', async () => {
-    const result = await sqldb.queryAsync(sql.generate_500, []);
-    assert.equal(result.rows.length, 500);
+    const result = await generateAndEnrollUsers({ count: 500, course_instance_id: '1' });
+    assert.equal(result.length, 500);
   });
 
-  step('auto assign groups', async () => {
+  step('randomly assign groups', async () => {
     const user_id = '1';
     const authn_user_id = '1';
     const max_group_size = 10;
     const min_group_size = 10;
-    const job_sequence_id = await groupUpdate.autoGroups(
+    const job_sequence_id = await groupUpdate.randomGroups(
       locals.assessment_id,
       user_id,
       authn_user_id,

@@ -44,8 +44,7 @@
 # However, you could use the Rocker base images in that case.
 # Their site has more documentation.
 
-# Latest as of 20240126
-FROM rocker/rstudio:4.3.2
+FROM rocker/rstudio:4.4.3
 
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.
@@ -63,6 +62,7 @@ RUN export OLD_UID=$(id -u rstudio) && \
 USER 0
 RUN apt-get update && \
     # Run 'unminimize' to add docs
+    apt-get install -y man-db unminimize && \
     yes | unminimize && \
     apt-get install -y --no-install-recommends \
     # Reverse proxy workaround for PrairieLearn:
@@ -71,7 +71,7 @@ RUN apt-get update && \
     gosu \
     fonts-dejavu \
     # Utilities for convenience debugging this container:
-    less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 man-db && \
+    less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 && \
     # Test:
     gosu nobody true && \
     # Cleanup:

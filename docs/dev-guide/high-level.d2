@@ -1,0 +1,56 @@
+direction: left
+
+classes: {
+  pill: {
+    style.border-radius: 50
+    width: 150
+  }
+  user.style.fill: "#FFE4B5"
+  repo.style.fill: "#B0E0E6"
+  server.style.fill: "#98FB98"
+  db.style.fill: "#DCDCDC"
+  layer: {
+    width: 450
+    height: 100
+    grid-columns: 2
+    style.opacity: 0
+  }
+}
+
+layer1: {
+  class: layer
+  instructor: Instructor {
+    class: [user; pill]
+  }
+  student: Student {
+    class: [user; pill]
+  }
+}
+
+layer2: {
+  class: layer
+  repo: Course git repo {
+    class: [repo; pill]
+  }
+  server: PL server {
+    class: [server; pill]
+  }
+}
+
+layer3: {
+  class: layer
+  # An element to align db to the right side
+  pad: {
+    style.opacity: 0
+    class: pill
+  }
+  db: Database {
+    class: [db; pill]
+  }
+}
+
+layer1.instructor <- layer2.server
+layer1.instructor -> layer2.repo
+layer1.student <-> layer2.server
+layer2.repo -> layer2.server
+layer2.server <-> layer3.db

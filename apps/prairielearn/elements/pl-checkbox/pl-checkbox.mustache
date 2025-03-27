@@ -1,16 +1,16 @@
 {{#question}}
-{{#inline}}<span class="d-inline-block">{{/inline}}
-{{^inline}}<div class="d-block">{{/inline}}
+{{#inline}}<span class="d-inline-block" role="group" aria-label="Checkbox options">{{/inline}}
+{{^inline}}<fieldset class="d-block"><legend class="visually-hidden">Checkbox options</legend>{{/inline}}
 
 {{#answers}}
     <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1 gap-2">
-        <input class="form-check-input mt-0" type="checkbox"
+        <input class="form-check-input mt-0 flex-shrink-0" type="checkbox"
                name="{{name}}" value="{{key}}" {{^editable}}disabled{{/editable}}
                {{#checked}}checked{{/checked}} id="{{name}}-{{key}}">
 
         <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
             {{^hide_letter_keys}}<div class="pl-checkbox-key-label">({{key}})</div>{{/hide_letter_keys}}
-            <div class="ml-1 mr-1">{{{html}}}</div>
+            <div class="ms-1 me-1 pl-checkbox-answer">{{{html}}}</div>
         </label>
 
         {{#display_feedback}}
@@ -21,32 +21,30 @@
 
         {{#display_score_badge}}
             {{#correct}}
-                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
+                <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>
             {{/correct}}
             {{#incorrect}}
-                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
+                <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
             {{/incorrect}}
         {{/display_score_badge}}
     </div>
 {{/answers}}
 
 {{#helptext}}
-<span class="form-inline">
-    <span class="input-group pl-checkbox">
-        <span> {{{helptext}}} </span>
-        <a role="button" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Checkbox" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
-            <i class="fa fa-question-circle" aria-hidden="true"></i>
-        </a>
-    </span>
-</span>
+<div class="d-flex align-items-center gap-2">
+    <span>{{{helptext}}}</span>
+    <button type="button" class="btn btn-light btn-sm" data-bs-toggle="popover" data-bs-html="true" title="Checkbox" data-bs-content="{{info}}" data-bs-placement="auto">
+        <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </button>
+</div>
 {{/helptext}}
 
-{{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-{{#partial}}&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 
 {{#inline}}</span>{{/inline}}
-{{^inline}}</div>{{/inline}}
+{{^inline}}</fieldset>{{/inline}}
 {{/question}}
 
 {{#format}}
@@ -83,7 +81,7 @@ Otherwise, you will receive a score of 0%.
 {{^inline}}<div class="d-block">{{/inline}}
     <span >
         <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-        <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border ml-1" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+        <button type="button" class="btn btn-sm btn-secondary small border ms-1" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" title="Format Error" data-bs-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
     </span>
 </div>
 {{#inline}}</span>{{/inline}}
@@ -105,10 +103,10 @@ Otherwise, you will receive a score of 0%.
         {{/display_feedback}}
         {{#display_score_badge}}
             {{#correct}}
-                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
+                <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>
             {{/correct}}
             {{#incorrect}}
-                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
+                <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
             {{/incorrect}}
         {{/display_score_badge}}
         </div>
@@ -120,13 +118,13 @@ Otherwise, you will receive a score of 0%.
 {{#display_score_badge}}
     &nbsp;
     {{#correct}}
-        <span class="badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+        <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
     {{/correct}}
     {{#incorrect}}
-        <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+        <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
     {{/incorrect}}
     {{#partial}}
-        <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+        <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
     {{/partial}}
 {{/display_score_badge}}
 

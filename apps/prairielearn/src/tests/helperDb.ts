@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import { Context } from 'mocha';
+import { type Context } from 'mocha';
 import pg from 'pg';
 
 import {

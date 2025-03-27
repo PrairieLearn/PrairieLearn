@@ -56,7 +56,6 @@ CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
     """Gets order type in a backwards-compatible way. New display overwrites old."""
-
     if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
         raise ValueError(
             'Setting answer choice order should be done with the "order" attribute.'
@@ -160,7 +159,6 @@ def categorize_options(
     element: lxml.html.HtmlElement,
 ) -> tuple[list[AnswerTuple], list[AnswerTuple]]:
     """Get provided correct and incorrect answers."""
-
     correct_answers = []
     incorrect_answers = []
     index = count(0)
@@ -297,7 +295,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     display_answers = []
     correct_answer_list = []
-    for key, answer in zip(pl.iter_keys(), sampled_answers):
+    for key, answer in zip(pl.iter_keys(), sampled_answers, strict=False):
         keyed_answer = {
             "key": key,
             "html": answer.html,
@@ -430,17 +428,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
                 else:
                     insert_text = f" exactly <b>{min_options_to_select}</b> options."
+            # If we get here, at least one of min_options_to_select and max_options_to_select should *not* be revealed.
+            elif show_min_select:
+                insert_text = f" at least <b>{min_options_to_select}</b> options."
+            elif show_max_select:
+                insert_text = f" at most <b>{max_options_to_select}</b> options."
             else:
-                # If we get here, at least one of min_options_to_select and max_options_to_select should *not* be revealed.
-                if show_min_select:
-                    insert_text = f" at least <b>{min_options_to_select}</b> options."
-                elif show_max_select:
-                    insert_text = f" at most <b>{max_options_to_select}</b> options."
-                else:
-                    # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
-                    insert_text = (
-                        " at least 0 options." if allow_blank else " at least 1 option."
-                    )
+                # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
+                insert_text = (
+                    " at least 0 options." if allow_blank else " at least 1 option."
+                )
 
             insert_text += number_correct_text
 
@@ -503,7 +500,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             info_params["insert_text"] = insert_text
             info_params["num_display_answers"] = len(display_answers)
 
-        with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
 
         html_params = {
@@ -524,7 +521,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -572,7 +569,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 score_type, score_value = pl.determine_score_params(score)
                 html_params[score_type] = score_value
 
-            with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+            with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
                 return chevron.render(f, html_params).strip()
         else:
             html_params = {
@@ -581,7 +578,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "parse_error": parse_error,
                 "inline": inline,
             }
-            with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+            with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
                 return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -592,17 +589,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         correct_answer_list = data["correct_answers"].get(name, [])
         if len(correct_answer_list) == 0:
             raise ValueError("At least one option must be true.")
-        else:
-            html_params = {
-                "answer": True,
-                "inline": inline,
-                "answers": correct_answer_list,
-                "hide_letter_keys": pl.get_boolean_attrib(
-                    element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
-                ),
-            }
-            with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-                return chevron.render(f, html_params).strip()
+        html_params = {
+            "answer": True,
+            "inline": inline,
+            "answers": correct_answer_list,
+            "hide_letter_keys": pl.get_boolean_attrib(
+                element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
+            ),
+        }
+        with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
 
     else:
         assert_never(data["panel"])

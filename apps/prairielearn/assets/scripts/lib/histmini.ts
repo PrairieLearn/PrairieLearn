@@ -56,6 +56,8 @@ export function histmini(
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
     .attr('class', 'center-block statsPlot')
+    // We are deliberately setting role="none" here as we do not have any meaningful information to expose to screen readers.
+    .attr('role', 'none')
     .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 

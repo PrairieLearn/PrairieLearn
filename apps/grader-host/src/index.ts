@@ -11,10 +11,13 @@ import byline from 'byline';
 import Docker from 'dockerode';
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import * as shlex from 'shlex';
 import * as tmp from 'tmp-promise';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { sanitizeObject } from '@prairielearn/sanitize';
 import * as Sentry from '@prairielearn/sentry';
 
@@ -31,6 +34,17 @@ import { type GradingJobMessage, receiveFromQueue } from './lib/receiveFromQueue
 import * as timeReporter from './lib/timeReporter.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+interface GradingResults {
+  job_id: string;
+  received_time: Date;
+  start_time?: Date;
+  end_time?: Date;
+  succeeded?: boolean;
+  timedOut?: boolean;
+  results?: any;
+  message?: string;
+}
 
 // catch SIGTERM and exit after waiting for all current jobs to finish
 let processTerminating = false;
@@ -130,10 +144,17 @@ async.series(
 
             await handleJob(job).then(
               () => globalLogger.info(`handleJob(${job.jobId}) succeeded`),
-              (err) => globalLogger.info(`handleJob(${job.jobId}) errored`, err),
+              (err) => {
+                globalLogger.info(`handleJob(${job.jobId}) errored`, err);
+
+                // Throwing the error will ensure that the job isn't deleted
+                // from SQS and thus will be retried.
+                throw err;
+              },
             );
           }).catch((err) => {
-            globalLogger.error('receive error:', err);
+            globalLogger.error('receiveFromQueue error', err);
+            Sentry.captureException(err);
           });
         }
       }
@@ -188,24 +209,85 @@ async function handleJob(job: GradingJobMessage) {
   try {
     const receivedTime = await timeReporter.reportReceivedTime(job.jobId);
 
-    const initResults = await Promise.all([
+    const initResults = await Promise.allSettled([
       reportReceived(context, receivedTime),
+      // It's possible that this could fail for normal reasons, e.g. a Docker
+      // image not existing in our cache. We'll allow this error to bubble up
+      // but we won't report it to Sentry.
       initDocker(context),
-      initFiles(context),
+      // This should never fail, but if it does, something has gone very wrong,
+      // so we'll specifically report it to Sentry.
+      initFiles(context).catch((err) => {
+        Sentry.captureException(err);
+        throw err;
+      }),
     ]);
 
-    const results = await runJob(context, receivedTime, initResults[2].tempDir);
+    const tempDir = initResults[2].status === 'fulfilled' ? initResults[2].value : undefined;
+
+    const results = await run(async () => {
+      const initSucceeded = initResults.every((result) => result.status === 'fulfilled');
+      if (initSucceeded && tempDir) {
+        return await runJob(context, receivedTime, tempDir.path);
+      }
+
+      // We failed to init, so we weren't able to run the job. We'll report
+      // generic error messages as the result of the job.
+      const message = run(() => {
+        const dockerInitSucceeded = initResults[1].status === 'fulfilled';
+        const fileInitSucceeded = initResults[2].status === 'fulfilled';
+
+        const messages: string[] = [];
+        if (!dockerInitSucceeded) {
+          messages.push(`Could not pull Docker image ${job.image}.`);
+        }
+        if (!fileInitSucceeded) {
+          messages.push('Could not initialize files for grading.');
+        }
+
+        // This should never occur, as `reportReceived` should never reject. But,
+        // just in case, we'll return a generic error message.
+        if (messages.length === 0) {
+          return 'An unknown error occurred.';
+        }
+
+        return messages.join('\n');
+      });
+
+      return {
+        job_id: job.jobId,
+        received_time: receivedTime,
+        start_time: new Date(),
+        end_time: new Date(),
+        succeeded: false,
+        message,
+      };
+    });
 
     logger.info(`Job ${job.jobId} completed with results:`, results);
 
-    await Promise.all([
-      uploadResults(context, results),
-      uploadArchive(context, initResults[2].tempDir),
-    ]);
+    try {
+      await Promise.all([
+        uploadResults(context, results),
+        // Only attempt to upload the archive if the directory was created.
+        tempDir ? uploadArchive(context, tempDir.path) : Promise.resolve(),
+      ]);
 
-    logger.info('Removing temporary directories');
-    await initResults[2].tempDirCleanup();
-    logger.info('Successfully removed temporary directories');
+      if (tempDir) {
+        logger.info('Removing temporary directories');
+        await tempDir.cleanup();
+        logger.info('Successfully removed temporary directories');
+      }
+    } catch (err) {
+      Sentry.captureException(err);
+      throw err;
+    } finally {
+      // Do this last so that we capture all relevant logs.
+      await uploadLogs(context).catch((err) => {
+        Sentry.captureException(err);
+        throw err;
+      });
+    }
   } finally {
     load.endJob();
   }
@@ -226,19 +308,18 @@ async function reportReceived(context: Context, receivedTime: Date) {
   const { job, logger } = context;
   logger.info('Sending job acknowledgement to PrairieLearn');
 
-  const messageBody = {
-    jobId: job.jobId,
-    event: 'job_received',
-    data: {
-      receivedTime,
-    },
-  };
-  const sqs = new SQSClient(makeAwsClientConfig());
   try {
+    const sqs = new SQSClient(makeAwsClientConfig());
     await sqs.send(
       new SendMessageCommand({
         QueueUrl: config.resultsQueueUrl,
-        MessageBody: JSON.stringify(messageBody),
+        MessageBody: JSON.stringify({
+          jobId: job.jobId,
+          event: 'job_received',
+          data: {
+            receivedTime,
+          },
+        }),
       }),
     );
   } catch (err) {
@@ -324,21 +405,34 @@ async function initFiles(context: Context) {
     logger.info('Unzipping files');
     await execa('tar', ['-xf', jobArchiveFile.path, '-C', jobDirectory.path]);
 
-    logger.info('Making entrypoint executable');
-    await execa('chmod', ['+x', path.join(jobDirectory.path, entrypoint.slice(6))]).catch(() => {
-      logger.error('Could not make file executable; continuing execution anyways');
-    });
+    if (entrypoint != null) {
+      const entrypointFirstToken = shlex.split(entrypoint)[0];
+      if (
+        path.isAbsolute(entrypointFirstToken) &&
+        contains('/grade', entrypointFirstToken, false)
+      ) {
+        // Mark the entrypoint as executable if it lives in the mounted volume.
+        logger.info('Making entrypoint executable');
+        await execa('chmod', [
+          '+x',
+          path.resolve(jobDirectory.path, path.relative('/grade', entrypointFirstToken)),
+        ]).catch(() => {
+          logger.error('Could not make file executable; continuing execution anyways');
+        });
+      }
+    }
 
-    return {
-      tempDir: jobDirectory.path,
-      tempDirCleanup: jobDirectory.cleanup,
-    };
+    return jobDirectory;
   } finally {
     await jobArchiveFile.cleanup();
   }
 }
 
-async function runJob(context: Context, receivedTime: Date, tempDir: string) {
+async function runJob(
+  context: Context,
+  receivedTime: Date,
+  tempDir: string,
+): Promise<GradingResults> {
   const {
     docker,
     logger,
@@ -352,7 +446,10 @@ async function runJob(context: Context, receivedTime: Date, tempDir: string) {
   // this.
   const jobTimeout = timeout + config.timeoutOverhead;
 
-  const results: Record<string, any> = {};
+  const results: GradingResults = {
+    job_id: jobId,
+    received_time: receivedTime,
+  };
 
   logger.info('Launching Docker container to run grading job');
 
@@ -363,7 +460,7 @@ async function runJob(context: Context, receivedTime: Date, tempDir: string) {
   const runImage = repository.getCombined();
   logger.info(`Run image: ${runImage}`);
 
-  const timeoutDeferredPromise = deferredPromise();
+  const timeoutDeferredPromise = deferredPromise<never>();
   const jobTimeoutId = setTimeout(() => {
     healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
     timeoutDeferredPromise.reject(new Error(`Job timeout of ${jobTimeout}s exceeded.`));
@@ -397,7 +494,7 @@ async function runJob(context: Context, receivedTime: Date, tempDir: string) {
           },
         ],
       },
-      Entrypoint: entrypoint.split(' '),
+      Entrypoint: entrypoint ? shlex.split(entrypoint) : undefined,
     });
 
     const stream = await container.attach({
@@ -496,16 +593,13 @@ async function runJob(context: Context, receivedTime: Date, tempDir: string) {
       // the timeout here if needed.
       clearTimeout(jobTimeoutId);
 
-      results.job_id = jobId;
-      results.received_time = receivedTime;
-
       return results;
     });
 
   return await Promise.race([task, timeoutDeferredPromise.promise]);
 }
 
-async function uploadResults(context: Context, results: any) {
+async function uploadResults(context: Context, results: GradingResults) {
   const {
     logger,
     s3,
@@ -572,17 +666,25 @@ async function uploadArchive(context: Context, tempDir: string) {
         Body: fs.createReadStream(archiveFile.path),
       },
     }).done();
-
-    // Upload all logs to S3.
-    await new Upload({
-      client: s3,
-      params: {
-        Bucket: s3Bucket,
-        Key: `${s3RootKey}/output.log`,
-        Body: logger.getBuffer(),
-      },
-    }).done();
   } finally {
     await archiveFile.cleanup();
   }
+}
+
+async function uploadLogs(context: Context) {
+  const {
+    logger,
+    s3,
+    job: { s3Bucket, s3RootKey },
+  } = context;
+
+  // Upload all logs to S3.
+  await new Upload({
+    client: s3,
+    params: {
+      Bucket: s3Bucket,
+      Key: `${s3RootKey}/output.log`,
+      Body: logger.getBuffer(),
+    },
+  }).done();
 }

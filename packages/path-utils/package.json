@@ -16,14 +16,14 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/chai": "^4.3.17",
-    "@types/mocha": "^10.0.7",
-    "@types/node": "^20.14.15",
-    "c8": "^10.1.2",
-    "chai": "^5.1.1",
-    "mocha": "^10.7.3",
-    "tsx": "^4.17.0",
-    "typescript": "^5.5.4"
+    "@types/chai": "^5.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.17.23",
+    "c8": "^10.1.3",
+    "chai": "^5.2.0",
+    "mocha": "^11.1.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
   },
   "c8": {
     "reporter": [

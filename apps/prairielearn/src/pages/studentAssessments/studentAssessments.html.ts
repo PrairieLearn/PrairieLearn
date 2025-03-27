@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import {
   AuthzAccessRuleSchema,
@@ -49,13 +49,10 @@ export function StudentAssessments({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Assessments' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'assessments',
-        })}
+        ${Navbar({ resLocals, navPage: 'assessments', navSubPage: 'assessments' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
@@ -65,8 +62,8 @@ export function StudentAssessments({
             <table class="table table-sm table-hover" aria-label="Assessments">
               <thead>
                 <tr>
-                  <th style="width: 1%"><span class="sr-only">Label</span></th>
-                  <th><span class="sr-only">Title</span></th>
+                  <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                  <th><span class="visually-hidden">Title</span></th>
                   <th class="text-center">Available credit</th>
                   <th class="text-center">Score</th>
                 </tr>
@@ -141,7 +138,7 @@ export function StudentAssessments({
 function AssessmentScore(row: StudentAssessmentsRow) {
   if (row.assessment_instance_id == null) return 'Not started';
   if (!row.show_closed_assessment_score) return 'Score not shown';
-  return Scorebar(row.assessment_instance_score_perc);
+  return Scorebar(row.assessment_instance_score_perc, { classes: 'mx-auto' });
 }
 
 function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: StudentAssessmentsRow }) {

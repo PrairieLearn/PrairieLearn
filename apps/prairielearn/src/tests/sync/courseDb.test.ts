@@ -7,7 +7,7 @@ import * as tmp from 'tmp-promise';
 import * as courseDb from '../../sync/course-db.js';
 import * as infofile from '../../sync/infofile.js';
 
-import { Question } from './util.js';
+import { type Question } from './util.js';
 
 async function withTempDirectory(callback: (dir: string) => Promise<void>) {
   const dir = await tmp.dir({ unsafeCleanup: true });

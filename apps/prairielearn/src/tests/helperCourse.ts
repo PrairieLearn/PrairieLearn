@@ -5,8 +5,8 @@ import { makeMockLogger } from './mockLogger.js';
 
 export async function syncCourse(courseDir = TEST_COURSE_PATH) {
   const { logger, getOutput } = makeMockLogger();
-  const result = await syncFromDisk.syncOrCreateDiskToSql(courseDir, logger);
-  if (!result || result.hadJsonErrorsOrWarnings) {
+  const syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseDir, logger);
+  if (syncResult.status === 'sharing_error' || syncResult.hadJsonErrorsOrWarnings) {
     console.log(getOutput());
     throw new Error(`Errors or warnings found during sync of ${courseDir}`);
   }

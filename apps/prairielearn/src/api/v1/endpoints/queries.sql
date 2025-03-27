@@ -54,6 +54,7 @@ WITH
       a.number AS assessment_number,
       u.user_id,
       u.uid AS user_uid,
+      u.uin AS user_uin,
       u.name AS user_name,
       users_get_displayed_role (u.user_id, ci.id) AS user_role,
       ai.max_points,
@@ -228,6 +229,8 @@ FROM
 WITH
   object_data AS (
     SELECT
+      z.number as zone_number,
+      z.title as zone_title,
       q.id AS question_id,
       q.qid AS question_name,
       iq.id AS instance_question_id,
@@ -250,6 +253,8 @@ WITH
       JOIN questions AS q ON (q.id = aq.question_id)
       JOIN assessments AS a ON (a.id = aq.assessment_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+      JOIN zones AS z ON (z.id = ag.zone_id)
     WHERE
       ai.id = $unsafe_assessment_instance_id
       AND ci.id = $course_instance_id
@@ -273,6 +278,7 @@ WITH
       s.id AS submission_id,
       u.user_id,
       u.uid AS user_uid,
+      u.uin AS user_uin,
       u.name AS user_name,
       users_get_displayed_role (u.user_id, ci.id) AS user_role,
       gi.id AS group_id,
@@ -285,6 +291,15 @@ WITH
       ai.number AS assessment_instance_number,
       q.id AS question_id,
       q.qid AS question_name,
+      (
+        SELECT
+          COALESCE(JSONB_AGG(tg.name), '[]'::jsonb) AS tags
+        FROM
+          question_tags AS qt
+          JOIN tags AS tg ON (tg.id = qt.tag_id)
+        WHERE
+          q.id = qt.question_id
+      ) AS question_tags,
       iq.id AS instance_question_id,
       iq.number AS instance_question_number,
       aq.max_points AS assessment_question_max_points,
@@ -297,8 +312,8 @@ WITH
       v.id AS variant_id,
       v.number AS variant_number,
       v.variant_seed,
-      v.params,
-      v.true_answer,
+      s.params,
+      s.true_answer,
       v.options,
       format_date_iso8601 (s.date, ci.display_timezone) AS date,
       s.submitted_answer,

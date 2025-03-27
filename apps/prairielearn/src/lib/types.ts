@@ -31,9 +31,8 @@ export type WithRequiredKeys<T, RequiredKeys extends keyof T> = Omit<
   T,
   RequiredKeys | NullableKeys<T>
 > &
-  RequiredProperty<Pick<T, RequiredKeys>> & {
-    [K in NullableKeys<Omit<T, RequiredKeys>>]?: undefined;
-  };
+  RequiredProperty<Pick<T, RequiredKeys>> &
+  Partial<Record<NullableKeys<Omit<T, RequiredKeys>>, undefined>>;
 
 /**
  * Useful for convincing an IDE to show the expansion of a type.
