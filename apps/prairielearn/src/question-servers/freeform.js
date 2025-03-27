@@ -1050,7 +1050,7 @@ export async function generate(question, course, variant_seed) {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
     const data = {
-      params: question.question_params || {},
+      params: question.question_params ?? {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
       options: _.defaults({}, course.options, question.options),
@@ -1088,9 +1088,6 @@ export async function prepare(question, course, variant) {
       options: variant.options ?? {},
       answers_names: {},
     };
-    console.log('PARAMS IN FRTEEDFORM')
-    console.log(data.params)
-    console.log(variant)
     _.extend(data.options, getContextOptions(context));
 
     return await withCodeCaller(course, async (codeCaller) => {

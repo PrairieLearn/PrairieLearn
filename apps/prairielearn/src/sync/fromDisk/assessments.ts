@@ -439,25 +439,15 @@ export async function sync(
       }
     }
   }
-  // console.log('params!!')
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
-    const params = getParamsForAssessment(assessment, questionIds);
-    const questionParamsList = params?.alternativeGroups?.map((group) =>
-      group.map((item) => item.question_params),
-    );
-    console.log('Alternative Groups Question Params:', questionParamsList);
     return JSON.stringify([
       tid,
       assessment.uuid,
       infofile.stringifyErrors(assessment),
       infofile.stringifyWarnings(assessment),
-      params,
+      getParamsForAssessment(assessment, questionIds),
     ]);
   });
-  console.log('AssessmentParams!CLOCKIT');
-  console.log(assessmentParams); // contains question params correctly inside params
-
-  // params -> question_params
 
   await sqldb.callOneRowAsync('sync_assessments', [
     assessmentParams,

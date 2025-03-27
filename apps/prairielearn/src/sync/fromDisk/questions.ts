@@ -10,13 +10,6 @@ import { isDraftQid } from '../question.js';
 
 function getParamsForQuestion(qid: string, q: Question | null | undefined) {
   if (!q) return null;
-  console.log(q);
-  console.log('Question Params:', q.questionParams);
-  if (!q.questionParams) {
-    console.error('Missing questionParams for question:', qid);
-    // return null;
-  }
-
 
   let partialCredit;
   if (q.partialCredit != null) {
@@ -37,8 +30,6 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
     workspace_args = shlex.join(workspace_args);
   }
 
-  console.log("getting params for question")
-  console.log(q)
 
   return {
     type: q.type === 'v3' ? 'Freeform' : q.type,
@@ -79,11 +70,8 @@ export async function sync(
   courseId: string,
   courseData: CourseData,
 ): Promise<Record<string, string>> {
-  console.log('insync')
 
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
-    console.log('question data')
-    console.log(question.data)
     return JSON.stringify([
       qid,
       question.uuid,
@@ -92,7 +80,6 @@ export async function sync(
       getParamsForQuestion(qid, question.data),
     ]);
   });
-  console.log(questionParams)
 
   const result = await sqldb.callRow(
     'sync_questions',
