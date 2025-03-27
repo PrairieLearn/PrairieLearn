@@ -7,7 +7,7 @@ def generate(data):
     x = sympy.symbols("x")
 
     # Randomize the degree.
-    degree = np.random.random_integers(1, 5)
+    degree = np.random.randint(1, 5)
 
     # Randomize the coefficients.
     coeffs = np.random.randint(-9, 10, degree + 1)
