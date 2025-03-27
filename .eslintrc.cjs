@@ -82,6 +82,17 @@ module.exports = {
       },
     ],
 
+    // Enforce alphabetical order of import specifiers within each import group.
+    // The import-x/order rule handles the overall sorting of the import groups.
+    'sort-imports': [
+      'error',
+      {
+        'ignoreDeclarationSort': true, // import-x/order sorts the groups
+        'ignoreMemberSort': false,
+        'memberSyntaxSortOrder': ['none', 'all', 'multiple', 'single']
+      }
+    ],
+
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.
     'mocha/no-exclusive-tests': 'error',
