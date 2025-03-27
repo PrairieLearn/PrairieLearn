@@ -1,7 +1,5 @@
 [tool.ruff]
-include = [
-    "**/*.py",
-]
+include = ["**/*.py"]
 
 extend-exclude = [
     # These files are intentionally not parseable as Python.
@@ -15,48 +13,46 @@ extend-exclude = [
 target-version = "py310"
 preview = true
 [tool.ruff.lint]
-select = [
-    "ALL"
-]
+select = ["ALL"]
 
 ignore = [
     # These rules provide little value to us
-    "BLE", # flake8-blind-except
-    "COM", # flake8-commas
-    "CPY001", # missing-copyright-notice 
-    "C901", # mccabe (complexity checks)
-    "ERA", # eradicate (code in comments)
-    "EM", # flake8-errmsg
-    "EXE", # flake8-executable
-    "E501", # line-too-long
-    "FIX", # flake8-fixme
-    "INP001", # implicit-namespace-package
-    "S", # flake8-bandit (security rules)
-    "SLF001", # private-member-access 
-    "T201", # flake8-print
-    "T100", # flake8-debugger
-    "TD", # flake8-todos
-    "PGH003", # blanket-type-ignore
+    "BLE",     # flake8-blind-except
+    "COM",     # flake8-commas
+    "CPY001",  # missing-copyright-notice 
+    "C901",    # mccabe (complexity checks)
+    "ERA",     # eradicate (code in comments)
+    "EM",      # flake8-errmsg
+    "EXE",     # flake8-executable
+    "E501",    # line-too-long
+    "FIX",     # flake8-fixme
+    "INP001",  # implicit-namespace-package
+    "S",       # flake8-bandit (security rules)
+    "SLF001",  # private-member-access 
+    "T201",    # flake8-print
+    "T100",    # flake8-debugger
+    "TD",      # flake8-todos
+    "PGH003",  # blanket-type-ignore
     "PLE2513", # invalid-character-esc
-    "PTH", # flake8-use-pathlib
+    "PTH",     # flake8-use-pathlib
 
     # These rules were discussed and disabled
-    "ANN401", # any-type
-    "D203", # incorrect-blank-line-before-class
-    "D212", # multi-line-summary-first-line
-    "D205", # missing-blank-line-after-summary (we use a multi-line description instead of summaries sometimes)
-    "D400", # missing-trailing-period
-    "D415", # missing-terminal-punctuation
-    "DOC201", # docstring-missing-returns
-    "DOC402", # docstring-missing-yields
-    "DOC501", # docstring-missing-exception
+    "ANN401",  # any-type
+    "D203",    # incorrect-blank-line-before-class
+    "D212",    # multi-line-summary-first-line
+    "D205",    # missing-blank-line-after-summary (we use a multi-line description instead of summaries sometimes)
+    "D400",    # missing-trailing-period
+    "D415",    # missing-terminal-punctuation
+    "DOC201",  # docstring-missing-returns
+    "DOC402",  # docstring-missing-yields
+    "DOC501",  # docstring-missing-exception
     "FURB101", # read-whole-file
     "FURB103", # write-whole-file
     "FURB118", # reimplemented-operator (confusing)
     "FURB140", # reimplemented-starmap (confusing)
-    "ISC003", # explicit-string-concatenation
-    "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
-    "PD901", # pandas-df-variable-name (we use `df` in many places)
+    "ISC003",  # explicit-string-concatenation
+    "NPY002",  # numpy-legacy-random (we use `np.random.*` in many places)
+    "PD901",   # pandas-df-variable-name (we use `df` in many places)
     "PLC0415", # import-outside-top-level
     "PLC1901", # compare-to-empty-string
     "PLC2701", # import-private-name
@@ -72,14 +68,14 @@ ignore = [
     "PLR2004", # magic-value-comparison
     "PLR6301", # no-self-use
     "PLW1514", # unspecified-encoding
-    "RET503", # implicit-return
-    "RET504", # unnecessary-assign
-    "RET505", # superfluous-else-return
-    "SIM108", # if-else-block-instead-of-if-exp
-    "TC006", # runtime-cast-value
-    "TRY300", # try-consider-else (returns in try blocks)
-    "TRY301", # raise-within-try
-    "TRY003", # raise-vanilla-args (long messages in raise statements)
+    "RET503",  # implicit-return
+    "RET504",  # unnecessary-assign
+    "RET505",  # superfluous-else-return
+    "SIM108",  # if-else-block-instead-of-if-exp
+    "TC006",   # runtime-cast-value
+    "TRY300",  # try-consider-else (returns in try blocks)
+    "TRY301",  # raise-within-try
+    "TRY003",  # raise-vanilla-args (long messages in raise statements)
 
     # These rules need to be enabled
     "D100", # undocumented-public-module
@@ -104,9 +100,16 @@ convention = "google"
 # - F841: local variable name is assigned to but never used
 # - ARG001: Unused function argument
 "exampleCourse/questions/**/tests/setup_code.py" = ["F401", "F821"]
-"exampleCourse/questions/**/tests/leading_code.py" = ["F401", "F821", "F841", "ARG001"]
+"exampleCourse/questions/**/tests/leading_code.py" = [
+    "F401",
+    "F821",
+    "F841",
+    "ARG001",
+]
 "exampleCourse/questions/**/tests/ans.py" = ["F821"]
-"exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/**/*.py" = ["ARG001"]
+"exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/**/*.py" = [
+    "ARG001",
+]
 
 # Ignore uppercase variables and function parameters (e.g. G for a graph)
 "exampleCourse/questions/**/*.py" = ["N806", "N803"]
@@ -117,23 +120,29 @@ convention = "google"
     # Ignore uppercase function parameters (e.g. G for a graph)
     "N803",
     # Allow boolean trap pattern in method signatures
-    "FBT001", "FBT002", "FBT003",
+    "FBT001",
+    "FBT002",
+    "FBT003",
     # ignore unused parameters in functions
     "ARG",
     # ignore docstring linting on functions (has no public API)
-    "D103"
+    "D103",
 ]
 "apps/prairielearn/python/**/*.py" = ["N803"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
-"exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
+"exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = [
+    "N805",
+]
 
 "graders/**/*.py" = [
     # Boolean default positional argument
     "FBT002",
     "D",
     # Avoid future changes to graders
-    "C419", "PYI061", "RUF036"
+    "C419",
+    "PYI061",
+    "RUF036",
 ]
 
 # Directories we don't want strict annotation linting or docstring linting on
@@ -177,10 +186,10 @@ include = [
     "./graders",
 ]
 exclude = [
-    "./apps/prairielearn/elements/pl-drawing", # requires refactor
-    "./apps/prairielearn/elements/pl-checkbox", # requires refactor
+    "./apps/prairielearn/elements/pl-drawing",            # requires refactor
+    "./apps/prairielearn/elements/pl-checkbox",           # requires refactor
     "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
-    "./apps/prairielearn/elements/pl-threejs", # deprecated
+    "./apps/prairielearn/elements/pl-threejs",            # deprecated
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
@@ -205,11 +214,6 @@ reportOperatorIssue = "information"
 reportUnknownParameterType = "information"
 
 [tool.pytest.ini_options]
-pythonpath = [
-    "apps/prairielearn/python"
-]
+pythonpath = ["apps/prairielearn/python"]
 addopts = "--cov=apps"
-testpaths = [
-    "apps/prairielearn/elements",
-    "apps/prairielearn/python/test",
-]
+testpaths = ["apps/prairielearn/elements", "apps/prairielearn/python/test"]
