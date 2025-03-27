@@ -257,7 +257,7 @@ export function postInstanceQuestion(locals: Record<string, any>) {
   });
 }
 
-export function postInstanceQuestionAndFail(locals: Record<string, any>) {
+export function postInstanceQuestionAndFail(locals: Record<string, any>, expectedStatus: number) {
   describe('POST to instance_question URL', function () {
     it('should generate the submittedAnswer', function () {
       assert(locals.getSubmittedAnswer);
@@ -278,7 +278,7 @@ export function postInstanceQuestionAndFail(locals: Record<string, any>) {
         form = {
           __action: locals.postAction,
           __csrf_token: locals.__csrf_token,
-          variant_id: locals.variant?.id,
+          __variant_id: locals.variant?.id,
         };
         Object.assign(form, locals.submittedAnswer);
       } else {
@@ -290,7 +290,7 @@ export function postInstanceQuestionAndFail(locals: Record<string, any>) {
         method: 'POST',
         body: new URLSearchParams(form),
       });
-      assert.include([400, 500], response.status);
+      assert.equal(response.status, expectedStatus);
     });
   });
 }

@@ -752,7 +752,7 @@ describe('Homework assessment', function () {
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 403);
   });
 
   describe('submit correct answer to question addNumbers', function () {
@@ -1350,7 +1350,7 @@ describe('Homework assessment', function () {
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
-            helperQuestion.postInstanceQuestionAndFail(locals);
+            helperQuestion.postInstanceQuestionAndFail(locals, 400);
           } else if (questionTest.action === 'grade-stored-fail') {
             describe('restoring submission data', function () {
               it('should succeed', function () {
@@ -1359,7 +1359,7 @@ describe('Homework assessment', function () {
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
-            helperQuestion.postInstanceQuestionAndFail(locals);
+            helperQuestion.postInstanceQuestionAndFail(locals, 400);
           } else if (questionTest.action === 'check-closed') {
             helperQuestion.getInstanceQuestion(locals);
           } else if (questionTest.action === 'save' || questionTest.action === 'grade') {

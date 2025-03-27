@@ -349,7 +349,7 @@ describe('Zone grading exam assessment', function () {
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
-            helperQuestion.postInstanceQuestionAndFail(locals);
+            helperQuestion.postInstanceQuestionAndFail(locals, 400);
           } else if (questionTest.action === 'grade-stored-fail') {
             describe('restoring submission data', function () {
               it('should succeed', function () {
@@ -358,7 +358,7 @@ describe('Zone grading exam assessment', function () {
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
-            helperQuestion.postInstanceQuestionAndFail(locals);
+            helperQuestion.postInstanceQuestionAndFail(locals, 400);
           } else if (questionTest.action === 'check-closed') {
             helperQuestion.getInstanceQuestion(locals);
           } else if (questionTest.action === 'save' || questionTest.action === 'grade') {
