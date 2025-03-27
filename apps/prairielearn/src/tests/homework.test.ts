@@ -719,7 +719,7 @@ describe('Homework assessment', function () {
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 403);
   });
 
   describe('submit correct answer to question addNumbers', function () {

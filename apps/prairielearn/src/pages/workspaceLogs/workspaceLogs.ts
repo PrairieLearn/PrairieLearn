@@ -3,11 +3,11 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fetch from 'node-fetch';
 
-import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
+import { authzHasCoursePreviewOrInstanceView } from '../../middlewares/authzHasCoursePreviewOrInstanceView.js';
 
 import {
   type WorkspaceLogRow,
@@ -116,17 +116,7 @@ async function loadLogsForWorkspaceVersion(
 // if the instructor has access to the workspace (i.e., course instance student
 // data view permission, or access to a workspace owned by the user); that's
 // already been checked by the workspace authorization middleware.
-router.use(
-  asyncHandler(async (req, res, next) => {
-    if (
-      !res.locals.authz_data.has_course_instance_permission_view &&
-      !res.locals.authz_data.has_course_permission_preview
-    ) {
-      throw new error.HttpStatusError(403, 'Access denied');
-    }
-    next();
-  }),
-);
+router.use(authzHasCoursePreviewOrInstanceView);
 
 // Overview of workspace logs, including all state transitions and links to
 // logs for individual versions.

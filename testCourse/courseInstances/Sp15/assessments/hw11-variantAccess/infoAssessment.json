@@ -1,0 +1,18 @@
+{
+  "uuid": "0e91476f-b1d6-46cb-8ba8-990823c587e5",
+  "type": "Homework",
+  "title": "Test access to a variant and its resources",
+  "set": "Homework",
+  "number": "11",
+  "allowAccess": [{ "credit": 100 }],
+  "zones": [
+    {
+      "questions": [
+        {
+          "id": "variantAccess",
+          "points": 4
+        }
+      ]
+    }
+  ]
+}
