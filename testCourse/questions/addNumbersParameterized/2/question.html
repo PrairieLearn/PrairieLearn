@@ -2,13 +2,6 @@
     <p> Consider two numbers in the range <span>[{{params.lower_bound}}, {{params.upper_bound}}]</span>,
         $a = {{params.a}}$ and $b = {{params.b}}$.</p>
     <p> What is the sum $c = a + b$?</p>
-  <p>Parameters:</p>
-  <ul>
-    <li>Lower bound: {{params.lower_bound}}</li>
-    <li>Upper bound: {{params.upper_bound}}</li>
-    <li>First number ($a$): {{params.a}}</li>
-    <li>Second number ($b$): {{params.b}}</li>
-  </ul>
   </pl-question-panel>
 
   <pl-number-input answers-name="c" comparison="sigfig" digits="3" label="$c=$"></pl-number-input>
