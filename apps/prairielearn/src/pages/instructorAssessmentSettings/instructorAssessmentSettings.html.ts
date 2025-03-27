@@ -6,7 +6,6 @@ import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
-import type { NarrowPayloadBlobTypes } from '@smithy/types';
 
 export function InstructorAssessmentSettings({
   resLocals,
@@ -40,17 +39,17 @@ export function InstructorAssessmentSettings({
     headContent: html` ${compiledScriptTag('instructorAssessmentSettingsClient.ts')} `,
     content: html`
       ${AssessmentSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        assessment: resLocals.assessment,
-        courseInstance: resLocals.course_instance,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      authz_data: resLocals.authz_data,
+      assessment: resLocals.assessment,
+      courseInstance: resLocals.course_instance,
+      course: resLocals.course,
+      urlPrefix: resLocals.urlPrefix,
+    })}
       ${QRCodeModal({
-        id: 'studentLinkModal',
-        title: 'Student Link QR Code',
-        content: studentLink,
-      })}
+      id: 'studentLinkModal',
+      title: 'Student Link QR Code',
+      content: studentLink,
+    })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
@@ -62,8 +61,8 @@ export function InstructorAssessmentSettings({
             <div class="mb-3">
               <label class="form-label" for="aid">AID</label>
               ${assessmentGHLink
-                ? html`<a target="_blank" href="${assessmentGHLink}"> view on GitHub </a>`
-                : ''}
+        ? html`<a target="_blank" href="${assessmentGHLink}"> view on GitHub </a>`
+        : ''}
               <input
                 type="text"
                 class="form-control font-monospace"
@@ -110,7 +109,7 @@ export function InstructorAssessmentSettings({
               <label class="form-label" for="set">Set</label>
               <select class="form-select" id="set" name="set" ${canEdit ? '' : 'disabled'}>
                 ${assessmentSets.map(
-                  (set) => html`
+          (set) => html`
                     <option
                       value="${set.name}"
                       ${resLocals.assessment_set.name === set.name ? 'selected' : ''}
@@ -118,7 +117,7 @@ export function InstructorAssessmentSettings({
                       ${set.name}
                     </option>
                   `,
-                )}
+        )}
               </select>
               <small class="form-text text-muted">
                 The
@@ -144,7 +143,7 @@ export function InstructorAssessmentSettings({
               <label class="form-label" for="module">Module</label>
               <select class="form-select" id="module" name="module" ${canEdit ? '' : 'disabled'}>
                 ${assessmentModules.map(
-                  (module) => html`
+          (module) => html`
                     <option
                       value="${module.name}"
                       ${resLocals.assessment_module.name === module.name ? 'selected' : ''}
@@ -152,7 +151,7 @@ export function InstructorAssessmentSettings({
                       ${module.name}
                     </option>
                   `,
-                )}
+        )}
               </select>
               <small class="form-text text-muted">
                 The <a href="${resLocals.urlPrefix}/course_admin/modules">module</a> this assessment
@@ -193,8 +192,8 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             ${resLocals.authz_data.has_course_permission_view
-              ? canEdit
-                ? html`
+        ? canEdit
+          ? html`
                     <div>
                       <button
                         id="save-button"
@@ -216,26 +215,26 @@ export function InstructorAssessmentSettings({
                     <a
                       data-testid="edit-assessment-configuration-link"
                       href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                        .id}/file_edit/${infoAssessmentPath}"
+              .id}/file_edit/${infoAssessmentPath}"
                     >
                       Edit assessment configuration
                     </a>
                     in <code>infoAssessment.json</code>
                   `
-                : html`
+          : html`
                     <a
                       href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                        .id}/file_view/${infoAssessmentPath}"
+              .id}/file_view/${infoAssessmentPath}"
                     >
                       View assessment configuration
                     </a>
                     in <code>infoAssessment.json</code>
                   `
-              : ''}
+        : ''}
           </form>
         </div>
         ${canEdit
-          ? html`
+        ? html`
               <div class="card-footer d-flex flex-wrap align-items-center">
                 <form name="copy-assessment-form" class="me-2" method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -258,15 +257,15 @@ export function InstructorAssessmentSettings({
                   <i class="fa fa-times" aria-hidden="true"></i> Delete this assessment
                 </button>
                 ${Modal({
-                  id: 'deleteAssessmentModal',
-                  title: 'Delete assessment',
-                  body: html`
+          id: 'deleteAssessmentModal',
+          title: 'Delete assessment',
+          body: html`
                     <p>
                       Are you sure you want to delete the assessment
                       <strong>${resLocals.assessment.tid}</strong>?
                     </p>
                   `,
-                  footer: html`
+          footer: html`
                     <input type="hidden" name="__action" value="delete_assessment" />
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -274,10 +273,10 @@ export function InstructorAssessmentSettings({
                     </button>
                     <button type="submit" class="btn btn-danger">Delete</button>
                   `,
-                })}
+        })}
               </div>
             `
-          : ''}
+        : ''}
       </div>
     `,
   });
