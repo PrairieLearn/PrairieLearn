@@ -8,18 +8,18 @@ import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielea
 
 import { config } from '../../lib/config.js';
 import {
+  type AssessmentQuestion,
+  type Course,
+  IdSchema,
+  type InstanceQuestion,
   InstanceQuestionSchema,
+  type Question,
+  type RubricItem,
+  RubricItemSchema,
+  type SubmissionGradingContextEmbedding,
   SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
   VariantSchema,
-  type Course,
-  type Question,
-  type AssessmentQuestion,
-  type SubmissionGradingContextEmbedding,
-  IdSchema,
-  RubricItemSchema,
-  type RubricItem,
-  type InstanceQuestion,
 } from '../../lib/db-types.js';
 import * as manualGrading from '../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../lib/question-render.js';

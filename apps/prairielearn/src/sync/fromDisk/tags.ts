@@ -7,7 +7,7 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { TagSchema, type Tag } from '../../lib/db-types.js';
+import { type Tag, TagSchema } from '../../lib/db-types.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 

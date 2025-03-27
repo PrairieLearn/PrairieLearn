@@ -1,14 +1,14 @@
-import { Router, type Request, type Response } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
-import { gradeAssessmentInstance, canDeleteAssessmentInstance } from '../../lib/assessment.js';
+import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
-import { uploadFile, deleteFile } from '../../lib/file-store.js';
+import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
@@ -25,8 +25,8 @@ import selectAndAuthzInstanceQuestion from '../../middlewares/selectAndAuthzInst
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import { selectUserById } from '../../models/user.js';
 import {
-  validateVariantAgainstQuestion,
   selectVariantsByInstanceQuestion,
+  validateVariantAgainstQuestion,
 } from '../../models/variant.js';
 
 import { StudentInstanceQuestion } from './studentInstanceQuestion.html.js';

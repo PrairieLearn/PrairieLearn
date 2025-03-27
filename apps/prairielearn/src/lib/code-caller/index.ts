@@ -1,7 +1,7 @@
 import * as os from 'node:os';
 
 import debugfn from 'debug';
-import { createPool, type Pool } from 'generic-pool';
+import { type Pool, createPool } from 'generic-pool';
 import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
