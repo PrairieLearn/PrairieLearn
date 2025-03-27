@@ -1829,15 +1829,13 @@ export async function test(variant, question, course, test_type) {
  */
 async function getContext(question, course) {
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-  /** @type {chunks.Chunk[]} */
-  const chunksToLoad = [
+  await chunks.ensureChunksForCourseAsync(course.id, [
     { type: 'question', questionId: question.id },
     { type: 'clientFilesCourse' },
     { type: 'serverFilesCourse' },
     { type: 'elements' },
     { type: 'elementExtensions' },
-  ];
-  await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
+  ]);
 
   // Select which rendering strategy we'll use. This is computed here so that
   // in can factor into the cache key.

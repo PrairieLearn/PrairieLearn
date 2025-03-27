@@ -582,10 +582,12 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
   app.use('/pl/news_items', (await import('./pages/newsItems/newsItems.js')).default);
   app.use('/pl/news_item', (await import('./pages/newsItem/newsItem.js')).default);
-  app.use(
-    '/pl/request_course',
+  app.use('/pl/request_course', [
+    // Users can post data to this page and then view it, so we'll block access to prevent
+    // students from using to infiltrate or exfiltrate exam information.
+    (await import('./middlewares/forbidAccessInExamMode.js')).default,
     (await import('./pages/instructorRequestCourse/instructorRequestCourse.js')).default,
-  );
+  ]);
 
   if (isEnterprise()) {
     app.use('/pl/terms', (await import('./ee/pages/terms/terms.js')).default);
@@ -702,6 +704,7 @@ export async function initExpress(): Promise<Express> {
 
   // All course instance instructor pages require the authn user to have permissions
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor', [
+    (await import('./middlewares/forbidAccessInExamMode.js')).default,
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
     (await import('./middlewares/selectOpenIssueCount.js')).default,
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
@@ -743,6 +746,7 @@ export async function initExpress(): Promise<Express> {
 
   // all pages under /pl/course require authorization
   app.use('/pl/course/:course_id(\\d+)', [
+    (await import('./middlewares/forbidAccessInExamMode.js')).default,
     (await import('./middlewares/authzCourseOrInstance.js')).default, // set res.locals.course
     (await import('./middlewares/selectOpenIssueCount.js')).default,
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
@@ -1070,7 +1074,7 @@ export async function initExpress(): Promise<Express> {
 
   // Submission files
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/submission/:submission_id(\\d+)/file',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     [
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
       (await import('./pages/submissionFile/submissionFile.js')).default(),
@@ -1383,7 +1387,7 @@ export async function initExpress(): Promise<Express> {
 
   // Submission files
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/submission/:submission_id(\\d+)/file',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     [
       (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
       (await import('./pages/submissionFile/submissionFile.js')).default(),
@@ -1529,7 +1533,7 @@ export async function initExpress(): Promise<Express> {
 
   // Submission files
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/submission/:submission_id(\\d+)/file',
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     (await import('./pages/submissionFile/submissionFile.js')).default(),
   );
 
@@ -1759,7 +1763,7 @@ export async function initExpress(): Promise<Express> {
 
   // Submission files
   app.use(
-    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:submission_id(\\d+)/file',
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     [
       (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
       (await import('./pages/submissionFile/submissionFile.js')).default(),
@@ -1789,6 +1793,9 @@ export async function initExpress(): Promise<Express> {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   // Public course pages ///////////////////////////////////////////////
+
+  // Prevent access to public pages when in exam mode.
+  app.use('/pl/public', (await import('./middlewares/forbidAccessInExamMode.js')).default);
 
   app.use('/pl/public/course/:course_id(\\d+)', [
     function (req: Request, res: Response, next: NextFunction) {
@@ -1849,7 +1856,7 @@ export async function initExpress(): Promise<Express> {
 
   // Submission files
   app.use(
-    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:submission_id(\\d+)/file',
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     [(await import('./pages/submissionFile/submissionFile.js')).default({ publicEndpoint: true })],
   );
 

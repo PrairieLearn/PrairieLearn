@@ -25,6 +25,7 @@ export function AssessmentNavigation({
   const targetSubPage = run(() => {
     if (!subPage) return '';
     if (subPage === 'assessment_instance') return 'instances';
+    if (subPage === 'file_edit') return 'file_view';
     return subPage;
   });
 
