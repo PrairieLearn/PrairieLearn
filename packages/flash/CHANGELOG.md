@@ -1,5 +1,11 @@
 # @prairielearn/flash
 
+## 2.0.12
+
+### Patch Changes
+
+- cbd4c6c: Fix memory leak caused by holding reference to HTTP request
+
 ## 2.0.11
 
 ### Patch Changes
