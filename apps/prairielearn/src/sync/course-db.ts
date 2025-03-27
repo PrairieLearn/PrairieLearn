@@ -1318,19 +1318,19 @@ async function validateAssessment(
 
   if (duplicateQids.size > 0) {
     errors.push(
-      `The following questions are used more than once: ${[...duplicateQids].join(', ')}`,
+      `The following questions are used more than once: ${formatQids({ qids: duplicateQids })}`,
     );
   }
 
   if (missingQids.size > 0) {
     errors.push(
-      `The following questions do not exist in this course: "${[...missingQids].join('", "')}"`,
+      `The following questions do not exist in this course: ${formatQids({ qids: missingQids })}`,
     );
   }
 
   if (draftQids.size > 0) {
     errors.push(
-      `The following questions are marked as draft and therefore cannot be used in assessments: ${[...draftQids].join(', ')}`,
+      `The following questions are marked as draft and therefore cannot be used in assessments: ${formatQids({ qids: draftQids })}`,
     );
   }
 
@@ -1412,6 +1412,12 @@ async function validateAssessment(
   }
 
   return { warnings, errors };
+}
+
+function formatQids({ qids }: { qids: Set<unknown> }) {
+  return Array.from(qids)
+    .map((qid) => `"${qid}"`)
+    .join(', ');
 }
 
 async function validateCourseInstance(
