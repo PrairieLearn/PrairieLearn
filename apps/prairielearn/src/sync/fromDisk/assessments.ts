@@ -46,7 +46,6 @@ function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
 ) {
-  // console.log('getting paramsssss');
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
@@ -82,9 +81,7 @@ function getParamsForAssessment(
         active: accessRule.active ?? true,
       };
     });
-  // console.log('assessment.zones:', assessment.zones);
   const zones = (assessment.zones ?? []).map((zone, index) => {
-    // console.log('zone:', zone);
     return {
       number: index + 1,
       title: zone.title,
@@ -186,13 +183,7 @@ function getParamsForAssessment(
             (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
           const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints,
-            pointsList: undefined,
-          };
+          return { ...alternative, hasSplitPoints, maxPoints, initPoints, pointsList: undefined };
         } else {
           throw new Error(`Unknown assessment type: ${assessment.type}`);
         }
@@ -203,9 +194,6 @@ function getParamsForAssessment(
       const questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
         assessmentQuestionNumber++;
         const questionId = questionIds[alternative.qid];
-        // console.log('Alternative Question Params:', alternative.questionParams);
-        console.log('Question Question Params:', question.questionParams);
-        // console.log('Zone Question Params:', zone.questionParams);
         return {
           number: assessmentQuestionNumber,
           has_split_points: alternative.hasSplitPoints,
@@ -230,15 +218,6 @@ function getParamsForAssessment(
           question_params: question.questionParams,
         };
       });
-      // console.log('Returning alternative group data:', {
-      //   number: alternativeGroupNumber,
-      //   number_choose: question.numberChoose,
-      //   advance_score_perc: question.advanceScorePerc,
-      //   questions,
-      //   question_params: question.questionParams,
-      // });
-      console.log('question in assessments!!')
-      console.log(question)
       return {
         number: alternativeGroupNumber,
         number_choose: question.numberChoose,
@@ -298,10 +277,7 @@ function parseSharedQuestionReference(qid) {
   const firstSlash = qid.indexOf('/');
   if (firstSlash === -1) {
     // No QID, invalid question reference. An error will be recorded when trying to locate this question
-    return {
-      sharing_name: qid.substring(1, qid.length),
-      qid: '',
-    };
+    return { sharing_name: qid.substring(1, qid.length), qid: '' };
   }
 
   return {
@@ -466,7 +442,9 @@ export async function sync(
   // console.log('params!!')
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
     const params = getParamsForAssessment(assessment, questionIds);
-    const questionParamsList = params?.alternativeGroups?.map(group => group.map(item => item.question_params));
+    const questionParamsList = params?.alternativeGroups?.map((group) =>
+      group.map((item) => item.question_params),
+    );
     console.log('Alternative Groups Question Params:', questionParamsList);
     return JSON.stringify([
       tid,
@@ -480,7 +458,6 @@ export async function sync(
   console.log(assessmentParams); // contains question params correctly inside params
 
   // params -> question_params
-
 
   await sqldb.callOneRowAsync('sync_assessments', [
     assessmentParams,

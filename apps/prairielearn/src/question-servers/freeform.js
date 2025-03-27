@@ -1049,15 +1049,6 @@ function getContextOptions(context) {
 export async function generate(question, course, variant_seed) {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
-    // const zoneParams = extractZoneParams(assessmentConfig, question);
-    console.log('question');
-    console.log(question);
-    console.log('context')
-    console.log(context);
-    console.log('LOGGGG: ' + question.question_params);
-    // console.log("Question object:", question);
-    // console.log("Variant seed:", variant_seed);
-    // console.log("zone info: ", zoneInformation)
     const data = {
       params: question.question_params || {},
       correct_answers: {},
