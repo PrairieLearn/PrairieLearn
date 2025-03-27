@@ -1125,8 +1125,8 @@ async function validateQuestion(
 }
 
 /**
- * Surrounds each qid with quotation marks
- * @returns A set of qids
+ * Formats a set of QIDs into a string for use in error messages.
+ * @returns A comma-separated list of double-quoted QIDs.
  */
 function formatQids(qids: Set<string>) {
   return Array.from(qids)
