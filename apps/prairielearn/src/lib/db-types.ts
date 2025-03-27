@@ -53,8 +53,7 @@ export const AlternativeGroupSchema = z.object({
   id: IdSchema,
   number: z.number().nullable(),
   number_choose: z.number().nullable(),
-  zone_id: IdSchema,
-  question_params: z.any().nullable(),
+  zone_id: IdSchema
 });
 export type AlternativeGroup = z.infer<typeof AlternativeGroupSchema>;
 
@@ -153,8 +152,7 @@ export const AssessmentInstanceSchema = z.object({
   open: z.boolean().nullable(),
   points: z.number().nullable(),
   score_perc: z.number().nullable(),
-  user_id: IdSchema.nullable(),
-  question_params:z.any().nullable(),
+  user_id: IdSchema.nullable()
 });
 export type AssessmentInstance = z.infer<typeof AssessmentInstanceSchema>;
 
