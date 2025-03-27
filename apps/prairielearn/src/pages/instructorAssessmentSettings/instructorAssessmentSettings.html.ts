@@ -61,7 +61,7 @@ export function InstructorAssessmentSettings({
             <div class="mb-3">
               <label class="form-label" for="aid">AID</label>
               ${assessmentGHLink
-                ? html`<a target="_blank" href="${assessmentGHLink}"> view on GitHub </a>`
+                ? html`<a target="_blank" href="${assessmentGHLink}">view on GitHub</a>`
                 : ''}
               <input
                 type="text"
