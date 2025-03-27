@@ -17,9 +17,7 @@ import { writeCourseIssues } from './issues.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const VariantWithFormattedDateSchema = VariantSchema.extend({
-  formatted_date: z.string(),
-});
+const VariantWithFormattedDateSchema = VariantSchema.extend({ formatted_date: z.string() });
 type VariantWithFormattedDate = z.infer<typeof VariantWithFormattedDateSchema>;
 
 const InstanceQuestionDataSchema = z.object({
@@ -65,29 +63,16 @@ async function makeVariant(
   } else {
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
   }
-  console.log('old questionParmas in makeVariant');
-  console.log(question.question_params)
-  console.log('questionParmas in makeVariant');
-  console.log(questionParams);
 
-  // console.log('course in makeVariant');
-  // console.log(course);
-
-  // console.log('question_params:', question_params);
-
-
-  question.question_params = questionParams
+  question.question_params = questionParams;
   const questionModule = questionServers.getModule(question.type);
   const { courseIssues, data } = await questionModule.generate(
     question,
     course,
     variant_seed,
-    questionParams
+    questionParams,
   );
 
-
-  console.log('RANDOM DATA')
-  console.log(data)
   const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
   let variant: VariantCreationData = {
     variant_seed,
@@ -251,11 +236,7 @@ async function makeAndInsertVariant(
     question_course,
     options,
     questionParams,
-
-    // assessmentConfig
   );
-
-  // console.log('Generated Variant:', variantData);
 
   const variant = await sqldb.runInTransactionAsync(async () => {
     let real_user_id: string | null = user_id;
@@ -272,7 +253,7 @@ async function makeAndInsertVariant(
       if (instance_question == null) {
         throw new error.HttpStatusError(404, 'Instance question not found');
       }
-      // console.log('Instance Question:', instance_question);
+
       // This handles the race condition where we simultaneously start
       // generating two variants for the same instance question. If we're the
       // second one to try and insert a variant, just pull the existing variant
@@ -284,7 +265,7 @@ async function makeAndInsertVariant(
       if (existing_variant != null) {
         return existing_variant;
       }
-      // console.log('Existing Variant:', existing_variant);
+
       if (!instance_question.instance_question_open) {
         throw new error.HttpStatusError(403, 'Instance question is not open');
       }
@@ -321,8 +302,6 @@ async function makeAndInsertVariant(
     }
 
     const question = await selectQuestionById(question_id);
-    // console.log('Question from makeVariant:', question);
-    // console.log('Question from insertVariant:', question);
     let workspace_id: string | null = null;
     if (question.workspace_image !== null) {
       workspace_id = await sqldb.queryOptionalRow(sql.insert_workspace, IdSchema);
@@ -385,11 +364,8 @@ export async function ensureVariant(
   options: { variant_seed?: string | null },
   require_open: boolean,
   client_fingerprint_id: string | null,
-  questionParams
+  questionParams,
 ): Promise<VariantWithFormattedDate> {
-  // console.log('Variant Course:', variant_course);
-  // console.log('Question Course:', question_course);
-  // console.log('Options:', options);
   if (instance_question_id != null) {
     // See if we have a useable existing variant, otherwise make a new one. This
     // test is also performed in makeAndInsertVariant inside a transaction to
@@ -412,7 +388,7 @@ export async function ensureVariant(
     options,
     require_open,
     client_fingerprint_id,
-    questionParams
+    questionParams,
   );
 }
 
@@ -427,10 +403,8 @@ export async function getQuestionCourse(
   variant_course: Course,
 ): Promise<Course> {
   if (question.course_id === variant_course.id) {
-    console.log("EQUALS in question variant")
     return variant_course;
   } else {
-    console.log("NOt equals in question variant")
     return selectCourseById(question.course_id);
   }
 }
