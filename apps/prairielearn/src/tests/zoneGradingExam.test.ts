@@ -239,6 +239,7 @@ describe('Zone grading exam assessment', function () {
         } with score ${questionTest.score}`, function () {
           describe('setting up the submission data', function () {
             it('should succeed', function () {
+              locals.shouldHaveButtons = ['grade', 'save'];
               locals.postAction = 'grade';
               locals.question = questions[questionTest.qid];
               locals.question.points += questionTest.sub_points;
