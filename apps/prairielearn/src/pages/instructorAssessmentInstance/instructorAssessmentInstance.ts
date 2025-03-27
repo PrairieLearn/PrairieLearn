@@ -74,7 +74,6 @@ router.get(
     const assessment_instance_date_formatted =
       dateDurationResult.assessment_instance_date_formatted;
     const assessment_instance_duration = dateDurationResult.assessment_instance_duration;
-    console.log('GETTING INSANCE QUESTIONS!')
     const instance_questions = await sqldb.queryRows(
       sql.select_instance_questions,
       {
