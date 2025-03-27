@@ -42,9 +42,13 @@ export async function getAvailableTimezones(): Promise<Timezone[]> {
  */
 export async function getCanonicalTimezones(alwaysInclude?: string[]): Promise<Timezone[]> {
   const availableTimezones = await getAvailableTimezones();
-  const canonicalTimezones = Intl.supportedValuesOf('timeZone');
+  const canonicalTimezones = new Set(Intl.supportedValuesOf('timeZone'));
+  // Intl.supportedValuesOf('timeZone') returns the list of canonical timezones,
+  // but it skips UTC and a few other entries
+  // (https://github.com/tc39/ecma402/issues/778). We include UTC manually.
+  canonicalTimezones.add('UTC');
   return availableTimezones.filter(
-    ({ name }) => canonicalTimezones.includes(name) || alwaysInclude?.includes(name),
+    ({ name }) => canonicalTimezones.has(name) || alwaysInclude?.includes(name),
   );
 }
 
