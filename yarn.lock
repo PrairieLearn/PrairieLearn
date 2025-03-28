@@ -13906,6 +13906,7 @@ __metadata:
     markdownlint-cli: "npm:^0.44.0"
     node-gyp: "npm:^11.1.0"
     prettier: "npm:3.5.3"
+    prettier-plugin-pkg: "npm:^0.18.1"
     pyright: "npm:^1.1.396"
     s3rver: "npm:^3.7.1"
     turbo: "npm:^2.4.4"
@@ -13924,6 +13925,15 @@ __metadata:
   version: 1.2.1
   resolution: "prelude-ls@npm:1.2.1"
   checksum: 10c0/b00d617431e7886c520a6f498a2e14c75ec58f6d93ba48c3b639cf241b54232d90daa05d83a9e9b9fef6baa63cb7e1e4602c2372fea5bc169668401eb127d0cd
+  languageName: node
+  linkType: hard
+
+"prettier-plugin-pkg@npm:^0.18.1":
+  version: 0.18.1
+  resolution: "prettier-plugin-pkg@npm:0.18.1"
+  peerDependencies:
+    prettier: ^3.0.3
+  checksum: 10c0/8f0f1308e53d0197ca7ff532c4136930f42ad334c32728b71d8f81136a5a663d9231b659d848d2d7587461bd68ce3c2a3afe4bd34cc8718471710511113e07f9
   languageName: node
   linkType: hard
 
