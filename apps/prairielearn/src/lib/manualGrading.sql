@@ -428,7 +428,7 @@ VALUES
     $authn_user_id,
     $authn_user_id,
     now(),
-    'Manual',
+    $grading_method,
     $correct,
     $score,
     $auto_points,
@@ -459,7 +459,8 @@ SET
   gradable = CASE
     WHEN $score IS NULL THEN gradable
     ELSE TRUE
-  END
+  END,
+  is_ai_graded = $is_ai_graded
 WHERE
   s.id = $submission_id;
 
@@ -476,7 +477,8 @@ WITH
       modified_at = now(),
       highest_submission_score = COALESCE($score, highest_submission_score),
       requires_manual_grading = FALSE,
-      last_grader = $authn_user_id
+      last_grader = $authn_user_id,
+      is_ai_graded = $is_ai_graded
     WHERE
       iq.id = $instance_question_id
     RETURNING

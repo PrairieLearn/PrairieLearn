@@ -7,17 +7,19 @@ import { flash, flashMiddleware } from './index.js';
 describe('flash', () => {
   it('throws an error if no session present', () => {
     assert.throw(() => {
-      flashMiddleware()({} as any, {} as any, () => {});
-    });
+      flashMiddleware()({} as any, {} as any, () => {
+        flash('notice', 'Hello world');
+      });
+    }, 'No session found on request');
   });
 
   it('throws an error when middleware is not used', () => {
     assert.throw(() => {
       flash('notice', 'Hello world');
-    });
+    }, 'flash() must be called within a request');
     assert.throw(() => {
       flash('notice', html`<p>hello ${'&'} world</p>`);
-    });
+    }, 'flash() must be called within a request');
   });
 
   it('adds a flash using string message', () => {

@@ -168,6 +168,22 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     return;
   }
 
+  // If this is an example course, only allow overrides if the user is an administrator.
+  if (res.locals.course.example_course && !res.locals.is_administrator) {
+    clearOverrideCookies(res, overrides);
+
+    throw new AugmentedError('Access denied', {
+      status: 403,
+      info: html`
+        <p>
+          You are not allowed to request an effective user in the example course unless you are an
+          administrator or you are running PrairieLearn in development mode. All requested changes
+          to the effective user have been removed.
+        </p>
+      `,
+    });
+  }
+
   // Cannot request a user data override without instructor permissions
   if (
     !(

@@ -83,6 +83,7 @@ async function checkRender(
     course,
     user,
     authn_user: user, // We don't have a separate authn user in this case.
+    is_administrator: false,
   };
   await getAndRenderVariant(null, null, locals);
 

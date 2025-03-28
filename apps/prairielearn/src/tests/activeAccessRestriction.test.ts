@@ -105,7 +105,7 @@ describe('Exam and homework assessment with active access restriction', function
     });
     assert.equal(response.status, 403);
 
-    const msg = response.$('div.test-suite-assessment-closed-message');
+    const msg = response.$('[data-testid="assessment-closed-message"]');
     assert.lengthOf(msg, 1);
     assert.match(msg.text(), /Assessment will become available on 2010-01-01 00:00:01/);
   });
@@ -143,7 +143,7 @@ describe('Exam and homework assessment with active access restriction', function
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 
-  step('start the exam and access a question', async () => {
+  step('start the exam and access questions', async () => {
     const response = await helperClient.fetchCheerio(context.examUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -163,13 +163,31 @@ describe('Exam and homework assessment with active access restriction', function
     context.__csrf_token = response.$('span[id=test_csrf_token]').text();
     const questionWithVariantPath = response.$('a:contains("Question 1")').attr('href');
     const questionWithoutVariantPath = response.$('a:contains("Question 2")').attr('href');
+    const questionWithWorkspace = response.$('a:contains("Question 7")').attr('href');
     context.examQuestionUrl = `${context.siteUrl}${questionWithVariantPath}`;
     context.examQuestionWithoutVariantUrl = `${context.siteUrl}${questionWithoutVariantPath}`;
+    context.examQuestionWithWorkspaceUrl = `${context.siteUrl}${questionWithWorkspace}`;
 
+    // Access the question to create a variant.
     const questionResponse = await helperClient.fetchCheerio(context.examQuestionUrl, {
       headers,
     });
     assert.isTrue(questionResponse.ok);
+
+    // Access the workspace question.
+    const workspaceQuestionResponse = await helperClient.fetchCheerio(
+      context.examQuestionWithWorkspaceUrl,
+      { headers },
+    );
+    assert.isTrue(workspaceQuestionResponse.ok);
+    const workspaceUrl = workspaceQuestionResponse.$('a:contains("Open workspace")').attr('href');
+    context.examWorkspaceUrl = `${context.siteUrl}${workspaceUrl}`;
+
+    // Access the workspace to create it.
+    const workspaceResponse = await helperClient.fetchCheerio(context.examWorkspaceUrl, {
+      headers,
+    });
+    assert.isTrue(workspaceResponse.ok);
   });
 
   step('count number of variants generated', async () => {
@@ -180,7 +198,7 @@ describe('Exam and homework assessment with active access restriction', function
       },
       z.number(),
     );
-    assert.equal(context.numberOfVariants, 1);
+    assert.equal(context.numberOfVariants, 2);
   });
 
   step('simulate a time limit expiration', async () => {
@@ -316,7 +334,15 @@ describe('Exam and homework assessment with active access restriction', function
     const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
     assert.equal(response.status, 403);
 
-    assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
+    assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
+    assert.lengthOf(response.$('div.progress'), 1); // score should be shown
+  });
+
+  step('access a workspace when active and showClosedAssessment are false', async () => {
+    const response = await helperClient.fetchCheerio(context.examWorkspaceUrl, { headers });
+    assert.equal(response.status, 403);
+
+    assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
     assert.lengthOf(response.$('div.progress'), 1); // score should be shown
   });
 
@@ -328,7 +354,7 @@ describe('Exam and homework assessment with active access restriction', function
       const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
       assert.equal(response.status, 403);
 
-      assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
+      assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
       assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
     },
   );
@@ -341,7 +367,7 @@ describe('Exam and homework assessment with active access restriction', function
     });
     assert.equal(response.status, 403);
 
-    const msg = response.$('div.test-suite-assessment-closed-message');
+    const msg = response.$('[data-testid="assessment-closed-message"]');
     assert.lengthOf(msg, 1);
     assert.match(msg.text(), /Assessment will become available on 2020-01-01 00:00:01/);
   });
@@ -371,6 +397,7 @@ describe('Exam and homework assessment with active access restriction', function
   step('access a question when homework is active', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
+    // Access the question to create a variant.
     const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
       headers,
     });
@@ -427,7 +454,7 @@ describe('Exam and homework assessment with active access restriction', function
     const countVariantsResult = await sqldb.queryRow(
       sql.count_variants,
       {
-        assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
+        assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl),
       },
       z.number(),
     );
@@ -444,7 +471,7 @@ describe('Exam and homework assessment with active access restriction', function
       });
       assert.equal(response.status, 403);
 
-      const msg = response.$('div.test-suite-assessment-closed-message');
+      const msg = response.$('[data-testid="assessment-closed-message"]');
       assert.lengthOf(msg, 1);
       assert.match(msg.text(), /Assessment will become available on 2030-01-01 00:00:01/);
 
@@ -474,7 +501,7 @@ describe('Exam and homework assessment with active access restriction', function
       });
       assert.equal(response.status, 403);
 
-      const msg = response.$('div.test-suite-assessment-closed-message');
+      const msg = response.$('[data-testid="assessment-closed-message"]');
       assert.lengthOf(msg, 1);
       assert.match(msg.text(), /Assessment is no longer available\./);
 

@@ -1,13 +1,13 @@
 {
   "name": "@prairielearn/flash",
-  "version": "2.0.11",
+  "version": "2.0.12",
   "type": "module",
-  "main": "dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/flash"
   },
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
