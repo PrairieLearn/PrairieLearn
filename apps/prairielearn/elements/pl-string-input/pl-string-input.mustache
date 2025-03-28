@@ -53,7 +53,7 @@
                 type="text"
                 inputmode="text"
                 class="form-control pl-string-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
-                {{#parse_error}}aria-invalid="true" aria-describedby="pl-string-input-{{uuid}}-error"{{/parse_error}}
+                {{#parse_error}}aria-invalid="true"{{/parse_error}}
                 size="{{size}}"
                 autocomplete="off"
                 autocorrect="off"
@@ -96,9 +96,6 @@
             <span class="badge text-bg-danger">
                 Invalid
                 <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-            </span>
-            <span id="pl-string-input-{{uuid}}-error">
-                You must enter a string.
             </span>
             <a
                 class="link-primary"

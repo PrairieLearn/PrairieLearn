@@ -257,7 +257,7 @@ export async function uploadAssessmentInstanceScores(
 
 // missing values and empty strings get mapped to null
 function getJsonPropertyOrNull(json: Record<string, any>, key: string): any {
-  const value = _.get(json, key, null);
+  const value = json[key] ?? null;
   if (value === '') return null;
   return value;
 }
@@ -426,7 +426,7 @@ async function updateAssessmentInstanceFromJson(
   assessment_id: string,
   authn_user_id: string,
 ) {
-  if (!_.has(json, 'instance')) throw new Error('"instance" not found');
+  if (!('instance' in json)) throw new Error('"instance" not found');
   await sqldb.runInTransactionAsync(async () => {
     const { id, assessment_instance_id } = await getAssessmentInstanceId(json, assessment_id);
 
@@ -434,9 +434,9 @@ async function updateAssessmentInstanceFromJson(
       throw new Error(`unable to locate instance ${json.instance} for ${id}`);
     }
 
-    if (_.has(json, 'score_perc')) {
+    if ('score_perc' in json) {
       await updateAssessmentInstanceScore(assessment_instance_id, json.score_perc, authn_user_id);
-    } else if (_.has(json, 'points')) {
+    } else if ('points' in json) {
       await updateAssessmentInstancePoints(assessment_instance_id, json.points, authn_user_id);
     } else {
       throw new Error('must specify either "score_perc" or "points"');

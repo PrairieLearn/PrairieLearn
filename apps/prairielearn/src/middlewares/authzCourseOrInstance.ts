@@ -2,7 +2,6 @@ import { parseISO, isValid } from 'date-fns';
 import debugfn from 'debug';
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
@@ -12,6 +11,7 @@ import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
+import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:authzCourseOrInstance');
@@ -73,7 +73,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   const permissions_course = result.rows[0].permissions_course;
   res.locals.authz_data = {
-    authn_user: _.cloneDeep(res.locals.authn_user),
+    authn_user: structuredClone(res.locals.authn_user),
     authn_mode: result.rows[0].mode,
     authn_mode_reason: result.rows[0].mode_reason,
     authn_is_administrator: res.locals.is_administrator,
@@ -82,7 +82,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     authn_has_course_permission_view: permissions_course.has_course_permission_view,
     authn_has_course_permission_edit: permissions_course.has_course_permission_edit,
     authn_has_course_permission_own: permissions_course.has_course_permission_own,
-    user: _.cloneDeep(res.locals.authn_user),
+    user: structuredClone(res.locals.authn_user),
     mode: result.rows[0].mode,
     mode_reason: result.rows[0].mode_reason,
     is_administrator: res.locals.is_administrator,
@@ -93,6 +93,10 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     has_course_permission_own: permissions_course.has_course_permission_own,
   };
   res.locals.user = res.locals.authz_data.user;
+  res.locals.course_has_course_instances = await selectCourseHasCourseInstances({
+    course_id: res.locals.course.id,
+  });
+
   if (isCourseInstance) {
     res.locals.course_instance = result.rows[0].course_instance;
     const permissions_course_instance = result.rows[0].permissions_course_instance;
@@ -162,6 +166,22 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   if (overrides.length === 0) {
     debug('no requested overrides');
     return;
+  }
+
+  // If this is an example course, only allow overrides if the user is an administrator.
+  if (res.locals.course.example_course && !res.locals.is_administrator) {
+    clearOverrideCookies(res, overrides);
+
+    throw new AugmentedError('Access denied', {
+      status: 403,
+      info: html`
+        <p>
+          You are not allowed to request an effective user in the example course unless you are an
+          administrator or you are running PrairieLearn in development mode. All requested changes
+          to the effective user have been removed.
+        </p>
+      `,
+    });
   }
 
   // Cannot request a user data override without instructor permissions
@@ -264,7 +284,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       });
     }
 
-    user = _.cloneDeep(result.rows[0].user);
+    user = structuredClone(result.rows[0].user);
     is_administrator = result.rows[0].is_administrator;
     user_with_requested_uid_has_instructor_access_to_course_instance = result.rows[0].is_instructor;
     debug(
