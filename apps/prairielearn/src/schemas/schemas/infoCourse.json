@@ -124,10 +124,6 @@
             "description": "Arbitrary comment for reference purposes.",
             "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
           },
-          "shortName": {
-            "description": "Short name (preferably 2 to 7 characters).",
-            "type": "string"
-          },
           "name": {
             "description": "Long descriptive name (preferably less than 10 words).",
             "type": "string"
