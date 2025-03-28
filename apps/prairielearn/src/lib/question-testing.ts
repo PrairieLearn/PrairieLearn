@@ -310,6 +310,7 @@ async function testQuestion(
       urlPrefix: `/pl/course/${variant_course.id}`,
       user,
       authn_user,
+      is_administrator: false,
     });
   } finally {
     const renderEnd = Date.now();
