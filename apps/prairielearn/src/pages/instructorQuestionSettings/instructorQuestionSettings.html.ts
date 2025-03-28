@@ -189,9 +189,9 @@ export function InstructorQuestionSettings({
                                     value="${topic.name}"
                                     data-color="${topic.color}"
                                     data-name="${topic.name}"
-                                    data-description="${topic.implicit ? '' : TopicDescription({
-                                      topic_description: topic,
-                                    })}"
+                                    data-description="${topic.implicit
+                                      ? ''
+                                      : TopicDescription(topic)}"
                                     ${topic.name === resLocals.topic.name ? 'selected' : ''}
                                   ></option>
                                 `;
@@ -222,13 +222,9 @@ export function InstructorQuestionSettings({
                                         value="${tag.name}"
                                         data-color="${tag.color}"
                                         data-name="${tag.name}"
-                                        ${tag.implicit
+                                        data-description="${tag.implicit
                                           ? ''
-                                          : html`
-                                              data-description="${TagDescription({
-                                                tag_description: tag,
-                                              })}"
-                                            `}
+                                          : TagDescription(tag)}"
                                         ${selectedTags.has(tag.name) ? 'selected' : ''}
                                       ></option>
                                     `;

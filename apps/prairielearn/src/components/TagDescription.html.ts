@@ -2,9 +2,9 @@ import { html } from '@prairielearn/html';
 
 import { type Tag } from '../lib/db-types.js';
 
-export function TagDescription({ tag_description }: { tag_description: Tag }) {
-  if (!tag_description.implicit) {
-    return tag_description.description;
+export function TagDescription(tag: Tag) {
+  if (!tag.implicit) {
+    return tag.description;
   }
 
   return html`

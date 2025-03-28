@@ -51,7 +51,7 @@ export function InstructorCourseAdminTopics({
                     <td class="align-middle">${topic.number}</td>
                     <td class="align-middle">${TopicBadge(topic)}</td>
                     <td class="align-middle">${topic.color}</td>
-                    <td class="align-middle">${TopicDescription({ topic_description: topic })}</td>
+                    <td class="align-middle">${TopicDescription(topic)}</td>
                   </tr>
                 `;
               })}

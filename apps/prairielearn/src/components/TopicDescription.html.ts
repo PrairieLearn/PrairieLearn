@@ -2,9 +2,9 @@ import { html } from '@prairielearn/html';
 
 import { type Topic } from '../lib/db-types.js';
 
-export function TopicDescription({ topic_description }: { topic_description: Topic }) {
-  if (!topic_description.implicit) {
-    return topic_description.description;
+export function TopicDescription(topic: Topic) {
+  if (!topic.implicit) {
+    return topic.description;
   }
 
   return html`

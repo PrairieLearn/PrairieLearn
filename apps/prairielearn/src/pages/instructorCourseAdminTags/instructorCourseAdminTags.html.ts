@@ -51,7 +51,7 @@ export function InstructorCourseAdminTags({
                     <td class="align-middle">${tag.number}</td>
                     <td class="align-middle">${TagBadge(tag)}</td>
                     <td class="align-middle">${tag.color}</td>
-                    <td class="align-middle">${TagDescription({ tag_description: tag })}</td>
+                    <td class="align-middle">${TagDescription(tag)}</td>
                   </tr>
                 `,
               )}
