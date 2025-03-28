@@ -275,7 +275,7 @@ See [UUIDs in JSON files](uuid.md) for more details.
 
 Dollar signs by default denote either **inline** (`$ x $`) or **display mode** (`$$ x $$`) environments.
 
-To escape either math environment, consider using PrairieLearn's Markdown tag and inline code syntax.
+To escape either math environment, consider using PrairieLearn's ``markdown` tag and inline code syntax.
 
 ```html
 <markdown>
@@ -380,8 +380,8 @@ PrairieLearn access rules default to zero-credit so leaving off the credit means
 To fix student scores without requiring them to answer another question you can:
 
 1. Download the `<Assessment-Name>_instances.csv` file from the "Downloads" tab.
-2. Edit the "Score (%)" column to reflect the new percentage scores. This would normally be "Points / Max points \* 100".
-3. Rename the "Score (%)" column to `"score_perc"` and delete all columns except "uid", "instance", and `"score_perc"`.
+2. Edit the `"Score (%)"` column to reflect the new percentage scores. This would normally be "Points / Max points \* 100".
+3. Rename the `"Score (%)"` column to `"score_perc"` and delete all columns except `"uid"`, `"instance"`, and `"score_perc"`.
 4. Upload the new scores with the "Upload new total scores" button on the "Uploads" tab.
 
 Changing total scores via CSV download/upload should only be done after the assessment is over and students are not working on it anymore, to avoid any risk of overwriting scores while students are answering more questions.

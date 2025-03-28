@@ -17,12 +17,12 @@ used for the course.
 
 ### R Packages Installed
 
-See the Dockerfile for full details but we include
+See the Dockerfile for full details but we include:
 
-- tidyverse and `data.table` for data manipulation;
-- RUnit, testthat and tinytest for testing;
-- microbenchmark, rbenchmark and bench for timing;
-- shiny, flexdashboard, dygraphs for shiny;
+- `tidyverse` and `data.table` for data manipulation;
+- `RUnit`, `testthat` and `tinytest` for testing;
+- `microbenchmark`, `rbenchmark` and `bench` for timing;
+- `shiny`, `flexdashboard`, `dygraphs` for shiny;
 
 and more. We also include a few command-line applications such as `git` and `sqlite3`.
 
