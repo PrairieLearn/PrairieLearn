@@ -5,9 +5,9 @@
     "editorconfig.editorconfig",
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
-    "tamasfe.even-better-toml",
     "ms-python.python",
     "ms-python.vscode-pylance",
-    "redhat.vscode-yaml"
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml"
   ]
 }
