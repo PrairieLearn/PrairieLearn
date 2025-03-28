@@ -123,7 +123,7 @@ On the Staff View for the assessment, select the Students tab. This tab will sho
 
 An edit button is presented inside the "Remaining" tab for each student, which should allow proctors to modify the time limit for a student. For instances with no time limit, this action allows the proctor to set the total time limit (based on the time the student started the assessment) or the remaining time (from the current time). For instances with a set time limit, in addition to these two options, the action also allows the instructor to add or subtract time from the current limit, or to remove the time limit. An option to set the time limit as Expired is also available, which will cause the timer to be set to the current time, and in effect block any further submissions by the student. Changing the time limit will re-open an assessment if it has been closed already.
 
-It is also possible to change the time limit for all instances, using the **Action for all instances** button on the top-right corner of the table. It advisable that any changes done to all instances take into consideration students with different time limits (e.g., students with assessibility concessions). One option available for changing the time limit is the option to add/subtract a specific percentage from the current total time limit for all students. This option allows proctors to maintain the concession percentage for students with a differential time limit.
+It is also possible to change the time limit for all instances, using the **Action for all instances** button on the top-right corner of the table. It advisable that any changes done to all instances take into consideration students with different time limits (e.g., students with accessibility concessions). One option available for changing the time limit is the option to add/subtract a specific percentage from the current total time limit for all students. This option allows proctors to maintain the concession percentage for students with a differential time limit.
 
 ## Passwords
 
@@ -163,7 +163,7 @@ Note that in this case the `startDate` and `endDate` should _NOT_ be specified. 
 
 ## Showing/hiding closed assessments
 
-When using [time limits](#time-limits), an assessment will "close" when the time limit runs out. When an assessment closes it automatially grades all saved answers and compute the new total score. By default, at this point students can still view the entire exam, see which questions they got correct/incorrect, and look at the questions themselves.
+When using [time limits](#time-limits), an assessment will "close" when the time limit runs out. When an assessment closes it automatically grades all saved answers and compute the new total score. By default, at this point students can still view the entire exam, see which questions they got correct/incorrect, and look at the questions themselves.
 
 To block students from viewing closed assessment details, set `"showClosedAssessment": false` in the `allowAccess` rule, like this:
 

@@ -114,7 +114,7 @@ docker run -it --rm -p 3000:3000 \
 
 #### Troubleshooting the --add-host option and network timeouts
 
-If you are an advanced Docker user, or if your organization's network policies require it, then you might have previously adjusted the address pool used by Docker. If this conflicts with the Docker defaults, you might get a network timeout error when attempting to launch a workspace locally. In that case, you might need to adjust the IP address for the `--add-host=` option. You can find more technical details here: [PL issue #9805](https://github.com/PrairieLearn/PrairieLearn/issues/9805#issuecomment-2093299949), [moby/moby PR 29376](https://github.com/moby/moby/pull/29376), [docker/docs issue 8663](https://github.com/docker/docs/issues/8663).
+If you are an advanced Docker user, or if your organization's network policies require it, then you might have previously adjusted the address pool used by Docker. If this conflicts with the Docker defaults, you might get a network timeout error when attempting to launch a workspace locally. In that case, you might need to adjust the IP address for the `--add-host=` option. You can find more technical details here: [PL issue #9805](https://github.com/PrairieLearn/PrairieLearn/issues/9805#issuecomment-2093299949), [`moby/moby` PR 29376](https://github.com/moby/moby/pull/29376), [`docker/docs` issue 8663](https://github.com/docker/docs/issues/8663).
 
 If you are using macOS, then you may be able to remove the `--add-host` option entirely without any problems.
 

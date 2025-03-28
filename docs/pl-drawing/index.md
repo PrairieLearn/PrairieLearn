@@ -353,7 +353,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `stroke-color` | string | black   | Set the stroke color of the circle.                                                                                                                                       |
 | `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                                              |
 
-To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the string `plist` is given as a dictionar with the following format:
+To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the string `plist` is given as a dictionary with the following format:
 
 ```python
 plist = '[{"x": x1, "y": y1}, {"x": x2,"y": x2}, ... , {"x": xn,"y": yn}]'
@@ -1855,7 +1855,7 @@ Any element is free to define any of the above methods, and a description for ea
 - `is_gradable()`
   Returns `True` if the current element is gradable, other it returns `False` if the element is not gradable and should be skipped in the grading stage.
 - `grade(ref, student, tol, angtol)`
-  The grading method for this element, checks the `student` submission against the given `ref`erence. This should return `True` if the element is placed correctly, and `False` otherwise. `tol` specifies the spatial tolerance in pixels, while `angtol` specifies rotational tolerance in degrees. The `ref` and `student` submissions will match the format given in `generate()`.
+  The grading method for this element, checks the `student` submission against the given reference (`ref`). This should return `True` if the element is placed correctly, and `False` otherwise. `tol` specifies the spatial tolerance in pixels, while `angtol` specifies rotational tolerance in degrees. The `ref` and `student` submissions will match the format given in `generate()`.
 - `grading_name(element)`
   Returns the grading name of this element as a string. Usually you do not need to define this unless you know what you are doing.
 - `validate_attributes()`

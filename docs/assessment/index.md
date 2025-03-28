@@ -529,7 +529,7 @@ The `advanceScorePerc` attribute is intended to be used in [group work](#enablin
 
 ## Auto-closing Exam assessments
 
-By default Exam assessments will auto-close after six hours of inactivity by the student. This generally means that you don't need to explicity close exams that students accidentally did not close when they were done. If you want to prevent auto-closing then you can set `"autoClose": false` as a top-level option in the `infoAssessment.json` file.
+By default Exam assessments will auto-close after six hours of inactivity by the student. This generally means that you don't need to explicitly close exams that students accidentally did not close when they were done. If you want to prevent auto-closing then you can set `"autoClose": false` as a top-level option in the `infoAssessment.json` file.
 
 ## Issue reporting
 

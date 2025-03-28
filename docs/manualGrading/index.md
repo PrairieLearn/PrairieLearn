@@ -144,7 +144,7 @@ If the rubric is changed after some submissions have already been manually grade
 - Changing the point value assigned to a rubric item will trigger a recalculation of the score for all submissions where that rubric item was applied, using the updated point value;
 - Changing the description or explanation of a rubric item will update the feedback shown to students, but will not trigger a score recalculation;
 - Deleting a rubric item will trigger a recalculation of the score without the deleted rubric item for all submissions where that rubric item was applied;
-- Changing the minimum score or maximum extra credit will cause all existing rubric gradings to be recalculated.
+- Changing the minimum score or maximum extra credit will cause all existing rubric grades to be recalculated.
 
 When updating rubric settings, a flag at the bottom of the settings dialog box gives graders the option of tagging all submissions for manual grading. This option may be used in cases where the changes are significant enough to warrant a review or "spot-check" of all previously graded questions, ensuring they take the new rubric into account.
 

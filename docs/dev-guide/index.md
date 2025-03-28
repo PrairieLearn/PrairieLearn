@@ -123,7 +123,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 - Use uppercase for SQL reserved words like `SELECT`, `FROM`, `AS`, etc.
 
-- SQL code should not be inline in JavaScript files. Instead it should be in a separate `.sql` file, following the [Yesql concept](https://github.com/krisajenkins/yesql). Each `filename.js` file will normally have a corresponding `filename.sql` file in the same directory. The `.sql` file should look like:
+- SQL code should not be inline in JavaScript files. Instead it should be in a separate `.sql` file, following the [`Yesql` concept](https://github.com/krisajenkins/yesql). Each `filename.js` file will normally have a corresponding `filename.sql` file in the same directory. The `.sql` file should look like:
 
   ```sql
   -- BLOCK select_question
