@@ -1,5 +1,4 @@
 import debugfn from 'debug';
-import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
@@ -84,7 +83,7 @@ class LoadEstimator {
 
   _addIntegratedLoad() {
     debug(`LoadEstimator._addIntegratedLoad(): jobType = ${this.jobType}`);
-    const currentJobCount = _.size(this.currentJobs);
+    const currentJobCount = Object.keys(this.currentJobs).length;
     const nowMS = Date.now();
     const delta = Math.max(1, nowMS - this.lastIncrementTimeMS) / 1000;
     this.integratedLoad += delta * currentJobCount;
@@ -125,7 +124,7 @@ class LoadEstimator {
     debug(`LoadEstimator._warnOldJobs(): jobType = ${this.jobType}`);
     if (!this.warnOnOldJobs) return;
     const nowMS = Date.now();
-    _.forEach(this.currentJobs, (info, id) => {
+    for (const [id, info] of Object.entries(this.currentJobs)) {
       if (nowMS - info.startMS > config.maxResponseTimeSec * 1000 && !info.warned) {
         const details = {
           jobType: this.jobType,
@@ -137,7 +136,7 @@ class LoadEstimator {
         logger.error('load._warnOldJobs(): job exceeded max response time', details);
         info.warned = true;
       }
-    });
+    }
   }
 }
 
@@ -169,7 +168,7 @@ export function endJob(jobType: string, id: string) {
 }
 
 export function close() {
-  debug(`close(): ${_.size(estimators)} estimators`);
+  debug(`close(): ${Object.keys(estimators).length} estimators`);
   for (const jobType in estimators) {
     estimators[jobType].close();
     delete estimators[jobType];

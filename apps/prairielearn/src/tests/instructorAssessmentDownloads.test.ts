@@ -1,7 +1,6 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
-import _ from 'lodash';
 import fetch from 'node-fetch';
 
 import * as helperExam from './helperExam.js';
@@ -166,10 +165,10 @@ describe('Instructor Assessment Downloads', function () {
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
-      assert(_.every(data, (entry) => entry['UID'] === 'dev@example.com'));
-      assert(_.every(data, (entry) => entry['Assessment'] === 'Exam 1'));
-      const questions = _.map(data, (entry) => entry['Question']).sort();
-      const expectedQuestions = _.map(helperExam.questionsArray, (q) => q.qid);
+      assert(data.every((entry) => entry['UID'] === 'dev@example.com'));
+      assert(data.every((entry) => entry['Assessment'] === 'Exam 1'));
+      const questions = data.map((entry) => entry['Question']).sort();
+      const expectedQuestions = helperExam.questionsArray.map((q) => q.qid);
       assert.deepEqual(questions, expectedQuestions);
     });
   });
