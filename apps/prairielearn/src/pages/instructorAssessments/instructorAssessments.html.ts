@@ -11,7 +11,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
-import type { AssessmentRow } from '../../lib/assessment.js';
+import type { AssessmentRow, AssessmentStatsRow } from '../../lib/assessment.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 

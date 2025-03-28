@@ -1,36 +1,20 @@
-import { z } from 'zod';
-
 import { html } from '@prairielearn/html';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import type { NavSubPage } from '../../components/Navbar.types.js';
-import {
-  AssessmentModuleSchema,
-  AssessmentSchema,
-  AssessmentSetSchema,
-} from '../../lib/db-types.js';
+import type { AssessmentRow } from '../../lib/assessment.js';
 import { idsEqual } from '../../lib/id.js';
 
-export const AssessmentDropdownItemDataSchema = AssessmentSchema.extend({
-  label: z.string(),
-  start_new_assessment_group: z.boolean(),
-  assessment_set: AssessmentSetSchema,
-  assessment_module: AssessmentModuleSchema,
-  open_issue_count: z.coerce.number(),
-});
-
-type AssessmentDropdownItemData = z.infer<typeof AssessmentDropdownItemDataSchema>;
-
 export function AssessmentSwitcher({
-  assessmentDropdownItemsData,
+  assessmentRows,
   assessmentsGroupBy,
   currentAssessmentId,
   courseInstanceId,
   plainUrlPrefix,
   targetSubPage,
 }: {
-  assessmentDropdownItemsData: AssessmentDropdownItemData[];
+  assessmentRows: AssessmentRow[];
   assessmentsGroupBy: 'Set' | 'Module';
   currentAssessmentId?: string;
   courseInstanceId: string;
@@ -38,7 +22,7 @@ export function AssessmentSwitcher({
   /* The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
 }) {
-  if (assessmentDropdownItemsData.length === 0) {
+  if (assessmentRows.length === 0) {
     return html`
       <button class="dropdown-item disabled" disabled>No assessments</button>
     `.toString();
@@ -46,7 +30,7 @@ export function AssessmentSwitcher({
 
   return html`
     <table>
-      ${assessmentDropdownItemsData.map((assessmentDropdownItemData) => {
+      ${assessmentRows.map((assessmentDropdownItemData) => {
         const isActive = currentAssessmentId
           ? idsEqual(currentAssessmentId, assessmentDropdownItemData.id)
           : false;
