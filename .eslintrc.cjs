@@ -87,10 +87,10 @@ module.exports = {
     'sort-imports': [
       'error',
       {
-        'ignoreDeclarationSort': true, // import-x/order sorts the groups
-        'ignoreMemberSort': false,
-        'memberSyntaxSortOrder': ['none', 'all', 'multiple', 'single']
-      }
+        ignoreDeclarationSort: true, // import-x/order sorts the groups
+        ignoreMemberSort: false,
+        memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
+      },
     ],
 
     // The recommended Mocha rules are too strict for us; we'll only enable
