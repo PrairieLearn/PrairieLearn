@@ -9,7 +9,8 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
-import { EnumModeSchema, InstitutionSchema, UserSchema } from '../../lib/db-types.js';
+import { InstitutionSchema, UserSchema } from '../../lib/db-types.js';
+import { ipToMode } from '../../lib/exam-mode.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 

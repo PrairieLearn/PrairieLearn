@@ -5,7 +5,7 @@ import { step } from 'mocha-steps';
 import { queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { AssessmentSchema, type Assessment, type Question } from '../lib/db-types.js';
+import { type Assessment, AssessmentSchema, type Question } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import {
   insertCourseInstancePermissions,
@@ -16,7 +16,7 @@ import { selectQuestionByQid } from '../models/question.js';
 
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
-import { getConfiguredUser, getOrCreateUser, withUser, type AuthUser } from './utils/auth.js';
+import { type AuthUser, getConfiguredUser, getOrCreateUser, withUser } from './utils/auth.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 

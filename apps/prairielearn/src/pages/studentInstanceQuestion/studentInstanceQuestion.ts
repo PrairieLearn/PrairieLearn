@@ -24,10 +24,7 @@ import { logPageView } from '../../middlewares/logPageView.js';
 import selectAndAuthzInstanceQuestion from '../../middlewares/selectAndAuthzInstanceQuestion.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import { selectUserById } from '../../models/user.js';
-import {
-  selectVariantsByInstanceQuestion,
-  validateVariantAgainstQuestion,
-} from '../../models/variant.js';
+import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 import { StudentInstanceQuestion } from './studentInstanceQuestion.html.js';
 

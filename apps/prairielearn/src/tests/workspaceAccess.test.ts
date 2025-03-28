@@ -5,10 +5,10 @@ import fetch from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { type Config, config } from '../lib/config.js';
+import { config } from '../lib/config.js';
 
 import * as helperServer from './helperServer.js';
-import { withUser, type AuthUser } from './utils/auth.js';
+import { type AuthUser, withUser } from './utils/auth.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
