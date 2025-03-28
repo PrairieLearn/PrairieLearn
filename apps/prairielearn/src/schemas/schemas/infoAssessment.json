@@ -71,18 +71,7 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/zone",
-        "properties": {
-          "title": { "type": "string" },
-          "questionParams": {
-            "description": "Parameters to pass down to questions in this zone.",
-            "type": "object",
-            "properties": {
-              "lower_bound": { "type": "number" },
-              "upper_bound": { "type": "number" }
-            },
-            "additionalProperties": false
-          }
-        },
+        "properties": { "title": { "type": "string" } },
         "required": ["questions"]
       }
     },
@@ -302,11 +291,7 @@
               "questionParams": {
                 "description": "Parameters specific to this question.",
                 "type": "object",
-                "properties": {
-                  "lower_bound": { "type": "number" },
-                  "upper_bound": { "type": "number" }
-                },
-                "additionalProperties": false
+                "additionalProperties": true
               }
             }
           }
@@ -384,11 +369,6 @@
           "items": { "type": "string" },
           "uniqueItems": true,
           "default": []
-        },
-        "questionParams": {
-          "description": "Parameters to pass down to this question or its alternatives.",
-          "type": "object",
-          "default": {}
         }
       }
     },
@@ -416,11 +396,6 @@
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
           "minimum": 0
-        },
-        "questionParams": {
-          "description": "Parameters to pass to this question.",
-          "type": "object",
-          "default": {}
         }
       }
     },
