@@ -125,3 +125,31 @@ FROM
   JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
 WHERE
   rgi.rubric_grading_id = $manual_rubric_grading_id;
+
+-- BLOCK insert_ai_grading_job
+INSERT INTO
+  ai_grading_jobs (
+    grading_job_id,
+    job_sequence_id,
+    prompt,
+    completion,
+    model,
+    prompt_tokens,
+    completion_tokens,
+    cost,
+    course_id,
+    course_instance_id
+  )
+VALUES
+  (
+    $grading_job_id,
+    $job_sequence_id,
+    to_jsonb($prompt::text[]),
+    $completion,
+    $model,
+    $prompt_tokens,
+    $completion_tokens,
+    $cost,
+    $course_id,
+    $course_instance_id
+  );
