@@ -13922,6 +13922,7 @@ __metadata:
     markdownlint-cli: "npm:^0.44.0"
     node-gyp: "npm:^11.1.0"
     prettier: "npm:^3.5.3"
+    prettier-plugin-pkg: "npm:^0.18.1"
     prettier-plugin-toml: "npm:^2.0.2"
     pyright: "npm:^1.1.396"
     s3rver: "npm:^3.7.1"
@@ -13956,6 +13957,16 @@ __metadata:
   linkType: hard
 
 "prettier@npm:3.5.3, prettier@npm:^3.5.3":
+"prettier-plugin-pkg@npm:^0.18.1":
+  version: 0.18.1
+  resolution: "prettier-plugin-pkg@npm:0.18.1"
+  peerDependencies:
+    prettier: ^3.0.3
+  checksum: 10c0/8f0f1308e53d0197ca7ff532c4136930f42ad334c32728b71d8f81136a5a663d9231b659d848d2d7587461bd68ce3c2a3afe4bd34cc8718471710511113e07f9
+  languageName: node
+  linkType: hard
+
+"prettier@npm:3.5.3":
   version: 3.5.3
   resolution: "prettier@npm:3.5.3"
   bin:

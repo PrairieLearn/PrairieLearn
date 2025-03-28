@@ -2,12 +2,12 @@
   "name": "@prairielearn/migrations",
   "version": "3.0.12",
   "type": "module",
-  "main": "./dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/migrations"
   },
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc && tscp",
     "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
