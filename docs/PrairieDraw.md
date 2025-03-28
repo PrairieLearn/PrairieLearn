@@ -214,6 +214,6 @@ These files should be committed to the `git` repository and pushed to the live s
 If you want to generate LaTeX label images without docker then you will need to install [Python](https://www.python.org), [ImageMagick](http://www.imagemagick.org/), and [LaTeX](http://tug.org/texlive/) and then run:
 
 ```sh
-cd <FULL-PATH>/PrairieLearn
+cd < FULL-PATH > /PrairieLearn
 python contrib/generate_text.py --subdir /path/to/course
 ```

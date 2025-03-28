@@ -25,12 +25,12 @@ apt-get install firefox-esr -y
 # install vscode depending on what architecture we're building on
 arch=$(uname -m)
 if [[ $arch == x86_64 ]]; then
-    wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" -O /vscode.deb
+  wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" -O /vscode.deb
 elif [[ $arch == arm* ]] || [[ $arch == aarch64 ]]; then
-    wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-arm64" -O /vscode.deb
+  wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-arm64" -O /vscode.deb
 else
-    echo "Unknown architecture $arch"
-    exit 1
+  echo "Unknown architecture $arch"
+  exit 1
 fi
 apt-get install /vscode.deb -y
 rm /vscode.deb

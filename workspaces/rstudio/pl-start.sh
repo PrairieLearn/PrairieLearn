@@ -25,11 +25,11 @@ rm -f /tmp/nginx.conf
 
 # Wait in the background for RStudio to finish starting, then run Nginx.
 {
-    while ! s6-svstat -o up /var/run/s6/services/rstudio ; do
-        sleep 0.5s
-    done
-    sleep 1s
-    service nginx start
+  while ! s6-svstat -o up /var/run/s6/services/rstudio; do
+    sleep 0.5s
+  done
+  sleep 1s
+  service nginx start
 } &
 
 # Begin the RStudio session as the primary process.

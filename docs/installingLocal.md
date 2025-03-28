@@ -28,16 +28,16 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
   # Repeat after switching branches, pulling new code, or editing Python dependencies in `plbase` image.
   # If editing code in `packages/`, you should also repeat either this command or `make build`.
   make deps
-
+  
   # Run the PrairieLearn server in development mode.
   make dev
-
+  
   # Or, run PrairieLearn like it is run in production.
   make start
-
+  
   # To support workspaces in local development, use `make dev-all` or `make start-all` to run
   # both PrairieLearn and a workspace server application.
-
+  
   # To stop the server, press Ctrl-C.
   # To exit the container, press Ctrl-C and then Ctrl-D.
   ```
@@ -64,8 +64,8 @@ The linters and tests for the JavaScript and Python code can be run with the fol
 docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
 
 # You can now run the following commands inside the container:
-make lint   # or run "make lint-js" and "make lint-python" separately
-make test   # or "make test-js" and "make test-python"
+make lint # or run "make lint-js" and "make lint-python" separately
+make test # or "make test-js" and "make test-python"
 ```
 
 To run specific tests you first need to run `make start-support` to start the database and other services:
@@ -120,8 +120,8 @@ The previous shells were launched in their own containers. If you want to open a
   which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
 
   ```console
-  CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
-  e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
+  CONTAINER ID IMAGE COMMAND CREATED STATUS PORTS NAMES
+  e0f522f41ea4 prairielearn/prairielearn "/bin/sh -c /Prai…" 2 hours ago Up 2 hours 0.0.0.0:3000- upbeat_roentgen > 3000/tcp
   ```
 
 - Open a shell in your PrairieLearn container by running

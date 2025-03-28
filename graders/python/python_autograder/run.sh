@@ -48,10 +48,10 @@ mv $MERGE_DIR/ans.py $MERGE_DIR/setup_code.py $MERGE_DIR/test.py $JOB_DIR/data/d
 
 # Leading and trailing code are optional -- check if they exist before we move them.
 if [[ -f "$MERGE_DIR/leading_code.py" ]]; then
-    mv $MERGE_DIR/leading_code.py $FILENAMES_DIR
+  mv $MERGE_DIR/leading_code.py $FILENAMES_DIR
 fi
 if [[ -f "$MERGE_DIR/trailing_code.py" ]]; then
-    mv $MERGE_DIR/trailing_code.py $FILENAMES_DIR
+  mv $MERGE_DIR/trailing_code.py $FILENAMES_DIR
 fi
 
 ##########################
@@ -62,7 +62,7 @@ echo "[run] starting autograder"
 
 # randomly generate the name of the results file, so that someone can't guess and write to it
 # write it to a file that is then deleted, so that it can't get picked up by the student
-SECRET_NAME=$MERGE_DIR/`uuidgen`
+SECRET_NAME=$MERGE_DIR/$(uuidgen)
 echo -n "$SECRET_NAME" > $FILENAMES_DIR/output-fname.txt
 chmod +r $FILENAMES_DIR/output-fname.txt
 
@@ -79,8 +79,7 @@ if [ -f "$SECRET_NAME" ]; then
 fi
 
 # if that didn't work, then print a last-ditch message
-if [ ! -s $OUT_DIR/results.json ]
-then
+if [ ! -s $OUT_DIR/results.json ]; then
   echo '{"succeeded": false, "score": 0.0, "message": "Your code could not be processed by the autograder. Please contact course staff and have them check the logs for this submission."}' > $OUT_DIR/results.json
 fi
 

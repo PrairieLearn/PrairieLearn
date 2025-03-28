@@ -33,7 +33,7 @@ KILL_WORKSPACES_AFTER=1
 
 # -------
 
-pl_tmux_show_tips () {
+pl_tmux_show_tips() {
   clear
   if [[ "${PL_TMUX_SHOW_TIPS:-0}" != "1" ]]; then
     return 0
@@ -48,18 +48,18 @@ pl_tmux_show_tips () {
 TMUX_CONF=/PrairieLearn/.tmux.conf
 [[ -f "$TMUX_CONF" ]] && args=(-f "$TMUX_CONF") || args=()
 
-pl_tmux_check_http () {
-  curl -Is http://localhost:3000 >/dev/null 2>&1
+pl_tmux_check_http() {
+  curl -Is http://localhost:3000 > /dev/null 2>&1
 }
 
-pl_tmux_check_https () {
-  curl -Isk https://localhost:3000 >/dev/null 2>&1
+pl_tmux_check_https() {
+  curl -Isk https://localhost:3000 > /dev/null 2>&1
 }
 
-pl_tmux_check_lin_host () {
-  if grep -iqe 'linux' <(uname -a) && ! grep -iqe '172.17.0.1' /etc/hosts ; then
+pl_tmux_check_lin_host() {
+  if grep -iqe 'linux' <(uname -a) && ! grep -iqe '172.17.0.1' /etc/hosts; then
     local OS_FLAG
-    OS_FLAG=$(docker info --format "{{.OperatingSystem}}" 2>/dev/null || echo "NO_DOCKER_INFO")
+    OS_FLAG=$(docker info --format "{{.OperatingSystem}}" 2> /dev/null || echo "NO_DOCKER_INFO")
     if [[ "$OS_FLAG" == "NO_DOCKER_INFO" ]]; then
       echo "Could not get info about OS from Docker. (Maybe not running in Docker.)"
       return
@@ -75,7 +75,7 @@ pl_tmux_check_lin_host () {
   fi
 }
 
-pl_tmux_wait_alive () {
+pl_tmux_wait_alive() {
   while true; do
     pl_tmux_check_http && sleep 1s && return 0
     pl_tmux_check_https && sleep 1s && return 0
@@ -83,13 +83,13 @@ pl_tmux_wait_alive () {
   done
 }
 
-pl_tmux_start_server_pane () {
+pl_tmux_start_server_pane() {
   clear
   echo "Starting..."
   make dev
 }
 
-pl_tmux_start_workspace_pane () {
+pl_tmux_start_workspace_pane() {
   clear
   pl_tmux_check_lin_host
   echo "Waiting for server..."
@@ -105,7 +105,7 @@ export -f pl_tmux_check_http pl_tmux_check_https pl_tmux_check_lin_host pl_tmux_
 if [ ${KILL_WORKSPACES_BEFORE:0} -eq 1 ]; then
   # kill any containers with a name like workspace-*
   CONTAINERS=$(docker ps -aq --filter "name=workspace-")
-  if [[ ! -z "$CONTAINERS" ]] ; then
+  if [[ ! -z "$CONTAINERS" ]]; then
     echo "Killing existing workspace containers: $CONTAINERS"
     docker kill $CONTAINERS
     docker rm $CONTAINERS
@@ -119,7 +119,10 @@ cd /PrairieLearn || {
 
 if [ ${INVOKE_YARN:0} -eq 1 ]; then
   yarn config set --home enableTelemetry 0
-  yarn || { echo "Yarn had an error. Giving up." ; exit 1 ; }
+  yarn || {
+    echo "Yarn had an error. Giving up."
+    exit 1
+  }
 fi
 
 # Check if tmux is an old or new version.
@@ -160,7 +163,7 @@ fi
 if [[ "$OSTYPE" == *linux* && -w /PrairieLearn ]]; then
   PL_DIR_UID=$(stat -c '%u' /PrairieLearn)
   PL_DIR_GID=$(stat -c '%g' /PrairieLearn)
-  if [ ${PL_DIR_UID:0} -gt 0 ] && [ ${CHOWN_GENERATED_FILES:0} -eq 1 ] ; then
+  if [ ${PL_DIR_UID:0} -gt 0 ] && [ ${CHOWN_GENERATED_FILES:0} -eq 1 ]; then
     echo "Retaking ownership of files in /PrairieLearn to match local uid:gid ${PL_DIR_UID}:${PL_DIR_GID}..."
     chown -R "${PL_DIR_UID}:${PL_DIR_GID}" /PrairieLearn && echo "Done"
   fi
@@ -169,7 +172,7 @@ fi
 if [ ${KILL_WORKSPACES_AFTER:0} -eq 1 ]; then
   # Kill any lingering workspaces to clean up.
   CONTAINERS=$(docker ps -aq --filter "name=workspace-")
-  if [[ ! -z "$CONTAINERS" ]] ; then
+  if [[ ! -z "$CONTAINERS" ]]; then
     echo "Killing remaining workspace containers: $CONTAINERS"
     docker kill $CONTAINERS
     docker rm $CONTAINERS
