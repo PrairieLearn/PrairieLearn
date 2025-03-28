@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { getAvailableTimezones } from '../../lib/timezones.js';
+import { getCanonicalTimezones } from '../../lib/timezones.js';
 
 import {
   AdministratorInstitutions,
@@ -18,7 +18,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const institutions = await sqldb.queryRows(sql.select_institutions, InstitutionRowSchema);
-    const availableTimezones = await getAvailableTimezones();
+    const availableTimezones = await getCanonicalTimezones();
     res.send(
       AdministratorInstitutions({ institutions, availableTimezones, resLocals: res.locals }),
     );

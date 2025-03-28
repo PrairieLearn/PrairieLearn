@@ -12,7 +12,7 @@ import { flash } from '@prairielearn/flash';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
-import { getAvailableTimezones } from '../../lib/timezones.js';
+import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { updateCourseShowGettingStarted } from '../../models/course.js';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
@@ -26,7 +26,7 @@ router.get(
     const courseInfoExists = await fs.pathExists(
       path.join(res.locals.course.path, 'infoCourse.json'),
     );
-    const availableTimezones = await getAvailableTimezones();
+    const availableTimezones = await getCanonicalTimezones([res.locals.course.display_timezone]);
 
     let origHash = '';
     if (courseInfoExists) {
