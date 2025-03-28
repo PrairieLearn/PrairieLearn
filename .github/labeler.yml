@@ -16,7 +16,7 @@ python:
   - changed-files:
       - any-glob-to-any-file:
           - 'apps/prairielearn/python/**'
-          - 'apps/prairielearn/elements/**'
+          - 'apps/prairielearn/elements/**/*.py'
           - 'images/plbase/python-requirements.txt'
           - 'pyproject.toml'
           - 'docs/requirements.txt'
