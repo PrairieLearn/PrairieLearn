@@ -436,6 +436,7 @@ export async function aiGrade({
                 feedback: { manual: '' },
               },
               user_id,
+              true, // is_ai_graded
             );
 
             job.info('Selected rubric items:');
@@ -477,6 +478,7 @@ export async function aiGrade({
                 feedback: { manual: response.parsed.feedback },
               },
               user_id,
+              true, // is_ai_graded
             );
             job.info(`AI score: ${response.parsed.score}`);
           } else if (response.refusal) {

@@ -70,6 +70,7 @@ WITH
       iq.id AS iq_id,
       iq.score_perc AS iq_score_perc,
       s.feedback,
+      s.is_ai_graded AS is_ai_graded,
       s.manual_rubric_grading_id AS s_manual_rubric_grading_id,
       ROW_NUMBER() OVER (
         PARTITION BY
@@ -98,6 +99,7 @@ FROM
   JOIN submission_grading_context_embeddings AS emb ON (emb.submission_id = ls.s_id)
 WHERE
   ls.rn = 1
+  AND NOT ls.is_ai_graded
 ORDER BY
   embedding <=> $embedding
 LIMIT

@@ -59,6 +59,7 @@ SELECT
   s.graded_at,
   s.grading_requested_at,
   s.id,
+  s.is_ai_graded,
   s.mode,
   s.override_score,
   s.score,
