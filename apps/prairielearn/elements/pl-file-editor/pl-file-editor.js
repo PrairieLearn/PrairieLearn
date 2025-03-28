@@ -301,6 +301,18 @@ window.PLFileEditor.prototype.preview = {
         marked.use({
           extensions: [
             {
+              // `\$` is used to escape math delimiters. This is a workaround to
+              // ensure that markdown escaping does not take priority over
+              // Mathjax delimiter escaping.
+              name: 'escapeMath',
+              level: 'inline',
+              start: (src) => src.match(/\\\$/)?.index,
+              tokenizer(src) {
+                if (src.match(/^\\\$/)?.index !== 0) return false;
+                return { type: 'escape', raw: '\\$', text: '\\$' };
+              },
+            },
+            {
               name: 'math',
               level: 'inline',
               start: (src) => src.match(startMath)?.index,
