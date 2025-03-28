@@ -130,6 +130,10 @@ foreignObject .md pre {
   margin: 0em 0;
 }
 
+[dir='ltr'] .md-typeset li > details > br {
+  display: none;
+}
+
 [dir='ltr'] .md-typeset li > details > summary {
   padding-left: 0.6em;
 }

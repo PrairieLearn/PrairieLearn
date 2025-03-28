@@ -1,5 +1,8 @@
 import json
+import re
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import jsonschema2md
 import mkdocs_gen_files
@@ -13,6 +16,16 @@ def build_and_write_schemas() -> None:
     parser = jsonschema2md.Parser(
         header_level=0, collapse_children=True, ignore_patterns=[".*comment.*"]
     )
+
+    original_construct_description_line = parser._construct_description_line
+
+    def _construct_description_line_no_link(*args: Any, **kwargs: Any) -> Sequence[str]:
+        """Hide the [Test](...) links in the description line of the schema documentation."""
+        result = original_construct_description_line(*args, **kwargs)
+        result = [re.sub(r" \(\[Test\]\((.*?)\)\)", "", line) for line in result]
+        return result
+
+    parser._construct_description_line = _construct_description_line_no_link
 
     for path in sorted(SCHEMAS_ROOT.glob("*.json")):
         file_path = path.relative_to(SCHEMAS_ROOT).with_suffix("")
