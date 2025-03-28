@@ -57,7 +57,7 @@ export async function sync(courseId: string, courseData: CourseData) {
     knownNames: knownAssessmentModuleNames,
     makeImplicitEntity: (name) => ({
       name,
-      heading: `${name} (Auto-generated from use in an assessment; add this assessment module to your infoCourse.json file to customize)`,
+      heading: name,
       implicit: true,
     }),
     comparisonProperties: ['heading'],

@@ -1,14 +1,14 @@
 {
   "name": "@prairielearn/markdown",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
-  "main": "./dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/markdown"
   },
+  "private": true,
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",

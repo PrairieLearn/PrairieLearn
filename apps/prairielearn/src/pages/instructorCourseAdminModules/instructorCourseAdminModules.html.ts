@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type AssessmentModule } from '../../lib/db-types.js';
@@ -47,7 +48,9 @@ export function InstructorCourseAdminModules({
                   <tr>
                     <td class="align-middle">${module.number}</td>
                     <td>${module.name}</td>
-                    <td>${module.heading}</td>
+                    <td class="align-middle">
+                      ${AssessmentModuleHeading({ assessment_module: module })}
+                    </td>
                   </tr>
                 `;
               })}

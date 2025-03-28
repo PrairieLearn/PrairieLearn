@@ -31,10 +31,10 @@ onDocumentReady(() => {
     loadPendingSubmissionPanel(e.currentTarget, false);
   });
 
-  const copyQuestionForm = document.querySelector<HTMLFormElement>('#copyQuestionModal form');
+  const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
   if (copyQuestionForm) {
     const courseSelect = copyQuestionForm.querySelector<HTMLSelectElement>(
-      '#copyQuestionModal select[name="to_course_id"]',
+      'select[name="to_course_id"]',
     );
     courseSelect?.addEventListener('change', () => {
       const option = courseSelect.selectedOptions[0];
