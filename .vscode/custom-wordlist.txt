@@ -16,6 +16,7 @@ incentivizes
 Jeroen
 mathematica
 miniconda
+Moodle
 ndarray
 ndarrays
 nrps

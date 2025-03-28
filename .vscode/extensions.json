@@ -8,6 +8,7 @@
     "ms-python.python",
     "ms-python.vscode-pylance",
     "redhat.vscode-yaml",
-    "streetsidesoftware.code-spell-checker"
+    "streetsidesoftware.code-spell-checker",
+    "valentjn.vscode-ltex"
   ]
 }

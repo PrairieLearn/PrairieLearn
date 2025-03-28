@@ -29,7 +29,7 @@ A full `info.json` file should look something like:
 
 ### `question.html`
 
-Most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element, though questions using other elements (e.g., `pl-string-input` for short expressions) are also possible. The question should also include, in the `pl-submission-panel`, a `pl-external-grader-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
+Most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element, though questions using other elements (e.g., `pl-string-input` for short expressions) are also possible. The question should also include, in the `pl-submission-panel`, a `pl-external-grader-results` to show the status of grading jobs. It is also recommended placing a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 
 ```html
 <pl-question-panel>
@@ -240,7 +240,7 @@ self.test_run("./square", args=["3", "5"], exp_output=["9", "25"],
               must_match_all_outputs="all")
 ```
 
-Some times a test must ensure that some strings are _not_ found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
+Sometimes a test must ensure that some strings are _not_ found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
 
 ```python
 self.test_run("diff -q output.txt expected.txt", reject_output=["differ"])
@@ -275,13 +275,13 @@ For both `exp_output` and `reject_output`, regular expressions may be used, by p
 self.test_run("./valid_date", exp_output=re.compile('([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))'))
 ```
 
-To avoid issues with student-provided code running longer than expected, such as in cases of infinite loop, the program will timeout after one second. In this case, the test will be considered failed. This setting can be changed with the `timeout` argument, which should be set to a number of seconds.
+To avoid issues with student-provided code running longer than expected, such as in cases of infinite loop, the program will time out after one second. In this case, the test will be considered failed. This setting can be changed with the `timeout` argument, which should be set to a number of seconds.
 
 ```python
 self.test_run("./slowprogram", exp_output="COMPLETED", timeout=10)
 ```
 
-To avoid issues with student-provided code producing code that is too large for PrairieLearn to handle, by default any program with more than 10KB (more precisely, 10240 characters) of output will fail and have its output truncated. To change this limit, use the `size_limit` argument, which should be set to a number of characters.
+To avoid issues with student-provided code producing code that is too large for PrairieLearn to handle, by default any program with more than 10 KB (more precisely, 10240 characters) of output will fail and have its output truncated. To change this limit, use the `size_limit` argument, which should be set to a number of characters.
 
 ```python
 self.test_run("./verboseprogram", exp_output="COMPLETED", size_limit=102400)

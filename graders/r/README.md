@@ -19,7 +19,7 @@ used for the course.
 
 See the Dockerfile for full details but we include
 
-- tidyverse and data.table for data manipulation;
+- tidyverse and `data.table` for data manipulation;
 - RUnit, testthat and tinytest for testing;
 - microbenchmark, rbenchmark and bench for timing;
 - shiny, flexdashboard, dygraphs for shiny;

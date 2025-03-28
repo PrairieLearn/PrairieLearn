@@ -27,7 +27,7 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 | `width`                    | integer | 580                                          | Horizontal width of the canvas (in pixels).                                                                                                                                 |
 | `height`                   | integer | 320                                          | Vertical height of the canvas (in pixels).                                                                                                                                  |
 | `grid-size`                | integer | 20                                           | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, then the background is white.                                                            |
-| `snap-to-grid`             | boolean | false                                        | If true, objects placed in the canvas snap to closest grid point. Otherwise, they can be placed outside of the grid.                                                        |
+| `snap-to-grid`             | boolean | false                                        | If true, objects placed in the canvas snap to the closest grid point. Otherwise, they can be placed outside the grid.                                                       |
 | `correct-answer`           | string  | special                                      | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                            |
 | `tol`                      | float   | `0.5*grid-size`                              | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.                     |
 | `angle-tol`                | float   | 10                                           | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.                                        |
@@ -756,7 +756,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 | `y2`               | float   | 10      | `y` position for the first point defining the end of the pulley line, i.e., the vertical distance from the top border of the canvas.                                      |
 | `x3`               | float   | 120     | `x` position for the second point defining the end of the pulley line, i.e., the horizontal distance from the left border of the canvas.                                  |
 | `y3`               | float   | 60      | `y` position for the second point defining the end of the pulley line, i.e., the vertical distance from the top border of the canvas.                                     |
-| `alternative-path` | boolean | false   | Selects the other tangent points at the pulley that connects to points `(x2,y2)` and `(x3,y3)`. By default, it draws the shortest path.                                   |
+| `alternative-path` | boolean | false   | Selects the other tangent points at the pulley that connects to the points `(x2,y2)` and `(x3,y3)`. By default, it draws the shortest path.                               |
 | `radius`           | float   | 20      | Radius of the pulley.                                                                                                                                                     |
 | `label`            | string  | -       | Text to label the pulley.                                                                                                                                                 |
 | `offsetx`          | float   | 2       | Horizontal distance of `label` from the center of the pulley.                                                                                                             |
@@ -827,7 +827,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 | `angle`              | float   | 0       | Angle of rotation around the start point of the line. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                        |
 | `x2`                 | float   | -       | `x` position for the end point for the line, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.   |
 | `y2`                 | float   | -       | `y` position for the end point for the line, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.      |
-| `dim-offset`         | float   | 0       | By default, the dimension is placed between points `(x1,y1)` and `(x2,y2)`. When `dim-offset` is different than zero, the dimension is translated parallel to the direction defined by `(x1,y1)` and `(x2,y2)`, with an offset distance `dim-offset`. |
+| `dim-offset`         | float   | 0       | By default, the dimension is placed between points `(x1,y1)` and `(x2,y2)`. When `dim-offset` is different from zero, the dimension is translated parallel to the direction defined by `(x1,y1)` and `(x2,y2)`, with an offset distance `dim-offset`. |
 | `dim-offset-angle`   | float   | -       | When `dim-offset-angle` is defined, the dimension has the orientation defined by `dim-offset-angle` about the point `(x1,y1)`, and the `dim-offset` is the distance from `(x1,y1)`.                                                                   |
 | `start-support-line` | boolean | false   | When `true` it draws a dashed line connecting the reference point `(x1,y1)` and the point where the dimension line starts (which are different when `dim-offset` is not zero).                                                                        |
 | `end-support-line`   | boolean | false   | When `true` it draws a dashed line connecting the reference point `(x2,y2)` and the point where the dimension line finishes (which are different when `dim-offset` is not zero).                                                                      |
@@ -1634,12 +1634,12 @@ This element will wrap all the elements included in the grading canvas that will
 | ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `draw-error-box` | boolean | false   | When `true`, the objects that are placed inside `pl-drawing-initial` will be displayed with their respective error bounding boxes in the answer panel. |
 
-The final version of a question should not have the attribute `draw-error-box`. However this attribute can be helpful during the process of creating a question. Authors have the option of starting the grading canvas including all the objects in `pl-drawing-initial` with
+The final version of a question should not have the attribute `draw-error-box`. However, this attribute can be helpful during the process of creating a question. Authors have the option of starting the grading canvas including all the objects in `pl-drawing-initial` with
 `draw-error-box=true`, to see how the graded objects are placed in the canvas, and if the default tolerances are reasonable for the specific question, or if adjustments are needed. Once the question is completed, the objects that are expected to be graded can be removed from `pl-drawing-initial` and added to `pl-drawing-answer`. The author can decide if the students should see the error box when the correct answer is displayed. By default, `draw-error-box="false"`.
 
 ### `pl-controls` element
 
-The element `pl-controls` will add the buttons that allows students to place objects in the canvas. The element `pl-controls-group` can be used to group buttons that have similar properties, for example, graded and non-graded objects.
+The element `pl-controls` will add the buttons that allow students to place objects in the canvas. The element `pl-controls-group` can be used to group buttons that have similar properties, for example, graded and non-graded objects.
 
 ```html
 <pl-controls>
@@ -1925,7 +1925,7 @@ Any element is free to define any of the above methods, and a description for ea
   is the same one that is generated in the Python `generate()` function. This function should also register the element with
   the answer state (see example below, and definition of answer state class).
 - `button_press(canvas, options, submittedAnswer)`
-  This function will be run whenever the sidebar control button for this element is pressed. By default this will call `generate()`,
+  This function will be run whenever the sidebar control button for this element is pressed. By default, this will call `generate()`,
   so in most cases you do not need to implement this.
 - `get_button_icon(options)`
   Returns the path as a string for this button's icon relative to `clientFilesElement` (or `clientFilesExtension`). By default, this will resolve to the same filename as the element's name, so if your image has the same name you do not need to implement this.

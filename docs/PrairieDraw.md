@@ -15,7 +15,7 @@ PrairieDraw uses the `Sylvester.Vector` class to specify positions and direction
 Below is an incomplete selection of useful operations on Vector; the complete documentation is found [here](http://sylvester.jcoglan.com/docs.html).
 
 `Sylvester.Vector.create(elements)`
-Creates and returns a new Vector from the array `elements`. It is often useful to alias this command in your script as `var $V = Sylvester.Vector.create` so you can write `$V([x,y])` later on.
+Creates and returns a new Vector from the array `elements`. It is often useful to alias this command in your script as `var $V = Sylvester.Vector.create`, so you can write `$V([x,y])` later on.
 
 `add(vector)`
 Returns a new Vector which is the sum of the receiver and the argument.
@@ -121,7 +121,7 @@ Draws a circle centered at `center` with radius `radius`.
 Draw a rectangle (aligned to the axes) of the given width and height. When not specified, `center` is assumed to be the origin. An `angle` to rotate can also be given.
 
 `rectangleGeneric(bottomLeft, bottomRight, height)`
-Draw a rectangle with one side connecting `bottomLeft` and `bottomRight` of the given `height`. The rectangle extends perpendicular (counter-clockwise) to this line.
+Draw a rectangle with one side connecting `bottomLeft` and `bottomRight` of the given `height`. The rectangle extends perpendicular (counterclockwise) to this line.
 
 ## Drawing vector arrows
 

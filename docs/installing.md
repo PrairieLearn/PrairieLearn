@@ -58,9 +58,9 @@ Once that message shows up, open a web browser and connect to [http://localhost:
 
 When you are finished with PrairieLearn, type Control-C on the terminal where you ran the server to stop it.
 
-### Running on Apple silicon and other ARM64 hardware
+### Running on Apple Silicon and other ARM64 hardware
 
-If you're using an Apple silicon Mac (M-series chips, etc.) or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
+If you're using an Apple Silicon Mac (M-series chips, etc.) or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
 
 ```console
 no matching manifest for linux/arm64/v8 in the manifest list entries
