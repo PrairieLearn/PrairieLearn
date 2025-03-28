@@ -1,14 +1,14 @@
 {
   "name": "@prairielearn/express-list-endpoints",
   "version": "1.0.5",
-  "license": "MIT",
   "type": "module",
-  "main": "dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/express-list-endpoints"
   },
+  "license": "MIT",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
