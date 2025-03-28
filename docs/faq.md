@@ -275,7 +275,7 @@ See [UUIDs in JSON files](uuid.md) for more details.
 
 Dollar signs by default denote either **inline** (`$ x $`) or **display mode** (`$$ x $$`) environments.
 
-To escape either math environment, consider using PrairieLearn's ``markdown` tag and inline code syntax.
+To escape either math environment, consider using PrairieLearn's `markdown` tag and inline code syntax.
 
 ```html
 <markdown>
