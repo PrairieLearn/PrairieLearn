@@ -2,14 +2,6 @@
 
 Workspaces allow students to work in persistent remote containers via in-browser frontends such as VS Code and JupyterLab. The remote containers are configured by instructors to provide custom, uniform environments per question. Workspace questions are integrated with the standard PrairieLearn autograding pipeline.
 
-## Supported browsers
-
-- [x] Chrome is supported
-- [x] Firefox is supported
-- [x] Safari is supported
-- [x] Edge Chromium (version >= 79) is supported
-- [ ] Edge Legacy (version < 79) is untested
-
 ## Directory structure
 
 ```text

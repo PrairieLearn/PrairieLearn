@@ -17,6 +17,7 @@ import {
 import { processSubmission } from '../../lib/question-submission.js';
 import { getSearchParams } from '../../lib/url.js';
 import { logPageView } from '../../middlewares/logPageView.js';
+import { selectAndAuthzVariant } from '../../models/variant.js';
 
 import { InstructorQuestionPreview } from './instructorQuestionPreview.html.js';
 
@@ -38,28 +39,6 @@ router.post(
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
-  }),
-);
-
-router.get(
-  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
-  asyncHandler(async (req, res) => {
-    const panels = await renderPanelsForSubmission({
-      submission_id: req.params.submission_id,
-      question: res.locals.question,
-      instance_question: null,
-      variant_id: req.params.variant_id,
-      user: res.locals.user,
-      urlPrefix: res.locals.urlPrefix,
-      questionContext: 'instructor',
-      // This is only used by score panels, which are not rendered in this context.
-      authorizedEdit: false,
-      // score panels are never rendered on the instructor question preview page.
-      renderScorePanels: false,
-      // Group role permissions are not used in this context.
-      groupRolePermissions: null,
-    });
-    res.json(panels);
   }),
 );
 
@@ -105,15 +84,60 @@ router.get(
       search: normalPreviewSearchParams.toString(),
     });
 
+    const renderSubmissionSearchParams = new URLSearchParams();
+    if (manualGradingPreviewEnabled) {
+      renderSubmissionSearchParams.set('manual_grading_preview', 'true');
+    }
+
     setRendererHeader(res);
     res.send(
       InstructorQuestionPreview({
         normalPreviewUrl,
         manualGradingPreviewEnabled,
         manualGradingPreviewUrl,
+        renderSubmissionSearchParams,
         resLocals: res.locals,
       }),
     );
+  }),
+);
+
+router.get(
+  '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
+  asyncHandler(async (req, res) => {
+    // As with the normal route, we need to respect the `manual_grading_preview` flag.
+    const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
+
+    const variant = await selectAndAuthzVariant({
+      unsafe_variant_id: req.params.unsafe_variant_id,
+      variant_course: res.locals.course,
+      question_id: res.locals.question.id,
+      course_instance_id: res.locals.course_instance?.id,
+      authz_data: res.locals.authz_data,
+      authn_user: res.locals.authn_user,
+      user: res.locals.user,
+      is_administrator: res.locals.is_administrator,
+    });
+
+    const panels = await renderPanelsForSubmission({
+      unsafe_submission_id: req.params.unsafe_submission_id,
+      question: res.locals.question,
+      instance_question: null,
+      variant,
+      user: res.locals.user,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: 'instructor',
+      // This is only used by score panels, which are not rendered in this context.
+      authorizedEdit: false,
+      // Score panels are never rendered on the instructor question preview page.
+      renderScorePanels: false,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
+      localsOverrides: {
+        manualGradingInterface: manualGradingPreviewEnabled,
+      },
+    });
+    res.json(panels);
   }),
 );
 

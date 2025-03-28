@@ -70,6 +70,7 @@ WITH
       iq.id AS iq_id,
       iq.score_perc AS iq_score_perc,
       s.feedback,
+      s.is_ai_graded AS is_ai_graded,
       s.manual_rubric_grading_id AS s_manual_rubric_grading_id,
       ROW_NUMBER() OVER (
         PARTITION BY
@@ -98,6 +99,7 @@ FROM
   JOIN submission_grading_context_embeddings AS emb ON (emb.submission_id = ls.s_id)
 WHERE
   ls.rn = 1
+  AND NOT ls.is_ai_graded
 ORDER BY
   embedding <=> $embedding
 LIMIT
@@ -133,3 +135,31 @@ WHERE
   id = $manual_rubric_grading_id
 LIMIT
   1;
+
+-- BLOCK insert_ai_grading_job
+INSERT INTO
+  ai_grading_jobs (
+    grading_job_id,
+    job_sequence_id,
+    prompt,
+    completion,
+    model,
+    prompt_tokens,
+    completion_tokens,
+    cost,
+    course_id,
+    course_instance_id
+  )
+VALUES
+  (
+    $grading_job_id,
+    $job_sequence_id,
+    to_jsonb($prompt::text[]),
+    $completion,
+    $model,
+    $prompt_tokens,
+    $completion_tokens,
+    $cost,
+    $course_id,
+    $course_instance_id
+  );

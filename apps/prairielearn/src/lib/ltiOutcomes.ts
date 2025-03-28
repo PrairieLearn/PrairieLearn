@@ -33,7 +33,7 @@ const exampleRequest = {
   },
 };
 function xmlReplaceResult(sourcedId: string, score: number, identifier: string) {
-  const Obj = _.clone(exampleRequest);
+  const Obj = structuredClone(exampleRequest);
 
   Obj.imsx_POXEnvelopeRequest.imsx_POXHeader.imsx_POXRequestHeaderInfo.imsx_messageIdentifier =
     identifier;
