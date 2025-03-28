@@ -54,25 +54,5 @@
   ],
   "python.testing.pytestArgs": ["apps/prairielearn/elements", "apps/prairielearn/python/test"],
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true,
-  "cSpell.enabledFileTypes": {
-    "*": false,
-    "markdown": true
-  },
-  "cSpell.allowCompoundWords": true,
-  "cSpell.customDictionaries": {
-    "custom": {
-      "name": "custom",
-      "path": "${workspaceFolder}/.vscode/custom-wordlist.txt",
-      "scope": "workspace",
-      "addWords": true
-    }
-  },
-  "cSpell.languageSettings": [
-    {
-      "languageId": "markdown",
-      "ignoreRegExpList": ["`[^`\n]+?`", "```[\\s\\S]*?```", "\\[[^\\]]*?\\]: "],
-      "dictionaries": ["wordsEn", "python", "softwareTerms", "misc", "custom", "companies"]
-    }
-  ]
+  "python.testing.pytestEnabled": true
 }
