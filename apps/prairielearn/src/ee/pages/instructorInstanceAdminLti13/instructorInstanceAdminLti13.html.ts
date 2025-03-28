@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
