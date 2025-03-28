@@ -52,5 +52,8 @@
   ],
   "python.testing.pytestArgs": ["apps/prairielearn/elements", "apps/prairielearn/python/test"],
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true
+  "python.testing.pytestEnabled": true,
+  "[json]": {
+    "files.insertFinalNewline": true
+  }
 }
