@@ -189,13 +189,9 @@ export function InstructorQuestionSettings({
                                     value="${topic.name}"
                                     data-color="${topic.color}"
                                     data-name="${topic.name}"
-                                    ${topic.implicit
-                                      ? ''
-                                      : html`
-                                          data-description="${TopicDescription({
-                                            topic_description: topic,
-                                          })}"
-                                        `}
+                                    data-description="${topic.implicit ? '' : TopicDescription({
+                                      topic_description: topic,
+                                    })}"
                                     ${topic.name === resLocals.topic.name ? 'selected' : ''}
                                   ></option>
                                 `;
