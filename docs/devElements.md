@@ -176,7 +176,7 @@ Note that the key used in the dynamic dependencies will be shared among all elem
 - For element scripts: use the name of the element, followed by a slash, followed by the name of the script. For example, if the element is named `pl-my-element` and the script is named `my-element.js`, then the key should be `pl-my-element/my-element.js`.
 - For `clientFilesCourse` scripts: use any course-specific convention that does not clash with the naming above.
 
-You can also find more detail about the types of dependencies in the Schema reference docs:
+You can also find more detail about the types of dependencies in the schema references:
 
 - [System-wide elements](./schemas/infoElementCore.md)
 - [Course-specific elements](./schemas/infoElementCourse.md)

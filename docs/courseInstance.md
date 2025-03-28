@@ -49,7 +49,7 @@ This file specifies basic information about the course instance:
 }
 ```
 
-!!! info "[`infoCourseInstance.json` reference](./schemas/infoCourseInstance.md) :robot:"
+See the [reference for `infoCourseInstance.json`](./schemas/infoCourseInstance.md) for more information about what can be added to this file.
 
 ## Access controls
 

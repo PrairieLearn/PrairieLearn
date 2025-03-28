@@ -130,7 +130,7 @@ This file specifies basic information about the course:
     }
     ```
 
-!!! info "[`infoCourse.json` reference](../schemas/infoCourse.md) :robot:"
+See the [reference for `infoCourse.json`](../schemas/infoCourse.md) for more information about what can be added to this file.
 
 ## Course-wide options
 

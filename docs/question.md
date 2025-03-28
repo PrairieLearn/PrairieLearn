@@ -75,7 +75,7 @@ The `info.json` file for each question defines properties of the question. For e
 | `shareSourcePublicly`    | boolean | Whether the the source code of the question should be available                                                                                                        |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                             |
 
-!!! info "[`infoQuestion.json` reference](schemas/infoQuestion.md) :robot:"
+See the [reference for `infoQuestion.json`](./schemas/infoQuestion.md) for more information about what can be added to this file.
 
 ### Question Dependencies
 

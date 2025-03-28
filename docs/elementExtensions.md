@@ -29,7 +29,7 @@ The `info.json` file is structurally similar to the element info file and may co
 }
 ```
 
-!!! info "[`infoElementExtension.json` reference](./schemas/infoElementExtension.md) :robot:"
+See the [reference for `infoElementExtension.json`](./schemas/infoElementExtension.md) for more information about what can be added to this file.
 
 ### Python Controller
 
