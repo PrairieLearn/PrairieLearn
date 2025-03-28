@@ -187,7 +187,8 @@ export async function saveSubmission(
 ): Promise<{ submission_id: string; variant: Variant }> {
   const submission: Partial<Submission> & SubmissionDataForSaving = {
     ...submissionData,
-    raw_submitted_answer: submissionData.submitted_answer,
+    // This is cloned to avoid double-storing workspace files.
+    raw_submitted_answer: structuredClone(submissionData.submitted_answer),
     gradable: true,
   };
 
