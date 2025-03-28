@@ -572,7 +572,7 @@ export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
 /**
  * Select assessments for a course instance grouped by set or module.
- * This query also adds the open issue count and a label derived from the set 
+ * This query also adds the open issue count and a label derived from the set
  * and assessment number to each assessment.
  */
 export async function selectAssessmentsForCourseInstanceGrouped({
@@ -599,8 +599,8 @@ export async function selectAssessmentsForCourseInstanceGrouped({
 }
 
 /**
- * Retrieve a cursor to a query selecting assessments for a course instance grouped 
- * by set or module. The query also adds the open issue count and a label derived 
+ * Retrieve a cursor to a query selecting assessments for a course instance grouped
+ * by set or module. The query also adds the open issue count and a label derived
  * from the set and assessment number to each assessment.
  */
 export async function selectAssessmentsForCourseInstanceGroupedCursor({
