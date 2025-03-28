@@ -24,6 +24,8 @@ export function InstructorInfoPanel({
   assessment,
   assessment_instance,
   instance_question,
+  assignedGrader,
+  lastGrader,
   question,
   variant,
   instance_group,
@@ -38,10 +40,9 @@ export function InstructorInfoPanel({
   course_instance?: CourseInstance;
   assessment?: Assessment;
   assessment_instance?: AssessmentInstance;
-  instance_question?: InstanceQuestion & {
-    assigned_grader_name?: string | null;
-    last_grader_name?: string | null;
-  };
+  instance_question?: InstanceQuestion;
+  assignedGrader?: User | null;
+  lastGrader?: User | null;
   question?: Question;
   variant?: Variant;
   instance_group?: Group | null;
@@ -87,7 +88,13 @@ export function InstructorInfoPanel({
         VariantInfo({ variant, timeZone, questionContext }),
         IssueReportButton({ variant, csrfToken, questionContext }),
         AssessmentInstanceInfo({ assessment, assessment_instance, timeZone }),
-        ManualGradingInfo({ instance_question, assessment, questionContext }),
+        ManualGradingInfo({
+          instance_question,
+          assignedGrader,
+          lastGrader,
+          assessment,
+          questionContext,
+        }),
       ])}
       <div class="card-footer small">This box is not visible to students.</div>
     </div>
@@ -159,7 +166,7 @@ function QuestionInfo({
       ? `course_instance/${course_instance.id}/instructor`
       : `course/${course.id}`
   }/question/${question.id}?variant_seed=${variant.variant_seed}`;
-  const publicPreviewUrl = `${config.urlPrefix}/public/course/${course.id}/question/${question.id}/preview`;
+  const publicPreviewUrl = `${config.urlPrefix}/public/course/${question.course_id}/question/${question.id}/preview`;
 
   // We don't show the sharing name in the QID if the question is not shared
   // publicly for importing, such as if only `share_source_publicly` is set.
@@ -299,15 +306,14 @@ function AssessmentInstanceInfo({
 
 function ManualGradingInfo({
   instance_question,
+  assignedGrader,
+  lastGrader,
   assessment,
   questionContext,
 }: {
-  instance_question?:
-    | (InstanceQuestion & {
-        assigned_grader_name?: string | null;
-        last_grader_name?: string | null;
-      })
-    | null;
+  instance_question?: InstanceQuestion | null;
+  assignedGrader?: User | null;
+  lastGrader?: User | null;
   assessment?: Assessment | null;
   questionContext: QuestionContext;
 }) {
@@ -333,15 +339,21 @@ function ManualGradingInfo({
       ? html`
           <div class="d-flex flex-wrap">
             <div class="pe-1">Assigned to:</div>
-            <div>${instance_question.assigned_grader_name ?? 'Unassigned'}</div>
+            <div>
+              ${assignedGrader?.name
+                ? `${assignedGrader.name} (${assignedGrader.uid})`
+                : (assignedGrader?.uid ?? 'Unassigned')}
+            </div>
           </div>
         `
       : ''}
-    ${instance_question.last_grader
+    ${lastGrader
       ? html`
           <div class="d-flex flex-wrap">
             <div class="pe-1">Graded by:</div>
-            <div>${instance_question.last_grader_name}</div>
+            <div>
+              ${lastGrader.name ? `${lastGrader.name} (${lastGrader.uid})` : lastGrader.uid}
+            </div>
           </div>
         `
       : ''}

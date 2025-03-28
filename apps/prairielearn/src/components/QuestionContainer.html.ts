@@ -28,11 +28,13 @@ export function QuestionContainer({
   questionContext,
   showFooter = true,
   manualGradingPreviewUrl,
+  renderSubmissionSearchParams,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
   showFooter?: boolean;
   manualGradingPreviewUrl?: string;
+  renderSubmissionSearchParams?: URLSearchParams;
 }) {
   const {
     question,
@@ -83,6 +85,7 @@ export function QuestionContainer({
               submissions: submissions.slice(0, MAX_TOP_RECENTS),
               submissionHtmls,
               submissionCount: submissions.length,
+              renderSubmissionSearchParams,
             })}
             ${submissions.length > MAX_TOP_RECENTS
               ? html`
@@ -107,6 +110,7 @@ export function QuestionContainer({
                       submissions: submissions.slice(MAX_TOP_RECENTS),
                       submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
                       submissionCount: submissions.length,
+                      renderSubmissionSearchParams,
                     })}
                   </div>
                 `
@@ -720,12 +724,14 @@ function SubmissionList({
   submissions,
   submissionHtmls,
   submissionCount,
+  renderSubmissionSearchParams,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
   submissions: SubmissionForRender[];
   submissionHtmls: string[];
   submissionCount: number;
+  renderSubmissionSearchParams?: URLSearchParams;
 }) {
   return submissions.map((submission, idx) =>
     SubmissionPanel({
@@ -740,6 +746,7 @@ function SubmissionList({
       submissionCount,
       rubric_data: resLocals.rubric_data,
       urlPrefix: resLocals.urlPrefix,
+      renderSubmissionSearchParams,
     }),
   );
 }
@@ -751,6 +758,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
     id: 'copyQuestionModal',
     title: 'Copy question',
     formAction: question_copy_targets[0]?.copy_url ?? '',
+    formClass: 'js-copy-question-form',
     body:
       question_copy_targets.length === 0
         ? html`
