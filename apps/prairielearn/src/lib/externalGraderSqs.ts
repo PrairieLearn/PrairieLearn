@@ -6,7 +6,6 @@ import { SQSClient, GetQueueUrlCommand, SendMessageCommand } from '@aws-sdk/clie
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import * as tar from 'tar';
 
 import { logger } from '@prairielearn/logger';
@@ -37,8 +36,8 @@ export class ExternalGraderSqs implements Grader {
     course: Course,
     configOverrides?: Partial<Config>,
   ) {
-    const config = _.cloneDeep(globalConfig);
-    _.assign(config, configOverrides);
+    const config = structuredClone(globalConfig);
+    Object.assign(config, configOverrides);
 
     const emitter = new EventEmitter();
 

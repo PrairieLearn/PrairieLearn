@@ -15,7 +15,6 @@ import Docker from 'dockerode';
 import express, { type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { type Entry } from 'fast-glob';
-import _ from 'lodash';
 import fetch from 'node-fetch';
 import * as shlex from 'shlex';
 import { v4 as uuidv4 } from 'uuid';
@@ -121,7 +120,7 @@ app.post(
     } else if (action == null) {
       res.status(500).send('Missing action');
     } else if (action === 'init') {
-      const useInitialZip: boolean = _.get(req.body.options, 'useInitialZip', false);
+      const useInitialZip: boolean = req.body.options?.useInitialZip ?? false;
       await initSequence(workspace_id, useInitialZip, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);
