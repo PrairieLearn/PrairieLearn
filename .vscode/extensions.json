@@ -2,6 +2,7 @@
   "recommendations": [
     "Tobermory.es6-string-html",
     "charliermarsh.ruff",
+    "editorconfig.editorconfig",
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
     "tamasfe.even-better-toml",
