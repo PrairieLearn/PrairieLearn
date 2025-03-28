@@ -29,7 +29,6 @@ export function AssessmentSwitcher({
   }
 
   return html`
-    <table>
       ${assessmentRows.map((assessmentDropdownItemData) => {
         const isActive = currentAssessmentId
           ? idsEqual(currentAssessmentId, assessmentDropdownItemData.id)
@@ -74,13 +73,12 @@ export function AssessmentSwitcher({
                     `
                   : ''}
               </p>
-              <p id="aid" class="m-0 ${isActive ? 'text-light' : 'text-muted'} small">
+              <p class="m-0 ${isActive ? 'text-light' : 'text-muted'} small">
                 ${assessmentDropdownItemData.tid}
               </p>
             </div>
           </a>
         `;
       })}
-    </table>
   `.toString();
 }
