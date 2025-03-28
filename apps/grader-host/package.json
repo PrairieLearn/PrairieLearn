@@ -1,12 +1,12 @@
 {
   "name": "@prairielearn/grader-host",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
+  "private": true,
   "scripts": {
     "build": "tsc && tscp",
-    "dev:no-watch": "tsx src/index.ts",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
+    "dev:no-watch": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "c8 mocha src/**/*.test.{js,ts}"
   },
