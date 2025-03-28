@@ -552,7 +552,7 @@ export async function getAndRenderVariant(
     question_course,
     locals,
   );
-  question.question_params = variant.params;
+  question.question_params = { ...question.question_params, ...variant.params };
   resultLocals.extraHeadersHtml = htmls.extraHeadersHtml;
   resultLocals.questionHtml = htmls.questionHtml;
   resultLocals.submissionHtmls = htmls.submissionHtmls;
