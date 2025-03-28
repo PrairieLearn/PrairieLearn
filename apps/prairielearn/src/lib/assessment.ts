@@ -571,8 +571,9 @@ export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
 export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
 /**
- * Select assessments for a course instance, along with grouping information,
- * open issue counts, and assessment labels derived from the set and assessment number.
+ * Select assessments for a course instance grouped by set or module.
+ * This query also adds the open issue count and a label derived from the set 
+ * and assessment number to each assessment.
  */
 export async function selectAssessmentsForCourseInstanceGrouped({
   course_instance_id,
@@ -598,8 +599,9 @@ export async function selectAssessmentsForCourseInstanceGrouped({
 }
 
 /**
- * Select a cursor of the query for assessments for a course instance, along with grouping information,
- * open issue counts, and assessment labels derived from the set and assessment number.
+ * Retrieve a cursor to a query selecting assessments for a course instance grouped 
+ * by set or module. The query also adds the open issue count and a label derived 
+ * from the set and assessment number to each assessment.
  */
 export async function selectAssessmentsForCourseInstanceGroupedCursor({
   course_instance_id,
