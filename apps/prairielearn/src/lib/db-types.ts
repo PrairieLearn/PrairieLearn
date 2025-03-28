@@ -47,6 +47,21 @@ export const AdministratorSchema = z.object({
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
 
+export const AiGradingJobSchema = z.object({
+  completion: z.any(),
+  completion_tokens: z.number(),
+  course_id: IdSchema,
+  course_instance_id: IdSchema,
+  cost: z.number(),
+  grading_job_id: IdSchema,
+  id: IdSchema,
+  job_sequence_id: IdSchema.nullable(),
+  model: z.string(),
+  prompt: z.any(),
+  prompt_tokens: z.number(),
+});
+export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
+
 export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
   assessment_id: IdSchema,
