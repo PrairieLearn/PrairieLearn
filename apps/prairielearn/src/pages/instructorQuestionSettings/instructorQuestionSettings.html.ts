@@ -7,7 +7,9 @@ import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
+import { TagDescription } from '../../components/TagDescription.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
+import { TopicDescription } from '../../components/TopicDescription.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -187,7 +189,9 @@ export function InstructorQuestionSettings({
                                     value="${topic.name}"
                                     data-color="${topic.color}"
                                     data-name="${topic.name}"
-                                    data-description="${topic.description}"
+                                    data-description="${topic.implicit
+                                      ? ''
+                                      : TopicDescription(topic)}"
                                     ${topic.name === resLocals.topic.name ? 'selected' : ''}
                                   ></option>
                                 `;
@@ -218,7 +222,9 @@ export function InstructorQuestionSettings({
                                         value="${tag.name}"
                                         data-color="${tag.color}"
                                         data-name="${tag.name}"
-                                        data-description="${tag.description}"
+                                        data-description="${tag.implicit
+                                          ? ''
+                                          : TagDescription(tag)}"
                                         ${selectedTags.has(tag.name) ? 'selected' : ''}
                                       ></option>
                                     `;
