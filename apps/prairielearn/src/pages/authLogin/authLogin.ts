@@ -35,15 +35,9 @@ router.get(
   asyncHandler(async (req, res, _next) => {
     const service = ServiceSchema.parse(req.query.service ?? null);
 
-    if (req.query.unsupported_provider === 'true') {
-      // This requires an institution ID to work. If for some reason there
-      // isn't one in the query params, redirect back to the normal login
-      // page without any query params.
-      const institutionId = InstitutionIdSchema.parse(req.query.institution_id ?? null);
-      if (!institutionId) {
-        res.redirect(req.baseUrl);
-        return;
-      }
+    const institutionId = InstitutionIdSchema.parse(req.query.institution_id ?? null);
+    if (institutionId) {
+      // Limit ourselves to showing the login options for a given institution.
 
       // Look up the supported providers for this institution.
       const supportedProviders = await queryRows(
@@ -56,6 +50,7 @@ router.get(
 
       res.send(
         AuthLoginUnsupportedProvider({
+          showUnsupportedMessage: req.query.unsupported_provider === 'true',
           institutionId,
           supportedProviders,
           service,
