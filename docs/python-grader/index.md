@@ -46,7 +46,7 @@ Each variable dictionary has entries `name` (the Python variable name in the cod
 
 ### `question.html`
 
-At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grader-results` to show the status of grading jobs. These are placed in the question panel and submission panel, respectively. It is also recommended placing a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
+At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grader-results` to show the status of grading jobs. These are placed in the question panel and submission panel, respectively. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 
 ```html title="question.html"
 <pl-question-panel>
