@@ -3759,7 +3759,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
-    "@pyroscope/nodejs": "npm:^0.4.3"
+    "@pyroscope/nodejs": "npm:^0.4.5"
     "@sa11y/format": "npm:^7.0.0"
     "@smithy/types": "npm:^4.1.0"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -4234,18 +4234,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pyroscope/nodejs@npm:^0.4.3":
-  version: 0.4.3
-  resolution: "@pyroscope/nodejs@npm:0.4.3"
+"@pyroscope/nodejs@npm:^0.4.5":
+  version: 0.4.5
+  resolution: "@pyroscope/nodejs@npm:0.4.5"
   dependencies:
     "@datadog/pprof": "npm:^5.4.1"
-    axios: "npm:^0.28.0"
     debug: "npm:^4.3.3"
-    form-data: "npm:^4.0.0"
     p-limit: "npm:^3.1.0"
     regenerator-runtime: "npm:^0.13.11"
     source-map: "npm:^0.7.3"
-  checksum: 10c0/5a4ccfd706b0e0c59b8b60326138deb8672da279ca6bc7a2dd6691482a57d3681aa4f574bf5f9572357af1cf6e9e7f5fe25babe4a8a10c57a460e7c996da82bc
+  checksum: 10c0/91b02e3b99230563d1afe6f9b095fa53080ba400ffd13c1cfee6a39018fa29d0309bffb6261d83f4c2cdaef445282ef85cf76fe7b80d8e3e074e26e594d7263c
   languageName: node
   linkType: hard
 
@@ -6707,17 +6705,6 @@ __metadata:
   version: 4.10.2
   resolution: "axe-core@npm:4.10.2"
   checksum: 10c0/0e20169077de96946a547fce0df39d9aeebe0077f9d3eeff4896518b96fde857f80b98f0d4279274a7178791744dd5a54bb4f322de45b4f561ffa2586ff9a09d
-  languageName: node
-  linkType: hard
-
-"axios@npm:^0.28.0":
-  version: 0.28.1
-  resolution: "axios@npm:0.28.1"
-  dependencies:
-    follow-redirects: "npm:^1.15.0"
-    form-data: "npm:^4.0.0"
-    proxy-from-env: "npm:^1.1.0"
-  checksum: 10c0/0437f851bb3552645cb44151bddeecf6bc85b41ea8f355f954fb5338f922d8ddcd255fc1eeffe83d9dd175dcdc1fb613f546ba607fa96cd33670738b30f7ca60
   languageName: node
   linkType: hard
 
@@ -9786,7 +9773,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.0.0, follow-redirects@npm:^1.15.0":
+"follow-redirects@npm:^1.0.0":
   version: 1.15.9
   resolution: "follow-redirects@npm:1.15.9"
   peerDependenciesMeta:
@@ -14053,13 +14040,6 @@ __metadata:
     forwarded: "npm:0.2.0"
     ipaddr.js: "npm:1.9.1"
   checksum: 10c0/c3eed999781a35f7fd935f398b6d8920b6fb00bbc14287bc6de78128ccc1a02c89b95b56742bf7cf0362cc333c61d138532049c7dedc7a328ef13343eff81210
-  languageName: node
-  linkType: hard
-
-"proxy-from-env@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "proxy-from-env@npm:1.1.0"
-  checksum: 10c0/fe7dd8b1bdbbbea18d1459107729c3e4a2243ca870d26d34c2c1bcd3e4425b7bcc5112362df2d93cc7fb9746f6142b5e272fd1cc5c86ddf8580175186f6ad42b
   languageName: node
   linkType: hard
 
