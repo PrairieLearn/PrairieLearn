@@ -8,11 +8,18 @@ import jsonschema2md
 import mkdocs_gen_files
 
 SCHEMAS_ROOT = Path("apps") / "prairielearn" / "src" / "schemas" / "schemas"
-URL_ROOT = Path("schemas")  # Relative to the docs directory
 SOURCE_ROOT = mkdocs_gen_files.config.repo_url + "/blob/master/"
 
 
 def build_and_write_schemas() -> None:
+    """
+    Generate Markdown documentation from JSON schema files.
+
+    This function scans for JSON schema files in SCHEMAS_ROOT, parses them using
+    jsonschema2md, and writes corresponding Markdown documentation files.
+    Files that already exist will be skipped.
+    """
+
     class CustomParser(jsonschema2md.Parser):
         """Custom parser that hides [Test](...) links in the schema documentation."""
 
