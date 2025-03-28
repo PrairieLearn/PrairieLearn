@@ -3,13 +3,13 @@
 dnf -y update
 
 dnf install -y \
-  util-linux \
-  sudo \
-  gcc \
-  make \
-  dos2unix \
-  graphviz \
-  graphviz-devel
+    util-linux \
+    sudo \
+    gcc \
+    make \
+    dos2unix \
+    graphviz \
+    graphviz-devel
 
 echo "setting up conda..."
 cd /

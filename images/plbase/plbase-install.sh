@@ -13,27 +13,27 @@ dnf update -y
 # - `procps-ng` is needed for the `pkill` executable, which is used by `zygote.py`
 # - `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
 dnf -y install \
-  bash-completion \
-  gcc \
-  gcc-c++ \
-  git \
-  graphviz \
-  graphviz-devel \
-  ImageMagick \
-  libjpeg-devel \
-  lsof \
-  make \
-  openssl \
-  postgresql16 \
-  postgresql16-server \
-  postgresql16-contrib \
-  procps-ng \
-  redis6 \
-  tar \
-  texlive \
-  texlive-dvipng \
-  texlive-type1cm \
-  tmux
+    bash-completion \
+    gcc \
+    gcc-c++ \
+    git \
+    graphviz \
+    graphviz-devel \
+    ImageMagick \
+    libjpeg-devel \
+    lsof \
+    make \
+    openssl \
+    postgresql16 \
+    postgresql16-server \
+    postgresql16-contrib \
+    procps-ng \
+    redis6 \
+    tar \
+    texlive \
+    texlive-dvipng \
+    texlive-type1cm \
+    tmux
 
 # Redis 7 isn't available on Amazon Linux 2023. Symlink the versioned
 # executables to make them work with scripts that expect unversioned ones.

@@ -5,7 +5,7 @@
 # file if it exists.
 
 if [[ -r /grade/tests/test.py ]]; then
-  exec python3 /grade/tests/test.py
+    exec python3 /grade/tests/test.py
 fi
 
 # If we cannot identify the starting script, we will return an error.

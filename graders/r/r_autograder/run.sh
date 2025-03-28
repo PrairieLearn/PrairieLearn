@@ -66,8 +66,8 @@ echo "[run.sh] Rscript pltest.R"
 Rscript pltest.R
 
 if [ ! -s results.json ]; then
-  # Let's attempt to keep everything from dying completely
-  echo '{"succeeded": false, "score": 0.0, "message": "Catastrophic failure! Contact course staff and have them check the logs for this submission."}' > results.json
+    # Let's attempt to keep everything from dying completely
+    echo '{"succeeded": false, "score": 0.0, "message": "Catastrophic failure! Contact course staff and have them check the logs for this submission."}' > results.json
 fi
 
 echo "[run.sh] autograder completed"

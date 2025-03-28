@@ -8,8 +8,8 @@
 AG_DIR='/python_autograder'
 
 if [[ ! -d /grade ]]; then
-  echo "ERROR: /grade not found! Mounting may have failed."
-  exit 1
+    echo "ERROR: /grade not found! Mounting may have failed."
+    exit 1
 fi
 
 # the parent directory containing everything about this grading job
@@ -48,10 +48,10 @@ mv $MERGE_DIR/ans.py $MERGE_DIR/setup_code.py $MERGE_DIR/test.py $JOB_DIR/data/d
 
 # Leading and trailing code are optional -- check if they exist before we move them.
 if [[ -f "$MERGE_DIR/leading_code.py" ]]; then
-  mv $MERGE_DIR/leading_code.py $FILENAMES_DIR
+    mv $MERGE_DIR/leading_code.py $FILENAMES_DIR
 fi
 if [[ -f "$MERGE_DIR/trailing_code.py" ]]; then
-  mv $MERGE_DIR/trailing_code.py $FILENAMES_DIR
+    mv $MERGE_DIR/trailing_code.py $FILENAMES_DIR
 fi
 
 ##########################
@@ -75,12 +75,12 @@ rm -f $OUT_DIR/results.json
 
 # copy the results file from secret if it exists
 if [ -f "$SECRET_NAME" ]; then
-  mv "$SECRET_NAME" $OUT_DIR/results.json
+    mv "$SECRET_NAME" $OUT_DIR/results.json
 fi
 
 # if that didn't work, then print a last-ditch message
 if [ ! -s $OUT_DIR/results.json ]; then
-  echo '{"succeeded": false, "score": 0.0, "message": "Your code could not be processed by the autograder. Please contact course staff and have them check the logs for this submission."}' > $OUT_DIR/results.json
+    echo '{"succeeded": false, "score": 0.0, "message": "Your code could not be processed by the autograder. Please contact course staff and have them check the logs for this submission."}' > $OUT_DIR/results.json
 fi
 
 echo "[run] autograder completed"

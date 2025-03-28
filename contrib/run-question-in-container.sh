@@ -13,20 +13,20 @@
 IN_CONTAINER=$(grep docker /proc/1/cgroup) # empty when not in a docker container
 
 if [ -z "$IN_CONTAINER" ]; then
-  echo "This tool is designed to run inside the grading container"
-  exit 1
+    echo "This tool is designed to run inside the grading container"
+    exit 1
 fi
 
 if [ -z "$QID" ]; then
-  QID=$1
-  if [ -z "$QID" ]; then
-    echo "First argument must be QID (name of question directory)"
-    exit 1
-  fi
+    QID=$1
+    if [ -z "$QID" ]; then
+        echo "First argument must be QID (name of question directory)"
+        exit 1
+    fi
 fi
 if [ ! -d "/course/questions/$QID" ]; then
-  echo "Directory /course/questions/$QID not found, quitting"
-  exit 1
+    echo "Directory /course/questions/$QID not found, quitting"
+    exit 1
 fi
 
 # Setup the environment
@@ -42,16 +42,16 @@ rm -rf /grade/results
 #cp -R /course/serverFilesCourse /grade
 
 ENTRYPOINT=$(cat /course/questions/$QID/info.json | python3 -c \
-  "import sys, json; print(json.load(sys.stdin)['externalGradingOptions']['entrypoint'])")
+    "import sys, json; print(json.load(sys.stdin)['externalGradingOptions']['entrypoint'])")
 
 if [ -z "$2" ] && [ -z "$RUNENTRY" ]; then
-  echo ""
-  echo "/grade environment ready!"
-  echo "Make sure an appropriate submission is in /grade/student"
-  echo "Then run this again with the 'run' argument at the end"
-  echo "Or run your entrypoint manually at $ENTRYPOINT"
-  echo ""
-  exit 0
+    echo ""
+    echo "/grade environment ready!"
+    echo "Make sure an appropriate submission is in /grade/student"
+    echo "Then run this again with the 'run' argument at the end"
+    echo "Or run your entrypoint manually at $ENTRYPOINT"
+    echo ""
+    exit 0
 fi
 
 chmod +x $ENTRYPOINT
@@ -59,4 +59,4 @@ $ENTRYPOINT
 
 echo ""
 cat /grade/results/results.json | python3 -c \
-  "import sys, json; parsed=json.load(sys.stdin); print(json.dumps(parsed, indent=4, sort_keys=True))"
+    "import sys, json; parsed=json.load(sys.stdin); print(json.dumps(parsed, indent=4, sort_keys=True))"

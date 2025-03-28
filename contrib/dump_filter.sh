@@ -214,10 +214,10 @@ pg_dump -Fc --file="${OUTPUT_DUMP}" ${TMP_DB}
 # Writing JSON data to ${OUTPUT_JSON_DIR}...
 mkdir -p "${OUTPUT_JSON_DIR}"
 for table in ${CLEAN_OUTPUT_TABLE_LIST}; do
-  psql --tuples-only --dbname=${TMP_DB} --file=- << EOF
+    psql --tuples-only --dbname=${TMP_DB} --file=- << EOF
 \pset format unaligned
 select json_agg(t) from ${table} as t
 \g ${OUTPUT_JSON_DIR}/${table}.json
 EOF
-  gzip ${OUTPUT_JSON_DIR}/${table}.json
+    gzip ${OUTPUT_JSON_DIR}/${table}.json
 done
