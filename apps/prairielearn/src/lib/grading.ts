@@ -187,8 +187,7 @@ export async function saveSubmission(
 ): Promise<{ submission_id: string; variant: Variant }> {
   const submission: Partial<Submission> & SubmissionDataForSaving = {
     ...submissionData,
-    // This is cloned to avoid double-storing workspace files.
-    raw_submitted_answer: structuredClone(submissionData.submitted_answer),
+    raw_submitted_answer: submissionData.submitted_answer,
     gradable: true,
   };
 
@@ -207,6 +206,15 @@ export async function saveSubmission(
         // if we have workspace files, encode them into _files
         if (zipPath != null) {
           const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
+
+          // Up until this point, `raw_submitted_answer` was just a reference to
+          // the `submitted_answer` object. If we naively wrote to
+          // `submitted_answer._files`, we'd end up storing the files twice in
+          // the database. To avoid this, we'll create a deep copy of
+          // `raw_submitted_answer` to ensure that we don't end up with
+          // duplicate file entries.
+          submission.raw_submitted_answer = structuredClone(submission.raw_submitted_answer);
+
           if (!('_files' in submission.submitted_answer)) {
             submission.submitted_answer['_files'] = [];
           }
