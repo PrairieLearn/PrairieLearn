@@ -527,7 +527,7 @@ export async function aiGrade({
                   feedback: { manual: feedback },
                 },
                 user_id,
-                true, // is_ai_graded
+                true, 
               );
               assert(grading_job_id);
 
