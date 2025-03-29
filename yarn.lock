@@ -3839,6 +3839,7 @@ __metadata:
     chalk: "npm:^5.4.1"
     cheerio: "npm:^1.0.0"
     clipboard: "npm:^2.0.11"
+    clsx: "npm:^2.1.1"
     cookie-parser: "npm:^1.4.7"
     crypto-js: "npm:^4.2.0"
     csv-parse: "npm:^5.6.0"
@@ -7433,6 +7434,13 @@ __metadata:
     strip-ansi: "npm:^6.0.1"
     wrap-ansi: "npm:^7.0.0"
   checksum: 10c0/4bda0f09c340cbb6dfdc1ed508b3ca080f12992c18d68c6be4d9cf51756033d5266e61ec57529e610dacbf4da1c634423b0c1b11037709cc6b09045cbd815df5
+  languageName: node
+  linkType: hard
+
+"clsx@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "clsx@npm:2.1.1"
+  checksum: 10c0/c4c8eb865f8c82baab07e71bfa8897c73454881c4f99d6bc81585aecd7c441746c1399d08363dc096c550cceaf97bd4ce1e8854e1771e9998d9f94c4fe075839
   languageName: node
   linkType: hard
 
