@@ -234,6 +234,407 @@ async function generateSubmissionEmbedding({
   return new_submission_embedding;
 }
 
+function parseAiRubricItems({
+  ai_rubric_items,
+  rubric_items,
+}: {
+  ai_rubric_items: Record<string, boolean>;
+  rubric_items: RubricItem[];
+}): {
+  appliedRubricItems: {
+    rubric_item_id: string;
+  }[];
+  selectedRubricDescriptions: Set<string>;
+} {
+  // Compute the set of selected rubric descriptions.
+  const selectedRubricDescriptions = new Set<string>();
+  Object.entries(ai_rubric_items).forEach(([description, selected]) => {
+    if (selected) {
+      selectedRubricDescriptions.add(description);
+    }
+  });
+
+  // Build a lookup table for rubric items by description.
+  const rubricItemsByDescription: Record<string, RubricItem> = {};
+  for (const item of rubric_items) {
+    rubricItemsByDescription[item.description] = item;
+  }
+
+  // It's possible that the rubric could have changed since we last
+  // fetched it. We'll optimistically apply all the rubric items
+  // that were selected. If an item was deleted, we'll allow the
+  // grading to fail; the user can then try again.
+  const appliedRubricItems = Array.from(selectedRubricDescriptions).map((description) => ({
+    rubric_item_id: rubricItemsByDescription[description].id,
+  }));
+  return { appliedRubricItems, selectedRubricDescriptions };
+}
+
+function pearsonCorrelation(x: number[], y: number[]): number | null {
+  if (x.length !== y.length || x.length === 0) {
+    throw new Error('Both arrays must have the same nonzero length.');
+  }
+
+  const n = x.length;
+  const sumX = x.reduce((acc, val) => acc + val, 0);
+  const sumY = y.reduce((acc, val) => acc + val, 0);
+  const sumXY = x.reduce((acc, _, i) => acc + x[i] * y[i], 0);
+  const sumX2 = x.reduce((acc, val) => acc + val * val, 0);
+  const sumY2 = y.reduce((acc, val) => acc + val * val, 0);
+
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt((n * sumX2 - sumX ** 2) * (n * sumY2 - sumY ** 2));
+
+  return denominator === 0 ? null : numerator / denominator;
+}
+
+function rootMeanSquaredError(actual: number[], predicted: number[]): number {
+  if (actual.length !== predicted.length || actual.length === 0) {
+    throw new Error('Both arrays must have the same nonzero length.');
+  }
+
+  const n = actual.length;
+  const squaredErrors = actual.map((a, i) => (a - predicted[i]) ** 2);
+  const meanSquaredError = squaredErrors.reduce((acc, val) => acc + val, 0) / n;
+
+  return Math.sqrt(meanSquaredError);
+}
+
+export async function aiGradeTest({
+  course,
+  course_instance_id,
+  question,
+  assessment_question,
+  urlPrefix,
+  authn_user_id,
+  user_id,
+}: {
+  question: Question;
+  course: Course;
+  course_instance_id?: string;
+  assessment_question: AssessmentQuestion;
+  urlPrefix: string;
+  authn_user_id: string;
+  user_id: string;
+}): Promise<string> {
+  // If OpenAI API Key and Organization are not provided, throw error
+  if (!config.openAiApiKey || !config.openAiOrganization) {
+    throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+  }
+  const openai = new OpenAI({
+    apiKey: config.openAiApiKey,
+    organization: config.openAiOrganization,
+  });
+
+  const question_course = await getQuestionCourse(question, course);
+
+  const serverJob = await createServerJob({
+    courseId: course.id,
+    courseInstanceId: course_instance_id,
+    assessmentId: assessment_question.assessment_id,
+    authnUserId: authn_user_id,
+    userId: user_id,
+    type: 'ai_grading_test',
+    description: 'Test accuracy for AI grading',
+  });
+
+  serverJob.executeInBackground(async (job) => {
+    const instance_questions = await queryRows(
+      sql.select_instance_questions_for_assessment_question,
+      {
+        assessment_question_id: assessment_question.id,
+      },
+      InstanceQuestionSchema,
+    );
+
+    job.info('Checking for embeddings for all submissions.');
+    let newEmbeddingsCount = 0;
+    for (const instance_question of instance_questions) {
+      const submission_id = await queryRow(
+        sql.select_last_submission_id,
+        { instance_question_id: instance_question.id },
+        IdSchema,
+      );
+      const submission_embedding = await queryOptionalRow(
+        sql.select_embedding_for_submission,
+        { submission_id },
+        SubmissionGradingContextEmbeddingSchema,
+      );
+      if (!submission_embedding) {
+        await generateSubmissionEmbedding({
+          course,
+          question,
+          instance_question,
+          urlPrefix,
+          openai,
+        });
+        newEmbeddingsCount++;
+      }
+    }
+    job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
+
+    let number_to_test = 0;
+    for (const instance_question of instance_questions) {
+      if (!instance_question.requires_manual_grading && instance_question.status !== 'unanswered') {
+        number_to_test++;
+      }
+    }
+    job.info(`Found ${number_to_test} submissions to test!`);
+
+    const rubric_items = await queryRows(
+      sql.select_rubric_for_grading,
+      {
+        assessment_question_id: assessment_question.id,
+      },
+      RubricItemSchema,
+    );
+    const rubric_id = rubric_items.length ? rubric_items[0].rubric_id : null;
+
+    let error_count = 0;
+    const testRubricResults: {
+      instance_question_id: string;
+      reference_items: Set<string>;
+      ai_items: Set<string>;
+    }[] = [];
+    const testScoreResults: {
+      instance_question_id: string;
+      reference_score: number;
+      ai_score: number;
+    }[] = [];
+
+    // Test each instance question
+    for (const instance_question of instance_questions) {
+      if (instance_question.requires_manual_grading || instance_question.status === 'unanswered') {
+        continue; // TODO: Add filter on human-graded submissions only after merging PR#11383
+      }
+
+      job.info(`\nInstance question ${instance_question.id}`);
+
+      const { variant, submission } = await queryRow(
+        sql.select_last_variant_and_submission,
+        { instance_question_id: instance_question.id },
+        SubmissionVariantSchema,
+      );
+
+      const grading_rubric_id = await queryOptionalRow(
+        sql.select_rubric_id_from_grading,
+        { manual_rubric_grading_id: submission.manual_rubric_grading_id },
+        IdSchema,
+      );
+
+      if (rubric_id !== grading_rubric_id) {
+        job.info(
+          'Rubric used for this submission does not match the current rubric in use. Skipping test.',
+        );
+        continue;
+      }
+
+      const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+      const locals = { ...urls, manualGradingInterface: true };
+      // Get question html
+      const questionModule = questionServers.getModule(question.type);
+      const render_question_results = await questionModule.render(
+        { question: true, submissions: false, answer: false },
+        variant,
+        question,
+        null,
+        [],
+        question_course,
+        locals,
+      );
+      if (render_question_results.courseIssues.length > 0) {
+        job.info(render_question_results.courseIssues.toString());
+        job.error('Error occurred');
+        job.fail('Errors occurred while AI grading, see output for details');
+      }
+      const $ = cheerio.load(render_question_results.data.questionHtml, null, false);
+      $('script').remove();
+      const questionPrompt = $.html();
+
+      let submission_embedding = await queryOptionalRow(
+        sql.select_embedding_for_submission,
+        { submission_id: submission.id },
+        SubmissionGradingContextEmbeddingSchema,
+      );
+      if (!submission_embedding) {
+        submission_embedding = await generateSubmissionEmbedding({
+          course,
+          question,
+          instance_question,
+          urlPrefix,
+          openai,
+        });
+      }
+      const submission_text = submission_embedding.submission_text;
+
+      const example_submissions = await queryRows(
+        sql.select_closest_submission_info,
+        {
+          submission_id: submission.id,
+          assessment_question_id: assessment_question.id,
+          embedding: submission_embedding.embedding,
+          limit: 5,
+        },
+        GradedExampleSchema,
+      );
+
+      const { messages } = await generatePrompt({
+        questionPrompt,
+        submission_text,
+        example_submissions,
+        rubric_items,
+      });
+
+      if (rubric_id) {
+        const rubric_grading_items = await queryRows(
+          sql.select_rubric_grading_items,
+          { manual_rubric_grading_id: submission.manual_rubric_grading_id },
+          RubricItemSchema,
+        );
+        const referenceRubricDescriptions = new Set<string>();
+        rubric_grading_items.forEach((item) => {
+          referenceRubricDescriptions.add(item.description);
+        });
+
+        // Dynamically generate the rubric schema based on the rubric items.
+        let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
+        for (const item of rubric_items) {
+          RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
+            z.object({
+              [item.description]: z.boolean(),
+            }),
+          );
+        }
+        const RubricGradingResultSchema = z.object({
+          rubric_items: RubricGradingItemsSchema,
+        });
+        const completion = await openai.beta.chat.completions.parse({
+          messages,
+          model: OPEN_AI_MODEL,
+          user: `course_${course.id}`,
+          response_format: zodResponseFormat(RubricGradingResultSchema, 'score'),
+          temperature: API_TEMPERATURE,
+        });
+        try {
+          job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
+          job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
+          job.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
+          const response = completion.choices[0].message;
+          job.info(`Raw response:\n${response.content}`);
+
+          if (response.parsed) {
+            const { selectedRubricDescriptions } = parseAiRubricItems({
+              ai_rubric_items: response.parsed.rubric_items,
+              rubric_items,
+            });
+            testRubricResults.push({
+              instance_question_id: instance_question.id,
+              reference_items: referenceRubricDescriptions,
+              ai_items: selectedRubricDescriptions,
+            });
+
+            // TODO: Insert grading job, possibly calculate score based on rubric
+            // TODO: Insert AI grading job after merging PR#11431
+
+            job.info('Reference rubric items:');
+            for (const item of referenceRubricDescriptions) {
+              job.info(`- ${item}`);
+            }
+            job.info('AI rubric items:');
+            for (const item of selectedRubricDescriptions) {
+              job.info(`- ${item}`);
+            }
+          } else if (response.refusal) {
+            job.error(`ERROR AI grading for ${instance_question.id}`);
+            job.error(response.refusal);
+            error_count++;
+          }
+        } catch (err) {
+          job.error(`ERROR AI grading for ${instance_question.id}`);
+          job.error(err);
+          error_count++;
+        }
+      } else {
+        const score_perc = instance_question.score_perc ?? 0;
+        const completion = await openai.beta.chat.completions.parse({
+          messages,
+          model: OPEN_AI_MODEL,
+          user: `course_${course.id}`,
+          response_format: zodResponseFormat(GradingResultSchema, 'score'),
+          temperature: API_TEMPERATURE,
+        });
+        try {
+          job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
+          job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
+          job.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
+          const response = completion.choices[0].message;
+          job.info(`Raw response:\n${response.content}`);
+          if (response.parsed) {
+            testScoreResults.push({
+              instance_question_id: instance_question.id,
+              reference_score: score_perc,
+              ai_score: response.parsed.score,
+            });
+
+            // TODO: Insert grading job
+            // TODO: Insert AI grading job after merging PR#11431
+
+            job.info(`Reference score: ${score_perc}`);
+            job.info(`AI score: ${response.parsed.score}`);
+          } else if (response.refusal) {
+            job.error(`ERROR AI grading for ${instance_question.id}`);
+            job.error(response.refusal);
+            error_count++;
+          }
+        } catch (err) {
+          job.error(`ERROR AI grading for ${instance_question.id}`);
+          job.error(err);
+          error_count++;
+        }
+      }
+    }
+
+    if (error_count > 0) {
+      job.error('Number of errors: ' + error_count);
+      job.fail('Errors occurred while AI grading, see output for details');
+    } else {
+      job.info('\n----------------Test results----------------');
+      if (rubric_id) {
+        job.info(`Test size: ${testRubricResults.length}`);
+        const rubricItemResults: Record<string, number> = {};
+        rubric_items.forEach((item) => {
+          rubricItemResults[item.description] = 0;
+          testRubricResults.forEach((test) => {
+            if (
+              (test.ai_items.has(item.description) && test.reference_items.has(item.description)) ||
+              (!test.ai_items.has(item.description) && !test.reference_items.has(item.description))
+            ) {
+              rubricItemResults[item.description]++;
+            }
+          });
+          const accuracy =
+            Math.round((10000 * rubricItemResults[item.description]) / testRubricResults.length) /
+            100;
+          job.info(`Rubric item: ${item.description}, accuracy: ${accuracy}%`);
+        });
+      } else {
+        job.info(`Test size: ${testScoreResults.length}`);
+        const rmse = rootMeanSquaredError(
+          testScoreResults.map((item) => item.reference_score),
+          testScoreResults.map((item) => item.ai_score),
+        );
+        job.info(`RMSE: ${Math.round(rmse * 100) / 100}`);
+        const r = pearsonCorrelation(
+          testScoreResults.map((item) => item.reference_score),
+          testScoreResults.map((item) => item.ai_score),
+        );
+        job.info(`Pearson's r: ${r ? Math.round(r * 10000) / 10000 : 'N/A'}`);
+      }
+    }
+  });
+  return serverJob.jobSequenceId;
+}
+
 export async function aiGrade({
   course,
   course_instance_id,
@@ -425,33 +826,14 @@ export async function aiGrade({
           job.info(`Raw response:\n${response.content}`);
 
           if (response.parsed) {
-            // Compute the set of selected rubric descriptions.
-            const selectedRubricDescriptions = new Set<string>();
-            Object.entries(response.parsed.rubric_items).forEach(([description, selected]) => {
-              if (selected) {
-                selectedRubricDescriptions.add(description);
-              }
+            const { appliedRubricItems, selectedRubricDescriptions } = parseAiRubricItems({
+              ai_rubric_items: response.parsed.rubric_items,
+              rubric_items,
             });
             job.info('Selected rubric items:');
             for (const item of selectedRubricDescriptions) {
               job.info(`- ${item}`);
             }
-
-            // Build a lookup table for rubric items by description.
-            const rubricItemsByDescription: Record<string, RubricItem> = {};
-            for (const item of rubric_items) {
-              rubricItemsByDescription[item.description] = item;
-            }
-
-            // It's possible that the rubric could have changed since we last
-            // fetched it. We'll optimistically apply all the rubric items
-            // that were selected. If an item was deleted, we'll allow the
-            // grading to fail; the user can then try again.
-            const appliedRubricItems = Array.from(selectedRubricDescriptions).map(
-              (description) => ({
-                rubric_item_id: rubricItemsByDescription[description].id,
-              }),
-            );
 
             // Record the grading results.
             const manual_rubric_data = {

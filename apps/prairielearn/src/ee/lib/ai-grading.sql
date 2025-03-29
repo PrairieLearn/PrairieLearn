@@ -126,6 +126,16 @@ FROM
 WHERE
   rgi.rubric_grading_id = $manual_rubric_grading_id;
 
+-- BLOCK select_rubric_id_from_grading
+SELECT
+  rubric_id
+FROM
+  rubric_gradings
+WHERE
+  id = $manual_rubric_grading_id
+LIMIT
+  1;
+
 -- BLOCK insert_ai_grading_job
 INSERT INTO
   ai_grading_jobs (
