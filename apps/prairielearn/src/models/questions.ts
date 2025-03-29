@@ -3,10 +3,10 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  TopicSchema,
-  SharingSetSchema,
   AssessmentsFormatForQuestionSchema,
+  SharingSetSchema,
   TagSchema,
+  TopicSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 

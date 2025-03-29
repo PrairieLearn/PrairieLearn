@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
 import {
+  callRow,
   loadSqlEquiv,
   queryRow,
   queryRows,
   runInTransactionAsync,
-  callRow,
 } from '@prairielearn/postgres';
 
 import { updateAssessmentInstance } from './assessment.js';

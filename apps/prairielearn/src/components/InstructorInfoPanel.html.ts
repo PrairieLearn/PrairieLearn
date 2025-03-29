@@ -1,16 +1,16 @@
 import { formatDate, formatInterval } from '@prairielearn/formatter';
-import { html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
-  DateFromISOString,
-  IntervalSchema,
   type Assessment,
   type AssessmentInstance,
   type Course,
   type CourseInstance,
+  DateFromISOString,
   type Group,
   type InstanceQuestion,
+  IntervalSchema,
   type Question,
   type User,
   type Variant,

@@ -2,8 +2,8 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import {
-  RegenerateInstanceModal,
   RegenerateInstanceAlert,
+  RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.html.js';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';

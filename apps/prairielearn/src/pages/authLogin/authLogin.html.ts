@@ -1,4 +1,4 @@
-import { html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { assetPath } from '../../lib/assets.js';

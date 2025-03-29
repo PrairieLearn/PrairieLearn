@@ -19,13 +19,13 @@ import * as syncSharingSets from './fromDisk/sharing.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import {
-  selectSharedQuestions,
-  getInvalidRenames,
-  checkInvalidSharingSetRemovals,
-  checkInvalidPublicSharingRemovals,
-  checkInvalidSharingSetDeletions,
-  checkInvalidSharingSetAdditions,
   checkInvalidDraftQuestionSharing,
+  checkInvalidPublicSharingRemovals,
+  checkInvalidSharingSetAdditions,
+  checkInvalidSharingSetDeletions,
+  checkInvalidSharingSetRemovals,
+  getInvalidRenames,
+  selectSharedQuestions,
 } from './sharing.js';
 
 interface SyncResultSharingError {

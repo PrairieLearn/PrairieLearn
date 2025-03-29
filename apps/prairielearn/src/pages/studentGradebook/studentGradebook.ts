@@ -5,7 +5,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import logPageView from '../../middlewares/logPageView.js';
 
-import { StudentGradebookRowSchema, StudentGradebook } from './studentGradebook.html.js';
+import { StudentGradebook, StudentGradebookRowSchema } from './studentGradebook.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();

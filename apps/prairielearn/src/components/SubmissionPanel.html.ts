@@ -7,12 +7,12 @@ import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
-  GradingJobSchema,
-  SubmissionSchema,
   type AssessmentQuestion,
   type GradingJob,
+  GradingJobSchema,
   type InstanceQuestion,
   type Question,
+  SubmissionSchema,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
 import { gradingJobStatus } from '../models/grading-job.js';

@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { parse as parsePostgresArray } from 'postgres-array';
 
-import { loadSqlEquiv, PostgresPool } from '@prairielearn/postgres';
+import { PostgresPool, loadSqlEquiv } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 

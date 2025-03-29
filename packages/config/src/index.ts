@@ -1,5 +1,5 @@
-import { EC2Client, DescribeTagsCommand } from '@aws-sdk/client-ec2';
-import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import { DescribeTagsCommand, EC2Client } from '@aws-sdk/client-ec2';
+import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import { z } from 'zod';

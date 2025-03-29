@@ -2,7 +2,7 @@ import { assert } from 'chai';
 
 import { html } from '@prairielearn/html';
 
-import { flashMiddleware, flash } from './index.js';
+import { flash, flashMiddleware } from './index.js';
 
 describe('flash', () => {
   it('throws an error if no session present', () => {

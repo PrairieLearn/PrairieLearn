@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { AssessmentSetSchema, CourseSchema, type AssessmentSet } from '../../lib/db-types.js';
+import { type AssessmentSet, AssessmentSetSchema, CourseSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';

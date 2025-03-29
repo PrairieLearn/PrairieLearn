@@ -11,14 +11,14 @@ import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
 import {
+  type GroupConfig,
+  GroupConfigSchema,
+  GroupRoleSchema,
   GroupSchema,
+  type GroupUserRole,
   IdSchema,
   type User,
   UserSchema,
-  GroupConfigSchema,
-  type GroupConfig,
-  GroupRoleSchema,
-  type GroupUserRole,
 } from './db-types.js';
 import { idsEqual } from './id.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);

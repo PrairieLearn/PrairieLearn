@@ -1,5 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { type CourseInstance } from '../lib/db-types.js';

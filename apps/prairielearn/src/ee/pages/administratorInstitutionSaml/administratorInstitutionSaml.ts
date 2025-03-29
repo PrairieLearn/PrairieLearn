@@ -14,8 +14,8 @@ import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/p
 import { getSamlOptions } from '../../auth/saml/index.js';
 import {
   getInstitution,
-  getInstitutionSamlProvider,
   getInstitutionAuthenticationProviders,
+  getInstitutionSamlProvider,
 } from '../../lib/institution.js';
 
 import {

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { escapeHtml, html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';

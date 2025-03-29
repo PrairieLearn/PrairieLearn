@@ -1,7 +1,7 @@
 import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
-import { loadSqlEquiv, queryRows, queryRow, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';

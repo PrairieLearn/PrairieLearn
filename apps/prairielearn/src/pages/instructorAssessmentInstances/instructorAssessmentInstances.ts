@@ -7,10 +7,10 @@ import * as sqldb from '@prairielearn/postgres';
 
 import {
   checkBelongs,
-  gradeAssessmentInstance,
-  gradeAllAssessmentInstances,
   deleteAllAssessmentInstancesForAssessment,
   deleteAssessmentInstance,
+  gradeAllAssessmentInstances,
+  gradeAssessmentInstance,
 } from '../../lib/assessment.js';
 import { regradeAssessmentInstance } from '../../lib/regrading.js';
 

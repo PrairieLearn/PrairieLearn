@@ -4,9 +4,9 @@ import { type Context } from 'mocha';
 import pg from 'pg';
 
 import {
-  init as initMigrations,
-  initBatchedMigrations,
   SCHEMA_MIGRATIONS_PATH,
+  initBatchedMigrations,
+  init as initMigrations,
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';

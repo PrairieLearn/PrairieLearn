@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { compiledScriptTag, nodeModulesAssetPath, assetPath } from '../lib/assets.js';
+import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
 import {
   type Assessment,

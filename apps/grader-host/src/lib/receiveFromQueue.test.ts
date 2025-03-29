@@ -1,7 +1,7 @@
 import {
-  ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
+  ReceiveMessageCommand,
 } from '@aws-sdk/client-sqs';
 import { assert, use as chaiUse } from 'chai';
 import chaiAsPromised from 'chai-as-promised';

@@ -16,10 +16,10 @@ import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentModule,
+  AssessmentModuleSchema,
   AssessmentSchema,
   type AssessmentSet,
   AssessmentSetSchema,
-  AssessmentModuleSchema,
 } from '../../lib/db-types.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';

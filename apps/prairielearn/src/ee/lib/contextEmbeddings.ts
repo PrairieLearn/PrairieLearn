@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import klaw from 'klaw';
 import { type OpenAI } from 'openai';
 
-import { loadSqlEquiv, queryRows, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';

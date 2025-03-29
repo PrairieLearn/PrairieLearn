@@ -7,7 +7,7 @@ import expressStaticGzip from 'express-static-gzip';
 import fs from 'fs-extra';
 import { globby } from 'globby';
 
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 const DEFAULT_OPTIONS = {
   dev: process.env.NODE_ENV !== 'production',

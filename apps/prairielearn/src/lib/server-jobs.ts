@@ -13,7 +13,7 @@ import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-toke
 import { chalk, chalkDim } from './chalk.js';
 import { config } from './config.js';
 import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
-import { type JobSequenceWithTokens, JobSequenceWithJobsSchema } from './server-jobs.types.js';
+import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);

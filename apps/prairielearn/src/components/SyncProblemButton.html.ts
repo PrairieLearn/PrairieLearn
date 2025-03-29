@@ -1,6 +1,6 @@
 import { AnsiUp } from 'ansi_up';
 
-import { html, unsafeHtml, escapeHtml } from '@prairielearn/html';
+import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 
 const ansiUp = new AnsiUp();
 

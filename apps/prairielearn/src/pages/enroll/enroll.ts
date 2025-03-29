@@ -12,15 +12,15 @@ import {
   queryZeroOrOneRowAsync,
 } from '@prairielearn/postgres';
 
-import { InstitutionSchema, CourseInstanceSchema, CourseSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
 import { ensureCheckedEnrollment } from '../../models/enrollment.js';
 
 import {
+  CourseInstanceRowSchema,
   Enroll,
   EnrollLtiMessage,
-  CourseInstanceRowSchema,
   EnrollmentLimitExceededMessage,
 } from './enroll.html.js';
 

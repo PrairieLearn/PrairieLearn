@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { uploadToS3, getFromS3 } from './aws.js';
+import { getFromS3, uploadToS3 } from './aws.js';
 import { config } from './config.js';
 import { type File, FileSchema, IdSchema } from './db-types.js';
 

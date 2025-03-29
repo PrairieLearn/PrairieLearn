@@ -1,4 +1,4 @@
-import { escapeHtml, html, type HtmlValue, joinHtml } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html, joinHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import type {

@@ -11,10 +11,10 @@ import {
 } from '../../../lib/db-types.js';
 import { type WithRequiredKeys } from '../../../lib/types.js';
 import {
-  insertCourseInstanceRequiredPlan,
   deleteCourseInstanceRequiredPlan,
+  insertCourseInstanceRequiredPlan,
 } from '../../models/course-instance-required-plans.js';
-import { ensurePlanGrant, updatePlanGrant, deletePlanGrant } from '../../models/plan-grants.js';
+import { deletePlanGrant, ensurePlanGrant, updatePlanGrant } from '../../models/plan-grants.js';
 
 import {
   PLAN_NAMES,

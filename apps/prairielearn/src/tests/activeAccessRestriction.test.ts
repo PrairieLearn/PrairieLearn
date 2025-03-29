@@ -6,7 +6,7 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { IdSchema, AssessmentInstanceSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, IdSchema } from '../lib/db-types.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';

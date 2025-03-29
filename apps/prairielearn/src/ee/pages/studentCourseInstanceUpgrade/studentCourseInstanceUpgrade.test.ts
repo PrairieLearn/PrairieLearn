@@ -5,10 +5,10 @@ import { config } from '../../../lib/config.js';
 import { ensureEnrollment } from '../../../models/enrollment.js';
 import * as helperServer from '../../../tests/helperServer.js';
 import {
-  withUser,
   type AuthUser,
   getConfiguredUser,
   getOrCreateUser,
+  withUser,
 } from '../../../tests/utils/auth.js';
 import {
   reconcilePlanGrantsForCourseInstance,

@@ -8,7 +8,7 @@ import fs from 'fs-extra';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { chalk } from '../../lib/chalk.js';
-import { updateChunksForCourse, logChunkChangesToJob } from '../../lib/chunks.js';
+import { logChunkChangesToJob, updateChunksForCourse } from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { CourseSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';

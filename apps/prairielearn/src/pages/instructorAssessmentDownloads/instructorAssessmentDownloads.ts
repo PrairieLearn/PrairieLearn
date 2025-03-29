@@ -27,8 +27,8 @@ import { getGroupConfig } from '../../lib/groups.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {
-  InstructorAssessmentDownloads,
   type Filenames,
+  InstructorAssessmentDownloads,
 } from './instructorAssessmentDownloads.html.js';
 
 const router = express.Router();

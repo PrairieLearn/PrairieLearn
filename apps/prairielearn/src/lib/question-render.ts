@@ -13,9 +13,9 @@ import { type QuestionContext } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
 import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
 import {
-  SubmissionPanel,
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
+  SubmissionPanel,
 } from '../components/SubmissionPanel.html.js';
 import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
@@ -50,7 +50,7 @@ import { getGroupInfo, getQuestionGroupPermissions, getUserRoles } from './group
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import type { SubmissionPanels } from './question-render.types.js';
-import { getQuestionCourse, ensureVariant } from './question-variant.js';
+import { ensureVariant, getQuestionCourse } from './question-variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

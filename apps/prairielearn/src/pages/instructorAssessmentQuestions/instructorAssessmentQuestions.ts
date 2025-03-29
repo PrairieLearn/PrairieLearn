@@ -2,13 +2,13 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import {
-  InstructorAssessmentQuestions,
   AssessmentQuestionRowSchema,
+  InstructorAssessmentQuestions,
 } from './instructorAssessmentQuestions.html.js';
 
 const router = express.Router();
