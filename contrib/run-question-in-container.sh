@@ -10,7 +10,7 @@
 #
 # Assumes the course content directory is at /course
 #
-IN_CONTAINER=`grep docker /proc/1/cgroup`  # empty when not in a docker container
+IN_CONTAINER=$(grep docker /proc/1/cgroup) # empty when not in a docker container
 
 if [ -z "$IN_CONTAINER" ]; then
     echo "This tool is designed to run inside the grading container"
@@ -41,8 +41,8 @@ rm -rf /grade/results
 #cp -R /course/questions/$QID/tests /grade
 #cp -R /course/serverFilesCourse /grade
 
-ENTRYPOINT=`cat /course/questions/$QID/info.json | python3 -c \
-    "import sys, json; print(json.load(sys.stdin)['externalGradingOptions']['entrypoint'])"`
+ENTRYPOINT=$(cat /course/questions/$QID/info.json | python3 -c \
+    "import sys, json; print(json.load(sys.stdin)['externalGradingOptions']['entrypoint'])")
 
 if [ -z "$2" ] && [ -z "$RUNENTRY" ]; then
     echo ""

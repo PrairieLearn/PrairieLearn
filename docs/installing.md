@@ -103,13 +103,13 @@ Now, we can run PrairieLearn with additional options to allow the external gradi
 
 ```sh
 docker run -it --rm -p 3000:3000 \
-    -v "$HOME/pl-tam212:/course" `# Replace the path with your course directory` \
-    -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
-    -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
-    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
-    --platform linux/amd64 `# Ensure the emulated amd64 version is used on ARM chips` \
-    --add-host=host.docker.internal:172.17.0.1 `# Ensure network connectivity` \
-    prairielearn/prairielearn
+  -v "$HOME/pl-tam212:/course" `# Replace the path with your course directory` \
+  -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
+  -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
+  -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
+  --platform linux/amd64 `# Ensure the emulated amd64 version is used on ARM chips` \
+  --add-host=host.docker.internal:172.17.0.1 `# Ensure network connectivity` \
+  prairielearn/prairielearn
 ```
 
 #### Troubleshooting the --add-host option and network timeouts

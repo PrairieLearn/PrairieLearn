@@ -164,11 +164,11 @@ Most of these prerequisites can be installed using the package manager of your O
 - On macOS, set the following environment variables so that `pygraphviz` can [find the necessary headers](https://github.com/pygraphviz/pygraphviz/blob/main/INSTALL.txt):
 
   ```sh
-  cat <<EOF >> .venv/bin/activate
+  cat << EOF >> .venv/bin/activate
   export CFLAGS="-I$(brew --prefix graphviz)/include"
   export LDFLAGS="-L$(brew --prefix graphviz)/lib"
   EOF
-
+  
   source .venv/bin/activate
   ```
 

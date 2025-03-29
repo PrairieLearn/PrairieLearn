@@ -4,8 +4,8 @@ set -e
 
 # Parse the first argument to this script, which will be a container name.
 if [ "$#" -ne 1 ]; then
-    echo "USAGE: $0 container_name" >& 2
-    echo "Example: $0 test_container" >& 2
+    echo "USAGE: $0 container_name" >&2
+    echo "Example: $0 test_container" >&2
     exit 1
 fi
 CONTAINER_NAME=$1
@@ -21,7 +21,7 @@ cat /tmp/coverage_reports.txt
 echo ""
 
 # Compute the absolute path of the root directory of the repository.
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 ROOT_DIR=$(realpath $SCRIPT_DIR/..)
 
 # Copy each coverage report to the appropriate location on the host.
