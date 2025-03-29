@@ -283,7 +283,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         return
 
     # Always simplify multiline characters (if they still exist)
-    a_tru = re.sub(r"\r*\n", "\n", str(a_tru))
+    a_tru = re.sub("\r*\n", "\n", str(a_tru))  # noqa: RUF039
 
     # explicitly cast the true answer to a string, to handle the case where the answer might be a number or some other type
     a_tru_str = str(a_tru)
