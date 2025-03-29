@@ -8,6 +8,9 @@ import * as sqldb from '@prairielearn/postgres';
 
 import {
   AssessmentInstanceSchema,
+  AssessmentModuleSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
   ClientFingerprintSchema,
   CourseSchema,
   IdSchema,
@@ -550,4 +553,71 @@ export function canDeleteAssessmentInstance(resLocals): boolean {
     // this check if the course is an example course.
     (!resLocals.assessment_instance.include_in_statistics || resLocals.course.example_course)
   );
+}
+
+export const AssessmentStatsRowSchema = AssessmentSchema.extend({
+  needs_statistics_update: z.boolean().optional(),
+});
+export type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
+
+export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
+  start_new_assessment_group: z.boolean(),
+  assessment_set: AssessmentSetSchema,
+  assessment_module: AssessmentModuleSchema,
+  label: z.string(),
+  open_issue_count: z.coerce.number(),
+});
+
+export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
+
+/**
+ * Select assessments for a course instance grouped by set or module.
+ * This query also adds the open issue count and a label derived from the set
+ * and assessment number to each assessment.
+ */
+export async function selectAssessmentsForCourseInstanceGrouped({
+  course_instance_id,
+  authz_data,
+  req_date,
+  assessments_group_by,
+}: {
+  course_instance_id: string;
+  authz_data: Record<string, any>;
+  req_date: Date;
+  assessments_group_by: 'Set' | 'Module';
+}) {
+  return await sqldb.queryRows(
+    sql.select_assessments_for_course_instance_grouped,
+    {
+      course_instance_id,
+      authz_data,
+      req_date,
+      assessments_group_by,
+    },
+    AssessmentRowSchema,
+  );
+}
+
+/**
+ * Retrieve a cursor to a query selecting assessments for a course instance grouped
+ * by set or module. The query also adds the open issue count and a label derived
+ * from the set and assessment number to each assessment.
+ */
+export async function selectAssessmentsForCourseInstanceGroupedCursor({
+  course_instance_id,
+  authz_data,
+  req_date,
+  assessments_group_by,
+}: {
+  course_instance_id: string;
+  authz_data: Record<string, any>;
+  req_date: Date;
+  assessments_group_by: 'Set' | 'Module';
+}) {
+  return await sqldb.queryCursor(sql.select_assessments_for_course_instance_grouped, {
+    course_instance_id,
+    authz_data,
+    req_date,
+    assessments_group_by,
+  });
 }

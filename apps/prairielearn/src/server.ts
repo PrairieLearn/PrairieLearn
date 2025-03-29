@@ -610,6 +610,13 @@ export async function initExpress(): Promise<Express> {
         .default,
     ],
   );
+  app.use(
+    '/pl/assessments_switcher/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)?',
+    [
+      (await import('./middlewares/authzCourseOrInstance.js')).default,
+      (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js')).default,
+    ],
+  );
 
   app.use('/pl/workspace/:workspace_id(\\d+)', [
     (req: Request, res: Response, next: NextFunction) => {
@@ -1038,6 +1045,7 @@ export async function initExpress(): Promise<Express> {
       ).default,
     ],
   );
+
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/clientFilesCourse',
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
