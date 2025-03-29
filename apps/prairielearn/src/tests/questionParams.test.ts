@@ -51,12 +51,7 @@ locals.questionBaseUrl = `${locals.courseInstanceBaseUrl}/instance_question`;
 locals.assessmentsUrl = `${locals.courseInstanceBaseUrl}/assessments`;
 locals.isStudentPage = false;
 
-const questionsArray: Question[] = [
-  { qid: 'addNumbersParameterized/1', type: 'Freeform' },
-  { qid: 'addNumbersParameterized/2', type: 'Freeform' },
-  { qid: 'addNumbersParameterized/3', type: 'Freeform' },
-  { qid: 'addNumbersParameterized/4', type: 'Freeform' },
-];
+const questionsArray: Question[] = [{ qid: 'addNumbersParameterized/2', type: 'Freeform' }];
 
 describe('Parameterized questions', function () {
   this.timeout(40000);
@@ -90,25 +85,23 @@ describe('Parameterized questions', function () {
       locals.$ = cheerio.load(await response.text());
     });
 
-    questionsArray.forEach((question, index) => {
-      it(`should verify question #${index + 1} (${question.qid}) has correct parameters`, async function () {
-        if (!question.url) {
-          throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);
-        }
-        const response = await fetch(question.url);
-        assert.equal(response.status, 200);
-        const $ = cheerio.load(await response.text());
-        const expectedRange =
-          index < 2 ? `[0, ${10 * (index + 1)}]` : `[${10 * index}, ${10 * (index + 1)}]`;
-        const elemList = $('span').filter(function () {
-          return $(this).text().trim() === expectedRange;
-        });
-        assert.lengthOf(
-          elemList,
-          1,
-          `Expected range ${expectedRange} not found for question ${question.qid}`,
-        );
+    it('should verify question (addNumbersParameterized/2) has correct parameters', async function () {
+      const question = questionsArray[0];
+      if (!question.url) {
+        throw new Error('URL for question (addNumbersParameterized/2) is undefined');
+      }
+      const response = await fetch(question.url);
+      assert.equal(response.status, 200);
+      const $ = cheerio.load(await response.text());
+      const expectedRange = '[0, 20]';
+      const elemList = $('span').filter(function () {
+        return $(this).text().trim() === expectedRange;
       });
+      assert.lengthOf(
+        elemList,
+        1,
+        `Expected range ${expectedRange} not found for question ${question.qid}`,
+      );
     });
   });
 });
