@@ -27,7 +27,7 @@ Each assessment contains:
 
 ### Questions
 
-[**Questions**](../question.md) are all independent, and a given question can be used on many different assessments across many different course instances. They are written in HTML (as a [Mustache template](https://mustache.github.io/mustache.5.html)) and use [elements](../elements.md) to accept student input. Python code can be used to generate random parameters and grade questions. Every time a question is shown to a student with randomly generated parameters, that is called a **variant** of the question.
+[**Questions**](../question.md) are all independent, and a given question can be used on different assessments across different course instances. They are written in HTML (as a [Mustache template](https://mustache.github.io/mustache.5.html)) and use [elements](../elements.md) to accept student input. Python code can be used to generate random parameters and grade questions. Every time a question is shown to a student with randomly generated parameters, that is called a **variant** of the question.
 
 ![An example homework question](./hw-question.png)
 
@@ -125,7 +125,7 @@ A course's questions are composed together to create homework and exam [**assess
 
 ![Homework Assessment](./hw-assessment.png)
 
-Asssessments are organized into **assessment sets** based on the type of assessment (e.g. `Homework`, `Quiz`, `Exam`). Optionally, each assessment can be a part of a **module** (e.g. `Introduction`, `Review`, `Linked Lists`). Your assessments can then be shown to students grouped by module or by assessment set.
+Assessments are organized into **assessment sets** based on the type of assessment (e.g. `Homework`, `Quiz`, `Exam`). Optionally, each assessment can be a part of a **module** (e.g. `Introduction`, `Review`, `Linked Lists`). Your assessments can then be shown to students grouped by module or by assessment set.
 
 === "Assessments (Set Grouping)"
 

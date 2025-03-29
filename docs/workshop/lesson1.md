@@ -30,7 +30,7 @@ $A = \int_0^2 (4-x^2) dx = \frac{16}{3}$
 
 For a given metal, $Q_v = 2 \rm \,ev$ is the energy required for vacancy formation. When the temperature is $T_1 = 800^o\rm C$, the vacancy concentration is 1 for every 10000 atoms.
 
-Detemine the temperature $T_2$ needed to achieve a concentration of 1 vacancy for every 1000 atoms.
+Determine the temperature $T_2$ needed to achieve a concentration of 1 vacancy for every 1000 atoms.
 
 **Solution:**
 
