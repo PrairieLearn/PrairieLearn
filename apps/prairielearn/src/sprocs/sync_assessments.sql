@@ -168,7 +168,8 @@ BEGIN
             group_work = (valid_assessment.data->>'group_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             sync_errors = NULL,
-            sync_warnings = valid_assessment.warnings
+            sync_warnings = valid_assessment.warnings,
+            json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision
         FROM
             (
                 SELECT
@@ -322,7 +323,8 @@ BEGIN
                 max_points,
                 number_choose,
                 best_questions,
-                advance_score_perc
+                advance_score_perc,
+                json_grade_rate_minutes
             )
             VALUES (
                 new_assessment_id,
@@ -331,7 +333,8 @@ BEGIN
                 (zone->>'max_points')::double precision,
                 (zone->>'number_choose')::integer,
                 (zone->>'best_questions')::integer,
-                (zone->>'advance_score_perc')::double precision
+                (zone->>'advance_score_perc')::double precision,
+                (zone->>'grade_rate_minutes')::double precision
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
@@ -339,7 +342,8 @@ BEGIN
                 max_points = EXCLUDED.max_points,
                 number_choose = EXCLUDED.number_choose,
                 best_questions = EXCLUDED.best_questions,
-                advance_score_perc = EXCLUDED.advance_score_perc
+                advance_score_perc = EXCLUDED.advance_score_perc,
+                json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes
             RETURNING id INTO new_zone_id;
 
             -- Insert each alternative group in this zone

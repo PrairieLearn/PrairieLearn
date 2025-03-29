@@ -90,6 +90,7 @@ function getParamsForAssessment(
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
+      grade_rate_minutes: zone.gradeRateMinutes,
     };
   });
 
@@ -270,6 +271,7 @@ function getParamsForAssessment(
     zones,
     alternativeGroups,
     groupRoles,
+    grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
   };
