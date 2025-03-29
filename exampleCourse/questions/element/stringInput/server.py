@@ -33,3 +33,4 @@ def generate(data):
     data["correct_answers"]["ans6"] = e
     data["correct_answers"]["ans7"] = f
     data["correct_answers"]["ans8"] = '"Ee"'
+    data["correct_answers"]["ans9"] = "I'm\nsorry\nDave."
