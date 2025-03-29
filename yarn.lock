@@ -3759,7 +3759,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
-    "@pyroscope/nodejs": "npm:^0.4.3"
+    "@pyroscope/nodejs": "npm:^0.4.5"
     "@sa11y/format": "npm:^7.0.0"
     "@smithy/types": "npm:^4.1.0"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -4234,18 +4234,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pyroscope/nodejs@npm:^0.4.3":
-  version: 0.4.3
-  resolution: "@pyroscope/nodejs@npm:0.4.3"
+"@pyroscope/nodejs@npm:^0.4.5":
+  version: 0.4.5
+  resolution: "@pyroscope/nodejs@npm:0.4.5"
   dependencies:
     "@datadog/pprof": "npm:^5.4.1"
-    axios: "npm:^0.28.0"
     debug: "npm:^4.3.3"
-    form-data: "npm:^4.0.0"
     p-limit: "npm:^3.1.0"
     regenerator-runtime: "npm:^0.13.11"
     source-map: "npm:^0.7.3"
-  checksum: 10c0/5a4ccfd706b0e0c59b8b60326138deb8672da279ca6bc7a2dd6691482a57d3681aa4f574bf5f9572357af1cf6e9e7f5fe25babe4a8a10c57a460e7c996da82bc
+  checksum: 10c0/91b02e3b99230563d1afe6f9b095fa53080ba400ffd13c1cfee6a39018fa29d0309bffb6261d83f4c2cdaef445282ef85cf76fe7b80d8e3e074e26e594d7263c
   languageName: node
   linkType: hard
 
@@ -5053,6 +5051,22 @@ __metadata:
     notepack.io: "npm:~3.0.1"
     socket.io-parser: "npm:~4.2.1"
   checksum: 10c0/57b5eb1d0372cc7f75cee27e5bf4eabd75cc81983a115749c14354ea432d9fa8170f43c723187687c5bd2a2560c1b658824f3226af3e6eb418e70a31dd1b56e4
+  languageName: node
+  linkType: hard
+
+"@taplo/core@npm:^0.1.0":
+  version: 0.1.1
+  resolution: "@taplo/core@npm:0.1.1"
+  checksum: 10c0/c36f761431b2e959742d8e186e74306fb8991d84589e2f03b6481244cc407275fa448a217ef87b8aa1e226615fd7ba85c60e6f0221f01d891b90dd30b45cb13b
+  languageName: node
+  linkType: hard
+
+"@taplo/lib@npm:^0.4.0-alpha.2":
+  version: 0.4.0-alpha.2
+  resolution: "@taplo/lib@npm:0.4.0-alpha.2"
+  dependencies:
+    "@taplo/core": "npm:^0.1.0"
+  checksum: 10c0/650ed35ba949054eb8dcfbaf77d6154d9639f5d8fa96d89546c399a95e699d7e01f65e308f89478d41e0120baa3572f25595fe088d19e62cc56ad3eb2b5acbb5
   languageName: node
   linkType: hard
 
@@ -6707,17 +6721,6 @@ __metadata:
   version: 4.10.2
   resolution: "axe-core@npm:4.10.2"
   checksum: 10c0/0e20169077de96946a547fce0df39d9aeebe0077f9d3eeff4896518b96fde857f80b98f0d4279274a7178791744dd5a54bb4f322de45b4f561ffa2586ff9a09d
-  languageName: node
-  linkType: hard
-
-"axios@npm:^0.28.0":
-  version: 0.28.1
-  resolution: "axios@npm:0.28.1"
-  dependencies:
-    follow-redirects: "npm:^1.15.0"
-    form-data: "npm:^4.0.0"
-    proxy-from-env: "npm:^1.1.0"
-  checksum: 10c0/0437f851bb3552645cb44151bddeecf6bc85b41ea8f355f954fb5338f922d8ddcd255fc1eeffe83d9dd175dcdc1fb613f546ba607fa96cd33670738b30f7ca60
   languageName: node
   linkType: hard
 
@@ -9786,7 +9789,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.0.0, follow-redirects@npm:^1.15.0":
+"follow-redirects@npm:^1.0.0":
   version: 1.15.9
   resolution: "follow-redirects@npm:1.15.9"
   peerDependenciesMeta:
@@ -13905,7 +13908,9 @@ __metadata:
     htmlhint: "npm:^1.1.4"
     markdownlint-cli: "npm:^0.44.0"
     node-gyp: "npm:^11.1.0"
-    prettier: "npm:3.5.3"
+    prettier: "npm:^3.5.3"
+    prettier-plugin-pkg: "npm:^0.18.1"
+    prettier-plugin-toml: "npm:^2.0.2"
     pyright: "npm:^1.1.396"
     s3rver: "npm:^3.7.1"
     turbo: "npm:^2.4.4"
@@ -13927,7 +13932,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:3.5.3":
+"prettier-plugin-pkg@npm:^0.18.1":
+  version: 0.18.1
+  resolution: "prettier-plugin-pkg@npm:0.18.1"
+  peerDependencies:
+    prettier: ^3.0.3
+  checksum: 10c0/8f0f1308e53d0197ca7ff532c4136930f42ad334c32728b71d8f81136a5a663d9231b659d848d2d7587461bd68ce3c2a3afe4bd34cc8718471710511113e07f9
+  languageName: node
+  linkType: hard
+
+"prettier-plugin-toml@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "prettier-plugin-toml@npm:2.0.2"
+  dependencies:
+    "@taplo/lib": "npm:^0.4.0-alpha.2"
+  peerDependencies:
+    prettier: ^3.0.3
+  checksum: 10c0/e48c8d4e6eaf422a09adab7fe0b7edb23bac703a1d15e462f2c8531c3b0edaf4e00a5a1f794732aaf7788628f40d7c704d82e2d72ccdba00741f94128cb67aa3
+  languageName: node
+  linkType: hard
+
+"prettier@npm:3.5.3, prettier@npm:^3.5.3":
   version: 3.5.3
   resolution: "prettier@npm:3.5.3"
   bin:
@@ -14043,13 +14068,6 @@ __metadata:
     forwarded: "npm:0.2.0"
     ipaddr.js: "npm:1.9.1"
   checksum: 10c0/c3eed999781a35f7fd935f398b6d8920b6fb00bbc14287bc6de78128ccc1a02c89b95b56742bf7cf0362cc333c61d138532049c7dedc7a328ef13343eff81210
-  languageName: node
-  linkType: hard
-
-"proxy-from-env@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "proxy-from-env@npm:1.1.0"
-  checksum: 10c0/fe7dd8b1bdbbbea18d1459107729c3e4a2243ca870d26d34c2c1bcd3e4425b7bcc5112362df2d93cc7fb9746f6142b5e272fd1cc5c86ddf8580175186f6ad42b
   languageName: node
   linkType: hard
 
@@ -16558,13 +16576,13 @@ __metadata:
   linkType: hard
 
 "xml-crypto@npm:^6.0.0":
-  version: 6.0.0
-  resolution: "xml-crypto@npm:6.0.0"
+  version: 6.0.1
+  resolution: "xml-crypto@npm:6.0.1"
   dependencies:
     "@xmldom/is-dom-node": "npm:^1.0.1"
     "@xmldom/xmldom": "npm:^0.8.10"
     xpath: "npm:^0.0.33"
-  checksum: 10c0/1a9d8be4cc7a4c618fa413b8ef30f11cda9ae81f20bc03e84c51f6c61383168a9915f8c3a26061e2053e58807b76d3a13726338f7bc0d8c45285fbb1da296293
+  checksum: 10c0/608121007ddc50e7e0e23c1305af1dba5e449ff79ab3d0ecfb034a8072896f47bc082d377d7ef13c4ee82137f64cd1b5dde1d2f8eecea59fda55a04c1b080d0a
   languageName: node
   linkType: hard
 

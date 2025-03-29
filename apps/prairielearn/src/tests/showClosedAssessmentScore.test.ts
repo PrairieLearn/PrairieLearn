@@ -100,7 +100,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     assert.lengthOf(response.$('a:contains("Question 1")'), 0);
 
     // we should have the "assessment closed" message
-    const msg = response.$('div.test-suite-assessment-closed-message');
+    const msg = response.$('[data-testid="assessment-closed-message"]');
     assert.lengthOf(msg, 1);
     assert.match(msg.text(), /Assessment .* is no longer available/);
   });
@@ -117,7 +117,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     });
     assert.equal(response.status, 403);
 
-    assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
+    assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
     assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
   });
 

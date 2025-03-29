@@ -17,7 +17,6 @@
     });
 </script>
 
-<!-- START pl-string-input -->
 {{#question}}
 {{#inline}}<span class="d-inline-block ms-2">{{/inline}}
     {{#multiline}}
@@ -54,7 +53,7 @@
                 type="text"
                 inputmode="text"
                 class="form-control pl-string-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
-                {{#parse_error}}aria-invalid="true" aria-describedby="pl-string-input-{{uuid}}-error"{{/parse_error}}
+                {{#parse_error}}aria-invalid="true"{{/parse_error}}
                 size="{{size}}"
                 autocomplete="off"
                 autocorrect="off"
@@ -95,17 +94,14 @@
     {{#parse_error}}
         <span class="invalid-feedback d-block">
             <span class="badge text-bg-danger">
-                Invalid 
+                Invalid
                 <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
             </span>
-            <span id="pl-string-input-{{uuid}}-error">
-                You must enter a string.
-            </span>
-            <a 
+            <a
                 class="link-primary"
                 tabindex="0"
                 role="button"
-                data-bs-placement="auto" 
+                data-bs-placement="auto"
                 data-bs-toggle="popover"
                 data-bs-html="true"
                 title="Format error"
@@ -189,10 +185,10 @@
 {{#missing_input}}
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-dark border">
-            Missing Input 
+            Missing Input
             <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
-        <a 
+        <a
             class="link-primary"
             tabindex="0"
             role="button"
@@ -216,7 +212,7 @@
 
 {{^multiline}}
 {{#a_sub}}
-<!-- Show raw value submitted answer was parsed from -->
+{{! Show raw value submitted answer was parsed from }}
 <button
     class="ml-1 btn btn-sm btn-secondary"
     data-bs-toggle="popover"
@@ -268,7 +264,7 @@
             disabled
             aria-describedby="pl-string-input-answer-{{uuid}}-suffix"
         >{{a_tru}}</textarea>
-        <!-- Show raw value correct answer was parsed from -->
+        {{! Show raw value correct answer was parsed from }}
         <button
             class="btn btn-sm btn-secondary"
             data-bs-toggle="popover"
@@ -288,7 +284,7 @@
 {{/multiline}}
 
 {{^multiline}}
-<!-- Show raw value correct answer was parsed from -->
+{{! Show raw value correct answer was parsed from }}
 <button
     class="ml-1 btn btn-sm btn-secondary"
     data-bs-toggle="popover"
@@ -306,4 +302,3 @@
 </span>
 {{/multiline}}
 {{/answer}}
-<!-- END pl-string-input -->

@@ -2,13 +2,13 @@
   "name": "@prairielearn/compiled-assets",
   "version": "3.0.11",
   "type": "module",
-  "main": "dist/index.js",
-  "bin": "dist/cli.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/compiled-assets"
   },
+  "bin": "dist/cli.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",

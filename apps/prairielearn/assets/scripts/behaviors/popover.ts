@@ -6,11 +6,11 @@ import { focusFirstFocusableChild, onDocumentReady, trapFocus } from '@prairiele
 
 import { getPopoverContainerForTrigger, getPopoverTriggerForContainer } from '../lib/popover.js';
 
-const openPopoverTriggers = new Set<Popover>();
+const openPopovers = new Set<Popover>();
 
 function closeOpenPopovers() {
-  openPopoverTriggers.forEach((popover) => popover.hide());
-  openPopoverTriggers.clear();
+  openPopovers.forEach((popover) => popover.hide());
+  openPopovers.clear();
 }
 
 /**
@@ -86,7 +86,7 @@ onDocumentReady(() => {
   });
 
   on('click', 'body', (e) => {
-    if (openPopoverTriggers.size === 0) return;
+    if (openPopovers.size === 0) return;
 
     // If this click occurred inside a popover, do nothing.
     const closestPopover = (e.target as HTMLElement).closest('.popover');
@@ -115,10 +115,8 @@ onDocumentReady(() => {
   on('shown.bs.popover', 'body', (event) => {
     const target = event.target as HTMLElement;
 
-    const popoverInstance = window.bootstrap.Popover.getInstance(target);
-    if (popoverInstance) {
-      openPopoverTriggers.add(popoverInstance);
-    }
+    const popover = window.bootstrap.Popover.getInstance(target);
+    if (popover) openPopovers.add(popover);
 
     const container = getPopoverContainerForTrigger(target);
 
@@ -143,9 +141,7 @@ onDocumentReady(() => {
   });
 
   on('hide.bs.popover', 'body', (event) => {
-    const popoverInstance = window.bootstrap.Popover.getInstance(event.target as HTMLElement);
-    if (popoverInstance) {
-      openPopoverTriggers.delete(popoverInstance);
-    }
+    const popover = window.bootstrap.Popover.getInstance(event.target as HTMLElement);
+    if (popover) openPopovers.delete(popover);
   });
 });
