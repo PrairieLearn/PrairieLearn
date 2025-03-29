@@ -1050,7 +1050,7 @@ export async function generate(question, course, variant_seed) {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
     const data = {
-      params: {},
+      params: question.question_params ?? {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
       options: _.defaults({}, course.options, question.options),
@@ -1080,6 +1080,7 @@ export async function prepare(question, course, variant) {
     if (variant.broken_at) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
+    console.log(_.get(variant, 'params', {}));
     const data = {
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},

@@ -133,9 +133,7 @@ router.get(
       renderScorePanels: false,
       // Group role permissions are not used in this context.
       groupRolePermissions: null,
-      localsOverrides: {
-        manualGradingInterface: manualGradingPreviewEnabled,
-      },
+      localsOverrides: { manualGradingInterface: manualGradingPreviewEnabled },
     });
     res.json(panels);
   }),
