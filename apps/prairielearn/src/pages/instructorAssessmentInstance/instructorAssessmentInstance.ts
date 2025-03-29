@@ -81,9 +81,7 @@ router.get(
       },
       InstanceQuestionRowSchema,
     );
-    instance_questions.forEach((question, index) => {
-      console.log(`Question ${index + 1}:`, question);
-    });
+    
 
     const assessmentInstanceLog = await selectAssessmentInstanceLog(
       res.locals.assessment_instance.id,
