@@ -24,10 +24,9 @@ def escape_unicode_string(string: str) -> str:
 
     def escape_unprintable(x: str) -> str:
         category = unicodedata.category(x)
-
-        if category in {"Cc", "Cf"}:
-            return f"<U+{ord(x):04X}>"
-
-        return x
+        if category in ("Cc", "Cf"):
+            return f"<U+{ord(x):x}>"
+        else:
+            return x
 
     return "".join(map(escape_unprintable, string))
