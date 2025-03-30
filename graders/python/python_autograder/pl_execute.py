@@ -52,6 +52,7 @@ def execute_code(
     - include_plt: If true, plots will be included in grading results.
     - console_output_fname: Filename to redirect console output to.
     - test_iter_num: The iteration number of this test, when test cases are run multiple times.
+    - ipynb_key: The key to use for extracting the student code from an ipynb file
 
     Returns:
     - ref_result: A named tuple with reference variables
