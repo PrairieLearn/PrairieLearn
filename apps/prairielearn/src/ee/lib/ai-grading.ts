@@ -408,8 +408,13 @@ export async function aiGradeTest({
 
     // Test each instance question
     for (const instance_question of instance_questions) {
-      if (instance_question.requires_manual_grading || instance_question.status === 'unanswered') {
-        continue; // TODO: Add filter on human-graded submissions only after merging PR#11383
+      if (
+        instance_question.status === 'unanswered' ||
+        instance_question.requires_manual_grading ||
+        instance_question.is_ai_graded
+      ) {
+        // Only test on instance questions that have been submitted and graded by a human
+        continue;
       }
 
       job.info(`\nInstance question ${instance_question.id}`);
@@ -618,8 +623,6 @@ export async function aiGradeTest({
               ai_score: score,
             });
 
-            // TODO: Insert grading job
-            // TODO: Insert AI grading job after merging PR#11431
             await runInTransactionAsync(async () => {
               assert(assessment_question.max_manual_points);
               const grading_job_id = await queryRow(
