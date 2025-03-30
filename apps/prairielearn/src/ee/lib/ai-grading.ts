@@ -543,14 +543,14 @@ export async function aiGradeTest({
             });
 
             await runInTransactionAsync(async () => {
+              assert(assessment_question.max_manual_points);
               const manual_rubric_grading = await manualGrading.insertRubricGrading(
                 rubric_id,
                 assessment_question.max_points ?? 0,
-                assessment_question.max_manual_points ?? 0,
+                assessment_question.max_manual_points,
                 appliedRubricItems,
                 0,
               );
-              assert(assessment_question.max_manual_points);
               const score =
                 manual_rubric_grading.computed_points / assessment_question.max_manual_points;
               const grading_job_id = await queryRow(
