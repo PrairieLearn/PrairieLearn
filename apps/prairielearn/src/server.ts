@@ -19,11 +19,11 @@ import Bowser from 'bowser';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
 import express, {
-  type RequestHandler,
   type Express,
-  type Request,
-  type Response,
   type NextFunction,
+  type Request,
+  type RequestHandler,
+  type Response,
 } from 'express';
 import asyncHandler from 'express-async-handler';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -39,7 +39,7 @@ import yargsParser from 'yargs-parser';
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 import { flashMiddleware } from '@prairielearn/flash';
-import { logger, addFileLogging } from '@prairielearn/logger';
+import { addFileLogging, logger } from '@prairielearn/logger';
 import * as migrations from '@prairielearn/migrations';
 import {
   SCHEMA_MIGRATIONS_PATH,

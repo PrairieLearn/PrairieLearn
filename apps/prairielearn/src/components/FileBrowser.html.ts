@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import hljs from 'highlight.js';
 import { isBinaryFile } from 'isbinaryfile';
 
-import { escapeHtml, html, type HtmlValue, joinHtml, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 import { run } from '@prairielearn/run';
 
