@@ -61,6 +61,9 @@ jobs:
           context: ${{ inputs.directory }}/${{ matrix.image }}
           tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          # These need to be os-specific caches (https://github.com/docker/buildx/discussions/1382)
+          cache-from: type=registry,ref=${{ inputs.image-prefix }}-${{ matrix.image }}:buildcache-${{ runner.os }}
+          cache-to: type=registry,ref=${{ inputs.image-prefix }}-${{ matrix.image }}:buildcache-${{ runner.os }},mode=max
 
       # Export the base image as a tarball (See https://docs.docker.com/build/ci/github-actions/share-image-jobs/)
       - name: Export tarball
@@ -160,6 +163,9 @@ jobs:
           # We will tag using a platform-specific image instead of doing a push-by-digest (https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners).
           # We want to use the default docker builder, as buildx uses `docker-container`, which has additional overhead to load local images (https://docs.docker.com/build/ci/github-actions/named-contexts/#using-with-a-container-builder).
           tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
+          # These need to be os-specific caches (https://github.com/docker/buildx/discussions/1382)
+          cache-from: type=registry,ref=${{ inputs.image-prefix }}-${{ matrix.image }}:buildcache-${{ runner.os }}
+          cache-to: type=registry,ref=${{ inputs.image-prefix }}-${{ matrix.image }}:buildcache-${{ runner.os }},mode=max
 
       - name: Export metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
