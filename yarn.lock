@@ -13013,6 +13013,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mvdan-sh@npm:^0.10.1":
+  version: 0.10.1
+  resolution: "mvdan-sh@npm:0.10.1"
+  checksum: 10c0/cfdd3c6429aad170014892f7934ff60a4418b32e4c14db10f0d3cfb7743f37385e2a3a8c58c65b7c4fbfe44838d9e8cf8c93897b9763a08224c32957a72621c0
+  languageName: node
+  linkType: hard
+
 "nan@npm:^2.14.0, nan@npm:^2.17.0, nan@npm:^2.18.0, nan@npm:^2.22.2":
   version: 2.22.2
   resolution: "nan@npm:2.22.2"
@@ -14064,6 +14071,7 @@ __metadata:
     node-gyp: "npm:^11.1.0"
     prettier: "npm:^3.5.3"
     prettier-plugin-pkg: "npm:^0.18.1"
+    prettier-plugin-sh: "npm:^0.15.0"
     prettier-plugin-toml: "npm:^2.0.3"
     pyright: "npm:^1.1.396"
     s3rver: "npm:^3.7.1"
@@ -14092,6 +14100,18 @@ __metadata:
   peerDependencies:
     prettier: ^3.0.3
   checksum: 10c0/8f0f1308e53d0197ca7ff532c4136930f42ad334c32728b71d8f81136a5a663d9231b659d848d2d7587461bd68ce3c2a3afe4bd34cc8718471710511113e07f9
+  languageName: node
+  linkType: hard
+
+"prettier-plugin-sh@npm:^0.15.0":
+  version: 0.15.0
+  resolution: "prettier-plugin-sh@npm:0.15.0"
+  dependencies:
+    mvdan-sh: "npm:^0.10.1"
+    sh-syntax: "npm:^0.4.2"
+  peerDependencies:
+    prettier: ^3.0.3
+  checksum: 10c0/256599d89deb83bd9fd85041936b852841fa198735ae2327ea4889f375b8c5a02e39139dd63a77911f49ef2fe7d44c36d01350ca4f93967d807bbadf2513a9bd
   languageName: node
   linkType: hard
 
@@ -15014,6 +15034,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"sh-syntax@npm:^0.4.2":
+  version: 0.4.2
+  resolution: "sh-syntax@npm:0.4.2"
+  dependencies:
+    tslib: "npm:^2.6.2"
+  checksum: 10c0/0bfe3b3ffcfa7b59a91d432e2f77e6cd4ccb0f267fe6fcce95b9be4ddf34169a8e2721060e067385574e3248818860b682af24b1cb4b5803167e1666bc6fec24
+  languageName: node
+  linkType: hard
+
 "shebang-command@npm:^2.0.0":
   version: 2.0.0
   resolution: "shebang-command@npm:2.0.0"
@@ -15902,12 +15931,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-api-utils@npm:^2.0.0, ts-api-utils@npm:^2.0.1":
+"ts-api-utils@npm:^2.0.0":
   version: 2.1.0
   resolution: "ts-api-utils@npm:2.1.0"
   peerDependencies:
     typescript: ">=4.8.4"
   checksum: 10c0/9806a38adea2db0f6aa217ccc6bc9c391ddba338a9fe3080676d0d50ed806d305bb90e8cef0276e793d28c8a929f400abb184ddd7ff83a416959c0f4d2ce754f
+  languageName: node
+  linkType: hard
+
+"ts-api-utils@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "ts-api-utils@npm:2.0.1"
+  peerDependencies:
+    typescript: ">=4.8.4"
+  checksum: 10c0/23fd56a958b332cac00150a652e4c84730df30571bd2faa1ba6d7b511356d1a61656621492bb6c7f15dd6e18847a1408357a0e406671d358115369a17f5bfedd
   languageName: node
   linkType: hard
 
