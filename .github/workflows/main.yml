@@ -127,10 +127,8 @@ jobs:
     uses: ./.github/workflows/image-builder.yml
     with:
       directory: graders
-      image-prefix: prairielearn/grader
-      base-images: '[]'
+      image-prefix: prairielearn/grader-
       images: "['c', 'java', 'python', 'r']"
-      exclude: '[]'
     secrets: inherit
   build-grader-images-results:
     if: ${{ always() }}
