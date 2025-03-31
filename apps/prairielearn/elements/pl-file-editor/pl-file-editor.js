@@ -299,19 +299,12 @@ window.PLFileEditor.prototype.preview = {
         const startMath = /(\$|\\\(|\\\[)/;
         const mathjaxInput = MathJax.startup.getInputJax() ?? [];
         marked.use({
+          renderer: {
+            // Any text that is not math should be ignored by MathJax. This
+            // includes escaped characters like `\$`.
+            text: (text) => `<span class="mathjax_ignore">${text}</span>`,
+          },
           extensions: [
-            {
-              // `\$` is used to escape math delimiters. This is a workaround to
-              // ensure that markdown escaping does not take priority over
-              // Mathjax delimiter escaping.
-              name: 'escapeMath',
-              level: 'inline',
-              start: (src) => src.match(/\\\$/)?.index,
-              tokenizer(src) {
-                if (src.match(/^\\\$/)?.index !== 0) return false;
-                return { type: 'escape', raw: '\\$', text: '\\$' };
-              },
-            },
             {
               name: 'math',
               level: 'inline',
@@ -330,7 +323,7 @@ window.PLFileEditor.prototype.preview = {
                     // characters (e.g., `_` or `*`). However HTML-specific
                     // encoding still needs to be manually handled.
                     return {
-                      type: 'escape',
+                      type: 'math',
                       raw,
                       text: raw
                         .replaceAll('&', '&amp;')
@@ -342,6 +335,7 @@ window.PLFileEditor.prototype.preview = {
                   }
                 }
               },
+              renderer: ({ text }) => text,
             },
           ],
         });
