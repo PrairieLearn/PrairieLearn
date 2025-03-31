@@ -111,6 +111,8 @@ export function InstructorAIGenerateDrafts({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="generate_question" />
 
+            ${SampleQuestionSelector()}
+
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
                 Give a high-level overview of the question. What internal parameters need to be
@@ -184,7 +186,7 @@ export function InstructorAIGenerateDrafts({
                           <option value=""></option>
                           ${examplePrompts.map(
                             (question) =>
-                              html`<option
+                              html`<optiongit
                                 value="${question.id}"
                                 data-prompt-general="${question.promptGeneral}"
                                 data-prompt-user-input="${question.promptUserInput}"
@@ -285,6 +287,60 @@ export function InstructorAIGenerateDrafts({
       ${DeleteQuestionsModal({ csrfToken: resLocals.__csrf_token })}
     `,
   });
+}
+
+const sampleQuestions = [
+  {
+    id: 'projectile-motion',
+    name: 'Projectile Motion'
+  },
+  {
+    id: 'polynomial-integration',
+    name: 'Polynomial Integration'
+  },
+  {
+    id: 'tree-traversal',
+    name: 'Tree Traversal'
+  }
+]
+
+function SampleQuestionSelector() {
+  return html`
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+      ${sampleQuestions.map((sampleQuestion, index) => (
+        html`
+          <li class="nav-item" role="presentation">
+            <button 
+              class="nav-link ${index === 0 ? 'active' : ''}" 
+              id="${sampleQuestion.id}-tab" 
+              data-bs-toggle="tab" 
+              data-bs-target="#${sampleQuestion.id}" 
+              type="button" 
+              role="tab" 
+              aria-controls="home" 
+              aria-selected="${index === 0 ? 'true' : ''}"
+            >
+              ${sampleQuestion.name}
+            </button>
+          </li>
+        `
+      ))}
+    </ul>
+    <div class="tab-content" id="myTabContent">
+      ${sampleQuestions.map((sampleQuestion, index) => (
+        html`
+        <div 
+          class="tab-pane ${index === 0 ? 'show active' : ''}" 
+          id="${sampleQuestion.id}" 
+          role="tabpanel" 
+          aria-labelledby="${sampleQuestion.name}-tab"
+        >
+          ${sampleQuestion.name}
+        </div>
+        `
+      ))}
+    </div>
+  `
 }
 
 export function GenerationFailure({
