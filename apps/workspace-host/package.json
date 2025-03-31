@@ -32,7 +32,7 @@
     "async-mutex": "^0.5.0",
     "body-parser": "^1.20.3",
     "debug": "^4.4.0",
-    "dockerode": "^4.0.4",
+    "dockerode": "^4.0.5",
     "express": "^4.21.2",
     "express-async-handler": "^1.2.0",
     "ioredis": "^5.5.0",

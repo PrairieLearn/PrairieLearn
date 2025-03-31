@@ -27,7 +27,7 @@
     "@prairielearn/sentry": "workspace:^",
     "async": "^3.2.6",
     "byline": "^5.0.0",
-    "dockerode": "^4.0.4",
+    "dockerode": "^4.0.5",
     "execa": "^9.5.2",
     "fs-extra": "^11.3.0",
     "logform": "^2.7.0",
