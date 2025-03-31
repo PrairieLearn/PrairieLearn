@@ -155,7 +155,7 @@ jobs:
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: docker/build-push-action@v6
         with:
-          context: ${{ inputs.directory }}/${{ matrix.image }}
+          context: ${{ matrix.image == 'prairielearn' && '.' || format('{0}/{1}', inputs.directory, matrix.image) }}
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           # We will tag using a platform-specific image instead of doing a push-by-digest (https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners).
           # We want to use the default docker builder, as buildx uses `docker-container`, which has additional overhead to load local images (https://docs.docker.com/build/ci/github-actions/named-contexts/#using-with-a-container-builder).
