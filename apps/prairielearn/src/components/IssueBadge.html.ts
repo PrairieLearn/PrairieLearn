@@ -31,26 +31,18 @@ export function IssueBadge({
     return html`<span class="badge rounded-pill text-bg-danger ${className ?? ''}">${count}</span>`;
   }
 
+  let query = 'is%3Aopen';
+  if (issueQid) {
+    query += `+qid%3A${encodeURIComponent(issueQid)}`;
+  }
   if (issueAid) {
-    return html`
-      <a
-        class="badge rounded-pill text-bg-danger ${className ?? ''}"
-        href="${urlPrefix}/course_admin/issues${issueAid
-          ? `?q=is%3Aopen+assessment%3A${encodeURIComponent(issueAid)}`
-          : ''}"
-        aria-label="${count} open ${count === 1 ? 'issue' : 'issues'}"
-      >
-        ${count}
-      </a>
-    `;
+    query += `+assessment%3A${encodeURIComponent(issueAid)}`;
   }
 
   return html`
     <a
       class="badge rounded-pill text-bg-danger ${className ?? ''}"
-      href="${urlPrefix}/course_admin/issues${issueQid
-        ? `?q=is%3Aopen+qid%3A${encodeURIComponent(issueQid)}`
-        : ''}"
+      href="${urlPrefix}/course_admin/issues?q=${query}"
       aria-label="${count} open ${count === 1 ? 'issue' : 'issues'}"
     >
       ${count}
