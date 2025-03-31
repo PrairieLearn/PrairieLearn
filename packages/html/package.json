@@ -2,13 +2,12 @@
   "name": "@prairielearn/html",
   "version": "4.0.10",
   "type": "module",
-  "main": "dist/index.js",
-  "sideEffects": false,
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/html"
   },
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
@@ -23,6 +22,7 @@
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   },
+  "sideEffects": false,
   "c8": {
     "reporter": [
       "html",

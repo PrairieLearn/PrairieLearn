@@ -10,18 +10,18 @@ import { z } from 'zod';
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
   loadSqlEquiv,
+  queryAsync,
   queryRow,
   queryRows,
-  queryAsync,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import {
   AssessmentInstanceSchema,
-  DateFromISOString,
-  Lti13InstanceSchema,
-  Lti13CourseInstanceSchema,
   AssessmentSchema,
+  DateFromISOString,
+  Lti13CourseInstanceSchema,
+  Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';

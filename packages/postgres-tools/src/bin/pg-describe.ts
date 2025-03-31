@@ -8,9 +8,9 @@ import fs from 'fs-extra';
 import yargs from 'yargs';
 
 import {
+  type DatabaseDescription,
   describeDatabase,
   formatDatabaseDescription,
-  type DatabaseDescription,
 } from '../describe.js';
 
 const args = yargs(process.argv.slice(2))

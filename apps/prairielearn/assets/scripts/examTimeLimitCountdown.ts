@@ -1,4 +1,4 @@
-import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { saveQuestionFormData } from './lib/confirmOnUnload.js';

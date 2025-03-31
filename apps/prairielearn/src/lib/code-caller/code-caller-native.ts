@@ -14,11 +14,11 @@ import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 
 import {
-  FunctionMissingError,
-  type CodeCaller,
-  type PrepareForCourseOptions,
-  type CodeCallerResult,
   type CallType,
+  type CodeCaller,
+  type CodeCallerResult,
+  FunctionMissingError,
+  type PrepareForCourseOptions,
 } from './code-caller-shared.js';
 
 interface CodeCallerNativeChildProcess extends ChildProcess {

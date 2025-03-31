@@ -2,16 +2,20 @@
   "name": "@prairielearn/zod",
   "version": "1.1.1",
   "type": "module",
-  "main": "./dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/zod"
   },
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
     "test": "c8 mocha src/**/*.test.ts"
+  },
+  "dependencies": {
+    "postgres-interval": "^4.0.2",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
@@ -23,10 +27,6 @@
     "mocha": "^11.1.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
-  },
-  "dependencies": {
-    "postgres-interval": "^4.0.2",
-    "zod": "^3.24.2"
   },
   "c8": {
     "reporter": [

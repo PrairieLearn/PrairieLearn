@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { config, type Config } from '../lib/config.js';
+import { type Config, config } from '../lib/config.js';
 
 import * as helperServer from './helperServer.js';
 

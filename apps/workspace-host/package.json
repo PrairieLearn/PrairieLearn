@@ -1,12 +1,12 @@
 {
   "name": "@prairielearn/workspace-host",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
+  "private": true,
   "scripts": {
     "build": "tsc && tscp",
-    "dev:no-watch": "tsx src/interface.js",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
+    "dev:no-watch": "tsx src/interface.js",
     "start": "node dist/interface.js",
     "test": "c8 mocha src/**/*.test.{js,ts}"
   },
@@ -32,7 +32,7 @@
     "async-mutex": "^0.5.0",
     "body-parser": "^1.20.3",
     "debug": "^4.4.0",
-    "dockerode": "^4.0.4",
+    "dockerode": "^4.0.5",
     "express": "^4.21.2",
     "express-async-handler": "^1.2.0",
     "ioredis": "^5.5.0",
