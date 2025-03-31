@@ -37,16 +37,12 @@ async function handlePendingLti13User({
   lti13_instance_id,
 }: {
   user: User;
-  uin: string | undefined;
-  sub: string | undefined;
-  lti13_instance_id: string | undefined;
+  uin: string;
+  sub: string;
+  lti13_instance_id: string;
 }) {
-  // Bail early if we're not in enterprise mode.
-  if (!isEnterprise()) return;
-
-  // Bail early if we're missing any attributes.
-  if (!uin || !sub || !lti13_instance_id) return;
-
+  // This function will only be called in enterprise mode. We use dynamic
+  // imports to avoid loading enterprise code in non-enterprise installations.
   const { updateLti13UserSub } = await import('../ee/models/lti13-user.js');
   const { selectLti13Instance } = await import('../ee/models/lti13Instance.js');
 
@@ -132,12 +128,14 @@ export async function loadUser(
   // If the student is authing as part of an LTI 1.3 launch, we need to associate
   // the pending `sub` claim with the user. We'll take care to ensure that the
   // UIN and institution ID match.
-  await handlePendingLti13User({
-    user: selectedUser.user,
-    uin: lti13_pending_uin,
-    sub: lti13_pending_sub,
-    lti13_instance_id: lti13_pending_instance_id,
-  });
+  if (isEnterprise() && lti13_pending_uin && lti13_pending_sub && lti13_pending_instance_id) {
+    await handlePendingLti13User({
+      user: selectedUser.user,
+      uin: lti13_pending_uin,
+      sub: lti13_pending_sub,
+      lti13_instance_id: lti13_pending_instance_id,
+    });
+  }
 
   // The session store will pick this up and store it in the `user_sessions.user_id` column.
   req.session.user_id = user_id;
