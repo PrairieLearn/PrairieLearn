@@ -1,16 +1,16 @@
 import { formatDate, formatInterval } from '@prairielearn/formatter';
-import { html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
-  DateFromISOString,
-  IntervalSchema,
   type Assessment,
   type AssessmentInstance,
   type Course,
   type CourseInstance,
+  DateFromISOString,
   type Group,
   type InstanceQuestion,
+  IntervalSchema,
   type Question,
   type User,
   type Variant,
@@ -166,7 +166,7 @@ function QuestionInfo({
       ? `course_instance/${course_instance.id}/instructor`
       : `course/${course.id}`
   }/question/${question.id}?variant_seed=${variant.variant_seed}`;
-  const publicPreviewUrl = `${config.urlPrefix}/public/course/${course.id}/question/${question.id}/preview`;
+  const publicPreviewUrl = `${config.urlPrefix}/public/course/${question.course_id}/question/${question.id}/preview`;
 
   // We don't show the sharing name in the QID if the question is not shared
   // publicly for importing, such as if only `share_source_publicly` is set.

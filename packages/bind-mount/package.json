@@ -2,13 +2,13 @@
   "name": "@prairielearn/bind-mount",
   "version": "1.1.2",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/bind-mount"
   },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc && node-gyp rebuild",
     "install": "node-gyp rebuild"
@@ -21,7 +21,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/bindings": "^1.5.5",
-    "@types/node": "^20.17.23",
+    "@types/node": "^20.17.28",
     "typescript": "^5.8.2"
   }
 }

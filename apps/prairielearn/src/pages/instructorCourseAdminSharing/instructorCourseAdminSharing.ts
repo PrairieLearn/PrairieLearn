@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getCanonicalHost } from '../../lib/url.js';
+import { updateCourseSharingName } from '../../models/course.js';
 
 import {
   InstructorCourseAdminSharing,
@@ -101,17 +102,17 @@ router.post(
         );
       } else {
         const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
-        if (canChooseSharingName) {
-          await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_name, {
-            sharing_name: req.body.course_sharing_name.trim(),
-            course_id: res.locals.course.id,
-          });
-        } else {
+        if (!canChooseSharingName) {
           throw new error.HttpStatusError(
             400,
             'Unable to change sharing name. At least one question has been shared.',
           );
         }
+
+        await updateCourseSharingName({
+          course_id: res.locals.course.id,
+          sharing_name: req.body.course_sharing_name.trim(),
+        });
       }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

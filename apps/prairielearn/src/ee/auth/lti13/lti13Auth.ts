@@ -2,14 +2,14 @@ import * as crypto from 'crypto';
 import { URL } from 'url';
 import { callbackify } from 'util';
 
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import { type NextFunction, type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Issuer, Strategy, type TokenSet } from 'openid-client';
 import * as passport from 'passport';
 import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
-import { HttpStatusError, AugmentedError } from '@prairielearn/error';
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 import * as authnLib from '../../../lib/authn.js';
@@ -17,7 +17,7 @@ import { setCookie } from '../../../lib/cookie.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectOptionalUserByUin } from '../../../models/user.js';
-import { Lti13ClaimSchema, Lti13Claim } from '../../lib/lti13.js';
+import { Lti13Claim, Lti13ClaimSchema } from '../../lib/lti13.js';
 import { updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 

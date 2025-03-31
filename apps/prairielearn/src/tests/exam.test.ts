@@ -942,7 +942,7 @@ describe('Exam assessment', function () {
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 400);
   });
 
   describe('26. save incorrect answer to question fossilFuelsRadio', function () {
@@ -1039,7 +1039,7 @@ describe('Exam assessment', function () {
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 400);
   });
 
   describe('30. load question fossilFuelsRadio page and save data for later submission', function () {
@@ -1082,7 +1082,7 @@ describe('Exam assessment', function () {
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 400);
   });
 
   describe('33. regrading', function () {
@@ -1826,7 +1826,7 @@ describe('Exam assessment', function () {
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
-            helperQuestion.postInstanceQuestionAndFail(locals);
+            helperQuestion.postInstanceQuestionAndFail(locals, 400);
           } else if (questionTest.action === 'grade-stored-fail') {
             describe('restoring submission data', function () {
               it('should succeed', function () {
@@ -1835,7 +1835,7 @@ describe('Exam assessment', function () {
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
-            helperQuestion.postInstanceQuestionAndFail(locals);
+            helperQuestion.postInstanceQuestionAndFail(locals, 400);
           } else if (questionTest.action === 'check-closed') {
             helperQuestion.getInstanceQuestion(locals);
           } else if (questionTest.action === 'save' || questionTest.action === 'grade') {

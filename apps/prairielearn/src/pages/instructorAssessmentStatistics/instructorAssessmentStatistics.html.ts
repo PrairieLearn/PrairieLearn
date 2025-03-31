@@ -6,7 +6,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentInstanceSchema, AssessmentSchema, type Assessment } from '../../lib/db-types.js';
+import { type Assessment, AssessmentInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
 
 export const DurationStatSchema = z.object({
   median_formatted: z.string(),

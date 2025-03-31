@@ -8,7 +8,7 @@ import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
 import { clearCookie } from '../lib/cookie.js';
 
 import { config } from './config.js';
-import { InstitutionSchema, UserSchema, type User } from './db-types.js';
+import { InstitutionSchema, type User, UserSchema } from './db-types.js';
 import { isEnterprise } from './license.js';
 import { HttpRedirect } from './redirect.js';
 
