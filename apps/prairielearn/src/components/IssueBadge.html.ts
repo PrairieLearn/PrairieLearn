@@ -33,16 +33,16 @@ export function IssueBadge({
 
   if (issueAid) {
     return html`
-    <a
-      class="badge rounded-pill text-bg-danger ${className ?? ''}"
-      href="${urlPrefix}/course_admin/issues${issueAid
-        ? `?q=is%3Aopen+assessment%3A${encodeURIComponent(issueAid)}`
-        : ''}"
-      aria-label="${count} open ${count === 1 ? 'issue' : 'issues'}"
-    >
-      ${count}
-    </a>
-  `;
+      <a
+        class="badge rounded-pill text-bg-danger ${className ?? ''}"
+        href="${urlPrefix}/course_admin/issues${issueAid
+          ? `?q=is%3Aopen+assessment%3A${encodeURIComponent(issueAid)}`
+          : ''}"
+        aria-label="${count} open ${count === 1 ? 'issue' : 'issues'}"
+      >
+        ${count}
+      </a>
+    `;
   }
 
   return html`

@@ -154,7 +154,11 @@ export function InstructorAssessments({
                                 ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                                 : ''}
                             </a>
-                            ${IssueBadge({ count: row.open_issue_count, urlPrefix, issueAid: row.tid })}
+                            ${IssueBadge({
+                              count: row.open_issue_count,
+                              urlPrefix,
+                              issueAid: row.tid,
+                            })}
                           </td>
 
                           <td class="align-middle">${row.tid}</td>
