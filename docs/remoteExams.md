@@ -21,7 +21,7 @@ If you are using PrairieTest for remote proctoring then the access control shoul
 
 Some notes about this configuration:
 
-- The `examUuid` parameter should be copied from PrairieTest for the specific exam. Each exam has its own unique `examUuid` -- it's vital that the correct value is used for each separate exam.
+- The `examUuid` parameter should be copied from PrairieTest for the specific exam. Each exam has its own unique `examUuid`, and it's vital that the correct value is used for each separate exam.
 - Date restrictions and time limits must not be set for the exam. All limits will be automatically enforced by PrairieTest on a per-student basis, taking into account conflict exams and disability accommodations.
 
 ## Testing center exams with a few students outside the testing center
