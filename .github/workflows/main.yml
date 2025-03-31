@@ -133,7 +133,17 @@ jobs:
           tags: prairielearn/grader-r:${{ env.COMMIT_SHA }}
 
   build-core-images:
+    uses: ./.github/workflows/image-builder.yml
+    with:
+      directory: images
+      image-prefix: prairielearn/
+      base-images: "['plbase']"
+      images: "['prairielearn']"
+      upload-artifacts-for: "['prairielearn-ubuntu-24.04']"
+    secrets: inherit
+  test-prairielearn:
     runs-on: ubuntu-latest
+    needs: [build-core-images]
 
     env:
       # Secrets aren't accessible for PRs coming from forks, and we also can't
@@ -142,11 +152,8 @@ jobs:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          # We need the whole history so we can diff against `master` to determine
-          # what images need to be built.
-          fetch-depth: 0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to DockerHub
         if: ${{ env.CAN_PUSH_IMAGE == 'true'}}
@@ -155,42 +162,26 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Check whether images/plbase was modified
-        run: scripts/check_path_modified.sh images/plbase images_plbase_modified
-      - name: Build and push prairielearn/plbase
-        if: ${{ env.images_plbase_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+      - name: Download prairielearn image
+        uses: actions/download-artifact@v4
         with:
-          context: images/plbase
-          platforms: linux/amd64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          no-cache: true
-          tags: prairielearn/plbase:${{ env.COMMIT_SHA }}
-
-      # This ensures that the `prairielearn/prairielearn` image is built with the
-      # correct version of `prairielearn/plbase`. We'll only tag this as `latest`
-      # if we actually built it; if it wasn't built, we don't tag it, so Docker will
-      # correctly fall back to pulling the `latest` version from the registry.
-      - name: Tag plbase image as latest
-        if: ${{ env.images_plbase_modified }}
-        run: docker tag prairielearn/plbase:${{ env.COMMIT_SHA }} prairielearn/plbase:latest
-
-      - name: Build the prairielearn docker image
-        run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} .
+          name: 'prairielearn-ubuntu-24.04-tarball'
+          path: ${{ runner.temp }}
 
       # This ensures that the `prairielearn/executor` image is built with the
       # correct version of `prairielearn/prairielearn`.
       - name: Tag prairielearn image as latest
-        run: docker tag prairielearn/prairielearn:${{ env.COMMIT_SHA }} prairielearn/prairielearn:latest
+        run: |
+          docker load -i ${{ runner.temp }}/prairielearn-ubuntu-24.04-tarball.tar | sed -n 's/Loaded image: //p' | while read -r tagged_image; do
+            image="${tagged_image%:*}"
+            docker tag "$tagged_image" "$image:latest"
+          done
 
       - name: Build executor image
         run: docker build ./images/executor --tag prairielearn/executor:${{ env.COMMIT_SHA }}
       - name: Tag executor image as latest
         run: docker tag prairielearn/executor:${{ env.COMMIT_SHA }} prairielearn/executor:latest
 
-      - name: Push prairielearn image to Docker registry
-        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        run: docker push prairielearn/prairielearn:${{ env.COMMIT_SHA }}
       - name: Push executor image to Docker registry
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         run: docker push prairielearn/executor:${{ env.COMMIT_SHA }}
