@@ -7,7 +7,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
-import { authzHasCoursePreviewOrInstanceView } from '../../middlewares/authzHasCoursePreviewOrInstanceView.js';
 
 import {
   type WorkspaceLogRow,
