@@ -7,7 +7,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
-import { authzHasCoursePreviewOrInstanceView } from '../../middlewares/authzHasCoursePreviewOrInstanceView.js';
 
 import {
   type WorkspaceLogRow,
@@ -116,7 +115,7 @@ async function loadLogsForWorkspaceVersion(
 // if the instructor has access to the workspace (i.e., course instance student
 // data view permission, or access to a workspace owned by the user); that's
 // already been checked by the workspace authorization middleware.
-router.use(authzHasCoursePreviewOrInstanceView);
+router.use((await import('../../middlewares/authzHasCoursePreviewOrInstanceView.js')).default);
 
 // Overview of workspace logs, including all state transitions and links to
 // logs for individual versions.
