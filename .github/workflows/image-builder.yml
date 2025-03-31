@@ -64,7 +64,7 @@ jobs:
           # These need to be os-specific caches (https://github.com/docker/buildx/discussions/1382)
           cache-from: type=registry,ref=${{ inputs.image-prefix }}-${{ matrix.image }}:buildcache-${{ runner.arch }}
           # Only export the cache on the default branch
-          cache-to: ${{ (github.ref_name == github.event.repository.default_branch || true) && format('type=registry,ref={0}-{1}:buildcache-{2},mode=max', inputs.image-prefix, matrix.image, runner.arch) || '' }}
+          cache-to: ${{ github.ref_name == github.event.repository.default_branch && format('type=registry,ref={0}-{1}:buildcache-{2},mode=max', inputs.image-prefix, matrix.image, runner.arch) || '' }}
 
       # Export the base image as a tarball (See https://docs.docker.com/build/ci/github-actions/share-image-jobs/)
       - name: Export tarball
@@ -167,7 +167,7 @@ jobs:
           # These need to be os-specific caches (https://github.com/docker/buildx/discussions/1382)
           cache-from: type=registry,ref=${{ inputs.image-prefix }}-${{ matrix.image }}:buildcache-${{ runner.arch }}
           # Only export the cache on the default branch
-          cache-to: ${{ (github.ref_name == github.event.repository.default_branch || true) && format('type=registry,ref={0}-{1}:buildcache-{2},mode=max', inputs.image-prefix, matrix.image, runner.arch) || '' }}
+          cache-to: ${{ github.ref_name == github.event.repository.default_branch && format('type=registry,ref={0}-{1}:buildcache-{2},mode=max', inputs.image-prefix, matrix.image, runner.arch) || '' }}
 
       - name: Export metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
