@@ -2026,7 +2026,7 @@ Common reasons that trigger the display of the answer panel are:
 
 ### `pl-external-grader-results` element
 
-This element displays results from externally-graded questions.
+Displays results from externally-graded questions.
 
 #### Sample element
 

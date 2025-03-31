@@ -538,7 +538,7 @@ To automatically fix lint and formatting errors, run `make format`.
 
 ![Question lifecycle flowchart](./question-flow.d2)
 
-## JavaScript's equality operator
+## JavaScript equality operator
 
 You should almost always use the `===` operator for comparisons; this is enforced with an ESLint rule.
 
