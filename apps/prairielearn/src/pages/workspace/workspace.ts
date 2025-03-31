@@ -37,7 +37,6 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     let navTitle: string, pageTitle: string | undefined, pageNote: string | undefined;
-
     if (res.locals.assessment == null) {
       // instructor preview
       pageTitle = 'Workspace Preview';
