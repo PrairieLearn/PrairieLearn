@@ -249,7 +249,7 @@ jobs:
           TAG: ${{ env.COMMIT_SHA }}
           PLATFORM: ${{ matrix.os == 'ubuntu-24.04' && 'linux/amd64' || 'linux/arm64' }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          METADATA_DIR: /tmp/workspace-images
+          METADATA_DIR: ${{ runner.temp }}/workspace-images
 
       - name: Upload metadata
         uses: actions/upload-artifact@v4
