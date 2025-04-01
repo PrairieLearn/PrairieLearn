@@ -1,11 +1,11 @@
-import { html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type Assessment, type AssessmentSet, type AssessmentModule } from '../../lib/db-types.js';
+import { type Assessment, type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 
 export function InstructorAssessmentSettings({
   resLocals,

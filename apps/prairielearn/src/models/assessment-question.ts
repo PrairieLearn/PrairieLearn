@@ -4,13 +4,13 @@ import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 import {
-  TopicSchema,
   AlternativeGroupSchema,
   AssessmentQuestionSchema,
   AssessmentsFormatForQuestionSchema,
   QuestionSchema,
-  ZoneSchema,
   TagSchema,
+  TopicSchema,
+  ZoneSchema,
 } from '../lib/db-types.js';
 
 export async function selectAssessmentQuestions(params: {

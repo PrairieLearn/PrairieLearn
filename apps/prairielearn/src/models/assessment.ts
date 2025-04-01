@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { queryRow, loadSqlEquiv } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { type Assessment, AssessmentSchema } from '../lib/db-types.js';
 
