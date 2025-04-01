@@ -951,15 +951,22 @@ def generate(data):
 | `correct-answer`          | string                  | See description | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                          |
 | `label`                   | text                    | —               | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                         |
 | `suffix`                  | text                    | —               | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                         |
-| `display`                 | `"block"` or `"inline"` | `"inline"`      | How to display the input field.                                                                                                                                           |
-| `remove-leading-trailing` | boolean                 | false           | Whether or not to remove leading and trailing blank spaces from the input string.                                                                                         |
+| `display`                 | `"block"` or `"inline"` | `"inline"`      | How to display the input field. Default is `"inline"` if `multiline` is enabled.                                                                                          |
+| `remove-leading-trailing` | boolean                 | false           | Whether or not to remove leading and trailing blank spaces from the input string. Default is `true` if `multiline` is enabled.                                            |
 | `remove-spaces`           | boolean                 | false           | Whether or not to remove blank spaces from the input string.                                                                                                              |
 | `allow-blank`             | boolean                 | false           | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                          |
 | `ignore-case`             | boolean                 | false           | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").                                                                                                     |
 | `normalize-to-ascii`      | boolean                 | false           | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading. |
 | `placeholder`             | text                    | —               | Hint displayed inside the input box describing the expected type of input.                                                                                                |
-| `size`                    | integer                 | 35              | Size of the input box.                                                                                                                                                    |
+| `size`                    | integer                 | 35              | Width of the input box.                                                                                                                                                   |
 | `show-help-text`          | boolean                 | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                      |
+| `multiline`               | boolean                 | false           | Whether or not not to allow for multiline input using a `textarea` display.                                                                                               |
+
+#### Using multiline inputs
+
+Note that, in multiline inputs, it can be hard to distinguish between inputs with or without a terminating line break (i.e., an additional "Enter" at the end of the input). Because of that, you are strongly encouraged to leave the default setting of `remove-leading-trailing="true"` unchanged when using multiline inputs.
+
+Additionally, multiline inputs will have any CR LF (`"\r\n"` in Python) line breaks normalized to a single LF (a single `"\n"` in Python). Note that this is different from the behavior of a standard `textarea` HTML element.
 
 #### Example implementations
 
