@@ -152,7 +152,7 @@ jobs:
           docker image ls -a
 
       - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }} platform-specific image
-        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
+        if: ${{ false && steps.check-modified.outputs.was-modified == 'true' }}
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.image == 'prairielearn' && '.' || format('{0}/{1}', inputs.directory, matrix.image) }}
@@ -162,13 +162,13 @@ jobs:
           tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
 
       - name: Export metadata
-        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
+        if: ${{ false && steps.check-modified.outputs.was-modified == 'true' }}
         run: |
           mkdir -p ${{ runner.temp }}/image-metadata/${{ matrix.image }}
           touch ${{ runner.temp }}/image-metadata/${{ matrix.image }}/${{ runner.arch }}
 
       - name: Upload metadata
-        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
+        if: ${{ false && steps.check-modified.outputs.was-modified == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: image-metadata-${{ inputs.directory}}-${{ matrix.image }}-${{ matrix.os }}
@@ -176,6 +176,11 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+      - name: Retag prairielearn image
+        if: ${{ false && steps.check-modified.outputs.was-modified == 'true' }}
+        shell: bash
+        run: |
+          docker tag "prairielearn" "prairielearn:latest"
       - name: Test prairielearn image
         if: ${{ format('{0}-{1}', matrix.image, runner.arch) == 'prairielearn-X64' }}
         uses: "./.github/actions/test-prairielearn"
