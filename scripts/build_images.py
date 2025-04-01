@@ -100,68 +100,76 @@ if uses_base_image:
     )
 
 
-for image in images.split(","):
-    # Make temporary files for the metadata.
-    with tempfile.NamedTemporaryFile(delete=False) as metadata_file:
-        pass
+try:
+    for image in all_images:
+        # Make temporary files for the metadata.
+        with tempfile.NamedTemporaryFile(delete=False) as metadata_file:
+            pass
 
-    is_base_image = image in base_image_list
+        is_base_image = image in base_image_list
 
-    args = [
-        "docker",
-        "buildx",
-        "build",
-        "--platform",
-        platform,
-        "--no-cache",
-        "--tag",
-        f"{image}:{tag}",
-        "--progress",
-        "plain",
-        "--metadata-file",
-        metadata_file.name,
-        # We have some images that rely on other images. They're configured to
-        # use this arg to determine which base image tag to use.
-        "--build-arg",
-        f"BASE_IMAGE_TAG={tag}",
-        "--build-arg",
-        "BASE_IMAGE_REGISTRY=localhost:5000",
-    ]
+        args = [
+            "docker",
+            "buildx",
+            "build",
+            "--platform",
+            platform,
+            "--no-cache",
+            "--tag",
+            f"{image}:{tag}",
+            "--progress",
+            "plain",
+            "--metadata-file",
+            metadata_file.name,
+            # We have some images that rely on other images. They're configured to
+            # use this arg to determine which base image tag to use.
+            "--build-arg",
+            f"BASE_IMAGE_TAG={tag}",
+            "--build-arg",
+            "BASE_IMAGE_REGISTRY=localhost:5000",
+        ]
 
-    if is_base_image:
-        args.extend(["--load"])
-    if should_push:
-        args.extend(["--push"])
+        if is_base_image:
+            args.extend(["--load"])
+        if should_push:
+            args.extend(["--push"])
 
-    args.extend([get_image_path(image)])
+        args.extend([get_image_path(image)])
 
-    # TODO: conditional building if images have changed.
-    print(f"Building image {image} for platform {platform}")
-    print_and_run_command(args)
+        # TODO: conditional building if images have changed.
+        print(f"Building image {image} for platform {platform}")
+        print_and_run_command(args)
 
-    if is_base_image:
-        local_registry_image = f"localhost:5000/{image}:{tag}"
-        print(f"Tagging base image {image} for local registry")
-        subprocess.run(
-            ["docker", "tag", f"{image}:{tag}", local_registry_image], check=True
-        )
+        if is_base_image:
+            local_registry_image = f"localhost:5000/{image}:{tag}"
+            print(f"Tagging base image {image} for local registry")
+            subprocess.run(
+                ["docker", "tag", f"{image}:{tag}", local_registry_image], check=True
+            )
 
-        print(f"Pushing base image {image} to local registry")
-        subprocess.run(["docker", "push", local_registry_image], check=True)
+            print(f"Pushing base image {image} to local registry")
+            subprocess.run(["docker", "push", local_registry_image], check=True)
 
-    with open(metadata_file.name) as f:
-        metadata = f.read()
+        with open(metadata_file.name) as f:
+            metadata = f.read()
 
-    print(f"Metadata: {metadata.strip()}")
+        print(f"Metadata: {metadata.strip()}")
 
-    # Write metadata to the metadata directory
-    if metadata_dir:
-        build_ref = json.loads(metadata)["buildx.build.ref"]
+        # Write metadata to the metadata directory
+        if metadata_dir:
+            build_ref = json.loads(metadata)["buildx.build.ref"]
 
-        # We need a unique name for the metadata file. We'll use the part of the
-        # image name after the last slash, and a hash of the build ref.
-        name_without_scope = image.split("/")[-1]
-        hashed_build_ref = hashlib.sha256(build_ref.encode()).hexdigest()
-        metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
-        with open(os.path.join(metadata_dir, metadata_filename), "w") as f:
-            f.write(metadata)
+            # We need a unique name for the metadata file. We'll use the part of the
+            # image name after the last slash, and a hash of the build ref.
+            name_without_scope = image.split("/")[-1]
+            hashed_build_ref = hashlib.sha256(build_ref.encode()).hexdigest()
+            metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
+            with open(os.path.join(metadata_dir, metadata_filename), "w") as f:
+                f.write(metadata)
+
+finally:
+    # Shut down the local registry if it was started.
+    if uses_base_image:
+        print("Stopping local Docker registry.")
+        subprocess.run(["docker", "stop", REGISTRY_NAME], check=True)
+        subprocess.run(["docker", "rm", REGISTRY_NAME], check=True)
