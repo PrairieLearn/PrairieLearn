@@ -62,7 +62,7 @@ for image in images.split(","):
             # TODO: make configurable?
             # "--no-cache",
             "--tag",
-            f"{image}:${tag}",
+            f"{image}:{tag}",
             "--progress",
             "plain",
             "--metadata-file",
