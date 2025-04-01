@@ -180,7 +180,8 @@ jobs:
       - name: Retag as latest
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
-          docker tag "${{ inputs.image-prefix }}${{ matrix.image }}" "${{ inputs.image-prefix }}${{ matrix.image }}:latest"
+          docker image ls -a
+          docker tag "${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}" "${{ inputs.image-prefix }}${{ matrix.image }}:latest"
 
       # We need to run test suites in the context of the build image, so we define them as composite actions.
       - name: Test PrairieLearn image
