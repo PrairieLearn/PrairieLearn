@@ -112,6 +112,6 @@ export function makeWorkspaceProxyMiddleware() {
     },
   };
   return createProxyMiddleware((pathname) => {
-    return !!pathname.match('/pl/workspace/([0-9])+/container/');
+    return /^\/pl\/workspace\/\d+\/container\//.test(pathname);
   }, workspaceProxyOptions);
 }
