@@ -13,11 +13,11 @@ import {
 } from '../models/course-permissions.js';
 
 import {
-  setUser,
-  parseInstanceQuestionId,
-  saveOrGrade,
   type User,
   assertAlert,
+  parseInstanceQuestionId,
+  saveOrGrade,
+  setUser,
 } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 

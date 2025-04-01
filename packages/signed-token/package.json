@@ -1,13 +1,13 @@
 {
   "name": "@prairielearn/signed-token",
-  "version": "2.0.9",
+  "version": "2.0.10",
   "type": "module",
-  "main": "dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/signed-token"
   },
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput"
@@ -20,7 +20,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/debug": "^4.1.12",
-    "@types/node": "^20.17.23",
+    "@types/node": "^20.17.28",
     "typescript": "^5.8.2"
   }
 }

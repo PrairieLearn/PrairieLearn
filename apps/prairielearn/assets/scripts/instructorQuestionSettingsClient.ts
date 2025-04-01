@@ -6,7 +6,7 @@ import { html } from '@prairielearn/html';
 import './lib/changeIdButton.js';
 import { TagBadge } from '../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../src/components/TopicBadge.html.js';
-import { type Topic, type Tag } from '../../src/lib/db-types.js';
+import { type Tag, type Topic } from '../../src/lib/db-types.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';

@@ -13,10 +13,10 @@ import { selectOptionalGradingJobById } from '../models/grading-job.js';
 
 import { config } from './config.js';
 import {
-  IdSchema,
   CourseSchema,
-  QuestionSchema,
   GradingJobSchema,
+  IdSchema,
+  QuestionSchema,
   SubmissionSchema,
   VariantSchema,
 } from './db-types.js';

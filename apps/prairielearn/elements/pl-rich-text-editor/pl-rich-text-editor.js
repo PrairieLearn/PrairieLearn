@@ -103,6 +103,11 @@
       },
     };
 
+    // Set the bounds for UI elements (e.g., the tooltip for the formula editor)
+    // to the question container.
+    // https://quilljs.com/docs/configuration#bounds
+    options.bounds = document.getElementById(`rte-${uuid}`).closest('.question-container');
+
     let inputElement = $('#rte-input-' + uuid);
     let quill = new Quill('#rte-' + uuid, options);
     let marked = null;
