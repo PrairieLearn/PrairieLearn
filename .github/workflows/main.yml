@@ -213,7 +213,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm]
+        # Temporarily disabling ARM64 builds to speed up iteration.
+        # os: [ubuntu-24.04, ubuntu-24.04-arm]
+        os: [ubuntu-24.04]
 
     runs-on: ${{ matrix.os }}
 
@@ -245,7 +247,8 @@ jobs:
       - name: Build images
         run: python3 scripts/build_images.py
         env:
-          IMAGES: prairielearn/workspace-xtermjs
+          BASE_IMAGES: prairielearn/workspace-vscode-base
+          IMAGES: prairielearn/workspace-vscode-python
           TAG: ${{ env.COMMIT_SHA }}
           PLATFORM: ${{ matrix.os == 'ubuntu-24.04' && 'linux/amd64' || 'linux/arm64' }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
@@ -282,6 +285,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Download metadata
+        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         uses: actions/download-artifact@v4
         with:
           pattern: image-metadata-workspace-*-${{ env.COMMIT_SHA }}
@@ -289,6 +293,7 @@ jobs:
           merge-multiple: true
 
       - name: Combine images
+        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         run: python3 scripts/combine_multi_platform_images.py
         env:
           METADATA_DIR: ${{ runner.temp }}/workspace-image-metadata
