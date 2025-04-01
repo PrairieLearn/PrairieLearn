@@ -6,7 +6,7 @@ In the base `PrairieLearn` directory run:
 
     docker build -t prairielearn .
 
-If you are using an Apple silicon Mac (M-series chips, etc.) or another ARM-based machine, you will need to add `--platform linux/amd64` to the command, like `docker build --platform linux/amd64 ...`.
+If you are using an Apple Silicon Mac (M-series chips, etc.) or another ARM-based machine, you will need to add `--platform linux/amd64` to the command, like `docker build --platform linux/amd64 ...`.
 
 ## Running the container
 

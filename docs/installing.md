@@ -58,9 +58,9 @@ Once that message shows up, open a web browser and connect to [http://localhost:
 
 When you are finished with PrairieLearn, type Control-C on the terminal where you ran the server to stop it.
 
-### Running on Apple silicon and other ARM64 hardware
+### Running on Apple Silicon and other ARM64 hardware
 
-If you're using an Apple silicon Mac (M-series chips, etc.) or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
+If you're using an Apple Silicon Mac (M-series chips, etc.) or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
 
 ```console
 no matching manifest for linux/arm64/v8 in the manifest list entries
@@ -108,7 +108,7 @@ docker run -it --rm -p 3000:3000 \
 
 #### Troubleshooting the --add-host option and network timeouts
 
-If you are an advanced Docker user, or if your organization's network policies require it, then you might have previously adjusted the address pool used by Docker. If this conflicts with the Docker defaults, you might get a network timeout error when attempting to launch a workspace locally. In that case, you might need to adjust the IP address for the `--add-host=` option. You can find more technical details here: [PL issue #9805](https://github.com/PrairieLearn/PrairieLearn/issues/9805#issuecomment-2093299949), [moby/moby PR 29376](https://github.com/moby/moby/pull/29376), [docker/docs issue 8663](https://github.com/docker/docs/issues/8663).
+If you are an advanced Docker user, or if your organization's network policies require it, then you might have previously adjusted the address pool used by Docker. If this conflicts with the Docker defaults, you might get a network timeout error when attempting to launch a workspace locally. In that case, you might need to adjust the IP address for the `--add-host=` option. You can find more technical details here: [PL issue #9805](https://github.com/PrairieLearn/PrairieLearn/issues/9805#issuecomment-2093299949), [`moby/moby` PR 29376](https://github.com/moby/moby/pull/29376), [`docker/docs` issue 8663](https://github.com/docker/docs/issues/8663).
 
 If you are using macOS, then you may be able to remove the `--add-host` option entirely without any problems.
 

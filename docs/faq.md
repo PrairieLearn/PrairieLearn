@@ -1,6 +1,6 @@
 # FAQ (Frequently Asked Questions)
 
-Have a question or issue that wasn't listed here but you think it should be?
+Have a question or issue that wasn't listed here, but you think it should be?
 
 Consider **[adding the question or issue](https://github.com/PrairieLearn/PrairieLearn/edit/master/docs/faq.md)** to the FAQ.
 
@@ -39,7 +39,7 @@ Writing and maintaining a large pool of questions is a lot of work. There are ma
 
 1. Homework questions are always re-used semester-to-semester. It is assumed that solutions to these will be posted by students on the internet, so they are strictly for practice. Students do get credit for homeworks, but it assumed that any student who puts in the effort will get 100%.
 2. Some questions in the pool are [tagged](https://prairielearn.readthedocs.io/en/latest/question/#question-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in a testing center or similar environment.
-3. Every semester a small number of secret questions are written and some of the older secret questions are moved to homeworks. This keeps the secret pool reasonably fresh and grows the homework pool over time. It also ensures that homework and exam questions are truly comparable in topics and difficulty.
+3. Every semester a small number of secret questions are written, and some older secret questions are moved to homeworks. This keeps the secret pool reasonably fresh and grows the homework pool over time. It also ensures that homework and exam questions are truly comparable in topics and difficulty.
 4. For homeworks, the [`maxPoints`](https://prairielearn.readthedocs.io/en/latest/assessment/#question-specification) option is used so that students don't need to complete all homework questions to get 100% on the homework. This allows the homework to be quite long, and to be partially for credit and partially as a set of extra questions that students can practice.
 5. Homeworks can be accessed for 100% credit until the due date, for 80% credit for a week after that, and for 0% credit (but students can still practice the questions) for the rest of the semester.
 
@@ -67,9 +67,9 @@ The raw history of student answers can also be accessed in the "Data" column of 
 
 ## How do I give a student access to homeworks or an exam after the semester is over?
 
-You need to give the student access to both the course instance itself for the completed semester as well as the specific assessments within that course instance.
+You need to give the student access to both the course instance itself for the completed semester and the specific assessments within that course instance.
 
-For example, suppose Fall 2017 is the completed semester and it is now Spring 2018. We have one student (`student@example.com`) that needs to take the final exam from Fall 2017 in February 2018. We will extend the Fall 2017 course instance and final exam access to include February 2018, but only for `student@example.com`.
+For example, suppose Fall 2017 is the completed semester, and it is now Spring 2018. We have one student (`student@example.com`) that needs to take the final exam from Fall 2017 in February 2018. We will extend the Fall 2017 course instance and final exam access to include February 2018, but only for `student@example.com`.
 
 First, edit `pl-exp101/courseInstance/Fa17/infoCourseInstance.json` to add a section for `student@example.com`:
 
@@ -140,7 +140,7 @@ for more details.
 
 ## How can we provide a cheat sheet for exams held in a testing center?
 
-To make a cheatsheet available to students, place the cheatsheet inside of either:
+To make a cheatsheet available to students, place the cheatsheet inside either:
 
 - `clientFilesCourse` folder
   - Good if the cheatsheet will be used on other exams.
@@ -196,7 +196,7 @@ and displayed as an error.
 Error: invalid QID: "question_name"
 ```
 
-To resolve this issue, first check the name of the folder inside of `questions/`
+To resolve this issue, first check the name of the folder inside `questions/`
 and, then, check the question name listed in `infoAssessments.json`. Either
 rename the folder or change the name listed in assessments to be the same.
 
@@ -275,7 +275,7 @@ See [UUIDs in JSON files](uuid.md) for more details.
 
 Dollar signs by default denote either **inline** (`$ x $`) or **display mode** (`$$ x $$`) environments.
 
-To escape either math environment, consider using PrairieLearn's markdown tag and inline code syntax.
+To escape either math environment, consider using PrairieLearn's `markdown` tag and inline code syntax.
 
 ```html
 <markdown>
@@ -298,7 +298,7 @@ how `markdown` is implemented in PrairieLearn.
 
 ## What steps do I have to take to access the parameter object in an external grader?
 
-By default, the external grader will receive a JSON dump of all values inside of the `data` object called
+By default, the external grader will receive a JSON dump of all values inside the `data` object called
 `data.json`. This file is located at:
 
 ```sh
@@ -330,7 +330,7 @@ To address this, there are a variety of different ways. In particular, we have:
 - Stop the process in terminal with ++ctrl+c++ and, then,
   close the terminal application.
 
-## Why do special characters like (<=) break my question display?
+## Why do special characters like `<` and `>` break my question display?
 
 The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more [here](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements.md#pl-code-element). Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
 
@@ -375,13 +375,13 @@ For more information on this granular technique, see [the documentation for pl-h
 
 ## I forgot to set `"credit":100` and now my students all have 0%. How do I fix this?
 
-PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](accessControl/index.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
+PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points, but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](accessControl/index.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
 
 To fix student scores without requiring them to answer another question you can:
 
 1. Download the `<Assessment-Name>_instances.csv` file from the "Downloads" tab.
-2. Edit the "Score (%)" column to reflect the new percentage scores. This would normally be "Points / Max points \* 100".
-3. Rename the "Score (%)" column to "score_perc" and delete all columns except "uid", "instance", and "score_perc".
+2. Edit the `"Score (%)"` column to reflect the new percentage scores. This would normally be "Points / Max points \* 100".
+3. Rename the `"Score (%)"` column to `"score_perc"` and delete all columns except `"uid"`, `"instance"`, and `"score_perc"`.
 4. Upload the new scores with the "Upload new total scores" button on the "Uploads" tab.
 
 Changing total scores via CSV download/upload should only be done after the assessment is over and students are not working on it anymore, to avoid any risk of overwriting scores while students are answering more questions.
@@ -390,7 +390,7 @@ Changing total scores via CSV download/upload should only be done after the asse
 
 Some changes in question files do not take effect for students that have already started working on a variant. These include, but are not limited to: changes in the value of correct answers, added or removed graded elements, changes in element type (e.g., replacing string input with integer input), changes in the `answers-name` option for graded elements, some other changes in element settings (e.g., multiple choice answers), changes in file names for gradable files, or updates to the `generate` function in `server.py`.
 
-You are highly encouraged to avoid changes such as the ones above to questions where students have already started working through the question. However, if such a change is necessary and you expect students to have their variants reset after such a change, you may do so in one of two ways:
+You are highly encouraged to avoid changes such as the ones above to questions where students have already started working through the question. However, if such a change is necessary, and you expect students to have their variants reset after such a change, you may do so in one of two ways:
 
 - To reset all variants for a particular assessment question, go to the assessment page, click "Actions" on the relevant question, then "Reset question variants". This will invalidate _every_ variant that has been created so far and that has not yet been completed, and students will be given a new one the next time they load the question.
 
@@ -400,7 +400,7 @@ Neither of these options will affect the score a student may already have obtain
 
 For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](regrading.md).
 
-## When I open some of the CSV downloads, some of the data is in the wrong columns
+## When I open some CSV downloads, some data is in the wrong columns
 
 When loading some assessment download files, such as `*_all_submissions.csv`, in Excel, you may notice data appearing in the wrong column or wrapping incorrectly. This typically happens because Excel has a maximum cell size of 32,767 characters and does not always correctly parse complex CSV data, particularly when fields contain JSON or special characters. While the `Params` column is the most likely culprit, other columns such as true answers, submitted answers, or feedback may also be affected. To work with these files, you can use Pandas in Python to clean or restructure the data for easier processing in Excel. For example:
 
