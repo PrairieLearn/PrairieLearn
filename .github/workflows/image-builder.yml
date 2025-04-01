@@ -238,5 +238,5 @@ jobs:
               $latest_tag \
               -t $image:latest \
               -t "${{ inputs.image-prefix }}$image:${{ github.sha }}" \
-            "${{ inputs.image-prefix }}$image:${{ github.sha }}-X86" "${{ inputs.image-prefix }}$image:${{ github.sha }}-ARM64"
+            "${{ inputs.image-prefix }}$image:${{ github.sha }}-X64" "${{ inputs.image-prefix }}$image:${{ github.sha }}-ARM64"
           done
