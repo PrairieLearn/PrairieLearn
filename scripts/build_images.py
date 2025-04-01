@@ -44,12 +44,17 @@ def get_image_path(image: str) -> str:
     raise ValueError(f"Cannot build unknown image: {image}")
 
 
-def print_command(command: list[str]) -> None:
+def print_and_run_command(command: list[str]) -> None:
     is_actions = os.environ.get("GITHUB_ACTIONS")
     if is_actions:
         print(f"[command]{' '.join(command)}")
     else:
         print(" ".join(command))
+
+    # Flush `stdout` before running to ensure proper sequencing of output.
+    sys.stdout.flush()
+
+    subprocess.run(command, check=True)
 
 
 for image in images.split(","):
@@ -89,13 +94,11 @@ for image in images.split(","):
 
     # TODO: conditional building if images have changed.
     print(f"Building image {image} for platform {platform}")
-    print_command(args)
-    subprocess.run(args, check=True)
+    print_and_run_command(args)
 
     print(f"Tagging image {image} with tag {tag}")
     tag_args = ["docker", "image", "tag", f"{image}", f"{image}:{tag}"]
-    print_command(tag_args)
-    subprocess.run(tag_args, check=True)
+    print_and_run_command(tag_args)
 
     with open(metadata_file.name) as f:
         metadata = f.read()

@@ -16,12 +16,17 @@ if not tag:
     sys.exit(1)
 
 
-def print_command(command: list[str]) -> None:
+def print_and_run_command(command: list[str]) -> None:
     is_actions = os.environ.get("GITHUB_ACTIONS")
     if is_actions:
         print(f"[command]{' '.join(command)}")
     else:
         print(" ".join(command))
+
+    # Flush `stdout` before running to ensure proper sequencing of output.
+    sys.stdout.flush()
+
+    subprocess.run(command, check=True)
 
 
 # Read all manifests, collect the digests, and group them by image name.
@@ -46,5 +51,4 @@ for image_name, digests in digests_by_image.items():
         args.extend(("--append", f"{image_name}@{digest}"))
 
     print(f"Creating image {image_name} with digests: {digests}")
-    print_command(args)
-    subprocess.run(args, check=True)
+    print_and_run_command(args)
