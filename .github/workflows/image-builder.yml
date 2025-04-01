@@ -26,7 +26,7 @@ on:
 
 jobs:
   build-base-images:
-    if: ${{ false && inputs.base-images != '[]' }}
+    if: ${{ inputs.base-images != '[]' }}
     strategy:
       max-parallel: 5
       matrix:
@@ -152,7 +152,7 @@ jobs:
           docker image ls -a
 
       - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }} platform-specific image
-        if: ${{ false && steps.check-modified.outputs.was-modified == 'true' }}
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.image == 'prairielearn' && '.' || format('{0}/{1}', inputs.directory, matrix.image) }}
@@ -162,13 +162,13 @@ jobs:
           tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
 
       - name: Export metadata
-        if: ${{ false && steps.check-modified.outputs.was-modified == 'true' }}
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
           mkdir -p ${{ runner.temp }}/image-metadata/${{ matrix.image }}
           touch ${{ runner.temp }}/image-metadata/${{ matrix.image }}/${{ runner.arch }}
 
       - name: Upload metadata
-        if: ${{ false && steps.check-modified.outputs.was-modified == 'true' }}
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: image-metadata-${{ inputs.directory}}-${{ matrix.image }}-${{ matrix.os }}
@@ -177,8 +177,8 @@ jobs:
           retention-days: 1
 
       # We want to retag the image as `latest` -- so that we can run any potential test suites.
-      - name: Retag image
-        if: ${{ false && steps.check-modified.outputs.was-modified == 'true' }}
+      - name: Retag as latest
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
           docker tag "${{ inputs.image-prefix }}${{ matrix.image }}" "${{ inputs.image-prefix }}${{ matrix.image }}:latest"
 

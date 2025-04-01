@@ -19,6 +19,10 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Debug
+      shell: bash
+      run: |
+        docker image ls -a
     - name: Build executor image
       shell: bash
       run: docker build ./images/executor --tag prairielearn/executor:${{ inputs.commit-sha }}
