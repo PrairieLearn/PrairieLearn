@@ -260,6 +260,8 @@ jobs:
           overwrite: true
 
   combine-multi-platform-workspace-images:
+    needs: [build-multi-platform-workspace-images]
+
     runs-on: ubuntu-22.04
 
     env:

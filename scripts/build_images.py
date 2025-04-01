@@ -58,7 +58,7 @@ for image in images.split(","):
             "build",
             "--platform",
             platform,
-            # "--push" if should_push else "",
+            "--push" if should_push else "",
             # TODO: make configurable?
             # "--no-cache",
             "--tag",
