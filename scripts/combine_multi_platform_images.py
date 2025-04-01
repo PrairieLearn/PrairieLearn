@@ -34,15 +34,9 @@ for file in os.listdir(metadata_dir):
 
         metadata_json = json.loads(metadata)
         digest = metadata_json["containerimage.digest"]
+        image_name = metadata_json["image.name"]
 
-        # The images will have platform-specific tags. We need to strip off the
-        # platform component.
-        full_image_name = metadata_json["image.name"]
-        image_name, image_tag = full_image_name.split(":")
-        image_tag_without_platform = image_tag.split("-")[0]
-        image_name_without_platform = f"{image_name}:{image_tag_without_platform}"
-
-        digests_by_image[image_name_without_platform].append(digest)
+        digests_by_image[image_name].append(digest)
 
 # For each image, make a new image from the digests.
 for image_name, digests in digests_by_image.items():
