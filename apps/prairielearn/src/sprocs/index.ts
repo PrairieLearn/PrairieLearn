@@ -78,10 +78,8 @@ export async function init() {
       'instance_questions_calculate_stats.sql',
       'assessment_instances_points.sql',
       'sync_course_instances.sql',
-      'sync_topics.sql',
       'sync_questions.sql',
       'sync_news_items.sql',
-      'sync_course_tags.sql',
       'sync_question_tags.sql',
       'sync_question_authors.sql',
       'sync_assessment_sets.sql',
@@ -89,7 +87,6 @@ export async function init() {
       'group_info.sql',
       'groups_uid_list.sql',
       'workspace_loads_current.sql',
-      'sync_assessment_modules.sql',
     ],
     async (filename) => {
       logger.verbose('Loading ' + filename);

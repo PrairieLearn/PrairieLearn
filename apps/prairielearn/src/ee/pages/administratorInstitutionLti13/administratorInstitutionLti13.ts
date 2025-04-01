@@ -9,12 +9,12 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
+import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { getInstitution } from '../../lib/institution.js';
 
 import { AdministratorInstitutionLti13 } from './administratorInstitutionLti13.html.js';
-import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
+import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });

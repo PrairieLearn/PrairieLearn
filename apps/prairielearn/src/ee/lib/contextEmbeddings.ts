@@ -2,15 +2,15 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 import klaw from 'klaw';
-import { OpenAI } from 'openai';
+import { type OpenAI } from 'openai';
 
-import { loadSqlEquiv, queryRows, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
-import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
+import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
-import { DocumentChunk, buildContextForElementDocs } from './context-parsers/documentation.js';
+import { type DocumentChunk, buildContextForElementDocs } from './context-parsers/documentation.js';
 import { buildContextForQuestion } from './context-parsers/template-questions.js';
 
 const sql = loadSqlEquiv(import.meta.url);

@@ -1,4 +1,4 @@
-import { HtmlValue, html } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 export function QuestionNavSideGroup({
   urlPrefix,
@@ -86,13 +86,13 @@ export function QuestionNavSideButton({
       <button
         id="${buttonId}"
         class="btn btn-secondary mb-3 pl-sequence-locked"
-        data-toggle="popover"
-        data-container="body"
-        data-html="true"
-        data-content="${disabledExplanation}"
+        data-bs-toggle="popover"
+        data-bs-container="body"
+        data-bs-html="true"
+        data-bs-content="${disabledExplanation}"
       >
         ${buttonLabel}
-        <i class="fas fa-lock ml-1" aria-label="Locked"></i>
+        <i class="fas fa-lock ms-1" aria-label="Locked"></i>
       </button>
     `;
   }

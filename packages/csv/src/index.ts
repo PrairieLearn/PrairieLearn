@@ -1,6 +1,6 @@
-import { stringify, Stringifier, Options as StringifierOptions } from 'csv-stringify';
+import { Stringifier, type Options as StringifierOptions, stringify } from 'csv-stringify';
 import multipipe from 'multipipe';
-import { transform, Handler as TransformHandler } from 'stream-transform';
+import { type Handler as TransformHandler, transform } from 'stream-transform';
 
 export { stringify, Stringifier };
 

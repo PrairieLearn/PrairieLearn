@@ -3,29 +3,29 @@ import { setTimeout as sleep } from 'timers/promises';
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import type { Request } from 'express';
 import _ from 'lodash';
-import fetch, { RequestInfo, RequestInit } from 'node-fetch';
-import { Issuer, TokenSet } from 'openid-client';
+import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
+import { Issuer, type TokenSet } from 'openid-client';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
   loadSqlEquiv,
+  queryAsync,
   queryRow,
   queryRows,
-  queryAsync,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import {
   AssessmentInstanceSchema,
-  DateFromISOString,
-  Lti13InstanceSchema,
-  Lti13CourseInstanceSchema,
   AssessmentSchema,
+  DateFromISOString,
+  Lti13CourseInstanceSchema,
+  Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { ServerJob } from '../../lib/server-jobs.js';
+import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';
@@ -140,6 +140,8 @@ export const Lti13ClaimSchema = z.object({
 });
 export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
+export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
+
 export class Lti13Claim {
   private claims: Lti13ClaimType;
   private req: Request;
@@ -215,11 +217,8 @@ export class Lti13Claim {
   /**
    * Return if user claim has roles for Instructor. Can toggle if a TA is considered an
    * instructor or not.
-   *
-   * @param {boolean} taIsInstructor [false]
-   * @returns boolean
    */
-  isRoleInstructor(taIsInstructor = false) {
+  isRoleInstructor(): boolean {
     this.assertValid();
     /*
      TA roles from Canvas development system
@@ -229,15 +228,32 @@ export class Lti13Claim {
       'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
       'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
       'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
+     ]
+    Student roles
+    [
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner',
+      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
+    ]
+    Designer roles
+    [
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
+      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
     ]
     */
 
     let role_instructor = this.roles.some((val: string) =>
-      ['Instructor', 'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'].includes(val),
+      [
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
+      ].includes(val),
     );
 
+    // TA roles may also have Instructor roles, so check this next. We don't
+    // currently consider TAs to be instructors.
     if (
-      !taIsInstructor &&
       this.roles.includes(
         'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
       )
@@ -307,10 +323,31 @@ export async function getAccessToken(lti13_instance_id: string) {
   const issuer = new Issuer(lti13_instance.issuer_params);
   const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
 
-  tokenSet = await client.grant({
-    grant_type: 'client_credentials',
-    scope: TOKEN_SCOPES.join(' '),
-  });
+  tokenSet = await client.grant(
+    {
+      grant_type: 'client_credentials',
+      scope: TOKEN_SCOPES.join(' '),
+    },
+    {
+      clientAssertionPayload: {
+        // Canvas requires the `aud` claim the be (or contain) the token endpoint:
+        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/client_credentials_provider.rb#L26-L29
+        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/asymmetric_client_credentials_provider.rb#L24
+        //
+        // From what we can tell, the OIDC spec requires this as well, see "private key jwt"
+        // here: https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.9
+        //
+        // "The Audience SHOULD be the URL of the Authorization Server's Token Endpoint."
+        //
+        // However, `openid-client` changed their behavior in the following commit:
+        // https://github.com/panva/openid-client/commit/0b05217e7f283b75fd93c27c0f8c647f37501a33
+        //
+        // There wasn't a justification provided and this seems to deviate from the OIDC spec.
+        // See a discussion here: https://github.com/panva/openid-client/discussions/730
+        aud: [...new Set([issuer.issuer, issuer.token_endpoint].filter(Boolean))],
+      },
+    },
+  );
 
   // Store the token for reuse
   const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
@@ -328,26 +365,23 @@ export async function getLineitems(instance: Lti13CombinedInstance) {
     throw new HttpStatusError(400, 'Lineitems not defined');
   }
   const token = await getAccessToken(instance.lti13_instance.id);
-  const lineitems = LineitemsSchema.parse(
-    await fetchRetry(instance.lti13_course_instance.lineitems_url, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  );
+  const fetchArray = await fetchRetryPaginated(instance.lti13_course_instance.lineitems_url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
-  return lineitems;
+  const lineitems = LineitemsSchema.array().parse(fetchArray);
+  return lineitems.flat();
 }
 
 export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_url: string) {
   const token = await getAccessToken(instance.lti13_instance.id);
-  const lineitem = LineitemSchema.parse(
-    await fetchRetry(lineitem_id_url, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  );
+  const fetchRes = await fetchRetry(lineitem_id_url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
-  return lineitem;
+  return LineitemSchema.parse(await fetchRes.json());
 }
 
 export async function syncLineitems(instance: Lti13CombinedInstance, job: ServerJob) {
@@ -413,16 +447,15 @@ export async function createAndLinkLineitem(
   );
 
   const token = await getAccessToken(instance.lti13_instance.id);
-  const item = LineitemSchema.parse(
-    await fetchRetry(instance.lti13_course_instance.lineitems_url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-type': 'application/vnd.ims.lis.v2.lineitem+json',
-      },
-      body: JSON.stringify(createBody),
-    }),
-  );
+  const fetchRes = await fetchRetry(instance.lti13_course_instance.lineitems_url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-type': 'application/vnd.ims.lis.v2.lineitem+json',
+    },
+    body: JSON.stringify(createBody),
+  });
+  const item = LineitemSchema.parse(await fetchRes.json());
 
   job.info('Associating PrairieLearn assessment with the new assignment');
 
@@ -487,11 +520,14 @@ export async function linkAssessment(
 // X-Rate-Limit-Remaining
 */
 
-const STATUS_CODE_RESPONSE = {
-  // 422 Unprocessable Content, like POSTING a grade to a non-student
-  422: null,
-};
-
+/**
+ * Make HTTP fetch requests with retries
+ *
+ * @param input URL to visit
+ * @param opts fetch options
+ * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @returns Node fetch response object
+ */
 export async function fetchRetry(
   input: RequestInfo | URL,
   opts?: RequestInit | undefined,
@@ -499,7 +535,7 @@ export async function fetchRetry(
     retryLeft?: number;
     sleepMs?: number;
   },
-) {
+): Promise<Response> {
   const fetchRetryOpts = {
     retryLeft: 5,
     sleepMs: 1000,
@@ -508,8 +544,10 @@ export async function fetchRetry(
   try {
     const response = await fetch(input, opts);
 
-    if (response.status in STATUS_CODE_RESPONSE) {
-      return STATUS_CODE_RESPONSE[response.status];
+    switch (response.status) {
+      // 422 Unprocessable Entity, User not found in course or is not a student
+      case 422:
+        return response;
     }
 
     if (!response.ok) {
@@ -517,21 +555,11 @@ export async function fetchRetry(
         data: {
           status: response.status,
           statusText: response.statusText,
-          body: response.text(),
+          body: await response.text(),
         },
       });
     }
-
-    const parsed = parseLinkHeader(response.headers.get('link')) ?? {};
-    if ('next' in parsed) {
-      const results = await response.json();
-
-      if (Array.isArray(results)) {
-        return results.concat(await fetchRetry(parsed.next.url, opts, fetchRetryOpts));
-      }
-    }
-
-    return await response.json();
+    return response;
   } catch (err) {
     fetchRetryOpts.retryLeft -= 1;
     if (fetchRetryOpts.retryLeft === 0) {
@@ -539,6 +567,41 @@ export async function fetchRetry(
     }
     await sleep(fetchRetryOpts.sleepMs);
     return await fetchRetry(input, opts, fetchRetryOpts);
+  }
+}
+
+/**
+ * Pagination wrapper around fetchRetry
+ *
+ * @param input
+ * @param opts
+ * @param incomingfetchRetryOpts
+ * @param input URL to visit
+ * @param opts fetch options
+ * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @returns Array of JSON responses from fetch
+ */
+export async function fetchRetryPaginated(
+  input: RequestInfo | URL,
+  opts?: RequestInit | undefined,
+  incomingfetchRetryOpts?: {
+    retryLeft?: number;
+    sleepMs?: number;
+  },
+): Promise<unknown[]> {
+  const output: unknown[] = [];
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const res = await fetchRetry(input, opts, incomingfetchRetryOpts);
+    output.push(await res.json());
+
+    const parsed = parseLinkHeader(res.headers.get('link')) ?? {};
+    if ('next' in parsed) {
+      input = parsed.next.url;
+    } else {
+      return output;
+    }
   }
 }
 
@@ -567,10 +630,18 @@ type UsersWithLti13Sub = z.infer<typeof UsersWithLti13SubSchema>;
 const ContextMembershipSchema = z.object({
   user_id: z.string(),
   roles: z.string().array(), // https://www.imsglobal.org/spec/lti/v1p3#role-vocabularies
-  status: z.enum(['Active', 'Inactive']).optional(),
-  email: z.string(), // optional per spec but required for us
+  status: z.enum(['Active', 'Inactive', 'Deleted']).optional(),
+  email: z.string().optional(),
 });
 type ContextMembership = z.infer<typeof ContextMembershipSchema>;
+
+const ContextMembershipContainerSchema = z.object({
+  id: z.string(),
+  context: z.object({
+    id: z.string(),
+  }),
+  members: ContextMembershipSchema.array(),
+});
 
 class Lti13ContextMembership {
   #memberships: Record<string, ContextMembership[]> = {};
@@ -579,6 +650,9 @@ class Lti13ContextMembership {
     // Turn array into an object for efficient lookups. We need to retain duplicates
     // so that we can detect and handle the case where two users have the same email.
     for (const member of memberships) {
+      if (member.email === undefined) {
+        continue;
+      }
       this.#memberships[member.email] ??= [];
       this.#memberships[member.email].push(member);
     }
@@ -596,7 +670,7 @@ class Lti13ContextMembership {
     }
 
     const token = await getAccessToken(lti13_instance.id);
-    const ltiMemberships = await fetchRetry(lti13_course_instance.context_memberships_url, {
+    const fetchArray = await fetchRetryPaginated(lti13_course_instance.context_memberships_url, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -604,7 +678,12 @@ class Lti13ContextMembership {
       },
     });
 
-    const filteredMemberships = ltiMemberships.members.filter((member: ContextMembership) => {
+    const containers = ContextMembershipContainerSchema.array().parse(fetchArray);
+    const ltiMemberships = containers.flatMap((c) => {
+      return c.members;
+    });
+
+    const filteredMemberships = ltiMemberships.filter((member: ContextMembership) => {
       // Skip invalid cases
       if (
         member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser') ||
@@ -616,9 +695,7 @@ class Lti13ContextMembership {
       return true;
     });
 
-    const memberships = ContextMembershipSchema.array().parse(filteredMemberships);
-
-    return new Lti13ContextMembership(memberships);
+    return new Lti13ContextMembership(filteredMemberships);
   }
 
   /**
@@ -687,6 +764,7 @@ export async function updateLti13Scores(
   );
 
   const memberships = await Lti13ContextMembership.loadForInstance(instance);
+  const timestamp = new Date();
 
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
@@ -704,7 +782,7 @@ export async function updateLti13Scores(
        https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
       */
       const score: Lti13Score = {
-        timestamp: assessment_instance.modified_at,
+        timestamp,
         startedAt: assessment_instance.date,
         scoreGiven: assessment_instance.score_perc,
         scoreMaximum: 100,
@@ -713,7 +791,7 @@ export async function updateLti13Scores(
         userId,
       };
 
-      await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
+      const res = await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -721,6 +799,11 @@ export async function updateLti13Scores(
         },
         body: JSON.stringify(score),
       });
+
+      job.info(`\t${res.statusText}`);
+      if (!res.ok) {
+        job.warn(`\t${await res.text()}`);
+      }
     }
   }
 }

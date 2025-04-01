@@ -1,5 +1,8 @@
+import { z } from 'zod';
+
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import {
   RegenerateInstanceAlert,
@@ -13,20 +16,60 @@ import { Navbar } from '../../components/Navbar.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import {
   ExamQuestionAvailablePoints,
-  ExamQuestionScore,
   ExamQuestionStatus,
   InstanceQuestionPoints,
-  QuestionAwardedPoints,
+  QuestionVariantHistory,
 } from '../../components/QuestionScore.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentInstance, GroupConfig, InstanceQuestion } from '../../lib/db-types.js';
+import {
+  type AssessmentInstance,
+  DateFromISOString,
+  type GroupConfig,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { GroupInfo } from '../../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
+import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
+
+export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
+  start_new_zone: z.boolean(),
+  zone_id: IdSchema,
+  zone_title: z.string().nullable(),
+  question_title: z.string(),
+  max_points: z.number().nullable(),
+  max_manual_points: z.number().nullable(),
+  max_auto_points: z.number().nullable(),
+  init_points: z.number().nullable(),
+  row_order: z.number(),
+  question_number: z.string(),
+  zone_max_points: z.number().nullable(),
+  zone_has_max_points: z.boolean(),
+  zone_best_questions: z.number().nullable(),
+  zone_has_best_questions: z.boolean(),
+  file_count: z.number(),
+  sequence_locked: z.boolean(),
+  prev_advance_score_perc: z.number().nullable(),
+  prev_title: z.string().nullable(),
+  prev_sequence_locked: z.boolean().nullable(),
+  allow_grade_left_ms: z.coerce.number(),
+  allow_grade_date: DateFromISOString.nullable(),
+  allow_grade_interval: z.string(),
+  previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
+  group_role_permissions: z
+    .object({
+      can_view: z.boolean(),
+      can_submit: z.boolean(),
+    })
+    .optional(),
+});
+export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
 export function StudentAssessmentInstance({
+  instance_question_rows,
   showTimeLimitExpiredModal,
   groupConfig,
   groupInfo,
@@ -34,6 +77,7 @@ export function StudentAssessmentInstance({
   userCanDeleteAssessmentInstance,
   resLocals,
 }: {
+  instance_question_rows: InstanceQuestionRow[];
   showTimeLimitExpiredModal: boolean;
   userCanDeleteAssessmentInstance: boolean;
   resLocals: Record<string, any>;
@@ -43,8 +87,54 @@ export function StudentAssessmentInstance({
       groupInfo: GroupInfo;
       userCanAssignRoles: boolean;
     }
-  | { groupConfig?: undefined; groupInfo?: undefined; userCanAssignRoles?: undefined }
+  | {
+      groupConfig?: undefined;
+      groupInfo?: undefined;
+      userCanAssignRoles?: undefined;
+    }
 )) {
+  let savedAnswers = 0;
+  let suspendedSavedAnswers = 0;
+  instance_question_rows.forEach((question) => {
+    if (question.status === 'saved') {
+      if (question.allow_grade_left_ms > 0) {
+        suspendedSavedAnswers++;
+      } else if (question.max_auto_points || !question.max_manual_points) {
+        // Note that we exclude questions that are not auto-graded from the count.
+        // This count is used to determine whether the "Grade X saved answers"
+        // button should be enabled, and clicking that button won't do any good for
+        // manually-graded questions.
+        savedAnswers++;
+      }
+    }
+  });
+
+  // Keep this in sync with the `InstanceQuestionTableHeader` function below.
+  const zoneTitleColspan = run(() => {
+    const trailingColumnsCount =
+      resLocals.assessment.type === 'Exam'
+        ? resLocals.has_auto_grading_question && resLocals.assessment.allow_real_time_grading
+          ? 2
+          : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
+            ? 3
+            : 1
+        : (resLocals.has_auto_grading_question ? 2 : 0) + 1;
+
+    return resLocals.assessment.type === 'Exam'
+      ? resLocals.has_auto_grading_question &&
+        resLocals.has_manual_grading_question &&
+        resLocals.assessment.allow_real_time_grading
+        ? 6
+        : 2 + trailingColumnsCount
+      : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
+        ? 6
+        : 1 + trailingColumnsCount;
+  });
+
+  const userGroupRoles = groupInfo
+    ? getRoleNamesForUser(groupInfo, resLocals.authz_data.user).join(', ')
+    : null;
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -70,7 +160,7 @@ export function StudentAssessmentInstance({
         ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
           ? ConfirmFinishModal({
-              instance_questions: resLocals.instance_questions,
+              instance_question_rows,
               csrfToken: resLocals.__csrf_token,
             })
           : ''}
@@ -96,8 +186,8 @@ export function StudentAssessmentInstance({
                     <div class="alert alert-warning">
                       This assessment will only be graded after it is finished. You should save
                       answers for all questions and your exam will be graded later. You can use the
-                      <span class="badge badge-outline badge-light">Finish assessment</span> button
-                      below to finish and calculate your final grade.
+                      <span class="badge badge-outline text-bg-light">Finish assessment</span>
+                      button below to finish and calculate your final grade.
                     </div>
                   `
                 : ''}
@@ -200,79 +290,77 @@ export function StudentAssessmentInstance({
                 ${InstanceQuestionTableHeader({ resLocals })}
               </thead>
               <tbody>
-                ${resLocals.instance_questions.map(
-                  (instance_question) => html`
-                    ${instance_question.start_new_zone && instance_question.zone_title
+                ${instance_question_rows.map(
+                  (instance_question_row) => html`
+                    ${instance_question_row.start_new_zone && instance_question_row.zone_title
                       ? html`
                           <tr>
-                            <th
-                              colspan="${(resLocals.has_auto_grading_question
-                                ? (resLocals.has_manual_grading_question ? 2 : 0) +
-                                  (resLocals.assessment.allow_real_time_grading ? 4 : 2)
-                                : 2) + (resLocals.assessment.type === 'Exam' ? 1 : 0)}"
-                            >
-                              <span class="mr-1">${instance_question.zone_title}</span>
-                              ${instance_question.zone_has_max_points
-                                ? ZoneInfoBadge({
-                                    popoverContent: `Of the points that you are awarded for answering these questions, at most ${instance_question.zone_max_points} will count toward your total points.`,
-                                    mainContent: `Maximum ${instance_question.zone_max_points} points`,
-                                  })
-                                : ''}
-                              ${instance_question.zone_has_best_questions
-                                ? ZoneInfoBadge({
-                                    popoverContent: `Of these questions, only the ${instance_question.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
-                                    mainContent: `Best ${instance_question.zone_best_questions} questions`,
-                                  })
-                                : ''}
+                            <th colspan="${zoneTitleColspan}">
+                              <div class="d-flex align-items-center">
+                                <span class="me-2">${instance_question_row.zone_title}</span>
+                                ${instance_question_row.zone_has_max_points
+                                  ? ZoneInfoPopover({
+                                      label: `Maximum ${instance_question_row.zone_max_points} points`,
+                                      content: `Of the points that you are awarded for answering these questions, at most ${instance_question_row.zone_max_points} will count toward your total points.`,
+                                    })
+                                  : ''}
+                                ${instance_question_row.zone_has_best_questions
+                                  ? ZoneInfoPopover({
+                                      label: `Best ${instance_question_row.zone_best_questions} questions`,
+                                      content: `Of these questions, only the ${instance_question_row.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
+                                    })
+                                  : ''}
+                              </div>
                             </th>
                           </tr>
                         `
                       : ''}
                     <tr
-                      class="${instance_question.sequence_locked
+                      class="${instance_question_row.sequence_locked
                         ? 'bg-light pl-sequence-locked'
                         : ''}"
                     >
                       <td>
                         ${RowLabel({
-                          instance_question,
-                          user_group_roles: resLocals.user_group_roles,
+                          instance_question_row,
+                          userGroupRoles,
                           urlPrefix: resLocals.urlPrefix,
                           rowLabelText:
                             resLocals.assessment.type === 'Exam'
-                              ? `Question ${instance_question.question_number}`
-                              : `${instance_question.question_number}. ${instance_question.question_title}`,
+                              ? `Question ${instance_question_row.question_number}`
+                              : `${instance_question_row.question_number}. ${instance_question_row.question_title}`,
                         })}
                       </td>
                       ${resLocals.assessment.type === 'Exam'
                         ? html`
                             <td class="text-center">
-                              ${ExamQuestionStatus({ instance_question })}
+                              ${ExamQuestionStatus({
+                                instance_question: instance_question_row,
+                                assessment_question: instance_question_row, // Required fields are in instance_question
+                              })}
                             </td>
                             ${resLocals.has_auto_grading_question &&
                             resLocals.assessment.allow_real_time_grading
                               ? html`
                                   <td class="text-center">
-                                    ${ExamQuestionScore({
-                                      instance_question,
-                                      assessment_question: instance_question, // Required fields are in instance_question
-                                    })}
-                                  </td>
-                                  <td class="text-center">
-                                    ${ExamQuestionAvailablePoints({
-                                      open:
-                                        resLocals.assessment_instance.open &&
-                                        instance_question.open,
-                                      currentWeight:
-                                        instance_question.points_list_original[
-                                          instance_question.number_attempts
-                                        ] - instance_question.max_manual_points,
-                                      pointsList: instance_question.points_list.map(
-                                        (p) => p - instance_question.max_manual_points,
-                                      ),
-                                      highestSubmissionScore:
-                                        instance_question.highest_submission_score,
-                                    })}
+                                    ${instance_question_row.max_auto_points
+                                      ? ExamQuestionAvailablePoints({
+                                          open:
+                                            resLocals.assessment_instance.open &&
+                                            instance_question_row.open,
+                                          currentWeight:
+                                            (instance_question_row.points_list_original?.[
+                                              instance_question_row.number_attempts
+                                            ] ?? 0) -
+                                            (instance_question_row.max_manual_points ?? 0),
+                                          pointsList: instance_question_row.points_list?.map(
+                                            (p) =>
+                                              p - (instance_question_row.max_manual_points ?? 0),
+                                          ),
+                                          highestSubmissionScore:
+                                            instance_question_row.highest_submission_score,
+                                        })
+                                      : html`&mdash;`}
                                   </td>
                                 `
                               : ''}
@@ -284,15 +372,15 @@ export function StudentAssessmentInstance({
                                     ? html`
                                         <td class="text-center">
                                           ${InstanceQuestionPoints({
-                                            instance_question,
-                                            assessment_question: instance_question, // Required fields are present in instance_question
+                                            instance_question: instance_question_row,
+                                            assessment_question: instance_question_row, // Required fields are present in instance_question
                                             component: 'auto',
                                           })}
                                         </td>
                                         <td class="text-center">
                                           ${InstanceQuestionPoints({
-                                            instance_question,
-                                            assessment_question: instance_question, // Required fields are present in instance_question
+                                            instance_question: instance_question_row,
+                                            assessment_question: instance_question_row, // Required fields are present in instance_question
                                             component: 'manual',
                                           })}
                                         </td>
@@ -300,8 +388,8 @@ export function StudentAssessmentInstance({
                                     : ''}
                                   <td class="text-center">
                                     ${InstanceQuestionPoints({
-                                      instance_question,
-                                      assessment_question: instance_question, // Required fields are present in instance_question
+                                      instance_question: instance_question_row,
+                                      assessment_question: instance_question_row, // Required fields are present in instance_question
                                       component: 'total',
                                     })}
                                   </td>
@@ -311,15 +399,15 @@ export function StudentAssessmentInstance({
                                   resLocals.has_manual_grading_question
                                     ? html`
                                         <td class="text-center">
-                                          ${formatPoints(instance_question.max_auto_points)}
+                                          ${formatPoints(instance_question_row.max_auto_points)}
                                         </td>
                                         <td class="text-center">
-                                          ${formatPoints(instance_question.max_manual_points)}
+                                          ${formatPoints(instance_question_row.max_manual_points)}
                                         </td>
                                       `
                                     : ''}
                                   <td class="text-center">
-                                    ${formatPoints(instance_question.max_points)}
+                                    ${formatPoints(instance_question_row.max_points)}
                                   </td>
                                 `}
                           `
@@ -327,15 +415,27 @@ export function StudentAssessmentInstance({
                             ${resLocals.has_auto_grading_question
                               ? html`
                                   <td class="text-center">
-                                    <span class="badge badge-primary">
-                                      ${formatPoints(instance_question.current_value)}
-                                    </span>
+                                    ${run(() => {
+                                      if (!instance_question_row.max_auto_points) {
+                                        return html`&mdash;`;
+                                      }
+
+                                      // Compute the current "auto" value by subtracting the manual points.
+                                      // We use this because `current_value` doesn't account for manual points.
+                                      // We don't want to mislead the student into thinking that they can earn
+                                      // more points than they actually can.
+                                      const currentAutoValue =
+                                        (instance_question_row.current_value ?? 0) -
+                                        (instance_question_row.max_manual_points ?? 0);
+
+                                      return formatPoints(currentAutoValue);
+                                    })}
                                   </td>
                                   <td class="text-center">
-                                    ${QuestionAwardedPoints({
+                                    ${QuestionVariantHistory({
                                       urlPrefix: resLocals.urlPrefix,
-                                      instanceQuestionId: instance_question.id,
-                                      previousVariants: instance_question.previous_variants,
+                                      instanceQuestionId: instance_question_row.id,
+                                      previousVariants: instance_question_row.previous_variants,
                                     })}
                                   </td>
                                 `
@@ -345,15 +445,15 @@ export function StudentAssessmentInstance({
                               ? html`
                                   <td class="text-center">
                                     ${InstanceQuestionPoints({
-                                      instance_question,
-                                      assessment_question: instance_question, // Required fields are present in instance_question
+                                      instance_question: instance_question_row,
+                                      assessment_question: instance_question_row, // Required fields are present in instance_question
                                       component: 'auto',
                                     })}
                                   </td>
                                   <td class="text-center">
                                     ${InstanceQuestionPoints({
-                                      instance_question,
-                                      assessment_question: instance_question, // Required fields are present in instance_question
+                                      instance_question: instance_question_row,
+                                      assessment_question: instance_question_row, // Required fields are present in instance_question
                                       component: 'manual',
                                     })}
                                   </td>
@@ -361,8 +461,8 @@ export function StudentAssessmentInstance({
                               : ''}
                             <td class="text-center">
                               ${InstanceQuestionPoints({
-                                instance_question,
-                                assessment_question: instance_question, // Required fields are present in instance_question
+                                instance_question: instance_question_row,
+                                assessment_question: instance_question_row, // Required fields are present in instance_question
                                 component: 'total',
                               })}
                             </td>
@@ -380,22 +480,22 @@ export function StudentAssessmentInstance({
                 ? html`
                     ${resLocals.assessment.allow_real_time_grading
                       ? html`
-                          <form name="grade-form" method="POST" class="form-inline">
+                          <form name="grade-form" method="POST">
                             <input type="hidden" name="__action" value="grade" />
                             <input
                               type="hidden"
                               name="__csrf_token"
                               value="${resLocals.__csrf_token}"
                             />
-                            ${resLocals.savedAnswers > 0
+                            ${savedAnswers > 0
                               ? html`
                                   <button
                                     type="submit"
                                     class="btn btn-info my-2"
                                     ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                                   >
-                                    Grade ${resLocals.savedAnswers} saved
-                                    ${resLocals.savedAnswers !== 1 ? 'answers' : 'answer'}
+                                    Grade ${savedAnswers} saved
+                                    ${savedAnswers !== 1 ? 'answers' : 'answer'}
                                   </button>
                                 `
                               : html`
@@ -405,17 +505,17 @@ export function StudentAssessmentInstance({
                                 `}
                           </form>
                           <ul class="my-1">
-                            ${resLocals.suspendedSavedAnswers > 1
+                            ${suspendedSavedAnswers > 1
                               ? html`
                                   <li>
-                                    There are ${resLocals.suspendedSavedAnswers} saved answers that
-                                    cannot be graded yet because their grade rate has not been
-                                    reached. They are marked with the
+                                    There are ${suspendedSavedAnswers} saved answers that cannot be
+                                    graded yet because their grade rate has not been reached. They
+                                    are marked with the
                                     <i class="fa fa-hourglass-half"></i> icon above. Reload this
                                     page to update this information.
                                   </li>
                                 `
-                              : resLocals.suspendedSavedAnswers === 1
+                              : suspendedSavedAnswers === 1
                                 ? html`
                                     <li>
                                       There is one saved answer that cannot be graded yet because
@@ -431,10 +531,10 @@ export function StudentAssessmentInstance({
                               the question page.
                             </li>
                             <li>
-                              Look at <strong>Best submission</strong> to confirm that each question
-                              has been graded. Questions with <strong>Available points</strong> can
-                              be attempted again for more points. Attempting questions again will
-                              never reduce the points you already have.
+                              Look at <strong>Status</strong> to confirm that each question has been
+                              graded. Questions with <strong>Available points</strong> can be
+                              attempted again for more points. Attempting questions again will never
+                              reduce the points you already have.
                             </li>
                             ${resLocals.authz_result.password != null ||
                             !resLocals.authz_result.show_closed_assessment
@@ -444,8 +544,8 @@ export function StudentAssessmentInstance({
                                     here:
                                     <button
                                       class="btn btn-danger"
-                                      data-toggle="modal"
-                                      data-target="#confirmFinishModal"
+                                      data-bs-toggle="modal"
+                                      data-bs-target="#confirmFinishModal"
                                       ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                                     >
                                       Finish assessment
@@ -472,8 +572,8 @@ export function StudentAssessmentInstance({
                               After you have answered all the questions completely, click here:
                               <button
                                 class="btn btn-danger"
-                                data-toggle="modal"
-                                data-target="#confirmFinishModal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#confirmFinishModal"
                                 ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                               >
                                 Finish assessment
@@ -550,7 +650,6 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
       ? html`
           ${resLocals.has_auto_grading_question && resLocals.assessment.allow_real_time_grading
             ? html`
-                <th class="text-center">Best submission ${ExamQuestionHelpBestSubmission()}</th>
                 <th class="text-center">Available points ${ExamQuestionHelpAvailablePoints()}</th>
                 <th class="text-center">Awarded points ${ExamQuestionHelpAwardedPoints()}</th>
               `
@@ -581,8 +680,8 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
             ? html`
                 <tr>
                   <th rowspan="2">Question</th>
-                  <th class="text-center" rowspan="2">Submission status</th>
-                  <th class="text-center" colspan="3">Auto-grading</th>
+                  <th class="text-center" rowspan="2">Status</th>
+                  <th class="text-center" colspan="2">Auto-grading</th>
                   <th class="text-center" rowspan="2">Manual grading points</th>
                   <th class="text-center" rowspan="2">Total points</th>
                 </tr>
@@ -593,7 +692,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
             : html`
                 <tr>
                   <th>Question</th>
-                  <th class="text-center">Submission status</th>
+                  <th class="text-center">Status</th>
                   ${trailingColumns}
                 </tr>
               `}
@@ -621,46 +720,39 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
   `;
 }
 
-function ZoneInfoBadge({
-  popoverContent,
-  mainContent,
-}: {
-  popoverContent: string;
-  mainContent: string;
-}) {
+function ZoneInfoPopover({ label, content }: { label: string; content: string }) {
   return html`
     <button
       type="button"
-      class="btn btn-xs btn-secondary badge badge-secondary text-white font-weight-normal py-1"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-content="${popoverContent}"
+      class="btn btn-xs btn-secondary"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-content="${content}"
     >
-      ${mainContent}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
+      ${label}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
     </button>
   `;
 }
 
 function RowLabel({
-  instance_question,
-  user_group_roles,
+  instance_question_row,
+  userGroupRoles,
   rowLabelText,
   urlPrefix,
 }: {
-  // TODO: better types?
-  instance_question: any;
-  user_group_roles: string;
+  instance_question_row: InstanceQuestionRow;
+  userGroupRoles: string | null;
   rowLabelText: string;
   urlPrefix: string;
 }) {
   let lockedPopoverText: string | null = null;
-  if (instance_question.sequence_locked) {
-    lockedPopoverText = instance_question.prev_sequence_locked
+  if (instance_question_row.sequence_locked) {
+    lockedPopoverText = instance_question_row.prev_sequence_locked
       ? 'A previous question must be completed before you can access this one.'
-      : `You must score at least ${instance_question.prev_advance_score_perc}% on ${instance_question.prev_title} to unlock this question.`;
-  } else if (!(instance_question.group_role_permissions?.can_view ?? true)) {
-    lockedPopoverText = `Your current group role (${user_group_roles}) restricts access to this question.`;
+      : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
+  } else if (!(instance_question_row.group_role_permissions?.can_view ?? true)) {
+    lockedPopoverText = `Your current group role (${userGroupRoles}) restricts access to this question.`;
   }
 
   return html`
@@ -669,11 +761,11 @@ function RowLabel({
           <span class="text-muted">${rowLabelText}</span>
           <button
             type="button"
-            class="btn btn-xs border text-secondary ml-1"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-content="${lockedPopoverText}"
+            class="btn btn-xs border text-secondary ms-1"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-content="${lockedPopoverText}"
             data-test-id="locked-instance-question-row"
             aria-label="Locked"
           >
@@ -681,17 +773,17 @@ function RowLabel({
           </button>
         `
       : html`
-          <a href="${urlPrefix}/instance_question/${instance_question.id}/">${rowLabelText}</a>
+          <a href="${urlPrefix}/instance_question/${instance_question_row.id}/">${rowLabelText}</a>
         `}
-    ${instance_question.file_count > 0
+    ${instance_question_row.file_count > 0
       ? html`
           <button
             type="button"
-            class="btn btn-xs border text-secondary ml-1"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-content="Personal notes: ${instance_question.file_count}"
+            class="btn btn-xs border text-secondary ms-1"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-content="Personal notes: ${instance_question_row.file_count}"
             aria-label="Has personal note attachments"
           >
             <i class="fas fa-paperclip"></i>
@@ -701,34 +793,17 @@ function RowLabel({
   `;
 }
 
-function ExamQuestionHelpBestSubmission() {
-  return html`
-    <button
-      type="button"
-      class="btn btn-xs btn-ghost"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Best submission"
-      data-content="The percentage score of the best submitted answer, or whether the question is <strong>unanswered</strong>, has a <strong>saved</strong> but ungraded answer, or is in <strong>grading</strong>."
-    >
-      <i class="fa fa-question-circle" aria-hidden="true"></i>
-    </button>
-  `;
-}
-
 function ExamQuestionHelpAvailablePoints() {
   return html`
     <button
       type="button"
       class="btn btn-xs btn-ghost"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Available points"
-      data-content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Available points"
+      data-bs-content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
@@ -740,12 +815,12 @@ function ExamQuestionHelpAwardedPoints() {
     <button
       type="button"
       class="btn btn-xs btn-ghost"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Awarded points"
-      data-content="The number of points already earned, as a fraction of the maximum possible points for the question."
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Awarded points"
+      data-bs-content="The number of points already earned, as a fraction of the maximum possible points for the question."
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
@@ -753,13 +828,13 @@ function ExamQuestionHelpAwardedPoints() {
 }
 
 function ConfirmFinishModal({
-  instance_questions,
+  instance_question_rows,
   csrfToken,
 }: {
-  instance_questions: InstanceQuestion[];
+  instance_question_rows: InstanceQuestionRow[];
   csrfToken: string;
 }) {
-  const all_questions_answered = instance_questions.every((iq) => iq.status !== 'unanswered');
+  const all_questions_answered = instance_question_rows.every((iq) => iq.status !== 'unanswered');
 
   return Modal({
     id: 'confirmFinishModal',
@@ -777,7 +852,7 @@ function ConfirmFinishModal({
     footer: html`
       <input type="hidden" name="__action" value="finish" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
+      <button type="button" data-bs-dismiss="modal" class="btn btn-secondary">Cancel</button>
       <button type="submit" class="btn btn-danger">Finish assessment</button>
     `,
   });

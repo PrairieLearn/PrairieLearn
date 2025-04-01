@@ -1,6 +1,6 @@
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { Lti13Instance, Lti13InstanceSchema } from '../../lib/db-types.js';
+import { type Lti13Instance, Lti13InstanceSchema } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

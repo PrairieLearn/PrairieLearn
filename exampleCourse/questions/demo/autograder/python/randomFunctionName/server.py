@@ -28,10 +28,10 @@ def generate(data):
     # Build the list of input/output pairs.
     data["params"]["pairs"] = [
         {
-            "input": input,
-            "output": output,
+            "input": input_word,
+            "output": output_word,
         }
-        for (input, output) in zip(input_words, output_words)
+        for (input_word, output_word) in zip(input_words, output_words, strict=True)
     ]
 
     # Pick the function name

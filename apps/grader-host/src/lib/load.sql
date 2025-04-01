@@ -17,8 +17,7 @@ VALUES
     $lifecycle_state,
     $healthy
   )
-ON CONFLICT (instance_id) DO
-UPDATE
+ON CONFLICT (instance_id) DO UPDATE
 SET
   date = now(),
   queue_name = EXCLUDED.queue_name,
@@ -46,8 +45,7 @@ VALUES
     $config,
     now()
   )
-ON CONFLICT (instance_id) DO
-UPDATE
+ON CONFLICT (instance_id) DO UPDATE
 SET
   date = now(),
   queue_name = EXCLUDED.queue_name,

@@ -1,53 +1,56 @@
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type CourseInstance } from '../../lib/db-types.js';
-import { QuestionsPageData } from '../../models/questions.js';
+import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
   questions,
+  templateQuestions = [],
   course_instances,
   showAddQuestionButton,
   showAiGenerateQuestionButton,
   resLocals,
 }: {
   questions: QuestionsPageData[];
+  templateQuestions?: { qid: string; title: string }[];
   course_instances: CourseInstance[];
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;
-  resLocals;
+  resLocals: Record<string, any>;
 }) => {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })} ${QuestionsTableHead()}
-      </head>
-
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
-          ${CourseSyncErrorsAndWarnings({
-            authz_data: resLocals.authz_data,
-            course: resLocals.course,
-            urlPrefix: resLocals.urlPrefix,
-          })}
-          ${QuestionsTable({
-            questions,
-            course_instances,
-            showAddQuestionButton,
-            showAiGenerateQuestionButton,
-            showSharingSets: resLocals.question_sharing_enabled,
-            current_course_instance: resLocals.course_instance,
-            urlPrefix: resLocals.urlPrefix,
-            plainUrlPrefix: resLocals.plainUrlPrefix,
-            __csrf_token: resLocals.__csrf_token,
-          })}
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Questions',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'questions',
+    },
+    options: {
+      fullWidth: true,
+    },
+    headContent: [QuestionsTableHead()],
+    content: html`
+      ${CourseSyncErrorsAndWarnings({
+        authz_data: resLocals.authz_data,
+        course: resLocals.course,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+      ${QuestionsTable({
+        questions,
+        templateQuestions,
+        course_instances,
+        showAddQuestionButton,
+        showAiGenerateQuestionButton,
+        showSharingSets: resLocals.question_sharing_enabled,
+        current_course_instance: resLocals.course_instance,
+        urlPrefix: resLocals.urlPrefix,
+        plainUrlPrefix: resLocals.plainUrlPrefix,
+        __csrf_token: resLocals.__csrf_token,
+      })}
+    `,
+  });
 };

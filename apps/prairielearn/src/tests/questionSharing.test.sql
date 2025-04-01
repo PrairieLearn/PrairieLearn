@@ -7,6 +7,14 @@ WHERE
   course_id = $course_id
   and qid = $qid;
 
+-- BLOCK select_sharing_set
+SELECT
+  id
+FROM
+  sharing_sets
+WHERE
+  name = $sharing_set_name;
+
 -- BLOCK update_course_repository
 UPDATE pl_courses AS c
 SET

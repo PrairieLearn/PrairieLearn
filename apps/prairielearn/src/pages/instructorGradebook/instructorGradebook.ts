@@ -5,12 +5,12 @@ import asyncHandler from 'express-async-handler';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRows, queryCursor } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
 
 import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
 import {
-  getCourseOwners,
   checkAssessmentInstanceBelongsToCourseInstance,
+  getCourseOwners,
 } from '../../lib/course.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
@@ -18,7 +18,7 @@ import { InstructorGradebook } from './instructorGradebook.html.js';
 import {
   AssessmentInstanceScoreResultSchema,
   CourseAssessmentRowSchema,
-  GradebookRow,
+  type GradebookRow,
   GradebookRowSchema,
 } from './instructorGradebook.types.js';
 

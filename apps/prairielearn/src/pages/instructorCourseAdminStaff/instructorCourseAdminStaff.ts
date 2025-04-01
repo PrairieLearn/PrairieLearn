@@ -4,16 +4,16 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { HtmlSafeString, html } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { User } from '../../lib/db-types.js';
+import { type User } from '../../lib/db-types.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { parseUidsString } from '../../lib/user.js';
 import {
-  CourseInstanceAuthz,
+  type CourseInstanceAuthz,
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
 import {
@@ -29,8 +29,8 @@ import {
 } from '../../models/course-permissions.js';
 
 import {
-  InstructorCourseAdminStaff,
   CourseUsersRowSchema,
+  InstructorCourseAdminStaff,
 } from './instructorCourseAdminStaff.html.js';
 
 const debug = debugfn('prairielearn:instructorCourseAdminStaff');

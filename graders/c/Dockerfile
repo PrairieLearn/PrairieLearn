@@ -26,3 +26,5 @@ ENV C_INCLUDE_PATH=/cgrader
 
 COPY cgrader /cgrader
 
+RUN chmod 700 /cgrader/entrypoint.sh
+ENTRYPOINT [ "/cgrader/entrypoint.sh" ]

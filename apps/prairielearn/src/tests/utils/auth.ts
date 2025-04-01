@@ -3,13 +3,13 @@ import { z } from 'zod';
 import { callRow, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
-import { IdSchema, User, UserSchema } from '../../lib/db-types.js';
+import { IdSchema, type User, UserSchema } from '../../lib/db-types.js';
 
 export interface AuthUser {
   name: string | null;
   uid: string;
   uin: string | null;
-  email: string | null;
+  email?: string | null;
 }
 
 export async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise<T> {
@@ -22,7 +22,7 @@ export async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise
     config.authName = user.name;
     config.authUid = user.uid;
     config.authUin = user.uin;
-    config.authEmail = user.email;
+    config.authEmail = user.email ?? null;
 
     return await fn();
   } finally {

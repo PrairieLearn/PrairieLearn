@@ -3,9 +3,9 @@ import { html } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../src/components/AssessmentBadge.html.js';
 import {
-  AssessmentInstanceScoreResult,
-  GradebookRow,
-  InstructorGradebookData,
+  type AssessmentInstanceScoreResult,
+  type GradebookRow,
+  type InstructorGradebookData,
 } from '../../src/pages/instructorGradebook/instructorGradebook.types.js';
 
 onDocumentReady(() => {
@@ -25,7 +25,7 @@ onDocumentReady(() => {
     url: `${urlPrefix}/instance_admin/gradebook/raw_data.json`,
     uniqueId: 'user_id',
     classes: 'table table-sm table-hover table-bordered',
-    theadClasses: 'thead-light',
+    theadClasses: 'table-light',
     showButtonText: true,
     minimumCountColumns: 0,
     search: true,
@@ -106,9 +106,9 @@ onDocumentReady(() => {
           <button
             class="btn btn-xs btn-ghost"
             type="button"
-            title="Show roles help"
-            data-toggle="modal"
-            data-target="#role-help"
+            aria-label="Roles help"
+            data-bs-toggle="modal"
+            data-bs-target="#role-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
           </button>`.toString(),
@@ -131,7 +131,7 @@ onDocumentReady(() => {
             ? html`
                 <button
                   type="button"
-                  class="btn btn-xs btn-secondary edit-score ml-1"
+                  class="btn btn-xs btn-secondary edit-score ms-1"
                   aria-label="Edit score"
                   data-assessment-instance-id="${assessment_instance_id}"
                   data-score="${score}"
@@ -164,9 +164,9 @@ onDocumentReady(() => {
     }
   });
 
-  $('[data-toggle="modal"]').click(function (e) {
+  $('[data-bs-toggle="modal"]').click(function (e) {
     e.stopPropagation(); // Keep click from changing sort
-    $($(e.currentTarget).data('target')).modal('show');
+    $($(e.currentTarget).data('bs-target')).modal('show');
   });
 });
 
@@ -188,7 +188,7 @@ function setupEditScorePopovers(csrfToken: string) {
               <input type="hidden" name="__action" value="edit_total_score_perc" />
               <input type="hidden" name="__csrf_token" value="${csrfToken}" />
               <input type="hidden" name="assessment_instance_id" value="${assessmentInstanceId}" />
-              <div class="form-group">
+              <div class="mb-3">
                 <div class="input-group">
                   <input
                     type="text"
@@ -197,7 +197,7 @@ function setupEditScorePopovers(csrfToken: string) {
                     value="${score}"
                     aria-label="Score percentage"
                   />
-                  <div class="input-group-append"><span class="input-group-text">%</span></div>
+                  <span class="input-group-text">%</span>
                 </div>
               </div>
               ${parsedOtherUsers?.length
@@ -219,7 +219,7 @@ function setupEditScorePopovers(csrfToken: string) {
                   This change will be overwritten if further questions are answered by the student.
                 </small>
               </p>
-              <button type="button" class="btn btn-secondary mr-2 js-popover-cancel-button">
+              <button type="button" class="btn btn-secondary me-2 js-popover-cancel-button">
                 Cancel
               </button>
               <button type="submit" class="btn btn-primary">Change</button>

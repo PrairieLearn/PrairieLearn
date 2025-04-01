@@ -59,7 +59,7 @@
     { "name": "v3", "color": "green1", "description": "v3 generation question (freeform)" }
   ],
   "sharingSets": [
-    { "name": "python-exercises", "description": "Python exercises for shraing" },
+    { "name": "python-exercises", "description": "Python exercises for sharing" },
     { "name": "final-exam", "description": "Questions that can be used on a final exam" }
   ]
 }

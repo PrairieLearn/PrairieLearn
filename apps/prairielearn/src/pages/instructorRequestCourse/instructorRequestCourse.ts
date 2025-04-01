@@ -17,9 +17,9 @@ import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
 
 import {
-  RequestCourse,
   CourseRequestRowSchema,
-  Lti13CourseRequestInput,
+  type Lti13CourseRequestInput,
+  RequestCourse,
 } from './instructorRequestCourse.html.js';
 
 const router = express.Router();

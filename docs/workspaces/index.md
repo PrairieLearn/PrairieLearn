@@ -2,14 +2,6 @@
 
 Workspaces allow students to work in persistent remote containers via in-browser frontends such as VS Code and JupyterLab. The remote containers are configured by instructors to provide custom, uniform environments per question. Workspace questions are integrated with the standard PrairieLearn autograding pipeline.
 
-## Supported browsers
-
-- [x] Chrome is supported
-- [x] Firefox is supported
-- [x] Safari is supported
-- [x] Edge Chromium (version >= 79) is supported
-- [ ] Edge Legacy (version < 79) is untested
-
 ## Directory structure
 
 ```text
@@ -58,12 +50,12 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
   - `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
   - `port`: port number used by the workspace app inside the Docker image
   - `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
-  - `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container for grading. Files can be in subdirectories, but the files must be explicitly listed (e.g. `dir/file.txt`) or use wildcards (e.g., `dir/*`). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder. Wildcards are allowed (e.g., you can specify `dir/*.c`) and will match any files in the workspace that match them. Paths with wildcards are considered optional. The following wildcards are supported:
+  - `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container when saving a submission. These files can then be used for grading (either auto-grading or manual grading), previewed in the submission panel, and included in instructor submission downloads. Files can be in subdirectories, but the files must be explicitly listed (e.g. `dir/file.txt`) or use wildcards (e.g., `dir/*`). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder. Wildcards are allowed (e.g., you can specify `dir/*.c`) and will match any files in the workspace that match them. Paths with wildcards are considered optional. The following wildcards are supported:
     - `*` matches everything except path separators and hidden files (names starting with `.`).
     - `**` can be used to identify files in all subdirectories of the workspace (e.g., `**/*.py` will copy the files with `.py` extension in the home directory and in all its subdirectories).
     - `?` matches any single character except path separators.
     - `[seq]` matches any character in `seq`.
-  - `args` (optional, default none): command line arguments to pass to the Docker image
+  - `args` (optional, default none): command line arguments to pass to the Docker image. May be a string (e.g., `"--auth none"`) or an array of strings (e.g., `["--auth", "none"]`).
   - `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
   - `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode. It is strongly recommended to use the default (no networking) for exam questions, because network access can be used to enable cheating. Only enable networking for homework questions, and only if it is strictly required, for example for downloading data from the internet.
   - `environment` (optional, default `{}`): environment variables to set inside the workspace container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`).
@@ -72,7 +64,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
 
 For an ungraded workspace, a full `info.json` file should look something like:
 
-```json
+```json title="info.json"
 {
     "uuid": "...",
     "title": "...",
@@ -93,7 +85,7 @@ For an ungraded workspace, a full `info.json` file should look something like:
 
 For an externally graded workspace, a full `info.json` file should look something like:
 
-```json
+```json title="info.json"
 {
     "uuid": "...",
     "title": "...",
@@ -176,7 +168,12 @@ starting_value = 17
 # ...
 ```
 
-For more fine-tuned randomized files, the `_workspace_files` parameter can also be set in `server.py`, containing an array of potentially dynamic files to be created in the workspace home directory. Each element of the array must include a `name` property, containing the file name (which can include a path with directories), and either a `contents` property, containing the contents of the file, or a `questionFile` property, pointing to an existing file in a different location in the question directory. For example:
+For more fine-tuned randomized files, the `_workspace_files` parameter can also be set in `server.py`, containing an array of potentially dynamic files to be created in the workspace home directory. Each element of the array must include a `name` property, containing the file name (which can include a path with directories), and one of the following:
+
+- a `contents` property, containing the contents of the file.
+- a `questionFile` or `serverFilesCourseFile` property, pointing to an existing file in the question directory or the course's `serverFilesCourse` directory, respectively.
+
+For example:
 
 ```py
 def generate(data):
@@ -206,12 +203,14 @@ def generate(data):
         },
         # A question file can also be added by using its path in the question instead of its contents
         {"name": "provided.txt", "questionFile": "clientFilesQuestion/provided.txt"},
+        # A file can also be added by using its path in serverFilesCourse
+        {"name": "course.txt", "serverFilesCourseFile": "data.txt"},
         # To make an empty file, set `contents` to None or an empty string
         {"name": "empty.txt", "contents": None}
     ]
 ```
 
-By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Either `questionFile` or `contents` must be provided, but not both. If an empty file is expected, `contents` may be set to `None` or an empty string.
+By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Exactly one of `questionFile`, `serverFilesCourseFile` or `contents` must be provided. If an empty file is expected, `contents` may be set to `None` or an empty string.
 
 If a file name appears in multiple locations, the following precedence takes effect:
 
@@ -228,7 +227,9 @@ PrairieLearn provides and maintains the following workspace images:
 - [`prairielearn/workspace-desktop`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/desktop/): An Ubuntu 24.04 desktop
 - [`prairielearn/workspace-jupyterlab-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/): JupyterLab with Python 3.11
 - [`prairielearn/workspace-rstudio`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/): RStudio with R version 4.4
-- [`prairielearn/workspace-vscode-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/): VS Code with Python 3.10
+- [`prairielearn/workspace-vscode-base`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-base/): Basic VS Code without any additions (used to build the C/C++ and Python workspaces below)
+- [`prairielearn/workspace-vscode-cpp`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-cpp/): VS Code with C/C++ (using `gcc` and `g++`)
+- [`prairielearn/workspace-vscode-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/): VS Code with Python 3.12
 - [`prairielearn/workspace-xtermjs`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/xtermjs/): Terminal emulator based on xterm.js
 
 ## Custom workspace images
@@ -249,7 +250,7 @@ For development, run the docker container as described in [Installing with local
 make dev-all
 ```
 
-Alternatively, you can run `make dev-workspace-host` and `make dev` independently. For development it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/tools/start_workspace_tmux.sh` that you might find useful.
+Alternatively, you can run `make dev-workspace-host` and `make dev` independently. For development it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/contrib/start_workspace_tmux.sh` that you might find useful.
 
 ## Permissions in production
 
@@ -261,11 +262,11 @@ docker run -it --rm -p HOST_PORT:CLIENT_PORT --user 1001:1001 IMAGE_NAME
 
 For example, the [example JupyterLab workspace](https://us.prairielearn.com/pl/course/108/question/9045312/preview) using the [JupyterLab image](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python) uses port 8080 and so can be run successfully like this:
 
-```
+```sh
 docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyterlab-python
 ```
 
-## What to Tell Students
+## What to tell students
 
 Instructors are strongly encouraged to allow students to get exposed to the PrairieLearn workspace environment, as well as specific workspaces to be used in a course, before any formal quizzes or exams. In particular, some workspaces may behave in ways that students need to be aware of. Instructors should provide students with instructions on:
 
@@ -274,3 +275,19 @@ Instructors are strongly encouraged to allow students to get exposed to the Prai
 - Workspace-specific instructions. Different workspace environments may include different instructions for saving files, compiling, testing, and otherwise using the environment, as well as different directory structures that may be relevant in some contexts. Additionally, some workspaces may require additional actions in specific cases. For example, in Jupyter workspaces, students may need to know how to interrupt or restart the kernel.
 
 - Expectations about workspace start times. In the worst case, a workspace may take several minutes as new machines are started and as images are pulled. This may be especially important in timed assessments, where the workspace starting time may affect the student's ability to complete their work.
+
+## Troubleshooting workspace loading
+
+A variety of issues can prevent a workspace from loading, including antivirus software, browser extensions, and network issues. If a workspace fails to load, the following steps may help you resolve the issue or provide more information to the PrairieLearn team:
+
+- **Wait**: Wait for the loading progress indicator to reach 100%. This may take a few minutes if the workspace image is being pulled to a specific host for the first time. Even once a workspace's state changes to running, slow networks may result in a blank page for some time as the workspace's client-side assets load.
+- **Reboot:** If the workspace still hasn't loaded after a few minutes, try rebooting the workspace by clicking the "Reboot" button in the top nav bar. As above, give the workspace several minutes to load.
+- **Try another browser**: Some browser extensions may interfere with workspace loading. If you have another browser installed, try loading the workspace in that browser. Also consider trying a private/incognito window, which will disable most extensions.
+- **Check the browser developer tools console tab**: Open the browser's developer tools and navigate to the "Console" tab. This may contain error messages that can help diagnose the issue.
+  - On Chrome or Edge, you can open the developer tools by opening the three-dots menu in the top right corner, selecting "More tools", and then "Developer tools".
+  - On Safari, you have to turn on the developer tools first. In the menu bar, click "Safari" -> "Settings" -> "Advanced" and check "Show features for web developers". You can then open the developer tools by selecting "Develop" -> "Show Web Inspector".
+  - On Firefox, you can open the developer tools by opening the Firefox menu in the top right corner, selecting "More tools", and then "Web Developer Tools".
+- **Check the browser developer tools network tab**: Using the steps above, open the developer tools and navigate to the "Network" tab. This tab will show all network requests made by the browser, including those made by the workspace. Look for requests that are taking a long time or failing. You may need to reload the page to see all requests. If you want to provide the PrairieLearn team with more information, you can save the network log to a HAR file and send it. _Note: The HAR file may contain sensitive information, so be careful when sharing it. Only share it with individuals that you trust._
+  - On Chrome or Edge, click the downward-facing arrow on the Network tab menu bar (it has a tooltip with the text "Export HAR..." when you hover over it) and save the HAR file.
+  - On Safari, click the "Export" button in the top right corner and save the HAR file.
+  - On Firefox, click the settings gear in the Network tab and select "Save all as HAR".

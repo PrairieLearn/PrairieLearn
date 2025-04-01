@@ -15,8 +15,8 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
 import * as chunks from './chunks.js';
 import { config } from './config.js';
-import { IdSchema, User, UserSchema } from './db-types.js';
-import { createServerJob, ServerJobResult } from './server-jobs.js';
+import { IdSchema, type User, UserSchema } from './db-types.js';
+import { type ServerJobResult, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

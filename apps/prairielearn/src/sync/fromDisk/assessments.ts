@@ -1,13 +1,13 @@
-import { isFuture, isValid, parseISO } from 'date-fns';
-import _ from 'lodash';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { Assessment, CourseInstanceData } from '../course-db.js';
+import { type Assessment, type CourseInstanceData } from '../course-db.js';
+import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -50,35 +50,35 @@ function getParamsForAssessment(
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
 
-  const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
-  const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
-  const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
-  const allowPersonalNotes = !!_.get(assessment, 'allowPersonalNotes', true);
+  const allowIssueReporting = assessment.allowIssueReporting ?? true;
+  const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
+  const requireHonorCode = assessment.requireHonorCode ?? true;
+  const allowPersonalNotes = assessment.allowPersonalNotes ?? true;
 
   // It used to be the case that assessment access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
   const allowAccess = (assessment.allowAccess ?? [])
-    .filter((accessRule) => !_.has(accessRule, 'role') || accessRule.role === 'Student')
+    .filter((accessRule) => !('role' in accessRule) || accessRule.role === 'Student')
     .map((accessRule, index) => {
       return {
         number: index + 1,
-        mode: _.has(accessRule, 'mode')
-          ? accessRule.mode
-          : _.has(accessRule, 'examUuid')
-            ? 'Exam'
-            : null,
-        uids: _.has(accessRule, 'uids') ? accessRule.uids : null,
-        start_date: _.has(accessRule, 'startDate') ? accessRule.startDate : null,
-        end_date: _.has(accessRule, 'endDate') ? accessRule.endDate : null,
-        credit: _.has(accessRule, 'credit') ? accessRule.credit : null,
-        time_limit_min: _.has(accessRule, 'timeLimitMin') ? accessRule.timeLimitMin : null,
-        password: _.has(accessRule, 'password') ? accessRule.password : null,
-        exam_uuid: _.has(accessRule, 'examUuid') ? accessRule.examUuid : null,
-        show_closed_assessment: !!_.get(accessRule, 'showClosedAssessment', true),
-        show_closed_assessment_score: !!_.get(accessRule, 'showClosedAssessmentScore', true),
-        active: !!_.get(accessRule, 'active', true),
+        mode: run(() => {
+          if (accessRule.mode) return accessRule.mode;
+          if (accessRule.examUuid) return 'Exam';
+          return null;
+        }),
+        uids: accessRule.uids ?? null,
+        start_date: accessRule.startDate ?? null,
+        end_date: accessRule.endDate ?? null,
+        credit: accessRule.credit ?? null,
+        time_limit_min: accessRule.timeLimitMin ?? null,
+        password: accessRule.password ?? null,
+        exam_uuid: accessRule.examUuid ?? null,
+        show_closed_assessment: accessRule.showClosedAssessment ?? true,
+        show_closed_assessment_score: accessRule.showClosedAssessmentScore ?? true,
+        active: accessRule.active ?? true,
       };
     });
 
@@ -99,9 +99,7 @@ function getParamsForAssessment(
   const assessmentCanView = assessment?.canView ?? allRoleNames;
   const assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
   const alternativeGroups = (assessment.zones ?? []).map((zone) => {
-    const zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes')
-      ? zone.gradeRateMinutes
-      : assessment.gradeRateMinutes || 0;
+    const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
     const zoneCanView = zone?.canView ?? assessmentCanView;
     const zoneCanSubmit = zone?.canSubmit ?? assessmentCanSubmit;
     return zone.questions.map((question) => {
@@ -119,13 +117,11 @@ function getParamsForAssessment(
         canSubmit: string[] | null;
         advanceScorePerc: number;
       }[] = [];
-      const questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
-        ? question.gradeRateMinutes
-        : zoneGradeRateMinutes;
+      const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
       const questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
       if (question.alternatives) {
-        alternatives = _.map(question.alternatives, function (alternative) {
+        alternatives = question.alternatives.map((alternative) => {
           return {
             qid: alternative.id,
             maxPoints: alternative.maxPoints ?? question.maxPoints ?? null,
@@ -133,20 +129,10 @@ function getParamsForAssessment(
             maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints ?? null,
             autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
-            forceMaxPoints: _.has(alternative, 'forceMaxPoints')
-              ? alternative.forceMaxPoints
-              : _.has(question, 'forceMaxPoints')
-                ? question.forceMaxPoints
-                : false,
-            triesPerVariant: _.has(alternative, 'triesPerVariant')
-              ? alternative.triesPerVariant
-              : _.has(question, 'triesPerVariant')
-                ? question.triesPerVariant
-                : 1,
+            forceMaxPoints: alternative.forceMaxPoints ?? question.forceMaxPoints ?? false,
+            triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant ?? 1,
             advanceScorePerc: alternative.advanceScorePerc,
-            gradeRateMinutes: _.has(alternative, 'gradeRateMinutes')
-              ? alternative.gradeRateMinutes
-              : questionGradeRateMinutes,
+            gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
           };
@@ -265,13 +251,13 @@ function getParamsForAssessment(
     allow_real_time_grading: allowRealTimeGrading,
     allow_personal_notes: allowPersonalNotes,
     require_honor_code: requireHonorCode,
-    auto_close: !!_.get(assessment, 'autoClose', true),
+    auto_close: assessment.autoClose ?? true,
     max_points: assessment.maxPoints,
     max_bonus_points: assessment.maxBonusPoints,
     set_name: assessment.set,
     assessment_module_name: assessment.module,
     text: assessment.text,
-    constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
+    constant_question_value: assessment.constantQuestionValue ?? false,
     group_work: !!assessment.groupWork,
     group_max_size: assessment.groupMaxSize || null,
     group_min_size: assessment.groupMinSize || null,
@@ -323,22 +309,7 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   // If there are no access rules, the course instance is not accessible.
   if (!courseInstance.allowAccess?.length) return false;
 
-  return courseInstance.allowAccess.some((accessRule) => {
-    if (!accessRule.endDate) return true;
-
-    // We don't have easy access to the course instance's timezone, so we'll
-    // just parse it in the machine's local timezone. This is fine, as we're
-    // only interesting in a rough signal of whether the end date is in the
-    // future. If we're off by up to a day, it's not a big deal.
-    //
-    // If the date is invalid, we'll treat it as though it's in the past and
-    // thus that it does not make the course instance accessible.
-    //
-    // `parseISO` is used instead of `new Date` for consistency with `course-db.ts`.
-    const parsedDate = parseISO(accessRule.endDate);
-    if (!isValid(parsedDate)) return false;
-    return isFuture(parsedDate);
-  });
+  return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
 }
 
 export async function sync(

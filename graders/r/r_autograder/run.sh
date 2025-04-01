@@ -4,13 +4,12 @@
 # INIT
 ##########################
 
+echo "[run.sh] --- New run started at $(date)"
+
 ## switch to control if more values are displayed on console or not
 DEBUG="off"
 export DEBUG
-if [ ${DEBUG} == "on" ]; then VFLAG="-v" else VFLAG=""; fi
-
-## the directory for the autograder
-AG_DIR="/r_autograder"
+if [ ${DEBUG} == "on" ]; then VFLAG="-v"; else VFLAG=""; fi
 
 ## the directory where the file pertaining to the job are mounted
 JOB_DIR="/grade"
@@ -18,6 +17,12 @@ JOB_DIR="/grade"
 STUDENT_DIR="${JOB_DIR}/student"
 TEST_DIR="${JOB_DIR}/tests"
 OUT_DIR="${JOB_DIR}/results"
+
+## the default directory for the autograder
+AG_DIR="/r_autograder"
+## alternate entrypoint within a course repo, to use it set
+## value of info.json for 'entrypoint' and mount 'serverFilesCourse'
+#AG_DIR="${JOB_DIR}/serverFilesCourse/r_autograder"
 
 ## where we will copy everything
 MERGE_DIR="${JOB_DIR}/run"
@@ -31,7 +36,7 @@ mkdir ${MERGE_DIR} ${BIN_DIR} ${OUT_DIR}
 ## making the test directory root:root and stripping group and others
 ## this will prevent the restricted user from snooping
 chown -R root:root ${TEST_DIR}
-chmod -R go-rwx    ${TEST_DIR}
+chmod -R go-rwx ${TEST_DIR}
 
 ## under 'tinytest' artefacts are created where the tests are running
 ## so let the 'ag' user own the directory to write files, run mkdir, ...
@@ -40,13 +45,12 @@ chown ag:ag ${TEST_DIR}
 if [ ${DEBUG} == "on" ]; then ls -ld ${TEST_DIR}; fi
 
 echo "[run.sh] copying content"
-cp    ${VFLAG}  ${STUDENT_DIR}/*  ${BIN_DIR}
-cp    ${VFLAG}  ${AG_DIR}/*       ${MERGE_DIR}
-cp -r ${VFLAG}  ${TEST_DIR}/*     ${MERGE_DIR}
-chown ${VFLAG}  ag:ag             ${MERGE_DIR}
+cp ${VFLAG} ${STUDENT_DIR}/* ${BIN_DIR}
+cp ${VFLAG} ${AG_DIR}/* ${MERGE_DIR}
+cp -r ${VFLAG} ${TEST_DIR}/* ${MERGE_DIR}
+chown ${VFLAG} ag:ag ${MERGE_DIR}
 
 if [ ${DEBUG} == "on" ]; then ls -ld ${MERGE_DIR} ${MERGE_DIR}/*; fi
-
 
 ##########################
 # RUN
@@ -61,8 +65,7 @@ echo "[run.sh] starting autograder"
 echo "[run.sh] Rscript pltest.R"
 Rscript pltest.R
 
-if [ ! -s results.json ]
-then
+if [ ! -s results.json ]; then
     # Let's attempt to keep everything from dying completely
     echo '{"succeeded": false, "score": 0.0, "message": "Catastrophic failure! Contact course staff and have them check the logs for this submission."}' > results.json
 fi
@@ -70,6 +73,5 @@ fi
 echo "[run.sh] autograder completed"
 
 # get the results from the file
-cp  ${VFLAG}  ${MERGE_DIR}/results.json  ${OUT_DIR}
-echo "[run.sh] copied results and DONE."
-echo "[run.sh] DONE"
+cp ${VFLAG} ${MERGE_DIR}/results.json ${OUT_DIR}
+echo "[run.sh] --- copied results, done at $(date)"

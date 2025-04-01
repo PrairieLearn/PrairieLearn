@@ -3,8 +3,8 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
-import { Course, CourseInstance } from '../../../lib/db-types.js';
-import { PlanName } from '../../lib/billing/plans-types.js';
+import { type Course, type CourseInstance } from '../../../lib/db-types.js';
+import { type PlanName } from '../../lib/billing/plans-types.js';
 import { formatStripePrice } from '../../lib/billing/stripe.js';
 
 export function StudentCourseInstanceUpgrade({
@@ -74,7 +74,7 @@ export function StudentCourseInstanceUpgrade({
                     type="submit"
                     name="__action"
                     value="upgrade"
-                    class="btn btn-primary btn-block"
+                    class="btn btn-primary d-block w-100"
                     disabled
                   >
                     Upgrade

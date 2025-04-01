@@ -20,7 +20,7 @@ To start, create a [Google Cloud account](https://cloud.google.com/) and then:
 
 Now add the keys to `config.json`:
 
-```json
+```json title="config.json"
 {
   "googleClientId": "Your Client ID key",
   "googleClientSecret": "Your Client Secret key",

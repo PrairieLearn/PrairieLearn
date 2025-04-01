@@ -110,7 +110,6 @@ div.pl-order-blocks-container {
 }
 
 div.pl-order-blocks-header {
-  height: 3rem;
   display: flex;
   align-items: center;
 }
@@ -148,4 +147,9 @@ div.pl-order-blocks-header {
 
 .pl-order-blocks-pairing-indicator li:last-child {
   margin-bottom: 0px !important;
+}
+
+.pl-order-blocks-selected:focus {
+  outline: 3px solid #ff6200;
+  outline-offset: -3px;
 }
