@@ -382,6 +382,7 @@ jobs:
           tags: prairielearn/grader-r:${{ env.COMMIT_SHA }}
 
   build-core-images:
+    if: false
     runs-on: ubuntu-latest
 
     env:
