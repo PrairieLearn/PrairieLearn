@@ -1,3 +1,4 @@
+import type { EventEmitter } from 'node:events';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
@@ -8,8 +9,19 @@ import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
 
 import { getRuntimeDirectoryForCourse } from './chunks.js';
-import type { Course, Question, Submission, Variant } from './db-types.js';
+import { type Config } from './config.js';
+import type { Course, GradingJob, Question, Submission, Variant } from './db-types.js';
 
+export interface Grader {
+  handleGradingRequest(
+    grading_job: GradingJob,
+    submission: Submission,
+    variant: Variant,
+    question: Question,
+    course: Course,
+    configOverrides?: Partial<Config>,
+  ): EventEmitter;
+}
 /**
  * Returns the directory where job files should be written to while running
  * with AWS infrastructure.

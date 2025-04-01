@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/htmlhint.json",
   // Question files don't need to have a doctype declaration
   "doctype-first": false,
   "attr-lowercase": true,

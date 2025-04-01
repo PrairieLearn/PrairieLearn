@@ -4,6 +4,7 @@ export function IssueBadge({
   count,
   suppressLink,
   issueQid,
+  issueAid,
   urlPrefix,
   className,
 }: {
@@ -14,26 +15,34 @@ export function IssueBadge({
       suppressLink: true;
       urlPrefix?: undefined;
       issueQid?: undefined;
+      issueAid?: undefined;
     }
   | {
       suppressLink?: false;
       urlPrefix: string;
       issueQid?: string | null;
+      issueAid?: string | null;
     }
 )) {
   // Convert explicitly to a number because some unvalidated queries still return a string (via bigint)
   if (Number(count) === 0) return '';
 
   if (suppressLink) {
-    return html`<span class="badge badge-pill badge-danger ${className ?? ''}">${count}</span>`;
+    return html`<span class="badge rounded-pill text-bg-danger ${className ?? ''}">${count}</span>`;
+  }
+
+  let query = 'is%3Aopen';
+  if (issueQid) {
+    query += `+qid%3A${encodeURIComponent(issueQid)}`;
+  }
+  if (issueAid) {
+    query += `+assessment%3A${encodeURIComponent(issueAid)}`;
   }
 
   return html`
     <a
-      class="badge badge-pill badge-danger ${className ?? ''}"
-      href="${urlPrefix}/course_admin/issues${issueQid
-        ? `?q=is%3Aopen+qid%3A${encodeURIComponent(issueQid)}`
-        : ''}"
+      class="badge rounded-pill text-bg-danger ${className ?? ''}"
+      href="${urlPrefix}/course_admin/issues?q=${query}"
       aria-label="${count} open ${count === 1 ? 'issue' : 'issues'}"
     >
       ${count}

@@ -1,5 +1,4 @@
 import { assert } from 'chai';
-import _ from 'lodash';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -890,7 +889,7 @@ describe('Exam assessment', function () {
     helperQuestion.getInstanceQuestion(locals);
     describe('save data for later submission', function () {
       it('should succeed', function () {
-        locals.savedVariant = _.clone(locals.variant);
+        locals.savedVariant = structuredClone(locals.variant);
         locals.questionSavedCsrfToken = locals.__csrf_token;
       });
     });
@@ -939,11 +938,11 @@ describe('Exam assessment', function () {
     });
     describe('restore saved data for submission', function () {
       it('should succeed', function () {
-        locals.variant = _.clone(locals.savedVariant);
+        locals.variant = structuredClone(locals.savedVariant);
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 400);
   });
 
   describe('26. save incorrect answer to question fossilFuelsRadio', function () {
@@ -985,7 +984,7 @@ describe('Exam assessment', function () {
     helperQuestion.getInstanceQuestion(locals);
     describe('save data for later submission', function () {
       it('should succeed', function () {
-        locals.savedVariant = _.clone(locals.variant);
+        locals.savedVariant = structuredClone(locals.variant);
         locals.questionSavedCsrfToken = locals.__csrf_token;
       });
     });
@@ -1036,11 +1035,11 @@ describe('Exam assessment', function () {
     });
     describe('restore saved data for submission', function () {
       it('should succeed', function () {
-        locals.variant = _.clone(locals.savedVariant);
+        locals.variant = structuredClone(locals.savedVariant);
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 400);
   });
 
   describe('30. load question fossilFuelsRadio page and save data for later submission', function () {
@@ -1053,7 +1052,7 @@ describe('Exam assessment', function () {
     helperQuestion.getInstanceQuestion(locals);
     describe('save data for later submission', function () {
       it('should succeed', function () {
-        locals.savedVariant = _.clone(locals.variant);
+        locals.savedVariant = structuredClone(locals.variant);
         locals.questionSavedCsrfToken = locals.__csrf_token;
       });
     });
@@ -1079,11 +1078,11 @@ describe('Exam assessment', function () {
     });
     describe('restore saved data for submission', function () {
       it('should succeed', function () {
-        locals.variant = _.clone(locals.savedVariant);
+        locals.variant = structuredClone(locals.savedVariant);
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 400);
   });
 
   describe('33. regrading', function () {
@@ -1815,7 +1814,7 @@ describe('Exam assessment', function () {
             helperQuestion.getInstanceQuestion(locals);
             describe('saving submission data', function () {
               it('should succeed', function () {
-                locals.question.savedVariant = _.clone(locals.variant);
+                locals.question.savedVariant = structuredClone(locals.variant);
                 locals.question.questionSavedCsrfToken = locals.__csrf_token;
               });
             });
@@ -1823,20 +1822,20 @@ describe('Exam assessment', function () {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'save';
-                locals.variant = _.clone(locals.question.savedVariant);
+                locals.variant = structuredClone(locals.question.savedVariant);
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
-            helperQuestion.postInstanceQuestionAndFail(locals);
+            helperQuestion.postInstanceQuestionAndFail(locals, 400);
           } else if (questionTest.action === 'grade-stored-fail') {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'grade';
-                locals.variant = _.clone(locals.question.savedVariant);
+                locals.variant = structuredClone(locals.question.savedVariant);
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
-            helperQuestion.postInstanceQuestionAndFail(locals);
+            helperQuestion.postInstanceQuestionAndFail(locals, 400);
           } else if (questionTest.action === 'check-closed') {
             helperQuestion.getInstanceQuestion(locals);
           } else if (questionTest.action === 'save' || questionTest.action === 'grade') {

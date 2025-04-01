@@ -4,6 +4,7 @@ import { assert } from 'chai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { z } from 'zod';
 
@@ -69,21 +70,21 @@ describe('Editing assessment settings', () => {
     );
     assert.equal(settingsPageResponse.status, 200);
 
-    const response = await fetchCheerio(
+    const response = await fetch(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
       {
         method: 'POST',
-        form: {
+        body: new URLSearchParams({
           __action: 'update_assessment',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
           title: 'Test Title',
           type: 'Homework',
           set: 'Practice Quiz',
           number: '1',
           module: 'Module2',
           aid: 'HW2',
-        },
+        }),
       },
     );
 
@@ -107,21 +108,21 @@ describe('Editing assessment settings', () => {
     );
     assert.equal(settingsPageResponse.status, 200);
 
-    const response = await fetchCheerio(
+    const response = await fetch(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
       {
         method: 'POST',
-        form: {
+        body: new URLSearchParams({
           __action: 'update_assessment',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
           title: 'Test Title',
           type: 'Homework',
           set: 'Practice Quiz',
           number: '1',
           module: 'Module2',
           aid: 'nestedPath/HW2',
-        },
+        }),
       },
     );
 
@@ -131,7 +132,7 @@ describe('Editing assessment settings', () => {
 
   step('verify changing aid did not leave empty directories', async () => {
     const assessmentDir = path.join(assessmentLiveDir, 'HW2');
-    assert.equal(await fs.pathExists(assessmentDir), false);
+    assert.notOk(await fs.pathExists(assessmentDir));
   });
 
   step('verify reverting a nested assessment id works correctly', async () => {
@@ -140,21 +141,21 @@ describe('Editing assessment settings', () => {
     );
     assert.equal(settingsPageResponse.status, 200);
 
-    const response = await fetchCheerio(
+    const response = await fetch(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
       {
         method: 'POST',
-        form: {
+        body: new URLSearchParams({
           __action: 'update_assessment',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
           title: 'Test Title',
           type: 'Homework',
           set: 'Practice Quiz',
           number: '1',
           module: 'Module2',
           aid: 'HW2',
-        },
+        }),
       },
     );
 
@@ -209,21 +210,21 @@ describe('Editing assessment settings', () => {
       );
       assert.equal(settingsPageResponse.status, 200);
 
-      const response = await fetchCheerio(
+      const response = await fetch(
         `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
         {
           method: 'POST',
-          form: {
+          body: new URLSearchParams({
             __action: 'update_assessment',
-            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
-            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
             title: 'Test Title - Unauthorized',
             type: 'Homework',
             set: 'Homework',
             number: '1',
             module: 'Module1',
             aid: 'HW1',
-          },
+          }),
         },
       );
       assert.equal(response.status, 403);
@@ -238,21 +239,21 @@ describe('Editing assessment settings', () => {
       );
       assert.equal(settingsPageResponse.status, 200);
 
-      const response = await fetchCheerio(
+      const response = await fetch(
         `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
         {
           method: 'POST',
-          form: {
+          body: new URLSearchParams({
             __action: 'update_assessment',
-            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
-            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
             title: 'Test Title - No Course Info',
             type: 'Homework',
             set: 'Homework',
             number: '1',
             module: 'Module1',
             aid: 'HW1',
-          },
+          }),
         },
       );
       assert.equal(response.status, 400);
@@ -266,21 +267,21 @@ describe('Editing assessment settings', () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
     );
-    const response = await fetchCheerio(
+    const response = await fetch(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
       {
         method: 'POST',
-        form: {
+        body: new URLSearchParams({
           __action: 'update_assessment',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
           title: assessmentInfo.title,
           type: assessmentInfo.type,
           set: assessmentInfo.set,
           number: assessmentInfo.number,
           module: assessmentInfo.module,
           aid: 'HW2',
-        },
+        }),
       },
     );
     assert.equal(response.status, 200);
@@ -302,24 +303,87 @@ describe('Editing assessment settings', () => {
     });
     await execa('git', ['push', 'origin', 'master'], { cwd: courseDevDir, env: process.env });
 
-    const response = await fetchCheerio(
+    const response = await fetch(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
       {
         method: 'POST',
-        form: {
+        body: new URLSearchParams({
           __action: 'update_assessment',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
           title: 'Test Title2',
           type: 'Homework',
           set: 'Homework',
           number: '1',
           module: 'Module1',
           aid: 'HW1',
-        },
+        }),
       },
     );
     assert.equal(response.status, 200);
     assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
   });
+
+  step('change assessment id', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+    );
+
+    // Change the assessment id to a valid, new id
+    const response = await fetch(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'update_assessment',
+          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
+          title: 'Test Title',
+          type: 'Homework',
+          set: 'Homework',
+          number: '1',
+          module: 'Module1',
+          aid: 'A1',
+        }),
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/assessment\/1\/settings$/);
+  });
+
+  step('verify change assessment id', async () => {
+    const assessmentDir = path.join(assessmentLiveDir, 'A1');
+    assert.ok(await fs.pathExists(assessmentDir));
+  });
+
+  step(
+    'should not be able to submit if provided assessment id falls outside the correct root directory',
+    async () => {
+      const settingsPageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+      );
+
+      // Change the assessment id to one that falls outside the correct root directory
+      const response = await fetch(
+        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'update_assessment',
+            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
+            title: 'Test Title',
+            type: 'Homework',
+            set: 'Homework',
+            number: '1',
+            module: 'Module1',
+            aid: '../A2',
+          }),
+        },
+      );
+
+      assert.equal(response.status, 400);
+    },
+  );
 });

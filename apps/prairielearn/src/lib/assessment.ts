@@ -7,12 +7,13 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  type AssessmentInstance,
+  AssessmentInstanceSchema,
+  ClientFingerprintSchema,
   CourseSchema,
   IdSchema,
   QuestionSchema,
   VariantSchema,
-  ClientFingerprintSchema,
-  AssessmentInstanceSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
@@ -104,22 +105,26 @@ export async function makeAssessmentInstance(
   user_id: string,
   group_work: boolean,
   authn_user_id: string,
-  mode: 'Exam' | 'Homework',
+  mode: AssessmentInstance['mode'],
   time_limit_min: number | null,
   date: Date,
   client_fingerprint_id: string | null,
 ): Promise<string> {
-  const result = await sqldb.callOneRowAsync('assessment_instances_insert', [
-    assessment_id,
-    user_id,
-    group_work,
-    authn_user_id,
-    mode,
-    time_limit_min,
-    date,
-    client_fingerprint_id,
-  ]);
-  return result.rows[0].assessment_instance_id;
+  const assessment_instance_id = await sqldb.callRow(
+    'assessment_instances_insert',
+    [
+      assessment_id,
+      user_id,
+      group_work,
+      authn_user_id,
+      mode,
+      time_limit_min,
+      date,
+      client_fingerprint_id,
+    ],
+    IdSchema,
+  );
+  return assessment_instance_id;
 }
 
 /**
@@ -172,6 +177,7 @@ export async function updateAssessmentInstance(
  * if needed.
  *
  * @param assessment_instance_id - The assessment instance to grade.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The current authenticated user.
  * @param requireOpen - Whether to enforce that the assessment instance is open before grading.
  * @param close - Whether to close the assessment instance after grading.
@@ -179,6 +185,7 @@ export async function updateAssessmentInstance(
  */
 export async function gradeAssessmentInstance(
   assessment_instance_id: string,
+  user_id: string | null,
   authn_user_id: string | null,
   requireOpen: boolean,
   close: boolean,
@@ -229,6 +236,7 @@ export async function gradeAssessmentInstance(
       check_submission_id,
       row.question,
       row.variant_course,
+      user_id,
       authn_user_id,
       overrideGradeRate,
     );
@@ -312,6 +320,7 @@ export async function gradeAllAssessmentInstances(
       const requireOpen = true;
       await gradeAssessmentInstance(
         row.assessment_instance_id,
+        user_id,
         authn_user_id,
         requireOpen,
         close,

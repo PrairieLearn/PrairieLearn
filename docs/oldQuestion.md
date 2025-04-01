@@ -4,7 +4,7 @@
 
 ## Partial credit
 
-By default all v1/v2 questions do not award partial credit. That is, a student either gets zero points or full points for the question. The question grading function (see below) can generate a fractional score in the range 0 to 1, but this is then rounded to 0 or 1 to give no points or full points. Scores below 0.5 are rounded down to 0, while scores equal to or above 0.5 are rounded up to 1. For example, if a question grading function returns 0.3 for a 10-point question, then this will result in zero points, while a grading score of 0.7 for the same question would give 10 points.
+By default, all v1/v2 questions do not award partial credit. That is, a student either gets zero points or full points for the question. The question grading function (see below) can generate a fractional score in the range 0 to 1, but this is then rounded to 0 or 1 to give no points or full points. Scores below 0.5 are rounded down to 0, while scores equal to or above 0.5 are rounded up to 1. For example, if a question grading function returns 0.3 for a 10-point question, then this will result in zero points, while a grading score of 0.7 for the same question would give 10 points.
 
 To give actual partial credit for a question, set `"partialCredit": true` in the `info.json` file for the question. This will make a score of 0.3 on a 10-point question award 3 points, for example.
 
@@ -30,7 +30,7 @@ See below for detailed information about each question type.
 
 A `MultipleChoice` question has an `info.json` that provides the question text, one or more correct answers, and one or more incorrect answers. One correct answer is randomly chosen, and enough incorrect answers to make `numberAnswers` total answers, which are then displayed to the student in a random order. For example:
 
-```json
+```json title="info.json"
 {
   "title": "Advantages of fossil fuels (radio)",
   "topic": "Energy",
@@ -61,7 +61,7 @@ A `MultipleChoice` question has an `info.json` that provides the question text, 
 
 A `MultipleTrueFalse` question has an `info.json` that provides the question text, zero or more true statements, and zero or more false statements. All the given statements are used, and are displayed to the students in a random order. For example:
 
-```json
+```json title="info.json"
 {
   "title": "Advantages of fossil fuels (MTF)",
   "topic": "Energy",
@@ -92,7 +92,7 @@ A `MultipleTrueFalse` question has an `info.json` that provides the question tex
 
 A `Checkbox` question has an `info.json` that provides the question text, one or more correct answers, and one or more incorrect answers. Several correct answers are randomly chosen (between `minCorrectAnswers` and `maxCorrectAnswers`, inclusive), and enough incorrect answers to make `numberAnswers` total answers, which are then displayed to the student in a random order. Depending on the values of `minCorrectAnswers` and `maxCorrectAnswers` it is possible to have all or none of the possible answers be correct. For example:
 
-```json
+```json title="info.json"
 {
   "title": "Advantages of fossil fuels (checkbox)",
   "topic": "Energy",
@@ -125,7 +125,7 @@ A `Checkbox` question has an `info.json` that provides the question text, one or
 
 A `File` question gives the student a file to download, and then requires an uploaded file for the answer. The downloaded file is specified in the `info.json` like:
 
-```json
+```json title="info.json"
 {
   "title": "Write a Fibonacci function",
   "topic": "Functions",

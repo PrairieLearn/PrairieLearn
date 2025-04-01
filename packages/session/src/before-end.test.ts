@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import express, { type Request, type Response, type NextFunction } from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
 import fetch from 'node-fetch';
 
 import { withServer } from '@prairielearn/express-test-utils';

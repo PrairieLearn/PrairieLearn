@@ -19,12 +19,13 @@ import * as syncSharingSets from './fromDisk/sharing.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import {
-  selectSharedQuestions,
-  getInvalidRenames,
-  checkInvalidSharingSetRemovals,
+  checkInvalidDraftQuestionSharing,
   checkInvalidPublicSharingRemovals,
-  checkInvalidSharingSetDeletions,
   checkInvalidSharingSetAdditions,
+  checkInvalidSharingSetDeletions,
+  checkInvalidSharingSetRemovals,
+  getInvalidRenames,
+  selectSharedQuestions,
 } from './sharing.js';
 
 interface SyncResultSharingError {
@@ -69,13 +70,15 @@ export async function checkSharingConfigurationValid(
     courseData,
     logger,
   );
+  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
   const sharingConfigurationValid =
     !existInvalidRenames &&
     !existInvalidPublicSharingRemovals &&
     !existInvalidSharingSetDeletions &&
     !existInvalidSharingSetAdditions &&
-    !existInvalidSharingSetRemovals;
+    !existInvalidSharingSetRemovals &&
+    !existInvalidDraftQuestionSharing;
   return sharingConfigurationValid;
 }
 

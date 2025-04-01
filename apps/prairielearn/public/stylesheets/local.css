@@ -126,6 +126,11 @@ mjx-container {
   max-width: min(800px, 90vw);
 }
 
+.popover-narrow-fixed {
+  width: 400px;
+  max-width: 90vw;
+}
+
 /**
  * Identical to the variables for `btn-light`, except with a transparent
  * background and border in the default state. This style is useful for
@@ -147,6 +152,31 @@ mjx-container {
   --bs-btn-disabled-color: #000;
   --bs-btn-disabled-bg: #f8f9fa;
   --bs-btn-disabled-border-color: #f8f9fa;
+}
+
+/**
+ * A darker variant of `btn-light`.
+ *
+ * These colors were determined by rebuilding the Bootstrap CSS with the `light`
+ * base color redefined from gray-100 to gray-300 here:
+ *
+ * https://github.com/twbs/bootstrap/blob/bafa9d25ed38b8742a3f52bc1401d46b71960153/scss/_variables.scss#L307
+ */
+.btn.btn-med-light {
+  --bs-btn-color: #000;
+  --bs-btn-bg: #dee2e6;
+  --bs-btn-border-color: #dee2e6;
+  --bs-btn-hover-color: #000;
+  --bs-btn-hover-bg: #bdc0c4;
+  --bs-btn-hover-border-color: #b2b5b8;
+  --bs-btn-focus-shadow-rgb: 189, 192, 196;
+  --bs-btn-active-color: #000;
+  --bs-btn-active-bg: #b2b5b8;
+  --bs-btn-active-border-color: #a7aaad;
+  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  --bs-btn-disabled-color: #000;
+  --bs-btn-disabled-bg: #dee2e6;
+  --bs-btn-disabled-border-color: #dee2e6;
 }
 
 /**
@@ -273,7 +303,7 @@ a.badge {
 
 /* Supports a color accent at the tops of nav tabs, github-style */
 .nav-tabs.pl-nav-tabs-bar .nav-link.active {
-  border-top-color: var(--primary, var(--bs-primary));
+  border-top-color: var(--bs-primary);
   border-top-width: 0.2rem;
   padding-top: 0.4rem;
 }
@@ -298,21 +328,6 @@ a.badge {
   margin-bottom: 0;
   font-size: 1rem;
   font-weight: 400;
-}
-
-/* Custom button styles that look better in input groups */
-.btn.btn-med-light {
-  color: #212529;
-  background-color: #dbdcdc;
-}
-
-.btn.btn-med-light:hover {
-  background-color: #ced0d0;
-}
-
-.btn.btn-med-light:focus {
-  background-color: #c3c3c3;
-  box-shadow: 0 0 0 0.2rem rgba(195, 195, 195, 0.25);
 }
 
 .user-output,
@@ -364,132 +379,21 @@ small .user-output-invalid {
   background: #fff;
 }
 
+/**
+ * We use red text in light buttons to indicate errors on many elements.
+ * By default, this has insufficient contrast. We override the color in
+ * this specific case to improve the contrast.
+ */
+.btn.btn-light.text-danger {
+  color: hsl(from rgb(var(--bs-danger-rgb)) h s calc(l - 5)) !important;
+}
+
 /***********************************
  * Button focus accessibility styles
  ***********************************/
-
-/**
- * TODO: After we're running with only Bootstrap 5, these can be collapsed into
- * a single rule with all the different selectors, since they can all share the
- * same var(--bs-btn-hover-color) value.
- */
-
-.btn.btn-primary:focus:focus-visible {
+.btn:focus:focus-visible {
   outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-secondary:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-success:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-danger:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-warning:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #000000) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-info:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-light:focus:focus-visible,
-.btn.btn-ghost:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #000000) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-dark:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-link:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #007bff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-primary:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #007bff) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-secondary:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #6c757d) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-success:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #28a745) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-danger:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #dc3545) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-warning:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #ffc107) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-info:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #17a2b8) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-light:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #f8f9fa) !important;
-  outline-width: 2px !important;
-  outline-offset: -2px !important;
-}
-
-.btn.btn-outline-dark:focus:focus-visible {
-  outline-style: solid !important;
-  outline-color: var(--bs-btn-hover-color, #343a40) !important;
+  outline-color: var(--bs-btn-hover-color) !important;
   outline-width: 2px !important;
   outline-offset: -2px !important;
 }
@@ -498,13 +402,13 @@ small .user-output-invalid {
 .table > :not(caption) > * > .sticky-column {
   position: sticky;
   left: 0;
-  background-color: var(--bs-body-bg, white);
+  background-color: var(--bs-body-bg);
   background-clip: padding-box;
   box-shadow: inset -1px 0 #dee2e6;
 }
 
 .table.table-hover > tbody > tr:hover > td.sticky-column {
-  color: var(--bs-table-hover-color, #212529);
+  color: var(--bs-table-hover-color);
   /* This must be opaque, to ensure the cell shows on top of others.
      TODO: compute this value by combining --bs-body-bg (opaque) with --bs-table-hover-bg (semi-transparent). */
   background-color: #efefef;
