@@ -1,5 +1,7 @@
 import * as sqldb from '@prairielearn/postgres';
+import { callAsync } from '@prairielearn/postgres';
 
+import { type Author, AuthorSchema } from '../../lib/db-types.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
@@ -26,36 +28,35 @@ export async function sync(
   }
 
   // Insert all unique authors
-  await sqldb.queryAsync(sql.sync_authors, {
-    course_id: courseId,
-    author_names: Array.from(uniqueAuthors),
+  await sqldb.queryAsync(sql.insert_authors, {
+    authors: Array.from(uniqueAuthors).map((authorString) => JSON.stringify([authorString])),
   });
 
   // Get the mapping of author names to their IDs
-  const authors = await sqldb.queryAsync(sql.select_authors, {
-    course_id: courseId,
-  });
+  const authors = await sqldb.queryRows(sql.select_authors, {}, AuthorSchema);
 
-  // Create question-author relationships
-  const questionAuthorRelationships: { question_id: string; author_id: string }[] = [];
-  for (const qid of Object.keys(courseData.questions)) {
-    const question = courseData.questions[qid];
-    if (infofile.hasErrors(question)) continue;
-    const questionId = questionIds[qid];
-    const questionAuthors = question.data?.authors ?? [];
-    for (const authorName of questionAuthors) {
-      const author = authors.rows.find((a) => a.name === authorName);
-      if (author) {
-        questionAuthorRelationships.push({
-          question_id: questionId,
-          author_id: author.id,
-        });
-      }
-    }
+  const authorIdsByString = new Map<string, Author>();
+  for (const author of authors) {
+    authorIdsByString.set(author.author_string, author);
   }
 
-  // Sync the question-author relationships
-  await sqldb.queryAsync(sql.sync_question_authors, {
-    question_author_relationships: questionAuthorRelationships,
+  // Create question-author relationships
+  const questionAuthorsParam: string[] = [];
+  Object.entries(courseData.questions).forEach(([qid, question]) => {
+    if (infofile.hasErrors(question)) return;
+    const dedupedQuestionAuthorStrings = new Set<string>();
+    (question.data?.authors ?? []).forEach((a) => dedupedQuestionAuthorStrings.add(a));
+    const questionTagIds = [...dedupedQuestionAuthorStrings].map((a) => {
+      const author = authorIdsByString.get(a);
+
+      // This should never happen in practice, but this keeps the type checker
+      // happy, and if it does happen, we want it to fail obviously and loudly.
+      if (!author) throw new Error(`Author ${a} not found`);
+
+      return author.id;
+    });
+    questionAuthorsParam.push(JSON.stringify([questionIds[qid], questionTagIds]));
   });
+
+  await callAsync('sync_question_authors', [questionAuthorsParam]);
 }

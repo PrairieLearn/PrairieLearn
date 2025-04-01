@@ -979,6 +979,12 @@ export const TagSchema = z.object({
 });
 export type Tag = z.infer<typeof TagSchema>;
 
+export const AuthorSchema = z.object({
+  id: IdSchema,
+  author_string: z.string(),
+});
+export type Author = z.infer<typeof AuthorSchema>;
+
 export const TopicSchema = z.object({
   color: z.string(),
   course_id: IdSchema,

@@ -259,20 +259,19 @@ describe('Question syncing', () => {
     await util.syncCourseData(courseDir);
 
     const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
-    assert.isOk(originalSyncedQuestion);
+    assert.ok(originalSyncedQuestion);
 
     // Check that the author was added to the authors table
     const authors = await util.dumpTable('authors');
-    const author = authors.find((a) => a.name === newAuthor);
-    assert.isOk(author);
-    assert.equal(author.course_id, originalSyncedQuestion.course_id);
+    const author = authors.find((a) => a.author_string === newAuthor);
+    assert.ok(author);
 
     // Check that the question-author relationship was created
     const questionAuthors = await util.dumpTable('question_authors');
     const questionAuthor = questionAuthors.find(
       (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author.id,
     );
-    assert.isOk(questionAuthor);
+    assert.ok(questionAuthor);
   });
 
   it('Authors are removed when removed from question', async () => {
@@ -298,10 +297,10 @@ describe('Question syncing', () => {
     const questionAuthor = questionAuthors.find(
       (qa) => qa.question_id === originalSyncedQuestion.id,
     );
-    assert.isNotOk(questionAuthor);
+    assert.isUndefined(questionAuthor);
   });
 
-  it('Authors are shared between questions in the same course', async () => {
+  it('Authors are shared between questions', async () => {
     const courseData = util.getCourseData();
     const newAuthor = 'example@example.com';
 
@@ -322,9 +321,9 @@ describe('Question syncing', () => {
 
     // Check that only one author record was created
     const authors = await util.dumpTable('authors');
-    const author = authors.find((a) => a.name === newAuthor);
+    const author = authors.find((a) => a.author_string === newAuthor);
     assert.isOk(author);
-    assert.equal(authors.filter((a) => a.name === newAuthor).length, 1);
+    assert.equal(authors.filter((a) => a.author_string === newAuthor).length, 1);
 
     // Check that both questions have the author relationship
     const questionAuthors = await util.dumpTable('question_authors');
@@ -340,34 +339,6 @@ describe('Question syncing', () => {
     );
     assert.isOk(question1Author);
     assert.isOk(question2Author);
-  });
-
-  it('Authors are isolated between different courses', async () => {
-    const courseData = util.getCourseData();
-    const newAuthor = 'example@example.com';
-
-    // Add author to question in first course
-    if (!courseData.questions[util.QUESTION_ID].authors) {
-      courseData.questions[util.QUESTION_ID].authors = [];
-    }
-    courseData.questions[util.QUESTION_ID].authors?.push(newAuthor);
-    const courseDir1 = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir1);
-
-    // Create a second course with the same author
-    const courseData2 = util.getCourseData();
-    if (!courseData2.questions[util.QUESTION_ID].authors) {
-      courseData2.questions[util.QUESTION_ID].authors = [];
-    }
-    courseData2.questions[util.QUESTION_ID].authors?.push(newAuthor);
-    const courseDir2 = await util.writeCourseToTempDirectory(courseData2);
-    await util.syncCourseData(courseDir2);
-
-    // Check that two separate author records were created
-    const authors = await util.dumpTable('authors');
-    const courseAuthors = authors.filter((a) => a.name === newAuthor);
-    assert.equal(courseAuthors.length, 2);
-    assert.notEqual(courseAuthors[0].course_id, courseAuthors[1].course_id);
   });
 
   it('records an error if "options" object is invalid', async () => {
