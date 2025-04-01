@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import subprocess
@@ -76,9 +77,15 @@ for image in images.split(","):
         metadata = f.read()
 
     print(f"Metadata: {metadata.strip()}")
-    digest = json.loads(metadata)["containerimage.digest"]
 
     # Write metadata to the metadata directory
     if metadata_dir:
-        with open(os.path.join(metadata_dir, f"{digest}.json"), "w") as f:
+        build_ref = json.loads(metadata)["buildx.build.ref"]
+
+        # We need a unique name for the metadata file. We'll use the part of the
+        # image name after the last slash, and a hash of the build ref.
+        name_without_scope = image.split("/")[-1]
+        hashed_build_ref = hashlib.sha256(build_ref.encode()).hexdigest()
+        metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
+        with open(os.path.join(metadata_dir, f"{metadata_filename}.json"), "w") as f:
             json.dump(metadata, f)
