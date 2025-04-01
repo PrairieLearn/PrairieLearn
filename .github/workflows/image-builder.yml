@@ -191,7 +191,9 @@ jobs:
               build_contexts="$build_contexts$image=docker-image://localhost:5000/$image:latest\n"
             done
           done
-          echo "build-contexts=$build_contexts" >> $GITHUB_OUTPUT
+          echo "build-contexts<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$build_contexts" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
           docker image ls -a
 
