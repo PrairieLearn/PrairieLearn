@@ -5,14 +5,9 @@ import sys
 from collections import defaultdict
 
 metadata_dir = os.environ.get("METADATA_DIR")
-tag = os.environ.get("TAG")
 
 if not metadata_dir:
     print("No manifest directory specified!")
-    sys.exit(1)
-
-if not tag:
-    print("No tag specified!")
     sys.exit(1)
 
 
@@ -38,10 +33,16 @@ for file in os.listdir(metadata_dir):
         print(f"Loaded {file} with metadata: {metadata}")
 
         metadata_json = json.loads(metadata)
-        image_name = metadata_json["image.name"]
         digest = metadata_json["containerimage.digest"]
 
-        digests_by_image[image_name].append(digest)
+        # The images will have platform-specific tags. We need to strip off the
+        # platform component.
+        full_image_name = metadata_json["image.name"]
+        image_name, image_tag = full_image_name.split(":")
+        image_tag_without_platform = image_tag.split("-")[0]
+        image_name_without_platform = f"{image_name}:{image_tag_without_platform}"
+
+        digests_by_image[image_name_without_platform].append(digest)
 
 # For each image, make a new image from the digests.
 for image_name, digests in digests_by_image.items():

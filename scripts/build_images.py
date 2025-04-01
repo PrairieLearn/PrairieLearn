@@ -57,6 +57,10 @@ def print_and_run_command(command: list[str]) -> None:
     subprocess.run(command, check=True)
 
 
+architecture = platform.split("/")[1]
+tag_with_platform = f"{tag}-{architecture}"
+
+
 for image in images.split(","):
     # Make temporary files for the metadata.
     with tempfile.NamedTemporaryFile(delete=False) as metadata_file:
@@ -72,7 +76,7 @@ for image in images.split(","):
         # We can't tag with the actual desired tag because that conflicts
         # with `push-by-digest=true`. We'll tag it separately later.
         "--tag",
-        image,
+        f"{image}:{tag_with_platform}",
         "--progress",
         "plain",
         "--metadata-file",
@@ -80,7 +84,7 @@ for image in images.split(","):
         # We have some images that rely on other images. They're configured to
         # use this arg to determine which base image tag to use.
         "--build-arg",
-        f"BASE_IMAGE_TAG={tag}",
+        f"BASE_IMAGE_TAG={tag_with_platform}",
         # Always load the image to produce ...
         "--load",
     ]
@@ -95,10 +99,6 @@ for image in images.split(","):
     # TODO: conditional building if images have changed.
     print(f"Building image {image} for platform {platform}")
     print_and_run_command(args)
-
-    print(f"Tagging image {image} with tag {tag}")
-    tag_args = ["docker", "image", "tag", f"{image}", f"docker.io/{image}:{tag}"]
-    print_and_run_command(tag_args)
 
     with open(metadata_file.name) as f:
         metadata = f.read()
