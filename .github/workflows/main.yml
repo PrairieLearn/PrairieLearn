@@ -137,7 +137,7 @@ jobs:
   build-core-images:
     uses: ./.github/workflows/image-builder.yml
     with:
-      directory: images\
+      directory: images
       image-prefix: prairielearn/
       base-images: "['plbase']"
       images: "['prairielearn']"
