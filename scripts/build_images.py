@@ -44,34 +44,40 @@ def get_image_path(image: str) -> str:
     raise ValueError(f"Cannot build unknown image: {image}")
 
 
+def print_command(command: list[str]) -> None:
+    is_actions = os.environ.get("GITHUB_ACTIONS")
+    if is_actions:
+        print(f"[command]{' '.join(command)}")
+    else:
+        print(" ".join(command))
+
+
 for image in images.split(","):
     # Make temporary files for the metadata.
     with tempfile.NamedTemporaryFile(delete=False) as metadata_file:
         pass
 
-    print(f"Building image {image} for platform {platform}")
-    # TODO: Log command?
     # TODO: conditional building if images have changed.
-    subprocess.run(
-        [
-            "docker",
-            "buildx",
-            "build",
-            "--platform",
-            platform,
-            "--push" if should_push else "",
-            # TODO: make configurable?
-            # "--no-cache",
-            "--tag",
-            f"{image}:{tag}",
-            "--progress",
-            "plain",
-            "--metadata-file",
-            metadata_file.name,
-            get_image_path(image),
-        ],
-        check=True,
-    )
+    args = [
+        "docker",
+        "buildx",
+        "build",
+        "--platform",
+        platform,
+        "--push" if should_push else "",
+        # TODO: make configurable?
+        # "--no-cache",
+        "--tag",
+        f"{image}:{tag}",
+        "--progress",
+        "plain",
+        "--metadata-file",
+        metadata_file.name,
+        get_image_path(image),
+    ]
+    print(f"Building image {image} for platform {platform}")
+    print_command(args)
+    subprocess.run(args, check=True)
 
     with open(metadata_file.name) as f:
         metadata = f.read()
