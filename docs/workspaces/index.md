@@ -244,7 +244,7 @@ In order to run workspaces in a local Docker environment, the `docker` command m
 
 ## Developing with workspaces (in Docker)
 
-For development, run the docker container as described in [Installing with local source code](../installingLocal.md) but also add the workspace-specific arguments described above to the docker command line. Inside the container, run:
+For development, run the Docker container as described in [Installing with local source code](../installingLocal.md) but also add the workspace-specific arguments described above to the Docker command line. Inside the container, run:
 
 ```sh
 make dev-all
