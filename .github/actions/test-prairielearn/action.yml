@@ -17,7 +17,7 @@ inputs:
 # 2. You have prepared the base `prairielearn/prairielearn:latest` image
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Build executor image
       shell: bash

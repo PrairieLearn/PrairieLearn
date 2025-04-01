@@ -185,7 +185,7 @@ jobs:
       # We need to run test suites in the context of the build image, so we define them as composite actions.
       - name: Test PrairieLearn image
         if: ${{ format('{0}-{1}', matrix.image, runner.arch) == 'prairielearn-X64' }}
-        uses: "./.github/actions/test-prairielearn"
+        uses: './.github/actions/test-prairielearn'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           commit-sha: ${{ github.sha }}
