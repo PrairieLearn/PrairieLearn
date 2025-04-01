@@ -137,6 +137,11 @@ jobs:
         os: [ubuntu-24.04, ubuntu-24.04-arm]
         exclude: ${{ fromJSON(inputs.exclude) }}
     runs-on: ${{ matrix.os }}
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     env:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
