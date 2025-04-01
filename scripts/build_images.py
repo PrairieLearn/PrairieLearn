@@ -5,6 +5,16 @@ import subprocess
 import sys
 import tempfile
 
+# A mapping of images to the base image that they use.
+BASE_IMAGES = {
+    "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
+    "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
+}
+
+# The container name for the local Docker registry.
+REGISTRY_NAME = "prairielearn-registry"
+
+base_images = os.environ.get("BASE_IMAGES", "")
 images = os.environ.get("IMAGES", "")
 # TODO: better default? OR just always mandate it?
 platform = os.environ.get("PLATFORM", "linux/arm64")
@@ -57,14 +67,45 @@ def print_and_run_command(command: list[str]) -> None:
     subprocess.run(command, check=True)
 
 
-architecture = platform.split("/")[1]
-tag_with_platform = f"{tag}-{architecture}"
+base_image_list = base_images.split(",")
+image_list = images.split(",")
+all_images = base_image_list + image_list
+
+uses_base_image = any(image in BASE_IMAGES for image in image_list)
+if uses_base_image:
+    # Stop any existing registry container.
+    try:
+        subprocess.run(
+            ["docker", "stop", REGISTRY_NAME], check=False, stderr=subprocess.DEVNULL
+        )
+        subprocess.run(["docker", "rm", REGISTRY_NAME], check=False)
+    except subprocess.CalledProcessError:
+        # The container probably didn't exist.
+        pass
+
+    print("Starting local Docker registry...")
+    subprocess.run(["docker", "pull", "registry:2"], check=True)
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "-d",
+            "-p",
+            "5000:5000",
+            "--name",
+            REGISTRY_NAME,
+            "registry:2",
+        ],
+        check=True,
+    )
 
 
 for image in images.split(","):
     # Make temporary files for the metadata.
     with tempfile.NamedTemporaryFile(delete=False) as metadata_file:
         pass
+
+    is_base_image = image in base_image_list
 
     args = [
         "docker",
@@ -73,10 +114,8 @@ for image in images.split(","):
         "--platform",
         platform,
         "--no-cache",
-        # We can't tag with the actual desired tag because that conflicts
-        # with `push-by-digest=true`. We'll tag it separately later.
         "--tag",
-        image,
+        f"{image}:{tag}",
         "--progress",
         "plain",
         "--metadata-file",
@@ -84,15 +123,15 @@ for image in images.split(","):
         # We have some images that rely on other images. They're configured to
         # use this arg to determine which base image tag to use.
         "--build-arg",
-        f"BASE_IMAGE_TAG={tag_with_platform}",
-        # Always load the image to produce ...
-        "--load",
+        f"BASE_IMAGE_TAG={tag}",
+        "--build-arg",
+        "BASE_IMAGE_REGISTRY=localhost:5000",
     ]
 
+    if is_base_image:
+        args.extend(["--load"])
     if should_push:
-        args.extend([
-            "--output=type=image,push-by-digest=true,name-canonical=true,push=true"
-        ])
+        args.extend(["--push"])
 
     args.extend([get_image_path(image)])
 
@@ -100,11 +139,15 @@ for image in images.split(","):
     print(f"Building image {image} for platform {platform}")
     print_and_run_command(args)
 
-    print(f"Tagging image {image} with tag {tag_with_platform}")
-    print_and_run_command(["docker", "tag", image, f"{image}:{tag_with_platform}"])
+    if is_base_image:
+        local_registry_image = f"localhost:5000/{image}:{tag}"
+        print(f"Tagging base image {image} for local registry")
+        subprocess.run(
+            ["docker", "tag", f"{image}:{tag}", local_registry_image], check=True
+        )
 
-    print("Pushing tagged image to repository")
-    print_and_run_command(["docker", "push", f"{image}:{tag_with_platform}"])
+        print(f"Pushing base image {image} to local registry")
+        subprocess.run(["docker", "push", local_registry_image], check=True)
 
     with open(metadata_file.name) as f:
         metadata = f.read()
