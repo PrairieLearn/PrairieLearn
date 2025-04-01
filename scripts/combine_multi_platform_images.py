@@ -33,12 +33,6 @@ for file in os.listdir(metadata_dir):
         print(f"Loaded {file} with metadata: {metadata}")
 
         metadata_json = json.loads(metadata)
-        # Do something with the metadata
-        # For example, print the image name and platforms
-        print(
-            f"Image: {metadata_json['name']}, Platforms: {metadata_json['platforms']}"
-        )
-
         image_name = metadata_json["image.name"]
         digest = metadata_json["containerimage.digest"]
 
