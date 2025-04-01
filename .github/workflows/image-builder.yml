@@ -227,11 +227,9 @@ jobs:
         working-directory: ${{ runner.temp }}/image-metadata
         run: |
           for image in *; do
-            latest_tag="${{ github.ref_name == github.event.repository.default_branch && format('-t \"{0}$image:latest\"', inputs.image-prefix) || '' }}"
+            latest_tag="${{ github.ref_name == github.event.repository.default_branch && format('-t \"{1}{0}$image:latest\"', inputs.image-prefix) || '' }}"
             # shellcheck disable=SC2046,SC2086
             docker buildx imagetools create \
-              $latest_tag \
-              -t $image:latest \
-              -t "${{ inputs.image-prefix }}$image:${{ github.sha }}" \
-            "${{ inputs.image-prefix }}$image:${{ github.sha }}-X64" "${{ inputs.image-prefix }}$image:${{ github.sha }}-ARM64"
+              $latest_tag -t "${{ inputs.image-prefix }}$image:${{ github.sha }}" \
+              "${{ inputs.image-prefix }}$image:${{ github.sha }}-X64" "${{ inputs.image-prefix }}$image:${{ github.sha }}-ARM64"
           done
