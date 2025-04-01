@@ -2,7 +2,7 @@ on:
   workflow_call:
     inputs:
       directory:
-        description: 'Either "workspaces" or "graders"'
+        description: 'The directory containing Dockerfiles to build (e.g. workspaces)'
         required: true
         type: string
       image-prefix:
@@ -60,7 +60,6 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }} platform-specific base image
-        id: build-specific
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: docker/build-push-action@v6
         with:
@@ -69,8 +68,7 @@ jobs:
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
 
       # Export the base image as a tarball (See https://docs.docker.com/build/ci/github-actions/share-image-jobs/)
-      - name: Build tarball
-        id: build-tarball
+      - name: Export tarball
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
           docker save -o ${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar "${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}"
@@ -150,7 +148,6 @@ jobs:
           merge-multiple: true
 
       - name: Tag base images
-        id: tag-base
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         # Retag all base images that were downloaded in the previous step as latest.
         # This is slightly simpler than using a named context.
@@ -165,7 +162,6 @@ jobs:
           docker image ls -a
 
       - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }} platform-specific image
-        id: build-specific
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: docker/build-push-action@v6
         with:
@@ -175,8 +171,7 @@ jobs:
           # We want to use the default docker builder, as buildx uses `docker-container`, which has additional overhead to load local images (https://docs.docker.com/build/ci/github-actions/named-contexts/#using-with-a-container-builder).
           tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
 
-      - name: Build tarball
-        id: build-tarball
+      - name: Export tarball
         if: ${{ steps.check-modified.outputs.was-modified == 'true' && contains(fromJson(inputs.upload-artifacts-for), format('{0}-{1}', matrix.image, matrix.os)) }}
         run: |
           docker save -o ${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar "${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}"
