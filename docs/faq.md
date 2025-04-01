@@ -312,10 +312,10 @@ See [The Grading Process section in Externally graded questions](externalGrading
 ## Why can't I launch PrairieLearn with docker?
 
 When previewing content within a local copy of PrairieLearn, the web version
-is powered by a docker container. At the end of a session, closing out of
-either the web browser or the terminal that launched the docker container
+is powered by a Docker container. At the end of a session, closing out of
+either the web browser or the terminal that launched the Docker container
 will **not** stop PrairieLearn from running. Therefore, when relaunching the
-docker version of PrairieLearn, the existing port may already be taken.
+Docker version of PrairieLearn, the existing port may already be taken.
 For example, we would have:
 
 ```bash

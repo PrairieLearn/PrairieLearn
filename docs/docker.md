@@ -30,7 +30,7 @@ brackets being optional.
 
 ## Useful commands
 
-In all of these commands, `IMAGE` refers to a docker image; if you built the
+In all of these commands, `IMAGE` refers to a Docker image; if you built the
 image manually (with `docker build`), then you should use `prairielearn`. If
 you downloaded it (following the installation guide), use
 `prairielearn/prairielearn`.
@@ -79,11 +79,11 @@ This section describes common applications for [Docker Compose](https://github.c
 
 ### Basics
 
-A docker-compose file describes the services an application needs to run. In our case, we use `docker-compose` to configure and run the PrairieLearn docker container locally.
+A docker-compose file describes the services an application needs to run. In our case, we use `docker-compose` to configure and run the PrairieLearn Docker container locally.
 
 To run PrairieLearn with `docker-compose`, run `docker-compose up pl`. This will, in order:
 
-- Build the PL docker image, and tag it as `prairielearn/prairielearn:local`
+- Build the PrairieLearn Docker image, and tag it as `prairielearn/prairielearn:local`
 - Mount `./testCourse` as a volume for a test course
 - Set up the container to run [external grading jobs](externalGrading.md)
 - Mount the current directory as `/PrairieLearn`
