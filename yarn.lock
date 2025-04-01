@@ -14081,7 +14081,7 @@ __metadata:
     prettier-plugin-pkg: "npm:^0.18.1"
     prettier-plugin-sh: "npm:^0.15.0"
     prettier-plugin-toml: "npm:^2.0.3"
-    pyright: "npm:^1.1.396"
+    pyright: "npm:^1.1.398"
     s3rver: "npm:^3.7.1"
     turbo: "npm:^2.4.4"
     typescript: "npm:^5.8.2"
@@ -14284,9 +14284,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pyright@npm:^1.1.396":
-  version: 1.1.396
-  resolution: "pyright@npm:1.1.396"
+"pyright@npm:^1.1.398":
+  version: 1.1.398
+  resolution: "pyright@npm:1.1.398"
   dependencies:
     fsevents: "npm:~2.3.3"
   dependenciesMeta:
@@ -14295,7 +14295,7 @@ __metadata:
   bin:
     pyright: index.js
     pyright-langserver: langserver.index.js
-  checksum: 10c0/ed2b8b2bf2a89cb0aeb71bfec183113497a3555070a202b70d5f93357a29b9b2ed0cc7f70f0aba82d230dbf68074eb367b2c3143fb259c5c82274cb40d74e2ff
+  checksum: 10c0/f8cdfc3b7168d28e29e0597472305f0f1a282257e51b5006cbb91199e8cfa20a00a4df17b06f54e67206591b37af07317a7d1e1d1880711bd0d3d84bfba5c4dd
   languageName: node
   linkType: hard
 
