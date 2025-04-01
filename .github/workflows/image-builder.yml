@@ -26,7 +26,7 @@ on:
 
 jobs:
   build-base-images:
-    if: ${{ inputs.base-images != '[]' }}
+    if: ${{ false && inputs.base-images != '[]' }}
     strategy:
       max-parallel: 5
       matrix:
