@@ -12,7 +12,7 @@ There are two ways to edit your content: through the in-browser editor in Prairi
 
 If you don't want to set up Docker on your computer and use Git/GitHub directly, you can access and edit all content directly in PrairieLearn via the "Files" tab that appears on supported pages. When you save an edit to a file, your change is automatically synced to your GitHub repository. Note that you must have "Editor" or "Owner" permissions in the course to edit files.
 
-The in-browser editor is great for getting started with PrairieLearn and can work well for managing content with a few instructors. However, with a large course staff, you may want to exert more control over changes via software engineering best practices like code reviews or continuous integration. For that, you can use Git and GitHub as discussed in the next section.
+The in-browser editor is great for getting started with PrairieLearn and can work well for managing content with a small number of instructors. However, with a large course staff, you may want to exert more control over changes via software engineering best practices like code reviews or continuous integration. For that, you can use Git and GitHub as discussed in the next section.
 
 ## Git/GitHub
 
