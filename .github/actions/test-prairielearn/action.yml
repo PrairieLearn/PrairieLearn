@@ -1,0 +1,77 @@
+name: 'PrairieLearn Test Suite'
+description: 'Will run the PrairieLearn test suite in the context of the image builder.'
+inputs:
+  token:
+    description: 'Codecov token'
+    required: false
+    default: ''
+  commit-sha:
+    description: 'The commit SHA to use for the image tag'
+    required: true
+  can-push-image:
+    description: 'Whether the image can be pushed to DockerHub'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Retag prairielearn image
+      shell: bash
+      run: |
+        docker tag "prairielearn" "prairielearn:latest"
+    - name: Build executor image
+      shell: bash
+      run: docker build ./images/executor --tag prairielearn/executor:${{ inputs.commit-sha }}
+    - name: Tag executor image as latest
+      shell: bash
+      run: docker tag prairielearn/executor:${{ inputs.commit-sha }} prairielearn/executor:latest
+
+    - name: Push executor image to Docker registry
+      if: ${{ inputs.can-push-image == 'true' }}
+      shell: bash
+      run: docker push prairielearn/executor:${{ inputs.commit-sha }}
+    # Only push the `:latest` image if we're on the `master` branch.
+    - name: Push latest executor image to Docker registry
+      if: ${{ inputs.can-push-image == 'true' && github.ref == 'refs/heads/master' }}
+      shell: bash
+      run: docker push prairielearn/executor:latest
+
+    # We run the following steps in this job instead of separately to avoid the
+    # overhead of pulling the image another time.
+
+    - name: Create a temporary directory for host files
+      shell: bash
+      run: mkdir -p /tmp/prairielearn
+    - name: Start the container
+      shell: bash
+      # We have tests for external grading code, which relies on the Docker
+      # socket being available, as well as a specific volume mount and
+      # environment variable. See the docs for more details:
+      # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
+      #
+      # We put the Postgres data on a tmpfs volume, which should be much faster.
+      run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs --tmpfs=/var/postgres -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
+    - name: Run the JavaScript tests
+      shell: bash
+      run: docker exec test_container sh -c "make -s -C /PrairieLearn test-js"
+    - name: Run the Python tests
+      shell: bash
+      run: docker exec test_container sh -c "make -s -C /PrairieLearn test-python"
+
+    # Since tests run in the context of the container, we need to copy all
+    # the coverage reports out of the container and into the host filesystem.
+    - name: Copy coverage reports to the host
+      shell: bash
+      run: ./scripts/copy_docker_coverage_reports.sh test_container
+    - name: Upload JavaScript coverage report to Codecov
+      uses: codecov/codecov-action@v5.4.0
+      with:
+        token: ${{ inputs.token }}
+        exclude: apps/prairielearn/python
+        flags: javascript
+
+    - name: Upload Python coverage report to Codecov
+      uses: codecov/codecov-action@v5.4.0
+      with:
+        token: ${{ inputs.token }}
+        directory: apps/prairielearn/python
+        flags: python
