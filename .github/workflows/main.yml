@@ -602,6 +602,7 @@ jobs:
       - build-workspace-images
       - build-grader-images
       - build-core-images
+      - combine-multi-platform-workspace-images
     if: ${{ always() }}
 
     steps:
