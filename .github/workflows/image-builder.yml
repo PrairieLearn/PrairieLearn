@@ -52,11 +52,6 @@ jobs:
         run: |
           scripts/check_path_modified.sh ${{ inputs.directory }}/${{ matrix.image }} ${{ inputs.directory }}_${{ matrix.image }}_modified
 
-      - name: Set up Docker Buildx
-        # Currently, we need this 'if' on each step. https://github.com/orgs/community/discussions/82744
-        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
-        uses: docker/setup-buildx-action@v3
-
       - name: Login to DockerHub
         if: ${{ steps.check-modified.outputs.was-modified == 'true' && env.CAN_PUSH_IMAGE == 'true' }}
         uses: docker/login-action@v3
@@ -64,60 +59,46 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set docker tags and labels
-        id: meta
-        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
-        uses: docker/metadata-action@v5
-        with:
-          context: git
-          images: |
-            ${{ inputs.image-prefix }}${{ matrix.image }}
-          # On the default branch, we'll also tag the image as `latest`
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=,format=long
-
-      - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }} digest
-        id: build-digest
+      - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }} platform-specific base image
+        id: build-specific
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.directory }}/${{ matrix.image }}
-          labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ inputs.image-prefix }}${{ matrix.image }}
-          outputs: |
-            type=image,push-by-digest=true,name-canonical=true,push=${{ env.CAN_PUSH_IMAGE == 'true' }}
+          # We will tag using a platform-specific image instead of doing a push-by-digest (https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners).
+          # We want to use the default docker builder, as buildx uses `docker-container`, which has additional overhead to load local images (https://docs.docker.com/build/ci/github-actions/named-contexts/#using-with-a-container-builder).
+          tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
 
+      # Export the base image as a tarball (See https://docs.docker.com/build/ci/github-actions/share-image-jobs/)
       - name: Build tarball
         id: build
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.directory }}/${{ matrix.image }}
-          labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
           outputs: |
             type=docker,dest=${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
 
-      # Group digests by image name. Tags are associated with each digest, but will be all merged when we push the image.
-      - name: Export docker metadata
+      # Create an empty file that will be used to mark an image as modified
+      - name: Export metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
-          mkdir -p ${{ runner.temp }}/digests/${{ matrix.image}}
-          digest="${{ steps.build-digest.outputs.digest }}"
-          echo "${{ steps.meta.outputs.tags }}" > "${{ runner.temp }}/digests/${{ matrix.image }}/${digest#sha256:}"
+          touch ${{ runner.temp }}/image-metadata/${{ matrix.image }}
 
-      # Workaround for https://github.com/orgs/community/discussions/17245
-      - name: Upload docker metadata
+      # Currently, there is no way to reference outputs for matrix jobs (https://github.com/orgs/community/discussions/17245)
+      - name: Upload metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ inputs.directory }}-${{ matrix.image }}-${{ matrix.os }}
-          path: ${{ runner.temp }}/digests/
+          name: image-metadata-${{ inputs.directory}}-${{ matrix.image }}-${{ matrix.os }}
+          path: ${{ runner.temp }}/image-metadata/
           if-no-files-found: error
           retention-days: 1
-      # We will upload the tarball so we can use it in the next job
-      - name: Upload docker tarball
+
+      # Upload the docker container so we can reference it in the next job.
+      - name: Upload tarball
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: actions/upload-artifact@v4
         with:
@@ -137,15 +118,10 @@ jobs:
         os: [ubuntu-24.04, ubuntu-24.04-arm]
         exclude: ${{ fromJSON(inputs.exclude) }}
     runs-on: ${{ matrix.os }}
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
     env:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
-    # Associate each workspace with requirements
+    # These steps will be similar to `build-base-images` -- View the comments there for more details.
     steps:
       # Check out the repository with full depth so we can check if the workspace was modified
       - uses: actions/checkout@v4
@@ -157,13 +133,6 @@ jobs:
         run: |
           scripts/check_path_modified.sh ${{ inputs.directory }}/${{ matrix.image }} ${{ inputs.directory }}_${{ matrix.image }}_modified
 
-      - name: Set up Docker Buildx
-        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
-        uses: docker/setup-buildx-action@v3
-        with:
-          # network=host driver-opt needed to push to local registry
-          driver-opts: network=host
-
       - name: Login to DockerHub
         if: ${{ steps.check-modified.outputs.was-modified == 'true' && env.CAN_PUSH_IMAGE == 'true' }}
         uses: docker/login-action@v3
@@ -171,66 +140,40 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Download artifact
+      - name: Download tarball
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: actions/download-artifact@v4
-        # Download all uploaded artifacts that match our OS
+        # Download all base images that were built in the previous job
         with:
           pattern: '${{ inputs.directory }}-*-${{ matrix.os }}-tarball'
           path: ${{ runner.temp }}
           merge-multiple: true
 
-      # This won't do anything if there are no artifacts to download (i.e. the base image didn't change)
-      # Retag these loaded images as latest, so that they get used as the base image instead of
-      # the one from DockerHub
-      - name: Load and tag base images
+      - name: Tag base images
         id: tag-base
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
+        # Retag all base images that were downloaded in the previous step as latest.
+        # This is slightly simpler than using a named context.
         run: |
-          build_contexts=""
           for file in ${{ runner.temp }}/*-${{ matrix.os }}.tar; do
             tagged_images=$(docker load -i "$file" | sed -n 's/Loaded image: //p')
             for tagged_image in $tagged_images; do
               image="${tagged_image%:*}"
-              docker tag "$tagged_image" "localhost:5000/$tagged_image"
-              docker push "localhost:5000/$tagged_image"
-              build_contexts="$build_contexts$image=docker-image://localhost:5000/$tagged_image\n"
+              docker tag "$tagged_image" "$image:latest"
             done
           done
-          {
-            echo 'build-contexts<<EOF'
-            echo -ne "$build_contexts"
-            echo EOF
-          } >> "$GITHUB_OUTPUT"
-          echo "GITHUB OUTPUT---"
-          cat "$GITHUB_OUTPUT"
-          echo "---GITHUB OUTPUT"
           docker image ls -a
 
-      - name: Set docker tags and labels
-        id: meta
-        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
-        uses: docker/metadata-action@v5
-        with:
-          context: git
-          images: |
-            ${{ inputs.image-prefix }}${{ matrix.image }}
-          # On the default branch, we'll also tag the image as `latest`
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=,format=long
-
-      - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }} digest
-        id: build-digest
+      - name: Build ${{ (env.CAN_PUSH_IMAGE == 'true' && 'and push') || '' }} platform-specific image
+        id: build-specific
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.directory }}/${{ matrix.image }}
-          labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ inputs.image-prefix }}${{ matrix.image }}
-          build-contexts: ${{ steps.tag-base.outputs.build-contexts }}
-          outputs: |
-            type=image,push-by-digest=true,name-canonical=true,push=${{ env.CAN_PUSH_IMAGE == 'true' }}
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
+          build-contexts: |
+            base=${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
 
       - name: Build tarball
         id: build
@@ -238,28 +181,25 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.directory }}/${{ matrix.image }}
-          labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
           outputs: |
             type=docker,dest=${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
 
-      - name: Export docker metadata
+      - name: Export metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
-          mkdir -p ${{ runner.temp }}/digests/${{ matrix.image }}
-          digest="${{ steps.build-digest.outputs.digest }}"
-          echo "${{ steps.meta.outputs.tags }}" > "${{ runner.temp }}/digests/${{ matrix.image }}/${digest#sha256:}"
+          touch ${{ runner.temp }}/image-metadata/${{ matrix.image }}
 
-      - name: Upload docker metadata
+      - name: Upload metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ inputs.directory}}-${{ matrix.image }}-${{ matrix.os }}
-          path: ${{ runner.temp }}/digests/
+          name: image-metadata-${{ inputs.directory}}-${{ matrix.image }}-${{ matrix.os }}
+          path: ${{ runner.temp }}/image-metadata/
           if-no-files-found: error
           retention-days: 1
 
-      - name: Upload docker tarball
+      - name: Upload tarball
         if: ${{ steps.check-modified.outputs.was-modified == 'true'  && contains(fromJson(inputs.upload-artifacts-for), format('{0}-{1}', matrix.image, matrix.os)) }}
         uses: actions/upload-artifact@v4
         with:
@@ -270,18 +210,18 @@ jobs:
   tag-images:
     runs-on: ubuntu-24.04
     needs: [build-images]
-    # If build-base-images is skipped, this normally wouldn't run. https://github.com/actions/runner/issues/491#issuecomment-882886236
+    # If build-base-images is skipped, this wouldn't run, so we add this `always()` block (https://github.com/actions/runner/issues/491#issuecomment-882886236)
     if: |
       always() && (needs.build-images.result == 'success')
     env:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
     steps:
-      - name: Download digests
+      - name: Download metadata
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         uses: actions/download-artifact@v4
         with:
-          path: ${{ runner.temp }}/digests
-          pattern: 'digests-${{ inputs.directory}}-*'
+          path: ${{ runner.temp }}/image-metadata
+          pattern: 'image-metadata-${{ inputs.directory}}-*'
           merge-multiple: true
 
       - name: Login to DockerHub
@@ -295,14 +235,16 @@ jobs:
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         uses: docker/setup-buildx-action@v3
 
-      - name: Create manifest list and push
+      - name: Create multi-platform manifest
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        working-directory: ${{ runner.temp }}/digests
+        working-directory: ${{ runner.temp }}/image-metadata
         run: |
           for image in *; do
-            pushd "$image"
-            tags="$(cat -- * | xargs echo -n | tr '\n' ' ' | sed 's/ / -t /g')"
+            latest_tag="${{ github.ref_name == github.event.repository.default_branch && format('-t \"{0}$image:latest\"', inputs.image-prefix) || '' }}"
             # shellcheck disable=SC2046,SC2086
-            docker buildx imagetools create -t $tags $(printf "${{ inputs.image-prefix }}$image@sha256:%s " *)
-            popd
+            docker buildx imagetools create \
+              $latest_tag \
+              -t $image:latest \
+              -t "${{ inputs.image-prefix }}$image:${{ github.sha }}" \
+            "${{ inputs.image-prefix }}$image:${{ github.sha }}-X86" "${{ inputs.image-prefix }}$image:${{ github.sha }}-ARM64"
           done
