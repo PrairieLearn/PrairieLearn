@@ -93,14 +93,11 @@ function ChooseSharingNameModal({
       <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
     `;
   } else {
-    body = html`
-    <strong>Unable to change your course's sharing name.</strong>
-    </p>
-    <p>
-      Your course's sharing name cannot be changed because at least one question has
-      been shared. Doing so would break the assessments of other courses that have
-      imported your questions.
-    </p>`;
+    body = html` <strong>Unable to change your course's sharing name.</strong>
+      <p>
+        Your course's sharing name cannot be changed because at least one question has been shared.
+        Doing so would break the assessments of other courses that have imported your questions.
+      </p>`;
     footer = html`
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
     `;

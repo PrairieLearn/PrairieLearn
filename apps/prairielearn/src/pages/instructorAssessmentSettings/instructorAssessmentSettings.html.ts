@@ -302,12 +302,12 @@ function AssessmentSharing({
   if (assessment.share_source_publicly) {
     details.push(html`
       <p>
-        <span class="badge color-green3 mr-1">Public source</span>
+        <span class="badge color-green3 me-1">Public source</span>
         This assessment's source is publicly shared.
       </p>
-      <div class="form-group">
+      <div>
         <label for="publicLink">Public Link</label>
-        <span class="input-group">
+        <div class="input-group">
           <input
             type="text"
             class="form-control"
@@ -316,7 +316,7 @@ function AssessmentSharing({
             value="${publicLink}"
             disabled
           />
-          <div class="input-group-append">
+          <div>
             <button
               type="button"
               class="btn btn-sm btn-outline-secondary btn-copy"
@@ -335,7 +335,7 @@ function AssessmentSharing({
               <i class="fas fa-qrcode"></i>
             </button>
           </div>
-        </span>
+        </div>
         <small class="form-text text-muted">
           The link that other instructors can use to view this assessment.
         </small>
