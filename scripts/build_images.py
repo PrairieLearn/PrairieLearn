@@ -5,7 +5,6 @@ import subprocess
 import sys
 import tempfile
 
-base_images = os.environ.get("BASE_IMAGES", "")
 images = os.environ.get("IMAGES", "")
 # TODO: better default? OR just always mandate it?
 platform = os.environ.get("PLATFORM", "linux/arm64")
@@ -53,12 +52,7 @@ def print_command(command: list[str]) -> None:
         print(" ".join(command))
 
 
-base_image_list = base_images.split(",")
-image_list = images.split(",")
-all_images = base_image_list + image_list
-
-
-for image in all_images:
+for image in images.split(","):
     # Make temporary files for the metadata.
     with tempfile.NamedTemporaryFile(delete=False) as metadata_file:
         pass
