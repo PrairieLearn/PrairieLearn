@@ -76,7 +76,7 @@ for image in images.split(","):
         # We can't tag with the actual desired tag because that conflicts
         # with `push-by-digest=true`. We'll tag it separately later.
         "--tag",
-        f"{image}:{tag_with_platform}",
+        image,
         "--progress",
         "plain",
         "--metadata-file",
@@ -99,6 +99,12 @@ for image in images.split(","):
     # TODO: conditional building if images have changed.
     print(f"Building image {image} for platform {platform}")
     print_and_run_command(args)
+
+    print(f"Tagging image {image} with tag {tag_with_platform}")
+    print_and_run_command(["docker", "tag", image, f"{image}:{tag_with_platform}"])
+
+    print("Pushing tagged image to repository")
+    print_and_run_command(["docker", "push", f"{image}:{tag_with_platform}"])
 
     with open(metadata_file.name) as f:
         metadata = f.read()
