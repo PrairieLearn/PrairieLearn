@@ -116,7 +116,7 @@ try:
             platform,
             "--no-cache",
             "--tag",
-            f"{image}:{tag}",
+            image,
             "--progress",
             "plain",
             "--metadata-file",
@@ -132,7 +132,9 @@ try:
         if is_base_image:
             args.extend(["--load"])
         if should_push:
-            args.extend(["--push"])
+            args.extend([
+                "--output=type=image,push-by-digest=true,name-canonical=true,push=true"
+            ])
 
         args.extend([get_image_path(image)])
 
@@ -143,9 +145,7 @@ try:
         if is_base_image:
             local_registry_image = f"localhost:5000/{image}:{tag}"
             print(f"Tagging base image {image} for local registry")
-            subprocess.run(
-                ["docker", "tag", f"{image}:{tag}", local_registry_image], check=True
-            )
+            subprocess.run(["docker", "tag", image, local_registry_image], check=True)
 
             print(f"Pushing base image {image} to local registry")
             subprocess.run(["docker", "push", local_registry_image], check=True)
