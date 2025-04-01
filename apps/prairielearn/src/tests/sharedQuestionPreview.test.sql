@@ -19,6 +19,6 @@ WHERE
 UPDATE questions
 SET
   share_source_publicly = true,
-  shared_publicly = false
+  share_publicly = false
 WHERE
   id = $question_id;
