@@ -240,7 +240,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Create directory for metadata
-        run: mkdir -p ${{ runner.temp }}/workspace-image-digests
+        run: mkdir -p ${{ runner.temp }}/workspace-image-metadata
 
       - name: Build images
         run: python3 scripts/build_images.py
@@ -249,13 +249,13 @@ jobs:
           TAG: ${{ env.COMMIT_SHA }}
           PLATFORM: ${{ matrix.os == 'ubuntu-24.04' && 'linux/amd64' || 'linux/arm64' }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          METADATA_DIR: ${{ runner.temp }}/workspace-images
+          METADATA_DIR: ${{ runner.temp }}/workspace-image-metadata
 
       - name: Upload metadata
         uses: actions/upload-artifact@v4
         with:
-          name: digests-workspace-${{ matrix.os }}-${{ env.COMMIT_SHA }}
-          path: ${{ runner.temp }}/workspace-image-digests
+          name: image-metadata-workspace-${{ matrix.os }}-${{ env.COMMIT_SHA }}
+          path: ${{ runner.temp }}/workspace-image-metadata
           retention-days: 1
           overwrite: true
 
@@ -284,13 +284,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: digests-workspace-*-${{ env.COMMIT_SHA }}
-          path: ${{ runner.temp }}/workspace-image-digests
+          path: ${{ runner.temp }}/workspace-image-metadata
           merge-multiple: true
 
       - name: Combine images
         run: python3 scripts/combine_multi_platform_images.py
         env:
-          METADATA_DIR: ${{ runner.temp }}/workspace-image-digests
+          METADATA_DIR: ${{ runner.temp }}/workspace-image-metadata
 
   build-grader-images:
     runs-on: ubuntu-latest

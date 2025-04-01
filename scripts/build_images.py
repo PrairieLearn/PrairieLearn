@@ -87,5 +87,5 @@ for image in images.split(","):
         name_without_scope = image.split("/")[-1]
         hashed_build_ref = hashlib.sha256(build_ref.encode()).hexdigest()
         metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
-        with open(os.path.join(metadata_dir, f"{metadata_filename}.json"), "w") as f:
+        with open(os.path.join(metadata_dir, metadata_filename), "w") as f:
             f.write(metadata)
