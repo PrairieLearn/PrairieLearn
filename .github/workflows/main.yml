@@ -292,6 +292,7 @@ jobs:
         run: python3 scripts/combine_multi_platform_images.py
         env:
           METADATA_DIR: ${{ runner.temp }}/workspace-image-metadata
+          TAG: ${{ env.COMMIT_SHA }}
 
   build-grader-images:
     runs-on: ubuntu-latest
