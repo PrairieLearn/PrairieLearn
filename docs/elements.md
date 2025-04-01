@@ -1715,7 +1715,7 @@ Floating child elements are wrapped with a `<pl-location>` tag that specifies th
 
 ### `pl-python-variable` element
 
-Displays the value of a Python variable. It uses options similar to the [pprint](https://docs.python.org/3/library/pprint.html) module to format output data, and can recursively print nested data structures. As such, some customization text is taken directly from this documentation.
+Displays the value of a Python variable. It uses options similar to the [pprint](https://docs.python.org/3/library/pprint.html) module to format output data, and can recursively print nested data structures. As such, some descriptions below are taken directly from this documentation.
 
 #### Sample elements
 
