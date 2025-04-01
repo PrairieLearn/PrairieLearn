@@ -247,8 +247,7 @@ jobs:
       - name: Build images
         run: python3 scripts/build_images.py
         env:
-          BASE_IMAGES: prairielearn/workspace-vscode-base
-          IMAGES: prairielearn/workspace-vscode-python
+          IMAGES: prairielearn/workspace-vscode-base,prairielearn/workspace-vscode-python
           TAG: ${{ env.COMMIT_SHA }}
           PLATFORM: ${{ matrix.os == 'ubuntu-24.04' && 'linux/amd64' || 'linux/arm64' }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}

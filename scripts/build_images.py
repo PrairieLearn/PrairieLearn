@@ -5,15 +5,6 @@ import subprocess
 import sys
 import tempfile
 
-# A mapping of images to the base image that they use.
-BASE_IMAGES = {
-    "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
-    "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
-}
-
-# The container name for the local Docker registry.
-REGISTRY_NAME = "prairielearn-registry"
-
 base_images = os.environ.get("BASE_IMAGES", "")
 images = os.environ.get("IMAGES", "")
 # TODO: better default? OR just always mandate it?
@@ -66,110 +57,50 @@ base_image_list = base_images.split(",")
 image_list = images.split(",")
 all_images = base_image_list + image_list
 
-uses_base_image = any(image in BASE_IMAGES for image in image_list)
-if uses_base_image:
-    # Stop any existing registry container.
-    try:
-        subprocess.run(
-            ["docker", "stop", REGISTRY_NAME], check=False, stderr=subprocess.DEVNULL
-        )
-        subprocess.run(["docker", "rm", REGISTRY_NAME], check=False)
-    except subprocess.CalledProcessError:
-        # The container probably didn't exist.
+
+for image in all_images:
+    # Make temporary files for the metadata.
+    with tempfile.NamedTemporaryFile(delete=False) as metadata_file:
         pass
 
-    print("Starting local Docker registry.")
-    subprocess.run(["docker", "pull", "registry:2"], check=True)
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "-d",
-            "-p",
-            "5000:5000",
-            "--name",
-            REGISTRY_NAME,
-            "registry:2",
-        ],
-        check=True,
-    )
+    args = [
+        "docker",
+        "buildx",
+        "build",
+        "--platform",
+        platform,
+        "--no-cache",
+        "--tag",
+        f"{image}:{tag}",
+        "--progress",
+        "plain",
+        "--metadata-file",
+        metadata_file.name,
+    ]
 
-try:
-    for image in all_images:
-        # Make temporary files for the metadata.
-        with tempfile.NamedTemporaryFile(delete=False) as metadata_file:
-            pass
+    if should_push:
+        args.extend(["--push"])
 
-        is_base_image = image in base_image_list
+    args.extend([get_image_path(image)])
 
-        args = [
-            "docker",
-            "buildx",
-            "build",
-            "--platform",
-            platform,
-            "--no-cache",
-            "--tag",
-            f"{image}:{tag}",
-            "--progress",
-            "plain",
-            "--metadata-file",
-            metadata_file.name,
-        ]
+    # TODO: conditional building if images have changed.
+    print(f"Building image {image} for platform {platform}")
+    print_command(args)
+    subprocess.run(args, check=True)
 
-        if should_push:
-            args.extend(["--push"])
-        if is_base_image:
-            args.extend(["--load"])
-        if image in BASE_IMAGES:
-            # This image has a base image. If the base image is also being
-            # built, use the one that was built into the local registry.
-            base_image = BASE_IMAGES[image]
-            if base_image in image_list:
-                print(f"Using local registry for base image {base_image}")
-                args.extend([
-                    "--build-arg",
-                    f"BASE_IMAGE=localhost:5000/{base_image}",
-                    "--build-arg",
-                    f"BASE_IMAGE_TAG={tag}",
-                ])
+    with open(metadata_file.name) as f:
+        metadata = f.read()
 
-        args.extend([get_image_path(image)])
+    print(f"Metadata: {metadata.strip()}")
 
-        # TODO: conditional building if images have changed.
-        print(f"Building image {image} for platform {platform}")
-        print_command(args)
-        subprocess.run(args, check=True)
+    # Write metadata to the metadata directory
+    if metadata_dir:
+        build_ref = json.loads(metadata)["buildx.build.ref"]
 
-        if is_base_image:
-            local_registry_image = f"localhost:5000/{image}:{tag}"
-            print(f"Tagging base image {image} for local registry")
-            subprocess.run(
-                ["docker", "tag", f"{image}:{tag}", local_registry_image], check=True
-            )
-
-            print(f"Pushing base image {image} to local registry")
-            subprocess.run(["docker", "push", local_registry_image], check=True)
-
-        with open(metadata_file.name) as f:
-            metadata = f.read()
-
-        print(f"Metadata: {metadata.strip()}")
-
-        # Write metadata to the metadata directory
-        if metadata_dir:
-            build_ref = json.loads(metadata)["buildx.build.ref"]
-
-            # We need a unique name for the metadata file. We'll use the part of the
-            # image name after the last slash, and a hash of the build ref.
-            name_without_scope = image.split("/")[-1]
-            hashed_build_ref = hashlib.sha256(build_ref.encode()).hexdigest()
-            metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
-            with open(os.path.join(metadata_dir, metadata_filename), "w") as f:
-                f.write(metadata)
-finally:
-    # Shut down the local registry if it was started.
-    if uses_base_image:
-        print("Stopping local Docker registry.")
-        subprocess.run(["docker", "stop", REGISTRY_NAME], check=True)
-        subprocess.run(["docker", "rm", REGISTRY_NAME], check=True)
+        # We need a unique name for the metadata file. We'll use the part of the
+        # image name after the last slash, and a hash of the build ref.
+        name_without_scope = image.split("/")[-1]
+        hashed_build_ref = hashlib.sha256(build_ref.encode()).hexdigest()
+        metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
+        with open(os.path.join(metadata_dir, metadata_filename), "w") as f:
+            f.write(metadata)
