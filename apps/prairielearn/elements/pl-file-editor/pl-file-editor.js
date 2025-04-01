@@ -300,11 +300,12 @@ window.PLFileEditor.prototype.preview = {
         const mathjaxInput = MathJax.startup.getInputJax() ?? [];
         marked.use({
           renderer: {
-            // Any text that is not math should be ignored by MathJax. This
-            // includes escaped characters like `\\` and `\$`, which we don't
-            // want MathJax to double-escape. The text input is already escaped
-            // by marked itself.
-            text: (text) => `<span class="mathjax_ignore">${text}</span>`,
+            // Any leaf text token (without child tokens) that is not math
+            // should be ignored by MathJax. This includes escaped characters
+            // like `\\` and `\$`, which we don't want MathJax to double-escape.
+            // The text input is already escaped by marked itself.
+            text: ({ text, tokens }) =>
+              tokens ? false : `<span class="mathjax_ignore">${text}</span>`,
           },
           extensions: [
             {
