@@ -283,7 +283,7 @@ jobs:
       - name: Download metadata
         uses: actions/download-artifact@v4
         with:
-          name: digests-workspace-*-${{ env.COMMIT_SHA }}
+          name: image-metadata-workspace-*-${{ env.COMMIT_SHA }}
           path: ${{ runner.temp }}/workspace-image-metadata
           merge-multiple: true
 
