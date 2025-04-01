@@ -105,6 +105,7 @@ function ChooseSharingNameModal({
   return Modal({
     title: 'Choose Sharing Name',
     id: 'chooseSharingNameModal',
+    form: canChooseSharingName,
     body,
     footer,
   });
