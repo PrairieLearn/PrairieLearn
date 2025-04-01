@@ -1,7 +1,8 @@
 {
-  "uuid": "933849d9-d7ee-4462-b743-b50e43b03b9e",
-  "title": "Element pl-number-input: Input of real and complex numbers",
+  "uuid": "c0444a41-1472-4aa5-a024-ee1091bdab8e",
+  "title": "Element pl-number-input: Input of numerical answers",
   "topic": "Element",
-  "tags": ["balamut2", "Sp18"],
+  "authors": ["balamut2"],
+  "tags": ["Sp18"],
   "type": "v3"
 }

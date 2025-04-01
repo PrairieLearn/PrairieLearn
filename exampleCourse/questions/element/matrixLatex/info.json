@@ -3,5 +3,6 @@
   "title": "Element pl-matrix-latex: Display of 2D numpy arrays in latex format",
   "topic": "Element",
   "type": "v3",
-  "tags": ["mfsilva"]
+  "authors": ["mfsilva"],
+  "tags": []
 }

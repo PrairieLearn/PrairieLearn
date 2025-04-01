@@ -2,7 +2,8 @@
   "uuid": "499d4c47-74a6-4e3e-ad65-1d38d9d97e8e",
   "title": "Workspace demo: VS Code (Python)",
   "topic": "Workspace",
-  "tags": ["su20", "tyang15"],
+  "authors": ["tyang15"],
+  "tags": ["su20"],
   "type": "v3",
   "singleVariant": true,
   "workspaceOptions": {

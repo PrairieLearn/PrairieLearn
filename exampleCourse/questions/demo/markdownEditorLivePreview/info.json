@@ -2,7 +2,8 @@
   "uuid": "b30f913b-8077-4b4a-9046-115e23486806",
   "title": "Demo: Markdown editing with live preview",
   "topic": "Demo",
-  "tags": ["code", "nnytko2", "jonatan"],
+  "authors": ["nnytko2", "jonatan"],
+  "tags": ["code"],
   "type": "v3",
   "singleVariant": true,
   "gradingMethod": "Manual"

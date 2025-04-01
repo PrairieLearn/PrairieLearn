@@ -2,7 +2,8 @@
   "uuid": "92344697-f0ba-4dc2-af2b-e112a48d04f0",
   "title": "Workspace demo with Create An R Object question",
   "topic": "Workspace",
-  "tags": ["sp23", "echuber2", "balamut2", "eddelbuettel", "v3", "demo", "r-autograder", "rstudio"],
+  "authors": ["echuber2", "balamut2", "eddelbuettel"],
+  "tags": ["sp23", "v3", "demo", "r-autograder", "rstudio"],
   "type": "v3",
   "singleVariant": true,
   "workspaceOptions": {

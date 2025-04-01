@@ -3,7 +3,7 @@
   "title": "Workspace demo: VS Code (C++)",
   "topic": "Workspace",
   "singleVariant": true,
-  "tags": ["jgfoster"],
+  "authors": ["jgfoster"],
   "type": "v3",
   "workspaceOptions": {
     "image": "prairielearn/workspace-vscode-cpp",

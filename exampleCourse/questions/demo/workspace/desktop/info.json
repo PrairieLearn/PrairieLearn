@@ -2,7 +2,8 @@
   "uuid": "4c12d197-9068-4dcb-8359-8048d61bdc28",
   "title": "Workspace demo: GUI Desktop",
   "topic": "Workspace",
-  "tags": ["fa21", "nnytko2"],
+  "authors": ["nnytko2"],
+  "tags": ["fa21"],
   "type": "v3",
   "singleVariant": true,
   "workspaceOptions": {

@@ -2,7 +2,8 @@
   "uuid": "F158CCF4-48F8-42F9-BBE6-C761210EA540",
   "title": "Workspace demo: JupyterLab",
   "topic": "Workspace",
-  "tags": ["su20", "tyang15", "mfsilva", "nnytko2"],
+  "authors": ["tyang15", "mfsilva", "nnytko2"],
+  "tags": ["su20"],
   "type": "v3",
   "singleVariant": true,
   "workspaceOptions": {
