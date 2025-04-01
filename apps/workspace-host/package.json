@@ -30,7 +30,7 @@
     "archiver": "^7.0.1",
     "async": "^3.2.6",
     "async-mutex": "^0.5.0",
-    "body-parser": "^1.20.3",
+    "body-parser": "^2.2.0",
     "debug": "^4.4.0",
     "dockerode": "^4.0.5",
     "express": "^4.21.2",
