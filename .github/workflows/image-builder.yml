@@ -192,7 +192,7 @@ jobs:
             tagged_images=$(docker load -i "$file" | sed -n 's/Loaded image: //p')
             for tagged_image in $tagged_images; do
               image="${tagged_image%:*}"
-              docker tag "$tagged_image" "localhost:5000/$image:latest"
+              docker tag "$tagged_image" "$image:latest"
               build_contexts="$build_contexts$image=docker-image://localhost:5000/$image:latest\n"
             done
           done
