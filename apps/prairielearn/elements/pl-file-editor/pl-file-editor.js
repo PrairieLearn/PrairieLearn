@@ -301,7 +301,9 @@ window.PLFileEditor.prototype.preview = {
         marked.use({
           renderer: {
             // Any text that is not math should be ignored by MathJax. This
-            // includes escaped characters like `\$`.
+            // includes escaped characters like `\\` and `\$`, which we don't
+            // want MathJax to double-escape. The text input is already escaped
+            // by marked itself.
             text: (text) => `<span class="mathjax_ignore">${text}</span>`,
           },
           extensions: [
