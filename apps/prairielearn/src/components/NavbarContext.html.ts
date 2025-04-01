@@ -25,11 +25,11 @@ export function ContextNavigation({
     <nav>
       <ul
         class="
-          nav
-          nav-tabs
-          pl-nav-tabs-bar
+          nav 
+          nav-tabs 
+          pl-nav-tabs-bar 
           pt-2
-          px-3
+          px-3 
           bg-light
         "
       >
