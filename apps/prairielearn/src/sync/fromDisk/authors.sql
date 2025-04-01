@@ -1,18 +1,58 @@
--- BLOCK sync_authors
-WITH
-  new_authors AS (
-    SELECT
-      *
-    FROM
-      jsonb_to_recordset($new_authors::JSONB) AS (author_string text)
-  )
+-- Insert authors into the authors table
+-- name: sync_authors
 INSERT INTO
-  authors (author_string)
+  authors (name, course_id)
 SELECT
-  author_string
+  unnest($author_names::text[]),
+  $course_id
+ON CONFLICT (name, course_id) DO NOTHING;
+
+-- Select all authors for a course
+-- name: select_authors
+SELECT
+  id,
+  name
 FROM
-  new_authors
-ON CONFLICT (author_string) DO NOTHING;
+  authors
+WHERE
+  course_id = $course_id;
+
+-- Sync question-author relationships
+-- name: sync_question_authors
+WITH
+  new_relationships AS (
+    SELECT DISTINCT
+      ON (question_id, author_id) (r ->> 'question_id')::bigint as question_id,
+      (r ->> 'author_id')::bigint as author_id
+    FROM
+      unnest($question_author_relationships::jsonb[]) AS r
+  )
+DELETE FROM question_authors qa
+WHERE
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      new_relationships nr
+    WHERE
+      nr.question_id = qa.question_id
+      AND nr.author_id = qa.author_id
+  )
+  AND qa.question_id IN (
+    SELECT
+      question_id
+    FROM
+      new_relationships
+  );
+
+INSERT INTO
+  question_authors (question_id, author_id)
+SELECT
+  question_id,
+  author_id
+FROM
+  new_relationships
+ON CONFLICT (question_id, author_id) DO NOTHING;
 
 -- BLOCK select_question_authors
 WITH
@@ -46,8 +86,7 @@ SELECT
   description
 FROM
   ncss
-ON CONFLICT (course_id, name) DO
-UPDATE
+ON CONFLICT (course_id, name) DO UPDATE
 SET
   description = EXCLUDED.description;
 
