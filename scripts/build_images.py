@@ -68,6 +68,7 @@ for image in images.split(","):
         "build",
         "--platform",
         platform,
+        "--no-cache",
         # We can't tag with the actual desired tag because that conflicts
         # with `push-by-digest=true`. We'll tag it separately later.
         "--tag",
