@@ -64,8 +64,10 @@ for image in images.split(","):
         "--platform",
         platform,
         "--no-cache",
+        # We can't tag with the actual desired tag because that conflicts
+        # with `push-by-digest=true`. We'll tag it separately later.
         "--tag",
-        f"{image}:{tag}",
+        image,
         "--progress",
         "plain",
         "--metadata-file",
@@ -74,6 +76,8 @@ for image in images.split(","):
         # use this arg to determine which base image tag to use.
         "--build-arg",
         f"BASE_IMAGE_TAG={tag}",
+        # Always load the image to produce ...
+        "--load",
     ]
 
     if should_push:
@@ -87,6 +91,11 @@ for image in images.split(","):
     print(f"Building image {image} for platform {platform}")
     print_command(args)
     subprocess.run(args, check=True)
+
+    print(f"Tagging image {image} with tag {tag}")
+    tag_args = ["docker", "image", "tag", f"{image}", f"{image}:{tag}"]
+    print_command(tag_args)
+    subprocess.run(tag_args, check=True)
 
     with open(metadata_file.name) as f:
         metadata = f.read()
