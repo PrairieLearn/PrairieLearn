@@ -10,7 +10,7 @@ from typing import TypedDict
 import chevron
 import lxml.html
 import prairielearn as pl
-from dag_checker import grade_dag, lcs_partial_credit, solve_dag
+from dag_checker import grade_dag, lcs_partial_credit, solve_dag, get_wrong_order_blocks
 from lxml.etree import _Comment
 from typing_extensions import NotRequired, assert_never
 
@@ -67,7 +67,7 @@ class OrderBlocksAnswerData(TypedDict):
     distractor_bin: NotRequired[str]
     distractor_feedback: str | None
     uuid: str
-
+    ordering_feedback: str | None
 
 FIRST_WRONG_TYPES = frozenset([
     FeedbackType.FIRST_WRONG,
@@ -254,6 +254,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     "indent",
                     "distractor-feedback",
                     "distractor-for",
+                    "ordering-feedback",
                 ],
             )
 
@@ -266,11 +267,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         distractor_feedback = pl.get_string_attrib(
             html_tags, "distractor-feedback", None
         )
+        ordering_feedback = pl.get_string_attrib(
+            html_tags, "ordering-feedback", None
+        )
 
         distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
+
         if distractor_for is not None and is_correct:
             raise ValueError(
                 "The distractor-for attribute may only be used on blocks with correct=false."
+            )
+        
+        if ordering_feedback is not None and not is_correct:
+            raise ValueError(
+                "The ordering-feedback attribute may only be used on blocks with correct=true."
             )
 
         tag, depends = get_graph_info(html_tags)
@@ -305,6 +315,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
             "distractor_feedback": distractor_feedback,
+            "ordering_feedback": ordering_feedback,  # only used with DAG grader
             "uuid": pl.get_uuid(),
         }
         if is_correct:
@@ -552,7 +563,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
                 "badge_type": attempt.get("badge_type", ""),
                 "icon": attempt.get("icon", ""),
-                "distractor_feedback": attempt.get("distractor_feedback", ""),
+                "ordering_feedback":  attempt.get("ordering_feedback", "") if attempt.get("is_misordered", False) else ""
             }
             for attempt in data["submitted_answers"].get(answer_name, [])
         ]
@@ -673,7 +684,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     answer_raw_name = answer_name + "-input"
     student_answer = data["raw_submitted_answers"].get(answer_raw_name, "[]")
-
     student_answer = json.loads(student_answer)
 
     if (not allow_blank_submission) and (
@@ -703,6 +713,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             answer["tag"] = (
                 matching_block["tag"] if matching_block is not None else None
             )
+            answer["is_misordered"] = False
             if grading_method is GradingMethodType.RANKING:
                 answer["ranking"] = (
                     matching_block["ranking"] if matching_block is not None else None
@@ -715,6 +726,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                     if block["inner_html"] == answer["inner_html"]
                 )
             answer["distractor_feedback"] = matching_block["distractor_feedback"]
+            answer["ordering_feedback"] = matching_block["ordering_feedback"]
+
 
     if grading_method is GradingMethodType.EXTERNAL:
         for html_tags in element:
@@ -775,7 +788,6 @@ def construct_feedback(
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
-
     student_answer = data["submitted_answers"][answer_name]
     grading_method = pl.get_enum_attrib(
         element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
@@ -822,6 +834,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     elif grading_method in LCS_GRADABLE_TYPES:
         submission = [ans["tag"] for ans in student_answer]
+
+        tags_with_feedback = [ans["tag"] for ans in student_answer if ans.get("ordering_feedback")]
+        tags_with_feedback = set(tags_with_feedback)
         depends_graph = {}
         group_belonging = {}
 
@@ -851,7 +866,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         elif grading_method is GradingMethodType.DAG:
             depends_graph, group_belonging = extract_dag(true_answer_list)
-
+            misordered_blocks = get_wrong_order_blocks(submission,  depends_graph, group_belonging, tags_with_feedback)    
+            for i in misordered_blocks:
+                student_answer[i]["is_misordered"] = True
         num_initial_correct, true_answer_length = grade_dag(
             submission, depends_graph, group_belonging
         )
@@ -877,8 +894,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     block["distractor_feedback"] = ""
 
         num_initial_correct, true_answer_length = grade_dag(
-            submission, depends_graph, group_belonging
-        )
+            submission, depends_graph, group_belonging)
 
         if partial_credit_type is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
