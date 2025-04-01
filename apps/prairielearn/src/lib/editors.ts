@@ -1002,6 +1002,9 @@ export class CourseInstanceRenameEditor extends Editor {
     const oldPath = path.join(courseInstancesPath, this.course_instance.short_name);
     const newPath = path.join(courseInstancesPath, this.ciid_new);
 
+    // Skip editing if the paths are the same.
+    if (oldPath === newPath) return null;
+
     // Ensure that the updated course instance folder path is fully contained in the course instances directory
     if (!contains(courseInstancesPath, newPath)) {
       throw new AugmentedError('Invalid folder path', {
@@ -1374,11 +1377,11 @@ export class QuestionAddEditor extends Editor {
 export class QuestionModifyEditor extends Editor {
   private question: Question;
   private origHash: string;
-  private files: Record<string, string>;
+  private files: Record<string, string | null>;
 
   constructor(
     params: BaseEditorOptions<{ question: Question }> & {
-      files: Record<string, string>;
+      files: Record<string, string | null>;
     },
   ) {
     const {
@@ -1415,7 +1418,11 @@ export class QuestionModifyEditor extends Editor {
     // and provide them in the `files` object.
     for (const [filePath, contents] of Object.entries(this.files)) {
       const resolvedPath = path.join(questionPath, filePath);
-      await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+      if (contents === null) {
+        await fs.remove(resolvedPath);
+      } else {
+        await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+      }
     }
 
     return {
@@ -1426,32 +1433,50 @@ export class QuestionModifyEditor extends Editor {
 }
 
 export class QuestionDeleteEditor extends Editor {
-  private question: Question;
+  private questions: Question[];
 
-  constructor(params: BaseEditorOptions<{ question: Question }>) {
-    const { question } = params.locals;
+  constructor(params: BaseEditorOptions & { questions: Question | Question[] }) {
+    let questions: Question[];
+
+    if (Array.isArray(params.questions)) {
+      questions = params.questions;
+    } else {
+      questions = [params.questions];
+    }
 
     super({
       ...params,
-      description: `Delete question ${question.qid}`,
+      description:
+        questions.length === 1
+          ? `Delete question ${questions[0].qid}`
+          : `Delete questions ${questions.map((x) => x.qid).join(', ')}`,
     });
 
-    this.question = question;
+    this.questions = questions;
   }
 
   async write() {
-    assert(this.question.qid, 'question.qid is required');
-
     debug('QuestionDeleteEditor: write()');
-    await fs.remove(path.join(this.course.path, 'questions', this.question.qid));
-    await this.removeEmptyPrecedingSubfolders(
-      path.join(this.course.path, 'questions'),
-      this.question.qid,
-    );
+
+    for (const question of this.questions) {
+      // This shouldn't happen in practice; this is just to satisfy TypeScript.
+      assert(question.qid, 'question.qid is required');
+
+      await fs.remove(path.join(this.course.path, 'questions', question.qid));
+      await this.removeEmptyPrecedingSubfolders(
+        path.join(this.course.path, 'questions'),
+        question.qid,
+      );
+    }
 
     return {
-      pathsToAdd: [path.join(this.course.path, 'questions', this.question.qid)],
-      commitMessage: `delete question ${this.question.qid}`,
+      pathsToAdd: this.questions.flatMap((question) =>
+        question.qid !== null ? path.join(this.course.path, 'questions', question.qid) : [],
+      ),
+      commitMessage:
+        this.questions.length === 1
+          ? `delete question ${this.questions[0].qid}`
+          : `delete questions (${this.questions.map((x) => x.qid).join(', ')})`,
     };
   }
 }

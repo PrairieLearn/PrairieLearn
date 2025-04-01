@@ -13,12 +13,12 @@ import { type QuestionContext } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
 import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
 import {
-  SubmissionPanel,
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
+  SubmissionPanel,
 } from '../components/SubmissionPanel.html.js';
 import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
-import { selectVariantsByInstanceQuestion } from '../models/variant.js';
+import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
 import { config } from './config.js';
@@ -39,34 +39,20 @@ import {
   GroupConfigSchema,
   IdSchema,
   type InstanceQuestion,
-  InstanceQuestionSchema,
   IssueSchema,
   type Question,
   type Submission,
   SubmissionSchema,
   type User,
   type Variant,
-  VariantSchema,
 } from './db-types.js';
 import { getGroupInfo, getQuestionGroupPermissions, getUserRoles } from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import type { SubmissionPanels } from './question-render.types.js';
-import { getQuestionCourse, ensureVariant } from './question-variant.js';
+import { ensureVariant, getQuestionCourse } from './question-variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const VariantSelectResultSchema = VariantSchema.extend({
-  assessment: AssessmentSchema.nullable(),
-  assessment_instance: AssessmentInstanceSchema.extend({
-    formatted_date: z.string().nullable(),
-  }).nullable(),
-  instance_question: InstanceQuestionSchema.extend({
-    assigned_grader_name: z.string().nullable(),
-    last_grader_name: z.string().nullable(),
-  }).nullable(),
-  formatted_date: z.string(),
-});
 
 const IssueRenderDataSchema = IssueSchema.extend({
   formatted_date: z.string().nullable(),
@@ -84,7 +70,6 @@ type InstanceQuestionWithAllowGrade = InstanceQuestion & {
 const SubmissionInfoSchema = z.object({
   grading_job: GradingJobSchema.nullable(),
   submission: SubmissionSchema,
-  variant: VariantSchema,
   question_number: z.string().nullable(),
   next_instance_question: z.object({
     id: IdSchema.nullable(),
@@ -412,9 +397,11 @@ export async function getAndRenderVariant(
     authz_result?: Record<string, any>;
     client_fingerprint_id?: string | null;
     manualGradingInterface?: boolean;
+    is_administrator: boolean;
   },
   options?: {
     urlOverrides?: Partial<QuestionUrls>;
+    publicQuestionPreview?: boolean;
   },
 ) {
   // We write a fair amount of unstructured data back into locals,
@@ -430,15 +417,18 @@ export async function getAndRenderVariant(
 
   const variant = await run(async () => {
     if (variant_id != null) {
-      return await sqldb.queryOptionalRow(
-        sql.select_variant_for_render,
-        {
-          variant_id,
-          question_id: locals.question.id,
-          instance_question_id: locals.instance_question?.id,
-        },
-        VariantSelectResultSchema,
-      );
+      return await selectAndAuthzVariant({
+        unsafe_variant_id: variant_id,
+        variant_course: locals.course,
+        question_id: locals.question.id,
+        course_instance_id: locals.course_instance?.id,
+        instance_question_id: locals.instance_question?.id,
+        authz_data: locals.authz_data,
+        authn_user: locals.authn_user,
+        user: locals.user,
+        is_administrator: locals.is_administrator,
+        publicQuestionPreview: options?.publicQuestionPreview,
+      });
     } else {
       const require_open = !!locals.assessment && locals.assessment.type !== 'Exam';
       const instance_question_id = locals.instance_question?.id ?? null;
@@ -458,8 +448,6 @@ export async function getAndRenderVariant(
       );
     }
   });
-
-  if (variant == null) throw new error.HttpStatusError(404, 'Variant not found');
 
   resultLocals.variant = variant;
 
@@ -620,42 +608,45 @@ export async function getAndRenderVariant(
  * set, also the side panels for score, navigation and the question footer.
  */
 export async function renderPanelsForSubmission({
-  submission_id,
+  unsafe_submission_id,
   question,
   instance_question,
-  variant_id,
+  variant,
   user,
   urlPrefix,
   questionContext,
   authorizedEdit,
   renderScorePanels,
   groupRolePermissions,
+  localsOverrides,
 }: {
-  submission_id: string;
+  unsafe_submission_id: string;
   question: Question;
   instance_question: InstanceQuestionWithAllowGrade | null;
-  variant_id: string | null;
+  variant: Variant;
   user: User;
   urlPrefix: string;
   questionContext: QuestionContext;
   authorizedEdit: boolean;
   renderScorePanels: boolean;
   groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
+  localsOverrides?: {
+    manualGradingInterface?: boolean;
+  };
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
     {
-      submission_id,
+      unsafe_submission_id,
       question_id: question.id,
       instance_question_id: instance_question?.id,
-      variant_id,
+      variant_id: variant.id,
     },
     SubmissionInfoSchema,
   );
   if (submissionInfo == null) throw new error.HttpStatusError(404, 'Not found');
 
   const {
-    variant,
     submission,
     next_instance_question,
     assessment_question,
@@ -700,6 +691,7 @@ export async function renderPanelsForSubmission({
       assessment_question,
       group_config,
     }),
+    ...localsOverrides,
   };
 
   await async.parallel([

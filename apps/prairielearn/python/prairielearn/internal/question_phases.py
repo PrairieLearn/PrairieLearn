@@ -31,7 +31,7 @@ class RenderContext(TypedDict):
     elements: dict[str, ElementInfo]
     """A dict mapping an element name to information about them."""
 
-    element_extensions: dict[str, dict[str, dict]]
+    element_extensions: dict[str, dict[str, dict[Any, Any]]]
     """A dict mapping an element name to a dict of extensions for that element."""
 
     course_path: str
@@ -58,7 +58,7 @@ def filelike_to_string(filelike: Any) -> str:
 
 
 def process(
-    phase: Phase, data: dict, context: RenderContext
+    phase: Phase, data: dict[str, Any], context: RenderContext
 ) -> tuple[str | None, set[str]]:
     html = context["html"]
     elements = context["elements"]
@@ -88,8 +88,11 @@ def process(
 
     def process_element(
         element: lxml.html.HtmlElement,
-    ) -> None | str | lxml.html.HtmlElement:
+    ) -> str | lxml.html.HtmlElement | None:
         nonlocal result
+
+        if not isinstance(element.tag, str):
+            return element
 
         if element.tag not in elements:
             return element
@@ -209,7 +212,7 @@ def process(
 
 
 def prepare_data(
-    phase: Phase, data: dict, context: RenderContext, element_tag: str
+    phase: Phase, data: dict[str, Any], context: RenderContext, element_tag: str
 ) -> None:
     element_extensions = context["element_extensions"]
     element_info = context["elements"][element_tag]
@@ -239,7 +242,7 @@ def prepare_data(
         data["options"]["client_files_extensions_url"] = client_files_extensions_url
 
 
-def restore_data(data: dict) -> None:
+def restore_data(data: dict[str, Any]) -> None:
     data.pop("extensions", None)
     data["options"].pop("client_files_element_url", None)
     data["options"].pop("client_files_extensions_url", None)

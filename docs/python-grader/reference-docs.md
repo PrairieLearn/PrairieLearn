@@ -1,3 +1,7 @@
+# Reference Documentation
+
+More high-level information about the Python grader can be found on the [Python Autograder](../python-grader/index.md) page.
+
 <!-- prettier-ignore -->
 ::: code_feedback.Feedback
     options:

@@ -69,12 +69,15 @@ class OrderBlocksAnswerData(TypedDict):
     uuid: str
 
 
-FIRST_WRONG_TYPES = frozenset(
-    [FeedbackType.FIRST_WRONG, FeedbackType.FIRST_WRONG_VERBOSE]
-)
-LCS_GRADABLE_TYPES = frozenset(
-    [GradingMethodType.RANKING, GradingMethodType.DAG, GradingMethodType.ORDERED]
-)
+FIRST_WRONG_TYPES = frozenset([
+    FeedbackType.FIRST_WRONG,
+    FeedbackType.FIRST_WRONG_VERBOSE,
+])
+LCS_GRADABLE_TYPES = frozenset([
+    GradingMethodType.RANKING,
+    GradingMethodType.DAG,
+    GradingMethodType.ORDERED,
+])
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -209,7 +212,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         html_tags: lxml.html.HtmlElement,
         index: int,
         group_info: GroupInfo,
-    ):
+    ) -> None:
         if html_tags.tag != "pl-answer":
             raise ValueError(
                 "Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \

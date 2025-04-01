@@ -62,7 +62,7 @@ External grading configuration is done on a per-question basis. All configuratio
 
 - `image`: The Docker image that should be used for the question. This can be any image specification that is understood by the `docker pull` command. This property is required.
 
-- `entrypoint`: The script or command line that will be run when your container starts. This should be an absolute path to something that is executable in the Docker image; this could take the form of a shell script, a python script, a compiled executable, or anything else that can be run like that. This file can be built into your image, which must be executable in the image itself; or it can be one of the files that will be mounted into `/grade` (more on that later), in which case the entrypoint file is given executable permission by the grading process itself before running (i.e., `chmod +x /path/to/entrypoint && /path/to/entrypoint`). This property is required.
+- `entrypoint`: The script or command line that will be run when your container starts. This should be an absolute path to something that is executable in the Docker image; this could take the form of a shell script, a python script, a compiled executable, or anything else that can be run like that. This file can be built into your image, which must be executable in the image itself; or it can be one of the files that will be mounted into `/grade` (more on that later), in which case the entrypoint file is given executable permission by the grading process itself before running (i.e., `chmod +x /path/to/entrypoint && /path/to/entrypoint`). If this property is not provided, the default entrypoint of the Docker image will be used.
 
   - The `entrypoint` may also be provided with additional command line arguments. These may be provided either as a string (e.g., `"/path/to/entrypoint -h"`) or as an array, with each element corresponding to an argument (e.g., `["/path/to/entrypoint", "-h"]`).
 
@@ -139,7 +139,11 @@ In particular, the file system structure of the grader looks like:
 +-- /...                       # Additional directories and files as needed.
 ```
 
-When your container starts up, your `entrypoint` script will be executed. After that, you can do whatever you want. The only requirement is that by the time that script finished, you should have written results for the grading job to `/grade/results/results.json`; the format for this is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
+When your container starts up, your `entrypoint` script will be executed. After that, you can do whatever you want. The only requirement is that by the time that script finished, you should have written results for the grading job to `/grade/results/results.json`. The format for this file is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
+
+!!! note
+
+    The `/grade/results` directory is not automatically created, so you must create it yourself before writing `results.json`.
 
 ## Directory layout
 
@@ -155,7 +159,7 @@ The following is an example of a well-structured course layout:
 |   `-- /addVector
 |       +-- info.json           # required configuration goes here (see below)
 |       |-- ...                 # some other question files
-|       `-- /tests              # folder of test cases
+|       `-- /tests              # directory of test cases
 |           +-- ag.py           # testing files
 |           `-- soln_out.txt
 |

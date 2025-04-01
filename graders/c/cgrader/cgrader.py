@@ -17,40 +17,39 @@ DATAFILE = "/grade/data/data.json"
 SB_USER = "sbuser"
 
 # List of symbols that are not allowed to be used in student code
-INVALID_SYMBOLS = frozenset(
-    (
-        "__asan_default_options",
-        "__asan_on_error",
-        "__asan_malloc_hook",
-        "__asan_free_hook",
-        "__asan_unpoison_memory_region",
-        "__asan_set_error_exit_code",
-        "__asan_set_death_callback",
-        "__asan_set_error_report_callback",
-        "__msan_default_options",
-        "__msan_malloc_hook",
-        "__msan_free_hook",
-        "__msan_unpoison",
-        "__msan_unpoison_string",
-        "__msan_set_exit_code",
-        "__lsan_is_turned_off",
-        "__lsan_default_suppressions",
-        "__lsan_do_leak_check",
-        "__lsan_disable",
-        "__lsan_enable",
-        "__lsan_ignore_object",
-        "__lsan_register_root_region",
-        "__lsan_unregister_root_region",
-        "__sanitizer_set_death_callback",
-        "__sanitizer_set_report_path",
-        "__sanitizer_sandbox_on_notify",
-    )
-)
+INVALID_SYMBOLS = frozenset((
+    "__asan_default_options",
+    "__asan_on_error",
+    "__asan_malloc_hook",
+    "__asan_free_hook",
+    "__asan_unpoison_memory_region",
+    "__asan_set_error_exit_code",
+    "__asan_set_death_callback",
+    "__asan_set_error_report_callback",
+    "__msan_default_options",
+    "__msan_malloc_hook",
+    "__msan_free_hook",
+    "__msan_unpoison",
+    "__msan_unpoison_string",
+    "__msan_set_exit_code",
+    "__lsan_is_turned_off",
+    "__lsan_default_suppressions",
+    "__lsan_do_leak_check",
+    "__lsan_disable",
+    "__lsan_enable",
+    "__lsan_ignore_object",
+    "__lsan_register_root_region",
+    "__lsan_unregister_root_region",
+    "__sanitizer_set_death_callback",
+    "__sanitizer_set_report_path",
+    "__sanitizer_sandbox_on_notify",
+))
 INVALID_PRIMITIVES = frozenset(("no_sanitize", "disable_sanitizer_instrumentation"))
 
 ASAN_FLAGS = ("-fsanitize=address", "-static-libasan", "-g", "-O0")
 
 
+OutputMatch = str | re.Pattern[str] | Iterable[str | re.Pattern[str]]
 OutputMatchingOption = Literal["all", "partial", "any"]
 
 
@@ -417,9 +416,9 @@ class CGrader:
         self,
         command: str | Iterable[str],
         input: str | None = None,  # noqa: A002
-        exp_output: str | Iterable[str] | None = None,
-        must_match_all_outputs: OutputMatchingOption | bool = "any",
-        reject_output: str | Iterable[str] | None = None,
+        exp_output: OutputMatch | None = None,
+        must_match_all_outputs: OutputMatchingOption | bool = "any",  # noqa: FBT001
+        reject_output: OutputMatch | None = None,
         field: str | None = None,
         ignore_case: bool = True,  # noqa: FBT001
         timeout: float = 1,
@@ -432,7 +431,7 @@ class CGrader:
         highlight_matches: bool = False,  # noqa: FBT001
     ) -> TestResult:
         if args is not None:
-            if isinstance(args, str | float | int):
+            if isinstance(args, (str, float, int)):
                 args = [args]
             args = list(map(str, args))
             assert is_str_list(args)
@@ -449,12 +448,12 @@ class CGrader:
         if exp_output is None:
             exp_output = []
             must_match_all_outputs = True
-        elif isinstance(exp_output, str):
+        elif isinstance(exp_output, (str, re.Pattern)):
             exp_output = [exp_output]
 
         if reject_output is None:
             reject_output = []
-        elif isinstance(reject_output, str):
+        elif isinstance(reject_output, (str, re.Pattern)):
             reject_output = [reject_output]
 
         if must_match_all_outputs is True:
@@ -462,16 +461,16 @@ class CGrader:
         elif must_match_all_outputs is False:
             must_match_all_outputs = "any"
 
-        def compile_re(t: str | re.Pattern | Any) -> tuple[str, re.Pattern]:
+        def compile_re(t: str | re.Pattern[str] | Any) -> tuple[str, re.Pattern[str]]:
             if isinstance(t, re.Pattern):
                 return (t.pattern, t)
             # If t is not a string, convert it to its string representation
             t = str(t)
             return (
-                t.strip(),
+                t.strip() if ignore_consec_spaces else t.rstrip(),
                 re.compile(
                     (
-                        "\\s+".join(map(re.escape, re.split("\\s+", t)))
+                        r"\s+".join(map(re.escape, re.split(r"\s+", t)))
                         if ignore_consec_spaces
                         else re.escape(t)
                     ),
@@ -581,7 +580,7 @@ class CGrader:
         self,
         name: str,
         description: str = "",
-        points: bool | float = True,
+        points: bool | float = True,  # noqa: FBT001
         msg: str | None = "",
         output: str = "",
         max_points: float = 1,
@@ -597,9 +596,9 @@ class CGrader:
             "points": points,
             "max_points": max_points,
             "output": output,
-            "message": msg if msg else "",
+            "message": msg or "",
         }
-        if images and isinstance(images, str | dict):
+        if images and isinstance(images, (str, dict)):
             test["images"] = [images]
         elif images:
             test["images"] = list(images)

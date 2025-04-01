@@ -25,8 +25,7 @@ WHERE
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 -- a random string generator for a 4-character join code suffix
-CREATE
-OR REPLACE FUNCTION random_string (
+CREATE OR REPLACE FUNCTION random_string (
   IN string_length INTEGER,
   IN possible_chars TEXT DEFAULT '0123456789'
 ) RETURNS text AS $$

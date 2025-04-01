@@ -13,11 +13,11 @@ import {
 } from '../models/course-permissions.js';
 
 import {
-  setUser,
-  parseInstanceQuestionId,
-  saveOrGrade,
   type User,
   assertAlert,
+  parseInstanceQuestionId,
+  saveOrGrade,
+  setUser,
 } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
@@ -262,7 +262,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
           );
           if (item.explanation) {
             assert.equal(
-              container.find('[data-testid="rubric-item-explanation"]').attr('data-content'),
+              container.find('[data-testid="rubric-item-explanation"]').attr('data-bs-content'),
               item.explanation_render ?? `<p>${item.explanation}</p>`,
             );
           } else {

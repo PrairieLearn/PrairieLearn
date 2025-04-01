@@ -1,4 +1,4 @@
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { type AssessmentQuestionRow } from '../models/assessment-question.js';
 
@@ -44,7 +44,7 @@ export function AssessmentQuestionNumber(question: AssessmentQuestionRow): HtmlS
   return question.alternative_group_size === 1
     ? html`${question.alternative_group_number}.`
     : html`
-        <span class="ml-3">
+        <span class="ms-3">
           ${question.alternative_group_number}.${question.number_in_alternative_group}.
         </span>
       `;

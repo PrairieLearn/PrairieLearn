@@ -15,16 +15,16 @@ interface CourseOptions {
   devModeFeatures: Record<string, boolean> | string[];
 }
 
-interface Tag {
+export interface Tag {
   name: string;
   color: string;
-  description: string;
+  description?: string;
 }
 
-interface Topic {
+export interface Topic {
   name: string;
   color: string;
-  description: string;
+  description?: string;
 }
 
 interface SharingSet {
@@ -162,7 +162,7 @@ export interface Assessment {
 interface QuestionExternalGradingOptions {
   enabled?: boolean;
   image: string;
-  entrypoint: string | string[];
+  entrypoint?: string | string[];
   serverFilesCourse?: string[];
   timeout?: number;
   enableNetworking?: boolean;
@@ -375,7 +375,7 @@ const questions: Record<string, Question> = {
     uuid: '894927f7-19b3-451d-8ad1-75974ad2ffb7',
     title: 'Workspace test question',
     topic: 'Workspace',
-    tags: ['workspace'],
+    tags: ['test'],
     type: 'v3',
     workspaceOptions: {
       image: 'prairielearn/workspace-vscode-python',

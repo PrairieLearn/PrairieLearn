@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js';
@@ -98,7 +98,7 @@ onDocumentReady(() => {
     `;
     if (question.open_issue_count > 0) {
       text += html`<a
-        class="badge badge-pill badge-danger ml-1"
+        class="badge rounded-pill text-bg-danger ms-1"
         href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
           question.qid ?? '',
         )}"

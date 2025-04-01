@@ -64,7 +64,7 @@ export function InstructorAssessmentQuestionStatistics({
     },
     headContent: [compiledScriptTag('instructorAssessmentQuestionStatisticsClient.ts')],
     content: html`
-      <h1 class="sr-only">
+      <h1 class="visually-hidden">
         ${resLocals.assessment_set.name} ${resLocals.assessment.number} Question Statistics
       </h1>
       ${AssessmentSyncErrorsAndWarnings({
@@ -86,7 +86,9 @@ export function InstructorAssessmentQuestionStatistics({
             footer: html`
               <input type="hidden" name="__action" value="refresh_stats" />
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancel
+              </button>
               <button type="submit" class="btn btn-danger">Submit</button>
             `,
           })
@@ -98,15 +100,15 @@ export function InstructorAssessmentQuestionStatistics({
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question difficulty vs
             discrimination
           </h2>
-          <div class="ml-auto">
+          <div class="ms-auto">
             <small>
-              <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
+              <span class="text-light me-2">Last calculated: ${statsLastUpdated}</span>
             </small>
             <button
               type="button"
               class="btn btn-sm btn-light"
-              data-toggle="modal"
-              data-target="#refreshAssessmentQuestionStatsModal"
+              data-bs-toggle="modal"
+              data-bs-target="#refreshAssessmentQuestionStatsModal"
             >
               <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </button>
@@ -132,25 +134,23 @@ export function InstructorAssessmentQuestionStatistics({
                   })}"
                 ></div>
               </div>
-              <div class="card-footer">
-                <small>
-                  <ul>
-                    <li>
-                      <strong>Mean score</strong> of a question is the average score for all
-                      students on the question. It is best to have a range of questions with
-                      different mean scores on the test, with some easy (mean score above 90%) and
-                      some hard (mean score below 50%).
-                    </li>
-                    <li>
-                      <strong>Discrimination</strong> of a question is the correlation coefficient
-                      between the scores on the question and the total assessment scores.
-                      Discrimination values should be above 20%, unless a question is very easy
-                      (mean score above 95%), in which case it is acceptable to have lower
-                      discriminations. It is always better to have higher discriminations for all
-                      questions, and a range of discriminations is not desired.
-                    </li>
-                  </ul>
-                </small>
+              <div class="card-footer small">
+                <ul>
+                  <li>
+                    <strong>Mean score</strong> of a question is the average score for all students
+                    on the question. It is best to have a range of questions with different mean
+                    scores on the test, with some easy (mean score above 90%) and some hard (mean
+                    score below 50%).
+                  </li>
+                  <li>
+                    <strong>Discrimination</strong> of a question is the correlation coefficient
+                    between the scores on the question and the total assessment scores.
+                    Discrimination values should be above 20%, unless a question is very easy (mean
+                    score above 95%), in which case it is acceptable to have lower discriminations.
+                    It is always better to have higher discriminations for all questions, and a
+                    range of discriminations is not desired.
+                  </li>
+                </ul>
               </div>
             `
           : html`<div class="card-body">No student data.</div>`}
@@ -161,15 +161,15 @@ export function InstructorAssessmentQuestionStatistics({
           <h2>
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question statistics
           </h2>
-          <div class="ml-auto">
+          <div class="ms-auto">
             <small>
-              <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
+              <span class="text-light me-2">Last calculated: ${statsLastUpdated}</span>
             </small>
             <button
               type="button"
               class="btn btn-sm btn-light"
-              data-toggle="modal"
-              data-target="#refreshAssessmentQuestionStatsModal"
+              data-bs-toggle="modal"
+              data-bs-target="#refreshAssessmentQuestionStatsModal"
             >
               <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </button>
@@ -255,7 +255,7 @@ export function InstructorAssessmentQuestionStatistics({
               ${questionStatsCsvFilename}
             </a>
           </p>
-          <small>
+          <div class="small">
             <ul>
               <li>
                 <strong>Mean score</strong> of a question is the average score for all students on
@@ -283,7 +283,7 @@ export function InstructorAssessmentQuestionStatistics({
                 right-most). This is essentially a graphical representation of the discrimination.
               </li>
             </ul>
-          </small>
+          </div>
         </div>
       </div>
 
@@ -293,15 +293,15 @@ export function InstructorAssessmentQuestionStatistics({
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Detailed question
             statistics
           </h2>
-          <div class="ml-auto">
+          <div class="ms-auto">
             <small>
-              <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
+              <span class="text-light me-2">Last calculated: ${statsLastUpdated}</span>
             </small>
             <button
               type="button"
               class="btn btn-sm btn-light"
-              data-toggle="modal"
-              data-target="#refreshAssessmentQuestionStatsModal"
+              data-bs-toggle="modal"
+              data-bs-target="#refreshAssessmentQuestionStatsModal"
             >
               <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </button>
@@ -539,7 +539,7 @@ export function InstructorAssessmentQuestionStatistics({
               ${questionStatsCsvFilename}
             </a>
           </p>
-          <small>
+          <div class="small">
             <ul>
               ${Object.keys(STAT_DESCRIPTIONS).map((stat) => {
                 return html`
@@ -556,7 +556,7 @@ export function InstructorAssessmentQuestionStatistics({
               averaging over all assessment instances for each student, then averaging over
               students.
             </p>
-          </small>
+          </div>
         </div>
       </div>
     `,

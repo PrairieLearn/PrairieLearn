@@ -3,7 +3,7 @@ import * as path from 'path';
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
-import { parseISO, isValid, isAfter, isFuture, isPast } from 'date-fns';
+import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
@@ -266,6 +266,8 @@ export interface AssessmentAllowAccess {
   active: boolean;
   timeLimitMin: number;
   password: string;
+  showClosedAssessment: boolean;
+  showClosedAssessmentScore: boolean;
 }
 
 interface QuestionAlternative {
@@ -349,6 +351,8 @@ export interface Assessment {
   advanceScorePerc: number;
   gradeRateMinutes: number;
   shareSourcePublicly: boolean;
+  requireHonorCode: boolean;
+  allowPersonalNotes: boolean;
 }
 
 interface QuestionExternalGradingOptions {
@@ -411,10 +415,21 @@ export async function loadFullCourse(
   courseId: string | null,
   courseDir: string,
 ): Promise<CourseData> {
-  const courseInfo = await loadCourseInfo(courseId, courseDir);
   const questions = await loadQuestions(courseDir);
+  const tagsInUse = new Set<string>();
+
+  for (const question of Object.values(questions)) {
+    if (question.data?.tags) {
+      for (const tag of question.data.tags) {
+        tagsInUse.add(tag);
+      }
+    }
+  }
+
   const courseInstanceInfos = await loadCourseInstances(courseDir);
   const courseInstances: Record<string, CourseInstanceData> = {};
+  const assessmentSetsInUse = new Set<string>();
+
   for (const [courseInstanceId, courseInstance] of Object.entries(courseInstanceInfos)) {
     // Check if the course instance is "expired". A course instance is considered
     // expired if it either has zero `allowAccess` rules (in which case it is never
@@ -433,11 +448,25 @@ export async function loadFullCourse(
       questions,
     );
 
+    for (const assessment of Object.values(assessments)) {
+      if (assessment.data?.set) {
+        assessmentSetsInUse.add(assessment.data?.set);
+      }
+    }
+
     courseInstances[courseInstanceId] = {
       courseInstance,
       assessments,
     };
   }
+
+  const courseInfo = await loadCourseInfo({
+    courseId,
+    coursePath: courseDir,
+    assessmentSetsInUse,
+    tagsInUse,
+  });
+
   return {
     course: courseInfo,
     questions,
@@ -652,10 +681,17 @@ export async function loadInfoFile<T extends { uuid: string }>({
   }
 }
 
-export async function loadCourseInfo(
-  courseId: string | null,
-  coursePath: string,
-): Promise<InfoFile<Course>> {
+export async function loadCourseInfo({
+  courseId,
+  coursePath,
+  assessmentSetsInUse,
+  tagsInUse,
+}: {
+  courseId: string | null;
+  coursePath: string;
+  assessmentSetsInUse: Set<string>;
+  tagsInUse: Set<string>;
+}): Promise<InfoFile<Course>> {
   const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
     coursePath,
     filePath: 'infoCourse.json',
@@ -718,12 +754,25 @@ export async function loadCourseInfo(
     return [...known.values()];
   }
 
+  // Assessment sets in DEFAULT_ASSESSMENT_SETS may be in use but not present in the
+  // course info JSON file. This ensures that default assessment sets are added if
+  // an assessment uses them, and removed if not.
+  const defaultAssessmentSetsInUse = DEFAULT_ASSESSMENT_SETS.filter((set) =>
+    assessmentSetsInUse.has(set.name),
+  );
+
   const assessmentSets = getFieldWithoutDuplicates(
     'assessmentSets',
     'name',
-    DEFAULT_ASSESSMENT_SETS,
+    defaultAssessmentSetsInUse,
   );
-  const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
+
+  // Tags in DEFAULT_TAGS may be in use but not present in the course info JSON
+  // file. This ensures that default tags are added if a question uses them, and
+  // removed if not.
+  const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => tagsInUse.has(tag.name));
+
+  const tags = getFieldWithoutDuplicates('tags', 'name', defaultTagsInUse);
   const topics = getFieldWithoutDuplicates('topics', 'name');
   const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
 
@@ -908,7 +957,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
               `Missing JSON file: ${infoFilePath}`,
             );
           }
-          _.assign(infoFiles, subInfoFiles);
+          Object.assign(infoFiles, subInfoFiles);
         } catch (e) {
           if (e.code === 'ENOTDIR') {
             // This wasn't a directory; ignore it.
@@ -1076,6 +1125,16 @@ async function validateQuestion(
   return { warnings, errors };
 }
 
+/**
+ * Formats a set of QIDs into a string for use in error messages.
+ * @returns A comma-separated list of double-quoted QIDs.
+ */
+function formatQids(qids: Set<string>) {
+  return Array.from(qids)
+    .map((qid) => `"${qid}"`)
+    .join(', ');
+}
+
 async function validateAssessment(
   assessment: Assessment,
   questions: Record<string, InfoFile<Question>>,
@@ -1084,7 +1143,7 @@ async function validateAssessment(
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  const allowRealTimeGrading = _.get(assessment, 'allowRealTimeGrading', true);
+  const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
   if (assessment.type === 'Homework') {
     // Because of how Homework-type assessments work, we don't allow
     // real-time grading to be disabled for them.
@@ -1124,10 +1183,10 @@ async function validateAssessment(
     });
   }
 
-  const foundQids = new Set();
-  const duplicateQids = new Set();
-  const missingQids = new Set();
-  const draftQids = new Set();
+  const foundQids = new Set<string>();
+  const duplicateQids = new Set<string>();
+  const missingQids = new Set<string>();
+  const draftQids = new Set<string>();
   const checkAndRecordQid = (qid: string): void => {
     if (qid[0] === '@') {
       // Question is being imported from another course. We hold off on validating this until
@@ -1269,20 +1328,16 @@ async function validateAssessment(
   });
 
   if (duplicateQids.size > 0) {
-    errors.push(
-      `The following questions are used more than once: ${[...duplicateQids].join(', ')}`,
-    );
+    errors.push(`The following questions are used more than once: ${formatQids(duplicateQids)}`);
   }
 
   if (missingQids.size > 0) {
-    errors.push(
-      `The following questions do not exist in this course: ${[...missingQids].join(', ')}`,
-    );
+    errors.push(`The following questions do not exist in this course: ${formatQids(missingQids)}`);
   }
 
   if (draftQids.size > 0) {
     errors.push(
-      `The following questions are marked as draft and therefore cannot be used in assessments: ${[...draftQids].join(', ')}`,
+      `The following questions are marked as draft and therefore cannot be used in assessments: ${formatQids(draftQids)}`,
     );
   }
 
@@ -1372,7 +1427,7 @@ async function validateCourseInstance(
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  if (_.has(courseInstance, 'allowIssueReporting')) {
+  if ('allowIssueReporting' in courseInstance) {
     if (courseInstance.allowIssueReporting) {
       warnings.push('"allowIssueReporting" is no longer needed.');
     } else {
@@ -1399,7 +1454,7 @@ async function validateCourseInstance(
       warnings.push(...allowAccessWarnings);
     });
 
-    if (_.has(courseInstance, 'userRoles')) {
+    if ('userRoles' in courseInstance) {
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );

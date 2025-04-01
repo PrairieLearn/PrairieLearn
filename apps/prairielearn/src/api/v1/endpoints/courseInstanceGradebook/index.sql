@@ -16,27 +16,47 @@ WITH
       a.deleted_at IS NULL
       AND a.course_instance_id = $course_instance_id
   ),
-  course_scores AS (
-    SELECT DISTINCT
-      ON (ai.user_id, a.id) ai.user_id,
-      a.id AS assessment_id,
+  assessment_instances_with_groups as (
+    SELECT
+      ai.id,
+      COALESCE(ai.user_id, gu.user_id) AS user_id,
+      ai.group_id,
+      ai.assessment_id,
       ai.score_perc,
       ai.max_points,
       ai.points,
-      format_date_iso8601 (ai.date, ci.display_timezone) AS start_date,
-      DATE_PART('epoch', ai.duration) AS duration_seconds,
-      ai.id AS assessment_instance_id
+      ai.date,
+      ai.duration
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+      LEFT JOIN groups AS g ON (g.id = ai.group_id)
+      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
     WHERE
-      ci.id = $course_instance_id
+      a.course_instance_id = $course_instance_id
+      AND (
+        g.deleted_at IS NULL
+        OR g.id IS NULL
+      )
+  ),
+  course_scores AS (
+    SELECT DISTINCT
+      ON (aig.user_id, aig.assessment_id) aig.user_id,
+      aig.assessment_id,
+      aig.score_perc,
+      aig.max_points,
+      aig.points,
+      format_date_iso8601 (aig.date, ci.display_timezone) AS start_date,
+      DATE_PART('epoch', aig.duration) AS duration_seconds,
+      aig.id AS assessment_instance_id
+    FROM
+      assessment_instances_with_groups AS aig
+      JOIN course_instances AS ci ON (ci.id = $course_instance_id)
     ORDER BY
-      ai.user_id,
-      a.id,
-      ai.score_perc DESC,
-      ai.id
+      aig.user_id,
+      aig.assessment_id,
+      aig.score_perc DESC,
+      aig.id
   ),
   user_ids AS (
     (
@@ -59,6 +79,7 @@ WITH
     SELECT
       u.user_id,
       u.uid,
+      u.uin,
       u.name,
       users_get_displayed_role (u.user_id, $course_instance_id) AS role
     FROM
@@ -69,6 +90,7 @@ WITH
     SELECT
       u.user_id,
       u.uid AS user_uid,
+      u.uin AS user_uin,
       u.name AS user_name,
       u.role AS user_role,
       a.assessment_id,
@@ -96,6 +118,7 @@ WITH
     SELECT
       user_id,
       user_uid,
+      user_uin,
       user_name,
       user_role,
       ARRAY_AGG(
@@ -135,6 +158,7 @@ WITH
     GROUP BY
       user_id,
       user_uid,
+      user_uin,
       user_name,
       user_role
   )

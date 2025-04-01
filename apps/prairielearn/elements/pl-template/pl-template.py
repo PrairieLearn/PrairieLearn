@@ -2,7 +2,7 @@ import copy
 import os
 import warnings
 from itertools import chain
-from typing import Any, cast
+from typing import Any
 
 import chevron
 import lxml.etree
@@ -15,35 +15,39 @@ DIRECTORY_CHOICE_DEFAULT = "serverFilesCourse"
 LOG_TAG_WARNINGS_DEFAULT = True
 
 # These elements should be display only
-ALLOWED_PL_TAGS = frozenset(
-    (
-        "pl-template",
-        "pl-variable",
-        "pl-code",
-        "pl-card",
-        "pl-figure",
-        "pl-file-download",
-        "pl-matrix-latex",
-    )
-)
+ALLOWED_PL_TAGS = frozenset((
+    "pl-template",
+    "pl-variable",
+    "pl-code",
+    "pl-card",
+    "pl-figure",
+    "pl-file-download",
+    "pl-matrix-latex",
+))
 
 # Entries from the data dict to copy
 DATA_ENTRIES_TO_COPY = ("params",)
 
 
 def check_tags(element_html: str) -> None:
-    element_list = cast(list, lxml.html.fragments_fromstring(element_html))
+    element_list = lxml.html.fragments_fromstring(element_html)
 
     # First element can be a string, remove since there's nothing to check.
     if isinstance(element_list[0], str):
         element_list.pop(0)
 
-    for e in chain.from_iterable(element.iter() for element in element_list):
+    for e in chain.from_iterable(
+        element.iter()
+        for element in element_list
+        if isinstance(element, lxml.html.HtmlElement)
+    ):
         if isinstance(e, lxml.etree._Comment):
             continue
 
         is_tag_invald = (
-            e.tag.startswith("pl-") and e.tag not in ALLOWED_PL_TAGS
+            isinstance(e.tag, str)
+            and e.tag.startswith("pl-")
+            and e.tag not in ALLOWED_PL_TAGS
         ) or e.tag == "markdown"
 
         if is_tag_invald:

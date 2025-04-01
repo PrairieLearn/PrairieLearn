@@ -96,7 +96,7 @@ export function InstructorFileEditor({
             </div>
           `
         : ''}
-      <h1 class="sr-only">File editor</h1>
+      <h1 class="visually-hidden">File editor</h1>
 
       <form name="editor-form" method="POST">
         <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
@@ -105,7 +105,7 @@ export function InstructorFileEditor({
           <div class="card-header bg-primary">
             <div class="row align-items-center justify-content-between">
               <div class="col-auto">
-                <span class="text-monospace text-white d-flex">
+                <span class="font-monospace text-white d-flex">
                   ${joinHtml(
                     paths.branch.map((dir) =>
                       dir.canView
@@ -128,8 +128,8 @@ export function InstructorFileEditor({
                   type="button"
                   id="help-button"
                   class="btn btn-light btn-sm"
-                  data-toggle="collapse"
-                  data-target="#help"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#help"
                   aria-expanded="false"
                 >
                   <i class="far fa-question-circle" aria-hidden="true"></i>
@@ -198,8 +198,8 @@ export function InstructorFileEditor({
                                 <button
                                   type="button"
                                   class="btn btn-secondary btn-sm"
-                                  data-toggle="collapse"
-                                  data-target="#job-sequence-results"
+                                  data-bs-toggle="collapse"
+                                  data-bs-target="#job-sequence-results"
                                   id="job-sequence-results-button"
                                 >
                                   Show detail
@@ -207,9 +207,12 @@ export function InstructorFileEditor({
                               </div>
                             `
                           : ''}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                          <span aria-hidden="true">&times;</span>
-                        </button>
+                        <button
+                          type="button"
+                          class="btn-close"
+                          data-bs-dismiss="alert"
+                          aria-label="Close"
+                        ></button>
                       </div>
                       ${draftEdit.jobSequence != null
                         ? html`
@@ -241,9 +244,12 @@ export function InstructorFileEditor({
                       <strong>Save and sync</strong>, you will overwrite the version of this file
                       that is on disk. If you instead click <strong>Choose their version</strong>,
                       any changes you have made to this file will be lost.
-                      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
+                      <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close"
+                      ></button>
                     </div>
                   `
                 : ''}
@@ -290,12 +296,10 @@ export function InstructorFileEditor({
                         </div>
                         <button
                           type="button"
-                          class="mr-2 m-auto btn-close-white close"
-                          data-dismiss="toast"
+                          class="btn-close"
+                          data-bs-dismiss="toast"
                           aria-label="Close"
-                        >
-                          <span aria-hidden="true">&times;</span>
-                        </button>
+                        ></button>
                       </div>
                     </div>
                   </div>

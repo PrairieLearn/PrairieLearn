@@ -9,18 +9,18 @@ import { selectUserById } from '../models/user.js';
 import * as questionServers from '../question-servers/index.js';
 
 import {
-  GradingJobSchema,
-  SubmissionSchema,
-  type Variant,
-  type Submission,
-  type Question,
   type Course,
   type CourseInstance,
+  GradingJobSchema,
+  type Question,
+  type Submission,
+  SubmissionSchema,
+  type Variant,
 } from './db-types.js';
-import { saveSubmission, gradeVariant, insertSubmission } from './grading.js';
+import { gradeVariant, insertSubmission, saveSubmission } from './grading.js';
 import { writeCourseIssues } from './issues.js';
 import { getAndRenderVariant } from './question-render.js';
-import { getQuestionCourse, ensureVariant } from './question-variant.js';
+import { ensureVariant, getQuestionCourse } from './question-variant.js';
 import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -105,6 +105,7 @@ async function createTestSubmission(
     credit: null,
     mode: null,
     variant_id: variant.id,
+    user_id,
     auth_user_id: authn_user_id,
     client_fingerprint_id: null,
   });
@@ -308,6 +309,7 @@ async function testQuestion(
       urlPrefix: `/pl/course/${variant_course.id}`,
       user,
       authn_user,
+      is_administrator: false,
     });
   } finally {
     const renderEnd = Date.now();

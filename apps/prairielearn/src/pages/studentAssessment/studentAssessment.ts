@@ -6,15 +6,15 @@ import { flash } from '@prairielearn/flash';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import {
-  joinGroup,
+  GroupOperationError,
+  canUserAssignGroupRoles,
   createGroup,
   getGroupConfig,
   getGroupId,
   getGroupInfo,
-  updateGroupRoles,
+  joinGroup,
   leaveGroup,
-  GroupOperationError,
-  canUserAssignGroupRoles,
+  updateGroupRoles,
 } from '../../lib/groups.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';

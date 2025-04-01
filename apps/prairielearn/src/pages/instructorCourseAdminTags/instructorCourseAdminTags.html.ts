@@ -3,6 +3,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadge } from '../../components/TagBadge.html.js';
+import { TagDescription } from '../../components/TagDescription.html.js';
 import { type Tag } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminTags({
@@ -50,7 +51,7 @@ export function InstructorCourseAdminTags({
                     <td class="align-middle">${tag.number}</td>
                     <td class="align-middle">${TagBadge(tag)}</td>
                     <td class="align-middle">${tag.color}</td>
-                    <td class="align-middle">${tag.description}</td>
+                    <td class="align-middle">${TagDescription(tag)}</td>
                   </tr>
                 `,
               )}

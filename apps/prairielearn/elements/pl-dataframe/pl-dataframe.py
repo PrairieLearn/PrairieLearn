@@ -156,9 +156,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             ["dtype"], axis="index", copy=False
         )
         other = descriptors.style.map(lambda v: "font-weight: bold;")  # type: ignore
-        frame_style.set_table_styles(
-            [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
-        )
+        frame_style.set_table_styles([
+            {"selector": ".foot_row0", "props": "border-top: 1px solid black;"}
+        ])
         frame_style.concat(other)
 
     if not show_header:
