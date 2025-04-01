@@ -19,7 +19,6 @@
 '@prairielearn/config': patch
 '@prairielearn/logger': patch
 '@prairielearn/sentry': patch
-'@prairielearn/cache': patch
 '@prairielearn/error': patch
 '@prairielearn/flash': patch
 '@prairielearn/html': patch
