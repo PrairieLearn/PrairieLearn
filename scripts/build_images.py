@@ -97,7 +97,7 @@ for image in images.split(","):
     print_and_run_command(args)
 
     print(f"Tagging image {image} with tag {tag}")
-    tag_args = ["docker", "image", "tag", f"{image}", f"{image}:{tag}"]
+    tag_args = ["docker", "image", "tag", f"{image}", f"docker.io/{image}:{tag}"]
     print_and_run_command(tag_args)
 
     with open(metadata_file.name) as f:
