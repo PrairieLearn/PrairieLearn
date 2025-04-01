@@ -1,5 +1,5 @@
 columns
-    author_string: text
+    author_string: text not null
     id: bigint not null default nextval('authors_id_seq'::regclass)
 
 indexes
