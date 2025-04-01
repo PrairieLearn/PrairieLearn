@@ -13,12 +13,12 @@ import { type QuestionContext } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
 import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
 import {
-  SubmissionPanel,
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
+  SubmissionPanel,
 } from '../components/SubmissionPanel.html.js';
 import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
-import { selectVariantsByInstanceQuestion } from '../models/variant.js';
+import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
 import { config } from './config.js';
@@ -31,6 +31,7 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   type Course,
+  type CourseInstance,
   CourseInstanceSchema,
   CourseSchema,
   GradingJobSchema,
@@ -38,34 +39,20 @@ import {
   GroupConfigSchema,
   IdSchema,
   type InstanceQuestion,
-  InstanceQuestionSchema,
   IssueSchema,
   type Question,
   type Submission,
   SubmissionSchema,
   type User,
   type Variant,
-  VariantSchema,
 } from './db-types.js';
 import { getGroupInfo, getQuestionGroupPermissions, getUserRoles } from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import type { SubmissionPanels } from './question-render.types.js';
-import { getQuestionCourse, ensureVariant } from './question-variant.js';
+import { ensureVariant, getQuestionCourse } from './question-variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const VariantSelectResultSchema = VariantSchema.extend({
-  assessment: AssessmentSchema.nullable(),
-  assessment_instance: AssessmentInstanceSchema.extend({
-    formatted_date: z.string().nullable(),
-  }).nullable(),
-  instance_question: InstanceQuestionSchema.extend({
-    assigned_grader_name: z.string().nullable(),
-    last_grader_name: z.string().nullable(),
-  }).nullable(),
-  formatted_date: z.string(),
-});
 
 const IssueRenderDataSchema = IssueSchema.extend({
   formatted_date: z.string().nullable(),
@@ -83,7 +70,6 @@ type InstanceQuestionWithAllowGrade = InstanceQuestion & {
 const SubmissionInfoSchema = z.object({
   grading_job: GradingJobSchema.nullable(),
   submission: SubmissionSchema,
-  variant: VariantSchema,
   question_number: z.string().nullable(),
   next_instance_question: z.object({
     id: IdSchema.nullable(),
@@ -123,10 +109,10 @@ const MAX_RECENT_SUBMISSIONS = 3;
  */
 async function render(
   variant_course: Course,
-  renderSelection,
+  renderSelection: questionServers.RenderSelection,
   variant: Variant,
   question: Question,
-  submission: Submission,
+  submission: Submission | null,
   submissions: Submission[],
   question_course: Course,
   locals: Record<string, any>,
@@ -273,8 +259,6 @@ function buildLocals({
     disableSaveButton: false,
     showNewVariantButton: false,
     showTryAgainButton: false,
-    showSubmissions: false,
-    showFeedback: false,
     showTrueAnswer: false,
     showGradingRequested: false,
     allowAnswerEditing: false,
@@ -331,7 +315,6 @@ function buildLocals({
     }
   }
 
-  locals.showFeedback = true;
   if (
     !variant.open ||
     (instance_question && !instance_question.open) ||
@@ -396,53 +379,82 @@ function buildLocals({
 export async function getAndRenderVariant(
   variant_id: string | null,
   variant_seed: string | null,
-  locals: Record<string, any>,
+  locals: {
+    urlPrefix: string;
+    course: Course;
+    question: Question;
+    user: User;
+    authn_user: User;
+    course_instance?: CourseInstance;
+    course_instance_id?: string;
+    assessment?: Assessment;
+    assessment_instance?: AssessmentInstance;
+    assessment_question?: AssessmentQuestion;
+    group_config?: GroupConfig;
+    group_role_permissions?: { can_view: boolean; can_submit: boolean };
+    instance_question?: InstanceQuestionWithAllowGrade;
+    authz_data?: Record<string, any>;
+    authz_result?: Record<string, any>;
+    client_fingerprint_id?: string | null;
+    manualGradingInterface?: boolean;
+    is_administrator: boolean;
+  },
   options?: {
     urlOverrides?: Partial<QuestionUrls>;
+    publicQuestionPreview?: boolean;
   },
 ) {
-  locals.question_course = await getQuestionCourse(locals.question, locals.course);
-  locals.question_is_shared = await sqldb.queryRow(
+  // We write a fair amount of unstructured data back into locals,
+  // so we'll cast it to `any` once so we don't have to do it every time.
+  const resultLocals = locals as any;
+
+  const question_course = await getQuestionCourse(locals.question, locals.course);
+  resultLocals.question_is_shared = await sqldb.queryRow(
     sql.select_is_shared,
     { question_id: locals.question.id },
     z.boolean(),
   );
 
-  if (variant_id != null) {
-    locals.variant = await sqldb.queryOptionalRow(
-      sql.select_variant_for_render,
-      {
-        variant_id,
+  const variant = await run(async () => {
+    if (variant_id != null) {
+      return await selectAndAuthzVariant({
+        unsafe_variant_id: variant_id,
+        variant_course: locals.course,
         question_id: locals.question.id,
+        course_instance_id: locals.course_instance?.id,
         instance_question_id: locals.instance_question?.id,
-      },
-      VariantSelectResultSchema,
-    );
-    if (locals.variant == null) {
-      throw new error.HttpStatusError(404, 'Variant not found');
+        authz_data: locals.authz_data,
+        authn_user: locals.authn_user,
+        user: locals.user,
+        is_administrator: locals.is_administrator,
+        publicQuestionPreview: options?.publicQuestionPreview,
+      });
+    } else {
+      const require_open = !!locals.assessment && locals.assessment.type !== 'Exam';
+      const instance_question_id = locals.instance_question?.id ?? null;
+      const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
+      const options = { variant_seed };
+      return await ensureVariant(
+        locals.question.id,
+        instance_question_id,
+        locals.user.user_id,
+        locals.authn_user.user_id,
+        course_instance_id,
+        locals.course,
+        question_course,
+        options,
+        require_open,
+        locals.client_fingerprint_id ?? null,
+      );
     }
-  } else {
-    const require_open = locals.assessment && locals.assessment.type !== 'Exam';
-    const instance_question_id = locals.instance_question?.id;
-    const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
-    const options = { variant_seed };
-    locals.variant = await ensureVariant(
-      locals.question.id,
-      instance_question_id,
-      locals.user.user_id,
-      locals.authn_user.user_id,
-      course_instance_id,
-      locals.course,
-      locals.question_course,
-      options,
-      require_open,
-      locals.client_fingerprint_id,
-    );
-  }
+  });
+
+  resultLocals.variant = variant;
 
   const {
     urlPrefix,
-    variant,
+    course,
+    course_instance,
     question,
     instance_question,
     assessment,
@@ -450,12 +462,13 @@ export async function getAndRenderVariant(
     assessment_question,
     group_config,
     group_role_permissions,
+    authz_data,
     authz_result,
   } = locals;
 
-  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question ?? null);
+  Object.assign(urls, options?.urlOverrides);
   Object.assign(locals, urls);
-  Object.assign(locals, options?.urlOverrides);
 
   const newLocals = buildLocals({
     variant,
@@ -468,10 +481,10 @@ export async function getAndRenderVariant(
     group_config,
     authz_result,
   });
-  Object.assign(locals, newLocals);
   if (locals.manualGradingInterface && question?.show_correct_answer) {
-    locals.showTrueAnswer = true;
+    newLocals.showTrueAnswer = true;
   }
+  Object.assign(locals, newLocals);
 
   // We only fully render a small number of submissions on initial page
   // load; the rest only require basic information like timestamps. As
@@ -479,14 +492,18 @@ export async function getAndRenderVariant(
   // information for all submissions to this variant, and then we'll
   // load the full submission for only the submissions that we'll
   // actually render.
-  const submissions = await sqldb.queryRows(
+  const basicSubmissions = await sqldb.queryRows(
     sql.select_basic_submissions,
-    { variant_id: locals.variant.id },
+    { variant_id: variant.id },
     SubmissionBasicSchema,
   );
-  const submissionCount = submissions.length;
+  const submissionCount = basicSubmissions.length;
 
-  if (submissionCount >= 1) {
+  const submissions = await run(async () => {
+    if (submissionCount === 0) {
+      return [];
+    }
+
     // Load detailed information for the submissions that we'll render.
     // Note that for non-Freeform questions, we unfortunately have to
     // eagerly load detailed data for all submissions, as that ends up
@@ -494,63 +511,64 @@ export async function getAndRenderVariant(
     // way to support async rendering of submissions.
     const needsAllSubmissions = locals.question.type !== 'Freeform';
     const submissionsToRender = needsAllSubmissions
-      ? submissions
-      : submissions.slice(0, MAX_RECENT_SUBMISSIONS);
+      ? basicSubmissions
+      : basicSubmissions.slice(0, MAX_RECENT_SUBMISSIONS);
     const submissionDetails = await sqldb.queryRows(
       sql.select_detailed_submissions,
       { submission_ids: submissionsToRender.map((s) => s.id) },
       SubmissionDetailedSchema,
     );
 
-    locals.submissions = submissions.map((s, idx) => ({
+    return basicSubmissions.map((s, idx) => ({
       submission_number: submissionCount - idx,
       ...s,
       // Both queries order results consistently, so we can just use
       // the array index to match up the basic and detailed results.
       ...(idx < submissionDetails.length ? submissionDetails[idx] : {}),
     })) satisfies SubmissionForRender[];
-    locals.submission = locals.submissions[0]; // most recent submission
+  });
 
-    locals.showSubmissions = true;
-    if (!locals.assessment && locals.question.show_correct_answer) {
-      // instructor question pages, only show if true answer is
-      // allowed by this question
-      locals.showTrueAnswer = true;
-    }
+  const submission = submissions[0] ?? null;
+  resultLocals.submissions = submissions;
+  resultLocals.submission = submission;
+
+  if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
+    // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
+    resultLocals.showTrueAnswer = true;
   }
 
-  locals.effectiveQuestionType = questionServers.getEffectiveQuestionType(locals.question.type);
+  const effectiveQuestionType = questionServers.getEffectiveQuestionType(locals.question.type);
+  resultLocals.effectiveQuestionType = effectiveQuestionType;
 
-  const renderSelection = {
-    header: true,
+  const renderSelection: questionServers.RenderSelection = {
     question: true,
-    submissions: locals.showSubmissions,
-    answer: locals.showTrueAnswer,
+    submissions: submissions.length > 0,
+    answer: resultLocals.showTrueAnswer,
   };
   const htmls = await render(
-    locals.course,
+    course,
     renderSelection,
-    locals.variant,
-    locals.question,
-    locals.submission,
-    locals.submissions.slice(0, MAX_RECENT_SUBMISSIONS),
-    locals.question_course,
+    variant,
+    question,
+    submission as Submission,
+    submissions.slice(0, MAX_RECENT_SUBMISSIONS) as Submission[],
+    question_course,
     locals,
   );
-  locals.extraHeadersHtml = htmls.extraHeadersHtml;
-  locals.questionHtml = htmls.questionHtml;
-  locals.submissionHtmls = htmls.submissionHtmls;
-  locals.answerHtml = htmls.answerHtml;
+  resultLocals.extraHeadersHtml = htmls.extraHeadersHtml;
+  resultLocals.questionHtml = htmls.questionHtml;
+  resultLocals.submissionHtmls = htmls.submissionHtmls;
+  resultLocals.answerHtml = htmls.answerHtml;
 
   // Load issues last in case there are issues from rendering.
   //
   // We'll only load the data that will be needed for this specific page render.
   // The checks here should match those in `components/QuestionContainer.html.ts`.
-  const loadExtraData = config.devMode || locals.authz_data.has_course_permission_view;
-  locals.issues = await sqldb.queryRows(
+  const loadExtraData = config.devMode || authz_data?.has_course_permission_view;
+  resultLocals.issues = await sqldb.queryRows(
     sql.select_issues,
     {
-      variant_id: locals.variant.id,
+      variant_id: variant.id,
       load_course_data: loadExtraData,
       load_system_data: loadExtraData,
     },
@@ -559,29 +577,28 @@ export async function getAndRenderVariant(
 
   if (locals.instance_question) {
     await manualGrading.populateRubricData(locals);
-    await async.eachSeries(locals.submissions, manualGrading.populateManualGradingData);
+    await async.eachSeries(submissions, manualGrading.populateManualGradingData);
   }
 
   if (locals.question.type !== 'Freeform') {
     const questionJson = JSON.stringify({
-      questionFilePath: locals.calculationQuestionFileUrl,
-      questionGeneratedFilePath: locals.calculationQuestionGeneratedFileUrl,
-      effectiveQuestionType: locals.effectiveQuestionType,
-      course: locals.course,
-      courseInstance: locals.course_instance,
+      questionFilePath: urls.calculationQuestionFileUrl,
+      questionGeneratedFilePath: urls.calculationQuestionGeneratedFileUrl,
+      effectiveQuestionType,
+      course,
+      courseInstance: course_instance,
       variant: {
-        id: locals.variant.id,
-        params: locals.variant.params,
+        id: variant.id,
+        params: variant.params,
       },
-      submittedAnswer:
-        locals.showSubmissions && locals.submission ? locals.submission.submitted_answer : null,
-      feedback: locals.showFeedback && locals.submission ? locals.submission.feedback : null,
-      trueAnswer: locals.showTrueAnswer ? locals.variant.true_answer : null,
-      submissions: locals.showSubmissions ? locals.submissions : null,
+      submittedAnswer: submission?.submitted_answer ?? null,
+      feedback: submission?.feedback ?? null,
+      trueAnswer: resultLocals.showTrueAnswer ? variant.true_answer : null,
+      submissions: submissions.length > 0 ? submissions : null,
     });
 
     const encodedJson = encodeURIComponent(questionJson);
-    locals.questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
+    resultLocals.questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
   }
 }
 
@@ -591,42 +608,45 @@ export async function getAndRenderVariant(
  * set, also the side panels for score, navigation and the question footer.
  */
 export async function renderPanelsForSubmission({
-  submission_id,
+  unsafe_submission_id,
   question,
   instance_question,
-  variant_id,
+  variant,
   user,
   urlPrefix,
   questionContext,
   authorizedEdit,
   renderScorePanels,
   groupRolePermissions,
+  localsOverrides,
 }: {
-  submission_id: string;
+  unsafe_submission_id: string;
   question: Question;
   instance_question: InstanceQuestionWithAllowGrade | null;
-  variant_id: string | null;
+  variant: Variant;
   user: User;
   urlPrefix: string;
   questionContext: QuestionContext;
   authorizedEdit: boolean;
   renderScorePanels: boolean;
   groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
+  localsOverrides?: {
+    manualGradingInterface?: boolean;
+  };
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
     {
-      submission_id,
+      unsafe_submission_id,
       question_id: question.id,
       instance_question_id: instance_question?.id,
-      variant_id,
+      variant_id: variant.id,
     },
     SubmissionInfoSchema,
   );
   if (submissionInfo == null) throw new error.HttpStatusError(404, 'Not found');
 
   const {
-    variant,
     submission,
     next_instance_question,
     assessment_question,
@@ -671,6 +691,7 @@ export async function renderPanelsForSubmission({
       assessment_question,
       group_config,
     }),
+    ...localsOverrides,
   };
 
   await async.parallel([

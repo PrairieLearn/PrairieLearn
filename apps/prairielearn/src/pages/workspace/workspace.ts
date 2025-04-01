@@ -40,8 +40,8 @@ router.get(
     if (res.locals.assessment == null) {
       // instructor preview
       pageTitle = 'Workspace Preview';
-      pageNote = res.locals.question_qid;
-      navTitle = res.locals.question_qid;
+      pageNote = res.locals.question.qid;
+      navTitle = res.locals.question.qid;
     } else {
       // student assessment
       pageTitle = 'Workspace';

@@ -8,12 +8,15 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
+import { updateCourseInstanceUsagesForGradingJob } from '../models/course-instance-usages.js';
+import { selectOptionalGradingJobById } from '../models/grading-job.js';
+
 import { config } from './config.js';
 import {
-  IdSchema,
   CourseSchema,
-  QuestionSchema,
   GradingJobSchema,
+  IdSchema,
+  QuestionSchema,
   SubmissionSchema,
   VariantSchema,
 } from './db-types.js';
@@ -161,7 +164,7 @@ export async function processGradingResult(content: any): Promise<void> {
       throw new error.AugmentedError('invalid grading', { data: { content } });
     }
 
-    if (_.has(content.grading, 'feedback') && !_.isObject(content.grading.feedback)) {
+    if ('feedback' in content.grading && !_.isObject(content.grading.feedback)) {
       throw new error.AugmentedError('invalid grading.feedback', { data: { content } });
     }
 
@@ -216,6 +219,13 @@ export async function processGradingResult(content: any): Promise<void> {
       }
     }
 
+    const grading_job = await selectOptionalGradingJobById(content.gradingId);
+    // Only update course instance usages if the job hasn't been graded yet.
+    // We have to compute this before calling
+    // `grading_jobs_update_after_grading` below because that will update
+    // `graded_at`.
+    const updateUsages = grading_job && grading_job.graded_at == null;
+
     await sqldb.callAsync('grading_jobs_update_after_grading', [
       content.gradingId,
       content.grading.receivedTime,
@@ -232,6 +242,15 @@ export async function processGradingResult(content: any): Promise<void> {
       content.grading.score,
       null, // `v2_score`: gross legacy, this can safely be null
     ]);
+
+    if (updateUsages) {
+      // This has to come after `grading_jobs_update_after_grading` above
+      // because it uses the `grading_finished_at` value updated there.
+      await updateCourseInstanceUsagesForGradingJob({
+        grading_job_id: content.gradingId,
+      });
+    }
+
     const assessment_instance_id = await sqldb.queryOptionalRow(
       sql.select_assessment_for_grading_job,
       { grading_job_id: content.gradingId },

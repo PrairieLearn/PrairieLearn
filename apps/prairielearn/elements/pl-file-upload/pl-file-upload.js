@@ -249,7 +249,7 @@
           var download =
             '<a download="' +
             fileName +
-            '" class="btn btn-outline-secondary btn-sm mr-1" href="data:application/octet-stream;base64,' +
+            '" class="btn btn-outline-secondary btn-sm me-1" href="data:application/octet-stream;base64,' +
             fileData +
             '">Download</a>';
 
@@ -318,7 +318,7 @@
           $fileStatusContainer.append(
             '<div class="align-self-center">' +
               download +
-              `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-toggle="collapse" data-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}">` +
+              `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-bs-toggle="collapse" data-bs-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}">` +
               '<span class="file-preview-icon fa fa-angle-down"></span>' +
               '</button>' +
               '</div>',
@@ -331,7 +331,7 @@
 
     addWarningMessage(message) {
       var $alert = $(
-        '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>',
+        '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>',
       );
       $alert.append(message);
       this.element.find('.messages').append($alert);

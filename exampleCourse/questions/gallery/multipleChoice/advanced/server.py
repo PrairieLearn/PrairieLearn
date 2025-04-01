@@ -24,9 +24,10 @@ def generate(data):
     # determines if the option "none of the above" will be used or not
     data["params"]["none"] = "false"  # random.choice(["false","true"])
 
-    if random.choice(
-        [0, 1]
-    ):  # This variant provides the distance and asks for the time
+    if random.choice([
+        0,
+        1,
+    ]):  # This variant provides the distance and asks for the time
         # horizontal distance (m)
         d = random.randint(4, 16)
         # time in the air (s)

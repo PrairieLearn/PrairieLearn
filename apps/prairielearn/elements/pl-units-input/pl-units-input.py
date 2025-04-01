@@ -45,8 +45,7 @@ UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-units-input.mustache"
 def get_with_units_atol(
     element: lxml.html.HtmlElement, data: pl.QuestionData, ureg: UnitRegistry
 ) -> str:
-    """Returns the atol string for use in the "with-units" grading mode."""
-
+    """Return the atol string for use in the "with-units" grading mode."""
     if pl.has_attrib(element, "atol"):
         return pl.get_string_attrib(element, "atol")
 
@@ -140,9 +139,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         correct_answer_parsed = ureg.Quantity(correct_answer)
 
-        if (correct_answer_parsed is not None) and (
-            not correct_answer_parsed.check(parsed_atol.dimensionality)
-        ):
+        if not correct_answer_parsed.check(parsed_atol.dimensionality):
             raise ValueError(
                 f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
                 f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
@@ -269,11 +266,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
 
-        else:
-            if raw_submitted_answer is not None:
-                html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    raw_submitted_answer
-                )
+        elif raw_submitted_answer is not None:
+            html_params["raw_submitted_answer"] = pl.escape_unicode_string(
+                raw_submitted_answer
+            )
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)

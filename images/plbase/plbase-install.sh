@@ -35,15 +35,19 @@ dnf -y install \
     texlive-type1cm \
     tmux
 
+# Redis 7 isn't available on Amazon Linux 2023. Symlink the versioned
+# executables to make them work with scripts that expect unversioned ones.
+ln -s /usr/bin/redis6-cli /usr/bin/redis-cli && ln -s /usr/bin/redis6-server /usr/bin/redis-server
+
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm
 cd /nvm
-git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
+git checkout $(git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1))
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
 nvm install 20
 npm install yarn@latest -g
-for f in /nvm/current/bin/* ; do ln -s $f /usr/local/bin/`basename $f` ; done
+for f in /nvm/current/bin/*; do ln -s $f /usr/local/bin/$(basename $f); done
 
 echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
@@ -69,7 +73,7 @@ dnf -y autoremove
 # get any benefit from Conda.
 echo "setting up conda..."
 cd /
-arch=`uname -m`
+arch=$(uname -m)
 # Pinning the Conda version so the default Python version is 3.10. Later conda versions use 3.12 as the default.
 curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Miniforge3-Linux-${arch}.sh
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f

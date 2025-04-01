@@ -1,7 +1,7 @@
 import html
 
 
-def render_this_extension(client_files):
+def render_this_extension(_client_files):
     with open("extension-fileio.py") as f:
         contents = f.read()
         return (

@@ -1,5 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { html, unsafeHtml, escapeHtml } from '@prairielearn/html';
+import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
@@ -13,7 +13,7 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
-import { getRoleNamesForUser, type GroupInfo } from '../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
 import { Modal } from './Modal.html.js';
@@ -26,9 +26,15 @@ const MAX_TOP_RECENTS = 3;
 export function QuestionContainer({
   resLocals,
   questionContext,
+  showFooter = true,
+  manualGradingPreviewUrl,
+  renderSubmissionSearchParams,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  showFooter?: boolean;
+  manualGradingPreviewUrl?: string;
+  renderSubmissionSearchParams?: URLSearchParams;
 }) {
   const {
     question,
@@ -40,7 +46,6 @@ export function QuestionContainer({
     authz_data,
     is_administrator,
     showTrueAnswer,
-    showSubmissions,
     submissions,
     submissionHtmls,
     answerHtml,
@@ -48,31 +53,31 @@ export function QuestionContainer({
 
   return html`
     <div
-      class="question-container"
+      class="question-container mb-4"
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
       data-variant-token="${variantToken}"
     >
       ${question.type !== 'Freeform'
-        ? html`<div hidden="true" class="question-data">${questionJsonBase64}</div>`
+        ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
       ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
-              ${QuestionPanel({ resLocals, questionContext })}
+              ${QuestionPanel({ resLocals, questionContext, showFooter, manualGradingPreviewUrl })}
             </form>
           `
-        : QuestionPanel({ resLocals, questionContext })}
+        : QuestionPanel({ resLocals, showFooter, questionContext })}
 
-      <div class="card mb-4 grading-block${showTrueAnswer ? '' : ' d-none'}">
+      <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
         <div class="card-header bg-secondary text-white">
           <h2>Correct answer</h2>
         </div>
         <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
       </div>
 
-      ${showSubmissions
+      ${submissions.length > 0
         ? html`
             ${SubmissionList({
               resLocals,
@@ -80,20 +85,21 @@ export function QuestionContainer({
               submissions: submissions.slice(0, MAX_TOP_RECENTS),
               submissionHtmls,
               submissionCount: submissions.length,
+              renderSubmissionSearchParams,
             })}
             ${submissions.length > MAX_TOP_RECENTS
               ? html`
-                  <div class="mb-4 d-flex justify-content-center">
+                  <div class="mb-3 d-flex justify-content-center">
                     <button
-                      class="show-hide-btn btn btn-outline-secondary btn-sm collapsed"
+                      class="btn btn-outline-secondary btn-sm show-hide-btn collapsed"
                       type="button"
-                      data-toggle="collapse"
-                      data-target="#more-submissions-collapser"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#more-submissions-collapser"
                       aria-expanded="false"
                       aria-controls="more-submissions-collapser"
                     >
                       Show/hide older submissions
-                      <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+                      <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
                     </button>
                   </div>
 
@@ -104,6 +110,7 @@ export function QuestionContainer({
                       submissions: submissions.slice(MAX_TOP_RECENTS),
                       submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
                       submissionCount: submissions.length,
+                      renderSubmissionSearchParams,
                     })}
                   </div>
                 `
@@ -155,7 +162,7 @@ export function IssuePanel({
   }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(msgBody)}`;
 
   return html`
-    <div class="card mb-4">
+    <div class="card mb-3">
       <div class="card-header bg-danger text-white">
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
       </div>
@@ -212,7 +219,7 @@ export function IssuePanel({
 
       ${config.devMode || authz_data.has_course_permission_view
         ? html`
-            <div class="card-body border border-bottom-0 border-left-0 border-right-0">
+            <div class="card-body border border-bottom-0 border-start-0 border-end-0">
               ${issue.system_data?.courseErrData
                 ? html`
                     <p><strong>Console log:</strong></p>
@@ -226,7 +233,7 @@ ${issue.system_data.courseErrData.outputBoth}</pre
                 <button
                   type="button"
                   class="btn btn-xs btn-secondary"
-                  data-toggle="collapse"
+                  data-bs-toggle="collapse"
                   href="#issue-course-data-${issue.id}"
                   aria-expanded="false"
                   aria-controls="#issue-course-data-${issue.id}"
@@ -246,7 +253,7 @@ ${JSON.stringify(issue.course_data, null, '    ')}</pre
                       <button
                         type="button"
                         class="btn btn-xs btn-secondary"
-                        data-toggle="collapse"
+                        data-bs-toggle="collapse"
                         href="#issue-system-data-${issue.id}"
                         aria-expanded="false"
                         aria-controls="#issue-system-data-${issue.id}"
@@ -321,7 +328,6 @@ function QuestionFooter({
   resLocals: QuestionFooterResLocals;
   questionContext: QuestionContext;
 }) {
-  if (questionContext === 'manual_grading') return '';
   if (resLocals.question.type === 'Freeform') {
     return html`
       <div class="card-footer" id="question-panel-footer">
@@ -391,6 +397,7 @@ export function QuestionFooterContent({
             ${showSaveButton
               ? html`
                   <button
+                    type="submit"
                     class="btn btn-info question-save disable-on-submit order-2"
                     ${disableSaveButton ? 'disabled' : ''}
                     ${question.type === 'Freeform' ? html`name="__action" value="save"` : ''}
@@ -402,7 +409,8 @@ export function QuestionFooterContent({
             ${showGradeButton
               ? html`
                   <button
-                    class="btn btn-primary question-grade disable-on-submit order-1 mr-1"
+                    type="submit"
+                    class="btn btn-primary question-grade disable-on-submit order-1 me-1"
                     ${disableGradeButton ? 'disabled' : ''}
                     ${question.type === 'Freeform' ? html`name="__action" value="grade"` : ''}
                   >
@@ -410,17 +418,17 @@ export function QuestionFooterContent({
                     ${variantAttemptsTotal > 0
                       ? variantAttemptsLeft > 1
                         ? html`
-                            <small class="font-italic ml-2">
+                            <small class="font-italic ms-2">
                               ${variantAttemptsLeft} attempts left
                             </small>
                           `
                         : variantAttemptsLeft === 1 && variantAttemptsTotal > 1
-                          ? html`<small class="font-italic ml-2">Last attempt</small>`
+                          ? html`<small class="font-italic ms-2">Last attempt</small>`
                           : variantAttemptsLeft === 1
-                            ? html`<small class="font-italic ml-2">Single attempt</small>`
+                            ? html`<small class="font-italic ms-2">Single attempt</small>`
                             : ''
                       : questionContext === 'student_homework'
-                        ? html`<small class="font-italic ml-2">Unlimited attempts</small>`
+                        ? html`<small class="font-italic ms-2">Unlimited attempts</small>`
                         : ''}
                   </button>
                 `
@@ -429,9 +437,9 @@ export function QuestionFooterContent({
               ? html`
                   <button
                     type="button"
-                    class="btn btn-xs btn-ghost mr-1"
-                    data-toggle="popover"
-                    data-content="Your group role (${getRoleNamesForUser(group_info, user).join(
+                    class="btn btn-xs btn-ghost me-1"
+                    data-bs-toggle="popover"
+                    data-bs-content="Your group role (${getRoleNamesForUser(group_info, user).join(
                       ', ',
                     )}) is not allowed to submit this question."
                     aria-label="Submission blocked"
@@ -450,13 +458,13 @@ export function QuestionFooterContent({
                 `}
             ${showNewVariantButton
               ? html`
-                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ml-1">
+                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ms-1">
                     New variant
                   </a>
                 `
               : showTryAgainButton
                 ? html`
-                    <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ml-1">
+                    <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
                       ${instance_question_info.previous_variants?.some((variant) => variant.open)
                         ? 'Go to latest variant'
                         : 'Try a new variant'}
@@ -469,14 +477,15 @@ export function QuestionFooterContent({
                       </small>
                       <button
                         type="button"
-                        class="btn btn-xs btn-ghost align-self-center ml-1"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-content="${escapeHtml(
+                        class="btn btn-xs btn-ghost align-self-center ms-1"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-title="Explanation of new variants"
+                        data-bs-content="${escapeHtml(
                           NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
                         )}"
-                        data-placement="auto"
+                        data-bs-placement="auto"
                       >
                         <i class="fa fa-question-circle" aria-hidden="true"></i>
                       </button>
@@ -533,7 +542,7 @@ function SubmitRateFooter({
         <span class="d-flex">
           ${disableGradeButton
             ? html`
-                <small class="font-italic ml-2 mt-1 submission-suspended-msg">
+                <small class="font-italic ms-2 mt-1 submission-suspended-msg">
                   Grading possible in <span id="submission-suspended-display"></span>
                   <div id="submission-suspended-progress" class="border border-info"></div>
                 </small>
@@ -555,11 +564,12 @@ function SubmitRateFooter({
           <button
             type="button"
             class="btn btn-xs btn-ghost"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-content="${escapeHtml(popoverContent)}"
-            data-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-title="Explanation of grading rate limits"
+            data-bs-content="${escapeHtml(popoverContent)}"
+            data-bs-placement="auto"
           >
             <i class="fa fa-question-circle" aria-hidden="true"></i>
           </button>
@@ -628,9 +638,13 @@ function AvailablePointsNotes({
 function QuestionPanel({
   resLocals,
   questionContext,
+  showFooter,
+  manualGradingPreviewUrl,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  showFooter: boolean;
+  manualGradingPreviewUrl?: string;
 }) {
   const { question, questionHtml, question_copy_targets, course, instance_question_info } =
     resLocals;
@@ -643,7 +657,7 @@ function QuestionPanel({
     questionContext !== 'manual_grading';
 
   return html`
-    <div class="card mb-4 question-block">
+    <div class="card mb-3 question-block">
       <div class="card-header bg-primary text-white d-flex align-items-center">
         <h1>
           ${QuestionTitle({
@@ -652,26 +666,54 @@ function QuestionPanel({
             questionNumber: instance_question_info?.question_number,
           })}
         </h1>
-        ${showCopyQuestionButton
-          ? html`
-              <button
-                class="btn btn-light btn-sm ml-auto"
-                type="button"
-                data-toggle="modal"
-                data-target="#copyQuestionModal"
-              >
-                <i class="fa fa-clone"></i>
-                Copy question
-              </button>
-            `
-          : ''}
+        <div class="ms-auto d-flex flex-row gap-1">
+          <div class="btn-group">
+            ${showCopyQuestionButton
+              ? html`
+                  <button
+                    class="btn btn-sm btn-outline-light"
+                    type="button"
+                    aria-label="Copy question"
+                    data-bs-toggle="modal"
+                    data-bs-target="#copyQuestionModal"
+                  >
+                    <i class="fa fa-fw fa-clone"></i>
+                    <span class="d-none d-sm-inline">Copy question</span>
+                  </button>
+                `
+              : ''}
+            ${manualGradingPreviewUrl
+              ? html`
+                  <div class="btn-group">
+                    <button
+                      class="btn btn-sm btn-outline-light dropdown-toggle"
+                      type="button"
+                      aria-expanded="false"
+                      data-bs-toggle="dropdown"
+                    >
+                      View&hellip;
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <a class="dropdown-item" href="${manualGradingPreviewUrl}">
+                          Manual grading view
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                `
+              : ''}
+          </div>
+        </div>
       </div>
       <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
-      ${QuestionFooter({
-        // TODO: propagate more precise types upwards.
-        resLocals: resLocals as any,
-        questionContext,
-      })}
+      ${showFooter
+        ? QuestionFooter({
+            // TODO: propagate more precise types upwards.
+            resLocals: resLocals as any,
+            questionContext,
+          })
+        : ''}
     </div>
   `;
 }
@@ -682,12 +724,14 @@ function SubmissionList({
   submissions,
   submissionHtmls,
   submissionCount,
+  renderSubmissionSearchParams,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
   submissions: SubmissionForRender[];
   submissionHtmls: string[];
   submissionCount: number;
+  renderSubmissionSearchParams?: URLSearchParams;
 }) {
   return submissions.map((submission, idx) =>
     SubmissionPanel({
@@ -702,6 +746,7 @@ function SubmissionList({
       submissionCount,
       rubric_data: resLocals.rubric_data,
       urlPrefix: resLocals.urlPrefix,
+      renderSubmissionSearchParams,
     }),
   );
 }
@@ -713,6 +758,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
     id: 'copyQuestionModal',
     title: 'Copy question',
     formAction: question_copy_targets[0]?.copy_url ?? '',
+    formClass: 'js-copy-question-form',
     body:
       question_copy_targets.length === 0
         ? html`
@@ -727,7 +773,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
               This question can be copied to any course for which you have editor permissions.
               Select one of your courses to copy this question.
             </p>
-            <select class="custom-select" name="to_course_id" required>
+            <select class="form-select" name="to_course_id" required>
               ${question_copy_targets.map(
                 (course, index) => html`
                   <option
@@ -750,7 +796,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
       />
       <input type="hidden" name="question_id" value="${question.id}" />
       <input type="hidden" name="course_id" value="${course.id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       ${question_copy_targets?.length > 0
         ? html`
             <button type="submit" name="__action" value="copy_question" class="btn btn-primary">
