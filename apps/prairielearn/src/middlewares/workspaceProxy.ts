@@ -46,7 +46,7 @@ export function makeWorkspaceProxyMiddleware() {
     ws: true,
     pathRewrite: async (path) => {
       try {
-        const match = path.match('/pl/workspace/([0-9]+)/container/(.*)');
+        const match = path.match(/\/pl\/workspace\/([0-9]+)\/container\/(.*)/);
         if (!match) throw new Error(`Could not match path: ${path}`);
         const workspace_id = parseInt(match[1]);
         let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);
