@@ -245,7 +245,7 @@ jobs:
       - name: Build images
         run: python3 scripts/build_images.py
         env:
-          IMAGES: prairielearn/workspace-jupyterlab-python
+          IMAGES: prairielearn/workspace-xtermjs
           TAG: ${{ env.COMMIT_SHA }}
           PLATFORM: ${{ matrix.os == 'ubuntu-24.04' && 'linux/amd64' || 'linux/arm64' }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
@@ -283,7 +283,7 @@ jobs:
       - name: Download metadata
         uses: actions/download-artifact@v4
         with:
-          name: image-metadata-workspace-*-${{ env.COMMIT_SHA }}
+          pattern: image-metadata-workspace-*-${{ env.COMMIT_SHA }}
           path: ${{ runner.temp }}/workspace-image-metadata
           merge-multiple: true
 
