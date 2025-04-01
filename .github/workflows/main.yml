@@ -280,11 +280,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Download x86 metadata
-        uses: actions/download-artifact@v4
-        with:
-          name: digests-workspace-ubuntu-24.04-${{ env.COMMIT_SHA }}
-
       - name: Download metadata
         uses: actions/download-artifact@v4
         with:
