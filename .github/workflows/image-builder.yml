@@ -72,12 +72,8 @@ jobs:
       - name: Build tarball
         id: build-tarball
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ inputs.directory }}/${{ matrix.image }}
-          tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
-          outputs: |
-            type=docker,dest=${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
+        run: |
+          docker save -o ${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar "${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}"
 
       # Create an empty file that will be used to mark an image as modified
       - name: Export metadata
@@ -182,7 +178,7 @@ jobs:
         id: build-tarball
         if: ${{ steps.check-modified.outputs.was-modified == 'true' && contains(fromJson(inputs.upload-artifacts-for), format('{0}-{1}', matrix.image, matrix.os)) }}
         run: |
-          docker save -o ${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar ${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}
+          docker save -o ${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar "${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}"
 
       - name: Export metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
