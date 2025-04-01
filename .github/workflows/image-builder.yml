@@ -176,12 +176,14 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      - name: Retag prairielearn image
+      # We want to retag the image as `latest` -- so that we can run any potential test suites.
+      - name: Retag image
         if: ${{ false && steps.check-modified.outputs.was-modified == 'true' }}
-        shell: bash
         run: |
-          docker tag "prairielearn" "prairielearn:latest"
-      - name: Test prairielearn image
+          docker tag "${{ inputs.image-prefix }}${{ matrix.image }}" "${{ inputs.image-prefix }}${{ matrix.image }}:latest"
+
+      # We need to run test suites in the context of the build image, so we define them as composite actions.
+      - name: Test PrairieLearn image
         if: ${{ format('{0}-{1}', matrix.image, runner.arch) == 'prairielearn-X64' }}
         uses: "./.github/actions/test-prairielearn"
         with:

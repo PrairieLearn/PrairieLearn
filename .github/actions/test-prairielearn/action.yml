@@ -11,6 +11,11 @@ inputs:
   can-push-image:
     description: 'Whether the image can be pushed to DockerHub'
     required: true
+
+# This workflow assumes a couple things:
+# 1. You have already signed into DockerHub
+# 2. You have prepared the base `prairielearn/prairielearn:latest` image
+
 runs:
   using: "composite"
   steps:
