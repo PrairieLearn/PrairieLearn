@@ -70,10 +70,16 @@ for image in images.split(","):
         "plain",
         "--metadata-file",
         metadata_file.name,
+        # We have some images that rely on other images. They're configured to
+        # use this arg to determine which base image tag to use.
+        "--build-arg",
+        f"BASE_IMAGE_TAG={tag}",
     ]
 
     if should_push:
-        args.extend(["--push"])
+        args.extend([
+            "--output=type=image,push-by-digest=true,name-canonical=true,push=true"
+        ])
 
     args.extend([get_image_path(image)])
 
