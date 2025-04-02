@@ -115,6 +115,8 @@ try:
             "--no-cache",
             "--tag",
             image,
+            "--tag",
+            f"localhost:5000/{image}",
             "--progress",
             "plain",
             "--metadata-file",
@@ -125,7 +127,7 @@ try:
             f"BASE_IMAGE_TAG={tag}",
             # "--build-arg",
             # "BASE_IMAGE_REGISTRY=localhost:5000",
-            "--load",
+            # "--load",
         ]
 
         if should_push:
@@ -140,6 +142,11 @@ try:
         print_and_run_command(args)
 
         print_and_run_command(["docker", "image", "ls"])
+
+        print_and_run_command([
+            "curl",
+            "http://localhost:5000/v2/prairielearn/workspace-vscode-base/tags/list",
+        ])
 
         with open(metadata_file.name) as f:
             metadata = f.read()
