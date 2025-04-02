@@ -12,9 +12,8 @@ import { config } from '../lib/config.js';
 import { LocalCache } from '../lib/local-cache.js';
 
 /**
- *
- * Function to strip "sensitive" cookies from requests that will be proxied
- * to workspace hosts.
+ * Removes "sensitive" cookies from the request to avoid exposing them to
+ * workspace hosts.
  */
 function stripSensitiveCookies(proxyReq: http.ClientRequest) {
   const cookies = proxyReq.getHeader('cookie');
@@ -55,7 +54,9 @@ export function makeWorkspaceProxyMiddleware() {
     },
     pathRewrite: async (path, req) => {
       try {
-        const match = (req.originalUrl ?? req.url).match('/pl/workspace/([0-9]+)/container/(.*)');
+        const match = (req.originalUrl ?? req.url).match(
+          /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
+        );
         if (!match) throw new Error(`Could not match path: ${path}`);
         const workspace_id = parseInt(match[1]);
         let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);

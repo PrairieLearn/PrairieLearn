@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/cache",
-  "version": "2.0.13",
+  "version": "2.0.14",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -10,8 +10,8 @@
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
-    "ioredis": "^5.5.0",
-    "lru-cache": "^11.0.2",
+    "ioredis": "^5.6.0",
+    "lru-cache": "^11.1.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

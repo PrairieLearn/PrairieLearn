@@ -281,7 +281,6 @@ export async function initExpress(): Promise<Express> {
   const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
   workspaceProxySocketActivityMetrics.start();
 
-  // proxy workspaces to remote machines
   const workspaceAuthRouter = express.Router();
   workspaceAuthRouter.use([
     // We use a short-lived cookie to cache a successful
