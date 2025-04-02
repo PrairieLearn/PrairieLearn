@@ -1,6 +1,10 @@
 on:
   workflow_call:
     inputs:
+      group:
+        description: 'A name for the group of images to build'
+        required: true
+        type: string
       base-images:
         description: 'The base images to build'
         required: false
@@ -47,7 +51,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Create directory for metadata
-        run: mkdir -p ${{ runner.temp }}/workspace-image-metadata
+        run: mkdir -p ${{ runner.temp }}/image-metadata-${{ inputs.group }}
 
       - name: Build images
         run: python3 scripts/build_images.py
@@ -56,13 +60,13 @@ jobs:
           IMAGES: ${{ inputs.images }}
           TAG: ${{ env.COMMIT_SHA }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          METADATA_DIR: ${{ runner.temp }}/workspace-image-metadata
+          METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
 
       - name: Upload metadata
         uses: actions/upload-artifact@v4
         with:
-          name: image-metadata-workspace-${{ matrix.os }}-${{ env.COMMIT_SHA }}
-          path: ${{ runner.temp }}/workspace-image-metadata
+          name: image-metadata-${{ inputs.group }}-${{ matrix.os }}-${{ env.COMMIT_SHA }}
+          path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           retention-days: 1
           overwrite: true
 
@@ -88,17 +92,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Create directory for metadata
+        run: mkdir -p ${{ runner.temp }}/image-metadata-${{ inputs.group}}
+
       - name: Download metadata
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         uses: actions/download-artifact@v4
         with:
-          pattern: image-metadata-workspace-*-${{ env.COMMIT_SHA }}
-          path: ${{ runner.temp }}/workspace-image-metadata
+          pattern: image-metadata-${{ inputs.group }}-*-${{ env.COMMIT_SHA }}
+          path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           merge-multiple: true
 
       - name: Combine images
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         run: python3 scripts/combine_multi_platform_images.py
         env:
-          METADATA_DIR: ${{ runner.temp }}/workspace-image-metadata
+          METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           TAG: ${{ env.COMMIT_SHA }}

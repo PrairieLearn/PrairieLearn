@@ -27,6 +27,7 @@ jobs:
   build-workspace-images:
     uses: ./.github/workflows/image-builder.yml
     with:
+      group: workspaces
       base-images: prairielearn/workspace-vscode-base
       images: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-rstudio,prairielearn/workspace-xtermjs,prairielearn/workspace-vscode-cpp,prairielearn/workspace-vscode-python
     secrets: inherit
@@ -34,6 +35,7 @@ jobs:
   build-grader-images:
     uses: ./.github/workflows/image-builder.yml
     with:
+      group: graders
       images: prairielearn/grader-c,prairielearn/grader-java,prairielearn/grader-python,prairielearn/grader-r
     secrets: inherit
 
