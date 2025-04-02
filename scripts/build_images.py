@@ -123,8 +123,8 @@ try:
             # use this arg to determine which base image tag to use.
             "--build-arg",
             f"BASE_IMAGE_TAG={tag}",
-            "--build-arg",
-            "BASE_IMAGE_REGISTRY=localhost:5000",
+            # "--build-arg",
+            # "BASE_IMAGE_REGISTRY=localhost:5000",
             "--load",
         ]
 
@@ -154,15 +154,9 @@ try:
         #     print(f"Pushing image {image}@{digest} to Docker Hub")
         #     print_and_run_command(["docker", "push", f"{image}@{digest}"])
 
-        # if is_base_image:
-        #     local_registry_image = f"localhost:5000/{image}:{tag}"
-        #     print(f"Tagging base image {image} for local registry")
-        #     print_and_run_command([
-        #         "docker",
-        #         "tag",
-        #         image,
-        #         local_registry_image,
-        #     ])
+        if is_base_image:
+            print(f"Tagging base image {image} for with tag {tag}")
+            print_and_run_command(["docker", "tag", image, f"{image}:{tag}"])
 
         #     print(f"Pushing base image {image} to local registry")
         #     print_and_run_command(["docker", "push", local_registry_image])
