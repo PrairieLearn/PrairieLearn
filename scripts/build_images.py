@@ -92,6 +92,7 @@ def check_path_modified(path: str) -> bool:
 
     diff_result = subprocess.run(
         ["git", "diff", "--exit-code", f"{diff_branch}..HEAD", "--", path],
+        capture_output=True,
         check=False,
     )
 
@@ -136,9 +137,9 @@ try:
     for image in all_images:
         is_base_image = image in base_image_list
         base_image = BASE_IMAGE_MAPPING.get(image)
+        base_image_built = base_image in built_images
         image_path = get_image_path(image)
         was_modified = check_path_modified(image_path)
-        base_image_built = image in built_images
 
         if not was_modified and not base_image_built:
             print(f"Skipping {image} because it hasn't changed.")
@@ -163,15 +164,19 @@ try:
             "plain",
             "--metadata-file",
             metadata_file.name,
-            # We have some images that rely on other images. They're configured to
-            # use this arg to determine which base image tag to use.
-            "--build-arg",
-            f"BASE_IMAGE_TAG={tag}",
-            "--build-arg",
-            "BASE_IMAGE_REGISTRY=localhost:5000",
             # "--load",
             "--output=type=image,push-by-digest=true,name-canonical=true,push=true",
         ]
+
+        if base_image and base_image_built:
+            args.extend([
+                # We have some images that rely on other images. They're configured to
+                # use this arg to determine which base image tag to use.
+                "--build-arg",
+                f"BASE_IMAGE_TAG={tag}",
+                "--build-arg",
+                "BASE_IMAGE_REGISTRY=localhost:5000",
+            ])
 
         if should_push:
             args.extend([
