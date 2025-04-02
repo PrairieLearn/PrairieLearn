@@ -129,7 +129,7 @@ try:
 
         if should_push:
             args.extend([
-                "--output=type=image,push-by-digest=true,name-canonical=true,push=true"
+                "--output=type=image,push-by-digest=true,name-canonical=true,push=true",
             ])
 
         args.extend([get_image_path(image)])
@@ -140,18 +140,24 @@ try:
 
         print_and_run_command(["docker", "image", "ls"])
 
-        if is_base_image:
-            local_registry_image = f"localhost:5000/{image}:{tag}"
-            print(f"Tagging base image {image} for local registry")
-            print_and_run_command(["docker", "tag", image, local_registry_image])
-
-            print(f"Pushing base image {image} to local registry")
-            print_and_run_command(["docker", "push", local_registry_image])
-
         with open(metadata_file.name) as f:
             metadata = f.read()
 
         print(f"Metadata: {metadata.strip()}")
+        digest = json.loads(metadata)["containerimage.digest"]
+
+        if is_base_image:
+            local_registry_image = f"localhost:5000/{image}:{tag}"
+            print(f"Tagging base image {image} for local registry")
+            print_and_run_command([
+                "docker",
+                "tag",
+                f"{image}@{digest}",
+                local_registry_image,
+            ])
+
+            print(f"Pushing base image {image} to local registry")
+            print_and_run_command(["docker", "push", local_registry_image])
 
         # Write metadata to the metadata directory
         if metadata_dir:
