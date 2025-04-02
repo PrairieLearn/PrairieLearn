@@ -6,6 +6,7 @@ import sys
 import tempfile
 
 # A mapping of images to the base image that they use.
+# TODO: Maybe not needed?
 BASE_IMAGES = {
     "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
@@ -75,17 +76,15 @@ uses_base_image = any(image in BASE_IMAGES for image in image_list)
 if uses_base_image:
     # Stop any existing registry container.
     try:
-        subprocess.run(
-            ["docker", "stop", REGISTRY_NAME], check=False, stderr=subprocess.DEVNULL
-        )
-        subprocess.run(["docker", "rm", REGISTRY_NAME], check=False)
+        print_and_run_command(["docker", "stop", REGISTRY_NAME])
+        print_and_run_command(["docker", "rm", REGISTRY_NAME])
     except subprocess.CalledProcessError:
         # The container probably didn't exist.
         pass
 
     print("Starting local Docker registry...")
-    subprocess.run(["docker", "pull", "registry:2"], check=True)
-    subprocess.run(
+    print_and_run_command(["docker", "pull", "registry:2"])
+    print_and_run_command(
         [
             "docker",
             "run",
@@ -129,8 +128,8 @@ try:
             "BASE_IMAGE_REGISTRY=localhost:5000",
         ]
 
-        if is_base_image:
-            args.extend(["--load"])
+        # if is_base_image:
+        #     args.extend(["--load"])
         if should_push:
             args.extend([
                 "--output=type=image,push-by-digest=true,name-canonical=true,push=true"
@@ -145,10 +144,10 @@ try:
         if is_base_image:
             local_registry_image = f"localhost:5000/{image}:{tag}"
             print(f"Tagging base image {image} for local registry")
-            subprocess.run(["docker", "tag", image, local_registry_image], check=True)
+            print_and_run_command(["docker", "tag", image, local_registry_image])
 
             print(f"Pushing base image {image} to local registry")
-            subprocess.run(["docker", "push", local_registry_image], check=True)
+            print_and_run_command(["docker", "push", local_registry_image])
 
         with open(metadata_file.name) as f:
             metadata = f.read()
@@ -171,5 +170,5 @@ finally:
     # Shut down the local registry if it was started.
     if uses_base_image:
         print("Stopping local Docker registry.")
-        subprocess.run(["docker", "stop", REGISTRY_NAME], check=True)
-        subprocess.run(["docker", "rm", REGISTRY_NAME], check=True)
+        print_and_run_command(["docker", "stop", REGISTRY_NAME])
+        print_and_run_command(["docker", "rm", REGISTRY_NAME])
