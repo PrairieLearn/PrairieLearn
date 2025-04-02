@@ -212,7 +212,7 @@ jobs:
             arm64_tag=""
             x64_tag="${{ inputs.image-prefix }}$image:${{ github.sha }}-X64"
             if [[ -f "$image/ARM64" ]]; then
-              arm64_tag="${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-ARM64"
+              arm64_tag="${{ inputs.image-prefix }}$image:${{ github.sha }}-ARM64"
             fi
             docker buildx imagetools create $latest_tag -t "${{ inputs.image-prefix }}$image:${{ github.sha }}" $x64_tag $arm64_tag
           done
