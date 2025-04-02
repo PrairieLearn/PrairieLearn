@@ -25,7 +25,6 @@ env:
 
 jobs:
   test-prairielearn:
-    if: false
     runs-on: ubuntu-latest
 
     env:
@@ -41,8 +40,8 @@ jobs:
           # what images need to be built.
           fetch-depth: 0
 
-      # We won't try to push in this job, but we still authenticate so that we
-      # don't hit image pull rate limits.
+      # We won't try to push in this job, but we still authenticate if the
+      # secrets are available so that we don't hit image pull rate limits.
       - name: Login to DockerHub
         if: ${{ env.CAN_PUSH_IMAGE == 'true'}}
         uses: docker/login-action@v3
