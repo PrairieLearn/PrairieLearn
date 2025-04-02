@@ -161,6 +161,12 @@ jobs:
           # We want to use the default docker builder, as buildx uses `docker-container`, which has additional overhead to load local images (https://docs.docker.com/build/ci/github-actions/named-contexts/#using-with-a-container-builder).
           tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
 
+      - name: Export metadata
+        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
+        run: |
+          mkdir -p ${{ runner.temp }}/image-metadata
+          touch ${{ runner.temp }}/image-metadata/${{ matrix.image }}
+
       - name: Upload metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: actions/upload-artifact@v4
