@@ -183,7 +183,12 @@ try:
 
         # Write metadata to the metadata directory
         if metadata_dir:
-            build_ref = json.loads(metadata)["buildx.build.ref"]
+            metadata = json.loads(metadata)
+            build_ref = metadata["buildx.build.ref"]
+
+            # If pushing is enabled, the image name will be a comma-separated list of image names.
+            # We'll replace it with just the plain image name.
+            metadata["image.name"] = image
 
             # We need a unique name for the metadata file. We'll use the part of the
             # image name after the last slash, and a hash of the build ref.
