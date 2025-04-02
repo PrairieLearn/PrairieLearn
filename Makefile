@@ -67,11 +67,11 @@ lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-
 lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
-	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}" --check
+	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check
 # This is a separate target since the caches don't respect updates to plugins.
 lint-js-cached:
 	@yarn eslint --ext js --report-unused-disable-directives --cache --cache-strategy content "**/*.{js,ts}"
-	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}" --check --cache --cache-strategy content
+	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check --cache --cache-strategy content
 lint-python:
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
@@ -92,11 +92,11 @@ lint-actions:
 format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,ts}"
-	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
+	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 # This is a separate target since the caches don't respect updates to plugins.
 format-js-cached:
 	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,ts}"
-	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
+	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
 format-python:
 	@python3 -m ruff check --fix ./
