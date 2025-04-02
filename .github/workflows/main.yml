@@ -24,14 +24,14 @@ env:
   COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
-  build-multi-platform-workspace-images:
+  build-workspace-images:
     uses: ./.github/workflows/image-builder.yml
     with:
       base-images: prairielearn/workspace-vscode-base
       images: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-rstudio,prairielearn/workspace-xtermjs,prairielearn/workspace-vscode-cpp,prairielearn/workspace-vscode-python
     secrets: inherit
 
-  build-multi-platform-grader-images:
+  build-grader-images:
     uses: ./.github/workflows/image-builder.yml
     with:
       images: prairielearn/grader-c,prairielearn/grader-java,prairielearn/grader-python,prairielearn/grader-r
@@ -263,7 +263,6 @@ jobs:
       - build-workspace-images
       - build-grader-images
       - build-core-images
-      - combine-multi-platform-workspace-images
     if: ${{ always() }}
 
     steps:
