@@ -1,8 +1,7 @@
 """Utilities for working with element attributes.
 
 ```python
-from prairielearn import ... # recommended
-from prairielearn.grading_utils import ... # unstable, not recommended
+from prairielearn import ...
 ```
 """
 

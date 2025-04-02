@@ -1,8 +1,7 @@
 """Utilities for converting and serializing between different data formats.
 
 ```python
-from prairielearn import ... # recommended
-from prairielearn.conversion_utils import ... # unstable, not recommended
+from prairielearn import ...
 ```
 """
 

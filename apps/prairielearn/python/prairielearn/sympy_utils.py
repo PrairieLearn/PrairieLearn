@@ -1,8 +1,7 @@
 """Utility functions for parsing and evaluating SymPy expressions.
 
 ```python
-from prairielearn import ... # recommended
-from prairielearn.sympy_utils import ... # unstable, not recommended
+from prairielearn import ...
 ```
 """
 

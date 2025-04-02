@@ -1,7 +1,7 @@
 """Conversion utilities for numbers to a specified precision and notation.
 
 ```python
-from prairielearn.to_precision import ... # recommended
+from prairielearn.to_precision import ...
 ```
 """
 

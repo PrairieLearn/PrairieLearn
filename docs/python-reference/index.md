@@ -14,25 +14,18 @@ You can use
 from prairielearn import ...
 ```
 
-to use any of these helpers. Any code from `prairielearn.internal` should be considered internal and may change without notice.
+to use any of these helpers. You should **not** directly import any of the dotted modules (e.g. `prairielearn.colors`).
 
-!!! warning
+??? info "More info"
 
-    Do not use imports like
-
-    ```python
-    from prairielearn.<submodule> import X
-    ```
-
-    Except for
+    The following imports are guaranteed to be stable, but you shouldn't use them.
 
     ```python
-    from prairielearn import X
     from prairielearn.colors import Y
     from prairielearn.to_precision import Z
+    from prairielearn.sympy_utils import Z
     ```
 
-    which are all safe to use. This is because the internal structure of the `prairielearn` module may change without notice excluding the `colors` and `to_precision` submodules.
 
 !!! warning
 
@@ -49,9 +42,9 @@ to use any of these helpers. Any code from `prairielearn.internal` should be con
     === "New"
 
         ```python
-        import prairielearn.colors
-        import prairielearn.to_precision
-        import prairielearn.sympy_utils
+        import prairielearn
+        import prairielearn
+        import prairielearn
         ```
 
 <!-- prettier-ignore -->
@@ -66,4 +59,3 @@ to use any of these helpers. Any code from `prairielearn.internal` should be con
             - attribute_utils
             - colors
             - unicode_utils
-            - internal

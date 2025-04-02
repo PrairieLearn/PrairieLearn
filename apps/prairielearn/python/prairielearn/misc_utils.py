@@ -1,8 +1,7 @@
 """Miscellaneous utilities for building questions and elements in PrairieLearn.
 
 ```python
-from prairielearn import ... # recommended
-from prairielearn.misc_utils import ... # unstable, not recommended
+from prairielearn import ...
 ```
 """
 
