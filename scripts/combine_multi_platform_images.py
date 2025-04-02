@@ -5,9 +5,14 @@ import sys
 from collections import defaultdict
 
 metadata_dir = os.environ.get("METADATA_DIR")
+tag = os.environ.get("TAG")
 
 if not metadata_dir:
     print("No manifest directory specified!")
+    sys.exit(1)
+
+if not tag:
+    print("No tag specified!")
     sys.exit(1)
 
 
@@ -36,14 +41,18 @@ for file in os.listdir(metadata_dir):
         digest = metadata_json["containerimage.digest"]
         image_name = metadata_json["image.name"]
 
-        digests_by_image[image_name].append(digest)
+        # In case this contains a tag, strip it off; we'll add it back later.
+        image_name_without_tag = image_name.split(":")[0]
+
+        digests_by_image[image_name_without_tag].append(digest)
 
 # For each image, make a new image from the digests.
 for image_name, digests in digests_by_image.items():
-    args = ["docker", "buildx", "imagetools", "create", "--tag", image_name]
+    image_name_with_tag = f"{image_name}:{tag}"
+    args = ["docker", "buildx", "imagetools", "create", "--tag", image_name_with_tag]
 
     for digest in digests:
-        args.extend(("--append", f"{image_name}@{digest}"))
+        args.extend([f"{image_name}@{digest}"])
 
-    print(f"Creating image {image_name} with digests: {digests}")
+    print(f"Creating image {image_name_with_tag} with digests: {digests}")
     print_and_run_command(args)

@@ -213,11 +213,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Temporarily disabling ARM64 builds to speed up iteration.
-        # os: [ubuntu-24.04, ubuntu-24.04-arm]
-        os: [ubuntu-24.04]
-
-    runs-on: ${{ matrix.os }}
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
 
     env:
       # Secrets aren't accessible for PRs coming from forks, and we also can't
