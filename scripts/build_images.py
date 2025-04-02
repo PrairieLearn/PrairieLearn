@@ -196,7 +196,7 @@ try:
             hashed_build_ref = hashlib.sha256(build_ref.encode()).hexdigest()
             metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
             with open(os.path.join(metadata_dir, metadata_filename), "w") as f:
-                f.write(metadata)
+                json.dump(metadata, f, indent=2)
 
 finally:
     # Shut down the local registry if it was started.
