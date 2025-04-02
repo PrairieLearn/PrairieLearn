@@ -158,16 +158,23 @@ try:
         #     print_and_run_command(["docker", "push", f"{image}@{digest}"])
 
         if is_base_image:
-            print(f"Tagging base image {image} for with tag {tag}")
-            print_and_run_command(["docker", "tag", image, f"{image}:{tag}"])
+            print_and_run_command([
+                "docker",
+                "pull",
+                f"localhost:5000/{image}@{digest}",
+            ])
+            print_and_run_command([
+                "docker",
+                "tag",
+                f"localhost:5000/{image}@{digest}",
+                f"{image}:{tag}",
+            ])
+
+            # print(f"Tagging base image {image} for with tag {tag}")
+            # print_and_run_command(["docker", "tag", image, f"{image}:{tag}"])
 
         #     print(f"Pushing base image {image} to local registry")
         #     print_and_run_command(["docker", "push", local_registry_image])
-
-        print_and_run_command([
-            "curl",
-            "http://localhost:5000/v2/prairielearn/workspace-vscode-base/tags/list",
-        ])
 
         # Write metadata to the metadata directory
         if metadata_dir:
