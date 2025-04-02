@@ -26,7 +26,6 @@ env:
 jobs:
   build-workspace-images:
     uses: ./.github/workflows/image-builder.yml
-    if: false
     with:
       directory: workspaces
       image-prefix: prairielearn/workspace-
@@ -51,7 +50,6 @@ jobs:
           fi
 
   build-grader-images:
-    if: false
     runs-on: ubuntu-latest
 
     env:
