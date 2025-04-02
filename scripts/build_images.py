@@ -123,8 +123,8 @@ try:
             # use this arg to determine which base image tag to use.
             "--build-arg",
             f"BASE_IMAGE_TAG={tag}",
-            # "--build-arg",
-            # "BASE_IMAGE_REGISTRY=localhost:5000",
+            "--build-arg",
+            "BASE_IMAGE_REGISTRY=localhost:5000",
             # "--load",
             "--output=type=image,push-by-digest=true,name-canonical=true,push=true",
         ]
