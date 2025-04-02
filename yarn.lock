@@ -2031,13 +2031,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@js-temporal/polyfill@npm:^0.4.4":
-  version: 0.4.4
-  resolution: "@js-temporal/polyfill@npm:0.4.4"
+"@js-temporal/polyfill@npm:^0.5.1":
+  version: 0.5.1
+  resolution: "@js-temporal/polyfill@npm:0.5.1"
   dependencies:
     jsbi: "npm:^4.3.0"
-    tslib: "npm:^2.4.1"
-  checksum: 10c0/9edd8431f38837235c7dc88c48bfb2235ca13ec24f22848cd3ca7ebfdb169a2cb9654e04a7efca1488d2b67b851d84013f0bfa8dc3df207bd496ad13560ec937
+  checksum: 10c0/d9a843e22167e6c98946dc03f8a480d062ece5d01ca850930c8f00af1bd99cfe513a98c3420b24a9920c47e7a61a82e5c8866da47ecdc0e7ee2cd3bf6e440b46
   languageName: node
   linkType: hard
 
@@ -3783,7 +3782,7 @@ __metadata:
     "@aws-sdk/credential-providers": "npm:^3.778.0"
     "@aws-sdk/lib-storage": "npm:^3.779.0"
     "@fortawesome/fontawesome-free": "npm:^6.7.2"
-    "@js-temporal/polyfill": "npm:^0.4.4"
+    "@js-temporal/polyfill": "npm:^0.5.1"
     "@node-saml/passport-saml": "npm:^5.0.1"
     "@octokit/rest": "npm:^21.1.1"
     "@prairielearn/aws": "workspace:^"
@@ -15999,7 +15998,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^2.3.1, tslib@npm:^2.4.0, tslib@npm:^2.4.1, tslib@npm:^2.6.2, tslib@npm:^2.8.1":
+"tslib@npm:^2.3.1, tslib@npm:^2.4.0, tslib@npm:^2.6.2, tslib@npm:^2.8.1":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: 10c0/9c4759110a19c53f992d9aae23aac5ced636e99887b51b9e61def52611732872ff7668757d4e4c61f19691e36f4da981cd9485e869b4a7408d689f6bf1f14e62
