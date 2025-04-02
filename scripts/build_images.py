@@ -5,23 +5,14 @@ import subprocess
 import sys
 import tempfile
 
-# A mapping of images to the base image that they use.
-# TODO: Maybe not needed?
-BASE_IMAGES = {
-    "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
-    "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
-}
-
 # The container name for the local Docker registry.
 REGISTRY_NAME = "prairielearn-registry"
 
 base_images = os.environ.get("BASE_IMAGES", "")
 images = os.environ.get("IMAGES", "")
-# TODO: better default? OR just always mandate it?
-platform = os.environ.get("PLATFORM", "linux/arm64")
-should_push = os.environ.get("PUSH_IMAGES", "false").lower() == "true"
 tag = os.environ.get("TAG")
 metadata_dir = os.environ.get("METADATA_DIR")
+should_push = os.environ.get("PUSH_IMAGES", "false").lower() == "true"
 
 if not images:
     print("No images specified. Exiting.")
@@ -33,6 +24,19 @@ if not tag:
 
 if not metadata_dir:
     print("No manifest directory specified; manifests will not be created.")
+
+
+def print_and_run_command(command: list[str]) -> None:
+    is_actions = os.environ.get("GITHUB_ACTIONS")
+    if is_actions:
+        print(f"[command]{' '.join(command)}")
+    else:
+        print(" ".join(command))
+
+    # Flush `stdout` before running to ensure proper sequencing of output.
+    sys.stdout.flush()
+
+    subprocess.run(command, check=True)
 
 
 def get_image_path(image: str) -> str:
@@ -55,25 +59,21 @@ def get_image_path(image: str) -> str:
     raise ValueError(f"Cannot build unknown image: {image}")
 
 
-def print_and_run_command(command: list[str]) -> None:
-    is_actions = os.environ.get("GITHUB_ACTIONS")
-    if is_actions:
-        print(f"[command]{' '.join(command)}")
-    else:
-        print(" ".join(command))
-
-    # Flush `stdout` before running to ensure proper sequencing of output.
-    sys.stdout.flush()
-
-    subprocess.run(command, check=True)
+def get_current_platform() -> str:
+    result = subprocess.run(
+        ["docker", "version", "--format", "json"],
+        capture_output=True,
+        check=True,
+    )
+    version_data = json.loads(result.stdout)
+    return f"{version_data['Server']['Os']}/{version_data['Server']['Arch']}"
 
 
 base_image_list = base_images.split(",")
 image_list = images.split(",")
 all_images = base_image_list + image_list
 
-uses_base_image = any(image in BASE_IMAGES for image in image_list)
-if uses_base_image:
+if base_image_list:
     # Stop any existing registry container.
     try:
         print_and_run_command(["docker", "stop", REGISTRY_NAME])
@@ -96,6 +96,8 @@ if uses_base_image:
             "registry:2",
         ],
     )
+
+platform = get_current_platform()
 
 
 try:
@@ -150,14 +152,13 @@ try:
         print(f"Metadata: {metadata.strip()}")
         digest = json.loads(metadata)["containerimage.digest"]
 
-        # if should_push:
-        #     print(f"Tagging image for push with digest {digest}")
-        #     print_and_run_command(["docker", "tag", image, f"{image}@{digest}"])
-
-        #     print(f"Pushing image {image}@{digest} to Docker Hub")
-        #     print_and_run_command(["docker", "push", f"{image}@{digest}"])
-
         if is_base_image:
+            # `buildx` cannot use locally-build images when the
+            # `docker-container` driver is used, and that driver must be used in
+            # order to support `push-by-digest`. To make the base image available,
+            # we'll push it to a local registry.
+            #
+            # https://github.com/moby/buildkit/issues/2343
             print_and_run_command([
                 "docker",
                 "pull",
@@ -174,12 +175,6 @@ try:
                 "push",
                 f"localhost:5000/{image}:{tag}",
             ])
-
-            # print(f"Tagging base image {image} for with tag {tag}")
-            # print_and_run_command(["docker", "tag", image, f"{image}:{tag}"])
-
-        #     print(f"Pushing base image {image} to local registry")
-        #     print_and_run_command(["docker", "push", local_registry_image])
 
         # Write metadata to the metadata directory
         if metadata_dir:
@@ -200,7 +195,7 @@ try:
 
 finally:
     # Shut down the local registry if it was started.
-    if uses_base_image:
+    if base_image_list:
         print("Stopping local Docker registry.")
         print_and_run_command(["docker", "stop", REGISTRY_NAME])
         print_and_run_command(["docker", "rm", REGISTRY_NAME])
