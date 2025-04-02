@@ -26,7 +26,6 @@ to use any of these helpers. You should **not** directly import any of the dotte
     from prairielearn.sympy_utils import Z
     ```
 
-
 !!! warning
 
     The following imports are now deprecated.
