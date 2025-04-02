@@ -1,4 +1,5 @@
 import type http from 'http';
+import type { Socket } from 'net';
 
 import type express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -38,6 +39,36 @@ function stripSensitiveCookies(proxyReq: http.ClientRequest) {
   });
 
   proxyReq.setHeader('cookie', filteredItems.join(';'));
+}
+
+function isResponseLike(obj: any): obj is http.ServerResponse {
+  return obj && typeof obj.writeHead === 'function';
+}
+
+function isSocketLike(obj: any): obj is Socket {
+  return obj && typeof obj.write === 'function' && !('writeHead' in obj);
+}
+
+/**
+ * Adapted from the following file in `http-proxy-middleware`:
+ * https://github.com/chimurai/http-proxy-middleware/blob/e94087e8d072c0c54a6c3a6b050c590a92921482/src/status-code.ts
+ */
+export function getStatusCode(err: any): number {
+  if (err?.status) return err.status;
+
+  if (/HPE_INVALID/.test(err?.code)) {
+    return 502;
+  }
+
+  switch (err?.code) {
+    case 'ECONNRESET':
+    case 'ENOTFOUND':
+    case 'ECONNREFUSED':
+    case 'ETIMEDOUT':
+      return 504;
+    default:
+      return 500;
+  }
 }
 
 export function makeWorkspaceProxyMiddleware() {
@@ -113,10 +144,18 @@ export function makeWorkspaceProxyMiddleware() {
           url: req.url,
           originalUrl: req.originalUrl,
         });
-        // Check to make sure we weren't already in the middle of sending a
-        // response before replying with an error 500
-        if (res && 'headersSent' in res && !res.headersSent) {
-          res.status?.((err as any).status ?? 500)?.send?.('Error proxying workspace request');
+
+        if (isResponseLike(res)) {
+          // Check to make sure we weren't already in the middle of sending a
+          // response before replying with our own error.
+          if (!res.headersSent) {
+            res.status(getStatusCode(err));
+          }
+
+          res.end('Error proxying workspace request');
+        } else if (isSocketLike(res)) {
+          // There's nothing we can do but destroy the socket.
+          res.destroy();
         }
       },
     },
