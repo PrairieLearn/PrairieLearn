@@ -169,6 +169,11 @@ try:
                 f"localhost:5000/{image}@{digest}",
                 f"localhost:5000/{image}:{tag}",
             ])
+            print_and_run_command([
+                "docker",
+                "push",
+                f"localhost:5000/{image}:{tag}",
+            ])
 
             # print(f"Tagging base image {image} for with tag {tag}")
             # print_and_run_command(["docker", "tag", image, f"{image}:{tag}"])
