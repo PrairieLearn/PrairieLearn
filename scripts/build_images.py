@@ -114,8 +114,6 @@ try:
             platform,
             "--no-cache",
             "--tag",
-            image,
-            "--tag",
             f"localhost:5000/{image}",
             "--progress",
             "plain",
@@ -128,11 +126,14 @@ try:
             # "--build-arg",
             # "BASE_IMAGE_REGISTRY=localhost:5000",
             # "--load",
+            "--output=type=image,push-by-digest=true,name-canonical=true,push=true",
         ]
 
         if should_push:
             args.extend([
-                "--output=type=image,push-by-digest=true,name-canonical=true,push=true",
+                # Only tag it with the registry name if we're going to push.
+                "--tag",
+                image,
             ])
 
         args.extend([get_image_path(image)])
