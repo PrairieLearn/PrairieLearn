@@ -99,8 +99,8 @@ def check_path_modified(path: str) -> bool:
     return diff_result.returncode != 0
 
 
-# Note that base images must come first in the list.
-base_image_list = base_images.split(",")
+# Note that base images must come first in the list so that they're built first.
+base_image_list = [] if not base_images else base_images.split(",")
 image_list = images.split(",")
 all_images = base_image_list + image_list
 
