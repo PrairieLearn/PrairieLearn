@@ -133,6 +133,8 @@ if has_base_image:
             "-d",
             "-p",
             "5000:5000",
+            # Put the registry storage in a tmpfs for faster reads and writes.
+            "--tmpfs=/var/lib/registry",
             "--name",
             REGISTRY_NAME,
             "registry:2",
@@ -142,7 +144,6 @@ if has_base_image:
 platform = get_current_platform()
 
 built_images: set[str] = set()
-
 
 try:
     for image in image_list:

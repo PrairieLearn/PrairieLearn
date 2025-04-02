@@ -24,27 +24,6 @@ env:
   COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
-  build-workspace-images:
-    uses: ./.github/workflows/image-builder.yml
-    with:
-      group: workspaces
-      images: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-rstudio,prairielearn/workspace-xtermjs,prairielearn/workspace-vscode-base,prairielearn/workspace-vscode-cpp,prairielearn/workspace-vscode-python
-    secrets: inherit
-
-  build-grader-images:
-    uses: ./.github/workflows/image-builder.yml
-    with:
-      group: graders
-      images: prairielearn/grader-c,prairielearn/grader-java,prairielearn/grader-python,prairielearn/grader-r
-    secrets: inherit
-
-  build-core-images:
-    uses: ./.github/workflows/image-builder.yml
-    with:
-      group: core
-      images: prairielearn/plbase,prairielearn/prairielearn,prairielearn/executor
-    secrets: inherit
-
   test-prairielearn:
     if: false
     runs-on: ubuntu-latest

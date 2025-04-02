@@ -108,4 +108,5 @@ jobs:
         run: python3 scripts/combine_multi_platform_images.py
         env:
           METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
-          TAG: ${{ env.COMMIT_SHA }}
+          # On master, add the `latest` tag as well.
+          TAGS: ${{ github.ref == 'refs/heads/master' && 'latest,${{ env.COMMIT_SHA }}' || env.COMMIT_SHA }}
