@@ -23,7 +23,7 @@ questions
 `-- my_autograded_workspace   # for an externally graded workspace question
     +-- info.json             # metadata for my_autograded_workspace
     +-- question.html         # HTML template for my_autograded_workspace
-    +-- server.py             # secret server-side code for my_ungraded_workspace (optional)
+    +-- server.py             # secret server-side code for my_autograded_workspace (optional)
     |
     +-- clientFilesQuestion   # files accessible to the client web browser (optional)
     |   `-- fig1.png
