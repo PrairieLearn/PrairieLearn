@@ -173,7 +173,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     answer_name = get_answer_name(file_name)
 
     # Get submitted answer or return parse_error if it does not exist
-    file_contents = data["submitted_answers"].get(answer_name, None)
+    file_contents = data["submitted_answers"].get(answer_name, "")
     if not file_contents and not allow_blank:
         pl.add_files_format_error(data, f"No submitted answer for {file_name}")
         return

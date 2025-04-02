@@ -20,11 +20,11 @@ import { config } from '../config.js';
 import { deferredPromise } from '../deferred.js';
 
 import {
-  type CodeCaller,
-  FunctionMissingError,
   type CallType,
-  type PrepareForCourseOptions,
+  type CodeCaller,
   type CodeCallerResult,
+  FunctionMissingError,
+  type PrepareForCourseOptions,
 } from './code-caller-shared.js';
 
 const CREATED = Symbol('CREATED');

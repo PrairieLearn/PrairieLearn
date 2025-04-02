@@ -3,16 +3,16 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
 import {
-  queryAsync,
-  queryValidatedOneRow,
   loadSqlEquiv,
-  queryValidatedRows,
+  queryAsync,
   queryOneRowAsync,
+  queryValidatedOneRow,
+  queryValidatedRows,
 } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
-import { QuestionSchema, GroupRoleSchema } from '../lib/db-types.js';
+import { GroupRoleSchema, QuestionSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
