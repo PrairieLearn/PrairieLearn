@@ -215,6 +215,8 @@ jobs:
       matrix:
         os: [ubuntu-24.04, ubuntu-24.04-arm]
 
+    runs-on: ${{ matrix.os }}
+
     env:
       # Secrets aren't accessible for PRs coming from forks, and we also can't
       # check secrets in an `if` conditional, so we check for the presence of
