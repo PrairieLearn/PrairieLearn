@@ -167,7 +167,7 @@ try:
                 "docker",
                 "tag",
                 f"localhost:5000/{image}@{digest}",
-                f"{image}:{tag}",
+                f"localhost:5000/{image}:{tag}",
             ])
 
             # print(f"Tagging base image {image} for with tag {tag}")
