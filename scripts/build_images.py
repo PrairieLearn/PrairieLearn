@@ -144,11 +144,6 @@ try:
 
         print_and_run_command(["docker", "image", "ls"])
 
-        print_and_run_command([
-            "curl",
-            "http://localhost:5000/v2/prairielearn/workspace-vscode-base/tags/list",
-        ])
-
         with open(metadata_file.name) as f:
             metadata = f.read()
 
@@ -168,6 +163,11 @@ try:
 
         #     print(f"Pushing base image {image} to local registry")
         #     print_and_run_command(["docker", "push", local_registry_image])
+
+        print_and_run_command([
+            "curl",
+            "http://localhost:5000/v2/prairielearn/workspace-vscode-base/tags/list",
+        ])
 
         # Write metadata to the metadata directory
         if metadata_dir:
