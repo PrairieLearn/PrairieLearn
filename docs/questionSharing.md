@@ -28,7 +28,7 @@ In order to allow someone to share their questions with your course, you must pr
 
 ## Using shared questions
 
-To refer to a question from another course, use the question id (qid) prefixed by the `@` symbol and the sharing name of the other course. For example, to use the question `addNumbers` from the course with sharing name `test-course`, you would put `@test-course/addNumbers` into your `assessmentInfo.json`. In the context of the `assessmentInfo.json`, this may look like:
+To refer to a question from another course, use the question ID (qid) prefixed by the `@` symbol and the sharing name of the other course. For example, to use the question `addNumbers` from the course with sharing name `test-course`, you would put `@test-course/addNumbers` into your `assessmentInfo.json`. In the context of the `assessmentInfo.json`, this may look like:
 
 ```json title="assessmentInfo.json"
 {
@@ -51,7 +51,7 @@ Questions that make use of `clientFilesQuestion` and `serverFilesCourse` will wo
 
 If a sharing course attempts to share a question which accesses client or server files associated with a course instance or an assessment, the question will not work as expected because the consuming course can not use it within the context of the sharing course's course instance or assessment.
 
-See the [the client and server files documentation](clientServerFiles.md) for general information about client and server files.
+See the [client and server files documentation](clientServerFiles.md) for general information about client and server files.
 
 Just as anyone with access to a question in your course can access any file in `clientFilesQuestion`, anyone with permissions to any of the questions you have shared from your course may also access these `clientFilesQuestion` files. This means that if you have any questions from your course that are publicly shared, anyone with access to the internet can access the `clientFilesQuestion` directories for these questions. Additionally, anyone with access to a question shared from your course will be able to access the client assets in your custom course elements, just as any students with access to your course can access the client assets in your custom course elements.
 
