@@ -127,8 +127,8 @@ try:
             "BASE_IMAGE_REGISTRY=localhost:5000",
         ]
 
-        # if is_base_image:
-        #     args.extend(["--load"])
+        if is_base_image:
+            args.extend(["--load"])
         if should_push:
             args.extend([
                 "--output=type=image,push-by-digest=true,name-canonical=true,push=true"
