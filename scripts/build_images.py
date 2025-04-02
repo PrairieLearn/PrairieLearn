@@ -128,10 +128,10 @@ try:
             "--load",
         ]
 
-        # if should_push:
-        #     args.extend([
-        #         "--output=type=image,push-by-digest=true,name-canonical=true,push=true",
-        #     ])
+        if should_push:
+            args.extend([
+                "--output=type=image,push-by-digest=true,name-canonical=true,push=true",
+            ])
 
         args.extend([get_image_path(image)])
 
@@ -147,25 +147,25 @@ try:
         print(f"Metadata: {metadata.strip()}")
         digest = json.loads(metadata)["containerimage.digest"]
 
-        if should_push:
-            print(f"Tagging image for push with digest {digest}")
-            print_and_run_command(["docker", "tag", image, f"{image}@{digest}"])
+        # if should_push:
+        #     print(f"Tagging image for push with digest {digest}")
+        #     print_and_run_command(["docker", "tag", image, f"{image}@{digest}"])
 
-            print(f"Pushing image {image}@{digest} to Docker Hub")
-            print_and_run_command(["docker", "push", f"{image}@{digest}"])
+        #     print(f"Pushing image {image}@{digest} to Docker Hub")
+        #     print_and_run_command(["docker", "push", f"{image}@{digest}"])
 
-        if is_base_image:
-            local_registry_image = f"localhost:5000/{image}:{tag}"
-            print(f"Tagging base image {image} for local registry")
-            print_and_run_command([
-                "docker",
-                "tag",
-                image,
-                local_registry_image,
-            ])
+        # if is_base_image:
+        #     local_registry_image = f"localhost:5000/{image}:{tag}"
+        #     print(f"Tagging base image {image} for local registry")
+        #     print_and_run_command([
+        #         "docker",
+        #         "tag",
+        #         image,
+        #         local_registry_image,
+        #     ])
 
-            print(f"Pushing base image {image} to local registry")
-            print_and_run_command(["docker", "push", local_registry_image])
+        #     print(f"Pushing base image {image} to local registry")
+        #     print_and_run_command(["docker", "push", local_registry_image])
 
         # Write metadata to the metadata directory
         if metadata_dir:
