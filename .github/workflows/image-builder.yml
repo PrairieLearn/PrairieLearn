@@ -11,6 +11,13 @@ on:
         required: true
         type: string
 
+env:
+  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  # Secrets aren't accessible for PRs coming from forks, and we also can't
+  # check secrets in an `if` conditional, so we check for the presence of
+  # the secret here and use this value in conditionals below.
+  CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+
 jobs:
   build-images:
     strategy:
@@ -19,13 +26,6 @@ jobs:
         os: [ubuntu-24.04, ubuntu-24.04-arm]
 
     runs-on: ${{ matrix.os }}
-
-    env:
-      COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      # Secrets aren't accessible for PRs coming from forks, and we also can't
-      # check secrets in an `if` conditional, so we check for the presence of
-      # the secret here and use this value in conditionals below.
-      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -52,8 +52,8 @@ jobs:
       - name: Build images
         run: python3 scripts/build_images.py
         env:
-          BASE_IMAGES: prairielearn/workspace-vscode-base
-          IMAGES: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-rstudio,prairielearn/workspace-xtermjs,prairielearn/workspace-vscode-cpp,prairielearn/workspace-vscode-python
+          BASE_IMAGES: ${{ inputs.base-images }}
+          IMAGES: ${{ inputs.images }}
           TAG: ${{ env.COMMIT_SHA }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           METADATA_DIR: ${{ runner.temp }}/workspace-image-metadata
