@@ -72,8 +72,8 @@ jobs:
       - name: Export metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
-          mkdir -p ${{ runner.temp }}/image-metadata
-          touch ${{ runner.temp }}/image-metadata/${{ matrix.image }}
+          mkdir -p ${{ runner.temp }}/image-metadata/${{ matrix.image }}
+          touch ${{ runner.temp }}/image-metadata/${{ matrix.image }}/${{ runner.arch }}
 
       # Currently, there is no way to reference outputs for matrix jobs (https://github.com/orgs/community/discussions/17245)
       - name: Upload metadata
@@ -164,8 +164,8 @@ jobs:
       - name: Export metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         run: |
-          mkdir -p ${{ runner.temp }}/image-metadata
-          touch ${{ runner.temp }}/image-metadata/${{ matrix.image }}
+          mkdir -p ${{ runner.temp }}/image-metadata/${{ matrix.image }}
+          touch ${{ runner.temp }}/image-metadata/${{ matrix.image }}/${{ runner.arch }}
 
       - name: Upload metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
@@ -209,8 +209,10 @@ jobs:
         run: |
           for image in *; do
             latest_tag="${{ github.ref_name == github.event.repository.default_branch && format('-t \"{0}$image:latest\"', inputs.image-prefix) || '' }}"
-            # shellcheck disable=SC2046,SC2086
-            docker buildx imagetools create \
-              $latest_tag -t "${{ inputs.image-prefix }}$image:${{ github.sha }}" \
-              "${{ inputs.image-prefix }}$image:${{ github.sha }}-X64" "${{ inputs.image-prefix }}$image:${{ github.sha }}-ARM64"
+            arm64_tag=""
+            x64_tag="${{ inputs.image-prefix }}$image:${{ github.sha }}-X64"
+            if [[ -f "$image/ARM64" ]]; then
+              arm64_tag="${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-ARM64"
+            fi
+            docker buildx imagetools create $latest_tag -t "${{ inputs.image-prefix }}$image:${{ github.sha }}" $x64_tag $arm64_tag
           done
