@@ -18,11 +18,6 @@ on:
         description: 'The images to build'
         required: true
         type: string
-      upload-artifacts-for:
-        description: 'The images to upload artifacts for'
-        required: false
-        type: string
-        default: '[]'
       exclude:
         description: 'The combinations to exclude'
         required: false
@@ -166,32 +161,12 @@ jobs:
           # We want to use the default docker builder, as buildx uses `docker-container`, which has additional overhead to load local images (https://docs.docker.com/build/ci/github-actions/named-contexts/#using-with-a-container-builder).
           tags: '${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}'
 
-      - name: Export tarball
-        if: ${{ steps.check-modified.outputs.was-modified == 'true' && contains(fromJson(inputs.upload-artifacts-for), format('{0}-{1}', matrix.image, matrix.os)) }}
-        run: |
-          docker save -o ${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar "${{ inputs.image-prefix }}${{ matrix.image }}:${{ github.sha }}-${{ runner.arch }}"
-
-      - name: Export metadata
-        if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
-        run: |
-          mkdir -p ${{ runner.temp }}/image-metadata
-          touch ${{ runner.temp }}/image-metadata/${{ matrix.image }}
-
       - name: Upload metadata
         if: ${{ steps.check-modified.outputs.was-modified == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: image-metadata-${{ inputs.directory}}-${{ matrix.image }}-${{ matrix.os }}
           path: ${{ runner.temp }}/image-metadata/
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Upload tarball
-        if: ${{ steps.check-modified.outputs.was-modified == 'true'  && contains(fromJson(inputs.upload-artifacts-for), format('{0}-{1}', matrix.image, matrix.os)) }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.directory }}-${{ matrix.image }}-${{ matrix.os }}-tarball
-          path: ${{ runner.temp }}/${{ matrix.image }}-${{ matrix.os }}.tar
           if-no-files-found: error
           retention-days: 1
   tag-images:
