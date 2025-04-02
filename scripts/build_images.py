@@ -127,8 +127,6 @@ try:
             "BASE_IMAGE_REGISTRY=localhost:5000",
         ]
 
-        if is_base_image:
-            args.extend(["--load"])
         if should_push:
             args.extend([
                 "--output=type=image,push-by-digest=true,name-canonical=true,push=true"
@@ -139,6 +137,8 @@ try:
         # TODO: conditional building if images have changed.
         print(f"Building image {image} for platform {platform}")
         print_and_run_command(args)
+
+        print_and_run_command(["docker", "image", "ls"])
 
         if is_base_image:
             local_registry_image = f"localhost:5000/{image}:{tag}"
