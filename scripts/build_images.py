@@ -95,7 +95,6 @@ if uses_base_image:
             REGISTRY_NAME,
             "registry:2",
         ],
-        check=True,
     )
 
 
