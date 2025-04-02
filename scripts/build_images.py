@@ -8,6 +8,12 @@ import tempfile
 # The container name for the local Docker registry.
 REGISTRY_NAME = "prairielearn-registry"
 
+# A mapping from images to their base images. We use this to know to rebuild images when their base image has changed.
+BASE_IMAGE_MAPPING = {
+    "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
+    "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
+}
+
 base_images = os.environ.get("BASE_IMAGES", "")
 images = os.environ.get("IMAGES", "")
 tag = os.environ.get("TAG")
@@ -69,6 +75,30 @@ def get_current_platform() -> str:
     return f"{version_data['Server']['Os']}/{version_data['Server']['Arch']}"
 
 
+def check_path_modified(path: str) -> bool:
+    branch = (
+        subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True,
+            check=True,
+        )
+        .stdout.decode()
+        .strip()
+    )
+
+    # If this script is being run *on* the master branch, then we want to diff
+    # with the previous commit on master. Otherwise, we diff with master itself.
+    diff_branch = "HEAD^1" if branch == "master" else "remotes/origin/master"
+
+    diff_result = subprocess.run(
+        ["git", "diff", "--exit-code", f"{diff_branch}..HEAD", "--", path],
+        check=False,
+    )
+
+    return diff_result.returncode != 0
+
+
+# Note that base images must come first in the list.
 base_image_list = base_images.split(",")
 image_list = images.split(",")
 all_images = base_image_list + image_list
@@ -99,14 +129,26 @@ if base_image_list:
 
 platform = get_current_platform()
 
+built_images: set[str] = set()
+
 
 try:
     for image in all_images:
+        is_base_image = image in base_image_list
+        base_image = BASE_IMAGE_MAPPING.get(image)
+        image_path = get_image_path(image)
+        was_modified = check_path_modified(image_path)
+        base_image_built = image in built_images
+
+        if not was_modified and not base_image_built:
+            print(f"Skipping {image} because it hasn't changed.")
+            continue
+
+        built_images.add(image)
+
         # Make temporary files for the metadata.
         with tempfile.NamedTemporaryFile(delete=False) as metadata_file:
             pass
-
-        is_base_image = image in base_image_list
 
         args = [
             "docker",
@@ -138,13 +180,10 @@ try:
                 image,
             ])
 
-        args.extend([get_image_path(image)])
+        args.extend([image_path])
 
-        # TODO: conditional building if images have changed.
         print(f"Building image {image} for platform {platform}")
         print_and_run_command(args)
-
-        print_and_run_command(["docker", "image", "ls"])
 
         with open(metadata_file.name) as f:
             metadata = f.read()
@@ -153,7 +192,7 @@ try:
         digest = json.loads(metadata)["containerimage.digest"]
 
         if is_base_image:
-            # `buildx` cannot use locally-build images when the
+            # `buildx` cannot use locally-built images when the
             # `docker-container` driver is used, and that driver must be used in
             # order to support `push-by-digest`. To make the base image available,
             # we'll push it to a local registry.

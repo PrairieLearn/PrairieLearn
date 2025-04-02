@@ -249,9 +249,8 @@ jobs:
         run: python3 scripts/build_images.py
         env:
           BASE_IMAGES: prairielearn/workspace-vscode-base
-          IMAGES: prairielearn/workspace-vscode-python
+          IMAGES: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-rstudio,prairielearn/workspace-xtermjs,prairielearn/workspace-vscode-python,prairielearn/workspace-vscode-cpp
           TAG: ${{ env.COMMIT_SHA }}
-          PLATFORM: ${{ matrix.os == 'ubuntu-24.04' && 'linux/amd64' || 'linux/arm64' }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           METADATA_DIR: ${{ runner.temp }}/workspace-image-metadata
 
