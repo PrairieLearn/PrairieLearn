@@ -88,7 +88,6 @@ router.get(
     if (manualGradingPreviewEnabled) {
       renderSubmissionSearchParams.set('manual_grading_preview', 'true');
     }
-    // console.log('variant:', res.locals.variant);
     setRendererHeader(res);
     res.send(
       InstructorQuestionPreview({
