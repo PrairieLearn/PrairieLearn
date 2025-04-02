@@ -10,11 +10,17 @@ REGISTRY_NAME = "prairielearn-registry"
 
 # A mapping from images to their base images. We use this to know to rebuild images when their base image has changed.
 BASE_IMAGE_MAPPING = {
+    # Core images.
+    "prairielearn/prairielearn": "prairielearn/plbase",
+    "prairielearn/executor": "prairielearn/prairielearn",
+    # Workspace images.
     "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
 }
 
-base_images = os.environ.get("BASE_IMAGES", "")
+BASE_IMAGES = list(set(BASE_IMAGE_MAPPING.values()))
+
+
 images = os.environ.get("IMAGES", "")
 tag = os.environ.get("TAG")
 metadata_dir = os.environ.get("METADATA_DIR")
@@ -59,6 +65,12 @@ def get_image_path(image: str) -> str:
         image = image[len("grader-") :]
         return f"graders/{image}"
 
+    if image == "plbase":
+        return "images/plbase"
+
+    if image == "executor":
+        return "images/executor"
+
     if image == "prairielearn":
         return "."
 
@@ -100,11 +112,10 @@ def check_path_modified(path: str) -> bool:
 
 
 # Note that base images must come first in the list so that they're built first.
-base_image_list = [] if not base_images else base_images.split(",")
 image_list = images.split(",")
-all_images = base_image_list + image_list
+has_base_image = any(image in BASE_IMAGES for image in image_list)
 
-if base_image_list:
+if has_base_image:
     # Stop any existing registry container.
     try:
         print_and_run_command(["docker", "stop", REGISTRY_NAME])
@@ -134,8 +145,8 @@ built_images: set[str] = set()
 
 
 try:
-    for image in all_images:
-        is_base_image = image in base_image_list
+    for image in image_list:
+        is_base_image = image in BASE_IMAGES
         base_image = BASE_IMAGE_MAPPING.get(image)
         base_image_built = base_image in built_images
         image_path = get_image_path(image)
@@ -239,7 +250,7 @@ try:
 
 finally:
     # Shut down the local registry if it was started.
-    if base_image_list:
+    if has_base_image:
         print("Stopping local Docker registry.")
         print_and_run_command(["docker", "stop", REGISTRY_NAME])
         print_and_run_command(["docker", "rm", REGISTRY_NAME])
