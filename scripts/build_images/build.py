@@ -70,6 +70,9 @@ def check_path_modified(path: str) -> bool:
 
     # If this script is being run *on* the master branch, then we want to diff
     # with the previous commit on master. Otherwise, we diff with master itself.
+    #
+    # In the case of stacked PRs, this will rebuild images if any of the downstack
+    # PRs changed the image.
     diff_branch = "HEAD^1" if branch == "master" else "remotes/origin/master"
 
     diff_result = subprocess.run(
