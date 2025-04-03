@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 import tempfile
 
 from utils import (
@@ -215,6 +216,12 @@ if __name__ == "__main__":
 
     # Note that base images must come first in the list so that they're built first.
     image_list = images.split(",")
+
+    if only_changed and not any(
+        check_path_modified(get_image_path(image)) for image in image_list
+    ):
+        print("No images have changed; skipping build.")
+        sys.exit(0)
 
     with (
         local_registry(REGISTRY_NAME),
