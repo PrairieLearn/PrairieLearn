@@ -31,9 +31,9 @@ def get_platforms() -> list[str]:
 Usage example:
 
 ```sh
-export IMAGES=prairielearn/workspace-vscode-base,prairielearn/workspace-vscode-python
-export TAG=testing-123
-scripts/build/build_multiplatform.py
+IMAGES=prairielearn/workspace-vscode-base,prairielearn/workspace-vscode-python \
+TAG=testing-123 \
+python3 scripts/build_images/build_multiplatform.py
 ```
 """
 if __name__ == "__main__":
