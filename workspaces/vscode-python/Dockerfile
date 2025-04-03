@@ -1,7 +1,4 @@
-ARG BASE_IMAGE=prairielearn/workspace-vscode-base
-ARG BASE_IMAGE_TAG=latest
-
-FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG}
+FROM prairielearn/workspace-vscode-base:latest
 
 # Make sure to build using bash as the shell so that conda/mamba hooks will
 # work during installation.
