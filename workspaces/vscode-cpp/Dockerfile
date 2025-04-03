@@ -1,8 +1,4 @@
-ARG BASE_IMAGE_REGISTRY=docker.io
-ARG BASE_IMAGE=prairielearn/workspace-vscode-base
-ARG BASE_IMAGE_TAG=latest
-
-FROM ${BASE_IMAGE_REGISTRY}/${BASE_IMAGE}:${BASE_IMAGE_TAG}
+FROM prairielearn/workspace-vscode-base
 
 USER root
 RUN apt-get update && apt-get upgrade -y \

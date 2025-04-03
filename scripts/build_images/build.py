@@ -92,6 +92,7 @@ def build_image(
     metadata_dir: str | None = None,
 ) -> None:
     is_base_image = image in BASE_IMAGES
+    base_image = BASE_IMAGE_MAPPING.get(image)
     image_path = get_image_path(image)
 
     with tempfile.NamedTemporaryFile() as metadata_file:
@@ -114,14 +115,10 @@ def build_image(
             "--output=type=image,push-by-digest=true,name-canonical=true,push=true",
         ]
 
-        if use_local_base_image:
+        if base_image and use_local_base_image:
             args.extend([
-                # We have some images that rely on other images. They're configured to
-                # use this arg to determine which base image tag to use.
-                "--build-arg",
-                f"BASE_IMAGE_TAG={tag}",
-                "--build-arg",
-                "BASE_IMAGE_REGISTRY=localhost:5000",
+                "--build-context",
+                f"{base_image}=docker-image://localhost:5000/{base_image}:{tag}",
             ])
 
         if should_push:

@@ -1,10 +1,6 @@
 # syntax=docker/dockerfile-upstream:master-labs
 
-ARG BASE_IMAGE_REGISTRY=docker.io
-ARG BASE_IMAGE=prairielearn/plbase
-ARG BASE_IMAGE_TAG=latest
-
-FROM ${BASE_IMAGE_REGISTRY}/${BASE_IMAGE}:${BASE_IMAGE_TAG}
+FROM prairielearn/prairielearn
 
 ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 

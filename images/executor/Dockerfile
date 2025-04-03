@@ -1,8 +1,4 @@
-ARG BASE_IMAGE_REGISTRY=docker.io
-ARG BASE_IMAGE=prairielearn/prairielearn
-ARG BASE_IMAGE_TAG=latest
-
-FROM ${BASE_IMAGE_REGISTRY}/${BASE_IMAGE}:${BASE_IMAGE_TAG}
+FROM prairielearn/prairielearn
 
 WORKDIR /PrairieLearn/
 
