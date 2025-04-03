@@ -103,6 +103,7 @@ FIRST_WRONG_FEEDBACK = {
     "distractor-feedback": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span> as the block at that location is not a part of any correct solution.""",
 }
 
+ORDERING_FEEDBACK_ATTR = "ordering-feedback"
 
 def get_graph_info(html_tags: lxml.html.HtmlElement) -> tuple[str, list[str]]:
     tag = pl.get_string_attrib(html_tags, "tag", pl.get_uuid()).strip()
@@ -268,7 +269,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             html_tags, "distractor-feedback", None
         )
         ordering_feedback = pl.get_string_attrib(
-            html_tags, "ordering-feedback", None
+            html_tags, ORDERING_FEEDBACK_ATTR, None
         )
 
         distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
