@@ -15,11 +15,11 @@ import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 
 import {
-  FunctionMissingError,
-  type CodeCaller,
-  type PrepareForCourseOptions,
-  type CodeCallerResult,
   type CallType,
+  type CodeCaller,
+  type CodeCallerResult,
+  FunctionMissingError,
+  type PrepareForCourseOptions,
 } from './code-caller-shared.js';
 
 interface CodeCallerNativeChildProcess extends ChildProcess {
@@ -355,7 +355,7 @@ export class CodeCallerNative implements CodeCaller {
     const cmd = this.options.pythonExecutable;
     const pythonZygote = path.join(APP_ROOT_PATH, 'python', 'zygote.py');
     const args = ['-B', pythonZygote];
-    const env = _.clone(process.env);
+    const env = structuredClone(process.env);
     // PYTHONIOENCODING might not be needed once we switch to Python 3.7
     // https://www.python.org/dev/peps/pep-0538/
     // https://www.python.org/dev/peps/pep-0540/

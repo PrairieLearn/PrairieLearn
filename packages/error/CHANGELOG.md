@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 2.0.11
+
+### Patch Changes
+
+- 984dc62: Upgrade all JavaScript dependencies
+
 ## 2.0.10
 
 ### Patch Changes

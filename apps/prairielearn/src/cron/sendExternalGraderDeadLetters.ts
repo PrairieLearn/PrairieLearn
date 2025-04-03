@@ -1,8 +1,8 @@
 import {
-  SQSClient,
+  DeleteMessageCommand,
   GetQueueUrlCommand,
   ReceiveMessageCommand,
-  DeleteMessageCommand,
+  SQSClient,
 } from '@aws-sdk/client-sqs';
 import * as async from 'async';
 

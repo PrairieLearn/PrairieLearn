@@ -402,11 +402,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # We need accurate timestamps to avoid prettier cache invalidation.
+          # We'll use `git restore-mtime`, which requires the full history.
+          fetch-depth: 0
 
       - name: Install OS packages
-        uses: awalsh128/cache-apt-pkgs-action@v1.4.3
+        uses: awalsh128/cache-apt-pkgs-action@v1.5.0
         with:
-          packages: graphviz libgraphviz-dev
+          packages: graphviz libgraphviz-dev git-restore-mtime
           version: 1.0
           execute_install_scripts: true
 
@@ -450,12 +454,24 @@ jobs:
 
       - name: Build all code
         run: make build
+      - name: Set up Prettier and ESLint cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache/prettier/.prettier-cache
+            .eslintcache
+          key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
+
       - name: Run the JavaScript linter
-        run: make lint-js
+        # Use git-restore-mtime due to a bug in prettier's content cache (https://github.com/prettier/prettier/issues/17278)
+        run: |
+          git restore-mtime
+          make lint-js-cached
       - name: Run the links linter
         run: make lint-links
       - name: Run the d2 diagram linter
         run: make lint-d2
+
       - name: Run the Python typechecker
         run: make typecheck-python
       - name: Run the Python linter

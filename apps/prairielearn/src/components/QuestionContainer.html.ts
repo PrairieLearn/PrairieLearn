@@ -1,5 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { html, unsafeHtml, escapeHtml } from '@prairielearn/html';
+import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
@@ -13,7 +13,7 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
-import { getRoleNamesForUser, type GroupInfo } from '../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
@@ -804,6 +804,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
     id: 'copyQuestionModal',
     title: 'Copy question',
     formAction: question_copy_targets[0]?.copy_url ?? '',
+    formClass: 'js-copy-question-form',
     body:
       question_copy_targets.length === 0
         ? html`
