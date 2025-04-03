@@ -2,7 +2,7 @@ import json
 import os
 from collections import defaultdict
 
-from .utils import get_env_or_exit, print_and_run_command
+from utils import get_env_or_exit, print_and_run_command
 
 metadata_dir = get_env_or_exit("METADATA_DIR")
 tags = get_env_or_exit("TAGS")
