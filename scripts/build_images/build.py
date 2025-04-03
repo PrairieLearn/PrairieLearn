@@ -170,20 +170,14 @@ def build_images(
     only_changed: bool = False,
     metadata_dir: str | None = None,
 ) -> None:
-    built_images: set[str] = set()
     image_digests: dict[str, str] = {}
 
     for image in images:
         base_image = BASE_IMAGE_MAPPING.get(image)
-        base_image_built = base_image in built_images
+        base_image_built = base_image in image_digests
         base_image_digest = image_digests.get(base_image) if base_image else None
         image_path = get_image_path(image)
         was_modified = not only_changed or check_path_modified(image_path)
-
-        # We require base images to be listed first in the image list. If
-        # someone violates that assumption, error loudly.
-        if base_image and not base_image_built:
-            raise RuntimeError(f"Base image {base_image} must be built before {image}.")
 
         if not was_modified and not base_image_built:
             print(f"Skipping {image} because it hasn't changed.")
@@ -197,7 +191,7 @@ def build_images(
             base_image_digest=base_image_digest,
             metadata_dir=metadata_dir,
         )
-        built_images.add(image)
+
         image_digests[image] = digest
 
 
