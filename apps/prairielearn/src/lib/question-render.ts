@@ -128,7 +128,6 @@ async function render(
     question_course,
     locals,
   );
-
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
   // user information may not be populated when rendering a panel.
@@ -242,10 +241,7 @@ function buildLocals({
   variant: Variant;
   question: Question;
   instance_question?: InstanceQuestionWithAllowGrade | null;
-  group_role_permissions?: {
-    can_view: boolean;
-    can_submit: boolean;
-  } | null;
+  group_role_permissions?: { can_view: boolean; can_submit: boolean } | null;
   assessment?: Assessment | null;
   assessment_instance?: AssessmentInstance | null;
   assessment_question?: AssessmentQuestion | null;
@@ -271,7 +267,6 @@ function buildLocals({
     // ID is coerced to a string so that it matches what we get back from the client
     variantToken: generateSignedToken({ variantId: variant.id.toString() }, config.secretKey),
   };
-
   if (!assessment || !assessment_instance || !assessment_question || !instance_question) {
     // instructor question pages
     locals.showGradeButton = true;
@@ -280,6 +275,7 @@ function buildLocals({
     locals.showNewVariantButton = true;
   } else {
     // student question pages
+    variant.params = { ...variant.params, ...assessment_question.question_params };
     if (assessment.type === 'Homework') {
       locals.showGradeButton = true;
       locals.showSaveButton = true;
@@ -365,7 +361,12 @@ function buildLocals({
     locals.disableGradeButton = true;
     locals.disableSaveButton = true;
   }
-
+  if (assessment_question) {
+    question.question_params = {
+      ...question.question_params,
+      ...assessment_question.question_params,
+    };
+  }
   return locals;
 }
 
@@ -399,15 +400,11 @@ export async function getAndRenderVariant(
     manualGradingInterface?: boolean;
     is_administrator: boolean;
   },
-  options?: {
-    urlOverrides?: Partial<QuestionUrls>;
-    publicQuestionPreview?: boolean;
-  },
+  options?: { urlOverrides?: Partial<QuestionUrls>; publicQuestionPreview?: boolean },
 ) {
   // We write a fair amount of unstructured data back into locals,
   // so we'll cast it to `any` once so we don't have to do it every time.
   const resultLocals = locals as any;
-
   const question_course = await getQuestionCourse(locals.question, locals.course);
   resultLocals.question_is_shared = await sqldb.queryRow(
     sql.select_is_shared,
@@ -445,6 +442,7 @@ export async function getAndRenderVariant(
         options,
         require_open,
         locals.client_fingerprint_id ?? null,
+        locals.assessment_question?.question_params,
       );
     }
   });
@@ -485,7 +483,6 @@ export async function getAndRenderVariant(
     newLocals.showTrueAnswer = true;
   }
   Object.assign(locals, newLocals);
-
   // We only fully render a small number of submissions on initial page
   // load; the rest only require basic information like timestamps. As
   // such, we'll load submissions in two passes: we'll load basic
@@ -555,6 +552,7 @@ export async function getAndRenderVariant(
     question_course,
     locals,
   );
+  question.question_params = { ...question.question_params, ...variant.params };
   resultLocals.extraHeadersHtml = htmls.extraHeadersHtml;
   resultLocals.questionHtml = htmls.questionHtml;
   resultLocals.submissionHtmls = htmls.submissionHtmls;
@@ -567,11 +565,7 @@ export async function getAndRenderVariant(
   const loadExtraData = config.devMode || authz_data?.has_course_permission_view;
   resultLocals.issues = await sqldb.queryRows(
     sql.select_issues,
-    {
-      variant_id: variant.id,
-      load_course_data: loadExtraData,
-      load_system_data: loadExtraData,
-    },
+    { variant_id: variant.id, load_course_data: loadExtraData, load_system_data: loadExtraData },
     IssueRenderDataSchema,
   );
 
@@ -587,10 +581,7 @@ export async function getAndRenderVariant(
       effectiveQuestionType,
       course,
       courseInstance: course_instance,
-      variant: {
-        id: variant.id,
-        params: variant.params,
-      },
+      variant: { id: variant.id, params: variant.params },
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
       trueAnswer: resultLocals.showTrueAnswer ? variant.true_answer : null,
@@ -630,9 +621,7 @@ export async function renderPanelsForSubmission({
   authorizedEdit: boolean;
   renderScorePanels: boolean;
   groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
-  localsOverrides?: {
-    manualGradingInterface?: boolean;
-  };
+  localsOverrides?: { manualGradingInterface?: boolean };
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
@@ -672,10 +661,7 @@ export async function renderPanelsForSubmission({
           instance_question_id: variant.instance_question_id,
         });
 
-  const panels: SubmissionPanels = {
-    submissionPanel: null,
-    extraHeadersHtml: null,
-  };
+  const panels: SubmissionPanels = { submissionPanel: null, extraHeadersHtml: null };
 
   const locals = {
     urlPrefix,
@@ -713,10 +699,7 @@ export async function renderPanelsForSubmission({
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
       panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
-      const rubric_data = await manualGrading.selectRubricData({
-        assessment_question,
-        submission,
-      });
+      const rubric_data = await manualGrading.selectRubricData({ assessment_question, submission });
       await manualGrading.populateManualGradingData(submission);
 
       panels.submissionPanel = SubmissionPanel({
