@@ -54,7 +54,7 @@ jobs:
         run: mkdir -p ${{ runner.temp }}/image-metadata-${{ inputs.group }}
 
       - name: Build images
-        run: python3 scripts/build_images.py
+        run: python3 scripts/build_images/build.py
         env:
           BASE_IMAGES: ${{ inputs.base-images }}
           IMAGES: ${{ inputs.images }}
@@ -105,7 +105,7 @@ jobs:
 
       - name: Combine images
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        run: python3 scripts/combine_multi_platform_images.py
+        run: python3 scripts/build_images/combine.py
         env:
           METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           # On master, add the `latest` tag as well.

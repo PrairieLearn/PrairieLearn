@@ -1,32 +1,11 @@
 import json
 import os
-import subprocess
-import sys
 from collections import defaultdict
 
-metadata_dir = os.environ.get("METADATA_DIR")
-tags = os.environ.get("TAGS")
+from .utils import get_env_or_exit, print_and_run_command
 
-if not metadata_dir:
-    print("No manifest directory specified!")
-    sys.exit(1)
-
-if not tags:
-    print("No tags specified!")
-    sys.exit(1)
-
-
-def print_and_run_command(command: list[str]) -> None:
-    is_actions = os.environ.get("GITHUB_ACTIONS")
-    if is_actions:
-        print(f"[command]{' '.join(command)}")
-    else:
-        print(" ".join(command))
-
-    # Flush `stdout` before running to ensure proper sequencing of output.
-    sys.stdout.flush()
-
-    subprocess.run(command, check=True)
+metadata_dir = get_env_or_exit("METADATA_DIR")
+tags = get_env_or_exit("TAGS")
 
 
 # Read all manifests, collect the digests, and group them by image name.

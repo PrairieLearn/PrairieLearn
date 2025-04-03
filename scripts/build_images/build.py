@@ -2,8 +2,10 @@ import hashlib
 import json
 import os
 import subprocess
-import sys
 import tempfile
+from contextlib import nullcontext
+
+from .utils import get_env_or_exit, local_registry, print_and_run_command
 
 # The container name for the local Docker registry.
 REGISTRY_NAME = "prairielearn-registry"
@@ -20,35 +22,13 @@ BASE_IMAGE_MAPPING = {
 
 BASE_IMAGES = list(set(BASE_IMAGE_MAPPING.values()))
 
-
-images = os.environ.get("IMAGES", "")
-tag = os.environ.get("TAG")
+images = get_env_or_exit("IMAGES")
+tag = get_env_or_exit("TAG")
 metadata_dir = os.environ.get("METADATA_DIR")
 should_push = os.environ.get("PUSH_IMAGES", "false").lower() == "true"
 
-if not images:
-    print("No images specified. Exiting.")
-    sys.exit(1)
-
-if not tag:
-    print("No tag specified. Exiting.")
-    sys.exit(1)
-
 if not metadata_dir:
     print("No manifest directory specified; manifests will not be created.")
-
-
-def print_and_run_command(command: list[str]) -> None:
-    is_actions = os.environ.get("GITHUB_ACTIONS")
-    if is_actions:
-        print(f"[command]{' '.join(command)}")
-    else:
-        print(" ".join(command))
-
-    # Flush `stdout` before running to ensure proper sequencing of output.
-    sys.stdout.flush()
-
-    subprocess.run(command, check=True)
 
 
 def get_image_path(image: str) -> str:
@@ -115,37 +95,12 @@ def check_path_modified(path: str) -> bool:
 image_list = images.split(",")
 has_base_image = any(image in BASE_IMAGES for image in image_list)
 
-if has_base_image:
-    # Stop any existing registry container.
-    try:
-        print_and_run_command(["docker", "stop", REGISTRY_NAME])
-        print_and_run_command(["docker", "rm", REGISTRY_NAME])
-    except subprocess.CalledProcessError:
-        # The container probably didn't exist.
-        pass
-
-    print("Starting local Docker registry...")
-    print_and_run_command(["docker", "pull", "registry:2"])
-    print_and_run_command(
-        [
-            "docker",
-            "run",
-            "-d",
-            "-p",
-            "5000:5000",
-            # Put the registry storage in a tmpfs for faster reads and writes.
-            "--tmpfs=/var/lib/registry",
-            "--name",
-            REGISTRY_NAME,
-            "registry:2",
-        ],
-    )
 
 platform = get_current_platform()
 
 built_images: set[str] = set()
 
-try:
+with local_registry(REGISTRY_NAME) if has_base_image else nullcontext():
     for image in image_list:
         is_base_image = image in BASE_IMAGES
         base_image = BASE_IMAGE_MAPPING.get(image)
@@ -248,10 +203,3 @@ try:
             metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
             with open(os.path.join(metadata_dir, metadata_filename), "w") as f:
                 json.dump(metadata, f, indent=2)
-
-finally:
-    # Shut down the local registry if it was started.
-    if has_base_image:
-        print("Stopping local Docker registry.")
-        print_and_run_command(["docker", "stop", REGISTRY_NAME])
-        print_and_run_command(["docker", "rm", REGISTRY_NAME])
