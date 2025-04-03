@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile-upstream:master-labs
 
-FROM prairielearn/prairielearn
+FROM prairielearn/plbase
 
 ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 
