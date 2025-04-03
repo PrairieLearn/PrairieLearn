@@ -3,7 +3,6 @@ import json
 import os
 import subprocess
 import tempfile
-from contextlib import nullcontext
 
 from utils import (
     buildx_builder,
@@ -85,8 +84,10 @@ def check_path_modified(path: str) -> bool:
 def build_image(
     image: str,
     *,
-    builder: str,
+    tag: str,
     platform: str,
+    builder: str,
+    should_push: bool = False,
     use_local_base_image: bool = False,
     metadata_dir: str | None = None,
 ) -> None:
@@ -151,11 +152,7 @@ def build_image(
         # we'll push it to a local registry.
         #
         # https://github.com/moby/buildkit/issues/2343
-        print_and_run_command([
-            "docker",
-            "pull",
-            f"localhost:5000/{image}@{digest}",
-        ])
+        print_and_run_command(["docker", "pull", f"localhost:5000/{image}@{digest}"])
         print_and_run_command([
             "docker",
             "tag",
@@ -189,8 +186,10 @@ def build_image(
 def build_images(
     images: list[str],
     *,
-    builder: str,
+    tag: str,
     platform: str,
+    builder: str,
+    should_push: bool = False,
     only_changed: bool = False,
     metadata_dir: str | None = None,
 ) -> None:
@@ -208,8 +207,10 @@ def build_images(
 
         build_image(
             image,
-            builder=builder,
+            tag=tag,
             platform=platform,
+            builder=builder,
+            should_push=should_push,
             use_local_base_image=bool(base_image and base_image_built),
             metadata_dir=metadata_dir,
         )
@@ -230,16 +231,17 @@ if __name__ == "__main__":
 
     # Note that base images must come first in the list so that they're built first.
     image_list = images.split(",")
-    has_base_image = any(image in BASE_IMAGES for image in image_list)
 
     with (
-        local_registry(REGISTRY_NAME) if has_base_image else nullcontext(),
+        local_registry(REGISTRY_NAME),
         buildx_builder(BUILDER_NAME) as builder,
     ):
         build_images(
             image_list,
+            tag=tag,
+            platform=platform,
             builder=BUILDER_NAME,
+            should_push=should_push,
             only_changed=only_changed,
             metadata_dir=metadata_dir,
-            platform=platform,
         )
