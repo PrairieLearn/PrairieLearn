@@ -20,10 +20,7 @@ def combine_images_from_metadata_dir(
             digest = metadata_json["containerimage.digest"]
             image_name = metadata_json["image.name"]
 
-            # In case this contains a tag, strip it off; we'll add it back later.
-            image_name_without_tag = image_name.split(":")[0]
-
-            digests_by_image[image_name_without_tag].append(digest)
+            digests_by_image[image_name].append(digest)
 
     # For each image, make a new image from the digests.
     for image_name, digests in digests_by_image.items():

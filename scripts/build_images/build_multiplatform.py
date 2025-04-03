@@ -27,6 +27,15 @@ def get_platforms() -> list[str]:
     return platforms.split(",")
 
 
+"""
+Usage example:
+
+```sh
+export IMAGES=prairielearn/workspace-vscode-base,prairielearn/workspace-vscode-python
+export TAG=testing-123
+scripts/build/build_multiplatform.py
+```
+"""
 if __name__ == "__main__":
     images = get_env_or_exit("IMAGES")
     tag = get_env_or_exit("TAG")
