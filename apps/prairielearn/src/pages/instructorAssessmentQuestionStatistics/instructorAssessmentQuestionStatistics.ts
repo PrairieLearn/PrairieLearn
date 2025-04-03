@@ -93,7 +93,7 @@ router.get(
           'QID',
           'Question title',
           'Question topic',
-          'Question tag(s)',
+          'Question tags',
           ...Object.values(STAT_DESCRIPTIONS).map((d) => d.non_html_title),
         ],
         transform(record) {
