@@ -52,7 +52,6 @@ if __name__ == "__main__":
         for platform in platforms:
             build_images(
                 image_list,
-                tag=tag,
                 platform=platform,
                 builder=BUILDER_NAME,
                 metadata_dir=tmpdir,
