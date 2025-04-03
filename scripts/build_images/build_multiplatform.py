@@ -23,8 +23,8 @@ def get_platforms() -> list[str]:
     if platforms is None:
         return [get_current_platform()]
 
-    # Split the platforms by comma and strip whitespace.
-    return [platform.strip() for platform in platforms.split(",")]
+    # Split the platforms by comma.
+    return platforms.split(",")
 
 
 if __name__ == "__main__":

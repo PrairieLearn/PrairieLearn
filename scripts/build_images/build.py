@@ -94,7 +94,7 @@ def build_image(
     is_base_image = image in BASE_IMAGES
     image_path = get_image_path(image)
 
-    with tempfile.NamedTemporaryFile(delete=False) as metadata_file:
+    with tempfile.NamedTemporaryFile() as metadata_file:
         args = [
             "docker",
             "buildx",
