@@ -1,4 +1,4 @@
-CREATE INDEX idx_questions_public_share ON questions (course_id)
+CREATE INDEX questions_course_id_publicly_shared_idx ON questions (course_id)
 WHERE
   deleted_at IS NULL
   AND (
