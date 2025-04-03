@@ -200,7 +200,7 @@ def build_images(
 
         if not was_modified and not base_image_built:
             print(f"Skipping {image} because it hasn't changed.")
-            return
+            continue
 
         build_image(
             image,
