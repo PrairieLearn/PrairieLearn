@@ -5,11 +5,6 @@ on:
         description: 'A name for the group of images to build'
         required: true
         type: string
-      base-images:
-        description: 'The base images to build'
-        required: false
-        type: string
-        default: ''
       images:
         description: 'The images to build'
         required: true
