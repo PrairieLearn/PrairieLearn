@@ -303,6 +303,8 @@ function SampleQuestionSelector() {
                       role="tab" 
                       aria-controls="home" 
                       aria-selected="${index === 0 ? 'true' : ''}"
+                      data-id="${examplePrompt.id}"
+                      data-name="${examplePrompt.name}"
                       data-prompt-general="${examplePrompt.promptGeneral}"
                       data-prompt-user-input="${examplePrompt.promptUserInput}"
                       data-prompt-grading="${examplePrompt.promptGrading}"
@@ -313,22 +315,9 @@ function SampleQuestionSelector() {
                 `
               ))}
             </ul>
-            <div class="tab-content pt-3" id="myPillContent">
-              ${examplePrompts.map((examplePrompt, index) => (
-                html`
-                <div 
-                  class="tab-pane ${index === 0 ? 'show active' : ''}" 
-                  id="${examplePrompt.id}" 
-                  role="tabpanel" 
-                  aria-labelledby="${examplePrompt.id}-pill"
-                >
-                  
-                  ${SampleQuestionPreview(
-                    examplePrompt.id
-                  )}
-                </div>
-                `
-              ))}
+
+            <div class="tab-content pt-3">
+              ${SampleQuestionPreview()}
               <button
                 id="copy-prompts"
                 type="button"
@@ -345,46 +334,42 @@ function SampleQuestionSelector() {
   `
 }
 
-function SampleQuestionPreview(
-  id: string
-) {
-
-  const examplePrompt = examplePrompts.find((prompt) => prompt.id === id);
-
-  if (!examplePrompt) {
-    return html`<div>Invalid example prompt</div>`;
-  }
-
+function SampleQuestionPreview() {
   return html`
     <div class="card shadow">
       <div class="card-header d-flex align-items-center">
         <span class="badge rounded-pill bg-success me-3">Try me!</span>
-        ${examplePrompt.name}
+        <p id="question-preview-name" class="mb-0">
+        </p>
       </div>
       <div class="card-body">
-        <p>
+        <p id="question-preview-title">
           Suppose a ball is thrown from a level surface at a [angle]° angle with
           a velocity of [velocity] m/s. How far will the ball travel?
         </p>
         <span class="input-group">
+          <span class="input-group-text">
+            <span>Dot product = </span>
+          </span>
           <input
+            id="question-user-response"
             type="text"
             class="form-control"
           />
-          <span class="input-group-text">
-            <span class="me-2">m</span>
+          <span id="grade-response" class="input-group-text d-none">
             <span class="badge bg-success">100%</span>
           </span>
         </span>
       </div>
       <div class="card-footer d-flex justify-content-end">
         <button
+          id="new-variant-button"
           type="button"
           class="btn btn-primary me-2"
         >
           New variant
         </button>
-        <button type="button" class="btn btn-primary">
+        <button id="grade-button" type="button" class="btn btn-primary">
           Grade
         </button>
       </div>
