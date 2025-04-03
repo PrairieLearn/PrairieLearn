@@ -416,20 +416,8 @@ export async function aiGradeTest({
       job.info('\n----------------Test results----------------');
       if (rubric_id) {
         job.info(`Test size: ${testRubricResults.length}`);
-        const rubricItemResults: Record<string, number> = {};
         rubric_items.forEach((item) => {
-          rubricItemResults[item.description] = 0;
-          testRubricResults.forEach((test) => {
-            if (
-              (test.ai_items.has(item.description) && test.reference_items.has(item.description)) ||
-              (!test.ai_items.has(item.description) && !test.reference_items.has(item.description))
-            ) {
-              rubricItemResults[item.description]++;
-            }
-          });
-          const accuracy =
-            Math.round((10000 * rubricItemResults[item.description]) / testRubricResults.length) /
-            100;
+          const accuracy = aiGradingUtil.rubricItemAccuracy(testRubricResults, item);
           job.info(`Rubric item: ${item.description}, accuracy: ${accuracy}%`);
         });
       } else {
@@ -438,12 +426,12 @@ export async function aiGradeTest({
           testScoreResults.map((item) => item.reference_score),
           testScoreResults.map((item) => item.ai_score),
         );
-        job.info(`RMSE: ${Math.round(rmse * 100) / 100}`);
+        job.info(`RMSE: ${rmse}`);
         const r = aiGradingUtil.pearsonCorrelation(
           testScoreResults.map((item) => item.reference_score),
           testScoreResults.map((item) => item.ai_score),
         );
-        job.info(`Pearson's r: ${r ? Math.round(r * 10000) / 10000 : 'N/A'}`);
+        job.info(`Pearson's r: ${r}`);
       }
     }
   });

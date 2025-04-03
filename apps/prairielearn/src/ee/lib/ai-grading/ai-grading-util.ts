@@ -252,7 +252,7 @@ export function parseAiRubricItems({
   return { appliedRubricItems, selectedRubricDescriptions };
 }
 
-export function pearsonCorrelation(x: number[], y: number[]): number | null {
+export function pearsonCorrelation(x: number[], y: number[]): number {
   if (x.length !== y.length || x.length === 0) {
     throw new Error('Both arrays must have the same nonzero length.');
   }
@@ -267,7 +267,7 @@ export function pearsonCorrelation(x: number[], y: number[]): number | null {
   const numerator = n * sumXY - sumX * sumY;
   const denominator = Math.sqrt((n * sumX2 - sumX ** 2) * (n * sumY2 - sumY ** 2));
 
-  return denominator === 0 ? null : numerator / denominator;
+  return denominator === 0 ? 0 : Math.round((numerator / denominator) * 10000) / 10000;
 }
 
 export function rootMeanSquaredError(actual: number[], predicted: number[]): number {
@@ -279,5 +279,26 @@ export function rootMeanSquaredError(actual: number[], predicted: number[]): num
   const squaredErrors = actual.map((a, i) => (a - predicted[i]) ** 2);
   const meanSquaredError = squaredErrors.reduce((acc, val) => acc + val, 0) / n;
 
-  return Math.sqrt(meanSquaredError);
+  return Math.round(Math.sqrt(meanSquaredError) * 100) / 100;
+}
+
+export function rubricItemAccuracy(
+  testRubricResults: {
+    instance_question_id: string;
+    reference_items: Set<string>;
+    ai_items: Set<string>;
+  }[],
+  item: RubricItem,
+): number {
+  let match = 0;
+  testRubricResults.forEach((test) => {
+    if (
+      (test.ai_items.has(item.description) && test.reference_items.has(item.description)) ||
+      (!test.ai_items.has(item.description) && !test.reference_items.has(item.description))
+    ) {
+      match++;
+    }
+  });
+  const accuracy = Math.round((match / testRubricResults.length) * 100) / 100;
+  return accuracy;
 }
