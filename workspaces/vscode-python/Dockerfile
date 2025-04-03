@@ -1,4 +1,4 @@
-FROM prairielearn/workspace-vscode-base
+FROM prairielearn/workspace-vscode-base:latest
 
 # Make sure to build using bash as the shell so that conda/mamba hooks will
 # work during installation.

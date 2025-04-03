@@ -1,4 +1,4 @@
-FROM prairielearn/workspace-vscode-base
+FROM prairielearn/workspace-vscode-base:latest
 
 USER root
 RUN apt-get update && apt-get upgrade -y \
