@@ -44,24 +44,6 @@ FROM
 WHERE
   emb.submission_id = $submission_id;
 
--- BLOCK create_embedding_for_submission
-INSERT INTO
-  submission_grading_context_embeddings (
-    embedding,
-    submission_id,
-    submission_text,
-    assessment_question_id
-  )
-VALUES
-  (
-    $embedding,
-    $submission_id,
-    $submission_text,
-    $assessment_question_id
-  )
-RETURNING
-  *;
-
 -- BLOCK select_closest_submission_info
 WITH
   latest_submissions AS (
@@ -126,6 +108,16 @@ FROM
 WHERE
   rgi.rubric_grading_id = $manual_rubric_grading_id;
 
+-- BLOCK select_rubric_id_from_grading
+SELECT
+  rubric_id
+FROM
+  rubric_gradings
+WHERE
+  id = $manual_rubric_grading_id
+LIMIT
+  1;
+
 -- BLOCK insert_ai_grading_job
 INSERT INTO
   ai_grading_jobs (
@@ -153,3 +145,35 @@ VALUES
     $course_id,
     $course_instance_id
   );
+
+-- BLOCK insert_grading_job
+INSERT INTO
+  grading_jobs (
+    submission_id,
+    auth_user_id,
+    graded_by,
+    graded_at,
+    grading_method,
+    correct,
+    score,
+    auto_points,
+    manual_points,
+    feedback,
+    manual_rubric_grading_id
+  )
+VALUES
+  (
+    $submission_id,
+    $authn_user_id,
+    $authn_user_id,
+    now(),
+    $grading_method,
+    $correct,
+    $score,
+    $auto_points,
+    $manual_points,
+    $feedback,
+    $manual_rubric_grading_id
+  )
+RETURNING
+  id;
