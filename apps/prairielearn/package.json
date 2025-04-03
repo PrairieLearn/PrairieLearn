@@ -117,6 +117,7 @@
     "http-proxy-middleware": "^2.0.7",
     "http-status": "^2.1.0",
     "ioredis": "^5.6.0",
+    "is-plain-obj": "^4.1.0",
     "isbinaryfile": "^5.0.4",
     "jju": "^1.4.0",
     "jose": "^6.0.10",
