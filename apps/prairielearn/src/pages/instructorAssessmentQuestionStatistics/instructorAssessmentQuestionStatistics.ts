@@ -92,6 +92,8 @@ router.get(
           'Question number',
           'QID',
           'Question title',
+          'Question topic',
+          'Question tag(s)',
           ...Object.values(STAT_DESCRIPTIONS).map((d) => d.non_html_title),
         ],
         transform(record) {
@@ -102,6 +104,8 @@ router.get(
             record.assessment_question_number,
             record.qid,
             record.question_title,
+            record.topic.name,
+            record.question_tags,
             record.mean_question_score,
             record.median_question_score,
             record.question_score_variance,
