@@ -3932,6 +3932,7 @@ __metadata:
     http-proxy-middleware: "npm:^3.0.3"
     http-status: "npm:^2.1.0"
     ioredis: "npm:^5.6.0"
+    is-plain-obj: "npm:^4.1.0"
     isbinaryfile: "npm:^5.0.4"
     jju: "npm:^1.4.0"
     jose: "npm:^6.0.10"
@@ -9390,6 +9391,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"eslint-plugin-you-dont-need-lodash-underscore@npm:^6.14.0":
+  version: 6.14.0
+  resolution: "eslint-plugin-you-dont-need-lodash-underscore@npm:6.14.0"
+  dependencies:
+    kebab-case: "npm:^1.0.0"
+  checksum: 10c0/23dadc91b754b9afdd5c9d87509f21e1c627888dc8a5e34c3d3181521ce9c5e87b4d1f5c693413d857e7fbb6e54b6d471adb1ee1e912fc8824a982f1762a11e0
+  languageName: node
+  linkType: hard
+
 "eslint-scope@npm:^7.2.2":
   version: 7.2.2
   resolution: "eslint-scope@npm:7.2.2"
@@ -11591,6 +11601,13 @@ __metadata:
   bin:
     katex: cli.js
   checksum: 10c0/e2e4139ba72a13f2393308fbb2b4c5511611a19a40a6e39d956cf775e553af3517dbfd0a54477faaf401c923e4654e32296347846b8ff15dfa579f88ff8579bb
+  languageName: node
+  linkType: hard
+
+"kebab-case@npm:^1.0.0":
+  version: 1.0.2
+  resolution: "kebab-case@npm:1.0.2"
+  checksum: 10c0/94080c483c4bb88d7a37efe21431271e91a2297d2fb4e9c12167c5a9144a813ffbdd92f7ba7778f553250c83ba8413f4b061e949b0d6c9bada771efe10c220a4
   languageName: node
   linkType: hard
 
@@ -14078,6 +14095,7 @@ __metadata:
     eslint-plugin-mocha: "npm:^10.5.0"
     eslint-plugin-no-floating-promise: "npm:^2.0.0"
     eslint-plugin-no-only-tests: "npm:^3.3.0"
+    eslint-plugin-you-dont-need-lodash-underscore: "npm:^6.14.0"
     globby: "npm:^14.1.0"
     htmlhint: "npm:^1.1.4"
     markdownlint-cli: "npm:^0.44.0"
