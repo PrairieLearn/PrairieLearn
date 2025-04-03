@@ -94,53 +94,50 @@ def build_image(
     is_base_image = image in BASE_IMAGES
     image_path = get_image_path(image)
 
-    # Make temporary files for the metadata.
     with tempfile.NamedTemporaryFile(delete=False) as metadata_file:
-        pass
-
-    args = [
-        "docker",
-        "buildx",
-        "build",
-        "--builder",
-        builder,
-        "--platform",
-        platform,
-        "--no-cache",
-        "--tag",
-        f"localhost:5000/{image}",
-        "--progress",
-        "plain",
-        "--metadata-file",
-        metadata_file.name,
-        # "--load",
-        "--output=type=image,push-by-digest=true,name-canonical=true,push=true",
-    ]
-
-    if use_local_base_image:
-        args.extend([
-            # We have some images that rely on other images. They're configured to
-            # use this arg to determine which base image tag to use.
-            "--build-arg",
-            f"BASE_IMAGE_TAG={tag}",
-            "--build-arg",
-            "BASE_IMAGE_REGISTRY=localhost:5000",
-        ])
-
-    if should_push:
-        args.extend([
-            # Only tag it with the registry name if we're going to push.
+        args = [
+            "docker",
+            "buildx",
+            "build",
+            "--builder",
+            builder,
+            "--platform",
+            platform,
+            "--no-cache",
             "--tag",
-            image,
-        ])
+            f"localhost:5000/{image}",
+            "--progress",
+            "plain",
+            "--metadata-file",
+            metadata_file.name,
+            # "--load",
+            "--output=type=image,push-by-digest=true,name-canonical=true,push=true",
+        ]
 
-    args.extend([image_path])
+        if use_local_base_image:
+            args.extend([
+                # We have some images that rely on other images. They're configured to
+                # use this arg to determine which base image tag to use.
+                "--build-arg",
+                f"BASE_IMAGE_TAG={tag}",
+                "--build-arg",
+                "BASE_IMAGE_REGISTRY=localhost:5000",
+            ])
 
-    print(f"Building image {image} for platform {platform}")
-    print_and_run_command(args)
+        if should_push:
+            args.extend([
+                # Only tag it with the registry name if we're going to push.
+                "--tag",
+                image,
+            ])
 
-    with open(metadata_file.name) as f:
-        metadata = f.read()
+        args.extend([image_path])
+
+        print(f"Building image {image} for platform {platform}")
+        print_and_run_command(args)
+
+        with open(metadata_file.name) as f:
+            metadata = f.read()
 
     print(f"Metadata: {metadata.strip()}")
     digest = json.loads(metadata)["containerimage.digest"]
