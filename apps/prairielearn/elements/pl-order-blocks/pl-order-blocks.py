@@ -86,6 +86,10 @@ PL_ANSWER_INDENT_DEFAULT = -1
 ALLOW_BLANK_DEFAULT = False
 INDENTION_DEFAULT = False
 INLINE_DEFAULT = False
+ANSWER_INDENT_DEFAULT = None
+DISTRACTOR_FEEDBACK_DEFAULT = None
+ORDERING_FEEDBACK_DEFAULT = None
+DISTRACTOR_FOR_DEFAULT = None
 MAX_INDENTION_DEFAULT = 4
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
@@ -103,7 +107,6 @@ FIRST_WRONG_FEEDBACK = {
     "distractor-feedback": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span> as the block at that location is not a part of any correct solution.""",
 }
 
-ORDERING_FEEDBACK_ATTR = "ordering-feedback"
 
 def get_graph_info(html_tags: lxml.html.HtmlElement) -> tuple[str, list[str]]:
     tag = pl.get_string_attrib(html_tags, "tag", pl.get_uuid()).strip()
@@ -262,17 +265,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         is_correct = pl.get_boolean_attrib(
             html_tags, "correct", PL_ANSWER_CORRECT_DEFAULT
         )
-        answer_indent = pl.get_integer_attrib(html_tags, "indent", None)
+        answer_indent = pl.get_integer_attrib(html_tags, "indent", ANSWER_INDENT_DEFAULT)
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
         distractor_feedback = pl.get_string_attrib(
-            html_tags, "distractor-feedback", None
+            html_tags, "distractor-feedback", DISTRACTOR_FEEDBACK_DEFAULT
         )
         ordering_feedback = pl.get_string_attrib(
-            html_tags, ORDERING_FEEDBACK_ATTR, None
+            html_tags, "ordering-feedback", ORDERING_FEEDBACK_DEFAULT
         )
 
-        distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
+        distractor_for = pl.get_string_attrib(html_tags, "distractor-for", DISTRACTOR_FOR_DEFAULT)
 
         if distractor_for is not None and is_correct:
             raise ValueError(
