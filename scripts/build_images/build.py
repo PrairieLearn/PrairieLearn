@@ -179,6 +179,11 @@ def build_images(
         image_path = get_image_path(image)
         was_modified = not only_changed or check_path_modified(image_path)
 
+        # We require base images to be listed first in the image list. If
+        # someone violates that assumption, error loudly.
+        if base_image and not base_image_built:
+            raise RuntimeError(f"Base image {base_image} must be built before {image}.")
+
         if not was_modified and not base_image_built:
             print(f"Skipping {image} because it hasn't changed.")
             continue
