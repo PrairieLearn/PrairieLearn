@@ -39,13 +39,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Create directory for metadata
-        run: mkdir -p ${{ runner.temp }}/image-metadata-${{ inputs.group }}
-
       - name: Build images
         run: python3 scripts/build_images/build.py
         env:
-          BASE_IMAGES: ${{ inputs.base-images }}
           IMAGES: ${{ inputs.images }}
           TAG: ${{ env.COMMIT_SHA }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}

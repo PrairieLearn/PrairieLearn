@@ -221,7 +221,9 @@ if __name__ == "__main__":
     should_push = os.environ.get("PUSH_IMAGES", "false").lower() == "true"
     only_changed = os.environ.get("ONLY_CHANGED", "false").lower() == "true"
 
-    if not metadata_dir:
+    if metadata_dir:
+        os.makedirs(metadata_dir, exist_ok=True)
+    else:
         print("No metadata directory specified; metadata files will not be created.")
 
     platform = get_current_platform()
