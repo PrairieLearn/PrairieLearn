@@ -20,9 +20,9 @@ import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-nam
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
 
 import {
-  InstructorAssessmentInstance,
   AssessmentInstanceStatsSchema,
   InstanceQuestionRowSchema,
+  InstructorAssessmentInstance,
 } from './instructorAssessmentInstance.html.js';
 
 const router = express.Router();

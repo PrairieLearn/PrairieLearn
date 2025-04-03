@@ -1,10 +1,10 @@
 import { assert } from 'chai';
 
 import {
+  type AssessmentModule,
   AssessmentModuleSchema,
   AssessmentSchema,
   CourseSchema,
-  type AssessmentModule,
 } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 

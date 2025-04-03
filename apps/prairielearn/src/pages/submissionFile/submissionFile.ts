@@ -44,7 +44,7 @@ export default function (options = { publicEndpoint: false }) {
         res.locals.user = UserSchema.parse(res.locals.authn_user);
 
         if (
-          !(res.locals.question.shared_publicly || res.locals.question.share_source_publicly) ||
+          !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
           res.locals.course.id !== res.locals.question.course_id
         ) {
           res.sendStatus(404);

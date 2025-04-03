@@ -1,9 +1,9 @@
 import {
-  type ECRClient,
   type AuthorizationData,
+  type ECRClient,
   GetAuthorizationTokenCommand,
 } from '@aws-sdk/client-ecr';
-import { subHours, isFuture } from 'date-fns';
+import { isFuture, subHours } from 'date-fns';
 
 import { logger } from '@prairielearn/logger';
 

@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js';
@@ -89,7 +89,7 @@ onDocumentReady(() => {
     // We only want to show the sharing name prefix for publicly-shared questions.
     // Those that only have their source shared publicly (and thus that are not
     // available to be imported by other courses) won't show the prefix.
-    const prefix = qidPrefix && question.shared_publicly ? qidPrefix : '';
+    const prefix = qidPrefix && question.share_publicly ? qidPrefix : '';
 
     text += html`
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
@@ -118,7 +118,7 @@ onDocumentReady(() => {
 
   window.sharingSetFormatter = function (_sharing_sets: any, question: QuestionsPageData) {
     const items = [];
-    if (question.shared_publicly) {
+    if (question.share_publicly) {
       items.push(html`<span class="badge color-green3">Public</span>`);
     }
     if (question.share_source_publicly) {

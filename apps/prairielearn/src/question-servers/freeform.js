@@ -15,12 +15,12 @@ import * as parse5 from 'parse5';
 
 import { cache } from '@prairielearn/cache';
 import { logger } from '@prairielearn/logger';
-import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
+import { instrumented, instrumentedWithMetrics, metrics } from '@prairielearn/opentelemetry';
 
 import * as assets from '../lib/assets.js';
 import { canonicalLogger } from '../lib/canonical-logger.js';
 import * as chunks from '../lib/chunks.js';
-import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.js';
+import { FunctionMissingError, withCodeCaller } from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
