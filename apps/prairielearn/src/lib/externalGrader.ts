@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 
+import isPlainObject from 'is-plain-obj';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -24,7 +25,6 @@ import { ExternalGraderLocal } from './externalGraderLocal.js';
 import { ExternalGraderSqs } from './externalGraderSqs.js';
 import * as externalGradingSocket from './externalGradingSocket.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
-import isPlainObject from 'is-plain-obj';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
