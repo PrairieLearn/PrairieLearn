@@ -284,7 +284,6 @@ export function rootMeanSquaredError(actual: number[], predicted: number[]): num
 
 export function rubricItemAccuracy(
   testRubricResults: {
-    instance_question_id: string;
     reference_items: Set<string>;
     ai_items: Set<string>;
   }[],

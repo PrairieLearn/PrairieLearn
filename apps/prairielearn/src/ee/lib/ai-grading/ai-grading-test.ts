@@ -135,12 +135,10 @@ export async function aiGradeTest({
 
     let error_count = 0;
     const testRubricResults: {
-      instance_question_id: string;
       reference_items: Set<string>;
       ai_items: Set<string>;
     }[] = [];
     const testScoreResults: {
-      instance_question_id: string;
       reference_score: number;
       ai_score: number;
     }[] = [];
@@ -277,7 +275,6 @@ export async function aiGradeTest({
                 rubric_items,
               });
             testRubricResults.push({
-              instance_question_id: instance_question.id,
               reference_items: referenceRubricDescriptions,
               ai_items: selectedRubricDescriptions,
             });
@@ -358,7 +355,6 @@ export async function aiGradeTest({
           if (response.parsed) {
             const score = response.parsed.score;
             testScoreResults.push({
-              instance_question_id: instance_question.id,
               reference_score: score_perc,
               ai_score: score,
             });
