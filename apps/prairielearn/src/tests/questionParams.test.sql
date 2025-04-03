@@ -13,7 +13,7 @@ FROM
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
-  AND a.number = '10';
+  AND a.number = '12';
 
 -- BLOCK select_assessment_instances
 SELECT
