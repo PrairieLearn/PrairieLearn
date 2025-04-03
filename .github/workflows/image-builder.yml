@@ -43,7 +43,6 @@ jobs:
         run: python3 scripts/build_images/build.py
         env:
           IMAGES: ${{ inputs.images }}
-          TAG: ${{ env.COMMIT_SHA }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           ONLY_CHANGED: true

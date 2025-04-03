@@ -87,14 +87,13 @@ def check_path_modified(path: str) -> bool:
 def build_image(
     image: str,
     *,
-    tag: str,
     platform: str,
     builder: str,
     should_push: bool = False,
-    use_local_base_image: bool = False,
+    base_image_digest: str | None = None,
     metadata_dir: str | None = None,
-) -> None:
-    is_base_image = image in BASE_IMAGES
+) -> str:
+    """Builds a Docker image. Returns the digest of the built image."""
     base_image = BASE_IMAGE_MAPPING.get(image)
     image_path = get_image_path(image)
 
@@ -114,14 +113,13 @@ def build_image(
             "plain",
             "--metadata-file",
             metadata_file.name,
-            # "--load",
             "--output=type=image,push-by-digest=true,name-canonical=true,push=true",
         ]
 
-        if base_image and use_local_base_image:
+        if base_image and base_image_digest:
             args.extend([
                 "--build-context",
-                f"{base_image}=docker-image://localhost:5000/{base_image}:{tag}",
+                f"{base_image}=docker-image://localhost:5000/{base_image}@{base_image_digest}",
             ])
 
         if should_push:
@@ -142,26 +140,6 @@ def build_image(
     print(f"Metadata: {metadata.strip()}")
     digest = json.loads(metadata)["containerimage.digest"]
 
-    if is_base_image:
-        # `buildx` cannot use locally-built images when the
-        # `docker-container` driver is used, and that driver must be used in
-        # order to support `push-by-digest`. To make the base image available,
-        # we'll push it to a local registry.
-        #
-        # https://github.com/moby/buildkit/issues/2343
-        print_and_run_command(["docker", "pull", f"localhost:5000/{image}@{digest}"])
-        print_and_run_command([
-            "docker",
-            "tag",
-            f"localhost:5000/{image}@{digest}",
-            f"localhost:5000/{image}:{tag}",
-        ])
-        print_and_run_command([
-            "docker",
-            "push",
-            f"localhost:5000/{image}:{tag}",
-        ])
-
     # Write metadata to the metadata directory
     if metadata_dir:
         metadata = json.loads(metadata)
@@ -179,11 +157,12 @@ def build_image(
         with open(os.path.join(metadata_dir, metadata_filename), "w") as f:
             json.dump(metadata, f, indent=2)
 
+    return digest
+
 
 def build_images(
     images: list[str],
     *,
-    tag: str,
     platform: str,
     builder: str,
     should_push: bool = False,
@@ -191,10 +170,12 @@ def build_images(
     metadata_dir: str | None = None,
 ) -> None:
     built_images: set[str] = set()
+    image_digests: dict[str, str] = {}
 
     for image in images:
         base_image = BASE_IMAGE_MAPPING.get(image)
         base_image_built = base_image in built_images
+        base_image_digest = image_digests.get(base_image) if base_image else None
         image_path = get_image_path(image)
         was_modified = not only_changed or check_path_modified(image_path)
 
@@ -202,21 +183,20 @@ def build_images(
             print(f"Skipping {image} because it hasn't changed.")
             continue
 
-        build_image(
+        digest = build_image(
             image,
-            tag=tag,
             platform=platform,
             builder=builder,
             should_push=should_push,
-            use_local_base_image=bool(base_image and base_image_built),
+            base_image_digest=base_image_digest,
             metadata_dir=metadata_dir,
         )
         built_images.add(image)
+        image_digests[image] = digest
 
 
 if __name__ == "__main__":
     images = get_env_or_exit("IMAGES")
-    tag = get_env_or_exit("TAG")
     metadata_dir = os.environ.get("METADATA_DIR")
     should_push = os.environ.get("PUSH_IMAGES", "false").lower() == "true"
     only_changed = os.environ.get("ONLY_CHANGED", "false").lower() == "true"
@@ -237,7 +217,6 @@ if __name__ == "__main__":
     ):
         build_images(
             image_list,
-            tag=tag,
             platform=platform,
             builder=BUILDER_NAME,
             should_push=should_push,
