@@ -92,7 +92,7 @@ def validate_image_order(images: list[str]) -> None:
     Validates that the images are in the correct order. Base images must come
     first.
 
-    This does't strictly check a topological sort, as we allow an image to be
+    This doesn't strictly check a topological sort, as we allow an image to be
     built without its base image being built in the same run. In that case, we'd
     just pull the base image from the registry. But if we are configured to
     build the base image, it must be built first.
