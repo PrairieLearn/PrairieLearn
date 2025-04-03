@@ -290,7 +290,7 @@ def lcs_partial_credit(
                 ):
                     mvc_size = len(subset)
                     break
-                    
+
             if mvc_size < problematic_subgraph.number_of_nodes() - 1:
                 break
 
