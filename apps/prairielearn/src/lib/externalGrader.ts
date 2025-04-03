@@ -24,6 +24,7 @@ import { ExternalGraderLocal } from './externalGraderLocal.js';
 import { ExternalGraderSqs } from './externalGraderSqs.js';
 import * as externalGradingSocket from './externalGradingSocket.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
+import isPlainObject from 'is-plain-obj';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -159,11 +160,11 @@ async function updateJobReceivedTime(grading_job_id: string, receivedTime: strin
  */
 export async function processGradingResult(content: any): Promise<void> {
   try {
-    if (content.grading == null || typeof content.grading !== 'object') {
+    if (content.grading == null || !isPlainObject(content.grading)) {
       throw new error.AugmentedError('invalid grading', { data: { content } });
     }
 
-    if (content.grading.feedback != null && typeof content.grading.feedback !== 'object') {
+    if (content.grading.feedback != null && !isPlainObject(content.grading.feedback)) {
       throw new error.AugmentedError('invalid grading.feedback', { data: { content } });
     }
 
