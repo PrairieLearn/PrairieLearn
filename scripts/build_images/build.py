@@ -1,3 +1,4 @@
+import functools
 import hashlib
 import json
 import os
@@ -58,6 +59,7 @@ def get_image_path(image: str) -> str:
     raise ValueError(f"Cannot build unknown image: {image}")
 
 
+@functools.cache
 def check_path_modified(path: str) -> bool:
     branch = (
         subprocess.run(
@@ -83,6 +85,30 @@ def check_path_modified(path: str) -> bool:
     )
 
     return diff_result.returncode != 0
+
+
+def validate_image_order(images: list[str]) -> None:
+    """
+    Validates that the images are in the correct order. Base images must come
+    first.
+
+    This does't strictly check a topological sort, as we allow an image to be
+    built without its base image being built in the same run. In that case, we'd
+    just pull the base image from the registry. But if we are configured to
+    build the base image, it must be built first.
+    """
+    seen_images = set()
+    for image in images:
+        seen_images.add(image)
+        base_image = BASE_IMAGE_MAPPING.get(image)
+
+        if not base_image or base_image not in images:
+            continue
+
+        if base_image not in seen_images:
+            raise RuntimeError(
+                f"{image} depends on {base_image}, which must be listed first."
+            )
 
 
 def build_image(
@@ -170,6 +196,8 @@ def build_images(
     only_changed: bool = False,
     metadata_dir: str | None = None,
 ) -> None:
+    validate_image_order(images)
+
     image_digests: dict[str, str] = {}
 
     for image in images:
