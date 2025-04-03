@@ -9,7 +9,10 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
 import { QuestionFooterContent } from '../components/QuestionContainer.html.js';
-import { type QuestionContext } from '../components/QuestionContainer.types.js';
+import {
+  type QuestionContext,
+  type QuestionRenderContext,
+} from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
 import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
 import {
@@ -396,8 +399,8 @@ export async function getAndRenderVariant(
     authz_data?: Record<string, any>;
     authz_result?: Record<string, any>;
     client_fingerprint_id?: string | null;
-    manualGradingInterface?: boolean;
     is_administrator: boolean;
+    questionRenderContext?: QuestionRenderContext;
   },
   options?: {
     urlOverrides?: Partial<QuestionUrls>;
@@ -481,7 +484,11 @@ export async function getAndRenderVariant(
     group_config,
     authz_result,
   });
-  if (locals.manualGradingInterface && question?.show_correct_answer) {
+  if (
+    (locals.questionRenderContext === 'manual_grading' ||
+      locals.questionRenderContext === 'ai_grading') &&
+    question?.show_correct_answer
+  ) {
     newLocals.showTrueAnswer = true;
   }
   Object.assign(locals, newLocals);
@@ -615,10 +622,10 @@ export async function renderPanelsForSubmission({
   user,
   urlPrefix,
   questionContext,
+  questionRenderContext,
   authorizedEdit,
   renderScorePanels,
   groupRolePermissions,
-  localsOverrides,
 }: {
   unsafe_submission_id: string;
   question: Question;
@@ -627,12 +634,10 @@ export async function renderPanelsForSubmission({
   user: User;
   urlPrefix: string;
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   authorizedEdit: boolean;
   renderScorePanels: boolean;
   groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
-  localsOverrides?: {
-    manualGradingInterface?: boolean;
-  };
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
@@ -680,6 +685,7 @@ export async function renderPanelsForSubmission({
   const locals = {
     urlPrefix,
     plainUrlPrefix: config.urlPrefix,
+    questionRenderContext,
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     ...buildLocals({
       variant,
@@ -691,7 +697,6 @@ export async function renderPanelsForSubmission({
       assessment_question,
       group_config,
     }),
-    ...localsOverrides,
   };
 
   await async.parallel([
@@ -721,6 +726,7 @@ export async function renderPanelsForSubmission({
 
       panels.submissionPanel = SubmissionPanel({
         questionContext,
+        questionRenderContext,
         question,
         variant_id: variant.id,
         assessment_question,

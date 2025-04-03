@@ -1,6 +1,5 @@
 import assert from 'node:assert';
 
-import * as cheerio from 'cheerio';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -201,7 +200,10 @@ async function generateSubmissionEmbedding({
     { instance_question_id: instance_question.id },
     SubmissionVariantSchema,
   );
-  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+  const locals = {
+    ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+    questionRenderContext: 'ai_grading',
+  };
   const questionModule = questionServers.getModule(question.type);
   const render_submission_results = await questionModule.render(
     { question: false, submissions: true, answer: false },
@@ -210,15 +212,9 @@ async function generateSubmissionEmbedding({
     submission,
     [submission],
     question_course,
-    // We deliberately do not set `manualGradingInterface: true` when rendering
-    // the submission. The expectation is that instructors will use elements lik
-    // `<pl-manual-grading-only>` to provide extra instructions to the LLM. We
-    // don't want to mix in instructions like that with the student's response.
-    urls,
+    locals,
   );
-  const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
-  $('script').remove();
-  const submission_text = $.html();
+  const submission_text = render_submission_results.data.submissionHtmls[0];
   const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
@@ -328,8 +324,10 @@ export async function aiGrade({
         SubmissionVariantSchema,
       );
 
-      const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
-      const locals = { ...urls, manualGradingInterface: true };
+      const locals = {
+        ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+        questionRenderContext: 'ai_grading',
+      };
       // Get question html
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
@@ -346,9 +344,7 @@ export async function aiGrade({
         job.error('Error occurred');
         job.fail('Errors occurred while AI grading, see output for details');
       }
-      const $ = cheerio.load(render_question_results.data.questionHtml, null, false);
-      $('script').remove();
-      const questionPrompt = $.html();
+      const questionPrompt = render_question_results.data.questionHtml;
 
       let submission_embedding = await queryOptionalRow(
         sql.select_embedding_for_submission,
