@@ -5,15 +5,15 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
+  type Course,
+  type InstanceQuestion,
+  type Question,
+  type RubricItem,
+  RubricItemSchema,
+  type SubmissionGradingContextEmbedding,
   SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
   VariantSchema,
-  type Course,
-  type Question,
-  type SubmissionGradingContextEmbedding,
-  RubricItemSchema,
-  type RubricItem,
-  type InstanceQuestion,
 } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
