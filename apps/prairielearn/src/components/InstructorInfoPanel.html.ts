@@ -175,7 +175,7 @@ function QuestionInfo({
   // have been updated to use `share_source_publicly`. This special-casing
   // predates the ability to share questions only for copying, not importing.
   const sharingQid =
-    course.example_course || !question.shared_publicly
+    course.example_course || !question.share_publicly
       ? question.qid
       : `@${course.sharing_name}/${question.qid}`;
 
@@ -197,7 +197,7 @@ function QuestionInfo({
       ? html`
           <div class="d-flex flex-wrap">
             <div class="pe-1">Shared As:</div>
-            ${question.shared_publicly || question.share_source_publicly
+            ${question.share_publicly || question.share_source_publicly
               ? html`
                   <div>
                     <a href="${publicPreviewUrl}">${sharingQid}</a>
