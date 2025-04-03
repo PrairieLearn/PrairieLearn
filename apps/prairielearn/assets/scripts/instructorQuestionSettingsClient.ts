@@ -65,7 +65,7 @@ onDocumentReady(() => {
         },
       },
     });
-  }
+  } 
 
   qidField.addEventListener('input', () => validateId({ input: qidField, otherIds: otherQids }));
   qidField.addEventListener('change', () => validateId({ input: qidField, otherIds: otherQids }));

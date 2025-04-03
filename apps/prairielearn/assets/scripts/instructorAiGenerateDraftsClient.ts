@@ -2,6 +2,10 @@ import { observe } from 'selector-observer';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+function updateSampleQuestionPreview(id: string) {
+  
+}
+
 onDocumentReady(() => {
   const addQuestionCard = document.querySelector('#add-question-card');
   const hiddenInputsContainer = addQuestionCard?.querySelector('.js-hidden-inputs-container');
@@ -29,21 +33,45 @@ onDocumentReady(() => {
     expandQuestionForm();
   });
 
-  const userPromptExampleSelect = document.querySelector<HTMLSelectElement>('#user-prompt-example');
-  userPromptExampleSelect?.addEventListener('change', () => {
+  const copyPromptsButton = document.querySelector('#copy-prompts');
+  console.log('copyPromptsButton', copyPromptsButton);
+  copyPromptsButton?.addEventListener('click', () => {
     function setInputValue(selector: string, value: string) {
       const input = document.querySelector(selector) as HTMLInputElement;
       input.value = value;
     }
 
-    const options = userPromptExampleSelect.options;
-    const selection = options[options.selectedIndex].dataset;
+    const selectedTab = userVisualExampleSelect?.querySelector('.active') as HTMLAnchorElement;
+    const selection = selectedTab.dataset;
 
     setInputValue('#user-prompt-llm', selection.promptGeneral ?? '');
     setInputValue('#user-prompt-llm-user-input', selection.promptUserInput ?? '');
     setInputValue('#user-prompt-llm-grading', selection.promptGrading ?? '');
   });
+
+  const userVisualExampleSelect = document.querySelector<HTMLSelectElement>('#user-visual-example-tab');
+  userVisualExampleSelect?.addEventListener('shown.bs.tab', (event) => {
+    function setTextValue(selector: string, value: string) {
+      const input = document.querySelector(selector) as HTMLInputElement;
+      // There is an em within the input. Find it
+      const em = input.querySelector('em');
+      if (em) {
+        em.innerHTML = value;
+      }
+
+      // Update the sample question: Set the title and options
+
+    }
+
+    const newTab = event.target as HTMLAnchorElement;
+    const selection = newTab.dataset;
+  
+    setTextValue('#user-prompt-llm-example', `Example: ${selection.promptGeneral ?? ''}`);
+    setTextValue('#user-prompt-llm-user-input-example', `Example: ${selection.promptUserInput ?? ''}`);
+    setTextValue('#user-prompt-llm-grading-example', `Example: ${selection.promptGrading ?? ''}`);
+  });
 });
+
 
 function resizeTextarea(textarea: HTMLTextAreaElement) {
   textarea.style.height = 'auto';

@@ -19,9 +19,20 @@ export const DraftMetadataWithQidSchema = z.object({
 });
 export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 
-const examplePrompts = [
+export const examplePrompts = [
   {
-    id: 'Select median of 5 random numbers',
+    id: 'dot-product',
+    name: 'Dot product of two vectors',
+    promptGeneral:
+      'Generate a question by randomly creating two vectors (e.g., 3-dimensional). Ask the student to calculate the dot product of these vectors. Include the vector components in the prompt..',
+    promptUserInput:
+      'Provide a single numeric input field for the computed dot product..',
+    promptGrading:
+      'Calculate the dot product of the two vectors internally and compare it with the student’s submitted value.',
+  },
+  {
+    id: 'select-median-of-random-numbers',
+    name: 'Median of random numbers',
     promptGeneral:
       'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
     promptUserInput:
@@ -29,21 +40,28 @@ const examplePrompts = [
     promptGrading: 'The correct answer is the median of the numbers.',
   },
   {
-    id: 'Multiply random integers',
+    id: 'properties-of-binary-search-tree',
+    name: 'Properties of a binary search tree',
     promptGeneral:
-      'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B.',
-    promptUserInput: 'Provide an integer input box for the user to enter the product.',
-    promptGrading: 'The correct answer is the product of A and B.',
+      "Generate a multiple-choice question testing a student's knowledge on the properties of binary search trees. Include one correct answer and several incorrect ones.",
+    promptUserInput:
+      'Display the answer options as radio buttons for a single selection.',
+    promptGrading:
+      "Predefine the correct property and compare the student's selected option with the correct answer.",
   },
   {
-    id: 'Answer to Ultimate Question',
+    id: 'bit-shifting',
+    name: 'Bit shifting',
     promptGeneral:
-      'Write a question asking "What Is The Answer to the Ultimate Question of Life, the Universe, and Everything?".',
-    promptUserInput: 'Provide an integer box for the user to answer.',
-    promptGrading: 'The correct answer is 42.',
+      'Generate a question where an arbitrarily-generated bit string is provided along with instructions to shift the bits either to the left or to the right by a specified number of positions. The prompt should include the original bit string, the direction of the shift, and the number of positions to shift. This should be a logical shift. The number of positions to shift by should be randomized.',
+    promptUserInput:
+      'Provide a text input box where students can type the resulting bit string after performing the specified bit shifting operation.',
+    promptGrading:
+      "Internally perform the given bit shift on the generated bit string and compare the resulting bit string with the student's input.",
   },
   {
-    id: 'Calculate Projectile Distance',
+    id: 'projectile-distance',
+    name: 'Calculate projectile distance',
     promptGeneral:
       'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
     promptUserInput: 'Provide a numerical input box for the user to enter an answer.',
@@ -51,6 +69,7 @@ const examplePrompts = [
       'The correct answer is the distance that the projectile will travel, using the corresponding formula.',
   },
 ];
+
 
 export function InstructorAIGenerateDrafts({
   resLocals,
@@ -124,12 +143,9 @@ export function InstructorAIGenerateDrafts({
                 class="form-control js-textarea-autosize"
                 style="resize: none;"
               ></textarea>
-              <div class="form-text form-muted">
-                <em>
-                  Example: A toy car is pushed off a table with height h at speed v0. Assume
-                  acceleration due to gravity as 9.81 m/s^2. H is a number with 1 decimal digit
-                  selected at random between 1 and 2 meters. V0 is a an integer between 1 and 4 m/s.
-                  How long does it take for the car to reach the ground?
+              <div id="user-prompt-llm-example" class="form-text form-muted">
+                <em>  
+                  Example: ${examplePrompts[0].promptGeneral}
                 </em>
               </div>
             </div>
@@ -146,10 +162,9 @@ export function InstructorAIGenerateDrafts({
                   class="form-control js-textarea-autosize"
                   style="resize: none;"
                 ></textarea>
-                <div class="form-text form-muted">
+                <div id="user-prompt-llm-user-input-example" class="form-text form-muted">
                   <em>
-                    Example: students should enter the solution using a decimal number. The answer
-                    should be in seconds.
+                    Example: ${examplePrompts[0].promptUserInput}
                   </em>
                 </div>
               </div>
@@ -164,42 +179,12 @@ export function InstructorAIGenerateDrafts({
                   class="form-control js-textarea-autosize"
                   style="resize: none;"
                 ></textarea>
-                <div class="form-text form-muted">
-                  <em> Example: the answer is computed as sqrt(2 * h / g) where g = 9.81 m/s^2 </em>
+                <div id="user-prompt-llm-grading-example" class="form-text form-muted">
+                  <em>
+                    Example: ${examplePrompts[0].promptGrading} 
+                  </em>
                 </div>
               </div>
-
-              ${
-                // We think this will mostly be useful in local dev or for
-                // global admins who will want to iterate rapidly and don't
-                // want to retype a whole prompt each time. For actual users,
-                // we think this will mostly be confusing if we show it.
-                resLocals.is_administrator
-                  ? html`
-                      <hr />
-
-                      <div class="mb-3">
-                        <label for="user-prompt-example" class="form-label">
-                          Or choose an example prompt:
-                        </label>
-                        <select id="user-prompt-example" class="form-select">
-                          <option value=""></option>
-                          ${examplePrompts.map(
-                            (question) =>
-                              html`<optiongit
-                                value="${question.id}"
-                                data-prompt-general="${question.promptGeneral}"
-                                data-prompt-user-input="${question.promptUserInput}"
-                                data-prompt-grading="${question.promptGrading}"
-                              >
-                                ${question.id}
-                              </option>`,
-                          )}
-                        </select>
-                      </div>
-                    `
-                  : ''
-              }
 
               <button type="submit" class="btn btn-primary w-100">
                 <span
@@ -289,59 +274,125 @@ export function InstructorAIGenerateDrafts({
   });
 }
 
-const sampleQuestions = [
-  {
-    id: 'projectile-motion',
-    name: 'Projectile Motion'
-  },
-  {
-    id: 'polynomial-integration',
-    name: 'Polynomial Integration'
-  },
-  {
-    id: 'tree-traversal',
-    name: 'Tree Traversal'
-  }
-]
 
 function SampleQuestionSelector() {
+
+  // TODO: Check if the user has any questions generated. If so, start collapsed.
+
   return html`
-    <ul class="nav nav-tabs" id="myTab" role="tablist">
-      ${sampleQuestions.map((sampleQuestion, index) => (
-        html`
-          <li class="nav-item" role="presentation">
-            <button 
-              class="nav-link ${index === 0 ? 'active' : ''}" 
-              id="${sampleQuestion.id}-tab" 
-              data-bs-toggle="tab" 
-              data-bs-target="#${sampleQuestion.id}" 
-              type="button" 
-              role="tab" 
-              aria-controls="home" 
-              aria-selected="${index === 0 ? 'true' : ''}"
-            >
-              ${sampleQuestion.name}
-            </button>
-          </li>
-        `
-      ))}
-    </ul>
-    <div class="tab-content" id="myTabContent">
-      ${sampleQuestions.map((sampleQuestion, index) => (
-        html`
-        <div 
-          class="tab-pane ${index === 0 ? 'show active' : ''}" 
-          id="${sampleQuestion.id}" 
-          role="tabpanel" 
-          aria-labelledby="${sampleQuestion.name}-tab"
-        >
-          ${sampleQuestion.name}
+
+    <div class="accordion my-3" id="accordionExample">
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingOne">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+            Example questions and prompts
+          </button>
+        </h2>
+        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+          <div class="accordion-body">
+            <ul class="nav nav-pills" id="user-visual-example-tab" role="tablist">
+              ${examplePrompts.map((examplePrompt, index) => (
+                html`
+                  <li class="nav-item" role="presentation">
+                    <button 
+                      class="nav-link ${index === 0 ? 'active' : ''}" 
+                      id="${examplePrompt.id}-pill" 
+                      data-bs-toggle="pill" 
+                      data-bs-target="#${examplePrompt.id}" 
+                      type="button" 
+                      role="tab" 
+                      aria-controls="home" 
+                      aria-selected="${index === 0 ? 'true' : ''}"
+                      data-prompt-general="${examplePrompt.promptGeneral}"
+                      data-prompt-user-input="${examplePrompt.promptUserInput}"
+                      data-prompt-grading="${examplePrompt.promptGrading}"
+                    >
+                      ${examplePrompt.name}
+                    </button>
+                  </li>
+                `
+              ))}
+            </ul>
+            <div class="tab-content pt-3" id="myPillContent">
+              ${examplePrompts.map((examplePrompt, index) => (
+                html`
+                <div 
+                  class="tab-pane ${index === 0 ? 'show active' : ''}" 
+                  id="${examplePrompt.id}" 
+                  role="tabpanel" 
+                  aria-labelledby="${examplePrompt.id}-pill"
+                >
+                  
+                  ${SampleQuestionPreview(
+                    examplePrompt.id
+                  )}
+                </div>
+                `
+              ))}
+              <button
+                id="copy-prompts"
+                type="button"
+                class="btn btn-primary me-2 mt-3"
+              >
+                <i class="fa fa-clone" aria-hidden="true"></i>
+                Copy prompts
+              </button>
+            </div>
+          </div>
         </div>
-        `
-      ))}
+      </div>
     </div>
   `
 }
+
+function SampleQuestionPreview(
+  id: string
+) {
+
+  const examplePrompt = examplePrompts.find((prompt) => prompt.id === id);
+
+  if (!examplePrompt) {
+    return html`<div>Invalid example prompt</div>`;
+  }
+
+  return html`
+    <div class="card shadow">
+      <div class="card-header d-flex align-items-center">
+        <span class="badge rounded-pill bg-success me-3">Try me!</span>
+        ${examplePrompt.name}
+      </div>
+      <div class="card-body">
+        <p>
+          Suppose a ball is thrown from a level surface at a [angle]° angle with
+          a velocity of [velocity] m/s. How far will the ball travel?
+        </p>
+        <span class="input-group">
+          <input
+            type="text"
+            class="form-control"
+          />
+          <span class="input-group-text">
+            <span class="me-2">m</span>
+            <span class="badge bg-success">100%</span>
+          </span>
+        </span>
+      </div>
+      <div class="card-footer d-flex justify-content-end">
+        <button
+          type="button"
+          class="btn btn-primary me-2"
+        >
+          New variant
+        </button>
+        <button type="button" class="btn btn-primary">
+          Grade
+        </button>
+      </div>
+    </div>
+  `
+}
+  
+
 
 export function GenerationFailure({
   urlPrefix,
