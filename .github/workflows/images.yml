@@ -20,6 +20,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+env:
+  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   build-workspace-images:
     uses: ./.github/workflows/image-builder.yml
