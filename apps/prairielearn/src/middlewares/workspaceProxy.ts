@@ -1,5 +1,7 @@
 import type http from 'http';
+import type { Socket } from 'net';
 
+import type express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import type * as httpProxyMiddleware from 'http-proxy-middleware';
 
@@ -39,14 +41,53 @@ function stripSensitiveCookies(proxyReq: http.ClientRequest) {
   proxyReq.setHeader('cookie', filteredItems.join(';'));
 }
 
+function isResponseLike(obj: any): obj is http.ServerResponse {
+  return obj && typeof obj.writeHead === 'function';
+}
+
+function isSocketLike(obj: any): obj is Socket {
+  return obj && typeof obj.write === 'function' && !('writeHead' in obj);
+}
+
+/**
+ * Adapted from the following file in `http-proxy-middleware`:
+ * https://github.com/chimurai/http-proxy-middleware/blob/e94087e8d072c0c54a6c3a6b050c590a92921482/src/status-code.ts
+ */
+export function getStatusCode(err: any): number {
+  if (err?.status) return err.status;
+
+  if (/HPE_INVALID/.test(err?.code)) {
+    return 502;
+  }
+
+  switch (err?.code) {
+    case 'ECONNRESET':
+    case 'ENOTFOUND':
+    case 'ECONNREFUSED':
+    case 'ETIMEDOUT':
+      return 504;
+    default:
+      return 500;
+  }
+}
+
 export function makeWorkspaceProxyMiddleware() {
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
-  const workspaceProxyOptions: httpProxyMiddleware.Options = {
+  const workspaceProxyOptions: httpProxyMiddleware.Options<express.Request, express.Response> = {
     target: 'invalid',
     ws: true,
-    pathRewrite: async (path) => {
+    pathFilter: (path, req) => {
+      // `req.originalUrl` won't be defined for websocket requests, but for
+      // non-websocket requests, `req.url` won't contain the full path. So we
+      // need to handle both.
+      const url = req.originalUrl ?? req.url;
+      return !!url.match(/^\/pl\/workspace\/[0-9]+\/container\//);
+    },
+    pathRewrite: async (path, req) => {
       try {
-        const match = path.match(/\/pl\/workspace\/([0-9]+)\/container\/(.*)/);
+        const match = (req.originalUrl ?? req.url).match(
+          /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
+        );
         if (!match) throw new Error(`Could not match path: ${path}`);
         const workspace_id = parseInt(match[1]);
         let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);
@@ -57,13 +98,12 @@ export function makeWorkspaceProxyMiddleware() {
             ' JOIN variants AS v ON (v.question_id = q.id)' +
             ' WHERE v.workspace_id = $workspace_id;';
           const result = await queryOneRowAsync(sql, { workspace_id });
-          workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
-          if (workspace_url_rewrite == null) workspace_url_rewrite = true;
+          workspace_url_rewrite = result.rows[0].workspace_url_rewrite ?? true;
           workspaceUrlRewriteCache.set(workspace_id, workspace_url_rewrite);
         }
-        if (!workspace_url_rewrite) {
-          return path;
-        }
+
+        if (!workspace_url_rewrite) return path;
+
         const pathSuffix = match[2];
         const newPath = '/' + pathSuffix;
         return newPath;
@@ -72,11 +112,10 @@ export function makeWorkspaceProxyMiddleware() {
         return path;
       }
     },
-    logLevel: 'silent',
-    logProvider: (_provider) => logger,
     router: async (req) => {
-      const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
-      if (!match) throw new Error(`Could not match URL: ${req.url}`);
+      const url = req.originalUrl ?? req.url;
+      const match = url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
+      if (!match) throw new Error(`Could not match URL: ${url}`);
 
       const workspace_id = match[1];
       const result = await queryZeroOrOneRowAsync(
@@ -92,26 +131,34 @@ export function makeWorkspaceProxyMiddleware() {
 
       return `http://${result.rows[0].hostname}/`;
     },
-    onProxyReq: (proxyReq) => {
-      stripSensitiveCookies(proxyReq);
-    },
-    onProxyReqWs: (proxyReq) => {
-      stripSensitiveCookies(proxyReq);
-    },
-    onError: (err, req, res) => {
-      logger.error(`Error proxying workspace request: ${err}`, {
-        err,
-        url: req.url,
-        originalUrl: req.originalUrl,
-      });
-      // Check to make sure we weren't already in the middle of sending a
-      // response before replying with an error 500
-      if (res && !res.headersSent) {
-        res.status?.((err as any).status ?? 500)?.send?.('Error proxying workspace request');
-      }
+    on: {
+      proxyReq: (proxyReq) => {
+        stripSensitiveCookies(proxyReq);
+      },
+      proxyReqWs: (proxyReq) => {
+        stripSensitiveCookies(proxyReq);
+      },
+      error: (err, req, res) => {
+        logger.error(`Error proxying workspace request: ${err}`, {
+          err,
+          url: req.url,
+          originalUrl: req.originalUrl,
+        });
+
+        if (isResponseLike(res)) {
+          // Check to make sure we weren't already in the middle of sending a
+          // response before replying with our own error.
+          if (!res.headersSent) {
+            res.status(getStatusCode(err));
+          }
+
+          res.end('Error proxying workspace request');
+        } else if (isSocketLike(res)) {
+          // There's nothing we can do but destroy the socket.
+          res.destroy();
+        }
+      },
     },
   };
-  return createProxyMiddleware((pathname) => {
-    return /^\/pl\/workspace\/\d+\/container\//.test(pathname);
-  }, workspaceProxyOptions);
+  return createProxyMiddleware(workspaceProxyOptions);
 }
