@@ -14,8 +14,8 @@ import * as parse5 from 'parse5';
 
 import { cache } from '@prairielearn/cache';
 import { logger } from '@prairielearn/logger';
-import { run } from '@prairielearn/run';
 import { instrumented, instrumentedWithMetrics, metrics } from '@prairielearn/opentelemetry';
+import { run } from '@prairielearn/run';
 
 import { stripHtmlForAiGrading } from '../lib/ai-grading.js';
 import * as assets from '../lib/assets.js';
