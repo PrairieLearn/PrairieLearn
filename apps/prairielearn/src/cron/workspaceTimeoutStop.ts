@@ -1,5 +1,5 @@
 import { logger } from '@prairielearn/logger';
-import { metrics, getCounter, ValueType } from '@prairielearn/opentelemetry';
+import { ValueType, getCounter, metrics } from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 

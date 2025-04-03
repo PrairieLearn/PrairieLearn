@@ -38,7 +38,7 @@ async function setLocals(req, res) {
   }
 
   if (
-    !(res.locals.question.shared_publicly || res.locals.question.share_source_publicly) ||
+    !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
     res.locals.course.id !== res.locals.question.course_id
   ) {
     throw new error.HttpStatusError(404, 'Not Found');

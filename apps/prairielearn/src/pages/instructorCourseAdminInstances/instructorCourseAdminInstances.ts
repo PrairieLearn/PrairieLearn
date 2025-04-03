@@ -14,8 +14,8 @@ import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 import {
-  InstructorCourseAdminInstances,
   type CourseInstanceAuthzRow,
+  InstructorCourseAdminInstances,
 } from './instructorCourseAdminInstances.html.js';
 
 const router = express.Router();

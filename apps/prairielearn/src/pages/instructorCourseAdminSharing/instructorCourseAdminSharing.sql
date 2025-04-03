@@ -56,7 +56,7 @@ SELECT
     FROM
       questions AS q
     WHERE
-      q.shared_publicly
+      q.share_publicly
       AND course_id = $course_id
     UNION
     SELECT

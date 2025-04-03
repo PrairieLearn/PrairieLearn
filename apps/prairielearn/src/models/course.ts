@@ -6,10 +6,10 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
-  queryRow,
   queryAsync,
-  queryRows,
   queryOptionalRow,
+  queryRow,
+  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 

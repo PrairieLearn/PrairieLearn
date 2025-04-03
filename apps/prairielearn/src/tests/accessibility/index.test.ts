@@ -413,7 +413,7 @@ describe('accessibility', () => {
     };
 
     await sqldb.queryOneRowAsync(
-      'UPDATE questions SET shared_publicly = true WHERE id = $question_id',
+      'UPDATE questions SET share_publicly = true WHERE id = $question_id',
       { question_id: routeParams.question_id },
     );
   });
