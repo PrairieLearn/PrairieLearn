@@ -1,8 +1,10 @@
 FROM node:22-bookworm
 
-RUN apt-get update && apt-get upgrade -y && \
+RUN apt-get update && \
+  apt-get upgrade -y && \
   apt-get install -y --no-install-recommends emacs-nox vim tmux && \
-  apt-get clean && rm -rf /var/lib/apt/lists/*
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
 COPY src /xterm
 
 WORKDIR /xterm
