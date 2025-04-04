@@ -1,6 +1,6 @@
 # `@prairielearn/run`
 
-A small utility for emulating expression-oriented programming, Inspired by <https://maxgreenwald.me/blog/do-more-with-run>.
+A small utility for emulating expression-oriented programming, inspired by <https://maxgreenwald.me/blog/do-more-with-run>.
 
 ## Usage
 
