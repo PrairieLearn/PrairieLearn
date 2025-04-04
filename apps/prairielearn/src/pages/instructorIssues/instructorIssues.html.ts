@@ -393,6 +393,19 @@ function FilterHelpModal() {
           </tr>
           <tr>
             <td>
+              <code>assessment:<em>AID</em></code>
+            </td>
+            <td>
+              Shows all issues with an assessment ID like <code>AID</code>; supports
+              <code>*</code> as a wildcard. For example,
+              <code>assessment:exam/instantFeedback</code> shows all issues associated with the
+              assessment <code>exam/instantFeedback</code>, and <code>assessment:exam/*</code> shows
+              all issues associated with any assessment that starts with <code>exam/</code>, such as
+              <code>exam/instantFeedback</code> and <code>exam/manualGrading</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>
               <code>qid:<em>QID</em></code>
             </td>
             <td>

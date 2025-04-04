@@ -89,7 +89,7 @@ function AssessmentStatusDescription({
   extraClasses?: string;
 }) {
   return html`
-    <div class="test-suite-assessment-closed-message ${extraClasses}">
+    <div class="${extraClasses}" data-testid="assessment-closed-message">
       ${assessment_instance?.open === false
         ? html`Assessment is <strong>closed</strong> and is no longer available.`
         : authz_result.next_active_time == null

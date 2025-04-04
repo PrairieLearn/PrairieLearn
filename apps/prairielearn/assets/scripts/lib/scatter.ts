@@ -1,4 +1,4 @@
-import { scaleLinear, axisBottom, axisLeft, select, zip } from 'd3';
+import { axisBottom, axisLeft, scaleLinear, select, zip } from 'd3';
 
 export function scatter(
   selector: HTMLElement,

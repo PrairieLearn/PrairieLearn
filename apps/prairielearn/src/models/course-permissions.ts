@@ -10,11 +10,11 @@ import {
 } from '@prairielearn/postgres';
 
 import {
-  type User,
-  type CoursePermission,
-  CoursePermissionSchema,
   type CourseInstancePermission,
   CourseInstancePermissionSchema,
+  type CoursePermission,
+  CoursePermissionSchema,
+  type User,
 } from '../lib/db-types.js';
 
 import { selectOrInsertUserByUid } from './user.js';

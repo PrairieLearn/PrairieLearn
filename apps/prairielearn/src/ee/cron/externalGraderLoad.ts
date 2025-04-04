@@ -1,6 +1,5 @@
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
-import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
@@ -339,7 +338,7 @@ async function sendStatsToCloudWatch(stats) {
 
 async function setAutoScalingGroupCapacity(stats) {
   if (!config.externalGradingAutoScalingGroupName) return;
-  if (!_.isInteger(stats.desired_instances)) return;
+  if (!Number.isInteger(stats.desired_instances)) return;
   if (stats.desired_instances < 1 || stats.desired_instances > 1e6) return;
   if (stats.desired_instances === stats.instance_count) return;
 
