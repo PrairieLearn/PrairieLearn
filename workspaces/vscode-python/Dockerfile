@@ -1,4 +1,5 @@
 FROM prairielearn/workspace-vscode-base:latest
+ARG CACHEBUST=2025-04-04-17-34-59
 
 # Make sure to build using bash as the shell so that conda/mamba hooks will
 # work during installation.

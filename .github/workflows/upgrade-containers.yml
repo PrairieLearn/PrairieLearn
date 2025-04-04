@@ -1,0 +1,33 @@
+name: Upgrade Containers
+
+on:
+  schedule:
+    # At 12:00 (for testing)
+    - cron: '0 12 * * *'
+    # At 12:00 on day-of-month 15.
+    # - cron: '0 12 15 * *'
+
+jobs:
+  upgrade-containers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up timestamp
+        id: get-timestamp
+        run: echo "timestamp=$(date +%Y-%m-%d-%H-%M-%S)" >> "$GITHUB_OUTPUT"
+
+      - name: Upgrade containers
+        run: |
+          find . -name 'Dockerfile' -exec sed -i "s/ARG CACHEBUST=.*/ARG CACHEBUST=${{ steps.get-timestamp.outputs.timestamp }}/" {} \;
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: upgrade-containers-${{ steps.get-timestamp.outputs.timestamp }}
+          title: 'Upgrade Docker containers'
+          commit-message: 'Bump CACHEBUST value of containers'
+          body: |
+            This PR updates all Dockerfiles with a new `CACHEBUST` value to rebuild the images.
+          labels: chore,dependencies,docker
