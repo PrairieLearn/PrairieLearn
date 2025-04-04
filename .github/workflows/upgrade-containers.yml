@@ -16,7 +16,7 @@ jobs:
 
       - name: Set up timestamp
         id: get-timestamp
-        run: echo "timestamp="$(date +%Y-%m-%d-%H-%M-%S)"" >> $GITHUB_OUTPUT
+        run: echo "timestamp=$(date +%Y-%m-%d-%H-%M-%S)" >> "$GITHUB_OUTPUT"
 
       - name: Upgrade containers
         run: |
