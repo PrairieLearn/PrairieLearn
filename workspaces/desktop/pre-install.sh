@@ -9,12 +9,15 @@ apt-get install -y man-db unminimize
 yes | unminimize
 
 # create base system
-apt-get install xfce4 x11vnc novnc xvfb dbus-x11 wget nodejs npm gosu python3 -y --no-install-recommends
+apt-get install xfce4 x11vnc novnc xvfb dbus-x11 wget nodejs npm gosu python3 apt-rdepends -y --no-install-recommends
+
+apt-rdepends node-for-in
+
 groupadd -g 1001 prairielearner
 useradd -u 1001 -g 1001 -m -d /home/prairielearner -s /bin/bash prairielearner
 
 # install needed apps
-apt-get install xfce4-terminal build-essential geany emacs-gtk vim-gtk3 nano gedit less -y
+apt-get install xfce4-terminal build-essential geany emacs-gtk vim-gtk3 nano gedit less -y --no-install-recommends
 
 # install firefox without snap (https://askubuntu.com/a/1369163)
 apt-get purge firefox -y
@@ -25,12 +28,12 @@ apt-get install firefox-esr -y
 # install vscode depending on what architecture we're building on
 arch=$(uname -m)
 if [[ $arch == x86_64 ]]; then
-    wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" -O /vscode.deb
+  wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" -O /vscode.deb
 elif [[ $arch == arm* ]] || [[ $arch == aarch64 ]]; then
-    wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-arm64" -O /vscode.deb
+  wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-arm64" -O /vscode.deb
 else
-    echo "Unknown architecture $arch"
-    exit 1
+  echo "Unknown architecture $arch"
+  exit 1
 fi
 apt-get install /vscode.deb -y
 rm /vscode.deb
