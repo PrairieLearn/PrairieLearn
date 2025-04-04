@@ -92,4 +92,4 @@ jobs:
         env:
           METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           # On master, add the `latest` tag as well.
-          TAGS: ${{ github.ref == 'refs/heads/master' && 'latest,${{ env.COMMIT_SHA }}' || env.COMMIT_SHA }}
+          TAGS: ${{ github.ref == 'refs/heads/master' && format('latest,{0}', env.COMMIT_SHA) || env.COMMIT_SHA }}
