@@ -1,4 +1,4 @@
-# rocker-pl
+# `prairielearn/grader-r`
 
 This is a Docker image working as an external grader to be paired with
 PrairieLearn. It has been used in the STAT 430 'DSPM' (2018-2020) and [STAT
