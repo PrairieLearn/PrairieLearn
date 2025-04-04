@@ -73,7 +73,7 @@ dnf -y autoremove
 # get any benefit from Conda.
 echo "setting up conda..."
 cd /
-arch=$(uname -m)
+arch="$(uname -m)"
 # Pinning the Conda version so the default Python version is 3.10. Later conda versions use 3.12 as the default.
 curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Miniforge3-Linux-${arch}.sh
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
