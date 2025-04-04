@@ -1,4 +1,4 @@
-## PrairieLearn Autograding R Docker Image
+# PrairieLearn Autograding R Docker Image
 
 The docker container is from the [versioned `tidyverse` stack](https://github.com/rocker-org/rocker-versioned)
 ([3.6.1 source](https://github.com/rocker-org/rocker-versioned/blob/master/tidyverse/3.6.1.Dockerfile))
