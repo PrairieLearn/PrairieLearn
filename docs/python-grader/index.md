@@ -42,7 +42,7 @@ def generate(data):
     ]
 ```
 
-Each variable dictionary has entries `name` (the Python variable name in the code), `description` (human readable), and `type` (human readable). These variable lists are used for two purposes: (1) showing students which variables are used, and (2) making variables available to the student code and autograder code.
+Each variable dictionary has entries `name` (the Python variable name in the code), `description` (human-readable), and `type` (human-readable). These variable lists are used for two purposes: (1) showing students which variables are used, and (2) making variables available to the student code and autograder code.
 
 ### `question.html`
 
@@ -94,13 +94,13 @@ Note that the `<pl-external-grader-variables>` element is for purely decorative 
 
 ### `tests/setup_code.py`
 
-This file is executed before any reference or student code is run. Any variables defined in `names_for_user` can be accessed from here in student code, while the reference answer may freely access variables without restriction. The code in this file is run only _once_ total for both student and reference code. If you need to run some code before each of student and reference code (for example, to set a random seed), you may define the function `def repeated_setup()`, which will be executed before each of them. `repeated_setup()` will always be run after the setup code itself is run.
+This file is executed before any reference or student code is run. Any variables defined in `names_for_user` can be accessed from here in student code, while the reference answer may freely access variables without restriction. The code in this file is run only _once_ total for both student and reference code. If you need to run some code before each of student and reference code (for example, to set a random seed), you may define the function `def repeated_setup()`, which will be executed before each of them. `repeated_setup()` will always run after the setup code itself is run.
 
 The server parameters in `data` can be accessed with `data` in this file.
 
 ### `tests/test.py`
 
-The test cases for each coding problem are defined as methods of a `Test` class contained in the `test.py` file. The class will extend from either `PLTestCase` or `PLTestCaseWithPlot`, depending if you require plots from the student:
+The test cases for each coding problem are defined as methods of a `Test` class contained in the `test.py` file. The class will extend from either `PLTestCase` or `PLTestCaseWithPlot`, depending on if you require plots from the student:
 
 ```python title="tests/test.py"
 from pl_unit_test import PLTestCase, PLTestCaseWithPlot

@@ -1,5 +1,12 @@
 # @prairielearn/signed-token
 
+## 2.0.11
+
+### Patch Changes
+
+- c24120e: Minor changes to reduce dependency on lodash
+- 03f1008: Upgrade all JavaScript dependencies
+
 ## 2.0.10
 
 ### Patch Changes
