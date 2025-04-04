@@ -89,7 +89,6 @@ export function makeWorkspaceProxyMiddleware() {
       // The path provided to this function doesn't include the full path with
       // the `/pl/workspace/<workspace_id>/container/` prefix, so we need to
       // reconstruct it from the request.
-      //
       const path = getRequestPath(req);
       return WORKSPACE_CONTAINER_PATH_REGEXP.test(path);
     },
