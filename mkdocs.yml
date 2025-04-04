@@ -213,10 +213,22 @@ nav:
       - 'Regrading assessments': 'regrading.md'
       - 'Element for drawing': 'pl-drawing/index.md'
       - 'External grading': 'externalGrading.md'
-      - 'Python autograder': 'python-grader/index.md'
+      - 'Python autograder':
+          - 'python-grader/index.md'
+          - 'Reference Docs': python-grader/reference-docs.md
       - 'C/C++ autograder': 'c-grader/index.md'
       - 'Java autograder': 'java-grader/index.md'
-      - 'Python Reference': 'python-reference/'
+      - 'Python Reference':
+          - python-reference/index.md
+          - 'Colors': python-reference/prairielearn/colors.md
+          - 'Conversion': python-reference/prairielearn/conversion_utils.md
+          - 'Element attributes': python-reference/prairielearn/attribute_utils.md
+          - 'Element extensions': python-reference/prairielearn/extension_utils.md
+          - 'Grading': python-reference/prairielearn/grading_utils.md
+          - 'Numerical precision': python-reference/prairielearn/to_precision.md
+          - 'Other': python-reference/prairielearn/misc_utils.md
+          - 'SymPy': python-reference/prairielearn/sympy_utils.md
+          - 'Unicode': python-reference/prairielearn/unicode_utils.md
       - 'Workspaces': 'workspaces/index.md'
       - 'Manual grading': 'manualGrading/index.md'
       - 'Question sharing': 'questionSharing.md'
@@ -253,7 +265,6 @@ not_in_nav: |
   workshop/lesson3.md
   workshop/lesson4.md
   workshop/lesson5.md
-  python-grader/reference-docs.md
 
 validation:
   omitted_files: warn
