@@ -175,6 +175,7 @@ include = [
   "./apps/prairielearn/python",
   "./contrib/question_converters/canvas",
   "./graders",
+  "./scripts",
 ]
 exclude = [
   "./apps/prairielearn/elements/pl-drawing",            # requires refactor

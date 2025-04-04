@@ -71,6 +71,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.course = result.rows[0].course;
   res.locals.institution = result.rows[0].institution;
 
+  // The side nav is expanded by default.
+  res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true;
+
   const permissions_course = result.rows[0].permissions_course;
   res.locals.authz_data = {
     authn_user: structuredClone(res.locals.authn_user),

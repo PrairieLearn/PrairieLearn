@@ -248,5 +248,5 @@ SELECT
       questions
     WHERE
       id = $question_id
-      AND shared_publicly
+      AND share_publicly
   );
