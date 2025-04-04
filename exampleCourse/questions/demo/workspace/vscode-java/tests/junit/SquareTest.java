@@ -12,7 +12,7 @@ public class SquareTest {
     @ParameterizedTest(name = "Test with input {0}")
     @ValueSource(ints = { 0, 1, 2, 4, 10, -1, -10, -100 })
     @Tag("points=2")
-    public void testWithInputOne(int i, TestReporter reporter) {
+    public void testSquareFunction(int i, TestReporter reporter) {
 
         reporter.publishEntry("Testing with input " + i + "...");
         assertEquals(i * i, Square.square(i));
