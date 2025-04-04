@@ -18,4 +18,4 @@ into a _new_ course. Within this course, go to the "Course Editor" -> "Content U
 
 **Note:** The export occurs in the **Course Space** and not the _Authoring_ space.
 
-For more information, please see [Craig's original e-mail](zilles-email.md)
+For more information, please see [Craig's original e-mail](./zilles-email.md)
