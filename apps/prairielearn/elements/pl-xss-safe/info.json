@@ -5,7 +5,8 @@
   },
   "dynamicDependencies": {
     "nodeModulesScripts": {
-      "marked": "marked/lib/marked.esm.js"
+      "marked": "marked/lib/marked.esm.js",
+      "@prairielearn/marked-mathjax": "@prairielearn/marked-mathjax/src/index.js"
     }
   }
 }

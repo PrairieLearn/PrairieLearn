@@ -8,6 +8,7 @@
     // confusion
     if (language == "markdown") {
       const marked = (await import('marked')).marked;
+      (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
       code = await marked.parse(code);
     }
     code = DOMPurify.sanitize(code, {SANITIZE_NAMED_PROPS: true});
