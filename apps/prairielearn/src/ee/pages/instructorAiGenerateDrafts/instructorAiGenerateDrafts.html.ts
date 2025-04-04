@@ -19,7 +19,7 @@ export const DraftMetadataWithQidSchema = z.object({
 });
 export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 
-type ExamplePrompt = {
+interface ExamplePrompt {
   id: string;
   name: string;
   promptGeneral: string;
@@ -33,8 +33,7 @@ export const examplePrompts: ExamplePrompt[] = [
     name: 'Dot product of two vectors',
     promptGeneral:
       'Generate a question by randomly creating two vectors (e.g., 3-dimensional). Ask the student to calculate the dot product of these vectors. Include the vector components in the prompt..',
-    promptUserInput:
-      'Provide a single numeric input field for the computed dot product..',
+    promptUserInput: 'Provide a single numeric input field for the computed dot product..',
     promptGrading:
       'Calculate the dot product of the two vectors internally and compare it with the student’s submitted value.',
   },
@@ -52,8 +51,7 @@ export const examplePrompts: ExamplePrompt[] = [
     name: 'Properties of a binary search tree',
     promptGeneral:
       "Generate a multiple-choice question testing a student's knowledge on the properties of binary search trees. Include one correct answer and several incorrect ones.",
-    promptUserInput:
-      'Display the answer options as radio buttons for a single selection.',
+    promptUserInput: 'Display the answer options as radio buttons for a single selection.',
     promptGrading:
       "Predefine the correct property and compare the student's selected option with the correct answer.",
   },
@@ -155,9 +153,7 @@ export function InstructorAIGenerateDrafts({
                 style="resize: none;"
               ></textarea>
               <div id="user-prompt-llm-example" class="form-text form-muted">
-                <em>  
-                  Example: ${examplePrompts[0].promptGeneral}
-                </em>
+                <em> Example: ${examplePrompts[0].promptGeneral} </em>
               </div>
             </div>
 
@@ -174,9 +170,7 @@ export function InstructorAIGenerateDrafts({
                   style="resize: none;"
                 ></textarea>
                 <div id="user-prompt-llm-user-input-example" class="form-text form-muted">
-                  <em>
-                    Example: ${examplePrompts[0].promptUserInput}
-                  </em>
+                  <em> Example: ${examplePrompts[0].promptUserInput} </em>
                 </div>
               </div>
 
@@ -191,9 +185,7 @@ export function InstructorAIGenerateDrafts({
                   style="resize: none;"
                 ></textarea>
                 <div id="user-prompt-llm-grading-example" class="form-text form-muted">
-                  <em>
-                    Example: ${examplePrompts[0].promptGrading} 
-                  </em>
+                  <em> Example: ${examplePrompts[0].promptGrading} </em>
                 </div>
               </div>
 
@@ -285,38 +277,47 @@ export function InstructorAIGenerateDrafts({
   });
 }
 
-
 function SampleQuestionSelector({
   startPrompt,
-  startOpen
-} : {
-  startPrompt: ExamplePrompt,
-  startOpen: boolean
+  startOpen,
+}: {
+  startPrompt: ExamplePrompt;
+  startOpen: boolean;
 }) {
-
   return html`
-
     <div class="accordion my-3" id="sample-question-accordion">
       <div class="accordion-item">
         <h2 class="accordion-header" id="sample-question-accordion-content">
-          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#sample-question-content" aria-expanded="${startOpen ? 'true' : ''}" aria-controls="sample-question-content">
+          <button
+            class="accordion-button"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#sample-question-content"
+            aria-expanded="${startOpen ? 'true' : ''}"
+            aria-controls="sample-question-content"
+          >
             Example questions and prompts
           </button>
         </h2>
-        <div id="sample-question-content" class="accordion-collapse ${startOpen ? 'show' : 'collapse'}" aria-labelledby="sample-question-content" data-bs-parent="#sample-question-accordion">
+        <div
+          id="sample-question-content"
+          class="accordion-collapse ${startOpen ? 'show' : 'collapse'}"
+          aria-labelledby="sample-question-content"
+          data-bs-parent="#sample-question-accordion"
+        >
           <div class="accordion-body">
             <ul class="nav nav-pills" id="example-question-selector" role="tablist">
-              ${examplePrompts.map((examplePrompt, index) => (
-                html`
+              ${examplePrompts.map(
+                (examplePrompt, index) => html`
                   <li class="nav-item" role="presentation">
-                    <button 
-                      class="nav-link ${index === 0 ? 'active' : ''}" 
-                      id="${examplePrompt.id}-pill" 
-                      data-bs-toggle="pill" 
-                      data-bs-target="#${examplePrompt.id}" 
-                      type="button" 
-                      role="tab" 
-                      aria-controls="home" 
+                    <button
+                      class="nav-link ${index === 0 ? 'active' : ''}"
+                      id="${examplePrompt.id}-pill"
+                      data-bs-toggle="pill"
+                      data-bs-target="#${examplePrompt.id}"
+                      type="button"
+                      role="tab"
+                      aria-controls="home"
                       aria-selected="${index === 0 ? 'true' : ''}"
                       data-id="${examplePrompt.id}"
                       data-name="${examplePrompt.name}"
@@ -327,17 +328,13 @@ function SampleQuestionSelector({
                       ${examplePrompt.name}
                     </button>
                   </li>
-                `
-              ))}
+                `,
+              )}
             </ul>
 
             <div class="tab-content pt-3">
               ${SampleQuestionPreview(startPrompt)}
-              <button
-                id="copy-prompts"
-                type="button"
-                class="btn btn-primary me-2 mt-3"
-              >
+              <button id="copy-prompts" type="button" class="btn btn-primary me-2 mt-3">
                 <i class="fa fa-clone" aria-hidden="true"></i>
                 Copy prompts
               </button>
@@ -346,7 +343,7 @@ function SampleQuestionSelector({
         </div>
       </div>
     </div>
-  `
+  `;
 }
 
 function SampleQuestionPreview(startPrompt: ExamplePrompt) {
@@ -356,34 +353,22 @@ function SampleQuestionPreview(startPrompt: ExamplePrompt) {
     <div class="card shadow">
       <div class="card-header d-flex align-items-center">
         <span class="badge rounded-pill bg-success me-3">Try me!</span>
-        <p id="question-preview-name" class="mb-0">
-          ${startPrompt.name}
-        </p>
+        <p id="question-preview-name" class="mb-0">${startPrompt.name}</p>
       </div>
       <div class="card-body">
-        <p id="question-preview-title">
-
-        </p>
+        <p id="question-preview-title"></p>
         <span class="input-group">
           <span class="input-group-text">
             <span>Dot product = </span>
           </span>
-          <input
-            id="question-preview-response"
-            type="text"
-            class="form-control"
-          />
+          <input id="question-preview-response" type="text" class="form-control" />
           <span id="grade-response" class="input-group-text d-none">
             <span class="badge bg-success">100%</span>
           </span>
         </span>
       </div>
       <div class="card-footer d-flex justify-content-end">
-        <button
-          id="question-preview-new-variant-button"
-          type="button"
-          class="btn btn-primary me-2"
-        >
+        <button id="question-preview-new-variant-button" type="button" class="btn btn-primary me-2">
           New variant
         </button>
         <button id="question-preview-grade-button" type="button" class="btn btn-primary">
@@ -391,10 +376,8 @@ function SampleQuestionPreview(startPrompt: ExamplePrompt) {
         </button>
       </div>
     </div>
-  `
+  `;
 }
-  
-
 
 export function GenerationFailure({
   urlPrefix,
