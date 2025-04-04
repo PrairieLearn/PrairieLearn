@@ -9,6 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import mkdocs_gen_files
+from pathspec import RegexPattern
 
 ROOT = Path.cwd()
 SOURCE_ROOT = "https://github.com/PrairieLearn/PrairieLearn/blob/master/"
@@ -29,7 +30,7 @@ def build_readme_nav() -> None:
         base = Path(mapping.src).absolute()
         doc_path = Path(mapping.dest)
         title_lookup = {}
-        for path in base.rglob("README.md"):
+        for path in base.rglob("*.md"):
             path_relative_to_base = path.relative_to(base)
             path_relative_to_root = path.relative_to(ROOT)
 
@@ -68,7 +69,7 @@ def build_readme_nav() -> None:
                 file_matches = re.findall(relative_regex, contents)
                 for [label, match] in file_matches:
                     # Rewrite links that don't point to internal documentation if we can
-                    if not match.endswith("README.md"):
+                    if not match.startswith("./"):
                         # This isn't fully accurate for determining if it's an internal link, but it works for our purposes
                         contents = contents.replace(
                             f"[{label}]({match})",
@@ -81,6 +82,13 @@ def build_readme_nav() -> None:
                 print(body, file=f)
 
             if path_relative_to_base.parent.as_posix() == ".":
+                continue
+
+            # We only want to add the README.md files to the navigation
+            if path.name != "README.md":
+                mkdocs_gen_files.config.not_in_nav.patterns.append(
+                    RegexPattern(doc_readme_path.as_posix(), include=None)
+                )
                 continue
 
             # Note: this code is a bit of a hack to get the title of the parent directory
