@@ -19,7 +19,15 @@ export const DraftMetadataWithQidSchema = z.object({
 });
 export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 
-export const examplePrompts = [
+type ExamplePrompt = {
+  id: string;
+  name: string;
+  promptGeneral: string;
+  promptUserInput: string;
+  promptGrading: string;
+}
+
+export const examplePrompts: ExamplePrompt[] = [
   {
     id: 'dot-product',
     name: 'Dot product of two vectors',
@@ -70,7 +78,6 @@ export const examplePrompts = [
   },
 ];
 
-
 export function InstructorAIGenerateDrafts({
   resLocals,
   drafts,
@@ -85,6 +92,7 @@ export function InstructorAIGenerateDrafts({
     pageTitle: resLocals.pageTitle,
     headContent: html`
       ${compiledScriptTag('instructorAiGenerateDraftsClient.ts')}
+      ${compiledScriptTag('instructorAiGenerateDraftsQuestionPreviewClient.ts')}
       <style>
         .reveal-fade {
           position: absolute;
@@ -130,7 +138,10 @@ export function InstructorAIGenerateDrafts({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="generate_question" />
 
-            ${SampleQuestionSelector()}
+            ${SampleQuestionSelector({
+              startPrompt: examplePrompts[0],
+              startOpen: true,
+            })}
 
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
@@ -275,22 +286,26 @@ export function InstructorAIGenerateDrafts({
 }
 
 
-function SampleQuestionSelector() {
-
-  // TODO: Check if the user has any questions generated. If so, start collapsed.
+function SampleQuestionSelector({
+  startPrompt,
+  startOpen
+} : {
+  startPrompt: ExamplePrompt,
+  startOpen: boolean
+}) {
 
   return html`
 
-    <div class="accordion my-3" id="accordionExample">
+    <div class="accordion my-3" id="sample-question-accordion">
       <div class="accordion-item">
-        <h2 class="accordion-header" id="headingOne">
-          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+        <h2 class="accordion-header" id="sample-question-accordion-content">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#sample-question-content" aria-expanded="${startOpen ? 'true' : ''}" aria-controls="sample-question-content">
             Example questions and prompts
           </button>
         </h2>
-        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+        <div id="sample-question-content" class="accordion-collapse ${startOpen ? 'show' : 'collapse'}" aria-labelledby="sample-question-content" data-bs-parent="#sample-question-accordion">
           <div class="accordion-body">
-            <ul class="nav nav-pills" id="user-visual-example-tab" role="tablist">
+            <ul class="nav nav-pills" id="example-question-selector" role="tablist">
               ${examplePrompts.map((examplePrompt, index) => (
                 html`
                   <li class="nav-item" role="presentation">
@@ -317,7 +332,7 @@ function SampleQuestionSelector() {
             </ul>
 
             <div class="tab-content pt-3">
-              ${SampleQuestionPreview()}
+              ${SampleQuestionPreview(startPrompt)}
               <button
                 id="copy-prompts"
                 type="button"
@@ -334,25 +349,27 @@ function SampleQuestionSelector() {
   `
 }
 
-function SampleQuestionPreview() {
+function SampleQuestionPreview(startPrompt: ExamplePrompt) {
+  // TODO: Immediately generate the starting prompt content
+
   return html`
     <div class="card shadow">
       <div class="card-header d-flex align-items-center">
         <span class="badge rounded-pill bg-success me-3">Try me!</span>
         <p id="question-preview-name" class="mb-0">
+          ${startPrompt.name}
         </p>
       </div>
       <div class="card-body">
         <p id="question-preview-title">
-          Suppose a ball is thrown from a level surface at a [angle]° angle with
-          a velocity of [velocity] m/s. How far will the ball travel?
+
         </p>
         <span class="input-group">
           <span class="input-group-text">
             <span>Dot product = </span>
           </span>
           <input
-            id="question-user-response"
+            id="question-preview-response"
             type="text"
             class="form-control"
           />
@@ -363,13 +380,13 @@ function SampleQuestionPreview() {
       </div>
       <div class="card-footer d-flex justify-content-end">
         <button
-          id="new-variant-button"
+          id="question-preview-new-variant-button"
           type="button"
           class="btn btn-primary me-2"
         >
           New variant
         </button>
-        <button id="grade-button" type="button" class="btn btn-primary">
+        <button id="question-preview-grade-button" type="button" class="btn btn-primary">
           Grade
         </button>
       </div>
