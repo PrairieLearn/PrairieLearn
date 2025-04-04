@@ -3613,6 +3613,11 @@ __metadata:
 "@prairielearn/marked-mathjax@workspace:^, @prairielearn/marked-mathjax@workspace:packages/marked-mathjax":
   version: 0.0.0-use.local
   resolution: "@prairielearn/marked-mathjax@workspace:packages/marked-mathjax"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    marked: "npm:^15.0.7"
+    tsx: "npm:^4.19.3"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
