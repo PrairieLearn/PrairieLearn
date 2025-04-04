@@ -416,3 +416,15 @@ df2.to_csv("PREFIX_all_submissions_no_params.csv", index=False)
 # while trimming the values in Params that are above the Excel limit
 df.to_excel("PREFIX_all_submissions.xlsx", index=False)
 ```
+
+## I have files that should be included both in the workspace and in the tests. How do I store these files to avoid duplication?
+
+In these cases, you can store your files in the `tests` directory for the question and reference them from the workspace by adding them to the `_workspace_files` list. For example, suppose we want to include `xyz.c` and `xyz.h` in both the workspace home folder, and in `/grade/tests` in the autograder. To do this, save these files to `[QUESTION DIRECTORY]/tests`, and in `server.py`, include the following lines:
+
+```python
+def generate(data):
+    data["params"]["_workspace_files"] = [
+        {"name": "xyz.h", "questionFile": "tests/xyz.h"},
+        {"name": "xyz.c", "questionFile": "tests/xyz.c"},
+    ]
+```
