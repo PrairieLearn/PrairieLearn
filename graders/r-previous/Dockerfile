@@ -1,7 +1,7 @@
 # Borrow the leg work done by the rocker project
 # c.f. https://github.com/rocker-org/rocker-versioned/tree/master/tidyverse
 FROM rocker/tidyverse:3.6.1
-ARG CACHEBUST=1
+ARG CACHEBUST=2025-04-04-17-34-59
 
 # Set a new label for the image
 LABEL org.label-schema.license="GPL-2.0" \
