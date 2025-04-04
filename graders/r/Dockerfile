@@ -32,49 +32,10 @@ ENV PYTHONIOENCODING=UTF-8
 # users to adapt and adjust the package list.  We also install sqlite3 to support the
 # SQL lectures. (Adding a duckdb binary may be an option too.)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
-        git \
-        pandoc \
-        sqlite3 \
-        sudo \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    && install.r bench \        
-        data.table \
-        devtools \
-        diffobj \
-        doparallel \
-        duckdb \
-        dygraphs \
-        flexdashboard \
-        foreach \
-        fs \
-        future.apply \
-        gapminder \
-        gh \
-        git2r \
-        igraph \
-        lahman \
-        lintr \
-        magick \
-        memoise \
-        microbenchmark \
-        nycflights13 \
-        palmerpenguins \
-        png \
-        profmem \
-        RcppArmadillo \
-        rex \
-        rsqlite \
-        runit \
-        shiny \
-        stringdist \
-        testthat \
-        tidyverse \
-        tinysnapshot \
-        tinytest \
-        ttdo \
-        unix \
-        xts \
+    && apt-get install -y --no-install-recommends curl git pandoc sqlite3 sudo \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && install.r bench data.table devtools diffobj doparallel duckdb dygraphs flexdashboard foreach fs futu apply gapminder gh git2r igraph lahman lintr magick memoise microbenchmark nycflights13 palmerpenguins png profmem RcppArmadillo rex rsqlite runit shiny stringdist testthat tidyverse tinysnapshot tinytest ttdo unix xts \
     && echo "options(diffobj.brightness=\"dark\")" >> /etc/R/Rprofile.site
 
 # Install visualTest from Mango
@@ -86,7 +47,7 @@ RUN install2.r --repos=NULL /r_autograder/plr \
     && rm -r /r_autograder/plr
 
 # Set up user ag
-RUN useradd ag \ 
+RUN useradd ag \
     && mkdir /home/ag \
     && chown ag:ag /home/ag \
     && echo "[user]" > /home/ag/.gitconfig \
