@@ -34,7 +34,7 @@ export const examplePrompts = [
     id: 'select-median-of-random-numbers',
     name: 'Median of random numbers',
     promptGeneral:
-      'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
+      'Write a multiple choice question asking the user to choose the median of an arbitrary length sequence of random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
     promptUserInput:
       'Each random number generated should be a potential answer to the multiple-choice question. Randomize the order of the numbers.',
     promptGrading: 'The correct answer is the median of the numbers.',
