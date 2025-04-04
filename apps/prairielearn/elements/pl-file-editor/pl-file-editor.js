@@ -322,9 +322,6 @@ window.PLFileEditor.prototype.preview = {
                   const foundMath = inputJax.findMath([src])?.find((math) => math.start?.n === 0);
                   if (foundMath) {
                     const raw = src.substring(0, foundMath.end.n);
-                    // The escape type will take care of Markdown-specific
-                    // characters (e.g., `_` or `*`). However HTML-specific
-                    // encoding still needs to be manually handled.
                     return {
                       type: 'math',
                       raw,
