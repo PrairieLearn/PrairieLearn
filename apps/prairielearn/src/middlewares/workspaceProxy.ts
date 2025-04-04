@@ -12,6 +12,8 @@ import { queryOneRowAsync, queryZeroOrOneRowAsync } from '@prairielearn/postgres
 import { config } from '../lib/config.js';
 import { LocalCache } from '../lib/local-cache.js';
 
+const WORKSPACE_CONTAINER_PATH_REGEXP = /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/;
+
 /**
  * Removes "sensitive" cookies from the request to avoid exposing them to
  * workspace hosts.
@@ -71,23 +73,34 @@ export function getStatusCode(err: any): number {
   }
 }
 
+function getRequestPath(req: express.Request): string {
+  // `req.originalUrl` won't be defined for websocket requests, but for
+  // non-websocket requests, `req.url` won't contain the full path. So we
+  // need to handle both.
+  return req.originalUrl ?? req.url;
+}
+
 export function makeWorkspaceProxyMiddleware() {
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   const workspaceProxyOptions: httpProxyMiddleware.Options<express.Request, express.Response> = {
     target: 'invalid',
     ws: true,
-    pathFilter: (path, req) => {
-      // `req.originalUrl` won't be defined for websocket requests, but for
-      // non-websocket requests, `req.url` won't contain the full path. So we
-      // need to handle both.
-      const url = req.originalUrl ?? req.url;
-      return !!url.match(/^\/pl\/workspace\/[0-9]+\/container\//);
+    pathFilter: (_path, req) => {
+      // The path provided to this function doesn't include the full path with
+      // the `/pl/workspace/<workspace_id>/container/` prefix, so we need to
+      // reconstruct it from the request.
+      //
+      const path = getRequestPath(req);
+      return WORKSPACE_CONTAINER_PATH_REGEXP.test(path);
     },
-    pathRewrite: async (path, req) => {
+    pathRewrite: async (_path, req) => {
+      // The path provided to this function doesn't include the full path with
+      // the `/pl/workspace/<workspace_id>/container/` prefix, so we need to
+      // reconstruct it from the request.
+      const path = getRequestPath(req);
+
       try {
-        const match = (req.originalUrl ?? req.url).match(
-          /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
-        );
+        const match = path.match(WORKSPACE_CONTAINER_PATH_REGEXP);
         if (!match) throw new Error(`Could not match path: ${path}`);
         const workspace_id = parseInt(match[1]);
         let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);
@@ -113,9 +126,9 @@ export function makeWorkspaceProxyMiddleware() {
       }
     },
     router: async (req) => {
-      const url = req.originalUrl ?? req.url;
-      const match = url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
-      if (!match) throw new Error(`Could not match URL: ${url}`);
+      const path = getRequestPath(req);
+      const match = path.match(WORKSPACE_CONTAINER_PATH_REGEXP);
+      if (!match) throw new Error(`Could not match path: ${path}`);
 
       const workspace_id = match[1];
       const result = await queryZeroOrOneRowAsync(
