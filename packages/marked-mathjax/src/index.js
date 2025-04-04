@@ -1,9 +1,7 @@
-/* global MathJax */
-
 const startMath = /(\$|\\\(|\\\[)/;
-const mathjaxInput = MathJax.startup.getInputJax() ?? [];
 
-export function addMathjaxExtension(marked) {
+export function addMathjaxExtension(marked, MathJax) {
+  const mathjaxInput = MathJax.startup.getInputJax() ?? [];
   marked.use({
     renderer: {
       // Any leaf text token (without child tokens) that is not math

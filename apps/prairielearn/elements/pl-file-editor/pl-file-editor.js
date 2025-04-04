@@ -296,7 +296,7 @@ window.PLFileEditor.prototype.preview = {
     return async (value) => {
       if (marked == null) {
         marked = (await import('marked')).marked;
-        (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked);
+        (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
       }
       return await marked.parse(value);
     };
