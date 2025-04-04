@@ -233,7 +233,6 @@ nav:
       - 'Building question elements': 'devElements.md'
       - 'Building element extensions': 'elementExtensions.md'
       - 'Code execution': 'codeExecution.md'
-      - 'Docker packaging': 'docker.md'
       - 'Contributing': 'contributing.md'
   - Administrators:
       - 'SAML SSO configuration': 'saml.md'
