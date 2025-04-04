@@ -1,5 +1,6 @@
 FROM prairielearn/workspace-vscode-base:latest
 
+ARG CACHEBUST=1
 # Make sure to build using bash as the shell so that conda/mamba hooks will
 # work during installation.
 SHELL ["/bin/bash", "-c"]

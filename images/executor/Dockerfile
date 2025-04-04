@@ -1,4 +1,5 @@
 FROM prairielearn/prairielearn:latest
+ARG CACHEBUST=1
 
 WORKDIR /PrairieLearn/
 

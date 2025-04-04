@@ -1,5 +1,6 @@
 FROM ubuntu:24.04
 
+ARG CACHEBUST=1
 ENV DEBIAN_FRONTEND noninteractive
 COPY pre-install.sh /pre-install.sh
 RUN /bin/bash /pre-install.sh

@@ -1,4 +1,5 @@
 FROM amazonlinux:2023
+ARG CACHEBUST=1
 
 COPY plbase-install.sh python-requirements.txt /
 

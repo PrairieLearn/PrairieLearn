@@ -1,7 +1,7 @@
 FROM ubuntu:24.04
-
 LABEL maintainer="jonatan@yorku.ca"
 
+ARG CACHEBUST=1
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \

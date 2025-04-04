@@ -1,5 +1,6 @@
 FROM amazonlinux:2023
 
+ARG CACHEBUST=1
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
 ENV LANG=en_US.UTF-8

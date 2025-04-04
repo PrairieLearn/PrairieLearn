@@ -22,6 +22,7 @@
 
 FROM rocker/r2u:24.04
 
+ARG CACHEBUST=1
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
 
