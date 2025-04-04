@@ -41,6 +41,7 @@
     "@prairielearn/html": "workspace:^",
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/markdown": "workspace:^",
+    "@prairielearn/marked-mathjax": "workspace:^",
     "@prairielearn/migrations": "workspace:^",
     "@prairielearn/named-locks": "workspace:^",
     "@prairielearn/node-metrics": "workspace:^",

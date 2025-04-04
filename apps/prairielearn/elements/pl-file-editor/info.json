@@ -12,6 +12,7 @@
   "dynamicDependencies": {
     "nodeModulesScripts": {
       "marked": "marked/lib/marked.esm.js",
+      "@prairielearn/marked-mathjax": "@prairielearn/marked-mathjax/src/index.js",
       "@viz-js/viz": "@viz-js/viz/lib/viz-standalone.mjs"
     }
   }

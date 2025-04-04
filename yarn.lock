@@ -3610,6 +3610,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/marked-mathjax@workspace:^, @prairielearn/marked-mathjax@workspace:packages/marked-mathjax":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/marked-mathjax@workspace:packages/marked-mathjax"
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/migrations@workspace:^, @prairielearn/migrations@workspace:packages/migrations":
   version: 0.0.0-use.local
   resolution: "@prairielearn/migrations@workspace:packages/migrations"
@@ -3801,6 +3807,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/markdown": "workspace:^"
+    "@prairielearn/marked-mathjax": "workspace:^"
     "@prairielearn/migrations": "workspace:^"
     "@prairielearn/named-locks": "workspace:^"
     "@prairielearn/node-metrics": "workspace:^"
