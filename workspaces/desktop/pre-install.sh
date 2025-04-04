@@ -9,9 +9,7 @@ apt-get install -y man-db unminimize
 yes | unminimize
 
 # create base system
-apt-get install xfce4 x11vnc novnc xvfb dbus-x11 wget nodejs npm gosu python3 apt-rdepends -y --no-install-recommends
-
-apt-rdepends node-for-in
+apt-get install xfce4 x11vnc novnc xvfb dbus-x11 wget nodejs npm gosu python3 -y --no-install-recommends
 
 groupadd -g 1001 prairielearner
 useradd -u 1001 -g 1001 -m -d /home/prairielearner -s /bin/bash prairielearner
