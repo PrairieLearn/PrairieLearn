@@ -12,7 +12,7 @@ export function addMathjaxExtension(marked: Marked, MathJax: any) {
       // The text input is already escaped by marked itself.
       text: (token) =>
         'tokens' in token && token.tokens
-          ? false
+          ? false // If there are children, let default renderer handle it.
           : `<span class="mathjax_ignore">${token.text}</span>`,
     },
     extensions: [
