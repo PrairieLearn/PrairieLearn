@@ -1,6 +1,6 @@
 public class Square {
 
-    public static long square(long n) {
+    public static int square(int n) {
         // Compute the square of n
     }
 }
