@@ -1,8 +1,8 @@
 # Borrow the leg work done by the rocker project
 # c.f. https://github.com/rocker-org/rocker-versioned/tree/master/tidyverse
 FROM rocker/tidyverse:3.6.1
-
 ARG CACHEBUST=1
+
 # Set a new label for the image
 LABEL org.label-schema.license="GPL-2.0" \
       org.label-schema.vcs-url="https://github.com/PrairieLearn/PrairieLearn" \
