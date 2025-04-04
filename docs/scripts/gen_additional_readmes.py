@@ -14,8 +14,8 @@ ROOT = Path.cwd()
 SOURCE_ROOT = "https://github.com/PrairieLearn/PrairieLearn/blob/master/"
 
 # Any links need to be replaced with a link to the file on GitHub
-relative_regex = r"\[(.*?)\]\((\..*?)\)"
-relative_regex_dir = r"\[(.*?)\]\((\..*?\/)\)"
+relative_regex = r"[^!]\[(.*?)\]\((\..*?)\)"
+relative_regex_dir = r"[^!]\[(.*?)\]\((\..*?\/)\)"
 relative_regex_img = r"!\[(.*?)\]\((\..*?)\)"
 readmes_mapping = [
     SimpleNamespace(**v) for v in mkdocs_gen_files.config.extra["additional_readmes"]
@@ -25,19 +25,15 @@ doc_site_url = mkdocs_gen_files.config.site_url + "/en/latest/"
 
 def build_readme_nav() -> None:
     nav = mkdocs_gen_files.Nav()
-    robot_notice = """
-!!! note
-    This file was spliced into the documentation.
-""".strip()
     for mapping in readmes_mapping:
         base = Path(mapping.src).absolute()
         doc_path = Path(mapping.dest)
+        title_lookup = {}
         for path in base.rglob("README.md"):
             path_relative_to_base = path.relative_to(base)
             path_relative_to_root = path.relative_to(ROOT)
 
             doc_readme_path = doc_path / path_relative_to_base
-            doc_readme_path.parent.mkdir(parents=True, exist_ok=True)
             with mkdocs_gen_files.open(doc_readme_path, "w") as f:
                 contents = path.read_text()
                 # Rewrite links to directories that point to a README file.
@@ -52,11 +48,22 @@ def build_readme_nav() -> None:
 
                 # Rewrite links to images and files to point to the GitHub repository
                 # and add a "raw=true" query parameter to the image links.
-                contents = re.sub(
-                    relative_regex_img,
-                    rf"![\1]({SOURCE_ROOT}{path_relative_to_root.parent}/\2?raw=true)",
-                    contents,
-                )
+                img_matches = re.findall(relative_regex_img, contents)
+                for [label, match] in img_matches:
+                    # If this is a image within current directory, we can write the image to the directory
+                    # and link to it. Otherwise, we need to link to the GitHub repository.
+                    img_path = doc_readme_path.parent / match
+                    if match.startswith("./"):
+                        with (
+                            open(path.parent / match, "rb") as img_file_in,
+                            mkdocs_gen_files.open(img_path, "wb") as img_file,
+                        ):
+                            img_file.write(img_file_in.read())
+                    else:
+                        contents = contents.replace(
+                            f"![{label}]({match})",
+                            f"![{label}]({SOURCE_ROOT}{path_relative_to_root.parent}/{match}?raw=true)",
+                        )
 
                 file_matches = re.findall(relative_regex, contents)
                 for [label, match] in file_matches:
@@ -69,13 +76,28 @@ def build_readme_nav() -> None:
                         )
 
                 header, body = contents.split("\n", 1)
+                header_text = header.split("#")[-1].strip()
                 print(header, file=f)
-                print(robot_notice, file=f)
                 print(body, file=f)
 
             if path_relative_to_base.parent.as_posix() == ".":
                 continue
-            nav[path_relative_to_base.parent.parts] = path_relative_to_base.as_posix()
+
+            # Note: this code is a bit of a hack to get the title of the parent directory
+            # to show up in the navigation. It relies on the fact that the parent directory is traversed before child directories.
+            title_lookup[path_relative_to_base.parent.parts] = header_text
+            directory = path_relative_to_base.parent
+            parent_directory_parts = directory.parent.parts
+            nav_title = (
+                *tuple(
+                    title_lookup.get(
+                        parent_directory_parts[: i + 1], parent_directory_parts[i]
+                    )
+                    for i in range(len(parent_directory_parts))
+                ),
+                header_text,
+            )
+            nav[nav_title] = path_relative_to_base.as_posix()
             mkdocs_gen_files.set_edit_path(
                 doc_readme_path, ".." / path_relative_to_root
             )
