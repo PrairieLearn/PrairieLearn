@@ -78,5 +78,5 @@ router.get(() => {
 For production usage, assets must be precompiled with the `compiled-assets build` command. Note that the source directory and build directory should match the values provided to `assets.init`.
 
 ```sh
-compiled-assets build ./assets ./public/build
+$ compiled-assets build ./assets ./public/build
 ```
