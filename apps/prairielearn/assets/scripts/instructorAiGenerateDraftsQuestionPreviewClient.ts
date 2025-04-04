@@ -274,5 +274,3 @@ function generateDotProductVariant(): SampleQuestionVariantInfo {
         answerUnits: 'm',
     }
   }
-
-
