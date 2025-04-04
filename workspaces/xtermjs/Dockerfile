@@ -8,7 +8,8 @@ RUN apt-get update && \
 COPY src /xterm
 
 WORKDIR /xterm
-RUN yarn install --frozen-lockfile && yarn cache clean
+RUN yarn install --frozen-lockfile && \
+  yarn cache clean
 
 RUN useradd -m student
 ENTRYPOINT ["node", "server.js", "-w", "/home/student"]
