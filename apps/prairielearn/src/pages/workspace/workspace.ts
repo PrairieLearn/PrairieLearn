@@ -57,8 +57,8 @@ router.get(
         navTitle,
         navTitleHref,
         showLogs:
-          res.locals.authz_data.has_course_instance_permission_view ||
-          res.locals.authz_data.has_course_permission_preview,
+          res.locals.authz_data?.has_course_instance_permission_view ||
+          res.locals.authz_data?.has_course_permission_preview,
         heartbeatIntervalSec: config.workspaceHeartbeatIntervalSec,
         visibilityTimeoutSec: config.workspaceVisibilityTimeoutSec,
         socketToken: generateSignedToken(
