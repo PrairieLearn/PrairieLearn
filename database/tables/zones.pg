@@ -3,6 +3,7 @@ columns
     assessment_id: bigint not null
     best_questions: integer
     id: bigint not null default nextval('zones_id_seq'::regclass)
+    json_grade_rate_minutes: double precision
     max_points: double precision
     number: integer
     number_choose: integer
