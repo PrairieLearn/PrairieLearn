@@ -24,7 +24,14 @@ WITH
       TRUE AS can_open_course,
       coalesce(
         jsonb_agg(
-          jsonb_build_object('long_name', ci.long_name, 'id', ci.id)
+          jsonb_build_object(
+            'long_name',
+            ci.long_name,
+            'id',
+            ci.id,
+            'expired',
+            FALSE -- Example courses never expire
+          )
           ORDER BY
             d.start_date DESC NULLS LAST,
             d.end_date DESC NULLS LAST,
@@ -60,7 +67,14 @@ WITH
     SELECT
       c.id,
       jsonb_agg(
-        jsonb_build_object('long_name', ci.long_name, 'id', ci.id)
+        jsonb_build_object(
+          'long_name',
+          ci.long_name,
+          'id',
+          ci.id,
+          'expired',
+          coalesce(d.expired, TRUE)
+        )
         ORDER BY
           d.start_date DESC NULLS LAST,
           d.end_date DESC NULLS LAST,
@@ -83,7 +97,12 @@ WITH
       LATERAL (
         SELECT
           min(ar.start_date) AS start_date,
-          max(ar.end_date) AS end_date
+          max(ar.end_date) AS end_date,
+          bool_and(
+            ar.end_date IS NOT NULL
+            -- Tolerance of 1 month to allow instructors to easily see recently expired courses
+            AND ar.end_date < now() - interval '1 month'
+          ) AS expired
         FROM
           course_instance_access_rules AS ar
         WHERE
