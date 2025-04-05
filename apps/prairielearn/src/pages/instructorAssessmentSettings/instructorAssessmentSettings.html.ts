@@ -1,11 +1,11 @@
-import { html } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import { type Assessment, type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
@@ -13,6 +13,7 @@ export function InstructorAssessmentSettings({
   assessmentGHLink,
   tids,
   studentLink,
+  publicLink,
   infoAssessmentPath,
   assessmentSets,
   assessmentModules,
@@ -23,6 +24,7 @@ export function InstructorAssessmentSettings({
   assessmentGHLink: string | null;
   tids: string[];
   studentLink: string;
+  publicLink: string;
   infoAssessmentPath: string;
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
@@ -191,6 +193,8 @@ export function InstructorAssessmentSettings({
                 The link that students will use to access this assessment.
               </small>
             </div>
+            <h2 class="h4">Sharing</h2>
+            ${AssessmentSharing({ assessment: resLocals.assessment, publicLink })}
             ${resLocals.authz_data.has_course_permission_view
               ? canEdit
                 ? html`
@@ -280,4 +284,64 @@ export function InstructorAssessmentSettings({
       </div>
     `,
   });
+}
+
+function AssessmentSharing({
+  assessment,
+  publicLink,
+}: {
+  assessment: Assessment;
+  publicLink: string;
+}) {
+  if (!assessment.share_source_publicly) {
+    return html`<p>This assessment is not being shared.</p>`;
+  }
+
+  const details: HtmlValue[] = [];
+
+  if (assessment.share_source_publicly) {
+    details.push(html`
+      <p>
+        <span class="badge color-green3 me-1">Public source</span>
+        This assessment's source is publicly shared.
+      </p>
+      <div>
+        <label for="publicLink">Public Link</label>
+        <div class="input-group">
+          <input
+            type="text"
+            class="form-control"
+            id="publicLink"
+            name="publicLink"
+            value="${publicLink}"
+            disabled
+          />
+          <div>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary btn-copy"
+              data-clipboard-text="${publicLink}"
+              aria-label="Copy public link"
+            >
+              <i class="far fa-clipboard"></i>
+            </button>
+            <button
+              type="button"
+              title="Public Link QR Code"
+              aria-label="Public Link QR Code"
+              class="btn btn-sm btn-outline-secondary js-qrcode-button"
+              data-qr-code-content="${publicLink}"
+            >
+              <i class="fas fa-qrcode"></i>
+            </button>
+          </div>
+        </div>
+        <small class="form-text text-muted">
+          The link that other instructors can use to view this assessment.
+        </small>
+      </div>
+    `);
+  }
+
+  return details;
 }
