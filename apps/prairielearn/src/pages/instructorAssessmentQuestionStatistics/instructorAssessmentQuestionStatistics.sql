@@ -27,7 +27,6 @@ SELECT
   q.qid,
   q.title AS question_title,
   row_to_json(top) AS topic,
-  q.id AS question_id,
   (
     SELECT
       COALESCE(JSONB_AGG(tg.name), '[]'::jsonb) AS tags

@@ -84,7 +84,7 @@ router.get(
             record.assessment_question_number,
             record.qid,
             record.question_title,
-            record.topic.name,
+            record.question_topic,
             record.question_tags,
             record.mean_question_score,
             record.median_question_score,

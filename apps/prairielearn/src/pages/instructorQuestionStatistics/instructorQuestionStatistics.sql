@@ -9,7 +9,7 @@ SELECT
   a.course_instance_id,
   q.qid,
   q.title AS question_title,
-  row_to_json(top) AS topic,
+  top.name AS question_topic,
   (
     SELECT
       COALESCE(JSONB_AGG(tg.name), '[]'::jsonb) AS tags
