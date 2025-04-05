@@ -6,6 +6,7 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
+import { type ExamplePrompt, examplePrompts } from '../../../lib/aiGeneratedQuestionSamples.js';
 import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
 
 // We show all draft questions, even those without associated metadata, because we
@@ -18,39 +19,6 @@ export const DraftMetadataWithQidSchema = z.object({
   uid: z.string().nullable(),
 });
 export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
-
-const examplePrompts = [
-  {
-    id: 'Select median of 5 random numbers',
-    promptGeneral:
-      'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
-    promptUserInput:
-      'Each random number generated should be a potential answer to the multiple-choice question. Randomize the order of the numbers.',
-    promptGrading: 'The correct answer is the median of the numbers.',
-  },
-  {
-    id: 'Multiply random integers',
-    promptGeneral:
-      'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B.',
-    promptUserInput: 'Provide an integer input box for the user to enter the product.',
-    promptGrading: 'The correct answer is the product of A and B.',
-  },
-  {
-    id: 'Answer to Ultimate Question',
-    promptGeneral:
-      'Write a question asking "What Is The Answer to the Ultimate Question of Life, the Universe, and Everything?".',
-    promptUserInput: 'Provide an integer box for the user to answer.',
-    promptGrading: 'The correct answer is 42.',
-  },
-  {
-    id: 'Calculate Projectile Distance',
-    promptGeneral:
-      'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
-    promptUserInput: 'Provide a numerical input box for the user to enter an answer.',
-    promptGrading:
-      'The correct answer is the distance that the projectile will travel, using the corresponding formula.',
-  },
-];
 
 export function InstructorAIGenerateDrafts({
   resLocals,
@@ -66,6 +34,7 @@ export function InstructorAIGenerateDrafts({
     pageTitle: resLocals.pageTitle,
     headContent: html`
       ${compiledScriptTag('instructorAiGenerateDraftsClient.ts')}
+      ${compiledScriptTag('instructorAiGenerateDraftsQuestionPreviewClient.ts')}
       <style>
         .reveal-fade {
           position: absolute;
@@ -111,6 +80,11 @@ export function InstructorAIGenerateDrafts({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="generate_question" />
 
+            ${SampleQuestionSelector({
+              startPrompt: examplePrompts[0],
+              startOpen: true,
+            })}
+
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
                 Give a high-level overview of the question. What internal parameters need to be
@@ -122,13 +96,8 @@ export function InstructorAIGenerateDrafts({
                 class="form-control js-textarea-autosize"
                 style="resize: none;"
               ></textarea>
-              <div class="form-text form-muted">
-                <em>
-                  Example: A toy car is pushed off a table with height h at speed v0. Assume
-                  acceleration due to gravity as 9.81 m/s^2. H is a number with 1 decimal digit
-                  selected at random between 1 and 2 meters. V0 is a an integer between 1 and 4 m/s.
-                  How long does it take for the car to reach the ground?
-                </em>
+              <div id="user-prompt-llm-example" class="form-text form-muted">
+                <em> Example: ${examplePrompts[0].promptGeneral} </em>
               </div>
             </div>
 
@@ -144,11 +113,8 @@ export function InstructorAIGenerateDrafts({
                   class="form-control js-textarea-autosize"
                   style="resize: none;"
                 ></textarea>
-                <div class="form-text form-muted">
-                  <em>
-                    Example: students should enter the solution using a decimal number. The answer
-                    should be in seconds.
-                  </em>
+                <div id="user-prompt-llm-user-input-example" class="form-text form-muted">
+                  <em> Example: ${examplePrompts[0].promptUserInput} </em>
                 </div>
               </div>
 
@@ -162,42 +128,10 @@ export function InstructorAIGenerateDrafts({
                   class="form-control js-textarea-autosize"
                   style="resize: none;"
                 ></textarea>
-                <div class="form-text form-muted">
-                  <em> Example: the answer is computed as sqrt(2 * h / g) where g = 9.81 m/s^2 </em>
+                <div id="user-prompt-llm-grading-example" class="form-text form-muted">
+                  <em> Example: ${examplePrompts[0].promptGrading} </em>
                 </div>
               </div>
-
-              ${
-                // We think this will mostly be useful in local dev or for
-                // global admins who will want to iterate rapidly and don't
-                // want to retype a whole prompt each time. For actual users,
-                // we think this will mostly be confusing if we show it.
-                resLocals.is_administrator
-                  ? html`
-                      <hr />
-
-                      <div class="mb-3">
-                        <label for="user-prompt-example" class="form-label">
-                          Or choose an example prompt:
-                        </label>
-                        <select id="user-prompt-example" class="form-select">
-                          <option value=""></option>
-                          ${examplePrompts.map(
-                            (question) =>
-                              html`<option
-                                value="${question.id}"
-                                data-prompt-general="${question.promptGeneral}"
-                                data-prompt-user-input="${question.promptUserInput}"
-                                data-prompt-grading="${question.promptGrading}"
-                              >
-                                ${question.id}
-                              </option>`,
-                          )}
-                        </select>
-                      </div>
-                    `
-                  : ''
-              }
 
               <button type="submit" class="btn btn-primary w-100">
                 <span
@@ -285,6 +219,108 @@ export function InstructorAIGenerateDrafts({
       ${DeleteQuestionsModal({ csrfToken: resLocals.__csrf_token })}
     `,
   });
+}
+
+function SampleQuestionSelector({
+  startPrompt,
+  startOpen,
+}: {
+  startPrompt: ExamplePrompt;
+  startOpen: boolean;
+}) {
+  return html`
+    <div class="accordion my-3" id="sample-question-accordion">
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="sample-question-accordion-content">
+          <button
+            class="accordion-button"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#sample-question-content"
+            aria-expanded="${startOpen ? 'true' : ''}"
+            aria-controls="sample-question-content"
+          >
+            Example questions and prompts
+          </button>
+        </h2>
+        <div
+          id="sample-question-content"
+          class="accordion-collapse ${startOpen ? 'show' : 'collapse'}"
+          aria-labelledby="sample-question-content"
+          data-bs-parent="#sample-question-accordion"
+        >
+          <div class="accordion-body">
+            <ul class="nav nav-pills" id="example-question-selector" role="tablist">
+              ${examplePrompts.map(
+                (examplePrompt, index) => html`
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link ${index === 0 ? 'active' : ''}"
+                      id="${examplePrompt.id}-pill"
+                      data-bs-toggle="pill"
+                      data-bs-target="#${examplePrompt.id}"
+                      type="button"
+                      role="tab"
+                      aria-controls="home"
+                      aria-selected="${index === 0 ? 'true' : ''}"
+                      data-id="${examplePrompt.id}"
+                      data-name="${examplePrompt.name}"
+                      data-prompt-general="${examplePrompt.promptGeneral}"
+                      data-prompt-user-input="${examplePrompt.promptUserInput}"
+                      data-prompt-grading="${examplePrompt.promptGrading}"
+                    >
+                      ${examplePrompt.name}
+                    </button>
+                  </li>
+                `,
+              )}
+            </ul>
+
+            <div class="tab-content pt-3">
+              ${SampleQuestionPreview(startPrompt)}
+              <button id="copy-prompts" type="button" class="btn btn-primary me-2 mt-3">
+                <i class="fa fa-clone" aria-hidden="true"></i>
+                Copy prompts
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function SampleQuestionPreview(startPrompt: ExamplePrompt) {
+  // TODO: Immediately generate the starting prompt content
+  return html`
+    <div class="card shadow">
+      <div class="card-header d-flex align-items-center">
+        <span class="badge rounded-pill bg-success me-3">Try me!</span>
+        <p id="question-preview-name" class="mb-0">${startPrompt.name}</p>
+      </div>
+      <div class="card-body">
+        <div id="question-content"></div>
+        <span class="input-group">
+          <span id="question-preview-answer-name-container" class="input-group-text">
+            <span id="question-preview-answer-name">${startPrompt.answerName ? `${startPrompt.answerName} = ` : ''}</span>
+          </span>
+          <input id="question-preview-response" type="text" class="form-control" />
+          <span id="grade-answer-units-feedback-container" class="input-group-text gap-3 ${!startPrompt.answerUnits ? 'd-none' : ''}">
+            <span id="grade-answer-units">${startPrompt.answerUnits}</span>
+            <span id="grade-answer-feedback" class="badge bg-success">100%</span>
+          </span>
+        </span>
+      </div>
+      <div class="card-footer d-flex justify-content-end">
+        <button id="question-preview-new-variant-button" type="button" class="btn btn-primary me-2">
+          New variant
+        </button>
+        <button id="question-preview-grade-button" type="button" class="btn btn-primary">
+          Grade
+        </button>
+      </div>
+    </div>
+  `;
 }
 
 export function GenerationFailure({
