@@ -4,7 +4,6 @@
     "nodeModulesScripts": [
       "ace-builds/src-min-noconflict/ace.js",
       "ace-builds/src-min-noconflict/ext-themelist.js",
-      "showdown/dist/showdown.js",
       "dompurify/dist/purify.min.js"
     ],
     "elementScripts": ["pl-file-editor.js"],
@@ -12,6 +11,8 @@
   },
   "dynamicDependencies": {
     "nodeModulesScripts": {
+      "marked": "marked/lib/marked.esm.js",
+      "@prairielearn/marked-mathjax": "@prairielearn/marked-mathjax/dist/index.js",
       "@viz-js/viz": "@viz-js/viz/lib/viz-standalone.mjs"
     }
   }
