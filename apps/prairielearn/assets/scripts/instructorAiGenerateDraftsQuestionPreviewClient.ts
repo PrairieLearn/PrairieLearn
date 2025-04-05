@@ -1,13 +1,10 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-import { examplePrompts } from '../../src/ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
+import {examplePrompts} from '../../src/lib/aiGeneratedQuestionSamples.js'
 
 interface SampleQuestionVariantInfo {
   question: string;
-  answerName?: string;
-  answerUnits?: string;
   correctAnswer: string;
-  answerFormat: 'multiple-choice' | 'text';
   options?: string[];
 }
 
@@ -18,19 +15,22 @@ onDocumentReady(() => {
   const questionPreviewName = document.querySelector(
     '#question-preview-name',
   ) as HTMLParagraphElement;
-  const questionPreviewTitle = document.querySelector(
-    '#question-preview-title',
-  ) as HTMLInputElement;
+  const questionContent = document.querySelector(
+    '#question-content',
+  ) as HTMLDivElement;
   const gradeButton = document.querySelector('#question-preview-grade-button') as HTMLButtonElement;
   const questionUserResponse = document.querySelector(
     '#question-preview-response',
   ) as HTMLInputElement;
-  const gradeResponse = document.querySelector('#grade-response') as HTMLSpanElement;
-  const gradeResponseBadge = gradeResponse.querySelector('.badge') as HTMLSpanElement;
 
   const exampleQuestionSelector = document.querySelector(
     '#example-question-selector',
   ) as HTMLSelectElement;
+  const questionPreviewAnswerName = document.querySelector('#question-preview-answer-name') as HTMLSpanElement;
+  const questionPreviewAnswerNameContainer = document.querySelector('#question-preview-answer-name-container') as HTMLSpanElement;
+  const questionPreviewAnswerUnitsFeedbackContainer = document.querySelector('#grade-answer-units-feedback-container') as HTMLSpanElement;
+  const questionPreviewAnswerUnits = document.querySelector('#grade-answer-units') as HTMLSpanElement;
+  const questionPreviewAnswerFeedback = document.querySelector('#grade-answer-feedback') as HTMLSpanElement;
 
   const copyPromptsButton = document.querySelector('#copy-prompts');
 
@@ -42,10 +42,7 @@ onDocumentReady(() => {
 
     // Find the selected sample question tab
     const selectedTab = exampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
-    const selection = selectedTab.dataset;
-
-    // Set the preview question name
-    questionPreviewName.innerHTML = selection.name ?? '';
+    const selection = selectedTab.dataset;;
 
     // Set the prompt input values based on the selected question tab
     setInputValue('#user-prompt-llm', selection.promptGeneral ?? '');
@@ -56,17 +53,25 @@ onDocumentReady(() => {
   function setGrade(state: 'correct' | 'incorrect' | 'no-grade') {
     switch (state) {
       case 'correct':
-        gradeResponse.className = 'input-group-text';
-        gradeResponseBadge.className = 'badge bg-success';
-        gradeResponseBadge.textContent = '100%';
+        questionPreviewAnswerUnitsFeedbackContainer.className = 'input-group-text';
+        if (questionPreviewAnswerUnits.innerHTML !== '') {
+          questionPreviewAnswerUnits.className = 'me-2';
+        }
+        questionPreviewAnswerFeedback.className = 'badge bg-success';
+        questionPreviewAnswerFeedback.textContent = '100%';
         break;
       case 'incorrect':
-        gradeResponse.className = 'input-group-text';
-        gradeResponseBadge.className = 'badge bg-danger';
-        gradeResponseBadge.textContent = '0%';
+        questionPreviewAnswerUnitsFeedbackContainer.className = 'input-group-text';
+        if (questionPreviewAnswerUnits.innerHTML !== '') {
+          questionPreviewAnswerUnits.className = 'me-2';
+        }
+        questionPreviewAnswerFeedback.className = 'badge bg-danger';
+        questionPreviewAnswerFeedback.textContent = '0%';
         break;
       case 'no-grade':
-        gradeResponse.className = 'input-group-text d-none';
+        questionPreviewAnswerFeedback.className = 'input-group-text d-none';
+        questionPreviewAnswerUnits.className = '';
+        
     }
   }
 
@@ -100,17 +105,17 @@ onDocumentReady(() => {
       default:
         variant = {
           question: '',
-          answerName: '',
           correctAnswer: '',
-          answerFormat: 'multiple-choice',
         };
     }
+
+    console.log('variant', variant);
 
     // Clear the user response field
     questionUserResponse.value = '';
 
     // Set the question content to that of the variant
-    questionPreviewTitle.value = variant.question;
+    questionContent.innerHTML = variant.question;
 
     // Store the answer in the grade button
     gradeButton.dataset.answer = variant.correctAnswer;
@@ -120,6 +125,27 @@ onDocumentReady(() => {
     // Update the examples
     const examplePrompt = examplePrompts.find((examplePrompt) => examplePrompt.id === id);
     if (examplePrompt) {
+      // Set question preview name
+      questionPreviewName.innerHTML = examplePrompt.name;
+
+      // Update the answer name
+      if (examplePrompt.answerName) {
+        questionPreviewAnswerNameContainer.className = 'input-group-text';
+        questionPreviewAnswerName.innerHTML = `${examplePrompt.answerName} = `;
+      } else {
+        questionPreviewAnswerNameContainer.className = 'input-group-text d-none';
+        questionPreviewAnswerName.innerHTML = '';
+      }
+
+      // Update the answer units
+      if (examplePrompt.answerUnits) {
+        questionPreviewAnswerUnitsFeedbackContainer.className = 'input-group-text';
+        questionPreviewAnswerUnits.innerHTML = examplePrompt.answerUnits;
+      } else {
+        questionPreviewAnswerUnitsFeedbackContainer.className = 'input-group-text d-none';
+        questionPreviewAnswerUnits.innerHTML = '';
+      }
+ 
       setTextValue('#user-prompt-llm-example', `Example: ${examplePrompt.promptGeneral ?? ''}`);
       setTextValue(
         '#user-prompt-llm-user-input-example',
@@ -144,12 +170,28 @@ onDocumentReady(() => {
   });
 
   // Generate a new variant when the example question tab is changed
-
   exampleQuestionSelector?.addEventListener('shown.bs.tab', async (event) => {
     const newTab = event.target as HTMLAnchorElement;
     const selection = newTab.dataset;
     if (selection.id) {
       generateSampleQuestionVariant(selection.id);
+    }
+  });
+
+  // Grade the question when the grade button is clicked
+  gradeButton?.addEventListener('click', () => {
+    const selectedTab = exampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
+    if (selectedTab.dataset.id) {
+      const response = questionUserResponse.value;
+      const answer = gradeButton.dataset.answer;
+
+      console.log('response', response, answer);
+
+      if (response === answer) {
+        setGrade('correct');
+      } else {
+        setGrade('incorrect');
+      }
     }
   });
 });
@@ -183,9 +225,7 @@ function generateDotProductVariant(): SampleQuestionVariantInfo {
                 Calculate the dot product u • v.
             </p>
         `,
-    answerName: 'Dot Product',
     correctAnswer: dotProduct.toString(),
-    answerFormat: 'text',
   };
 }
 
@@ -195,7 +235,7 @@ function generateMedianVariant(): SampleQuestionVariantInfo {
 
   const randomArray = Array.from({ length: numberOfItems }, () => Math.floor(Math.random() * 100));
 
-  const sortedArray = randomArray.sort();
+  const sortedArray = randomArray.sort((a, b) => a - b);  
   const middleIndex = Math.floor(sortedArray.length / 2);
   let median;
   if (sortedArray.length % 2 === 0) {
@@ -210,18 +250,14 @@ function generateMedianVariant(): SampleQuestionVariantInfo {
             Select the median of the following numbers: ${randomArray.map((num) => num.toString()).join(', ')}
         </p>
         `,
-    answerName: 'Median',
     correctAnswer: median.toString(),
-    answerFormat: 'text',
   };
 }
 
 function generateBSTVariant(): SampleQuestionVariantInfo {
   return {
     question: '',
-    answerName: '',
     correctAnswer: '',
-    answerFormat: 'multiple-choice',
   };
 }
 
@@ -247,12 +283,10 @@ function generateBitShiftingVariant(): SampleQuestionVariantInfo {
                 Perform a logical left shift by ${numPositions} on the bit string.
             </p>
         `,
-    answerName: 'Bit String',
     correctAnswer: shiftedNumber
       .toString(2)
       .padStart(bitLength, '0')
       .slice(shiftAmount, shiftAmount + bitLength),
-    answerFormat: 'text',
   };
 }
 
@@ -287,9 +321,6 @@ function generateProjectileDistanceVariant(): SampleQuestionVariantInfo {
                 A projectile is launched at an angle of ${launchAngle.toFixed(2)} with an initial velocity of ${initialVelocity.toFixed(2)} m/s. Assuming no wind resistance, calculate how far the projectile will travel horizontally.
             </p>
         `,
-    answerName: 'Horizontal Distance',
-    correctAnswer: horizontalDisplacement.toString(),
-    answerFormat: 'text',
-    answerUnits: 'm',
+    correctAnswer: horizontalDisplacement.toFixed(2),
   };
 }

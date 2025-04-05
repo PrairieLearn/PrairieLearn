@@ -6,6 +6,7 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
+import { type ExamplePrompt, examplePrompts } from '../../../lib/aiGeneratedQuestionSamples.js';
 import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
 
 // We show all draft questions, even those without associated metadata, because we
@@ -18,63 +19,6 @@ export const DraftMetadataWithQidSchema = z.object({
   uid: z.string().nullable(),
 });
 export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
-
-interface ExamplePrompt {
-  id: string;
-  name: string;
-  promptGeneral: string;
-  promptUserInput: string;
-  promptGrading: string;
-}
-
-export const examplePrompts: ExamplePrompt[] = [
-  {
-    id: 'dot-product',
-    name: 'Dot product of two vectors',
-    promptGeneral:
-      'Generate a question by randomly creating two vectors (e.g., 3-dimensional). Ask the student to calculate the dot product of these vectors. Include the vector components in the prompt..',
-    promptUserInput: 'Provide a single numeric input field for the computed dot product..',
-    promptGrading:
-      'Calculate the dot product of the two vectors internally and compare it with the student’s submitted value.',
-  },
-  {
-    id: 'select-median-of-random-numbers',
-    name: 'Median of random numbers',
-    promptGeneral:
-      'Write a multiple choice question asking the user to choose the median of an arbitrary length sequence of random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
-    promptUserInput:
-      'Each random number generated should be a potential answer to the multiple-choice question. Randomize the order of the numbers.',
-    promptGrading: 'The correct answer is the median of the numbers.',
-  },
-  {
-    id: 'properties-of-binary-search-tree',
-    name: 'Properties of a binary search tree',
-    promptGeneral:
-      "Generate a multiple-choice question testing a student's knowledge on the properties of binary search trees. Include one correct answer and several incorrect ones.",
-    promptUserInput: 'Display the answer options as radio buttons for a single selection.',
-    promptGrading:
-      "Predefine the correct property and compare the student's selected option with the correct answer.",
-  },
-  {
-    id: 'bit-shifting',
-    name: 'Bit shifting',
-    promptGeneral:
-      'Generate a question where an arbitrarily-generated bit string is provided along with instructions to shift the bits either to the left or to the right by a specified number of positions. The prompt should include the original bit string, the direction of the shift, and the number of positions to shift. This should be a logical shift. The number of positions to shift by should be randomized.',
-    promptUserInput:
-      'Provide a text input box where students can type the resulting bit string after performing the specified bit shifting operation.',
-    promptGrading:
-      "Internally perform the given bit shift on the generated bit string and compare the resulting bit string with the student's input.",
-  },
-  {
-    id: 'projectile-distance',
-    name: 'Calculate projectile distance',
-    promptGeneral:
-      'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
-    promptUserInput: 'Provide a numerical input box for the user to enter an answer.',
-    promptGrading:
-      'The correct answer is the distance that the projectile will travel, using the corresponding formula.',
-  },
-];
 
 export function InstructorAIGenerateDrafts({
   resLocals,
@@ -348,7 +292,6 @@ function SampleQuestionSelector({
 
 function SampleQuestionPreview(startPrompt: ExamplePrompt) {
   // TODO: Immediately generate the starting prompt content
-
   return html`
     <div class="card shadow">
       <div class="card-header d-flex align-items-center">
@@ -356,14 +299,15 @@ function SampleQuestionPreview(startPrompt: ExamplePrompt) {
         <p id="question-preview-name" class="mb-0">${startPrompt.name}</p>
       </div>
       <div class="card-body">
-        <p id="question-preview-title"></p>
+        <div id="question-content"></div>
         <span class="input-group">
-          <span class="input-group-text">
-            <span>Dot product = </span>
+          <span id="question-preview-answer-name-container" class="input-group-text">
+            <span id="question-preview-answer-name">${startPrompt.answerName ? `${startPrompt.answerName} = ` : ''}</span>
           </span>
           <input id="question-preview-response" type="text" class="form-control" />
-          <span id="grade-response" class="input-group-text d-none">
-            <span class="badge bg-success">100%</span>
+          <span id="grade-answer-units-feedback-container" class="input-group-text gap-3 ${!startPrompt.answerUnits ? 'd-none' : ''}">
+            <span id="grade-answer-units">${startPrompt.answerUnits}</span>
+            <span id="grade-answer-feedback" class="badge bg-success">100%</span>
           </span>
         </span>
       </div>
