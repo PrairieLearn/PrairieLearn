@@ -4,7 +4,6 @@ export interface ExamplePrompt {
     promptGeneral: string;
     promptUserInput: string;
     promptGrading: string;
-    answerFormat: 'text' | 'multiple-choice'
     answerName?: string;
     answerUnits?: string;
 }
@@ -19,7 +18,6 @@ export const examplePrompts: ExamplePrompt[] = [
         promptGrading:
         'Calculate the dot product of the two vectors internally and compare it with the student’s submitted value.',
         answerName: 'Dot Product',
-        answerFormat: 'text'
     },
     {
         id: 'median',
@@ -30,17 +28,6 @@ export const examplePrompts: ExamplePrompt[] = [
         'Each random number generated should be a potential answer to the multiple-choice question. Randomize the order of the numbers.',
         promptGrading: 'The correct answer is the median of the numbers.',
         answerName: 'Median',
-        answerFormat: 'text',
-    },
-    {
-        id: 'properties-of-binary-search-tree',
-        name: 'Properties of a binary search tree',
-        promptGeneral:
-        "Generate a multiple-choice question testing a student's knowledge on the properties of binary search trees. Include one correct answer and several incorrect ones.",
-        promptUserInput: 'Display the answer options as radio buttons for a single selection.',
-        promptGrading:
-        "Predefine the correct property and compare the student's selected option with the correct answer.",
-        answerFormat: 'multiple-choice',
     },
     {
         id: 'bit-shifting',
@@ -52,7 +39,6 @@ export const examplePrompts: ExamplePrompt[] = [
         promptGrading:
         "Internally perform the given bit shift on the generated bit string and compare the resulting bit string with the student's input.",
         answerName: 'Bit String',
-        answerFormat: 'text',
     },
     {
         id: 'projectile-distance',
@@ -63,7 +49,6 @@ export const examplePrompts: ExamplePrompt[] = [
         promptGrading:
         'The correct answer is the distance that the projectile will travel, using the corresponding formula.',
         answerName: 'Horizontal Distance',
-        answerFormat: 'text',
         answerUnits: 'm'
     },
 ];

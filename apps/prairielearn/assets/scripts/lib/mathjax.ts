@@ -82,6 +82,7 @@ const mathjaxPromise = new Promise<void>((resolve, reject) => {
     configurable: true,
     enumerable: true,
   });
+  console.log('MathJax initialized');
 });
 
 export async function mathjaxTypeset() {

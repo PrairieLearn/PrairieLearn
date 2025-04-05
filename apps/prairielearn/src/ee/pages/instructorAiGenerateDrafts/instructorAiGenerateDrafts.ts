@@ -1,9 +1,10 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
@@ -41,8 +42,20 @@ router.get(
       { course_id: res.locals.course.id },
       DraftMetadataWithQidSchema,
     );
+    
+    const hasAIQuestionGenerationPrompts = await queryRow(
+      sql.select_course_has_ai_question_generation_prompts,
+      { course_id: res.locals.course.id },
+      z.boolean()
+    );
 
-    res.send(InstructorAIGenerateDrafts({ resLocals: res.locals, drafts }));
+    res.send(InstructorAIGenerateDrafts({ 
+      resLocals: res.locals, 
+      drafts, 
+      // The sample question is only shown if there are no drafts or
+      // no AI question generation prompts have been used.
+      sampleQuestionOpen: !hasAIQuestionGenerationPrompts || drafts.length === 0 
+    }));
   }),
 );
 

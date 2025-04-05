@@ -7,6 +7,7 @@ import { html } from '@prairielearn/html';
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
 import { type ExamplePrompt, examplePrompts } from '../../../lib/aiGeneratedQuestionSamples.js';
+import { nodeModulesAssetPath } from '../../../lib/assets.js';
 import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
 
 // We show all draft questions, even those without associated metadata, because we
@@ -23,9 +24,12 @@ export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 export function InstructorAIGenerateDrafts({
   resLocals,
   drafts,
+  sampleQuestionOpen
 }: {
   resLocals: Record<string, any>;
   drafts: DraftMetadataWithQid[];
+  /* Determines if the sample question preview should be open by default. */
+  sampleQuestionOpen: boolean;
 }) {
   const hasDrafts = drafts.length > 0;
 
@@ -35,6 +39,7 @@ export function InstructorAIGenerateDrafts({
     headContent: html`
       ${compiledScriptTag('instructorAiGenerateDraftsClient.ts')}
       ${compiledScriptTag('instructorAiGenerateDraftsQuestionPreviewClient.ts')}
+      <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
       <style>
         .reveal-fade {
           position: absolute;
@@ -82,7 +87,7 @@ export function InstructorAIGenerateDrafts({
 
             ${SampleQuestionSelector({
               startPrompt: examplePrompts[0],
-              startOpen: true,
+              startOpen: sampleQuestionOpen,
             })}
 
             <div class="mb-3">
@@ -291,7 +296,6 @@ function SampleQuestionSelector({
 }
 
 function SampleQuestionPreview(startPrompt: ExamplePrompt) {
-  // TODO: Immediately generate the starting prompt content
   return html`
     <div class="card shadow">
       <div class="card-header d-flex align-items-center">

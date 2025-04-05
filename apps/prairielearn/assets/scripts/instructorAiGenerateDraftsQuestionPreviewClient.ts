@@ -2,6 +2,8 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import {examplePrompts} from '../../src/lib/aiGeneratedQuestionSamples.js'
 
+import { mathjaxTypeset } from './lib/mathjax.js';
+
 interface SampleQuestionVariantInfo {
   question: string;
   correctAnswer: string;
@@ -156,6 +158,7 @@ onDocumentReady(() => {
         `Example: ${examplePrompt.promptGrading ?? ''}`,
       );
     }
+    mathjaxTypeset();
   }
 
   // Generate the initial variant when the page loads
@@ -170,7 +173,7 @@ onDocumentReady(() => {
   });
 
   // Generate a new variant when the example question tab is changed
-  exampleQuestionSelector?.addEventListener('shown.bs.tab', async (event) => {
+  exampleQuestionSelector?.addEventListener('shown.bs.tab', (event) => {
     const newTab = event.target as HTMLAnchorElement;
     const selection = newTab.dataset;
     if (selection.id) {
@@ -212,19 +215,21 @@ function generateDotProductVariant(): SampleQuestionVariantInfo {
 
   return {
     question: `
-            <p>
-                Given two vectors:
-            </p>
-            <p>
-                u = [${vector1.x}, ${vector1.y}, ${vector1.z}]
-            </p>
-            <p>
-                v = [${vector2.x}, ${vector2.y}, ${vector2.z}]
-            </p>
-            <p>
-                Calculate the dot product u • v.
-            </p>
-        `,
+<p>
+    Given two vectors:
+</p>
+<p>
+  $
+  \\mathbf{u} = \\begin{bmatrix} ${vector1.x} \\\\ ${vector1.y} \\\\ ${vector1.z} \\end{bmatrix}
+
+  \\quad \\text{and} \\quad
+
+  \\mathbf{v} = \\begin{bmatrix} ${vector2.x} \\\\ ${vector2.y} \\\\ ${vector2.z} \\end{bmatrix}
+  $
+</p>
+<p>
+    Calculate the dot product $ \\mathbf{u} \\cdot \\mathbf{v} $.
+</p>`,
     correctAnswer: dotProduct.toString(),
   };
 }
@@ -254,13 +259,6 @@ function generateMedianVariant(): SampleQuestionVariantInfo {
   };
 }
 
-function generateBSTVariant(): SampleQuestionVariantInfo {
-  return {
-    question: '',
-    correctAnswer: '',
-  };
-}
-
 function generateBitShiftingVariant(): SampleQuestionVariantInfo {
   // The length of the bit string, between 3 and 7
   const bitLength = Math.floor(Math.random() * 5) + 3;
@@ -277,7 +275,7 @@ function generateBitShiftingVariant(): SampleQuestionVariantInfo {
   return {
     question: `
             <p>
-                You are given the bit string: ${bitString.toString(2).padStart(bitLength, '0')}.
+                You are given the bit string: <code>${bitString.toString(2).padStart(bitLength, '0')}</code>.
             </p>
             <p>
                 Perform a logical left shift by ${numPositions} on the bit string.
@@ -315,12 +313,17 @@ function generateProjectileDistanceVariant(): SampleQuestionVariantInfo {
   // Compute the horizontal displacement using the x component and time of flight
   const horizontalDisplacement = initialVelocityX * timeOfFlight;
 
+  const launchAngleRounded = Math.round(launchAngle * 100) / 100;
+  const initialVelocityRounded = Math.round(initialVelocity * 100) / 100;
+  const horizontalDisplacementRounded = Math.round(horizontalDisplacement * 100) / 100;
+  
+
   return {
     question: `
             <p>
-                A projectile is launched at an angle of ${launchAngle.toFixed(2)} with an initial velocity of ${initialVelocity.toFixed(2)} m/s. Assuming no wind resistance, calculate how far the projectile will travel horizontally.
+                A projectile is launched at an angle of $ ${launchAngleRounded}^{\\circ} $ with an initial velocity of $ ${initialVelocityRounded} $ m/s. Assuming no wind resistance, calculate how far the projectile will travel horizontally.
             </p>
         `,
-    correctAnswer: horizontalDisplacement.toFixed(2),
+    correctAnswer: horizontalDisplacementRounded.toString(),
   };
 }
