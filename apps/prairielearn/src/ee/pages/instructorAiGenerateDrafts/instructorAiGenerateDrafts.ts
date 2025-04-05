@@ -42,20 +42,22 @@ router.get(
       { course_id: res.locals.course.id },
       DraftMetadataWithQidSchema,
     );
-    
+
     const hasAIQuestionGenerationPrompts = await queryRow(
       sql.select_course_has_ai_question_generation_prompts,
       { course_id: res.locals.course.id },
-      z.boolean()
+      z.boolean(),
     );
 
-    res.send(InstructorAIGenerateDrafts({ 
-      resLocals: res.locals, 
-      drafts, 
-      // The sample question is only shown if there are no drafts or
-      // no AI question generation prompts have been used.
-      sampleQuestionOpen: !hasAIQuestionGenerationPrompts || drafts.length === 0 
-    }));
+    res.send(
+      InstructorAIGenerateDrafts({
+        resLocals: res.locals,
+        drafts,
+        // The sample question is only shown if there are no drafts or
+        // no AI question generation prompts have been used.
+        sampleQuestionOpen: !hasAIQuestionGenerationPrompts || drafts.length === 0,
+      }),
+    );
   }),
 );
 

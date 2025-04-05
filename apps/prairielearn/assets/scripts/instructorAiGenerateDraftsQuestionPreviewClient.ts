@@ -1,6 +1,6 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-import {examplePrompts} from '../../src/lib/aiGeneratedQuestionSamples.js'
+import { examplePrompts } from '../../src/lib/aiGeneratedQuestionSamples.js';
 
 import { mathjaxTypeset } from './lib/mathjax.js';
 
@@ -17,9 +17,7 @@ onDocumentReady(() => {
   const questionPreviewName = document.querySelector(
     '#question-preview-name',
   ) as HTMLParagraphElement;
-  const questionContent = document.querySelector(
-    '#question-content',
-  ) as HTMLDivElement;
+  const questionContent = document.querySelector('#question-content') as HTMLDivElement;
   const gradeButton = document.querySelector('#question-preview-grade-button') as HTMLButtonElement;
   const questionUserResponse = document.querySelector(
     '#question-preview-response',
@@ -28,11 +26,21 @@ onDocumentReady(() => {
   const exampleQuestionSelector = document.querySelector(
     '#example-question-selector',
   ) as HTMLSelectElement;
-  const questionPreviewAnswerName = document.querySelector('#question-preview-answer-name') as HTMLSpanElement;
-  const questionPreviewAnswerNameContainer = document.querySelector('#question-preview-answer-name-container') as HTMLSpanElement;
-  const questionPreviewAnswerUnitsFeedbackContainer = document.querySelector('#grade-answer-units-feedback-container') as HTMLSpanElement;
-  const questionPreviewAnswerUnits = document.querySelector('#grade-answer-units') as HTMLSpanElement;
-  const questionPreviewAnswerFeedback = document.querySelector('#grade-answer-feedback') as HTMLSpanElement;
+  const questionPreviewAnswerName = document.querySelector(
+    '#question-preview-answer-name',
+  ) as HTMLSpanElement;
+  const questionPreviewAnswerNameContainer = document.querySelector(
+    '#question-preview-answer-name-container',
+  ) as HTMLSpanElement;
+  const questionPreviewAnswerUnitsFeedbackContainer = document.querySelector(
+    '#grade-answer-units-feedback-container',
+  ) as HTMLSpanElement;
+  const questionPreviewAnswerUnits = document.querySelector(
+    '#grade-answer-units',
+  ) as HTMLSpanElement;
+  const questionPreviewAnswerFeedback = document.querySelector(
+    '#grade-answer-feedback',
+  ) as HTMLSpanElement;
 
   const copyPromptsButton = document.querySelector('#copy-prompts');
 
@@ -44,7 +52,7 @@ onDocumentReady(() => {
 
     // Find the selected sample question tab
     const selectedTab = exampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
-    const selection = selectedTab.dataset;;
+    const selection = selectedTab.dataset;
 
     // Set the prompt input values based on the selected question tab
     setInputValue('#user-prompt-llm', selection.promptGeneral ?? '');
@@ -73,7 +81,6 @@ onDocumentReady(() => {
       case 'no-grade':
         questionPreviewAnswerFeedback.className = 'input-group-text d-none';
         questionPreviewAnswerUnits.className = '';
-        
     }
   }
 
@@ -95,9 +102,6 @@ onDocumentReady(() => {
       case 'median':
         variant = generateMedianVariant();
         break;
-      case 'bst':
-        variant = generateBSTVariant();
-        break;
       case 'bit-shifting':
         variant = generateBitShiftingVariant();
         break;
@@ -110,8 +114,6 @@ onDocumentReady(() => {
           correctAnswer: '',
         };
     }
-
-    console.log('variant', variant);
 
     // Clear the user response field
     questionUserResponse.value = '';
@@ -147,7 +149,7 @@ onDocumentReady(() => {
         questionPreviewAnswerUnitsFeedbackContainer.className = 'input-group-text d-none';
         questionPreviewAnswerUnits.innerHTML = '';
       }
- 
+
       setTextValue('#user-prompt-llm-example', `Example: ${examplePrompt.promptGeneral ?? ''}`);
       setTextValue(
         '#user-prompt-llm-user-input-example',
@@ -187,8 +189,6 @@ onDocumentReady(() => {
     if (selectedTab.dataset.id) {
       const response = questionUserResponse.value;
       const answer = gradeButton.dataset.answer;
-
-      console.log('response', response, answer);
 
       if (response === answer) {
         setGrade('correct');
@@ -240,7 +240,7 @@ function generateMedianVariant(): SampleQuestionVariantInfo {
 
   const randomArray = Array.from({ length: numberOfItems }, () => Math.floor(Math.random() * 100));
 
-  const sortedArray = randomArray.sort((a, b) => a - b);  
+  const sortedArray = randomArray.sort((a, b) => a - b);
   const middleIndex = Math.floor(sortedArray.length / 2);
   let median;
   if (sortedArray.length % 2 === 0) {
@@ -316,7 +316,6 @@ function generateProjectileDistanceVariant(): SampleQuestionVariantInfo {
   const launchAngleRounded = Math.round(launchAngle * 100) / 100;
   const initialVelocityRounded = Math.round(initialVelocity * 100) / 100;
   const horizontalDisplacementRounded = Math.round(horizontalDisplacement * 100) / 100;
-  
 
   return {
     question: `

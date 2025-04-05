@@ -24,7 +24,7 @@ export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 export function InstructorAIGenerateDrafts({
   resLocals,
   drafts,
-  sampleQuestionOpen
+  sampleQuestionOpen,
 }: {
   resLocals: Record<string, any>;
   drafts: DraftMetadataWithQid[];
@@ -306,10 +306,15 @@ function SampleQuestionPreview(startPrompt: ExamplePrompt) {
         <div id="question-content"></div>
         <span class="input-group">
           <span id="question-preview-answer-name-container" class="input-group-text">
-            <span id="question-preview-answer-name">${startPrompt.answerName ? `${startPrompt.answerName} = ` : ''}</span>
+            <span id="question-preview-answer-name"
+              >${startPrompt.answerName ? `${startPrompt.answerName} = ` : ''}</span
+            >
           </span>
           <input id="question-preview-response" type="text" class="form-control" />
-          <span id="grade-answer-units-feedback-container" class="input-group-text gap-3 ${!startPrompt.answerUnits ? 'd-none' : ''}">
+          <span
+            id="grade-answer-units-feedback-container"
+            class="input-group-text gap-3 ${!startPrompt.answerUnits ? 'd-none' : ''}"
+          >
             <span id="grade-answer-units">${startPrompt.answerUnits}</span>
             <span id="grade-answer-feedback" class="badge bg-success">100%</span>
           </span>
