@@ -9,7 +9,7 @@ SELECT
   a.course_instance_id,
   q.qid,
   q.title AS question_title,
-  row_to_json(tp) AS topic,
+  row_to_json(top) AS topic,
   (
     SELECT
       COALESCE(JSONB_AGG(tg.name), '[]'::jsonb) AS tags
@@ -24,7 +24,7 @@ SELECT
 FROM
   assessment_questions AS aq
   JOIN questions AS q ON (q.id = aq.question_id)
-  JOIN topics AS tp ON (tp.id = q.topic_id)
+  JOIN topics AS top ON (top.id = q.topic_id)
   JOIN assessments AS a ON (a.id = aq.assessment_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
