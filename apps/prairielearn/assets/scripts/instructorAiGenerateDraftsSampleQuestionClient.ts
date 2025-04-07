@@ -19,6 +19,7 @@ onDocumentReady(() => {
   const questionDemoName = questionDemo.querySelector(
     '#question-demo-name',
   ) as HTMLParagraphElement;
+
   const questionContent = questionDemo.querySelector('#question-content') as HTMLDivElement;
   const gradeButton = questionDemo.querySelector('#grade-button') as HTMLButtonElement;
   const userResponse = questionDemo.querySelector('#user-response') as HTMLInputElement;
@@ -37,7 +38,7 @@ onDocumentReady(() => {
 
   const copyPromptsButton = document.querySelector('#copy-prompts');
 
-  // When the Copy Prompts button is clicked, copy the prompts of the selected question to the input fields
+  // Copy the prompts of the selected question to the prompt input fields
   copyPromptsButton?.addEventListener('click', () => {
     function setInputValue(selector: string, value: string) {
       const input = document.querySelector(selector) as HTMLInputElement;

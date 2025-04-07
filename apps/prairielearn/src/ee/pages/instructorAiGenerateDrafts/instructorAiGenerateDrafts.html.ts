@@ -271,7 +271,6 @@ function SampleQuestionSelector({
                       data-bs-target="#${examplePrompt.id}"
                       type="button"
                       role="tab"
-                      aria-controls="home"
                       aria-selected="${index === 0 ? 'true' : ''}"
                       data-id="${examplePrompt.id}"
                     >
@@ -311,7 +310,12 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
               ${initialPrompt.answerLabel ? `${initialPrompt.answerLabel} = ` : ''}
             </span>
           </span>
-          <input id="user-response" type="text" class="form-control" />
+          <input
+            id="user-response"
+            type="text"
+            class="form-control"
+            aria-label="Sample question response"
+          />
           <span
             id="answer-units-feedback-container"
             class="input-group-text ${initialPrompt.answerUnits ? 'show-units' : ''}"

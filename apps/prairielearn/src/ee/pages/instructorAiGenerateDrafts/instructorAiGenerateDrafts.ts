@@ -53,8 +53,8 @@ router.get(
       InstructorAIGenerateDrafts({
         resLocals: res.locals,
         drafts,
-        // The sample question is only shown if there are no drafts or
-        // no AI question generation prompts have been used.
+        // The sample question is initially open if there are no AI question generation drafts
+        // or if the course does not have any AI question generation prompts
         sampleQuestionOpen: !hasAIQuestionGenerationPrompts || drafts.length === 0,
       }),
     );

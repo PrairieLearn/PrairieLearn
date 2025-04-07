@@ -14,8 +14,8 @@ export const examplePrompts: ExamplePrompt[] = [
     id: 'dot-product',
     name: 'Dot product of two vectors',
     promptGeneral:
-      'Generate a question by randomly creating two vectors (e.g., 3-dimensional). Ask the student to calculate the dot product of these vectors. Include the vector components in the prompt..',
-    promptUserInput: 'Provide a single numeric input field for the computed dot product..',
+      'Generate a question by randomly creating two vectors (e.g., 3-dimensional). Ask the student to calculate the dot product of these vectors. Include the vector components in the prompt.',
+    promptUserInput: 'Provide a single numeric input field for the computed dot product.',
     promptGrading:
       'Calculate the dot product of the two vectors internally and compare it with the student’s submitted value.',
     answerLabel: 'Dot Product',
@@ -24,10 +24,10 @@ export const examplePrompts: ExamplePrompt[] = [
     id: 'median',
     name: 'Median of random numbers',
     promptGeneral:
-      'Write a multiple choice question asking the user to choose the median of an arbitrary length sequence of random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
+      'Write a free response question that asks the user to determine the median of an arbitrary-length sequence of random numbers between 1 and 100. Display all the numbers to the user and instruct them to provide the median as their answer.',
     promptUserInput:
-      'Each random number generated should be a potential answer to the multiple-choice question. Randomize the order of the numbers.',
-    promptGrading: 'The correct answer is the median of the numbers.',
+      'Generate a sequence of random numbers and display them in a sorted order. The user should calculate and enter the median value of these numbers.',
+    promptGrading: 'The correct answer is the median of the displayed numbers.',
     answerLabel: 'Median',
   },
   {
