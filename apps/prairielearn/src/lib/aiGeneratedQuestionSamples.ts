@@ -4,7 +4,8 @@ export interface ExamplePrompt {
   promptGeneral: string;
   promptUserInput: string;
   promptGrading: string;
-  answerName?: string;
+  /* Describes what the answer of the user is, e.g. dot product or velocity */
+  answerLabel?: string;
   answerUnits?: string;
 }
 
@@ -17,7 +18,7 @@ export const examplePrompts: ExamplePrompt[] = [
     promptUserInput: 'Provide a single numeric input field for the computed dot product..',
     promptGrading:
       'Calculate the dot product of the two vectors internally and compare it with the student’s submitted value.',
-    answerName: 'Dot Product',
+    answerLabel: 'Dot Product',
   },
   {
     id: 'median',
@@ -27,7 +28,7 @@ export const examplePrompts: ExamplePrompt[] = [
     promptUserInput:
       'Each random number generated should be a potential answer to the multiple-choice question. Randomize the order of the numbers.',
     promptGrading: 'The correct answer is the median of the numbers.',
-    answerName: 'Median',
+    answerLabel: 'Median',
   },
   {
     id: 'bit-shifting',
@@ -38,7 +39,7 @@ export const examplePrompts: ExamplePrompt[] = [
       'Provide a text input box where students can type the resulting bit string after performing the specified bit shifting operation.',
     promptGrading:
       "Internally perform the given bit shift on the generated bit string and compare the resulting bit string with the student's input.",
-    answerName: 'Bit String',
+    answerLabel: 'Bit String',
   },
   {
     id: 'projectile-distance',
@@ -48,7 +49,7 @@ export const examplePrompts: ExamplePrompt[] = [
     promptUserInput: 'Provide a numerical input box for the user to enter an answer.',
     promptGrading:
       'The correct answer is the distance that the projectile will travel, using the corresponding formula.',
-    answerName: 'Horizontal Distance',
+    answerLabel: 'Horizontal Distance',
     answerUnits: 'm',
   },
 ];

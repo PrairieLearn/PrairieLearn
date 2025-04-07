@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
+import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
@@ -28,7 +28,7 @@ export function InstructorAIGenerateDrafts({
 }: {
   resLocals: Record<string, any>;
   drafts: DraftMetadataWithQid[];
-  /* Determines if the sample question preview should be open by default. */
+  /* Determines if the sample question should be open by default. */
   sampleQuestionOpen: boolean;
 }) {
   const hasDrafts = drafts.length > 0;
@@ -38,7 +38,8 @@ export function InstructorAIGenerateDrafts({
     pageTitle: resLocals.pageTitle,
     headContent: html`
       ${compiledScriptTag('instructorAiGenerateDraftsClient.ts')}
-      ${compiledScriptTag('instructorAiGenerateDraftsQuestionPreviewClient.ts')}
+      ${compiledScriptTag('instructorAiGenerateDraftsSampleQuestionClient.ts')}
+      ${compiledStylesheetTag('instructorAiGenerateDrafts.css')}
       <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
       <style>
         .reveal-fade {
@@ -86,7 +87,7 @@ export function InstructorAIGenerateDrafts({
             <input type="hidden" name="__action" value="generate_question" />
 
             ${SampleQuestionSelector({
-              startPrompt: examplePrompts[0],
+              initialPrompt: examplePrompts[0],
               startOpen: sampleQuestionOpen,
             })}
 
@@ -101,8 +102,8 @@ export function InstructorAIGenerateDrafts({
                 class="form-control js-textarea-autosize"
                 style="resize: none;"
               ></textarea>
-              <div id="user-prompt-llm-example" class="form-text form-muted">
-                <em> Example: ${examplePrompts[0].promptGeneral} </em>
+              <div class="form-text form-muted">
+                <em id="user-prompt-llm-example" > Example: ${examplePrompts[0].promptGeneral} </em>
               </div>
             </div>
 
@@ -118,8 +119,8 @@ export function InstructorAIGenerateDrafts({
                   class="form-control js-textarea-autosize"
                   style="resize: none;"
                 ></textarea>
-                <div id="user-prompt-llm-user-input-example" class="form-text form-muted">
-                  <em> Example: ${examplePrompts[0].promptUserInput} </em>
+                <div class="form-text form-muted">
+                  <em id="user-prompt-llm-user-input-example"> Example: ${examplePrompts[0].promptUserInput} </em>
                 </div>
               </div>
 
@@ -133,8 +134,8 @@ export function InstructorAIGenerateDrafts({
                   class="form-control js-textarea-autosize"
                   style="resize: none;"
                 ></textarea>
-                <div id="user-prompt-llm-grading-example" class="form-text form-muted">
-                  <em> Example: ${examplePrompts[0].promptGrading} </em>
+                <div class="form-text form-muted">
+                  <em id="user-prompt-llm-grading-example"> Example: ${examplePrompts[0].promptGrading} </em>
                 </div>
               </div>
 
@@ -227,10 +228,10 @@ export function InstructorAIGenerateDrafts({
 }
 
 function SampleQuestionSelector({
-  startPrompt,
+  initialPrompt,
   startOpen,
 }: {
-  startPrompt: ExamplePrompt;
+  initialPrompt: ExamplePrompt;
   startOpen: boolean;
 }) {
   return html`
@@ -255,7 +256,7 @@ function SampleQuestionSelector({
           data-bs-parent="#sample-question-accordion"
         >
           <div class="accordion-body">
-            <ul class="nav nav-pills" id="example-question-selector" role="tablist">
+            <ul class="nav nav-pills" id="sample-question-selector" role="tablist">
               ${examplePrompts.map(
                 (examplePrompt, index) => html`
                   <li class="nav-item" role="presentation">
@@ -269,10 +270,6 @@ function SampleQuestionSelector({
                       aria-controls="home"
                       aria-selected="${index === 0 ? 'true' : ''}"
                       data-id="${examplePrompt.id}"
-                      data-name="${examplePrompt.name}"
-                      data-prompt-general="${examplePrompt.promptGeneral}"
-                      data-prompt-user-input="${examplePrompt.promptUserInput}"
-                      data-prompt-grading="${examplePrompt.promptGrading}"
                     >
                       ${examplePrompt.name}
                     </button>
@@ -282,7 +279,7 @@ function SampleQuestionSelector({
             </ul>
 
             <div class="tab-content pt-3">
-              ${SampleQuestionPreview(startPrompt)}
+              ${SampleQuestionDemo(initialPrompt)}
               <button id="copy-prompts" type="button" class="btn btn-primary me-2 mt-3">
                 <i class="fa fa-clone" aria-hidden="true"></i>
                 Copy prompts
@@ -295,38 +292,37 @@ function SampleQuestionSelector({
   `;
 }
 
-function SampleQuestionPreview(startPrompt: ExamplePrompt) {
+function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
   return html`
-    <div class="card shadow">
+    <div id="question-demo" class="card shadow">
       <div class="card-header d-flex align-items-center">
         <span class="badge rounded-pill bg-success me-3">Try me!</span>
-        <p id="question-preview-name" class="mb-0">${startPrompt.name}</p>
+        <p id="question-demo-name" class="mb-0">${initialPrompt.name}</p>
       </div>
       <div class="card-body">
         <div id="question-content"></div>
         <span class="input-group">
-          <span id="question-preview-answer-name-container" class="input-group-text">
-            <span id="question-preview-answer-name"
-              >${startPrompt.answerName ? `${startPrompt.answerName} = ` : ''}</span
-            >
+          <span id="answer-label-container" class="input-group-text">
+            <span id="answer-label">
+              ${initialPrompt.answerLabel ? `${initialPrompt.answerLabel} = ` : ''}
+            </span>
           </span>
-          <input id="question-preview-response" type="text" class="form-control" />
+          <input id="user-response" type="text" class="form-control" />
           <span
-            id="grade-answer-units-feedback-container"
-            class="input-group-text gap-3 ${!startPrompt.answerUnits ? 'd-none' : ''}"
+            id="answer-units-feedback-container"
+            class="input-group-text ${initialPrompt.answerUnits ? 'show-units' : ''}"
           >
-            <span id="grade-answer-units">${startPrompt.answerUnits}</span>
-            <span id="grade-answer-feedback" class="badge bg-success">100%</span>
+            <span id="answer-units">${initialPrompt.answerUnits}</span>
+            <span id="feedback-badge-correct" class="badge bg-success">100%</span>
+            <span id="feedback-badge-incorrect" class="badge bg-danger">0%</span>
           </span>
         </span>
       </div>
       <div class="card-footer d-flex justify-content-end">
-        <button id="question-preview-new-variant-button" type="button" class="btn btn-primary me-2">
+        <button id="new-variant-button" type="button" class="btn btn-primary me-2">
           New variant
         </button>
-        <button id="question-preview-grade-button" type="button" class="btn btn-primary">
-          Grade
-        </button>
+        <button id="grade-button" type="button" class="btn btn-primary">Grade</button>
       </div>
     </div>
   `;

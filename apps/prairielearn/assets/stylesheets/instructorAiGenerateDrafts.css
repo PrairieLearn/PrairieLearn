@@ -1,0 +1,38 @@
+#answer-units-feedback-container {
+  display: none;
+}
+
+/* If units are shown, or a response was provided, display the answer units and feedback container */
+#answer-units-feedback-container.show-units,
+#answer-units-feedback-container.correct,
+#answer-units-feedback-container.incorrect {
+  display: flex;
+}
+
+/* By default, the feedback badges (0%, 100%) are hidden */
+#answer-units-feedback-container #feedback-badge-correct,
+#answer-units-feedback-container #feedback-badge-incorrect {
+  display: none;
+}
+
+/* Show the proper feedback badge based on the correctness of the user's response */
+#answer-units-feedback-container.correct #feedback-badge-correct,
+#answer-units-feedback-container.incorrect #feedback-badge-incorrect {
+  display: block;
+}
+
+/* Hide the answer units by default */
+#answer-units-feedback-container #answer-units {
+  display: none;
+}
+
+#answer-units-feedback-container.show-units #answer-units {
+  display: block;
+  margin-right: 0;
+}
+
+/* Add padding between the units and the feedback badge when both are displayed */
+#answer-units-feedback-container.correct #answer-units,
+#answer-units-feedback-container.incorrect #answer-units {
+  margin-right: 0.5rem;
+}

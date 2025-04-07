@@ -7,43 +7,37 @@ import { mathjaxTypeset } from './lib/mathjax.js';
 interface SampleQuestionVariantInfo {
   question: string;
   correctAnswer: string;
-  options?: string[];
 }
 
 onDocumentReady(() => {
-  const newVariantButton = document.querySelector(
-    '#question-preview-new-variant-button',
-  ) as HTMLButtonElement;
-  const questionPreviewName = document.querySelector(
-    '#question-preview-name',
-  ) as HTMLParagraphElement;
-  const questionContent = document.querySelector('#question-content') as HTMLDivElement;
-  const gradeButton = document.querySelector('#question-preview-grade-button') as HTMLButtonElement;
-  const questionUserResponse = document.querySelector(
-    '#question-preview-response',
-  ) as HTMLInputElement;
+  const questionDemo = document.querySelector('#question-demo') as HTMLDivElement;
 
-  const exampleQuestionSelector = document.querySelector(
-    '#example-question-selector',
+  const sampleQuestionSelector = document.querySelector(
+    '#sample-question-selector',
   ) as HTMLSelectElement;
-  const questionPreviewAnswerName = document.querySelector(
-    '#question-preview-answer-name',
+
+  const questionDemoName = questionDemo.querySelector(
+    '#question-demo-name',
+  ) as HTMLParagraphElement;
+  const questionContent = questionDemo.querySelector('#question-content') as HTMLDivElement;
+  const gradeButton = questionDemo.querySelector('#grade-button') as HTMLButtonElement;
+  const userResponse = questionDemo.querySelector('#user-response') as HTMLInputElement;
+
+  const answerLabelContainer = questionDemo.querySelector(
+    '#answer-label-container',
   ) as HTMLSpanElement;
-  const questionPreviewAnswerNameContainer = document.querySelector(
-    '#question-preview-answer-name-container',
+  const answerLabel = questionDemo.querySelector('#answer-label') as HTMLSpanElement;
+
+  const answerUnitsFeedbackContainer = questionDemo.querySelector(
+    '#answer-units-feedback-container',
   ) as HTMLSpanElement;
-  const questionPreviewAnswerUnitsFeedbackContainer = document.querySelector(
-    '#grade-answer-units-feedback-container',
-  ) as HTMLSpanElement;
-  const questionPreviewAnswerUnits = document.querySelector(
-    '#grade-answer-units',
-  ) as HTMLSpanElement;
-  const questionPreviewAnswerFeedback = document.querySelector(
-    '#grade-answer-feedback',
-  ) as HTMLSpanElement;
+  const answerUnits = questionDemo.querySelector('#answer-units') as HTMLSpanElement;
+
+  const newVariantButton = questionDemo.querySelector('#new-variant-button') as HTMLButtonElement;
 
   const copyPromptsButton = document.querySelector('#copy-prompts');
 
+  // When the Copy Prompts button is clicked, copy the prompts of the selected question to the input fields
   copyPromptsButton?.addEventListener('click', () => {
     function setInputValue(selector: string, value: string) {
       const input = document.querySelector(selector) as HTMLInputElement;
@@ -51,46 +45,37 @@ onDocumentReady(() => {
     }
 
     // Find the selected sample question tab
-    const selectedTab = exampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
-    const selection = selectedTab.dataset;
+    const selectedTab = sampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
+    const id = selectedTab.dataset.id;
+    const examplePrompt = examplePrompts.find((examplePrompt) => examplePrompt.id === id);
 
     // Set the prompt input values based on the selected question tab
-    setInputValue('#user-prompt-llm', selection.promptGeneral ?? '');
-    setInputValue('#user-prompt-llm-user-input', selection.promptUserInput ?? '');
-    setInputValue('#user-prompt-llm-grading', selection.promptGrading ?? '');
+    if (examplePrompt) {
+      setInputValue('#user-prompt-llm', examplePrompt.promptGeneral ?? '');
+      setInputValue('#user-prompt-llm-user-input', examplePrompt.promptUserInput ?? '');
+      setInputValue('#user-prompt-llm-grading', examplePrompt.promptGrading ?? '');
+    }
   });
 
   function setGrade(state: 'correct' | 'incorrect' | 'no-grade') {
     switch (state) {
       case 'correct':
-        questionPreviewAnswerUnitsFeedbackContainer.className = 'input-group-text';
-        if (questionPreviewAnswerUnits.innerHTML !== '') {
-          questionPreviewAnswerUnits.className = 'me-2';
-        }
-        questionPreviewAnswerFeedback.className = 'badge bg-success';
-        questionPreviewAnswerFeedback.textContent = '100%';
+        answerUnitsFeedbackContainer.classList.add('correct');
+        answerUnitsFeedbackContainer.classList.remove('incorrect');
         break;
       case 'incorrect':
-        questionPreviewAnswerUnitsFeedbackContainer.className = 'input-group-text';
-        if (questionPreviewAnswerUnits.innerHTML !== '') {
-          questionPreviewAnswerUnits.className = 'me-2';
-        }
-        questionPreviewAnswerFeedback.className = 'badge bg-danger';
-        questionPreviewAnswerFeedback.textContent = '0%';
+        answerUnitsFeedbackContainer.classList.add('incorrect');
+        answerUnitsFeedbackContainer.classList.remove('correct');
         break;
       case 'no-grade':
-        questionPreviewAnswerFeedback.className = 'input-group-text d-none';
-        questionPreviewAnswerUnits.className = '';
+        answerUnitsFeedbackContainer.classList.remove('correct');
+        answerUnitsFeedbackContainer.classList.remove('incorrect');
     }
   }
 
-  function setTextValue(selector: string, value: string) {
+  function setEmTagValue(selector: string, value: string) {
     const input = document.querySelector(selector) as HTMLInputElement;
-    // There is an em within the input. Find it
-    const em = input.querySelector('em');
-    if (em) {
-      em.innerHTML = value;
-    }
+    input.innerHTML = value;
   }
 
   function generateSampleQuestionVariant(id: string) {
@@ -116,7 +101,7 @@ onDocumentReady(() => {
     }
 
     // Clear the user response field
-    questionUserResponse.value = '';
+    userResponse.value = '';
 
     // Set the question content to that of the variant
     questionContent.innerHTML = variant.question;
@@ -129,37 +114,38 @@ onDocumentReady(() => {
     // Update the examples
     const examplePrompt = examplePrompts.find((examplePrompt) => examplePrompt.id === id);
     if (examplePrompt) {
-      // Set question preview name
-      questionPreviewName.innerHTML = examplePrompt.name;
+      questionDemoName.innerHTML = examplePrompt.name;
 
-      // Update the answer name
-      if (examplePrompt.answerName) {
-        questionPreviewAnswerNameContainer.className = 'input-group-text';
-        questionPreviewAnswerName.innerHTML = `${examplePrompt.answerName} = `;
+      // Update the answer label
+      if (examplePrompt.answerLabel) {
+        answerLabelContainer.classList.remove('d-none');
+        answerLabel.innerHTML = `${examplePrompt.answerLabel} = `;
       } else {
-        questionPreviewAnswerNameContainer.className = 'input-group-text d-none';
-        questionPreviewAnswerName.innerHTML = '';
+        answerLabelContainer.classList.add('d-none');
+        answerLabel.innerHTML = '';
       }
 
       // Update the answer units
       if (examplePrompt.answerUnits) {
-        questionPreviewAnswerUnitsFeedbackContainer.className = 'input-group-text';
-        questionPreviewAnswerUnits.innerHTML = examplePrompt.answerUnits;
+        answerUnitsFeedbackContainer.classList.add('show-units');
+        answerUnits.innerHTML = examplePrompt.answerUnits;
       } else {
-        questionPreviewAnswerUnitsFeedbackContainer.className = 'input-group-text d-none';
-        questionPreviewAnswerUnits.innerHTML = '';
+        answerUnitsFeedbackContainer.classList.remove('show-units');
+        answerUnits.innerHTML = '';
       }
 
-      setTextValue('#user-prompt-llm-example', `Example: ${examplePrompt.promptGeneral ?? ''}`);
-      setTextValue(
+      setEmTagValue('#user-prompt-llm-example', `Example: ${examplePrompt.promptGeneral ?? ''}`);
+      setEmTagValue(
         '#user-prompt-llm-user-input-example',
         `Example: ${examplePrompt.promptUserInput ?? ''}`,
       );
-      setTextValue(
+      setEmTagValue(
         '#user-prompt-llm-grading-example',
         `Example: ${examplePrompt.promptGrading ?? ''}`,
       );
     }
+
+    // Render the MathJax content
     mathjaxTypeset();
   }
 
@@ -168,14 +154,14 @@ onDocumentReady(() => {
 
   // Generate a new variant when the new variant button is clicked
   newVariantButton?.addEventListener('click', () => {
-    const selectedTab = exampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
+    const selectedTab = sampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
     if (selectedTab.dataset.id) {
       generateSampleQuestionVariant(selectedTab.dataset.id);
     }
   });
 
   // Generate a new variant when the example question tab is changed
-  exampleQuestionSelector?.addEventListener('shown.bs.tab', (event) => {
+  sampleQuestionSelector?.addEventListener('shown.bs.tab', (event) => {
     const newTab = event.target as HTMLAnchorElement;
     const selection = newTab.dataset;
     if (selection.id) {
@@ -185,9 +171,9 @@ onDocumentReady(() => {
 
   // Grade the question when the grade button is clicked
   gradeButton?.addEventListener('click', () => {
-    const selectedTab = exampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
+    const selectedTab = sampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
     if (selectedTab.dataset.id) {
-      const response = questionUserResponse.value;
+      const response = userResponse.value;
       const answer = gradeButton.dataset.answer;
 
       if (response === answer) {
@@ -265,28 +251,28 @@ function generateBitShiftingVariant(): SampleQuestionVariantInfo {
 
   // Randomly generated bit string of length bitLength
   const bitString = Math.floor(Math.random() * Math.pow(2, bitLength));
+  const bitStringBinary = bitString.toString(2).padStart(bitLength, '0');
 
   // Random number between 1 and bitLength-1, inclusive
   const shiftAmount = Math.floor(Math.random() * (bitLength - 1)) + 1;
-  const shiftedNumber = bitString << shiftAmount;
-
   const numPositions = shiftAmount === 1 ? '1 position' : `${shiftAmount} positions`;
+
+  // Perform a logical left shift by slicing off the first shiftAmount bits and appending zeros.
+  const shiftedString = bitStringBinary.slice(shiftAmount) + '0'.repeat(shiftAmount);
 
   return {
     question: `
             <p>
-                You are given the bit string: <code>${bitString.toString(2).padStart(bitLength, '0')}</code>.
+                You are given the bit string: <code>${bitStringBinary}</code>.
             </p>
             <p>
                 Perform a logical left shift by ${numPositions} on the bit string.
             </p>
         `,
-    correctAnswer: shiftedNumber
-      .toString(2)
-      .padStart(bitLength, '0')
-      .slice(shiftAmount, shiftAmount + bitLength),
+    correctAnswer: shiftedString,
   };
 }
+
 
 function generateProjectileDistanceVariant(): SampleQuestionVariantInfo {
   // Initial velocity is between 10 and 20 m/s
