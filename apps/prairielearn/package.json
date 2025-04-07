@@ -65,7 +65,7 @@
     "ace-builds": "^1.39.1",
     "ace-code": "^1.39.1",
     "ajv": "^8.17.1",
-    "ansi_up": "^6.0.2",
+    "ansi_up": "^6.0.5",
     "archiver": "^7.0.1",
     "async": "^3.2.6",
     "backbone": "^1.6.1",
