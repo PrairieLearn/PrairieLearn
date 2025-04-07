@@ -90,6 +90,8 @@ function getParamsForAssessment(
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
+      json_can_view: zone.canView,
+      json_can_submit: zone.canSubmit,
     };
   });
 
@@ -116,6 +118,8 @@ function getParamsForAssessment(
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number;
+        jsonCanView: string[] | null;
+        jsonCanSubmit: string[] | null;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -135,6 +139,8 @@ function getParamsForAssessment(
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
+            jsonCanView: alternative.canView,
+            jsonCanSubmit: alternative.canSubmit,
           };
         });
       } else if (question.id) {
@@ -152,6 +158,8 @@ function getParamsForAssessment(
             gradeRateMinutes: questionGradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
+            jsonCanView: question.canView,
+            jsonCanSubmit: question.canSubmit,
           },
         ];
       }
@@ -218,6 +226,8 @@ function getParamsForAssessment(
             zone.advanceScorePerc ??
             assessment.advanceScorePerc ??
             0,
+          json_can_view: alternative.jsonCanView,
+          json_can_submit: alternative.jsonCanSubmit,
         };
       });
 
@@ -266,6 +276,8 @@ function getParamsForAssessment(
     student_group_leave: !!assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
     has_roles: !!assessment.groupRoles,
+    json_can_view: assessment.canView,
+    json_can_submit: assessment.canSubmit,
     allowAccess,
     zones,
     alternativeGroups,

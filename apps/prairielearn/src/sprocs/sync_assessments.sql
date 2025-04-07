@@ -168,7 +168,9 @@ BEGIN
             group_work = (valid_assessment.data->>'group_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             sync_errors = NULL,
-            sync_warnings = valid_assessment.warnings
+            sync_warnings = valid_assessment.warnings,
+            json_can_view = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_view')),
+            json_can_submit = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_submit'))
         FROM
             (
                 SELECT
@@ -322,7 +324,9 @@ BEGIN
                 max_points,
                 number_choose,
                 best_questions,
-                advance_score_perc
+                advance_score_perc,
+                json_can_view,
+                json_can_submit
             )
             VALUES (
                 new_assessment_id,
@@ -331,7 +335,9 @@ BEGIN
                 (zone->>'max_points')::double precision,
                 (zone->>'number_choose')::integer,
                 (zone->>'best_questions')::integer,
-                (zone->>'advance_score_perc')::double precision
+                (zone->>'advance_score_perc')::double precision,
+                ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_view')),
+                ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_submit'))
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
@@ -339,7 +345,9 @@ BEGIN
                 max_points = EXCLUDED.max_points,
                 number_choose = EXCLUDED.number_choose,
                 best_questions = EXCLUDED.best_questions,
-                advance_score_perc = EXCLUDED.advance_score_perc
+                advance_score_perc = EXCLUDED.advance_score_perc,
+                json_can_view = EXCLUDED.json_can_view,
+                json_can_submit = EXCLUDED.json_can_submit
             RETURNING id INTO new_zone_id;
 
             -- Insert each alternative group in this zone
@@ -412,7 +420,9 @@ BEGIN
                         alternative_group_id,
                         number_in_alternative_group,
                         advance_score_perc,
-                        effective_advance_score_perc
+                        effective_advance_score_perc,
+                        json_can_view,
+                        json_can_submit
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
@@ -429,7 +439,9 @@ BEGIN
                         new_alternative_group_id,
                         (assessment_question->>'number_in_alternative_group')::integer,
                         (assessment_question->>'advance_score_perc')::double precision,
-                        (assessment_question->>'effective_advance_score_perc')::double precision
+                        (assessment_question->>'effective_advance_score_perc')::double precision,
+                        ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'json_can_view')),
+                        ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'json_can_submit'))
                     ) ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
@@ -446,7 +458,9 @@ BEGIN
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,
                         question_id = EXCLUDED.question_id,
                         advance_score_perc = EXCLUDED.advance_score_perc,
-                        effective_advance_score_perc = EXCLUDED.effective_advance_score_perc
+                        effective_advance_score_perc = EXCLUDED.effective_advance_score_perc,
+                        json_can_view = EXCLUDED.json_can_view,
+                        json_can_submit = EXCLUDED.json_can_submit
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 
