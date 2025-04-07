@@ -2384,7 +2384,7 @@ describe('Assessment syncing', () => {
       assert.isNotOk(syncedAssessment?.sync_warnings);
     });
   });
-  it('syncs JSON data for grade rate minutes correctly', async () => {
+  it('syncs JSON data for group role permissions correctly', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groupWork = true;
