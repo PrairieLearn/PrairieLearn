@@ -13,6 +13,10 @@ services:
     environment:
       - HOST_JOBS_DIR=${HOME}/pl_ag_jobs
       - NODE_ENV=production
+    # This must be changed if you've changed Docker's address pools.
+    # i.e., "default-address-pools" in /etc/docker/daemon.json
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
 
 volumes:
   postgres:
