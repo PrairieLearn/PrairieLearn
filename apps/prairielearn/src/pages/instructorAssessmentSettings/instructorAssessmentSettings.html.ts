@@ -197,7 +197,7 @@ ${resLocals.assessment.text}</textarea
                       ${resLocals.assessment.multiple_instance ? 'checked' : ''}
                     />
                     <label class="form-check-label" for="multiple_instance">
-                      Multiple Instances
+                      Multiple instances
                     </label>
                     <div class="small text-muted">
                       Whether to allow students to create additional instances of the assessment.
