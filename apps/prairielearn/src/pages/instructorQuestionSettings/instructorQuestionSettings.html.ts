@@ -555,13 +555,13 @@ function QuestionSharing({
   question: Question;
   sharingSetsIn: SharingSetRow[];
 }) {
-  if (!question.shared_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
+  if (!question.share_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
     return html`<p>This question is not being shared.</p>`;
   }
 
   const details: HtmlValue[] = [];
 
-  if (question.shared_publicly) {
+  if (question.share_publicly) {
     details.push(html`
       <p>
         <span class="badge color-green3 me-1">Public</span>

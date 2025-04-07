@@ -115,17 +115,13 @@
       "description": "Question topics (visible to students).",
       "type": "array",
       "items": {
-        "description": "A single assessment set description.",
+        "description": "A single topic, can represent a unit of learning (e.g. 'vectors').",
         "type": "object",
         "required": ["name", "color"],
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
             "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
-          },
-          "shortName": {
-            "description": "Short name (preferably 2 to 7 characters).",
-            "type": "string"
           },
           "name": {
             "description": "Long descriptive name (preferably less than 10 words).",
