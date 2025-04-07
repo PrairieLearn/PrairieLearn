@@ -179,17 +179,17 @@ router.post(
         req.body.allow_issue_reporting === 'on',
         true,
       );
-      assessmentInfo.multipleInstance = propertyValueWithDefault(
-        assessmentInfo.multipleInstance,
-        req.body.multiple_instance === 'on',
-        false,
-      );
       assessmentInfo.allowPersonalNotes = propertyValueWithDefault(
         assessmentInfo.allowPersonalNotes,
         req.body.allow_personal_notes === 'on',
         true,
       );
-      if (res.locals.assessment.type !== 'Homework') {
+      if (res.locals.assessment.type === 'Exam') {
+        assessmentInfo.multipleInstance = propertyValueWithDefault(
+          assessmentInfo.multipleInstance,
+          req.body.multiple_instance === 'on',
+          false,
+        );
         assessmentInfo.autoClose = propertyValueWithDefault(
           assessmentInfo.autoClose,
           req.body.auto_close === 'on',
