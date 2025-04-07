@@ -3875,7 +3875,7 @@ __metadata:
     ace-builds: "npm:^1.39.1"
     ace-code: "npm:^1.39.1"
     ajv: "npm:^8.17.1"
-    ansi_up: "npm:^6.0.2"
+    ansi_up: "npm:^6.0.5"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
     axe-core: "npm:^4.10.2"
@@ -6761,6 +6761,13 @@ __metadata:
   version: 6.0.2
   resolution: "ansi_up@npm:6.0.2"
   checksum: 10c0/f39f2d2f2fde2d640d0033c03eb8efbbcbfcb7c01b1ce371c551250213df0546592160768c9b3de8fc2b13fec6dd3ab15bf01ebc6408ec66280fddd94a4ea21e
+  languageName: node
+  linkType: hard
+
+"ansi_up@npm:^6.0.5":
+  version: 6.0.5
+  resolution: "ansi_up@npm:6.0.5"
+  checksum: 10c0/410de314d6f020b9b434150e1982b6622017c4c072685e53f2e5237d9140f366c59ae845800ce272087dc975a837c7224b853e9489f025ff7cd5816d7b5bae28
   languageName: node
   linkType: hard
 
