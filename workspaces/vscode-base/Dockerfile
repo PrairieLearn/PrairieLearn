@@ -1,5 +1,5 @@
 # noble is the codename for Ubuntu 24.04 LTS
-FROM codercom/code-server:4.97.2-noble
+FROM codercom/code-server:4.98.2-noble
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
 # "coder" account's UID and GID here so that fixuid has no work to do later.
@@ -49,7 +49,7 @@ RUN code-server --disable-telemetry --force \
 USER coder
 RUN mkdir -p "/home/coder/workspace" "/home/coder/.local/share/code-server/User"
 WORKDIR "/home/coder/workspace"
-COPY --chmod=0644 --chown=coder:coder settings.json tasks.json /home/coder/.local/share/code-server/User/
+COPY --chmod=0644 --chown=coder:coder settings.json /home/coder/.local/share/code-server/User/
 
 # Prepare the entrypoint helper that steps down to a limited user in local dev mode
 COPY --chmod=0755 --chown=root:root pl-gosu-helper.sh /usr/bin/

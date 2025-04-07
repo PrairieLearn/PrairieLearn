@@ -119,7 +119,7 @@ export async function loadUser(
     res.locals.authn_is_administrator && res.locals.access_as_administrator;
 
   res.locals.is_institution_administrator =
-    res.locals.authn_is_administrator ||
+    res.locals.is_administrator ||
     (await sqldb.queryRow(
       sql.select_is_institution_admin,
       {

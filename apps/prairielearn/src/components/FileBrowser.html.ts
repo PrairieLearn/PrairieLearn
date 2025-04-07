@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import hljs from 'highlight.js';
 import { isBinaryFile } from 'isbinaryfile';
 
-import { escapeHtml, html, type HtmlValue, joinHtml, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 import { run } from '@prairielearn/run';
 
@@ -98,10 +98,6 @@ interface FileRenameInfo {
   dir: string;
 }
 
-function isHidden(item: string) {
-  return item[0] === '.';
-}
-
 export async function browseDirectory({
   paths,
 }: {
@@ -109,10 +105,7 @@ export async function browseDirectory({
 }): Promise<DirectoryListings> {
   const filenames = await fs.readdir(paths.workingPath);
   const all_files = await async.mapLimit(
-    filenames
-      .sort()
-      .map((name, index) => ({ name, index }))
-      .filter((f) => !isHidden(f.name)),
+    filenames.sort().map((name, index) => ({ name, index })),
     3,
     async (file: { name: string; index: number }) => {
       const filepath = path.join(paths.workingPath, file.name);
@@ -143,6 +136,8 @@ export async function browseDirectory({
           sync_warnings: sync_data.warnings,
         } as DirectoryEntryFile;
       } else if (stats.isDirectory()) {
+        // The .git directory is hidden in the browser interface.
+        if (file.name === '.git') return null;
         return {
           id: file.index,
           name: file.name,

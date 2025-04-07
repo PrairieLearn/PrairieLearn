@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryRows, queryAsync, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
@@ -12,8 +12,8 @@ import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationPromptSchema,
-  IdSchema,
   type Course,
+  IdSchema,
   type Question,
   type User,
 } from '../../../lib/db-types.js';

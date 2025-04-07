@@ -1,4 +1,4 @@
-import { html, escapeHtml } from '@prairielearn/html';
+import { escapeHtml, html } from '@prairielearn/html';
 
 import { type CourseRequestRow } from '../lib/course-request.js';
 import { type Institution } from '../lib/db-types.js';
@@ -209,7 +209,7 @@ function CourseRequestApproveForm({
   coursesRoot: string;
   csrfToken: string;
 }) {
-  const repo_name = 'pl-' + request.short_name.replace(' ', '').toLowerCase();
+  const repo_name = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
   return html`
     <form name="create-course-from-request-form-${request.id}" method="POST">
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />

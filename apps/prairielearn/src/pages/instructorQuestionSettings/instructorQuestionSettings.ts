@@ -17,10 +17,10 @@ import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
 import {
   FileModifyEditor,
-  QuestionRenameEditor,
-  QuestionDeleteEditor,
-  QuestionCopyEditor,
   MultiEditor,
+  QuestionCopyEditor,
+  QuestionDeleteEditor,
+  QuestionRenameEditor,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';

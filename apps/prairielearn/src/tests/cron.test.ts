@@ -37,8 +37,8 @@ describe('Cron', function () {
 
     it('should all have started', async () => {
       const result = await sqldb.queryAsync(sql.select_cron_jobs, []);
-      const runJobs = _.map(result.rows, (row) => row.name);
-      const cronJobs = _.map(cron.jobs, (row) => row.name);
+      const runJobs = result.rows.map((row) => row.name);
+      const cronJobs = cron.jobs.map((row) => row.name);
       assert.lengthOf(_.difference(runJobs, cronJobs), 0);
       assert.lengthOf(_.difference(cronJobs, runJobs), 0);
     });

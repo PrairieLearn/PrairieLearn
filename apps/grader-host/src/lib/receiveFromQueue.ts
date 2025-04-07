@@ -1,9 +1,9 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import {
-  ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
+  ReceiveMessageCommand,
   type SQSClient,
 } from '@aws-sdk/client-sqs';
 import { z } from 'zod';

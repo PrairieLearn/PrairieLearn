@@ -1,5 +1,17 @@
 # @prairielearn/sanitize
 
+## 2.0.12
+
+### Patch Changes
+
+- 03f1008: Upgrade all JavaScript dependencies
+
+## 2.0.11
+
+### Patch Changes
+
+- 984dc62: Upgrade all JavaScript dependencies
+
 ## 2.0.10
 
 ### Patch Changes
