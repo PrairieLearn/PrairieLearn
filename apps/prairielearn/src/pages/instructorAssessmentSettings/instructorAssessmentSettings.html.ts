@@ -185,7 +185,7 @@ ${resLocals.assessment.text}</textarea
                 </div>
               </div>
             </div>
-            ${resLocals.assessment.type !== 'Homework'
+            ${resLocals.assessment.type === 'Exam'
               ? html`
                   <div class="mb-3 form-check">
                     <input
