@@ -2,7 +2,7 @@ import async from 'async';
 
 import * as namedLocks from '@prairielearn/named-locks';
 
-import { chalk, chalkDim } from '../lib/chalk.js';
+import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
@@ -194,7 +194,7 @@ export async function syncDiskToSql(
   logger: ServerJobLogger,
 ): Promise<SyncResults> {
   const lockName = getLockNameForCoursePath(courseDir);
-  logger.verbose(chalkDim(`Trying lock ${lockName}`));
+  logger.verbose(`Trying lock ${lockName}`);
   const result = await namedLocks.doWithLock(
     lockName,
     {
@@ -205,12 +205,12 @@ export async function syncDiskToSql(
       },
     },
     async () => {
-      logger.verbose(chalkDim(`Acquired lock ${lockName}`));
+      logger.verbose(`Acquired lock ${lockName}`);
       return await syncDiskToSqlWithLock(course_id, courseDir, logger);
     },
   );
 
-  logger.verbose(chalkDim(`Released lock ${lockName}`));
+  logger.verbose(`Released lock ${lockName}`);
   return result;
 }
 

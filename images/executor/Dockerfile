@@ -1,4 +1,5 @@
 FROM prairielearn/prairielearn:latest
+
 WORKDIR /PrairieLearn/
 
 # Create our unprivileged user
