@@ -361,14 +361,14 @@ function checkSettingsResults(
 }
 
 function buildRubricItemFields(items: RubricItem[]): Record<string, string> {
-  return _.fromPairs(
-    _.flatMap(
-      _.toPairs(_.mapKeys(items, (item, index) => (item.id ? `cur${item.id}` : `new${index}`))),
-      ([key, item], order) =>
-        _.map(_.toPairs({ order, ...item }), ([field, value]) => [
-          `rubric_item[${key}][${field}]`,
-          value,
-        ]),
+  return Object.fromEntries(
+    Object.entries(
+      _.mapKeys(items, (item, index) => (item.id ? `cur${item.id}` : `new${index}`)),
+    ).flatMap(([key, item], order) =>
+      Object.entries({ order, ...item }).map(([field, value]) => [
+        `rubric_item[${key}][${field}]`,
+        String(value),
+      ]),
     ),
   );
 }

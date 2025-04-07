@@ -49,11 +49,7 @@ This file specifies basic information about the course instance:
 }
 ```
 
-??? note "Format specification for `infoCourseInstance.json`"
-
-    ```json
-    --8<-- "apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
-    ```
+See the [reference for `infoCourseInstance.json`](./schemas/infoCourseInstance.md) for more information about what can be added to this file.
 
 ## Access controls
 
