@@ -221,7 +221,7 @@ ${resLocals.assessment.text}</textarea
                 Whether students are allowed to upload personal notes for this assessment.
               </div>
             </div>
-            ${resLocals.assessment.type !== 'Homework'
+            ${resLocals.assessment.type === 'Exam'
               ? html`
                   <div class="mb-3 form-check">
                     <input
@@ -239,7 +239,7 @@ ${resLocals.assessment.text}</textarea
                   </div>
                 `
               : ''}
-            ${resLocals.assessment.type !== 'Homework'
+            ${resLocals.assessment.type === 'Exam'
               ? html`
                   <div class="mb-3 form-check">
                     <input
