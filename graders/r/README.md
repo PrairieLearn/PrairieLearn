@@ -1,4 +1,4 @@
-## rocker-pl
+# `prairielearn/grader-r`
 
 This is a Docker image working as an external grader to be paired with
 PrairieLearn. It has been used in the STAT 430 'DSPM' (2018-2020) and [STAT
@@ -15,7 +15,7 @@ which offers _all_ of CRAN as fully dependency-resolved .deb binaries for both
 rely on [r2u](https://eddelbuettel.github.io/r2u/) in the RStudio Server instance
 used for the course.
 
-### R Packages Installed
+## R Packages Installed
 
 See the Dockerfile for full details but we include:
 
@@ -26,6 +26,6 @@ See the Dockerfile for full details but we include:
 
 and more. We also include a few command-line applications such as `git` and `sqlite3`.
 
-### Authors
+## Authors
 
 Alton Barbehenn and Dirk Eddelbuettel
