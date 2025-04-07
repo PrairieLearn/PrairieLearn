@@ -7,6 +7,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  type AssessmentInstance,
   AssessmentInstanceSchema,
   AssessmentModuleSchema,
   AssessmentSchema,
@@ -16,7 +17,6 @@ import {
   IdSchema,
   QuestionSchema,
   VariantSchema,
-  type AssessmentInstance,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
 import * as ltiOutcomes from './ltiOutcomes.js';

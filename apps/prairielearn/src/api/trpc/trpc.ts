@@ -1,6 +1,6 @@
 import * as crypto from 'node:crypto';
 
-import { initTRPC, TRPCError } from '@trpc/server';
+import { TRPCError, initTRPC } from '@trpc/server';
 import { type CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import { type Request } from 'express';
 import * as jose from 'jose';

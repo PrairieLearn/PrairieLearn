@@ -1,6 +1,5 @@
 import * as async from 'async';
 import { type Request, type Response } from 'express';
-import _ from 'lodash';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -140,13 +139,19 @@ export async function reportIssueFromForm(
     instructorMessage: `${studentSubmission ? 'student' : 'instructor'}-reported issue`,
     manuallyReported: true,
     courseCaused: true,
-    courseData: _.pick(res.locals, [
-      'variant',
-      'question',
-      'course_instance',
-      'course',
-      ...(studentSubmission ? ['instance_question', 'assessment_instance', 'assessment'] : []),
-    ]),
+    courseData: {
+      variant,
+      question: res.locals.question,
+      course_instance: res.locals.course_instance,
+      course: res.locals.course,
+      ...(studentSubmission
+        ? {
+            instance_question: res.locals.instance_question,
+            assessment_instance: res.locals.assessment_instance,
+            assessment: res.locals.assessment,
+          }
+        : {}),
+    },
     systemData: {},
     userId: res.locals.user.user_id,
     authnUserId: res.locals.authn_user.user_id,

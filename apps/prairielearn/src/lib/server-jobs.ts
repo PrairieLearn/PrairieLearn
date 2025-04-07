@@ -10,10 +10,10 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
-import { chalk, chalkDim } from './chalk.js';
+import { chalk } from './chalk.js';
 import { config } from './config.js';
 import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
-import { type JobSequenceWithTokens, JobSequenceWithJobsSchema } from './server-jobs.types.js';
+import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -113,7 +113,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   }
 
   verbose(msg: string) {
-    this.addToOutput(chalkDim(msg) + '\n');
+    this.addToOutput(chalk.dim(msg) + '\n');
   }
 
   async exec(
@@ -147,7 +147,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
       // Record timing information.
       const duration = (performance.now() - start).toFixed(2);
-      this.addToOutput(chalkDim(`Command completed in ${duration}ms`) + '\n\n');
+      this.addToOutput(chalk.dim(`Command completed in ${duration}ms`) + '\n\n');
     }
 
     return { data: this.data };

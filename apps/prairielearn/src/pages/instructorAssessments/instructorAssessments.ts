@@ -6,7 +6,13 @@ import asyncHandler from 'express-async-handler';
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryCursor,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import {
   selectAssessmentsForCourseInstanceGrouped,
