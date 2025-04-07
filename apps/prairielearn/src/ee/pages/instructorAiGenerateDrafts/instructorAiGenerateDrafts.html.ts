@@ -103,7 +103,7 @@ export function InstructorAIGenerateDrafts({
                 style="resize: none;"
               ></textarea>
               <div class="form-text form-muted">
-                <em id="user-prompt-llm-example" > Example: ${examplePrompts[0].promptGeneral} </em>
+                <em id="user-prompt-llm-example"> Example: ${examplePrompts[0].promptGeneral} </em>
               </div>
             </div>
 
@@ -120,7 +120,9 @@ export function InstructorAIGenerateDrafts({
                   style="resize: none;"
                 ></textarea>
                 <div class="form-text form-muted">
-                  <em id="user-prompt-llm-user-input-example"> Example: ${examplePrompts[0].promptUserInput} </em>
+                  <em id="user-prompt-llm-user-input-example">
+                    Example: ${examplePrompts[0].promptUserInput}
+                  </em>
                 </div>
               </div>
 
@@ -135,7 +137,9 @@ export function InstructorAIGenerateDrafts({
                   style="resize: none;"
                 ></textarea>
                 <div class="form-text form-muted">
-                  <em id="user-prompt-llm-grading-example"> Example: ${examplePrompts[0].promptGrading} </em>
+                  <em id="user-prompt-llm-grading-example">
+                    Example: ${examplePrompts[0].promptGrading}
+                  </em>
                 </div>
               </div>
 

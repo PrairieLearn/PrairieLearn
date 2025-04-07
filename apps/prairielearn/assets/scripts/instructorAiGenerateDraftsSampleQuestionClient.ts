@@ -273,7 +273,6 @@ function generateBitShiftingVariant(): SampleQuestionVariantInfo {
   };
 }
 
-
 function generateProjectileDistanceVariant(): SampleQuestionVariantInfo {
   // Initial velocity is between 10 and 20 m/s
   const initialVelocity = Math.floor(Math.random() * 10) + 10;
