@@ -30,10 +30,10 @@ RUN arch="$(uname -m)" \
     && mamba clean --all --yes --quiet \
     && pip cache purge
 
- USER coder
+USER coder
  
- # After installing Python we install some VS Code extensions.
- RUN code-server --disable-telemetry --force \
+# After installing Python we install some VS Code extensions.
+RUN code-server --disable-telemetry --force \
     # vscode support for python, including debugger
     --install-extension ms-python.python \
     # auto-fix indentation for multiline contexts

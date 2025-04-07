@@ -11,13 +11,14 @@ RUN apt-get update && \
 
 ENV LANG=en_US.UTF-8
 
-RUN groupadd sbuser && \
-    useradd -m -g sbuser sbuser && \
+RUN groupadd sbuser \
+    && useradd -m -g sbuser sbuser \
     # Disable ptrace mechanism to avoid heap dumping from other processes
-    echo "kernel.yama.ptrace_scope = 3" >> /etc/sysctl.d/10-ptrace.conf && \
+    && echo "kernel.yama.ptrace_scope = 3" >> /etc/sysctl.d/10-ptrace.conf \
     # Delete all java.management files to hinder student's ability to retrieve information from the grader
-    rm -rf /usr/lib/jvm/java-21-openjdk-amd64/lib/libmanagement.so /usr/lib/jvm/java-21-openjdk-amd64/lib/libmanagement_agent.so /usr/lib/jvm/java-21-openjdk-amd64/lib/libmanagement_ext.so && \
+    && rm -rf /usr/lib/jvm/java-21-openjdk-amd64/lib/libmanagement.so /usr/lib/jvm/java-21-openjdk-amd64/lib/libmanagement_agent.so /usr/lib/jvm/java-21-openjdk-amd64/lib/libmanagement_ext.so \
     mkdir /javagrader
+
 COPY libs /javagrader/libs
 COPY JUnitAutograder.java AutograderInfo.java /javagrader/
 

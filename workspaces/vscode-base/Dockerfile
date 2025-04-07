@@ -41,8 +41,8 @@ RUN code-server --disable-telemetry --force \
     # visualize csv files in vscode window
     --install-extension mechatroner.rainbow-csv \
     # format tables in markdown files
-    --install-extension fcrespo82.markdown-table-formatter && \
-    rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs
+    --install-extension fcrespo82.markdown-table-formatter \
+    && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs
 
 # We standardize on /home/coder/workspace as the default working directory
 # for the editor, and we recommend that staff set this as workspaceOptions
