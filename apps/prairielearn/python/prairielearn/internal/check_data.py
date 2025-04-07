@@ -4,17 +4,15 @@ Phase = Literal["generate", "prepare", "render", "parse", "grade", "test", "file
 
 ValueType = Literal["boolean", "integer", "number", "string", "object"]
 
-all_phases: frozenset[Phase] = frozenset(
-    {
-        "generate",
-        "prepare",
-        "render",
-        "parse",
-        "grade",
-        "test",
-        "file",
-    }
-)
+all_phases: frozenset[Phase] = frozenset({
+    "generate",
+    "prepare",
+    "render",
+    "parse",
+    "grade",
+    "test",
+    "file",
+})
 
 
 class PropInfo(TypedDict):
@@ -144,7 +142,7 @@ def check_prop(
         raise ValueError(f'Expected data["{prop}"] to be an integer')
     if value_type == "string" and not isinstance(new_value, str):
         raise ValueError(f'Expected data["{prop}"] to be a string')
-    if value_type == "number" and not isinstance(new_value, int | float):
+    if value_type == "number" and not isinstance(new_value, (int, float)):
         raise ValueError(f'Expected data["{prop}"] to be a number')
     if value_type == "boolean" and not isinstance(new_value, bool):
         raise ValueError(f'Expected data["{prop}"] to be a boolean')

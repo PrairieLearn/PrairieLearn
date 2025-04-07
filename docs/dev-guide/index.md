@@ -1,6 +1,6 @@
 # Developer Guide
 
-In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.js) and SQL (PostgreSQL) as the languages of implementation and try to minimize the number of complex libraries or frameworks being used. The website is server-side generated pages with minimal client-side JavaScript.
+In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.js) and SQL (PostgreSQL) as the languages of implementation and try to minimize the number of complex libraries or frameworks being used. The website is server-side generated pages with minimal client-side JavaScript.
 
 ## High level view
 
@@ -25,7 +25,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 - The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `testCourse`, and then emulate a client web browser that answers questions on assessments. If a test fails then it is often easiest to debug by recreating the error by doing questions yourself against a locally-running server.
 
-- If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest_1`, `pltest_2`, etc.) won't be removed when testing ends. This allows you inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test run.
+- If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest_1`, `pltest_2`, etc.) won't be removed when testing ends. This allows you to inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test run.
 
 ## Debugging server-side JavaScript
 
@@ -87,7 +87,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 - [Express](http://expressjs.com) is used as the web framework.
 
-- All pages are server-side rendered and we try and minimize the amount of client-side JavaScript. Client-side JS should use vanilla JavaScript/TypeScript where possible, but third-party libraries may be used when appropriate.
+- All pages are server-side rendered, and we try and minimize the amount of client-side JavaScript. Client-side JS should use vanilla JavaScript/TypeScript where possible, but third-party libraries may be used when appropriate.
 
 - Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For a real-world example, consider the page where users can accept the PrairieLearn terms and conditions, located at [`apps/prairielearn/src/ee/pages/terms`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms). That directory contains the following files:
 
@@ -123,7 +123,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 - Use uppercase for SQL reserved words like `SELECT`, `FROM`, `AS`, etc.
 
-- SQL code should not be inline in JavaScript files. Instead it should be in a separate `.sql` file, following the [Yesql concept](https://github.com/krisajenkins/yesql). Each `filename.js` file will normally have a corresponding `filename.sql` file in the same directory. The `.sql` file should look like:
+- SQL code should not be inline in JavaScript files. Instead, it should be in a separate `.sql` file, following the [`Yesql` concept](https://github.com/krisajenkins/yesql). Each `filename.js` file will normally have a corresponding `filename.sql` file in the same directory. The `.sql` file should look like:
 
   ```sql
   -- BLOCK select_question
@@ -143,7 +143,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
     *;
   ```
 
-From JavaScript you can then do:
+From JavaScript, you can then do:
 
 ```javascript
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
@@ -188,11 +188,12 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - To be able to use the stored procedures from the `psql` command line it is necessary to get the most recent schema name using `\dn` and set the `search_path` to use this _quoted_ schema name and the `public` schema:
 
-  ```
-  set search_path to "server_2021-07-07T20:25:04.779Z_T75V6Y",public;
+  <!-- prettier-ignore -->
+  ```sql
+  set search_path to "server_2021-07-07T20:25:04.779Z_T75V6Y", public;
   ```
 
-- During startup we initially have no non-public schema in use. We first run the migrations to update all tables in the `public` schema, then we call `sqldb.setRandomSearchSchemaAsync()` to activate a random per-execution schema, and we run the sproc creation code to generate all the stored procedures in this schema. This means that every invocation of PrairieLearn will have its own locally-scoped copy of the stored procedures which are the correct versions for its code. This lets us upgrade PrairieLearn servers one at a time, while old servers are still running with their own copies of their sprocs. When PrairieLearn first starts up it has `search_path = public`, but later it will have `search_path = "server_2021-07-07T20:25:04.779Z_T75V6Y",public` so that it will first search the random schema and then fall back to `public`. The naming convention for the random schema uses the local instance name, the date, and a random string. Note that schema names need to be quoted using double-quotations in `psql` because they contain characters such as hyphens.
+- During startup, we initially have no non-public schema in use. We first run the migrations to update all tables in the `public` schema, then we call `sqldb.setRandomSearchSchemaAsync()` to activate a random per-execution schema, and we run the sproc creation code to generate all the stored procedures in this schema. This means that every invocation of PrairieLearn will have its own locally-scoped copy of the stored procedures which are the correct versions for its code. This lets us upgrade PrairieLearn servers one at a time, while old servers are still running with their own copies of their sprocs. When PrairieLearn first starts up it has `search_path = public`, but later it will have `search_path = "server_2021-07-07T20:25:04.779Z_T75V6Y",public` so that it will first search the random schema and then fall back to `public`. The naming convention for the random schema uses the local instance name, the date, and a random string. Note that schema names need to be quoted using double-quotations in `psql` because they contain characters such as hyphens.
 
 - For more details see `sprocs/array_and_number.sql` and comments in `server.js` near the call to `sqldb.setRandomSearchSchemaAsync()`.
 
@@ -200,7 +201,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - The most important tables in the database are shown in the diagram below:
 
-![](./simplified-models.d2)
+![Simplified database diagram](./simplified-models.d2)
 
 - Detailed descriptions of the format of each table are in the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
@@ -233,7 +234,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - See the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below:
 
-![](./models.d2){layout="elk"}
+![Full database diagram](./models.d2){layout="elk"}
 
 ## Database schema conventions
 
@@ -251,7 +252,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
     AND ai.deleted_at IS NULL;
   ```
 
-- We (almost) never delete student data from the database. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
+- We (almost) never delete student data from the database. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead, they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
 
 ## Database schema modification
 
@@ -289,7 +290,7 @@ WHERE
   const question = await queryRow(sql.block_name, QuestionSchema);
   ```
 
-- Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. All locking functions are equivalent in their action, so the most convenient one should be used in any given situation:
+- Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc.) should call a locking function when they start. All locking functions are equivalent in their action, so the most convenient one should be used in any given situation:
 
   | Locking function            | Argument                 |
   | --------------------------- | ------------------------ |
@@ -367,9 +368,7 @@ WHERE
   FROM
     ROWS
   FROM
-    (jsonb_to_recordset($data) AS (a INTEGER, b TEXT))
-  WITH
-    ORDINALITY AS data (a, b, order_by);
+    (jsonb_to_recordset($data) AS (a INTEGER, b TEXT)) WITH ORDINALITY AS data (a, b, order_by);
   ```
 
 ## Asynchronous control flow in JavaScript
@@ -380,7 +379,7 @@ WHERE
 
 ## Using async route handlers with ExpressJS
 
-- Express can't directly use async route handlers. Instead we use [express-async-handler](https://www.npmjs.com/package/express-async-handler) like this:
+- Express can't directly use async route handlers. Instead, we use [express-async-handler](https://www.npmjs.com/package/express-async-handler) like this:
 
   ```javascript
   import asyncHandler from 'express-async-handler';
@@ -482,7 +481,7 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - The core files involved in question rendering are [lib/question-render.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.ts), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [components/QuestionContainer.html.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/components/QuestionContainer.html.ts).
 
-- The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestion`, etc). Unfortunately the control-flow is complicated because we need to call `lib/question-render.ts` during page data load, store the data it generates, and then later include the `components/QuestionContainer.html.ts` template to actually render this data.
+- The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestion`, etc.). Unfortunately the control-flow is complicated because we need to call `lib/question-render.ts` during page data load, store the data it generates, and then later include the `components/QuestionContainer.html.ts` template to actually render this data.
 
 - For example, the exact control-flow for `pages/instructorQuestion` is:
 
@@ -522,28 +521,28 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - The important variables involved in tracking question errors are:
 
-  | Variable                   | Error level    | Description                                                                                                                                                                                           |
-  | -------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | `variant.broken_at`        | Question error | Set to `NOW()` if there were question code errors in generating the variant. Such a variant will be not have `render()` functions called, but will instead be displayed as `This question is broken`. |
-  | `submission.broken`        | Question error | Set to `true` if there question code errors in parsing or grading the variant. After `submission.broken` is `true`, no further actions will be taken with the submission.                             |
-  | `issues` table             | Question error | Rows are inserted to record the details of the errors that caused `variant.broken != null` or `submission.broken == true` to be set to `true`.                                                        |
-  | `submission.gradable`      | Student error  | Whether this submission can be given a score. Set to `false` if format errors in the `submitted_answer` were encountered during either parsing or grading.                                            |
-  | `submission.format_errors` | Student error  | Details on any errors during parsing or grading. Should be set to something meaningful if `gradable = false` to explain what was wrong with the submitted answer.                                     |
-  | `submission.graded_at`     | None           | NULL if grading has not yet occurred, otherwise a timestamp.                                                                                                                                          |
-  | `submission.score`         | None           | Final score for the submission. Only used if `gradable = true` and `graded_at` is not NULL.                                                                                                           |
-  | `submission.feedback`      | None           | Feedback generated during grading. Only used if `gradable = true` and `graded_at` is not NULL.                                                                                                        |
+  | Variable                   | Error level    | Description                                                                                                                                                                                        |
+  | -------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `variant.broken_at`        | Question error | Set to `NOW()` if there were question code errors in generating the variant. Such a variant will not have `render()` functions called, but will instead be displayed as `This question is broken`. |
+  | `submission.broken`        | Question error | Set to `true` if there question code errors in parsing or grading the variant. After `submission.broken` is `true`, no further actions will be taken with the submission.                          |
+  | `issues` table             | Question error | Rows are inserted to record the details of the errors that caused `variant.broken != null` or `submission.broken == true` to be set to `true`.                                                     |
+  | `submission.gradable`      | Student error  | Whether this submission can be given a score. Set to `false` if format errors in the `submitted_answer` were encountered during either parsing or grading.                                         |
+  | `submission.format_errors` | Student error  | Details on any errors during parsing or grading. Should be set to something meaningful if `gradable = false` to explain what was wrong with the submitted answer.                                  |
+  | `submission.graded_at`     | None           | NULL if grading has not yet occurred, otherwise a timestamp.                                                                                                                                       |
+  | `submission.score`         | None           | Final score for the submission. Only used if `gradable = true` and `graded_at` is not NULL.                                                                                                        |
+  | `submission.feedback`      | None           | Feedback generated during grading. Only used if `gradable = true` and `graded_at` is not NULL.                                                                                                     |
 
 - Note that `submission.format_errors` stores information about student errors, while the `issues` table stores information about question code errors.
 
 - The question flow is shown in the diagram below:
 
-![](./question-flow.d2)
+![Question lifecycle flowchart](./question-flow.d2)
 
 ## JavaScript equality operator
 
 You should almost always use the `===` operator for comparisons; this is enforced with an ESLint rule.
 
-The only case where the `==` operator is frequently useful is for comparing entity IDs that may be coming from the client/database/etc. These may be either strings or numbers depending on where they're coming from or how they're fetched. To make it abundantly clear that ids are being compared, you should use the `idsEqual` utility:
+The only case where the `==` operator is frequently useful is for comparing entity IDs that may be coming from the client/database/etc. These may be either strings or numbers depending on where they're coming from or how they're fetched. To make it abundantly clear that IDs are being compared, you should use the `idsEqual` utility:
 
 ```js
 import { idsEqual } from './lib/id';

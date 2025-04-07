@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { formatTimezone, type Timezone } from '../../lib/timezones.js';
+import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 
 export function InstructorCourseAdminSettings({
   resLocals,
@@ -36,7 +36,9 @@ export function InstructorCourseAdminSettings({
 
       <div class="card  mb-4">
         <div class="card-header bg-primary text-white d-flex">
-          <h1>Course Settings</h1>
+          <h1>
+            ${resLocals.has_enhanced_navigation ? 'General course settings' : 'Course Settings'}
+          </h1>
         </div>
         <div class="card-body">
           ${!courseInfoExists || !coursePathExists
@@ -49,8 +51,8 @@ export function InstructorCourseAdminSettings({
           <form name="edit-course-settings-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
-            <div class="form-group">
-              <label for="short_name">Short Name</label>
+            <div class="mb-3">
+              <label class="form-label" for="short_name">Short Name</label>
               <input
                 type="text"
                 class="form-control"
@@ -69,8 +71,8 @@ export function InstructorCourseAdminSettings({
                 "MATH 101" or "PHYS 440").
               </small>
             </div>
-            <div class="form-group">
-              <label for="title">Title</label>
+            <div class="mb-3">
+              <label class="form-label" for="title">Title</label>
               <input
                 type="text"
                 class="form-control"
@@ -88,10 +90,10 @@ export function InstructorCourseAdminSettings({
                 This is the official title of the course, as given in the course catalog.
               </small>
             </div>
-            <div class="form-group">
-              <label for="display_timezone">Timezone</label>
+            <div class="mb-3">
+              <label class="form-label" for="display_timezone">Timezone</label>
               <select
-                class="custom-select"
+                class="form-select"
                 id="display_timezone"
                 name="display_timezone"
                 ${courseInfoExists &&
@@ -116,8 +118,8 @@ export function InstructorCourseAdminSettings({
                 timezone that has the same times as you.
               </small>
             </div>
-            <div class="form-group">
-              <label for="institution">Institution</label>
+            <div class="mb-3">
+              <label class="form-label" for="institution">Institution</label>
               <input
                 type="text"
                 class="form-control"
@@ -130,8 +132,8 @@ export function InstructorCourseAdminSettings({
                 This is your academic institution (e.g., "University of Illinois").
               </small>
             </div>
-            <div class="form-group">
-              <label for="path">Path</label>
+            <div class="mb-3">
+              <label class="form-label" for="path">Path</label>
               <input
                 type="text"
                 class="form-control"
@@ -144,8 +146,8 @@ export function InstructorCourseAdminSettings({
                 The path where course files can be found.
               </small>
             </div>
-            <div class="form-group">
-              <label for="repository">Repository</label>
+            <div class="mb-3">
+              <label class="form-label" for="repository">Repository</label>
               <span class="input-group">
                 <input
                   type="text"
@@ -155,17 +157,15 @@ export function InstructorCourseAdminSettings({
                   value="${resLocals.course.repository}"
                   disabled
                 />
-                <div class="input-group-append">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary btn-copy"
-                    data-clipboard-text="${resLocals.course.repository}"
-                    aria-label="Copy repository"
-                    ${resLocals.course.repository ? '' : 'disabled'}
-                  >
-                    <i class="far fa-clipboard"></i>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary btn-copy"
+                  data-clipboard-text="${resLocals.course.repository}"
+                  aria-label="Copy repository"
+                  ${resLocals.course.repository ? '' : 'disabled'}
+                >
+                  <i class="far fa-clipboard"></i>
+                </button>
               </span>
               <small class="form-text text-muted">
                 The Github repository that can be used to sync course files.

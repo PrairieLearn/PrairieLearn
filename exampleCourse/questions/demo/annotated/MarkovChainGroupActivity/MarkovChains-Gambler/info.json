@@ -9,11 +9,10 @@
   "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-python",
-    "entrypoint": "/python_autograder/run.sh",
     "timeout": 60
   },
   "workspaceOptions": {
-    "image": "prairielearn/workspace-jupyterlab",
+    "image": "prairielearn/workspace-jupyterlab-python",
     "port": 8080,
     "home": "/home/jovyan",
     "rewriteUrl": false,

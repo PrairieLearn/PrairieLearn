@@ -17,10 +17,10 @@ import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
 import {
   FileModifyEditor,
-  QuestionRenameEditor,
-  QuestionDeleteEditor,
-  QuestionCopyEditor,
   MultiEditor,
+  QuestionCopyEditor,
+  QuestionDeleteEditor,
+  QuestionRenameEditor,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
@@ -28,7 +28,6 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
-import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
@@ -43,6 +42,25 @@ import {
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+/**
+ * Returns the new value if it differs from the default value. Otherwise, returns undefined.
+ * This is helpful for setting JSON properties that we only want to write to if they are different
+ * than the default value.
+ */
+function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+  if (existingValue === undefined) {
+    if (newValue !== defaultValue) {
+      return newValue;
+    }
+  } else {
+    if (existingValue !== defaultValue && newValue === defaultValue) {
+      return undefined;
+    } else {
+      return newValue;
+    }
+  }
+}
 
 router.post(
   '/test',
@@ -139,6 +157,24 @@ router.post(
         return [req.body.tags];
       });
 
+      questionInfo.gradingMethod = propertyValueWithDefault(
+        questionInfo.gradingMethod,
+        req.body.grading_method,
+        'Internal',
+      );
+
+      questionInfo.singleVariant = propertyValueWithDefault(
+        questionInfo.singleVariant,
+        req.body.single_variant === 'on',
+        false,
+      );
+
+      questionInfo.showCorrectAnswer = propertyValueWithDefault(
+        questionInfo.showCorrectAnswer,
+        req.body.show_correct_answer === 'on',
+        true,
+      );
+
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
       const qid_new = run(() => {
@@ -218,6 +254,7 @@ router.post(
     } else if (req.body.__action === 'delete_question') {
       const editor = new QuestionDeleteEditor({
         locals: res.locals as any,
+        questions: res.locals.question,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -242,7 +279,7 @@ router.get(
     // `originalUrl` so that this router doesn't have to be aware of where it's
     // mounted.
     const host = getCanonicalHost(req);
-    let questionTestPath = new URL(`${host}${req.originalUrl}`).pathname;
+    let questionTestPath = new URL(req.originalUrl, host).pathname;
     if (!questionTestPath.endsWith('/')) {
       questionTestPath += '/';
     }
@@ -295,8 +332,7 @@ router.get(
       user_id: res.locals.user.user_id,
       is_administrator: res.locals.is_administrator,
     });
-    const infoPath = encodePath(path.join('questions', res.locals.question.qid, 'info.json'));
-
+    const infoPath = path.join('questions', res.locals.question.qid, 'info.json');
     const fullInfoPath = path.join(res.locals.course.path, infoPath);
     const questionInfoExists = await fs.pathExists(fullInfoPath);
 

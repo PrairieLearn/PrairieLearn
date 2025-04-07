@@ -2,10 +2,10 @@ import { type IncomingMessage } from 'node:http';
 import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
 
-import { S3, type CompleteMultipartUploadCommandOutput } from '@aws-sdk/client-s3';
+import { type CompleteMultipartUploadCommandOutput, S3 } from '@aws-sdk/client-s3';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { Upload } from '@aws-sdk/lib-storage';
-import { type SdkStream, type NodeJsClient } from '@smithy/types';
+import { type NodeJsClient, type SdkStream } from '@smithy/types';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 

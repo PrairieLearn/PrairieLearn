@@ -101,6 +101,7 @@ packages/*/dist
 coverage/
 apps/*/coverage
 packages/*/coverage
+coverage.xml
 
 ## TypeScript cache
 *.tsbuildinfo
@@ -114,3 +115,6 @@ packages/*/coverage
 
 ## v8 crash reports
 isolate-*-v8.log
+
+## ESLint cache
+.eslintcache

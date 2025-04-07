@@ -15,7 +15,7 @@ PrairieDraw uses the `Sylvester.Vector` class to specify positions and direction
 Below is an incomplete selection of useful operations on Vector; the complete documentation is found [here](http://sylvester.jcoglan.com/docs.html).
 
 `Sylvester.Vector.create(elements)`
-Creates and returns a new Vector from the array `elements`. It is often useful to alias this command in your script as `var $V = Sylvester.Vector.create` so you can write `$V([x,y])` later on.
+Creates and returns a new Vector from the array `elements`. It is often useful to alias this command in your script as `var $V = Sylvester.Vector.create`, so you can write `$V([x,y])` later on.
 
 `add(vector)`
 Returns a new Vector which is the sum of the receiver and the argument.
@@ -121,7 +121,7 @@ Draws a circle centered at `center` with radius `radius`.
 Draw a rectangle (aligned to the axes) of the given width and height. When not specified, `center` is assumed to be the origin. An `angle` to rotate can also be given.
 
 `rectangleGeneric(bottomLeft, bottomRight, height)`
-Draw a rectangle with one side connecting `bottomLeft` and `bottomRight` of the given `height`. The rectangle extends perpendicular (counter-clockwise) to this line.
+Draw a rectangle with one side connecting `bottomLeft` and `bottomRight` of the given `height`. The rectangle extends perpendicular (counterclockwise) to this line.
 
 ## Drawing vector arrows
 
@@ -189,7 +189,7 @@ Places text along the arc specified by `center`, `radius`, `startAngle`, and `en
 When using `PrairieDraw.js` to draw figures in questions, figure labels can be included using either plain text, like `pd.text(..., "label")`, or with LaTeX, like `pd.text(..., "TEX:$x$")`. If you are using LaTeX labels then they have to be rendered into image files before they can be displayed. This is done by running the command:
 
 ```sh
-docker run -it --rm -v PATH_TO_MY_COURSE:/course prairielearn/prairielearn /PrairieLearn/tools/generate_text.py
+docker run -it --rm -v PATH_TO_MY_COURSE:/course prairielearn/prairielearn /PrairieLearn/contrib/generate_text.py
 ```
 
 Replace `PATH_TO_MY_COURSE` above with your local course path directory, such as `/Users/mwest/git/pl-tam212` or `C:/GitHub/pl-tam212`.
@@ -211,9 +211,8 @@ These files should be committed to the `git` repository and pushed to the live s
 
 ## Advanced: Running without Docker
 
-If you want to generate LaTeX label images without docker then you will need to install [Python](https://www.python.org), [ImageMagick](http://www.imagemagick.org/), and [LaTeX](http://tug.org/texlive/) and then run:
+If you want to generate LaTeX label images without Docker then you will need to install [Python](https://www.python.org), [ImageMagick](http://www.imagemagick.org/), and [LaTeX](http://tug.org/texlive/) and then run the following command in the root of the PrairieLearn repository:
 
 ```sh
-cd <FULL-PATH>/PrairieLearn
-python tools/generate_text.py --subdir /path/to/course
+python contrib/generate_text.py --subdir /path/to/course
 ```

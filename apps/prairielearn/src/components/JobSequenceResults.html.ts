@@ -5,7 +5,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import type { Course } from '../lib/db-types.js';
-import type { JobWithToken, JobSequenceWithTokens } from '../lib/server-jobs.types.js';
+import type { JobSequenceWithTokens, JobWithToken } from '../lib/server-jobs.types.js';
 
 import { JobStatus } from './JobStatus.html.js';
 

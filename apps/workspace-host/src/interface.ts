@@ -15,7 +15,6 @@ import Docker from 'dockerode';
 import express, { type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { type Entry } from 'fast-glob';
-import _ from 'lodash';
 import fetch from 'node-fetch';
 import * as shlex from 'shlex';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,10 +29,10 @@ import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
-import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws.js';
+import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
 import { parseDockerLogs } from './lib/docker.js';
-import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths.js';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import * as socketServer from './lib/socket-server.js';
 
 interface WorkspaceServerSettings {
@@ -121,7 +120,7 @@ app.post(
     } else if (action == null) {
       res.status(500).send('Missing action');
     } else if (action === 'init') {
-      const useInitialZip: boolean = _.get(req.body.options, 'useInitialZip', false);
+      const useInitialZip: boolean = req.body.options?.useInitialZip ?? false;
       await initSequence(workspace_id, useInitialZip, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);

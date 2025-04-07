@@ -77,14 +77,17 @@ class PLTestResult(unittest.TestResult):
             tr_list = traceback.format_exception(*err[1].err)
             name = "Your code raised an Exception"
             self.done_grading = True
-            if isinstance(err[1].err[1], SyntaxError | NameError):
+            if isinstance(err[1].err[1], (SyntaxError, NameError)):
                 self.grading_succeeded = False
                 self.format_errors.append("Your code has a syntax error.")
                 Feedback.set_main_output()
             else:
-                self.results.append(
-                    {"name": name, "filename": "error", "max_points": 1, "points": 0}
-                )
+                self.results.append({
+                    "name": name,
+                    "filename": "error",
+                    "max_points": 1,
+                    "points": 0,
+                })
                 Feedback.set_name("error")
             Feedback.add_feedback("".join(tr_list))
             Feedback.add_feedback("\n\nYour code:\n\n")

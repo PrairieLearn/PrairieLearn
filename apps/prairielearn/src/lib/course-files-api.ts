@@ -4,7 +4,7 @@ import { createTRPCProxyClient, httpLink } from '@trpc/client';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import * as jose from 'jose';
 
-import { courseFilesRouter, type CourseFilesRouter } from '../api/trpc/index.js';
+import { type CourseFilesRouter, courseFilesRouter } from '../api/trpc/index.js';
 
 import { config } from './config.js';
 

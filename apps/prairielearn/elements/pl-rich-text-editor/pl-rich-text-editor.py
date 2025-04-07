@@ -14,7 +14,7 @@ class Counter(Enum):
     WORD = "word"
 
 
-class OutputFormat(Enum):
+class InputFormat(Enum):
     HTML = "html"
     MARKDOWN = "markdown"
 
@@ -25,6 +25,7 @@ ALLOW_BLANK_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
 DIRECTORY_DEFAULT = "."
 MARKDOWN_SHORTCUTS_DEFAULT = True
+CLIPBOARD_ENABLED_DEFAULT = True
 
 
 def get_answer_name(file_name: str) -> str:
@@ -34,9 +35,9 @@ def get_answer_name(file_name: str) -> str:
 
 
 def element_inner_html(element: lxml.html.HtmlElement) -> str:
-    return (element.text or "") + "".join(
-        [str(lxml.html.tostring(c), "utf-8") for c in element.iterchildren()]
-    )
+    return (element.text or "") + "".join([
+        str(lxml.html.tostring(c), "utf-8") for c in element.iterchildren()
+    ])
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -51,6 +52,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "format",
         "markdown-shortcuts",
         "counter",
+        "clipboard-enabled",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(
@@ -88,13 +90,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
     directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
-    output_format = pl.get_enum_attrib(
-        element, "format", OutputFormat, OutputFormat.HTML
-    )
+    input_format = pl.get_enum_attrib(element, "format", InputFormat, InputFormat.HTML)
     markdown_shortcuts = pl.get_boolean_attrib(
         element, "markdown-shortcuts", MARKDOWN_SHORTCUTS_DEFAULT
     )
     counter = pl.get_enum_attrib(element, "counter", Counter, Counter.NONE)
+    clipboard_enabled = pl.get_boolean_attrib(
+        element, "clipboard-enabled", CLIPBOARD_ENABLED_DEFAULT
+    )
     element_text = element_inner_html(element)
 
     if data["panel"] == "question" or data["panel"] == "submission":
@@ -111,39 +114,45 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 if (data["panel"] == "submission" or not data["editable"])
                 else "false"
             ),
-            "format": output_format.value,
+            "format": input_format.value,
             "markdown_shortcuts": "true" if markdown_shortcuts else "false",
             "counter": counter.value,
             "counter_enabled": counter != Counter.NONE,
+            "clipboard_enabled": clipboard_enabled,
         }
 
-        if source_file_name is not None:
-            if directory == "serverFilesCourse":
-                directory = data["options"]["server_files_course_path"]
-            elif directory == "clientFilesCourse":
-                directory = data["options"]["client_files_course_path"]
-            else:
-                directory = os.path.join(data["options"]["question_path"], directory)
-            file_path = os.path.join(directory, source_file_name)
-            with open(file_path) as f:
-                text_display = f.read()
-        else:
-            text_display = element_text
-
-        html_params["original_file_contents"] = base64.b64encode(
-            text_display.encode("UTF-8").strip()
-        ).decode()
-
         submitted_files = data["submitted_answers"].get("_files", [])
-        submitted_file_contents = [
-            f.get("contents", None)
-            for f in submitted_files
-            if f.get("name", None) == file_name
-        ]
-        if submitted_file_contents:
-            html_params["current_file_contents"] = submitted_file_contents[0]
+        submitted_file = next(
+            (f for f in submitted_files if f.get("name", None) == file_name), None
+        )
+        if submitted_file:
+            html_params["current_file_contents"] = submitted_file.get("contents")
+            # If the mimetype is provided, override the input format
+            if submitted_file.get("mimetype"):
+                html_params["format"] = (
+                    "html"
+                    if submitted_file.get("mimetype") == "text/html"
+                    else "markdown"
+                )
         else:
-            html_params["current_file_contents"] = html_params["original_file_contents"]
+            if source_file_name is not None:
+                if directory == "serverFilesCourse":
+                    directory = data["options"]["server_files_course_path"]
+                elif directory == "clientFilesCourse":
+                    directory = data["options"]["client_files_course_path"]
+                else:
+                    directory = os.path.join(
+                        data["options"]["question_path"], directory
+                    )
+                file_path = os.path.join(directory, source_file_name)
+                with open(file_path) as f:
+                    text_display = f.read()
+            else:
+                text_display = element_text
+
+            html_params["current_file_contents"] = base64.b64encode(
+                text_display.encode("UTF-8").strip()
+            ).decode()
 
         html_params["question"] = data["panel"] == "question"
         with open("pl-rich-text-editor.mustache", encoding="utf-8") as f:
@@ -164,7 +173,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     answer_name = get_answer_name(file_name)
 
     # Get submitted answer or return parse_error if it does not exist
-    file_contents = data["submitted_answers"].get(answer_name, None)
+    file_contents = data["submitted_answers"].get(answer_name, "")
     if not file_contents and not allow_blank:
         pl.add_files_format_error(data, f"No submitted answer for {file_name}")
         return
@@ -173,4 +182,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # so delete the original submitted answer format to avoid
     # duplication
     del data["submitted_answers"][answer_name]
-    pl.add_submitted_file(data, file_name, file_contents)
+    # Mimetype is explicitly set to ensure that we can distinguish newer
+    # submissions (stored as HTML) from submissions using the older version of
+    # pl-rich-text-editor (potentially stored in Markdown)
+    pl.add_submitted_file(data, file_name, file_contents, mimetype="text/html")
