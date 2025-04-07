@@ -241,7 +241,7 @@ function SampleQuestionSelector({
   return html`
     <div class="accordion my-3" id="sample-question-accordion">
       <div class="accordion-item">
-        <h2 class="accordion-header" id="sample-question-accordion-content">
+        <h2 class="accordion-header" id="sample-question-accordion-heading">
           <button
             class="accordion-button"
             type="button"
@@ -256,7 +256,7 @@ function SampleQuestionSelector({
         <div
           id="sample-question-content"
           class="accordion-collapse ${startOpen ? 'show' : 'collapse'}"
-          aria-labelledby="sample-question-content"
+          aria-labelledby="sample-question-accordion-heading"
           data-bs-parent="#sample-question-accordion"
         >
           <div class="accordion-body">
