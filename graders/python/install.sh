@@ -13,7 +13,7 @@ dnf install -y \
 
 echo "setting up conda..."
 cd /
-arch=$(uname -m)
+arch="$(uname -m)"
 curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
