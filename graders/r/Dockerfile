@@ -21,7 +21,7 @@
 # r2u is now part of rocker so the image is now also rocker/r2u.
 
 FROM rocker/r2u:24.04
-ARG CACHEBUST=2025-04-04-17-34-59
+ARG CACHEBUST=2025-04-08-23-36-34
 
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
