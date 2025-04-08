@@ -44,7 +44,7 @@ export const TopicJsonSchema = z
     shortName: z.string().describe('Short name (preferably 2 to 7 characters).').optional(),
     name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
     color: ColorJsonSchema,
-    description: z.string().describe('Description of the topic.').optional(),
+    description: z.string().describe("A single topic, can represent a unit of learning (e.g. 'vectors')").optional(),
   })
   .describe('A single topic description for organizing questions.');
 
