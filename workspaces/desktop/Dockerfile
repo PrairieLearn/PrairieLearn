@@ -1,6 +1,6 @@
 FROM ubuntu:24.04
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 COPY pre-install.sh /pre-install.sh
 RUN /bin/bash /pre-install.sh
 COPY code.desktop /usr/share/applications/code.desktop
@@ -15,6 +15,6 @@ COPY post-install.sh /post-install.sh
 RUN /bin/bash /post-install.sh
 
 USER 1001
-ENV PL_USER prairielearner
+ENV PL_USER=prairielearner
 
-CMD ["/pl-gosu-helper.sh", "/start-vnc.sh" ]
+CMD ["/pl-gosu-helper.sh", "/start-vnc.sh"]

@@ -73,7 +73,7 @@ RUN apt-get update \
         ttdo \
         unix \
         xts \
-    && echo "options(diffobj.brightness=\"dark\")" >> /etc/R/Rprofile.site
+    && echo "options(diffobj.brightness=\"dark\")" >>/etc/R/Rprofile.site
 
 # Install visualTest from Mango
 RUN installGithub.r MangoTheCat/visualTest
@@ -87,12 +87,12 @@ RUN install2.r --repos=NULL /r_autograder/plr \
 RUN useradd ag \
     && mkdir /home/ag \
     && chown ag:ag /home/ag \
-    && echo "[user]" > /home/ag/.gitconfig \
-    && echo "name = Autograding User" >> /home/ag/.gitconfig \
-    && echo "email = ag@nowhere" >> /home/ag/.gitconfig \
+    && echo "[user]" >/home/ag/.gitconfig \
+    && echo "name = Autograding User" >>/home/ag/.gitconfig \
+    && echo "email = ag@nowhere" >>/home/ag/.gitconfig \
     && chown ag:ag /home/ag/.gitconfig
 
 # Copy autograder interface script into position
 COPY r_autograder /r_autograder
 
-ENTRYPOINT [ "/r_autograder/run.sh" ]
+ENTRYPOINT ["/r_autograder/run.sh"]

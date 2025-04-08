@@ -31,7 +31,7 @@ RUN arch="$(uname -m)" \
     && pip cache purge
 
 USER coder
- 
+
 # After installing Python we install some VS Code extensions.
 RUN code-server --disable-telemetry --force \
     # vscode support for python, including debugger
