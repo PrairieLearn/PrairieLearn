@@ -26,7 +26,6 @@ import express, {
   type Response,
 } from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
@@ -1886,7 +1885,9 @@ export async function initExpress(): Promise<Express> {
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-    res.locals.error_id = _.times(12, () => _.sample(chars)).join('');
+    res.locals.error_id = Array.from({ length: 12 })
+      .map(() => chars[Math.floor(Math.random() * chars.length)])
+      .join('');
 
     err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
 
