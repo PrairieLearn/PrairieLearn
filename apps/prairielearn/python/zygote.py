@@ -159,7 +159,7 @@ def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> 
         zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
     except Exception:
-        print(f"Error converting this object to json:\n{obj}\n")
+        print(f"Error converting this object to json:\n{obj}\n", file=sys.stderr)
         raise
 
 
@@ -190,11 +190,10 @@ def worker_loop() -> None:
             if not json_inp.strip():
                 continue
 
-            # Unpack the input line as JSON
+            # Unpack the input line as JSON. If that fails, log the line for debugging.
             try:
                 inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
             except json.JSONDecodeError as exc:
-                print(json_inp, file=sys.stderr)
                 raise ValueError(f"Error decoding JSON input: {json_inp}") from exc
 
             # Get the contents of the JSON input
