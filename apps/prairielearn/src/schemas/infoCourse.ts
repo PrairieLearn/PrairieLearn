@@ -41,12 +41,11 @@ export type ColorJson = z.infer<typeof ColorJsonSchema>;
 export const TopicJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    shortName: z.string().describe('Short name (preferably 2 to 7 characters).').optional(),
     name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
     color: ColorJsonSchema,
-    description: z.string().describe("A single topic, can represent a unit of learning (e.g. 'vectors')").optional(),
+    description: z.string().describe('Description of the topic.').optional(),
   })
-  .describe('A single topic description for organizing questions.');
+  .describe("A single topic, can represent a unit of learning (e.g. 'vectors')");
 
 export type TopicJson = z.infer<typeof TopicJsonSchema>;
 export type TopicJsonInput = z.input<typeof TopicJsonSchema>;
@@ -122,10 +121,9 @@ export const CourseJsonSchema = z
     timezone: z
       .string()
       .describe(
-        'The timezone for all date input and display (e.g., "America/Chicago", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).',
+        'The timezone for all date input and display (e.g., "America/Chicago"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred.',
       )
-      .optional()
-      .default('America/Chicago'),
+      .optional(),
     options: CourseOptionsJsonSchema.optional(),
     assessmentSets: z.array(AssessmentSetJsonSchema).describe('Assessment sets.').optional(),
     assessmentModules: z

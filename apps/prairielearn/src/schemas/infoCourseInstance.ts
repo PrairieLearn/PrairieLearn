@@ -40,10 +40,9 @@ export const CourseInstanceJsonSchema = z
     timezone: z
       .string()
       .describe(
-        'The timezone for all date input and display (e.g., "America/Chicago", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).',
+        'The timezone for all date input and display (e.g., "America/Chicago"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.',
       )
-      .optional()
-      .default('America/Chicago'),
+      .optional(),
     allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional().default(true),
     hideInEnrollPage: z
       .boolean()
