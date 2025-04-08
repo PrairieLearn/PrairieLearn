@@ -8,7 +8,7 @@ insert_final_newline = true
 [Makefile]
 indent_style = tab
 
-[*.{js,jsx,ts,tsx,json,mjs,cjs,mts,cts,sql,yml,html,css}]
+[*.{js,jsx,ts,tsx,json,mjs,cjs,mts,cts,sql,yml,html,css,sh}]
 indent_style = space
 indent_size = 2
 

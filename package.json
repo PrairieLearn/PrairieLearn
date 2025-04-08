@@ -47,7 +47,7 @@
     "markdownlint-cli": "^0.44.0",
     "prettier": "^3.5.3",
     "prettier-plugin-pkg": "^0.18.1",
-    "prettier-plugin-sh": "^0.16.0",
+    "prettier-plugin-sh": "^0.17.0",
     "prettier-plugin-toml": "^2.0.3",
     "pyright": "^1.1.398",
     "s3rver": "^3.7.1",
