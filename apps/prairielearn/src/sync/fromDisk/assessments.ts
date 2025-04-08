@@ -116,10 +116,10 @@ function getParamsForAssessment(
         triesPerVariant: number;
         gradeRateMinutes: number;
         canView: string[] | null;
-        canSubmit: string[] | null;
-        advanceScorePerc: number;
         jsonCanView: string[] | null;
+        canSubmit: string[] | null;
         jsonCanSubmit: string[] | null;
+        advanceScorePerc: number;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -138,8 +138,8 @@ function getParamsForAssessment(
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
-            canSubmit: alternative?.canSubmit ?? questionCanSubmit,
             jsonCanView: alternative.canView,
+            canSubmit: alternative?.canSubmit ?? questionCanSubmit,
             jsonCanSubmit: alternative.canSubmit,
           };
         });
@@ -157,8 +157,8 @@ function getParamsForAssessment(
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
             canView: questionCanView,
-            canSubmit: questionCanSubmit,
             jsonCanView: question.canView,
+            canSubmit: questionCanSubmit,
             jsonCanSubmit: question.canSubmit,
           },
         ];
@@ -218,7 +218,9 @@ function getParamsForAssessment(
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
+          json_can_view: alternative.jsonCanView,
           can_submit: alternative.canSubmit,
+          json_can_submit: alternative.jsonCanSubmit,
           advance_score_perc: alternative.advanceScorePerc,
           effective_advance_score_perc:
             alternative.advanceScorePerc ??
@@ -226,8 +228,6 @@ function getParamsForAssessment(
             zone.advanceScorePerc ??
             assessment.advanceScorePerc ??
             0,
-          json_can_view: alternative.jsonCanView,
-          json_can_submit: alternative.jsonCanSubmit,
         };
       });
 
