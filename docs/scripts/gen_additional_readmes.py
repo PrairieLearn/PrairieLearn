@@ -79,6 +79,10 @@ def build_readme_nav() -> None:
                 header, body = contents.split("\n", 1)
                 header_text = header.split("#")[-1].strip()
                 print(header, file=f)
+                print(
+                    f"""!!! note\n\tThis documentation was sourced from [{path_relative_to_root.as_posix()}]({SOURCE_ROOT}{path_relative_to_root.as_posix()}).""".strip(),
+                    file=f,
+                )
                 print(body, file=f)
 
             if path_relative_to_base.parent.as_posix() == ".":
