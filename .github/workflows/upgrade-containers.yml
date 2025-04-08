@@ -1,6 +1,7 @@
 name: Upgrade Containers
 
 on:
+  workflow_dispatch:
   schedule:
     # At 12:00 (for testing)
     - cron: '0 12 * * *'
