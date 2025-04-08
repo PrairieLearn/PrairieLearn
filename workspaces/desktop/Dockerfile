@@ -18,4 +18,4 @@ RUN /bin/bash /post-install.sh
 USER 1001
 ENV PL_USER prairielearner
 
-CMD /pl-gosu-helper.sh /start-vnc.sh
+CMD ["/pl-gosu-helper.sh", "/start-vnc.sh" ]
