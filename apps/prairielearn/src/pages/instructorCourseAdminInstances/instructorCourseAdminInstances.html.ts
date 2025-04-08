@@ -125,7 +125,7 @@ export function InstructorCourseAdminInstances({
                           data-bs-placement="bottom"
                           data-bs-html="true"
                           data-bs-title="Latest Access Date"
-                          data-content="${PopoverEndDate()}"
+                          data-bs-content="${PopoverEndDate()}"
                         >
                           <i class="far fa-question-circle" aria-hidden="true"></i>
                         </button>

@@ -1,13 +1,15 @@
 import { z } from 'zod';
 
-import { escapeHtml, html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
+import { TagDescription } from '../../components/TagDescription.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
+import { TopicDescription } from '../../components/TopicDescription.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -127,7 +129,7 @@ export function InstructorQuestionSettings({
             <div class="mb-3">
               <label class="form-label" for="qid">QID</label>
               ${questionGHLink
-                ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
+                ? html`<a target="_blank" href="${questionGHLink}">view on GitHub</a>`
                 : ''}
               <input
                 type="text"
@@ -147,7 +149,7 @@ export function InstructorQuestionSettings({
             </div>
             <div class="mb-3">
               <h2 class="h4">General</h2>
-              <label for="title">Title</label>
+              <label class="form-label" for="title">Title</label>
               <input
                 type="text"
                 class="form-control"
@@ -187,7 +189,9 @@ export function InstructorQuestionSettings({
                                     value="${topic.name}"
                                     data-color="${topic.color}"
                                     data-name="${topic.name}"
-                                    data-description="${topic.description}"
+                                    data-description="${topic.implicit
+                                      ? ''
+                                      : TopicDescription(topic)}"
                                     ${topic.name === resLocals.topic.name ? 'selected' : ''}
                                   ></option>
                                 `;
@@ -218,7 +222,9 @@ export function InstructorQuestionSettings({
                                         value="${tag.name}"
                                         data-color="${tag.color}"
                                         data-name="${tag.name}"
-                                        data-description="${tag.description}"
+                                        data-description="${tag.implicit
+                                          ? ''
+                                          : TagDescription(tag)}"
                                         ${selectedTags.has(tag.name) ? 'selected' : ''}
                                       ></option>
                                     `;
@@ -237,6 +243,67 @@ export function InstructorQuestionSettings({
                     : ''}
                 </tbody>
               </table>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="grading_method">Grading method</label>
+              <select
+                class="form-select"
+                id="grading_method"
+                name="grading_method"
+                ${canEdit ? '' : 'disabled'}
+              >
+                <option
+                  value="Internal"
+                  ${resLocals.question.grading_method === 'Internal' ? 'selected' : ''}
+                >
+                  Internal
+                </option>
+                <option
+                  value="External"
+                  ${resLocals.question.grading_method === 'External' ? 'selected' : ''}
+                >
+                  External
+                </option>
+                <option
+                  value="Manual"
+                  ${resLocals.question.grading_method === 'Manual' ? 'selected' : ''}
+                >
+                  Manual
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                The grading method used for this question.
+              </small>
+            </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="single_variant"
+                name="single_variant"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.question.single_variant ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="single_variant">Single variant</label>
+              <div class="small text-muted">
+                If enabled, students will only be able to try a single variant of this question on
+                any given assessment.
+              </div>
+            </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="show_correct_answer"
+                name="show_correct_answer"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.question.show_correct_answer ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="show_correct_answer">Show correct answer</label>
+              <div class="small text-muted">
+                If enabled, the correct answer panel will be shown after all submission attempts
+                have been exhausted.
+              </div>
             </div>
             ${canEdit
               ? html`
@@ -488,13 +555,13 @@ function QuestionSharing({
   question: Question;
   sharingSetsIn: SharingSetRow[];
 }) {
-  if (!question.shared_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
+  if (!question.share_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
     return html`<p>This question is not being shared.</p>`;
   }
 
   const details: HtmlValue[] = [];
 
-  if (question.shared_publicly) {
+  if (question.share_publicly) {
     details.push(html`
       <p>
         <span class="badge color-green3 me-1">Public</span>

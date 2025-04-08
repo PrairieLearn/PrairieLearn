@@ -1,4 +1,4 @@
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 interface ModalProps {
   body?: HtmlSafeString | string;
@@ -11,7 +11,7 @@ interface ModalProps {
   formEncType?: string;
   formMethod?: string;
   formAction?: string;
-  preventSubmitOnEnter?: boolean;
+  formClass?: string;
 }
 
 export function Modal({
@@ -25,6 +25,7 @@ export function Modal({
   formEncType,
   formMethod = 'POST',
   formAction,
+  formClass,
 }: ModalProps): HtmlSafeString {
   const titleId = `${id}-title`;
   const modal = html`
@@ -49,6 +50,7 @@ export function Modal({
       autocomplete="off"
       ${formEncType ? html`enctype="${formEncType}"` : ''}
       ${formAction ? html`action="${formAction}"` : ''}
+      ${formClass ? html`class="${formClass}"` : ''}
     >
       ${modal}
     </form>

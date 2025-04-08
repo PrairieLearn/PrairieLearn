@@ -2,11 +2,10 @@ import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
 
 import { S3 } from '@aws-sdk/client-s3';
-import { SQSClient, GetQueueUrlCommand, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { GetQueueUrlCommand, SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import * as tar from 'tar';
 
 import { logger } from '@prairielearn/logger';
@@ -22,7 +21,7 @@ import {
   type Variant,
 } from './db-types.js';
 import { type Grader } from './externalGraderCommon.js';
-import { getJobDirectory, buildDirectory } from './externalGraderCommon.js';
+import { buildDirectory, getJobDirectory } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -37,8 +36,8 @@ export class ExternalGraderSqs implements Grader {
     course: Course,
     configOverrides?: Partial<Config>,
   ) {
-    const config = _.cloneDeep(globalConfig);
-    _.assign(config, configOverrides);
+    const config = structuredClone(globalConfig);
+    Object.assign(config, configOverrides);
 
     const emitter = new EventEmitter();
 

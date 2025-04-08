@@ -3,11 +3,11 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
 import {
-  queryAsync,
-  queryRows,
   loadSqlEquiv,
+  queryAsync,
   queryOneRowAsync,
   queryRow,
+  queryRows,
 } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';

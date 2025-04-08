@@ -1,5 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { html, unsafeHtml, escapeHtml } from '@prairielearn/html';
+import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
@@ -13,11 +13,12 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
-import { getRoleNamesForUser, type GroupInfo } from '../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
 import { Modal } from './Modal.html.js';
-import type { QuestionContext } from './QuestionContainer.types.js';
+import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.html.js';
 
 // Only shows this many recent submissions by default
@@ -26,9 +27,19 @@ const MAX_TOP_RECENTS = 3;
 export function QuestionContainer({
   resLocals,
   questionContext,
+  questionRenderContext,
+  showFooter = true,
+  manualGradingPreviewUrl,
+  aiGradingPreviewUrl,
+  renderSubmissionSearchParams,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
+  showFooter?: boolean;
+  manualGradingPreviewUrl?: string;
+  aiGradingPreviewUrl?: string;
+  renderSubmissionSearchParams?: URLSearchParams;
 }) {
   const {
     question,
@@ -47,7 +58,7 @@ export function QuestionContainer({
 
   return html`
     <div
-      class="question-container"
+      class="question-container mb-4"
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
       data-variant-token="${variantToken}"
@@ -59,30 +70,47 @@ export function QuestionContainer({
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
-              ${QuestionPanel({ resLocals, questionContext })}
+              ${QuestionPanel({
+                resLocals,
+                questionContext,
+                questionRenderContext,
+                showFooter,
+                manualGradingPreviewUrl,
+                aiGradingPreviewUrl,
+              })}
             </form>
           `
-        : QuestionPanel({ resLocals, questionContext })}
-
-      <div class="card mb-4 grading-block${showTrueAnswer ? '' : ' d-none'}">
-        <div class="card-header bg-secondary text-white">
-          <h2>Correct answer</h2>
-        </div>
-        <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
-      </div>
-
+        : QuestionPanel({ resLocals, showFooter, questionContext })}
+      ${
+        // The correct answer isn't used when performing AI grading, so we hide
+        // it here to avoid confusion.
+        questionRenderContext !== 'ai_grading'
+          ? html`
+              <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
+                <div class="card-header bg-secondary text-white">
+                  <h2>Correct answer</h2>
+                </div>
+                <div class="card-body answer-body">
+                  ${showTrueAnswer ? unsafeHtml(answerHtml) : ''}
+                </div>
+              </div>
+            `
+          : ''
+      }
       ${submissions.length > 0
         ? html`
             ${SubmissionList({
               resLocals,
               questionContext,
+              questionRenderContext,
               submissions: submissions.slice(0, MAX_TOP_RECENTS),
               submissionHtmls,
               submissionCount: submissions.length,
+              renderSubmissionSearchParams,
             })}
             ${submissions.length > MAX_TOP_RECENTS
               ? html`
-                  <div class="mb-4 d-flex justify-content-center">
+                  <div class="mb-3 d-flex justify-content-center">
                     <button
                       class="btn btn-outline-secondary btn-sm show-hide-btn collapsed"
                       type="button"
@@ -100,9 +128,11 @@ export function QuestionContainer({
                     ${SubmissionList({
                       resLocals,
                       questionContext,
+                      questionRenderContext,
                       submissions: submissions.slice(MAX_TOP_RECENTS),
                       submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
                       submissionCount: submissions.length,
+                      renderSubmissionSearchParams,
                     })}
                   </div>
                 `
@@ -154,7 +184,7 @@ export function IssuePanel({
   }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(msgBody)}`;
 
   return html`
-    <div class="card mb-4">
+    <div class="card mb-3">
       <div class="card-header bg-danger text-white">
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
       </div>
@@ -211,7 +241,7 @@ export function IssuePanel({
 
       ${config.devMode || authz_data.has_course_permission_view
         ? html`
-            <div class="card-body border border-bottom-0 border-left-0 border-right-0">
+            <div class="card-body border border-bottom-0 border-start-0 border-end-0">
               ${issue.system_data?.courseErrData
                 ? html`
                     <p><strong>Console log:</strong></p>
@@ -320,7 +350,6 @@ function QuestionFooter({
   resLocals: QuestionFooterResLocals;
   questionContext: QuestionContext;
 }) {
-  if (questionContext === 'manual_grading') return '';
   if (resLocals.question.type === 'Freeform') {
     return html`
       <div class="card-footer" id="question-panel-footer">
@@ -631,9 +660,17 @@ function AvailablePointsNotes({
 function QuestionPanel({
   resLocals,
   questionContext,
+  questionRenderContext,
+  showFooter,
+  manualGradingPreviewUrl,
+  aiGradingPreviewUrl,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
+  showFooter: boolean;
+  manualGradingPreviewUrl?: string;
+  aiGradingPreviewUrl?: string;
 }) {
   const { question, questionHtml, question_copy_targets, course, instance_question_info } =
     resLocals;
@@ -646,7 +683,7 @@ function QuestionPanel({
     questionContext !== 'manual_grading';
 
   return html`
-    <div class="card mb-4 question-block">
+    <div class="card mb-3 question-block">
       <div class="card-header bg-primary text-white d-flex align-items-center">
         <h1>
           ${QuestionTitle({
@@ -655,26 +692,71 @@ function QuestionPanel({
             questionNumber: instance_question_info?.question_number,
           })}
         </h1>
-        ${showCopyQuestionButton
-          ? html`
-              <button
-                class="btn btn-light btn-sm ms-auto"
-                type="button"
-                data-bs-toggle="modal"
-                data-bs-target="#copyQuestionModal"
-              >
-                <i class="fa fa-clone"></i>
-                Copy question
-              </button>
-            `
-          : ''}
+        <div class="ms-auto d-flex flex-row gap-1">
+          <div class="btn-group">
+            ${showCopyQuestionButton
+              ? html`
+                  <button
+                    class="btn btn-sm btn-outline-light"
+                    type="button"
+                    aria-label="Copy question"
+                    data-bs-toggle="modal"
+                    data-bs-target="#copyQuestionModal"
+                  >
+                    <i class="fa fa-fw fa-clone"></i>
+                    <span class="d-none d-sm-inline">Copy question</span>
+                  </button>
+                `
+              : ''}
+            ${manualGradingPreviewUrl || aiGradingPreviewUrl
+              ? html`
+                  <div class="btn-group">
+                    <button
+                      class="btn btn-sm btn-outline-light dropdown-toggle"
+                      type="button"
+                      aria-expanded="false"
+                      data-bs-toggle="dropdown"
+                    >
+                      View&hellip;
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      ${manualGradingPreviewUrl
+                        ? html`
+                            <li>
+                              <a class="dropdown-item" href="${manualGradingPreviewUrl}">
+                                Manual grading view
+                              </a>
+                            </li>
+                          `
+                        : ''}
+                      ${aiGradingPreviewUrl
+                        ? html`
+                            <li>
+                              <a class="dropdown-item" href="${aiGradingPreviewUrl}">
+                                AI grading view
+                              </a>
+                            </li>
+                          `
+                        : ''}
+                    </ul>
+                  </div>
+                `
+              : ''}
+          </div>
+        </div>
       </div>
-      <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
-      ${QuestionFooter({
-        // TODO: propagate more precise types upwards.
-        resLocals: resLocals as any,
-        questionContext,
-      })}
+      <div class="card-body question-body">
+        ${questionRenderContext === 'ai_grading'
+          ? AiGradingHtmlPreview(questionHtml)
+          : unsafeHtml(questionHtml)}
+      </div>
+      ${showFooter
+        ? QuestionFooter({
+            // TODO: propagate more precise types upwards.
+            resLocals: resLocals as any,
+            questionContext,
+          })
+        : ''}
     </div>
   `;
 }
@@ -682,19 +764,24 @@ function QuestionPanel({
 function SubmissionList({
   resLocals,
   questionContext,
+  questionRenderContext,
   submissions,
   submissionHtmls,
   submissionCount,
+  renderSubmissionSearchParams,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   submissions: SubmissionForRender[];
   submissionHtmls: string[];
   submissionCount: number;
+  renderSubmissionSearchParams?: URLSearchParams;
 }) {
   return submissions.map((submission, idx) =>
     SubmissionPanel({
       questionContext,
+      questionRenderContext,
       question: resLocals.question,
       assessment_question: resLocals.assessment_question,
       instance_question: resLocals.instance_question,
@@ -705,6 +792,7 @@ function SubmissionList({
       submissionCount,
       rubric_data: resLocals.rubric_data,
       urlPrefix: resLocals.urlPrefix,
+      renderSubmissionSearchParams,
     }),
   );
 }
@@ -716,6 +804,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
     id: 'copyQuestionModal',
     title: 'Copy question',
     formAction: question_copy_targets[0]?.copy_url ?? '',
+    formClass: 'js-copy-question-form',
     body:
       question_copy_targets.length === 0
         ? html`

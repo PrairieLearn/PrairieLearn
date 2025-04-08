@@ -12,6 +12,7 @@ router.use(async (req, res, next) => {
 
   const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
     institution_id: req.params.institution_id,
+    user_id: res.locals.authn_user.user_id,
   });
   res.locals.has_enhanced_navigation = hasEnhancedNavigation;
 

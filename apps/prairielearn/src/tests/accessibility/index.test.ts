@@ -16,6 +16,8 @@ import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
 
+import Bootstrap4ConstructPlugin from './bootstrap4-construct-plugin.js';
+
 const SITE_URL = 'http://localhost:' + config.serverPort;
 
 /**
@@ -81,7 +83,9 @@ async function checkPage(url: string) {
   // to also run HTML validation.
   const validator = new HtmlValidate();
   const validationResults = await validator.validateString(text, {
+    plugins: [Bootstrap4ConstructPlugin],
     rules: {
+      'bootstrap4-construct': 'error',
       'attribute-boolean-style': 'off',
       'attribute-empty-style': 'off',
       deprecated: ['error', { exclude: ['tt'] }],
@@ -213,8 +217,8 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file/:filename',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion/*',
-  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion/variant/:variant_id/*',
-  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file/*',
+  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:unsafe_submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_statistics/:filename',
@@ -238,18 +242,18 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/gradebook/raw_data.json',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion/*',
-  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/variant/:variant_id/*',
-  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file/*',
+  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:unsafe_submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instructor/news_item/:news_item_id/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion/*',
-  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
+  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_download/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file/:filename',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/file/:filename',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/text/:filename',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/statistics/:filename',
-  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file/*',
+  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:unsafe_submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/text/:filename',
   '/pl/course_instance/:course_instance_id/news_item/:news_item_id/*',
   '/pl/course_instance/:course_instance_id/sharedElements/course/:producing_course_id/cacheableElements/:cachebuster/*',
@@ -267,11 +271,11 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/elementExtensions/*',
   '/pl/course/:course_id/question/:question_id/file_download/*',
   '/pl/course/:course_id/question/:question_id/file/:filename',
-  '/pl/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
+  '/pl/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
   '/pl/course/:course_id/question/:question_id/preview/file/:filename',
   '/pl/course/:course_id/question/:question_id/preview/text/:filename',
   '/pl/course/:course_id/question/:question_id/statistics/:filename',
-  '/pl/course/:course_id/question/:question_id/submission/:submission_id/file/*',
+  '/pl/course/:course_id/question/:question_id/submission/:unsafe_submission_id/file/*',
   '/pl/course/:course_id/question/:question_id/text/:filename',
   '/pl/course/:course_id/grading_job/:job_id/file/:file',
   '/pl/course/:course_id/sharedElements/course/:producing_course_id/cacheableElements/:cachebuster/*',
@@ -281,19 +285,19 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/elements/*',
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
   '/pl/public/course/:course_id/question/:question_id/file_download/*',
-  '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
-  '/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file/*',
+  '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/public/course/:course_id/question/:question_id/submission/:unsafe_submission_id/file/*',
 
   // Renders partial HTML documents, not a full page.
-  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/variant/:variant_id/submission/:submission_id',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id/variant/:variant_id/submission/:submission_id',
+  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/variant/:unsafe_variant_id/submission/:unsafe_submission_id',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id/variant/:unsafe_variant_id/submission/:unsafe_submission_id',
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/assessments/stats/:assessment_id',
-  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/variant/:variant_id/submission/:submission_id',
+  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/variant/:unsafe_variant_id/submission/:unsafe_submission_id',
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/time_remaining',
-  '/pl/course/:course_id/question/:question_id/preview/variant/:variant_id/submission/:submission_id',
-  '/pl/public/course/:course_id/question/:question_id/preview/variant/:variant_id/submission/:submission_id',
-  '/pl/course_instance/:course_instance_id/instructor/ai_generate_editor/:question_id/variant/:variant_id/submission/:submission_id',
-  '/pl/course/:course_id/ai_generate_editor/:question_id/variant/:variant_id/submission/:submission_id',
+  '/pl/course/:course_id/question/:question_id/preview/variant/:unsafe_variant_id/submission/:unsafe_submission_id',
+  '/pl/public/course/:course_id/question/:question_id/preview/variant/:unsafe_variant_id/submission/:unsafe_submission_id',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_editor/:question_id/variant/:unsafe_variant_id/submission/:unsafe_submission_id',
+  '/pl/course/:course_id/ai_generate_editor/:question_id/variant/:unsafe_variant_id/submission/:unsafe_submission_id',
 
   // These pages just redirect to other pages and thus don't have to be tested.
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/next_ungraded',
@@ -408,7 +412,7 @@ describe('accessibility', () => {
     };
 
     await sqldb.queryOneRowAsync(
-      'UPDATE questions SET shared_publicly = true WHERE id = $question_id',
+      'UPDATE questions SET share_publicly = true WHERE id = $question_id',
       { question_id: routeParams.question_id },
     );
   });
