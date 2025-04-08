@@ -167,9 +167,9 @@ BEGIN
             allow_personal_notes = (valid_assessment.data->>'allow_personal_notes')::boolean,
             group_work = (valid_assessment.data->>'group_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
+            json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision,
             sync_errors = NULL,
-            sync_warnings = valid_assessment.warnings,
-            json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision
+            sync_warnings = valid_assessment.warnings
         FROM
             (
                 SELECT
@@ -413,14 +413,14 @@ BEGIN
                         force_max_points,
                         tries_per_variant,
                         grade_rate_minutes,
+                        json_grade_rate_minutes,
                         deleted_at,
                         assessment_id,
                         question_id,
                         alternative_group_id,
                         number_in_alternative_group,
                         advance_score_perc,
-                        effective_advance_score_perc,
-                        json_grade_rate_minutes
+                        effective_advance_score_perc
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
@@ -431,14 +431,14 @@ BEGIN
                         (assessment_question->>'force_max_points')::boolean,
                         (assessment_question->>'tries_per_variant')::integer,
                         (assessment_question->>'grade_rate_minutes')::double precision,
+                        (assessment_question->>'json_grade_rate_minutes')::double precision,
                         NULL,
                         new_assessment_id,
                         new_question_id,
                         new_alternative_group_id,
                         (assessment_question->>'number_in_alternative_group')::integer,
                         (assessment_question->>'advance_score_perc')::double precision,
-                        (assessment_question->>'effective_advance_score_perc')::double precision,
-                        (assessment_question->>'json_grade_rate_minutes')::double precision
+                        (assessment_question->>'effective_advance_score_perc')::double precision
                     ) ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
@@ -450,13 +450,13 @@ BEGIN
                         force_max_points = EXCLUDED.force_max_points,
                         tries_per_variant = EXCLUDED.tries_per_variant,
                         grade_rate_minutes = EXCLUDED.grade_rate_minutes,
+                        json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
                         deleted_at = EXCLUDED.deleted_at,
                         alternative_group_id = EXCLUDED.alternative_group_id,
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,
                         question_id = EXCLUDED.question_id,
                         advance_score_perc = EXCLUDED.advance_score_perc,
-                        effective_advance_score_perc = EXCLUDED.effective_advance_score_perc,
-                        json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes
+                        effective_advance_score_perc = EXCLUDED.effective_advance_score_perc
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 

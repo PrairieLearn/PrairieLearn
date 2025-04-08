@@ -114,10 +114,10 @@ function getParamsForAssessment(
         forceMaxPoints: boolean;
         triesPerVariant: number;
         gradeRateMinutes: number;
+        jsonGradeRateMinutes: number;
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number;
-        jsonGradeRateMinutes: number;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -135,9 +135,9 @@ function getParamsForAssessment(
             triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant ?? 1,
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
+            jsonGradeRateMinutes: alternative.gradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
-            jsonGradeRateMinutes: alternative.gradeRateMinutes,
           };
         });
       } else if (question.id) {
@@ -153,9 +153,9 @@ function getParamsForAssessment(
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
+            jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
-            jsonGradeRateMinutes: question.gradeRateMinutes,
           },
         ];
       }
@@ -211,6 +211,7 @@ function getParamsForAssessment(
           force_max_points: alternative.forceMaxPoints,
           tries_per_variant: alternative.triesPerVariant,
           grade_rate_minutes: alternative.gradeRateMinutes,
+          json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
@@ -222,7 +223,6 @@ function getParamsForAssessment(
             zone.advanceScorePerc ??
             assessment.advanceScorePerc ??
             0,
-          json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
         };
       });
 
