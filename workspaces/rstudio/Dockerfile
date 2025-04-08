@@ -65,12 +65,12 @@ RUN apt-get update \
     && yes | unminimize \
     && apt-get install -y --no-install-recommends \
     # Reverse proxy workaround for PrairieLearn:
-        nginx \
-        gettext \
-        gosu \
-        fonts-dejavu \
+    nginx \
+    gettext \
+    gosu \
+    fonts-dejavu \
     # Utilities for convenience debugging this container:
-        less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 \
+    less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 \
     && gosu nobody true \
     # Test:
     && apt-get clean \
