@@ -1,4 +1,4 @@
-import { z, type ZodSchema } from 'zod';
+import { type ZodSchema, z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 

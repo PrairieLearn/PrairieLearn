@@ -1,10 +1,10 @@
 import { type JSONSchemaType } from 'ajv';
-import { type ZodTypeDef, type ZodType } from 'zod';
+import { type ZodType, type ZodTypeDef } from 'zod';
 import {
-  ignoreOverride,
   type JsonSchema7Type,
   type Options,
   type Refs,
+  ignoreOverride,
   zodToJsonSchema,
 } from 'zod-to-json-schema';
 
@@ -12,6 +12,7 @@ import { CommentJsonSchema } from './comment.js';
 import {
   AdvanceScorePercJsonSchema,
   AssessmentAccessRuleJsonSchema,
+  type AssessmentJson,
   AssessmentJsonSchema,
   ForceMaxPointsJsonSchema,
   GroupRoleJsonSchema,
@@ -22,34 +23,33 @@ import {
   QuestionIdJsonSchema,
   ZoneAssessmentJsonSchema,
   ZoneQuestionJsonSchema,
-  type AssessmentJson,
 } from './infoAssessment.js';
-import { ColorJsonSchema, CourseJsonSchema, type CourseJson } from './infoCourse.js';
-import { CourseInstanceJsonSchema, type CourseInstanceJson } from './infoCourseInstance.js';
-import { ElementCoreJsonSchema, type ElementCoreJson } from './infoElementCore.js';
-import { ElementCourseJsonSchema, type ElementCourseJson } from './infoElementCourse.js';
-import { ElementExtensionJsonSchema, type ElementExtensionJson } from './infoElementExtension.js';
-import { NewsItemJsonSchema, type NewsItemJson } from './infoNewsItem.js';
-import { QuestionJsonSchema, type QuestionJson } from './infoQuestion.js';
+import { ColorJsonSchema, type CourseJson, CourseJsonSchema } from './infoCourse.js';
+import { type CourseInstanceJson, CourseInstanceJsonSchema } from './infoCourseInstance.js';
+import { type ElementCoreJson, ElementCoreJsonSchema } from './infoElementCore.js';
+import { type ElementCourseJson, ElementCourseJsonSchema } from './infoElementCourse.js';
+import { type ElementExtensionJson, ElementExtensionJsonSchema } from './infoElementExtension.js';
+import { type NewsItemJson, NewsItemJsonSchema } from './infoNewsItem.js';
+import { type QuestionJson, QuestionJsonSchema } from './infoQuestion.js';
 import {
-  QuestionCalculationOptionsJsonSchema,
   type QuestionCalculationOptionsJson,
+  QuestionCalculationOptionsJsonSchema,
 } from './questionOptionsCalculation.js';
 import { QuestionCheckboxOptionsJsonSchema } from './questionOptionsCheckbox.js';
 import type { QuestionCheckboxOptionsJson } from './questionOptionsCheckbox.js';
 import {
-  QuestionFileOptionsJsonSchema,
   type QuestionFileOptionsJson,
+  QuestionFileOptionsJsonSchema,
 } from './questionOptionsFile.js';
 import {
-  QuestionMultipleChoiceOptionsJsonSchema,
   type QuestionMultipleChoiceOptionsJson,
+  QuestionMultipleChoiceOptionsJsonSchema,
 } from './questionOptionsMultipleChoice.js';
 import {
-  QuestionMultipleTrueFalseOptionsJsonSchema,
   type QuestionMultipleTrueFalseOptionsJson,
+  QuestionMultipleTrueFalseOptionsJsonSchema,
 } from './questionOptionsMultipleTrueFalse.js';
-import { QuestionOptionsv3JsonSchema, type QuestionOptionsv3Json } from './questionOptionsv3.js';
+import { type QuestionOptionsv3Json, QuestionOptionsv3JsonSchema } from './questionOptionsv3.js';
 
 /**
  * Rewrite the group role annotation for canView and canSubmit fields.
