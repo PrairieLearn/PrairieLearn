@@ -5,10 +5,10 @@ import { callRow } from '@prairielearn/postgres';
 
 import { config } from './config.js';
 import {
-  EnumModeReasonSchema,
-  EnumModeSchema,
   type EnumMode,
   type EnumModeReason,
+  EnumModeReasonSchema,
+  EnumModeSchema,
 } from './db-types.js';
 
 export async function getModeForRequest(

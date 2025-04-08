@@ -1,6 +1,6 @@
 import { type Socket, io } from 'socket.io-client';
 
-import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 
 import type {
   StatusMessage,

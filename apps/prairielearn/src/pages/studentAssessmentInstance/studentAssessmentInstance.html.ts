@@ -32,7 +32,7 @@ import {
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { getRoleNamesForUser, type GroupInfo } from '../../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
