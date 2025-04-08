@@ -22,11 +22,7 @@ Each assessment is a single directory in the `assessments` folder or any subfold
 
 The assessment ID is the full path relative to `assessments`.
 
-??? note "Format specification for assessment `infoAssessment.json`"
-
-    ```json
-    --8<-- "apps/prairielearn/src/schemas/schemas/infoAssessment.json"
-    ```
+See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 
 ## Assessment naming
 

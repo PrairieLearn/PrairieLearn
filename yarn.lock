@@ -3875,7 +3875,7 @@ __metadata:
     ace-builds: "npm:^1.39.1"
     ace-code: "npm:^1.39.1"
     ajv: "npm:^8.17.1"
-    ansi_up: "npm:^6.0.2"
+    ansi_up: "npm:^6.0.5"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
     axe-core: "npm:^4.10.2"
@@ -3932,6 +3932,7 @@ __metadata:
     http-proxy-middleware: "npm:^3.0.3"
     http-status: "npm:^2.1.0"
     ioredis: "npm:^5.6.0"
+    is-plain-obj: "npm:^4.1.0"
     isbinaryfile: "npm:^5.0.4"
     jju: "npm:^1.4.0"
     jose: "npm:^6.0.10"
@@ -6756,10 +6757,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ansi_up@npm:^6.0.2":
-  version: 6.0.2
-  resolution: "ansi_up@npm:6.0.2"
-  checksum: 10c0/f39f2d2f2fde2d640d0033c03eb8efbbcbfcb7c01b1ce371c551250213df0546592160768c9b3de8fc2b13fec6dd3ab15bf01ebc6408ec66280fddd94a4ea21e
+"ansi_up@npm:^6.0.2, ansi_up@npm:^6.0.5":
+  version: 6.0.5
+  resolution: "ansi_up@npm:6.0.5"
+  checksum: 10c0/410de314d6f020b9b434150e1982b6622017c4c072685e53f2e5237d9140f366c59ae845800ce272087dc975a837c7224b853e9489f025ff7cd5816d7b5bae28
   languageName: node
   linkType: hard
 
@@ -9390,6 +9391,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"eslint-plugin-you-dont-need-lodash-underscore@npm:^6.14.0":
+  version: 6.14.0
+  resolution: "eslint-plugin-you-dont-need-lodash-underscore@npm:6.14.0"
+  dependencies:
+    kebab-case: "npm:^1.0.0"
+  checksum: 10c0/23dadc91b754b9afdd5c9d87509f21e1c627888dc8a5e34c3d3181521ce9c5e87b4d1f5c693413d857e7fbb6e54b6d471adb1ee1e912fc8824a982f1762a11e0
+  languageName: node
+  linkType: hard
+
 "eslint-scope@npm:^7.2.2":
   version: 7.2.2
   resolution: "eslint-scope@npm:7.2.2"
@@ -11591,6 +11601,13 @@ __metadata:
   bin:
     katex: cli.js
   checksum: 10c0/e2e4139ba72a13f2393308fbb2b4c5511611a19a40a6e39d956cf775e553af3517dbfd0a54477faaf401c923e4654e32296347846b8ff15dfa579f88ff8579bb
+  languageName: node
+  linkType: hard
+
+"kebab-case@npm:^1.0.0":
+  version: 1.0.2
+  resolution: "kebab-case@npm:1.0.2"
+  checksum: 10c0/94080c483c4bb88d7a37efe21431271e91a2297d2fb4e9c12167c5a9144a813ffbdd92f7ba7778f553250c83ba8413f4b061e949b0d6c9bada771efe10c220a4
   languageName: node
   linkType: hard
 
@@ -14078,6 +14095,7 @@ __metadata:
     eslint-plugin-mocha: "npm:^10.5.0"
     eslint-plugin-no-floating-promise: "npm:^2.0.0"
     eslint-plugin-no-only-tests: "npm:^3.3.0"
+    eslint-plugin-you-dont-need-lodash-underscore: "npm:^6.14.0"
     globby: "npm:^14.1.0"
     htmlhint: "npm:^1.1.4"
     markdownlint-cli: "npm:^0.44.0"
@@ -16195,11 +16213,11 @@ __metadata:
 
 "typescript@patch:typescript@npm%3A^5.8.2#optional!builtin<compat/typescript>":
   version: 5.8.2
-  resolution: "typescript@patch:typescript@npm%3A5.8.2#optional!builtin<compat/typescript>::version=5.8.2&hash=b45daf"
+  resolution: "typescript@patch:typescript@npm%3A5.8.2#optional!builtin<compat/typescript>::version=5.8.2&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/8a6cd29dfb59bd5a978407b93ae0edb530ee9376a5b95a42ad057a6f80ffb0c410489ccd6fe48d1d0dfad6e8adf5d62d3874bbd251f488ae30e11a1ce6dabd28
+  checksum: 10c0/5448a08e595cc558ab321e49d4cac64fb43d1fa106584f6ff9a8d8e592111b373a995a1d5c7f3046211c8a37201eb6d0f1566f15cdb7a62a5e3be01d087848e2
   languageName: node
   linkType: hard
 

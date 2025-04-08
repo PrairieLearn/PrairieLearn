@@ -45,7 +45,7 @@ export function makeWithInfo(message: string, info: string): ErrorWithInfo {
 export function addData(err: any, data: any): ErrorWithData {
   const newErr = (_.isError(err) ? err : new Error(String(err))) as ErrorWithData;
   newErr.data = newErr.data || {};
-  _.assign(newErr.data, data);
+  Object.assign(newErr.data, data);
   return newErr;
 }
 

@@ -6,7 +6,6 @@ import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
 import { run } from '@prairielearn/run';
@@ -649,7 +648,7 @@ export class CodeCallerNative implements CodeCaller {
 
   _checkState(allowedStates?: CodeCallerState[]) {
     if (allowedStates && !allowedStates.includes(this.state)) {
-      const allowedStatesList = '[' + _.map(allowedStates, String).join(',') + ']';
+      const allowedStatesList = '[' + allowedStates.map(String).join(',') + ']';
       return this._logError(
         'Expected CodeCallerNative states ' +
           allowedStatesList +
