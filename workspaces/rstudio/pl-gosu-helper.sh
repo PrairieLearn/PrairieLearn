@@ -4,7 +4,7 @@
 # you are testing in the local PrairieLearn Docker container and it attempts
 # to launch workspaces as root.
 
-# Put a line like "ENV PL_USER rstudio" or "ENV PL_USER coder"
+# Put a line like "ENV PL_USER=rstudio" or "ENV PL_USER=coder"
 # (whatever is appropriate) in your Dockerfile. This name should
 # match user 1001.
 

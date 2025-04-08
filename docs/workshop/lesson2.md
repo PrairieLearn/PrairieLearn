@@ -4,7 +4,7 @@
 
 ## Quick overview
 
-Let's take a look at some of the features available when customizing your assessments. You can find more information about assessment configuration [here](../assessment/index.md).
+Let's take a look at some features available when customizing your assessments. You can find more information about assessment configuration [here](../assessment/index.md).
 
 The beginning of the `infoAssessment.json` usually looks like this:
 
@@ -37,7 +37,7 @@ and
 }
 ```
 
-#### Homework:
+#### Homework
 
 Every question added in the `infoAssessment.json` file will appear in the assessment. By default, the questions will appear in the same order they are entered in the `json` file. To shuffle the question, add the option:
 
@@ -49,7 +49,7 @@ Every question added in the `infoAssessment.json` file will appear in the assess
 
 Students can create new instances of the question with different variables (when questions are randomized). The grading scheme rewards repeated correct answers for the same question.
 
-#### Exam:
+#### Exam
 
 Option to randomly select questions that will appear in the Assessment, out of a list of questions in the `infoAssessment.json`. Order of questions is randomized. The title of the question is not displayed. For each exam instance, there is only one instance of the question and hence the variables are fixed. Students can retry questions for reduced points. To create "practice exams", where students can generate many instances of the same assessment, use:
 
@@ -61,7 +61,7 @@ Option to randomly select questions that will appear in the Assessment, out of a
 
 ### Assessment `allowAccess`
 
-There are many options to help customizing when and who should have access to your assessment. Take a look at the section [Access Control](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn more. Here I will briefly describe the option `mode`
+There are many options to customize when and who should have access to your assessment. Take a look at the section [Access Control](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn more. Here I will briefly describe the option `mode`
 
 There are two available options:
 
@@ -81,7 +81,7 @@ and
 
 **Exam** is used when students are taking an assessment via CBTF (in-person or the online service starting in the Fall 2020). **Public** is used for all other cases, where students have access to the assessment via the internet using any device.
 
-## Examples:
+## Examples
 
 Before you start creating your assessments, make sure you have at least 4 questions inside your course. If you don't have that yet, copy some from the example course `XC 101` as we discussed in the previous lesson.
 
@@ -129,10 +129,10 @@ Before you start creating your assessments, make sure you have at least 4 questi
 
 ### Configuration 4: Synchronous exam using PrairieTest
 
-When using [PrairieTest](https://us.prairietest.com/pt/docs/course/welcome) to schedule and deliver PrairieLearn exams, you need to using the following configuration:
+When using [PrairieTest](https://us.prairietest.com/pt/docs/course/welcome) to schedule and deliver PrairieLearn exams, you need to use the following configuration:
 
 - Start from `Configuration 2`
-- Remove `startDate` and `endDate` from `allowAccess`. Instead use:
+- Remove `startDate` and `endDate` from `allowAccess`. Instead, use:
 
   ```json title="infoAssessment.json"
   {

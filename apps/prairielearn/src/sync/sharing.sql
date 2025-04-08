@@ -2,13 +2,13 @@
 SELECT
   q.id,
   q.qid,
-  q.shared_publicly
+  q.share_publicly
 FROM
   questions AS q
 WHERE
   q.course_id = $course_id
   AND (
-    q.shared_publicly
+    q.share_publicly
     OR EXISTS (
       SELECT
         1
@@ -44,7 +44,7 @@ WITH
 SELECT
   q.id,
   q.qid,
-  q.shared_publicly,
+  q.share_publicly,
   ssa.sharing_sets
 FROM
   questions AS q

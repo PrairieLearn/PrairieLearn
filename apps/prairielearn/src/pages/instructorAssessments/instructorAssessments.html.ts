@@ -5,6 +5,8 @@ import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
@@ -14,6 +16,7 @@ import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentModule,
+  AssessmentModuleSchema,
   AssessmentSchema,
   type AssessmentSet,
   AssessmentSetSchema,
@@ -26,11 +29,10 @@ export const AssessmentStatsRowSchema = AssessmentSchema.extend({
 });
 type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
 
-export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
+export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
   start_new_assessment_group: z.boolean(),
-  assessment_group_heading: AssessmentSetSchema.shape.heading,
+  assessment_set: AssessmentSetSchema,
+  assessment_module: AssessmentModuleSchema,
   label: z.string(),
   open_issue_count: z.coerce.number(),
 });
@@ -86,9 +88,10 @@ export function InstructorAssessments({
           ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
             ? html`
                 <button
-                  class="btn btn-sm btn-light ml-auto"
-                  data-toggle="modal"
-                  data-target="#createAssessmentModal"
+                  type="button"
+                  class="btn btn-sm btn-light ms-auto"
+                  data-bs-toggle="modal"
+                  data-bs-target="#createAssessmentModal"
                 >
                   <i class="fa fa-plus" aria-hidden="true"></i>
                   <span class="d-none d-sm-inline">Add assessment</span>
@@ -102,8 +105,8 @@ export function InstructorAssessments({
                 <table class="table table-sm table-hover" aria-label="Assessments">
                   <thead>
                     <tr>
-                      <th style="width: 1%"><span class="sr-only">Label</span></th>
-                      <th><span class="sr-only">Title</span></th>
+                      <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                      <th><span class="visually-hidden">Title</span></th>
                       <th>AID</th>
                       <th class="text-center">Students</th>
                       <th class="text-center">Scores</th>
@@ -117,13 +120,21 @@ export function InstructorAssessments({
                         ${row.start_new_assessment_group
                           ? html`
                               <tr>
-                                <th colspan="7" scope="row">${row.assessment_group_heading}</th>
+                                <th colspan="7" scope="row">
+                                  ${assessmentsGroupBy === 'Set'
+                                    ? AssessmentSetHeading({ assessment_set: row.assessment_set })
+                                    : AssessmentModuleHeading({
+                                        assessment_module: row.assessment_module,
+                                      })}
+                                </th>
                               </tr>
                             `
                           : ''}
                         <tr id="row-${row.id}">
                           <td class="align-middle" style="width: 1%">
-                            <span class="badge color-${row.color}">${row.label}</span>
+                            <span class="badge color-${row.assessment_set.color}">
+                              ${row.label}
+                            </span>
                           </td>
                           <td class="align-middle">
                             ${row.sync_errors
@@ -143,7 +154,11 @@ export function InstructorAssessments({
                                 ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                                 : ''}
                             </a>
-                            ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
+                            ${IssueBadge({
+                              count: row.open_issue_count,
+                              urlPrefix,
+                              issueAid: row.tid,
+                            })}
                           </td>
 
                           <td class="align-middle">${row.tid}</td>
@@ -165,7 +180,7 @@ export function InstructorAssessments({
             `
           : html`
               <div class="my-4 card-body text-center" style="text-wrap: balance;">
-                <p class="font-weight-bold">No assessments found.</p>
+                <p class="fw-bold">No assessments found.</p>
                 <p class="mb-0">
                   An assessment is a collection of questions to build or assess a student's
                   knowledge.
@@ -187,9 +202,10 @@ export function InstructorAssessments({
                   }
                   return html`
                     <button
+                      type="button"
                       class="btn btn-sm btn-primary"
-                      data-toggle="modal"
-                      data-target="#createAssessmentModal"
+                      data-bs-toggle="modal"
+                      data-bs-target="#createAssessmentModal"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>
                       <span class="d-none d-sm-inline">Add assessment</span>
@@ -215,7 +231,7 @@ export function InstructorAssessments({
 export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
   const spinner = html`
     <div class="spinner-border spinner-border-sm" role="status">
-      <span class="sr-only">Loading...</span>
+      <span class="visually-hidden">Loading...</span>
     </div>
   `;
   return html`
@@ -277,8 +293,8 @@ function CreateAssessmentModal({
     title: 'Create assessment',
     formMethod: 'POST',
     body: html`
-      <div class="form-group">
-        <label for="title">Title</label>
+      <div class="mb-3">
+        <label class="form-label" for="title">Title</label>
         <input
           type="text"
           class="form-control"
@@ -291,8 +307,8 @@ function CreateAssessmentModal({
           The full name of the assessment, visible to users.
         </small>
       </div>
-      <div class="form-group">
-        <label for="aid">Assessment identifier (AID)</label>
+      <div class="mb-3">
+        <label class="form-label" for="aid">Assessment identifier (AID)</label>
         <input
           type="text"
           class="form-control"
@@ -307,8 +323,8 @@ function CreateAssessmentModal({
           "hw2-derivatives". Use only letters, numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
-      <div class="form-group">
-        <label for="type">Type</label>
+      <div class="mb-3">
+        <label class="form-label" for="type">Type</label>
         <select class="form-select" id="type" name="type" aria-describedby="type_help" required>
           <option value="Homework">Homework</option>
           <option value="Exam">Exam</option>
@@ -317,8 +333,8 @@ function CreateAssessmentModal({
           The type of the assessment. This can be either Homework or Exam.
         </small>
       </div>
-      <div class="form-group">
-        <label for="set">Set</label>
+      <div class="mb-3">
+        <label class="form-label" for="set">Set</label>
         <select class="form-select" id="set" name="set" aria-describedby="set_help" required>
           ${assessmentSets.map((set) => html`<option value="${set.name}">${set.name}</option>`)}
         </select>
@@ -329,8 +345,8 @@ function CreateAssessmentModal({
       </div>
       ${assessmentsGroupBy === 'Module'
         ? html`
-            <div class="form-group">
-              <label for="module">Module</label>
+            <div class="mb-3">
+              <label class="form-label" for="module">Module</label>
               <select
                 class="form-select"
                 id="module"
@@ -353,7 +369,7 @@ function CreateAssessmentModal({
     footer: html`
       <input type="hidden" name="__action" value="add_assessment" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Create</button>
     `,
   });

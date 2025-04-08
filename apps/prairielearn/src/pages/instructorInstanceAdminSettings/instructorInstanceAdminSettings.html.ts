@@ -1,21 +1,24 @@
 import { html } from '@prairielearn/html';
 
-import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
+import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { encodePath } from '../../lib/uri-util.js';
 
 export function InstructorInstanceAdminSettings({
   resLocals,
   shortNames,
   studentLink,
   infoCourseInstancePath,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
   studentLink: string;
   infoCourseInstancePath: string;
+  origHash: string;
 }) {
   return PageLayout({
     resLocals,
@@ -33,62 +36,75 @@ export function InstructorInstanceAdminSettings({
         course: resLocals.course,
         urlPrefix: resLocals.urlPrefix,
       })}
+      ${QRCodeModal({
+        id: 'studentLinkModal',
+        title: 'Student Link QR Code',
+        content: studentLink,
+      })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
-          <h1>Course instance settings</h1>
+          <h1>
+            ${resLocals.has_enhanced_navigation
+              ? 'General course instance settings'
+              : 'Course instance settings'}
+          </h1>
         </div>
         <div class="card-body">
-          <div class="form-group">
-            <label for="long_name">Long Name</label>
-            <input
-              type="text"
-              class="form-control"
-              id="long_name"
-              name="long_name"
-              value="${resLocals.course_instance.long_name}"
-              required
-              disabled
-            />
-            <small class="form-text text-muted">
-              The long name of this course instance (e.g., 'Spring 2015').
-            </small>
-          </div>
-          <div class="form-group">
-            <label for="CIID">
-              CIID
-              ${resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course
-                ? ChangeIdButton({
-                    label: 'CIID',
-                    currentValue: resLocals.course_instance.short_name,
-                    otherValues: shortNames,
-                    extraHelpText: html`The recommended format is <code>Fa19</code> or
-                      <code>Fall2019</code>. Add suffixes if there are multiple versions, like
-                      <code>Fa19honors</code>.`,
-                    csrfToken: resLocals.__csrf_token,
-                  })
-                : ''}
-            </label>
-            <input
-              type="text"
-              class="form-control"
-              id="CIID"
-              name="CIID"
-              value="${resLocals.course_instance.short_name}"
-              required
-              disabled
-            />
-            <small class="form-text text-muted">
-              Use only letters, numbers, dashes, and underscores, with no spaces. You may use
-              forward slashes to separate directories. The recommended format is
-              <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple
-              versions, like <code>Fa19honors</code>.
-            </small>
-          </div>
-          <div class="form-group">
-            <label for="student_link">Student Link</label>
-            <span class="input-group">
-              <span readonly class="form-control form-control-sm">${studentLink}</span>
-              <div class="input-group-append">
+          <form name="edit-course-instance-settings-form" method="POST">
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="orig_hash" value="${origHash}" />
+            <div class="mb-3">
+              <label class="form-label" for="ciid">CIID</label>
+              <input
+                type="text"
+                class="form-control font-monospace"
+                id="ciid"
+                name="ciid"
+                value="${resLocals.course_instance.short_name}"
+                pattern="[\\-A-Za-z0-9_\\/]+"
+                required
+                data-other-values="${shortNames.join(',')}"
+                ${resLocals.authz_data.has_course_permission_edit &&
+                !resLocals.course.example_course
+                  ? ''
+                  : 'disabled'}
+              />
+              <small class="form-text text-muted">
+                Use only letters, numbers, dashes, and underscores, with no spaces. You may use
+                forward slashes to separate directories. The recommended format is
+                <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple
+                versions, like <code>Fa19honors</code>.
+              </small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="long_name">Long Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="long_name"
+                name="long_name"
+                value="${resLocals.course_instance.long_name}"
+                required
+                ${resLocals.authz_data.has_course_permission_edit &&
+                !resLocals.course.example_course
+                  ? ''
+                  : 'disabled'}
+              />
+              <small class="form-text text-muted">
+                The long name of this course instance (e.g., 'Spring 2015').
+              </small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="student_link">Student Link</label>
+              <span class="input-group">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="student_link"
+                  name="student_link"
+                  value="${studentLink}"
+                  disabled
+                />
                 <button
                   type="button"
                   class="btn btn-sm btn-outline-secondary btn-copy"
@@ -99,28 +115,28 @@ export function InstructorInstanceAdminSettings({
                 </button>
                 <button
                   type="button"
-                  title="Student Link QR Code"
+                  class="btn btn-sm btn-outline-secondary"
                   aria-label="Student Link QR Code"
-                  class="btn btn-sm btn-outline-secondary js-qrcode-button"
-                  data-qr-code-content="${studentLink}"
+                  data-bs-toggle="modal"
+                  data-bs-target="#studentLinkModal"
                 >
                   <i class="fas fa-qrcode"></i>
                 </button>
-              </div>
-            </span>
-            <small class="form-text text-muted">
-              This is the link that students will use to access the course. You can copy this link
-              to share with students.
-            </small>
-          </div>
-          ${EditConfiguration({
-            hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
-            hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
-            exampleCourse: resLocals.course.example_course,
-            urlPrefix: resLocals.urlPrefix,
-            navPage: resLocals.navPage,
-            infoCourseInstancePath,
-          })}
+              </span>
+              <small class="form-text text-muted">
+                This is the link that students will use to access the course. You can copy this link
+                to share with students.
+              </small>
+            </div>
+            ${EditConfiguration({
+              hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
+              hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
+              exampleCourse: resLocals.course.example_course,
+              urlPrefix: resLocals.urlPrefix,
+              navPage: resLocals.navPage,
+              infoCourseInstancePath,
+            })}
+          </form>
         </div>
         ${resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course
           ? CopyCourseInstanceForm({
@@ -163,10 +179,27 @@ function EditConfiguration({
     `;
   } else {
     return html`
+      <button
+        id="save-button"
+        type="submit"
+        class="btn btn-primary mb-2"
+        name="__action"
+        value="update_configuration"
+      >
+        Save
+      </button>
+      <button
+        id="cancel-button"
+        type="button"
+        class="btn btn-secondary mb-2"
+        onclick="window.location.reload()"
+      >
+        Cancel
+      </button>
       <p class="mb-0">
         <a
           data-testid="edit-course-instance-configuration-link"
-          href="${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}"
+          href="${encodePath(`${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}`)}"
           >Edit course instance configuration</a
         >
         in <code>infoCourseInstance.json</code>
@@ -184,17 +217,22 @@ function CopyCourseInstanceForm({
 }) {
   return html`
     <div class="card-footer d-flex flex-wrap align-items-center">
-      <form name="copy-course-instance-form" class="form-inline mr-2" method="POST">
+      <form name="copy-course-instance-form" class="me-2" method="POST">
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button name="__action" value="copy_course_instance" class="btn btn-sm btn-primary">
+        <button
+          type="submit"
+          name="__action"
+          value="copy_course_instance"
+          class="btn btn-sm btn-primary"
+        >
           <i class="fa fa-clone"></i> Make a copy of this course instance
         </button>
       </form>
       <button
+        type="button"
         class="btn btn-sm btn-primary"
-        href="#"
-        data-toggle="modal"
-        data-target="#deleteCourseInstanceModal"
+        data-bs-toggle="modal"
+        data-bs-target="#deleteCourseInstanceModal"
       >
         <i class="fa fa-times" aria-hidden="true"></i> Delete this course instance
       </button>
@@ -207,7 +245,7 @@ function CopyCourseInstanceForm({
         footer: html`
           <input type="hidden" name="__action" value="delete_course_instance" />
           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-danger">Delete</button>
         `,
       })}

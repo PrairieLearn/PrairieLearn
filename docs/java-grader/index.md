@@ -37,7 +37,7 @@ The autograder combines several classes to allow these tests to happen:
 
 ### `info.json`
 
-The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific Java autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-java"` and `"entrypoint"` should point to `"autograder.sh"`.
+The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific Java autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-java"`. The `"entrypoint"` does not need to be provided.
 
 A full `info.json` file should look something like:
 
@@ -53,8 +53,7 @@ A full `info.json` file should look something like:
   "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-java",
-    "timeout": 10,
-    "entrypoint": "autograder.sh"
+    "timeout": 10
   }
 }
 ```
@@ -124,13 +123,13 @@ void addition(TestReporter reporter) {
 }
 ```
 
-The autograder will give a question points based on if a test passed or failed based on the default Java behaviour. Note that [Java's built-in assertions](https://docs.oracle.com/javase/8/docs/technotes/guides/language/assert.html) are disabled by default, and as such tests that rely on Java's `assert` keyword may not work as intended. If test failures based on `assert` statements are needed, the program must be set up to be executed with the `-ea` option, [as listed below](#changing-compilation-options). An alternative is to use the `assertTrue` method in JUnit itself, with the benefit of providing more flexibility on the error message shown to students.
+The autograder will give a question points based on if a test passed or failed based on the default Java behavior. Note that [Java's built-in assertions](https://docs.oracle.com/javase/8/docs/technotes/guides/language/assert.html) are disabled by default, and as such tests that rely on Java's `assert` keyword may not work as intended. If test failures based on `assert` statements are needed, the program must be set up to be executed with the `-ea` option, [as listed below](#changing-compilation-options). An alternative is to use the `assertTrue` method in JUnit itself, with the benefit of providing more flexibility on the error message shown to students.
 
 ### Dynamic, parameterized and repeated tests
 
 JUnit 5 supports tests that are generated dynamically. These include [parameterized tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests), [repeated tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-repeated-tests) and [test factories](https://junit.org/junit5/docs/current/user-guide/#writing-tests-dynamic-tests).
 
-While the autograder supports the execution of these types of tests, they may in rare instances cause inconsistencies in the total number of points assigned to each submission. In particular, if different submissions generate different sets of tests, the total number of tests assigned to one student (and consequentially the maximum number of points) may be different than other students, causing the score percentage to be inconsistent. Also, if the student's code causes the autograder to crash (e.g., in case of out-of-memory errors or thread exhaustion), some tests may not be registered on time to be considered in the grading process.
+While the autograder supports the execution of these types of tests, they may in rare instances cause inconsistencies in the total number of points assigned to each submission. In particular, if different submissions generate different sets of tests, the total number of tests assigned to one student (and consequentially the maximum number of points) may be different from other students, causing the score percentage to be inconsistent. Also, if the student's code causes the autograder to crash (e.g., in case of out-of-memory errors or thread exhaustion), some tests may not be registered on time to be considered in the grading process.
 
 To avoid these issues, if a particular test class includes any dynamic test (i.e., tests using annotations like `@ParameterizedTest`, `@RepeatedTest` or `@TestFactory`), instructors are encouraged to define the maximum number of expected points as a class annotation, as demonstrated below. Classes that only use regular method tests (i.e., tests using annotations like `@Test`) are not required to use such a tag, as the total number of points can be easily retrieved from the static tests themselves at the start of the testing process.
 
@@ -149,7 +148,7 @@ public class ExampleJUnit5Test {
 
 ### Changing compilation options
 
-By default the Java compiler will show all compilation warnings to the user, except for `serial` (missing `serialVersionUID` on serializable classes). If you would like to change the compilation warnings or other compilation settings, you may do so by setting the `JDK_JAVAC_OPTIONS` environment variable in `info.json`, as follows:
+By default, the Java compiler will show all compilation warnings to the user, except for `serial` (missing `serialVersionUID` on serializable classes). If you would like to change the compilation warnings or other compilation settings, you may do so by setting the `JDK_JAVAC_OPTIONS` environment variable in `info.json`, as follows:
 
 ```json title="info.json"
 {
@@ -157,7 +156,6 @@ By default the Java compiler will show all compilation warnings to the user, exc
     "enabled": true,
     "image": "prairielearn/grader-java",
     "timeout": 10,
-    "entrypoint": "autograder.sh",
     "environment": { "JDK_JAVAC_OPTIONS": "-Xlint:-static -Xmaxerrs 3", "JDK_JAVA_OPTIONS": "-ea" }
   }
 }
@@ -186,8 +184,7 @@ Some questions may include libraries and base classes that are common across mul
     "enabled": true,
     "image": "prairielearn/grader-java",
     "serverFilesCourse": ["java/libs/"],
-    "timeout": 10,
-    "entrypoint": "autograder.sh"
+    "timeout": 10
   }
 }
 ```

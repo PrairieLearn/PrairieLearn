@@ -47,6 +47,21 @@ export const AdministratorSchema = z.object({
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
 
+export const AiGradingJobSchema = z.object({
+  completion: z.any(),
+  completion_tokens: z.number(),
+  course_id: IdSchema,
+  course_instance_id: IdSchema,
+  cost: z.number(),
+  grading_job_id: IdSchema,
+  id: IdSchema,
+  job_sequence_id: IdSchema.nullable(),
+  model: z.string(),
+  prompt: z.any(),
+  prompt_tokens: z.number(),
+});
+export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
+
 export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
   assessment_id: IdSchema,
@@ -160,7 +175,7 @@ export const AssessmentModuleSchema = z.object({
   id: IdSchema,
   course_id: IdSchema,
   name: z.string(),
-  heading: z.string().nullable(),
+  heading: z.string(),
   number: z.number().nullable(),
   implicit: z.boolean(),
 });
@@ -382,7 +397,7 @@ export type DraftQuestionMetadata = z.infer<typeof DraftQuestionMetadataSchema>;
 
 export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
-  created_at: DateFromISOString,
+  created_at: DateFromISOString.nullable(),
   id: IdSchema,
   user_id: IdSchema,
 });
@@ -467,7 +482,7 @@ export const GradingJobSchema = z.object({
   graded_at: DateFromISOString.nullable(),
   graded_by: IdSchema.nullable(),
   grading_finished_at: DateFromISOString.nullable(),
-  grading_method: z.enum(['Internal', 'External', 'Manual']).nullable(),
+  grading_method: z.enum(['Internal', 'External', 'Manual', 'AI']).nullable(),
   grading_received_at: DateFromISOString.nullable(),
   grading_request_canceled_at: DateFromISOString.nullable(),
   grading_request_canceled_by: IdSchema.nullable(),
@@ -555,6 +570,7 @@ export const InstanceQuestionSchema = z.object({
   id: IdSchema,
   incremental_submission_points_array: z.array(z.number().nullable()).nullable(),
   incremental_submission_score_array: z.array(z.number().nullable()).nullable(),
+  is_ai_graded: z.boolean(),
   last_grader: IdSchema.nullable(),
   last_submission_score: z.number().nullable(),
   manual_points: z.number().nullable(),
@@ -794,7 +810,7 @@ export const QuestionSchema = z.object({
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
   qid: z.string().nullable(),
-  shared_publicly: z.boolean(),
+  share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),
   show_correct_answer: z.boolean().nullable(),
   single_variant: z.boolean().nullable(),
@@ -935,9 +951,9 @@ export const SubmissionSchema = z.object({
   format_errors: z.record(z.string(), z.any()).nullable(),
   gradable: z.boolean().nullable(),
   graded_at: DateFromISOString.nullable(),
-  grading_method: z.enum(['Internal', 'External', 'Manual']).nullable(),
   grading_requested_at: DateFromISOString.nullable(),
   id: IdSchema,
+  is_ai_graded: z.boolean(),
   manual_rubric_grading_id: IdSchema.nullable(),
   mode: EnumModeSchema.nullable(),
   override_score: z.number().nullable(),
@@ -953,23 +969,23 @@ export const SubmissionSchema = z.object({
 export type Submission = z.infer<typeof SubmissionSchema>;
 
 export const TagSchema = z.object({
-  color: z.string().nullable(),
+  color: z.string(),
   course_id: IdSchema,
-  description: z.string().nullable(),
+  description: z.string(),
   id: IdSchema,
   implicit: z.boolean(),
-  name: z.string().nullable(),
+  name: z.string(),
   number: z.number().nullable(),
 });
 export type Tag = z.infer<typeof TagSchema>;
 
 export const TopicSchema = z.object({
-  color: z.string().nullable(),
+  color: z.string(),
   course_id: IdSchema,
-  description: z.string().nullable(),
+  description: z.string(),
   id: IdSchema,
   implicit: z.boolean(),
-  name: z.string().nullable(),
+  name: z.string(),
   number: z.number().nullable(),
 });
 export type Topic = z.infer<typeof TopicSchema>;
@@ -1002,7 +1018,7 @@ export const UserSessionSchema = z.object({
 export type UserSession = z.infer<typeof UserSessionSchema>;
 
 export const VariantSchema = z.object({
-  authn_user_id: IdSchema.nullable(),
+  authn_user_id: IdSchema,
   broken: z.boolean().nullable(),
   broken_at: DateFromISOString.nullable(),
   broken_by: IdSchema.nullable(),

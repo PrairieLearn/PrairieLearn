@@ -31,49 +31,48 @@ ENV PYTHONIOENCODING=UTF-8
 # tidyverse'. Switching to using the CRAN package names may make it easier to other R
 # users to adapt and adjust the package list.  We also install sqlite3 to support the
 # SQL lectures. (Adding a duckdb binary may be an option too.)
-RUN apt update \
-    && apt install -y curl \
-                      git \
-                      pandoc \
-                      sqlite3 \
-                      sudo \
-    && install.r bench \        
-                 data.table \
-                 devtools \
-                 diffobj \
-                 doparallel \
-                 duckdb \
-                 dygraphs \
-                 flexdashboard \
-                 foreach \
-                 fs \
-                 future.apply \
-                 gapminder \
-                 gh \
-                 git2r \
-                 igraph \
-                 lahman \
-                 lintr \
-                 magick \
-                 memoise \
-                 microbenchmark \
-                 nycflights13 \
-                 palmerpenguins \
-                 png \
-                 profmem \
-                 RcppArmadillo \
-                 rex \
-                 rsqlite \
-                 runit \
-                 shiny \
-                 stringdist \
-                 testthat \
-                 tidyverse \
-                 tinysnapshot \
-                 tinytest \
-                 ttdo \
-                 unix \
-                 xts \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl git pandoc sqlite3 sudo \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && install.r \
+        bench \
+        data.table \
+        devtools \
+        diffobj \
+        doparallel \
+        duckdb \
+        dygraphs \
+        flexdashboard \
+        foreach \
+        fs \
+        future.apply \
+        gapminder \
+        gh \
+        git2r \
+        igraph \
+        lahman \
+        lintr \
+        magick \
+        memoise \
+        microbenchmark \
+        nycflights13 \
+        palmerpenguins \
+        png \
+        profmem \
+        RcppArmadillo \
+        rex \
+        rsqlite \
+        runit \
+        shiny \
+        stringdist \
+        testthat \
+        tidyverse \
+        tinysnapshot \
+        tinytest \
+        ttdo \
+        unix \
+        xts \
     && echo "options(diffobj.brightness=\"dark\")" >> /etc/R/Rprofile.site
 
 # Install visualTest from Mango
@@ -82,16 +81,18 @@ RUN installGithub.r MangoTheCat/visualTest
 # Install plr (helper package for grading R code in PrairieLearn)
 COPY plr /r_autograder/plr
 RUN install2.r --repos=NULL /r_autograder/plr \
-        && rm -r /r_autograder/plr
+    && rm -r /r_autograder/plr
 
 # Set up user ag
-RUN useradd ag \ 
-        && mkdir /home/ag \
-        && chown ag:ag /home/ag \
-        && echo "[user]" > /home/ag/.gitconfig \
-        && echo "name = Autograding User" >> /home/ag/.gitconfig \
-        && echo "email = ag@nowhere" >> /home/ag/.gitconfig \
-        && chown ag:ag /home/ag/.gitconfig
+RUN useradd ag \
+    && mkdir /home/ag \
+    && chown ag:ag /home/ag \
+    && echo "[user]" > /home/ag/.gitconfig \
+    && echo "name = Autograding User" >> /home/ag/.gitconfig \
+    && echo "email = ag@nowhere" >> /home/ag/.gitconfig \
+    && chown ag:ag /home/ag/.gitconfig
 
 # Copy autograder interface script into position
 COPY r_autograder /r_autograder
+
+ENTRYPOINT [ "/r_autograder/run.sh" ]

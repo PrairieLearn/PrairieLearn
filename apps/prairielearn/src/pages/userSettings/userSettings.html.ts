@@ -26,6 +26,8 @@ export function UserSettings({
   newAccessTokens,
   purchases,
   isExamMode,
+  showEnhancedNavigationToggle,
+  enhancedNavigationEnabled,
   resLocals,
 }: {
   authn_user: User;
@@ -35,6 +37,8 @@ export function UserSettings({
   newAccessTokens: string[];
   purchases: Purchase[];
   isExamMode: boolean;
+  showEnhancedNavigationToggle: boolean;
+  enhancedNavigationEnabled: boolean;
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
@@ -80,30 +84,56 @@ export function UserSettings({
         </table>
       </div>
 
+      ${showEnhancedNavigationToggle
+        ? html`
+            <form method="POST">
+              <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex align-items-center">
+                  <h2>Feature preview</h2>
+                </div>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex align-items-center">
+                    <div class="form-check">
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        name="enhanced_navigation"
+                        value="1"
+                        id="enhanced_navigation_toggle"
+                        ${enhancedNavigationEnabled ? 'checked' : ''}
+                      />
+                      <label
+                        class="form-check-label d-flex align-items-center"
+                        for="enhanced_navigation_toggle"
+                      >
+                        Enhanced navigation
+                        <span class="badge rounded-pill text-bg-success ms-2" aria-hidden="true">
+                          Beta
+                        </span>
+                      </label>
+                      <div class="small text-muted">
+                        Try a new navigation experience for instructors that makes accessing your
+                        course simpler, faster, and more intuitive.
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+                <div class="card-footer">
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-primary"
+                    name="__action"
+                    value="update_features"
+                  >
+                    Save changes
+                  </button>
+                </div>
+              </div>
+            </form>
+          `
+        : ''}
       ${isEnterprise() ? UserSettingsPurchasesCard({ purchases }) : ''}
-
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
-          <h2>Browser configuration</h2>
-        </div>
-        <div class="card-body">
-          <p>
-            This section will let you reset browser settings related to technology inside
-            PrairieLearn.
-          </p>
-          <p>
-            If math formulas shows up as code like
-            <strong>$ x = rac {-b pm sqrt {b^2 - 4ac}}{2a} $</strong>
-            resetting the MathJax menu settings might help.
-          </p>
-          <button
-            class="btn btn-md btn-info"
-            onClick="localStorage.removeItem('MathJax-Menu-Settings');alert('MathJax menu settings have been reset');"
-          >
-            Reset MathJax menu settings
-          </button>
-        </div>
-      </div>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -112,13 +142,13 @@ export function UserSettings({
             ? html`
                 <button
                   type="button"
-                  class="btn btn-light btn-sm ml-auto"
-                  data-toggle="popover"
-                  data-container="body"
-                  data-html="true"
-                  data-placement="auto"
-                  title="Generate new token"
-                  data-content="${TokenGenerateForm({
+                  class="btn btn-light btn-sm ms-auto"
+                  data-bs-toggle="popover"
+                  data-bs-container="body"
+                  data-bs-html="true"
+                  data-bs-placement="auto"
+                  data-bs-title="Generate new token"
+                  data-bs-content="${TokenGenerateForm({
                     csrfToken: resLocals.__csrf_token,
                   }).toString()}"
                   data-testid="generate-token-button"
@@ -158,6 +188,30 @@ export function UserSettings({
           Access tokens can be used to access the PrairieLearn API. Be sure to keep them secure.
         </div>
       </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex">
+          <h2>Browser configuration</h2>
+        </div>
+        <div class="card-body">
+          <p>
+            This section will let you reset browser settings related to technology inside
+            PrairieLearn.
+          </p>
+          <p>
+            If math formulas shows up as code like
+            <strong>$ x = rac {-b pm sqrt {b^2 - 4ac}}{2a} $</strong>
+            resetting the MathJax menu settings might help.
+          </p>
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            onclick="localStorage.removeItem('MathJax-Menu-Settings');alert('MathJax menu settings have been reset');"
+          >
+            Reset MathJax menu settings
+          </button>
+        </div>
+      </div>
     `,
   });
 }
@@ -190,7 +244,7 @@ function TokenList({
   return accessTokens.map(
     (token) => html`
       <li class="list-group-item d-flex align-items-center">
-        <div class="d-flex flex-column mr-3">
+        <div class="d-flex flex-column me-3">
           <strong>${token.name}</strong>
           <span class="text-muted">Created at ${token.created_at}</span>
           <span class="text-muted">
@@ -199,13 +253,13 @@ function TokenList({
         </div>
         <button
           type="button"
-          class="btn btn-outline-danger btn-sm ml-auto"
-          data-toggle="popover"
-          data-container="body"
-          data-html="true"
-          data-placement="auto"
-          title="Delete this token"
-          data-content="${TokenDeleteForm({
+          class="btn btn-outline-danger btn-sm ms-auto"
+          data-bs-toggle="popover"
+          data-bs-container="body"
+          data-bs-html="true"
+          data-bs-placement="auto"
+          data-bs-title="Delete this token"
+          data-bs-content="${TokenDeleteForm({
             token_id: token.id,
             csrfToken: resLocals.__csrf_token,
           }).toString()}"
@@ -222,8 +276,8 @@ function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
     <form name="generate-token-form" method="post">
       <input type="hidden" name="__action" value="token_generate" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <div class="form-group">
-        <label for="token_name">Name:</label>
+      <div class="mb-3">
+        <label class="form-label" for="token_name">Name:</label>
         <input
           type="text"
           class="form-control"
@@ -234,7 +288,7 @@ function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Generate token</button>
       </div>
     </form>
@@ -252,7 +306,7 @@ function TokenDeleteForm({ token_id, csrfToken }: { token_id: string; csrfToken:
         API. You cannot undo this action.
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete token</button>
       </div>
     </form>

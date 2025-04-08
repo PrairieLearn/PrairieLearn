@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
@@ -67,10 +67,10 @@ export function InstructorInstanceAdminLti13({
                 <button
                   type="button"
                   class="btn dropdown-toggle border border-gray"
-                  data-toggle="dropdown"
+                  data-bs-toggle="dropdown"
                   aria-haspopup="true"
                   aria-expanded="false"
-                  data-boundary="window"
+                  data-bs-boundary="window"
                 >
                   ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
                 </button>
@@ -238,17 +238,17 @@ function LinkedAssessments({
                           footer: html`<button
                             type="button"
                             class="btn btn-secondary"
-                            data-dismiss="modal"
+                            data-bs-dismiss="modal"
                           >
                             Close
                           </button>`,
                         })}
                         ${row.assessment_group_heading}
                         <button
-                          class="btn btn-sm btn-secondary ml-2"
+                          class="btn btn-sm btn-secondary ms-2"
                           type="button"
-                          data-toggle="modal"
-                          data-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
+                          data-bs-toggle="modal"
+                          data-bs-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
                         >
                           Bulk actions
                         </button>
@@ -309,7 +309,7 @@ function LinkedAssessments({
                     footer: html`<button
                       type="button"
                       class="btn btn-secondary"
-                      data-dismiss="modal"
+                      data-bs-dismiss="modal"
                     >
                       Close
                     </button>`,
@@ -325,8 +325,8 @@ function LinkedAssessments({
                           <button
                             class="btn btn-med-light"
                             type="button"
-                            data-toggle="modal"
-                            data-target="#assignment-${row.id}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#assignment-${row.id}"
                           >
                             Link assignment
                           </button>

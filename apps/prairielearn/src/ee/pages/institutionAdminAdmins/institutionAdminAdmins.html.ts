@@ -2,14 +2,13 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
-import { Navbar } from '../../../components/Navbar.html.js';
+import { PageLayout } from '../../../components/PageLayout.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Institution,
-  UserSchema,
   InstitutionAdministratorSchema,
+  UserSchema,
 } from '../../../lib/db-types.js';
 
 export const InstitutionAdminAdminsRowSchema = z.object({
@@ -29,28 +28,23 @@ export function InstitutionAdminAdmins({
   uidsLimit: number;
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: `Admins — ${institution.short_name}` })}
-        ${compiledScriptTag('institutionAdminAdminsClient.ts')}
-      </head>
-      <body>
-        ${Navbar({
-          resLocals: { ...resLocals, institution },
-          navbarType: 'institution',
-          navPage: 'institution_admin',
-          navSubPage: 'admins',
-        })}
-        <main id="content" class="container mb-4">
-          ${AdminsCard({ rows })}
-          ${AddAdminsModal({ uidsLimit, csrfToken: resLocals.__csrf_token })}
-          ${RemoveAdminModal({ csrfToken: resLocals.__csrf_token })}
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals: {
+      ...resLocals,
+      institution,
+    },
+    pageTitle: `Admins — ${institution.short_name}`,
+    headContent: [compiledScriptTag('institutionAdminAdminsClient.ts')],
+    navContext: {
+      type: 'institution',
+      page: 'institution_admin',
+      subPage: 'admins',
+    },
+    content: html`
+      ${AdminsCard({ rows })} ${AddAdminsModal({ uidsLimit, csrfToken: resLocals.__csrf_token })}
+      ${RemoveAdminModal({ csrfToken: resLocals.__csrf_token })}
+    `,
+  });
 }
 
 function AdminsCard({ rows }: { rows: InstitutionAdminAdminsRow[] }) {
@@ -60,9 +54,9 @@ function AdminsCard({ rows }: { rows: InstitutionAdminAdminsRow[] }) {
         Administrators
         <button
           type="button"
-          class="btn btn-sm btn-light ml-auto"
-          data-toggle="modal"
-          data-target="#addAdminsModal"
+          class="btn btn-sm btn-light ms-auto"
+          data-bs-toggle="modal"
+          data-bs-target="#addAdminsModal"
         >
           <i class="fa fa-user-plus" aria-hidden="true"></i>
           Add administrators
@@ -86,9 +80,9 @@ function AdminsCard({ rows }: { rows: InstitutionAdminAdminsRow[] }) {
                     </div>
 
                     <button
-                      class="btn btn-sm btn-outline-danger ml-auto js-remove-admin"
-                      data-toggle="modal"
-                      data-target="#removeAdminModal"
+                      class="btn btn-sm btn-outline-danger ms-auto js-remove-admin"
+                      data-bs-toggle="modal"
+                      data-bs-target="#removeAdminModal"
                       type="button"
                       data-name-and-uid="${row.user.name} (${row.user.uid})"
                       data-institution-administrator-id="${row.institution_administrator.id}"
@@ -109,8 +103,8 @@ function AddAdminsModal({ uidsLimit, csrfToken }: { uidsLimit: number; csrfToken
     id: 'addAdminsModal',
     title: 'Add administrators',
     body: html`
-      <div class="form-group">
-        <label for="addAdminsModalUid" class="form-label"> UIDs </label>
+      <div class="mb-3">
+        <label class="form-label" for="addAdminsModalUid"> UIDs </label>
         <textarea
           name="uids"
           class="form-control"
@@ -133,7 +127,7 @@ function AddAdminsModal({ uidsLimit, csrfToken }: { uidsLimit: number; csrfToken
     footer: html`
       <input type="hidden" name="__action" value="addAdmins" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       <button type="submit" class="btn btn-primary">Add administrators</button>
     `,
   });
@@ -158,7 +152,7 @@ function RemoveAdminModal({ csrfToken }: { csrfToken: string }) {
         name="unsafe_institution_administrator_id"
         class="js-institution-administrator-id"
       />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Remove administrator</button>
     `,
   });

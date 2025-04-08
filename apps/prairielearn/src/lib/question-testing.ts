@@ -1,4 +1,3 @@
-import * as async from 'async';
 import jsonStringifySafe from 'json-stringify-safe';
 import _ from 'lodash';
 import { z } from 'zod';
@@ -9,18 +8,18 @@ import { selectUserById } from '../models/user.js';
 import * as questionServers from '../question-servers/index.js';
 
 import {
-  GradingJobSchema,
-  SubmissionSchema,
-  type Variant,
-  type Submission,
-  type Question,
   type Course,
   type CourseInstance,
+  GradingJobSchema,
+  type Question,
+  type Submission,
+  SubmissionSchema,
+  type Variant,
 } from './db-types.js';
-import { saveSubmission, gradeVariant, insertSubmission } from './grading.js';
+import { gradeVariant, insertSubmission, saveSubmission } from './grading.js';
 import { writeCourseIssues } from './issues.js';
 import { getAndRenderVariant } from './question-render.js';
-import { getQuestionCourse, ensureVariant } from './question-variant.js';
+import { ensureVariant, getQuestionCourse } from './question-variant.js';
 import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -72,7 +71,7 @@ async function createTestSubmission(
     question_course,
     test_type,
   );
-  const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+  const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
   const studentMessage = 'Error creating test submission';
   const courseData = { variant, question, course: variant_course };
@@ -105,6 +104,7 @@ async function createTestSubmission(
     credit: null,
     mode: null,
     variant_id: variant.id,
+    user_id,
     auth_user_id: authn_user_id,
     client_fingerprint_id: null,
   });
@@ -308,6 +308,7 @@ async function testQuestion(
       urlPrefix: `/pl/course/${variant_course.id}`,
       user,
       authn_user,
+      is_administrator: false,
     });
   } finally {
     const renderEnd = Date.now();
@@ -384,13 +385,13 @@ async function runTest(
       'true_answer',
     ];
     logger.verbose('variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    '));
-    if (_.isObject(expected_submission)) {
+    if (expected_submission) {
       logger.verbose(
         'expected_submission:\n' +
           jsonStringifySafe(_.pick(expected_submission, submissionKeys), null, '    '),
       );
     }
-    if (_.isObject(test_submission)) {
+    if (test_submission) {
       logger.verbose(
         'test_submission:\n' +
           jsonStringifySafe(_.pick(test_submission, submissionKeys), null, '    '),
@@ -448,7 +449,7 @@ export async function startTestQuestion(
   const stats: TestResultStats[] = [];
 
   serverJob.executeInBackground(async (job) => {
-    await async.eachSeries(_.range(count * test_types.length), async (iter) => {
+    for (const iter of Array(count * test_types.length).keys()) {
       const type = test_types[iter % test_types.length];
       job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
       const result = await runTest(
@@ -465,7 +466,7 @@ export async function startTestQuestion(
       if (result.stats) {
         stats.push(result.stats);
       }
-    });
+    }
 
     function printStats(label: string, key: keyof TestResultStats) {
       let min = Number.MAX_SAFE_INTEGER;

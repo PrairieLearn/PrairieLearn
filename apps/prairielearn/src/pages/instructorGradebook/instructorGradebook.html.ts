@@ -34,7 +34,7 @@ export function InstructorGradebook({
     pageTitle: 'Gradebook',
     navContext: {
       type: 'instructor',
-      page: 'gradebook',
+      page: 'instance_admin',
       subPage: 'gradebook',
     },
     options: {
@@ -44,9 +44,6 @@ export function InstructorGradebook({
       <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
         from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
       <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
-      <script src="${nodeModulesAssetPath(
-          'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-        )}"></script>
       <link
         href="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.css')}"
         rel="stylesheet"
@@ -57,6 +54,7 @@ export function InstructorGradebook({
         )}"
         rel="stylesheet"
       />
+      ${compiledScriptTag('bootstrap-table-sticky-header.js')}
       ${compiledScriptTag('instructorGradebookClient.ts')}
       ${compiledStylesheetTag('instructorGradebook.css')}
       ${EncodedData<InstructorGradebookData>(
@@ -91,7 +89,7 @@ export function InstructorGradebook({
               <table id="gradebook-table" aria-label="Gradebook"></table>
 
               <div class="spinning-wheel card-body spinner-border">
-                <span class="sr-only">Loading...</span>
+                <span class="visually-hidden">Loading...</span>
               </div>
             </div>
             ${RoleDescriptionModal()}
@@ -143,6 +141,7 @@ function RoleDescriptionModal() {
   return Modal({
     id: 'role-help',
     title: 'Roles',
+    form: false,
     body: html`
       <ul>
         <li>
@@ -162,7 +161,7 @@ function RoleDescriptionModal() {
       </ul>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }

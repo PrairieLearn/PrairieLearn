@@ -6,7 +6,6 @@ import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
@@ -148,7 +147,7 @@ export function getUniqueNames({
     // if oldLongName matches {longName} ({number from 0-9})
 
     oldLongNames.forEach((oldLongName) => {
-      if (!_.isString(oldLongName)) return;
+      if (typeof oldLongName !== 'string') return;
       const found =
         oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
       if (found) {
@@ -528,7 +527,7 @@ export abstract class Editor {
     }
 
     function getBaseLongName(oldname: string | null): string {
-      if (!_.isString(oldname)) return 'Unknown';
+      if (typeof oldname !== 'string') return 'Unknown';
       debug(oldname);
       const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
       debug(found);
@@ -556,7 +555,7 @@ export abstract class Editor {
     function getNumberLongName(basename: string, oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
-        if (!_.isString(oldname)) return;
+        if (typeof oldname !== 'string') return;
         const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
         if (found) {
           const foundNumber = parseInt(found[1]);
@@ -618,7 +617,7 @@ export class AssessmentCopyEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
       course_instance_id: this.course_instance.id,
     });
-    const oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = result.rows.map((row) => row.title);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
@@ -814,7 +813,7 @@ export class AssessmentAddEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
       course_instance_id: this.course_instance.id,
     });
-    const oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = result.rows.map((row) => row.title);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
@@ -901,7 +900,7 @@ export class CourseInstanceCopyEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
       course_id: this.course.id,
     });
-    const oldNamesLong = _.map(result.rows, 'long_name');
+    const oldNamesLong = result.rows.map((row) => row.long_name);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(
@@ -1000,6 +999,9 @@ export class CourseInstanceRenameEditor extends Editor {
     const oldPath = path.join(courseInstancesPath, this.course_instance.short_name);
     const newPath = path.join(courseInstancesPath, this.ciid_new);
 
+    // Skip editing if the paths are the same.
+    if (oldPath === newPath) return null;
+
     // Ensure that the updated course instance folder path is fully contained in the course instances directory
     if (!contains(courseInstancesPath, newPath)) {
       throw new AugmentedError('Invalid folder path', {
@@ -1075,7 +1077,7 @@ export class CourseInstanceAddEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
       course_id: this.course.id,
     });
-    const oldNamesLong = _.map(result.rows, 'long_name');
+    const oldNamesLong = result.rows.map((row) => row.long_name);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(
@@ -1216,7 +1218,7 @@ export class QuestionAddEditor extends Editor {
       const result = await sqldb.queryAsync(sql.select_questions_with_course, {
         course_id: this.course.id,
       });
-      const oldNamesLong = _.map(result.rows, 'title');
+      const oldNamesLong = result.rows.map((row) => row.title);
 
       debug('Get all existing short names');
       const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
@@ -1614,7 +1616,7 @@ export class QuestionCopyEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_questions_with_course, {
       course_id: this.course.id,
     });
-    const oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = result.rows.map((row) => row.title);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
@@ -1700,7 +1702,7 @@ export class QuestionTransferEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_questions_with_course, {
       course_id: this.course.id,
     });
-    const oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = result.rows.map((row) => row.title);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
