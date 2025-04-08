@@ -1,6 +1,5 @@
 import html
 import random
-import re
 from enum import Enum
 from typing import Any
 
@@ -244,7 +243,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         a_sub = "".join(a_sub.split())
 
     # Always simplify multiline characters (if they still exist)
-    a_sub = re.sub("\r*\n", "\n", a_sub)  # noqa: RUF039
+    a_sub = a_sub.replace("\r\n", "\n")
 
     if not a_sub and not allow_blank:
         data["format_errors"][name] = (
@@ -283,7 +282,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         return
 
     # Always simplify multiline characters (if they still exist)
-    a_tru = re.sub("\r*\n", "\n", str(a_tru))  # noqa: RUF039
+    a_tru = str(a_tru).replace("\r\n", "\n")
 
     # explicitly cast the true answer to a string, to handle the case where the answer might be a number or some other type
     a_tru_str = str(a_tru)
