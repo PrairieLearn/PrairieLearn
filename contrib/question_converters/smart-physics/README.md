@@ -1,4 +1,4 @@
-# smartPhysics Conversion Tool
+# smartPhysics conversion tool
 
 This converts multiple choice questions from `smart.physics` XML format to
 the PrairieLearn directory question structure. Each question will automatically

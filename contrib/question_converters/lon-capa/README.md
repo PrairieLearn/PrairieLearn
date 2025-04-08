@@ -1,4 +1,4 @@
-# LON-CAPA Conversion Tool
+# LON-CAPA conversion tool
 
 This converts multiple choice and numeric questions from LON-CAPA's IMS Archive format to
 the PrairieLearn directory question structure. Each question will automatically
