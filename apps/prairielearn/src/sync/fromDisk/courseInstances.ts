@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -20,12 +19,12 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
   const accessRules = (courseInstance.allowAccess || [])
-    .filter((accessRule) => !_.has(accessRule, 'role') || accessRule.role === 'Student')
+    .filter((accessRule) => !('role' in accessRule) || accessRule.role === 'Student')
     .map((accessRule) => ({
-      uids: _.has(accessRule, 'uids') ? accessRule.uids : null,
-      start_date: _.has(accessRule, 'startDate') ? accessRule.startDate : null,
-      end_date: _.has(accessRule, 'endDate') ? accessRule.endDate : null,
-      institution: _.has(accessRule, 'institution') ? accessRule.institution : null,
+      uids: accessRule.uids ?? null,
+      start_date: accessRule.startDate ?? null,
+      end_date: accessRule.endDate ?? null,
+      institution: accessRule.institution ?? null,
     }));
 
   return {

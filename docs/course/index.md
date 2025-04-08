@@ -130,6 +130,8 @@ This file specifies basic information about the course:
     }
     ```
 
+See the [reference for `infoCourse.json`](../schemas/infoCourse.md) for more information about what can be added to this file.
+
 ## Course-wide options
 
 These options, which apply to all instances of your course, can be set in the `infoCourse.json` file. The properties should be set within an object named `options` as shown in the example above.

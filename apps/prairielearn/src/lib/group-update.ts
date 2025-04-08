@@ -6,9 +6,9 @@ import { z } from 'zod';
 import * as namedLocks from '@prairielearn/named-locks';
 import {
   loadSqlEquiv,
+  queryOptionalRow,
   queryRow,
   queryRows,
-  queryOptionalRow,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 

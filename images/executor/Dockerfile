@@ -1,4 +1,5 @@
 FROM prairielearn/prairielearn:latest
+
 WORKDIR /PrairieLearn/
 
 # Create our unprivileged user
@@ -12,4 +13,4 @@ RUN groupadd executor \
 # do anything for this image, so we'll just disable it here.
 HEALTHCHECK NONE
 
-CMD make -s start-executor
+CMD [ "make", "-s", "start-executor" ]

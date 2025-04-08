@@ -7,18 +7,19 @@ import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
-  GradingJobSchema,
-  SubmissionSchema,
   type AssessmentQuestion,
   type GradingJob,
+  GradingJobSchema,
   type InstanceQuestion,
   type Question,
+  SubmissionSchema,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
 import { Modal } from './Modal.html.js';
-import type { QuestionContext } from './QuestionContainer.types.js';
+import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 
 const detailedSubmissionColumns = {
   feedback: true,
@@ -47,6 +48,7 @@ export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
 
 export function SubmissionPanel({
   questionContext,
+  questionRenderContext,
   question,
   assessment_question,
   instance_question,
@@ -61,6 +63,7 @@ export function SubmissionPanel({
   renderSubmissionSearchParams,
 }: {
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   question: Question;
   assessment_question?: AssessmentQuestion | null;
   instance_question?: InstanceQuestion | null;
@@ -275,7 +278,9 @@ export function SubmissionPanel({
                     <span class="visually-hidden">Loading...</span>
                   </div>
                 `
-              : unsafeHtml(submissionHtml)}
+              : questionRenderContext === 'ai_grading'
+                ? AiGradingHtmlPreview(submissionHtml)
+                : unsafeHtml(submissionHtml)}
           </div>
         </div>
 

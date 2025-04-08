@@ -24,6 +24,7 @@ module.exports = {
     'plugin:@eslint-react/recommended-legacy',
     'plugin:@typescript-eslint/stylistic',
     'plugin:@typescript-eslint/strict',
+    'plugin:you-dont-need-lodash-underscore/all',
     'prettier',
   ],
   plugins: [
@@ -34,6 +35,7 @@ module.exports = {
     '@eslint-react',
     '@prairielearn',
     '@typescript-eslint',
+    'you-dont-need-lodash-underscore',
   ],
   parserOptions: {
     ecmaVersion: 13,
@@ -82,6 +84,17 @@ module.exports = {
       },
     ],
 
+    // Enforce alphabetical order of import specifiers within each import group.
+    // The import-x/order rule handles the overall sorting of the import groups.
+    'sort-imports': [
+      'error',
+      {
+        ignoreDeclarationSort: true, // import-x/order sorts the groups
+        ignoreMemberSort: false,
+        memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
+      },
+    ],
+
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.
     'mocha/no-exclusive-tests': 'error',
@@ -116,6 +129,9 @@ module.exports = {
     // Blocks double-quote strings (unless a single quote is present in the
     // string) and backticks (unless there is a tag or substitution in place).
     quotes: ['error', 'single', { avoidEscape: true }],
+
+    // The _.omit function is still useful in some contexts.
+    'you-dont-need-lodash-underscore/omit': 'off',
   },
   overrides: [
     {

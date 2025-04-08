@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { AssessmentSetSchema, CourseSchema, type AssessmentSet } from '../../lib/db-types.js';
+import { type AssessmentSet, AssessmentSetSchema, CourseSchema } from '../../lib/db-types.js';
 import { type AssessmentJsonInput, type AssessmentSetJsonInput } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
@@ -225,8 +225,7 @@ describe('Assessment set syncing', () => {
     checkAssessmentSet(syncedAssessmentSets[0], {
       abbreviation: 'X',
       name: 'X',
-      heading:
-        'X (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)',
+      heading: 'X',
       color: 'gray1',
       // number: 1,
     });

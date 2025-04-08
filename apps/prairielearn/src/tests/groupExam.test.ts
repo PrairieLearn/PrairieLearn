@@ -4,7 +4,7 @@ import fetchCookie from 'fetch-cookie';
 import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 
-import { queryAsync, queryOneRowAsync, loadSqlEquiv } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';

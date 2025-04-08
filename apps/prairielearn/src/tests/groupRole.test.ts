@@ -18,6 +18,7 @@ import { type GroupRoleJsonInput } from '../schemas/index.js';
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { syncCourseData } from './sync/util.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let elemList;
