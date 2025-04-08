@@ -21,20 +21,21 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
-    'plugin:import-x/recommended',
-    'plugin:import-x/typescript',
     'plugin:@eslint-react/recommended-legacy',
     'plugin:@typescript-eslint/stylistic',
     'plugin:@typescript-eslint/strict',
+    'plugin:you-dont-need-lodash-underscore/all',
     'prettier',
   ],
   plugins: [
+    'import-x',
+    'mocha',
     'no-floating-promise',
     'no-only-tests',
-    'mocha',
     '@eslint-react',
     '@prairielearn',
     '@typescript-eslint',
+    'you-dont-need-lodash-underscore',
   ],
   parserOptions: {
     ecmaVersion: 13,
@@ -65,10 +66,6 @@ module.exports = {
     'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
     'object-shorthand': 'error',
 
-    // This isn't super useful to use because we're using TypeScript.
-    'import-x/no-named-as-default': 'off',
-    'import-x/no-named-as-default-member': 'off',
-
     'import-x/order': [
       'error',
       {
@@ -87,6 +84,17 @@ module.exports = {
       },
     ],
 
+    // Enforce alphabetical order of import specifiers within each import group.
+    // The import-x/order rule handles the overall sorting of the import groups.
+    'sort-imports': [
+      'error',
+      {
+        ignoreDeclarationSort: true, // import-x/order sorts the groups
+        ignoreMemberSort: false,
+        memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
+      },
+    ],
+
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.
     'mocha/no-exclusive-tests': 'error',
@@ -95,6 +103,7 @@ module.exports = {
     // These rules are implemented in `packages/eslint-plugin-prairielearn`.
     '@prairielearn/aws-client-mandatory-config': 'error',
     '@prairielearn/aws-client-shared-config': 'error',
+    '@prairielearn/jsx-no-dollar-interpolation': 'error',
 
     '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
 
@@ -120,17 +129,14 @@ module.exports = {
     // Blocks double-quote strings (unless a single quote is present in the
     // string) and backticks (unless there is a tag or substitution in place).
     quotes: ['error', 'single', { avoidEscape: true }],
+
+    // The _.omit function is still useful in some contexts.
+    'you-dont-need-lodash-underscore/omit': 'off',
   },
   overrides: [
     {
       files: ['*.ts'],
       rules: {
-        // TypeScript performs similar checks, so we disable these for TS files.
-        // https://typescript-eslint.io/linting/troubleshooting/performance-troubleshooting/#eslint-plugin-import
-        'import-x/named': 'off',
-        'import-x/namespace': 'off',
-        'import-x/default': 'off',
-        'import-x/no-named-as-default-member': 'off',
         'no-restricted-syntax': [
           'error',
           ...NO_RESTRICTED_SYNTAX,

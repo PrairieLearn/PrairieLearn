@@ -1,25 +1,33 @@
-import * as cheerio from 'cheerio';
+import assert from 'node:assert';
+
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import {
+  type AssessmentQuestion,
+  type Course,
+  IdSchema,
+  type InstanceQuestion,
   InstanceQuestionSchema,
+  type Question,
+  type RubricItem,
+  RubricItemSchema,
+  type SubmissionGradingContextEmbedding,
   SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
   VariantSchema,
-  type Course,
-  type Question,
-  type AssessmentQuestion,
-  type SubmissionGradingContextEmbedding,
-  IdSchema,
-  RubricItemSchema,
-  type RubricItem,
-  type InstanceQuestion,
 } from '../../lib/db-types.js';
 import * as manualGrading from '../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../lib/question-render.js';
@@ -46,6 +54,26 @@ const GradedExampleSchema = z.object({
   manual_rubric_grading_id: z.string().nullable(),
 });
 type GradedExample = z.infer<typeof GradedExampleSchema>;
+
+function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): number {
+  if (!usage) {
+    return 0;
+  }
+  const cached_input_tokens = usage.prompt_tokens_details?.cached_tokens ?? 0;
+  const prompt_tokens = usage.prompt_tokens - cached_input_tokens;
+  const completion_tokens = usage.completion_tokens;
+
+  // Pricings are updated according to https://platform.openai.com/docs/pricing
+  const cached_input_cost = 1.25 / 10 ** 6;
+  const prompt_cost = 2.5 / 10 ** 6;
+  const completion_cost = 10.0 / 10 ** 6;
+
+  return (
+    cached_input_tokens * cached_input_cost +
+    prompt_tokens * prompt_cost +
+    completion_tokens * completion_cost
+  );
+}
 
 async function generatePrompt({
   questionPrompt,
@@ -172,7 +200,10 @@ async function generateSubmissionEmbedding({
     { instance_question_id: instance_question.id },
     SubmissionVariantSchema,
   );
-  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+  const locals = {
+    ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+    questionRenderContext: 'ai_grading',
+  };
   const questionModule = questionServers.getModule(question.type);
   const render_submission_results = await questionModule.render(
     { question: false, submissions: true, answer: false },
@@ -181,15 +212,9 @@ async function generateSubmissionEmbedding({
     submission,
     [submission],
     question_course,
-    // We deliberately do not set `manualGradingInterface: true` when rendering
-    // the submission. The expectation is that instructors will use elements lik
-    // `<pl-manual-grading-only>` to provide extra instructions to the LLM. We
-    // don't want to mix in instructions like that with the student's response.
-    urls,
+    locals,
   );
-  const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
-  $('script').remove();
-  const submission_text = $.html();
+  const submission_text = render_submission_results.data.submissionHtmls[0];
   const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
@@ -216,7 +241,7 @@ export async function aiGrade({
 }: {
   question: Question;
   course: Course;
-  course_instance_id?: string;
+  course_instance_id: string;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   authn_user_id: string;
@@ -299,8 +324,10 @@ export async function aiGrade({
         SubmissionVariantSchema,
       );
 
-      const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
-      const locals = { ...urls, manualGradingInterface: true };
+      const locals = {
+        ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+        questionRenderContext: 'ai_grading',
+      };
       // Get question html
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
@@ -317,9 +344,7 @@ export async function aiGrade({
         job.error('Error occurred');
         job.fail('Errors occurred while AI grading, see output for details');
       }
-      const $ = cheerio.load(render_question_results.data.questionHtml, null, false);
-      $('script').remove();
-      const questionPrompt = $.html();
+      const questionPrompt = render_question_results.data.questionHtml;
 
       let submission_embedding = await queryOptionalRow(
         sql.select_embedding_for_submission,
@@ -403,6 +428,10 @@ export async function aiGrade({
                 selectedRubricDescriptions.add(description);
               }
             });
+            job.info('Selected rubric items:');
+            for (const item of selectedRubricDescriptions) {
+              job.info(`- ${item}`);
+            }
 
             // Build a lookup table for rubric items by description.
             const rubricItemsByDescription: Record<string, RubricItem> = {};
@@ -425,22 +454,35 @@ export async function aiGrade({
               rubric_id: rubric_items[0].rubric_id,
               applied_rubric_items: appliedRubricItems,
             };
-            await manualGrading.updateInstanceQuestionScore(
-              assessment_question.assessment_id,
-              instance_question.id,
-              submission.id,
-              null, // check_modified_at
-              {
-                // TODO: consider asking for and recording freeform feedback.
-                manual_rubric_data,
-              },
-              user_id,
-            );
+            await runInTransactionAsync(async () => {
+              const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+                assessment_question.assessment_id,
+                instance_question.id,
+                submission.id,
+                null, // check_modified_at
+                {
+                  // TODO: consider asking for and recording freeform feedback.
+                  manual_rubric_data,
+                  feedback: { manual: '' },
+                },
+                user_id,
+                true, // is_ai_graded
+              );
+              assert(grading_job_id);
 
-            job.info('Selected rubric items:');
-            for (const item of selectedRubricDescriptions) {
-              job.info(`- ${item}`);
-            }
+              await queryAsync(sql.insert_ai_grading_job, {
+                grading_job_id,
+                job_sequence_id: serverJob.jobSequenceId,
+                prompt: messages,
+                completion,
+                model: OPEN_AI_MODEL,
+                prompt_tokens: completion.usage?.prompt_tokens ?? 0,
+                completion_tokens: completion.usage?.completion_tokens ?? 0,
+                cost: calculateApiCost(completion.usage),
+                course_id: course.id,
+                course_instance_id,
+              });
+            });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
             job.error(response.refusal);
@@ -466,18 +508,38 @@ export async function aiGrade({
           const response = completion.choices[0].message;
           job.info(`Raw response:\n${response.content}`);
           if (response.parsed) {
-            await manualGrading.updateInstanceQuestionScore(
-              assessment_question.assessment_id,
-              instance_question.id,
-              submission.id,
-              null, // check_modified_at
-              {
-                score_perc: response.parsed.score,
-                feedback: { manual: response.parsed.feedback },
-              },
-              user_id,
-            );
-            job.info(`AI score: ${response.parsed.score}`);
+            const score = response.parsed.score;
+            const feedback = response.parsed.feedback;
+            job.info(`AI score: ${score}`);
+
+            await runInTransactionAsync(async () => {
+              const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+                assessment_question.assessment_id,
+                instance_question.id,
+                submission.id,
+                null, // check_modified_at
+                {
+                  manual_score_perc: score,
+                  feedback: { manual: feedback },
+                },
+                user_id,
+                true, // is_ai_graded
+              );
+              assert(grading_job_id);
+
+              await queryAsync(sql.insert_ai_grading_job, {
+                grading_job_id,
+                job_sequence_id: serverJob.jobSequenceId,
+                prompt: messages,
+                completion,
+                model: OPEN_AI_MODEL,
+                prompt_tokens: completion.usage?.prompt_tokens ?? 0,
+                completion_tokens: completion.usage?.completion_tokens ?? 0,
+                cost: calculateApiCost(completion.usage),
+                course_id: course.id,
+                course_instance_id,
+              });
+            });
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
             job.error(response.refusal);

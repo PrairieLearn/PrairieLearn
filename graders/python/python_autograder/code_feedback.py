@@ -473,7 +473,7 @@ class Feedback:
         if data is None:
             return bad(f"'{name}' is None or not defined")
 
-        if not isinstance(data, complex | float | int | np.number):
+        if not isinstance(data, (complex, float, int, np.number)):
             try:
                 # Check whether data is a sympy number because sympy
                 # numbers do not follow the typical interface
