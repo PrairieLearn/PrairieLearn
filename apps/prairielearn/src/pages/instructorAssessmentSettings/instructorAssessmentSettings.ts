@@ -173,7 +173,8 @@ router.post(
       if (assessmentInfo.module != null || req.body.module !== 'Default') {
         assessmentInfo.module = req.body.module;
       }
-      assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, req.body.text, '');
+      const normalizedText = req.body.text.replace(/\r\n/g, '\n');
+      assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, normalizedText, '');
       assessmentInfo.allowIssueReporting = propertyValueWithDefault(
         assessmentInfo.allowIssueReporting,
         req.body.allow_issue_reporting === 'on',
