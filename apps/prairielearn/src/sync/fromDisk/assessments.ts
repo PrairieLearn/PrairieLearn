@@ -6,13 +6,14 @@ import { run } from '@prairielearn/run';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { type Assessment, type CourseInstanceData } from '../course-db.js';
+import { type AssessmentJson } from '../../schemas/index.js';
+import { type CourseInstanceData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-type AssessmentInfoFile = infofile.InfoFile<Assessment>;
+type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
 
 /**
  * SYNCING PROCESS:
@@ -105,11 +106,11 @@ function getParamsForAssessment(
     return zone.questions.map((question) => {
       let alternatives: {
         qid: string;
-        maxPoints: number | number[];
-        points: number | number[];
-        maxAutoPoints: number | number[];
-        autoPoints: number | number[];
-        manualPoints: number;
+        maxPoints: number | null;
+        points: number | number[] | null;
+        maxAutoPoints: number | null;
+        autoPoints: number | number[] | null;
+        manualPoints: number | null;
         forceMaxPoints: boolean;
         triesPerVariant: number;
         gradeRateMinutes: number;
@@ -131,7 +132,12 @@ function getParamsForAssessment(
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
             forceMaxPoints: alternative.forceMaxPoints ?? question.forceMaxPoints ?? false,
             triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant ?? 1,
-            advanceScorePerc: alternative.advanceScorePerc,
+            advanceScorePerc:
+              alternative.advanceScorePerc ??
+              question.advanceScorePerc ??
+              zone.advanceScorePerc ??
+              assessment.advanceScorePerc ??
+              0,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
@@ -146,9 +152,13 @@ function getParamsForAssessment(
             maxAutoPoints: question.maxAutoPoints ?? null,
             autoPoints: question.autoPoints ?? null,
             manualPoints: question.manualPoints ?? null,
-            forceMaxPoints: question.forceMaxPoints || false,
-            triesPerVariant: question.triesPerVariant || 1,
-            advanceScorePerc: question.advanceScorePerc,
+            forceMaxPoints: question.forceMaxPoints ?? false,
+            triesPerVariant: question.triesPerVariant ?? 1,
+            advanceScorePerc:
+              question.advanceScorePerc ??
+              zone.advanceScorePerc ??
+              assessment.advanceScorePerc ??
+              0,
             gradeRateMinutes: questionGradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,

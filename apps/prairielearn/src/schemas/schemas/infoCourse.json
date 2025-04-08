@@ -8,7 +8,7 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -34,7 +34,7 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "useNewQuestionRenderer": {
           "description": "Feature flag to enable the new question renderer.",
@@ -45,17 +45,17 @@
           "description": "Feature flags to enable/disable in development mode.",
           "anyOf": [
             {
-              "type": "object",
-              "additionalProperties": {
-                "type": "boolean"
-              }
-            },
-            {
               "description": "Legacy format; use an object instead.",
               "type": "array",
               "items": {
                 "description": "A single feature flag.",
                 "type": "string"
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
               }
             }
           ]
@@ -68,11 +68,12 @@
       "items": {
         "description": "A single assessment set description.",
         "type": "object",
+        "additionalProperties": false,
         "required": ["abbreviation", "name", "heading", "color"],
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "abbreviation": {
             "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
@@ -87,7 +88,7 @@
             "type": "string"
           },
           "color": {
-            "$ref": "#/definitions/color"
+            "$ref": "#/definitions/ColorJsonSchema"
           }
         }
       }
@@ -98,6 +99,7 @@
       "items": {
         "description": "A single course module description.",
         "type": "object",
+        "additionalProperties": false,
         "required": ["name", "heading"],
         "properties": {
           "name": {
@@ -115,20 +117,21 @@
       "description": "Question topics (visible to students).",
       "type": "array",
       "items": {
-        "description": "A single topic, can represent a unit of learning (e.g. 'vectors').",
+        "description": "A single topic, can represent a unit of learning (e.g. 'vectors')",
         "type": "object",
+        "additionalProperties": false,
         "required": ["name", "color"],
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "name": {
             "description": "Long descriptive name (preferably less than 10 words).",
             "type": "string"
           },
           "color": {
-            "$ref": "#/definitions/color"
+            "$ref": "#/definitions/ColorJsonSchema"
           },
           "description": {
             "description": "Description of the topic.",
@@ -143,11 +146,12 @@
       "items": {
         "description": "A single tag description.",
         "type": "object",
+        "additionalProperties": false,
         "required": ["name", "color"],
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "shortName": {
             "description": "Short name (preferably 2 to 7 characters).",
@@ -158,7 +162,7 @@
             "type": "string"
           },
           "color": {
-            "$ref": "#/definitions/color"
+            "$ref": "#/definitions/ColorJsonSchema"
           },
           "description": {
             "description": "Description of the tag.",
@@ -173,6 +177,7 @@
       "items": {
         "description": "A sharing set description.",
         "type": "object",
+        "additionalProperties": false,
         "required": ["name"],
         "properties": {
           "name": {
@@ -188,8 +193,9 @@
     }
   },
   "definitions": {
-    "color": {
+    "ColorJsonSchema": {
       "description": "A color name.",
+      "type": "string",
       "enum": [
         "red1",
         "red2",
@@ -221,6 +227,22 @@
         "gray1",
         "gray2",
         "gray3"
+      ]
+    },
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
       ]
     }
   }
