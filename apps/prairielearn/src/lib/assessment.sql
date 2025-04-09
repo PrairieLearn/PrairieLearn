@@ -704,10 +704,78 @@ WITH
         LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
-        AND (
-          gj.grading_method = 'Manual'
-          OR gj.grading_method = 'AI'
-        )
+        AND gj.grading_method = 'Manual'
+        AND gj.graded_at IS NOT NULL
+    )
+    UNION
+    (
+      SELECT
+        3.7 AS event_order,
+        'AI grading results'::TEXT AS event_name,
+        'blue2'::TEXT AS event_color,
+        gj.graded_at AS date,
+        u.user_id AS auth_user_id,
+        u.uid AS auth_user_uid,
+        q.qid,
+        q.id AS question_id,
+        iq.id AS instance_question_id,
+        v.id AS variant_id,
+        v.number AS variant_number,
+        gj.id AS submission_id,
+        gj.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
+        jsonb_build_object(
+          'correct',
+          gj.correct,
+          'score',
+          gj.score,
+          'manual_points',
+          gj.manual_points,
+          'auto_points',
+          gj.auto_points,
+          'feedback',
+          gj.feedback,
+          'submitted_answer',
+          CASE
+            WHEN $include_files THEN s.submitted_answer
+            ELSE (s.submitted_answer - '_files')
+          END,
+          'submission_id',
+          s.id,
+          'rubric_grading',
+          CASE
+            WHEN rg.id IS NULL THEN NULL
+            ELSE (
+              SELECT
+                JSONB_BUILD_OBJECT(
+                  'computed_points',
+                  rg.computed_points,
+                  'adjust_points',
+                  rg.adjust_points,
+                  'items',
+                  JSONB_AGG(
+                    JSONB_BUILD_OBJECT('text', rgi.description, 'points', rgi.points)
+                  )
+                )
+              FROM
+                rubric_grading_items rgi
+              WHERE
+                rgi.rubric_grading_id = rg.id
+            )
+          END
+        ) AS data
+      FROM
+        grading_jobs AS gj
+        JOIN submissions AS s ON (s.id = gj.submission_id)
+        JOIN variants AS v ON (v.id = s.variant_id)
+        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+        LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
+        LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
+      WHERE
+        iq.assessment_instance_id = $assessment_instance_id
+        AND gj.grading_method = 'AI'
         AND gj.graded_at IS NOT NULL
     )
     UNION
