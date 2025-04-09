@@ -261,7 +261,57 @@ function SampleQuestionSelector({
         >
           <div class="accordion-body">
             <div class="tab-content">
+              <div class="d-flex align-items-center gap-2">
+                <div id="sample-question-selector" class="dropdown d-flex flex-grow-1">
+                  <button
+                    id="sample-question-selector-button"
+                    type="button"
+                    class="btn dropdown-toggle dropdown-menu-right border border-gray d-flex justify-content-between align-items-center bg-white flex-grow-1"
+                    style="max-width: 100%;"
+                    aria-label="Change example question"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    data-bs-toggle="dropdown"
+                    data-bs-boundary="window"
+                  >
+                    <span id="sample-question-selector-button-text" class="text-truncate overflow-hidden me-4">${examplePrompts[0].name}</span>
+                  </button>
+                  <div class="dropdown-menu py-0">
+                    <div class="overflow-auto">
+                      ${examplePrompts.map((a, index) => {
+                        return html`
+                          <a  
+                            id="prompt-${a.id}"
+                            class="dropdown-item ${index === 0 ? 'active' : ''}"
+                            data-id="${a.id}"
+                          >
+                            ${a.name}
+                          </a>
+                        `;
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <button id="previous-question-button" type="button" class="btn btn-primary">
+                  Previous question
+                </button>
+                <button id="next-question-button" type="button" class="btn btn-primary">
+                  Next question
+                </button>
+              </div>
+              <p class="font-weight-bold mb-1 mt-3">Question features</p>
+              <ul id="feature-list">
+                <li>Random number generation</li>
+                <li>LaTex support</li>
+                <li>Decimal input response</li>
+              </ul>
               ${SampleQuestionDemo(initialPrompt)}
+              <p class="font-weight-bold mb-1 mt-3">Prompt</p>
+              <p>Generate a question by randomly creating two vectors (e.g., 3-dimensional). Ask the student to calculate the dot product of these vectors. Include the vector components in the prompt.</p>
+              <button id="fill-prompts" type="button" class="btn btn-primary me-2">
+                <i class="fa fa-clone" aria-hidden="true"></i>
+                Fill prompts
+              </button>
             </div>
           </div>
         </div>
@@ -274,66 +324,46 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
   return html`
     <div id="question-demo" class="card shadow">
       <div class="card-header d-flex align-items-center p-3 gap-3">
-        <div id="sample-question-selector" class="dropdown">
-          <button
-            id="sample-question-selector-button"
-            type="button"
-            class="btn dropdown-toggle dropdown-menu-right border border-gray d-flex justify-content-between align-items-center bg-white pe-4"
-            style="max-width: 100%;"
-            aria-label="Change example question"
-            aria-haspopup="true"
-            aria-expanded="false"
-            data-bs-toggle="dropdown"
-            data-bs-boundary="window"
-          >
-            <span class="text-truncate overflow-hidden">${initialPrompt.name}</span>
-          </button>
-          <div class="dropdown-menu py-0">
-            <div class="overflow-auto">
-              ${examplePrompts.map((a, index) => {
-                return html`
-                  <a  
-                    class="dropdown-item ${index === 0 ? 'active' : ''}"
-                    data-id="${a.id}"
-                  >
-                    ${a.name}
-                  </a>
-                `;
-              })}
-            </div>
-          </div>
-        </div>
+        <p id="question-demo-name" class="mb-0">${initialPrompt.name}</p>
         <span class="badge rounded-pill bg-success me-3">Try me!</span>
       </div>
       <div class="card-body">
         <div id="question-content"></div>
-        <span class="input-group">
-          <span id="answer-label-container" class="input-group-text">
-            <span id="answer-label">
-              ${initialPrompt.answerLabel ? `${initialPrompt.answerLabel} = ` : ''}
+        <div id="response-container" class="${initialPrompt.answerType === 'number' ? 'number' : 'multiple-choice'}">
+          <span id="number-response" class="input-group">
+            <span id="answer-label-container" class="input-group-text">
+              <span id="answer-label">
+                ${initialPrompt.answerLabel ? `${initialPrompt.answerLabel} = ` : ''}
+              </span>
+            </span>
+            <input
+              id="user-number-response"
+              type="text"
+              class="form-control"
+              aria-label="Sample question response"
+              placeholder="rtol=2"
+            />
+            <span
+              id="answer-units-feedback-container"
+              class="input-group-text ${initialPrompt.answerUnits ? 'show-units' : ''}"
+            >
+              <span id="answer-units">${initialPrompt.answerUnits}</span>
+              <span id="feedback-badge-correct" class="badge bg-success">100%</span>
+              <span id="feedback-badge-incorrect" class="badge bg-danger">0%</span>
             </span>
           </span>
-          <input
-            id="user-response"
-            type="text"
-            class="form-control"
-            aria-label="Sample question response"
-          />
-          <span
-            id="answer-units-feedback-container"
-            class="input-group-text ${initialPrompt.answerUnits ? 'show-units' : ''}"
-          >
-            <span id="answer-units">${initialPrompt.answerUnits}</span>
-            <span id="feedback-badge-correct" class="badge bg-success">100%</span>
-            <span id="feedback-badge-incorrect" class="badge bg-danger">0%</span>
-          </span>
-        </span>
+          <div id="multiple-choice-response">
+            <div id="multiple-choice-response-options">
+            </div>
+            <div id="multiple-choice-feedback-container">
+              <span id="feedback-badge-correct" class="badge bg-success">100%</span>
+              <span id="feedback-badge-incorrect" class="badge bg-danger">0%</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card-footer d-flex justify-content-end">
-        <button id="fill-prompts" type="button" class="btn btn-primary me-2">
-          <i class="fa fa-clone" aria-hidden="true"></i>
-          Fill prompts
-        </button>
+      <div class="card-footer d-flex justify-content-end align-items-center">
+        <p class="my-0"><i id="answer">Answer:</i></p>
         <div class="flex-grow-1"></div>
         <button id="new-variant-button" type="button" class="btn btn-primary me-2">
           New variant
@@ -343,6 +373,44 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
     </div>
   `;
 }
+
+
+// <div>
+// <div class="form-check">
+//   <input class="form-check-input" type="radio" name="exampleRadios" id="exampleRadios1" value="option1" checked>
+//   <label class="form-check-label" for="exampleRadios1">
+//     (a) Default radio
+//   </label>
+// </div>
+// <div class="form-check">
+//   <input class="form-check-input" type="radio" name="exampleRadios" id="exampleRadios2" value="option2">
+//   <label class="form-check-label" for="exampleRadios2">
+//     (b) Second default radio
+//   </label>
+// </div>
+// <div class="form-check">
+//   <input class="form-check-input" type="radio" name="exampleRadios" id="exampleRadios3" value="option3">
+//   <label class="form-check-label" for="exampleRadios3">
+//     (c) Radio 3
+//   </label>
+// </div>
+// </div>
+// <div>
+// <div class="form-check">
+//   <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+//   <label class="form-check-label" for="flexCheckDefault">
+//     Default checkbox
+//   </label>
+// </div>
+// <div class="form-check">
+//   <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked>
+//   <label class="form-check-label" for="flexCheckChecked">
+//     Checked checkbox
+//   </label>
+// </div>
+// </div>
+// </div>
+
 
 export function GenerationFailure({
   urlPrefix,

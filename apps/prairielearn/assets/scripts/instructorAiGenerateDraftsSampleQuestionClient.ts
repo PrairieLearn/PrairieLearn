@@ -7,11 +7,18 @@ import { mathjaxTypeset } from './lib/mathjax.js';
 
 interface SampleQuestionVariantInfo {
   question: string;
+  options?: string[];
   correctAnswer: string;
 }
 
 onDocumentReady(() => {
   const questionDemo = document.querySelector('#question-demo') as HTMLDivElement;
+
+  const questionDemoName = questionDemo.querySelector(
+    '#question-demo-name',
+  ) as HTMLParagraphElement;
+
+  const featureList = document.querySelector('#feature-list') as HTMLUListElement;
 
   const sampleQuestionSelector = document.querySelector(
     '#sample-question-selector',
@@ -21,14 +28,34 @@ onDocumentReady(() => {
     '#sample-question-selector-button',
   ) as HTMLButtonElement;
 
+  const sampleQuestionSelectorButtonText = sampleQuestionSelectorButton.querySelector(
+    '#sample-question-selector-button-text',
+  ) as HTMLSpanElement;
+
   const sampleQuestionSelectorDropdownMenu = sampleQuestionSelector.querySelector(
     '.dropdown-menu',
   ) as HTMLSelectElement;
 
+  const previousQuestionButton = document.querySelector(
+    '#previous-question-button',
+  ) as HTMLButtonElement;
+
+  const nextQuestionButton = document.querySelector(
+    '#next-question-button',
+  ) as HTMLButtonElement;
+
   const questionContent = questionDemo.querySelector('#question-content') as HTMLDivElement;
   const gradeButton = questionDemo.querySelector('#grade-button') as HTMLButtonElement;
-  const userResponse = questionDemo.querySelector('#user-response') as HTMLInputElement;
+  const userNumberResponse = questionDemo.querySelector('#user-number-response') as HTMLInputElement;
 
+  const multipleChoiceResponse = questionDemo.querySelector('#multiple-choice-response') as HTMLDivElement;
+  const multipleChoiceResponseOptions = multipleChoiceResponse.querySelector(
+    '#multiple-choice-response-options',
+  ) as HTMLDivElement;
+  const multipleChoiceFeedbackContainer = multipleChoiceResponse.querySelector(
+    '#multiple-choice-feedback-container',
+  ) as HTMLDivElement;
+  
   const answerLabelContainer = questionDemo.querySelector(
     '#answer-label-container',
   ) as HTMLSpanElement;
@@ -38,10 +65,15 @@ onDocumentReady(() => {
     '#answer-units-feedback-container',
   ) as HTMLSpanElement;
   const answerUnits = questionDemo.querySelector('#answer-units') as HTMLSpanElement;
+  const answer = questionDemo.querySelector('#answer') as HTMLSpanElement;
 
   const newVariantButton = questionDemo.querySelector('#new-variant-button') as HTMLButtonElement;
 
   const fillPromptsButton = document.querySelector('#fill-prompts');
+  
+  function getSelectedSampleQuestion(): HTMLAnchorElement | null {
+    return sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
+  }
 
   // Fill the prompts of the selected question to the prompt input fields
   fillPromptsButton?.addEventListener('click', () => {
@@ -51,7 +83,8 @@ onDocumentReady(() => {
     }
 
     // Find the selected sample question tab
-    const selectedTab = sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
+    const selectedTab = getSelectedSampleQuestion();
+    if (!selectedTab) return;
     const id = selectedTab.dataset.id;
     const examplePrompt = examplePrompts.find((examplePrompt) => examplePrompt.id === id);
 
@@ -63,19 +96,21 @@ onDocumentReady(() => {
     }
   });
 
-  function setGrade(state: 'correct' | 'incorrect' | 'no-grade') {
+  function setGrade(state: 'correct' | 'incorrect' | 'no-grade', answerType: 'number' | 'radio' | 'checkbox') {
+    const feedbackContainer = answerType === 'number' ? answerUnitsFeedbackContainer : multipleChoiceFeedbackContainer;
+
     switch (state) {
       case 'correct':
-        answerUnitsFeedbackContainer.classList.add('correct');
-        answerUnitsFeedbackContainer.classList.remove('incorrect');
+        feedbackContainer.classList.add('correct');
+        feedbackContainer.classList.remove('incorrect');
         break;
       case 'incorrect':
-        answerUnitsFeedbackContainer.classList.add('incorrect');
-        answerUnitsFeedbackContainer.classList.remove('correct');
+        feedbackContainer.classList.add('incorrect');
+        feedbackContainer.classList.remove('correct');
         break;
       case 'no-grade':
-        answerUnitsFeedbackContainer.classList.remove('correct');
-        answerUnitsFeedbackContainer.classList.remove('incorrect');
+        feedbackContainer.classList.remove('correct');
+        feedbackContainer.classList.remove('incorrect');
     }
   }
 
@@ -99,6 +134,9 @@ onDocumentReady(() => {
       case 'projectile-distance':
         variant = generateProjectileDistanceVariant();
         break;
+      case 'mcq-test':
+        variant = generateMCQTestVariant();
+        break;
       default:
         variant = {
           question: '',
@@ -107,7 +145,7 @@ onDocumentReady(() => {
     }
 
     // Clear the user response field
-    userResponse.value = '';
+    userNumberResponse.value = '';
 
     // Set the question content to that of the variant
     questionContent.innerHTML = variant.question;
@@ -115,27 +153,98 @@ onDocumentReady(() => {
     // Store the answer in the grade button
     gradeButton.dataset.answer = variant.correctAnswer;
 
-    setGrade('no-grade');
 
     // Update the examples
     const examplePrompt = examplePrompts.find((examplePrompt) => examplePrompt.id === id);
     if (examplePrompt) {
-      // Update the answer label
-      if (examplePrompt.answerLabel) {
-        answerLabelContainer.classList.remove('d-none');
-        answerLabel.innerHTML = `${examplePrompt.answerLabel} = `;
-      } else {
-        answerLabelContainer.classList.add('d-none');
-        answerLabel.innerHTML = '';
-      }
+      // Update the question demo text
+      questionDemoName.innerHTML = examplePrompt.name ?? '';
 
-      // Update the answer units
-      if (examplePrompt.answerUnits) {
-        answerUnitsFeedbackContainer.classList.add('show-units');
-        answerUnits.innerHTML = examplePrompt.answerUnits;
-      } else {
-        answerUnitsFeedbackContainer.classList.remove('show-units');
-        answerUnits.innerHTML = '';
+      // Clear the response feedback
+      setGrade('no-grade', examplePrompt.answerType);
+      
+      // Update the feature list
+       featureList.innerHTML = examplePrompt.features.reduce(
+        (acc, feature) => `${acc}
+<li>${feature}</li>`,
+        '',
+       );
+
+       if (examplePrompt.answerType === 'number') {
+        // Display the numeric input
+        const responseContainer = questionDemo.querySelector(
+          '#response-container',
+        ) as HTMLDivElement;
+        responseContainer.classList.remove('multiple-choice');
+        responseContainer.classList.add('number');
+
+        // Create the response field placeholder text
+        let placeholderText: string = examplePrompt.answerType;
+
+        // Add relative and absolute tolerance if available
+        if (examplePrompt.rtol && examplePrompt.atol) {
+          placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol}, atol=${examplePrompt.atol})`;
+        } else if (examplePrompt.rtol) {
+          placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol})`;
+        } else if (examplePrompt.atol) {
+          placeholderText = `${placeholderText} (atol=${examplePrompt.atol})`;
+        }
+        
+        // Update the response placeholder text
+        userNumberResponse.placeholder = placeholderText;
+    
+        // Update the answer label
+        if (examplePrompt.answerLabel) {
+          answerLabelContainer.classList.remove('d-none');
+          answerLabel.innerHTML = `${examplePrompt.answerLabel} = `;
+        } else {
+          answerLabelContainer.classList.add('d-none');
+          answerLabel.innerHTML = '';
+        }
+
+        // Update the answer units
+        if (examplePrompt.answerUnits) {
+          answerUnitsFeedbackContainer.classList.add('show-units');
+          answerUnits.innerHTML = examplePrompt.answerUnits;
+        } else {
+          answerUnitsFeedbackContainer.classList.remove('show-units');
+          answerUnits.innerHTML = '';
+        }
+
+        // Update the text displaying the answer
+        answer.innerHTML = `Answer: ${variant.correctAnswer}`;
+      } else if (examplePrompt.answerType === 'radio') {
+        // Display the multiple choice input
+        const responseContainer = questionDemo.querySelector(
+          '#response-container',
+        ) as HTMLDivElement;
+        responseContainer.classList.remove('number');
+        responseContainer.classList.add('multiple-choice');
+
+        // Add the options to the question
+        multipleChoiceResponseOptions.innerHTML = (variant.options ?? []).reduce(
+          (acc, option, index) => {
+            // Create a letter for the option based on its index
+            const optionLetter = String.fromCharCode(index + 'a'.charCodeAt(0));
+            return `${acc}
+<div class="form-check">
+  <input class="form-check-input" type="radio" name="multiple-choice-response" id="option-${optionLetter}" value="${option}">
+  <label class="form-check-label" for="option-${optionLetter}">
+    (${optionLetter}) ${option}
+  </label>
+</div>`},
+          '',
+        );
+
+        // Update the text displaying the answer
+        const correctOptionIndex = variant.options?.indexOf(variant.correctAnswer);
+
+        if (correctOptionIndex !== undefined) {
+          const correctOptionLetter = String.fromCharCode(correctOptionIndex + 'a'.charCodeAt(0));
+          answer.innerHTML = `Answer: (${correctOptionLetter}) ${variant.correctAnswer}`;
+        } else {
+          answer.innerHTML = `Answer: ${variant.correctAnswer}`;
+        }
       }
 
       setEmTagValue('#user-prompt-llm-example', `Example: ${examplePrompt.promptGeneral ?? ''}`);
@@ -154,13 +263,12 @@ onDocumentReady(() => {
   }
 
   // Generate the initial variant when the page loads
-
   generateSampleQuestionVariant('dot-product');
 
   // Generate a new variant when the new variant button is clicked
   newVariantButton.addEventListener('click', () => {
-    const selectedTab = sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
-    if (selectedTab.dataset.id) {
+    const selectedTab = getSelectedSampleQuestion();
+    if (selectedTab?.dataset?.id) {
       generateSampleQuestionVariant(selectedTab.dataset.id);
     }
   });
@@ -173,37 +281,129 @@ onDocumentReady(() => {
       const selectedId = selectedTab.dataset.id;
 
       if (selectedId) {
-        const previousTab = sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
+        const previousTab = getSelectedSampleQuestion();
         if (previousTab) {
           previousTab.classList.remove('active');
         }
         selectedTab.classList.add('active');
-        sampleQuestionSelectorButton.innerHTML = selectedTab.innerHTML;
+        sampleQuestionSelectorButtonText.innerHTML = selectedTab.innerHTML;
         generateSampleQuestionVariant(selectedId);
       }
     }
   })
 
-  // Generate a new variant when the example question tab is changed
-  // sampleQuestionSelector?.addEventListener('shown.bs.tab', (event) => {
-  //   const newTab = event.target as HTMLAnchorElement;
-  //   const selection = newTab.dataset;
-  //   if (selection.id) {
-  //     generateSampleQuestionVariant(selection.id);
-  //   }
-  // });
+  previousQuestionButton.addEventListener('click', () => {
+    const selectedTab = getSelectedSampleQuestion();
+    if (!selectedTab) return;
+
+    const selectedTabId = selectedTab.dataset.id;
+    const examplePromptIndex = examplePrompts.findIndex(
+      (examplePrompt) => examplePrompt.id === selectedTabId,
+    );
+
+    if (examplePromptIndex > 0) {
+      // Find the example prompt before the current one
+      const previousPrompt = examplePrompts[examplePromptIndex - 1];
+
+      // Find its corresponding option
+      const previousOption = sampleQuestionSelector.querySelector(
+        `#prompt-${previousPrompt.id}`,
+      ) as HTMLAnchorElement;
+
+      const previousOptionId = previousOption.dataset.id;
+
+      previousOption.classList.add('active');
+      selectedTab.classList.remove('active');
+
+      sampleQuestionSelectorButtonText.innerHTML = previousOption.innerHTML;
+      if (previousOptionId) {
+        generateSampleQuestionVariant(previousOptionId);  
+      }
+    }
+  })
+
+  nextQuestionButton.addEventListener('click', () => {
+    const selectedTab = getSelectedSampleQuestion();
+    if (!selectedTab) return;
+
+    const selectedTabId = selectedTab.dataset.id;
+    const examplePromptIndex = examplePrompts.findIndex(
+      (examplePrompt) => examplePrompt.id === selectedTabId,
+    );
+
+    if (examplePromptIndex < examplePrompts.length - 1) {
+      // Find the example prompt after the current one
+      const nextPrompt = examplePrompts[examplePromptIndex + 1];
+
+      // Find its corresponding option
+      const nextOption = sampleQuestionSelector.querySelector(
+        `#prompt-${nextPrompt.id}`,
+      ) as HTMLAnchorElement;
+
+      const nextOptionId = nextOption.dataset.id;
+
+      nextOption.classList.add('active');
+      selectedTab.classList.remove('active');
+
+      sampleQuestionSelectorButtonText.innerHTML = nextOption.innerHTML;
+      if (nextOptionId) {
+        generateSampleQuestionVariant(nextOptionId);  
+      }
+    }
+  })
 
   // Grade the question when the grade button is clicked
   gradeButton?.addEventListener('click', () => {
-    const selectedTab = sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
-    if (selectedTab.dataset.id) {
-      const response = userResponse.value;
-      const answer = gradeButton.dataset.answer;
+    const selectedTab =  getSelectedSampleQuestion();
+    if (!selectedTab) return;
 
-      if (response === answer) {
-        setGrade('correct');
+    const response = userNumberResponse.value;
+    const answer = gradeButton.dataset.answer;
+
+    const examplePrompt = examplePrompts.find((examplePrompt) => examplePrompt.id === selectedTab.dataset.id);
+    if (!examplePrompt) return;
+
+    if (examplePrompt.answerType === 'number') {
+      const rtol = examplePrompt.rtol;
+      const atol = examplePrompt.atol;
+      const answerNum = parseFloat(answer ?? '0');
+      
+      if (answerNum) {
+        const responseNum = parseFloat(response);
+        const relativeError = Math.abs((responseNum - answerNum) / answerNum);
+        const absoluteError = Math.abs(responseNum - answerNum);
+        
+        const relativeErrorValid = rtol ? relativeError <= rtol : false;
+        const absoluteErrorValid = atol ? absoluteError <= atol : false;
+        const perfectMatch = response === answer;
+
+        let isValid = perfectMatch;
+
+        if (rtol && atol) {
+          isValid = relativeErrorValid && absoluteErrorValid;
+        } else if (rtol) {
+          isValid = relativeErrorValid;
+        } else if (atol) {
+          isValid = absoluteErrorValid;
+        }
+
+        if (isValid) {
+          setGrade('correct', examplePrompt.answerType);
+        } else {
+          setGrade('incorrect', examplePrompt.answerType);
+        }
+      }
+    } else if (examplePrompt.answerType === 'radio') {
+      const selectedOption = multipleChoiceResponseOptions.querySelector(
+        'input[type="radio"]:checked',
+      ) as HTMLInputElement;
+      const selectedValue = selectedOption?.value;
+      const correctAnswer = gradeButton.dataset.answer; 
+
+      if (selectedValue === correctAnswer) {
+        setGrade('correct', examplePrompt.answerType);
       } else {
-        setGrade('incorrect');
+        setGrade('incorrect', examplePrompt.answerType);
       }
     }
   });
@@ -334,4 +534,20 @@ function generateProjectileDistanceVariant(): SampleQuestionVariantInfo {
         `,
     correctAnswer: horizontalDisplacementRounded.toString(),
   };
+}
+
+function generateMCQTestVariant(): SampleQuestionVariantInfo {
+  // Shuffle the options
+  const options = ['Berlin', 'Madrid', 'Paris', 'Rome'];
+  const shuffledOptions = options.sort(() => Math.random() - 0.5);
+
+  return {
+    question: `
+            <p>
+                What is the capital of France?
+            </p>
+        `,
+    options: shuffledOptions,
+    correctAnswer: 'Paris', 
+  }
 }

@@ -36,3 +36,23 @@
 #answer-units-feedback-container.incorrect #answer-units {
   margin-right: 0.5rem;
 }
+
+#response-container.number #multiple-choice-response,
+#response-container.multiple-choice #number-response  {
+  display: none;
+}
+
+#multiple-choice-feedback-container {
+  width: fit-content;
+  margin-top: 1rem;
+}
+
+#multiple-choice-feedback-container #feedback-badge-correct,
+#multiple-choice-feedback-container #feedback-badge-incorrect {
+  display: none;
+}
+
+#multiple-choice-feedback-container.correct #feedback-badge-correct,
+#multiple-choice-feedback-container.incorrect #feedback-badge-incorrect {
+  display: block;
+}
