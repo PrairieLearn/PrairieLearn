@@ -36,10 +36,10 @@ onDocumentReady(() => {
 
   const newVariantButton = questionDemo.querySelector('#new-variant-button') as HTMLButtonElement;
 
-  const copyPromptsButton = document.querySelector('#copy-prompts');
+  const fillPromptsButton = document.querySelector('#fill-prompts');
 
-  // Copy the prompts of the selected question to the prompt input fields
-  copyPromptsButton?.addEventListener('click', () => {
+  // Fill the prompts of the selected question to the prompt input fields
+  fillPromptsButton?.addEventListener('click', () => {
     function setInputValue(selector: string, value: string) {
       const input = document.querySelector(selector) as HTMLInputElement;
       input.value = value;

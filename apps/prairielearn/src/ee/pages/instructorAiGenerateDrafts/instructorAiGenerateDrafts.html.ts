@@ -283,9 +283,9 @@ function SampleQuestionSelector({
 
             <div class="tab-content pt-3">
               ${SampleQuestionDemo(initialPrompt)}
-              <button id="copy-prompts" type="button" class="btn btn-primary me-2 mt-3">
+              <button id="fill-prompts" type="button" class="btn btn-primary me-2 mt-3">
                 <i class="fa fa-clone" aria-hidden="true"></i>
-                Copy prompts
+                Fill prompts
               </button>
             </div>
           </div>
