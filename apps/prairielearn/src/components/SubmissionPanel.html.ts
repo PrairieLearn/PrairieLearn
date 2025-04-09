@@ -1,3 +1,5 @@
+import * as url from 'node:url';
+
 import { differenceInMilliseconds } from 'date-fns';
 import { z } from 'zod';
 
@@ -5,18 +7,19 @@ import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
-  GradingJobSchema,
-  SubmissionSchema,
   type AssessmentQuestion,
   type GradingJob,
+  GradingJobSchema,
   type InstanceQuestion,
   type Question,
+  SubmissionSchema,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
 import { Modal } from './Modal.html.js';
-import type { QuestionContext } from './QuestionContainer.types.js';
+import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 
 const detailedSubmissionColumns = {
   feedback: true,
@@ -45,6 +48,7 @@ export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
 
 export function SubmissionPanel({
   questionContext,
+  questionRenderContext,
   question,
   assessment_question,
   instance_question,
@@ -56,8 +60,10 @@ export function SubmissionPanel({
   rubric_data,
   urlPrefix,
   expanded,
+  renderSubmissionSearchParams,
 }: {
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   question: Question;
   assessment_question?: AssessmentQuestion | null;
   instance_question?: InstanceQuestion | null;
@@ -69,15 +75,22 @@ export function SubmissionPanel({
   rubric_data?: RubricData | null;
   urlPrefix: string;
   expanded?: boolean;
+  renderSubmissionSearchParams?: URLSearchParams;
 }) {
   const isLatestSubmission = submission.submission_number === submissionCount;
   expanded = expanded || isLatestSubmission;
+
   const renderUrlPrefix =
     questionContext === 'instructor' || questionContext === 'public'
       ? `${urlPrefix}/question/${question.id}/preview`
       : questionContext === 'manual_grading'
         ? `${urlPrefix}/assessment/${assessment_question?.assessment_id}/manual_grading/instance_question/${instance_question?.id}`
         : `${urlPrefix}/instance_question/${instance_question?.id}`;
+  const renderUrl = url.format({
+    pathname: `${renderUrlPrefix}/variant/${variant_id}/submission/${submission.id}`,
+    search: renderSubmissionSearchParams?.toString(),
+  });
+
   return html`
     <div
       data-testid="submission-with-feedback"
@@ -223,28 +236,30 @@ export function SubmissionPanel({
               instance_question,
             })}
           </div>
-          <button
-            type="button"
-            class="btn btn-outline-dark btn-sm ms-2 me-2"
-            data-submission-id="${submission.id}"
-            data-bs-toggle="modal"
-            data-bs-target="#submissionInfoModal-${submission.id}"
-            aria-label="Submission info"
-          >
-            <i class="fa fa-info-circle fa-fw"></i>
-          </button>
-          <button
-            type="button"
-            class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap ${!expanded
-              ? 'collapsed'
-              : ''}"
-            data-bs-toggle="collapse"
-            data-bs-target="#submission-${submission.id}-body"
-            aria-expanded="${expanded ? 'true' : 'false'}"
-            aria-controls="submission-${submission.id}-body"
-          >
-            <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
-          </button>
+          <div class="btn-group">
+            <button
+              type="button"
+              class="btn btn-outline-dark btn-sm ms-2"
+              data-submission-id="${submission.id}"
+              data-bs-toggle="modal"
+              data-bs-target="#submissionInfoModal-${submission.id}"
+              aria-label="Submission info"
+            >
+              <i class="fa fa-info-circle fa-fw"></i>
+            </button>
+            <button
+              type="button"
+              class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap ${!expanded
+                ? 'collapsed'
+                : ''}"
+              data-bs-toggle="collapse"
+              data-bs-target="#submission-${submission.id}-body"
+              aria-expanded="${expanded ? 'true' : 'false'}"
+              aria-controls="submission-${submission.id}-body"
+            >
+              <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
+            </button>
+          </div>
         </div>
 
         <div
@@ -254,11 +269,7 @@ export function SubmissionPanel({
             : ''}"
           data-submission-id="${submission.id}"
           id="submission-${submission.id}-body"
-          ${question.type === 'Freeform'
-            ? html`
-                data-dynamic-render-url="${renderUrlPrefix}/variant/${variant_id}/submission/${submission.id}"
-              `
-            : ''}
+          ${question.type === 'Freeform' ? html`data-dynamic-render-url="${renderUrl}" ` : ''}
         >
           <div class="card-body submission-body">
             ${submissionHtml == null
@@ -267,7 +278,9 @@ export function SubmissionPanel({
                     <span class="visually-hidden">Loading...</span>
                   </div>
                 `
-              : unsafeHtml(submissionHtml)}
+              : questionRenderContext === 'ai_grading'
+                ? AiGradingHtmlPreview(submissionHtml)
+                : unsafeHtml(submissionHtml)}
           </div>
         </div>
 

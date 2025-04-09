@@ -79,7 +79,7 @@
       "description": "Options for externally graded questions.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["image", "entrypoint"],
+      "required": ["image"],
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
@@ -94,7 +94,7 @@
           "type": "string"
         },
         "entrypoint": {
-          "description": "Program or command to run as the entrypoint to your grader.",
+          "description": "Program or command to run as the entrypoint to your grader. If not provided, the default entrypoint for the image will be used.",
           "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
         },
         "serverFilesCourse": {

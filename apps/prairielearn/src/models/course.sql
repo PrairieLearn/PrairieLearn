@@ -117,4 +117,11 @@ UPDATE pl_courses
 SET
   show_getting_started = $show_getting_started
 WHERE
-  id = $course_id
+  id = $course_id;
+
+-- BLOCK update_course_sharing_name
+UPDATE pl_courses
+SET
+  sharing_name = $sharing_name
+WHERE
+  id = $course_id;

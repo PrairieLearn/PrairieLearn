@@ -1,5 +1,4 @@
 import debugfn from 'debug';
-import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
@@ -42,7 +41,7 @@ class LoadEstimator {
   startJob(id: string) {
     debug(`LoadEstimator.startJob(): jobType = ${this.jobType}, id = ${id}`);
     this._addIntegratedLoad();
-    if (_.has(this.currentJobs, id)) {
+    if (Object.prototype.hasOwnProperty.call(this.currentJobs, id)) {
       logger.error(`load.startJob(): ${this.jobType} id already running: ${id}`);
     }
     this.currentJobs[id] = { startMS: Date.now() };
@@ -51,7 +50,7 @@ class LoadEstimator {
   endJob(id: string) {
     debug(`LoadEstimator.endJob(): jobType = ${this.jobType}, id = ${id}`);
     this._addIntegratedLoad();
-    if (_.has(this.currentJobs, id)) {
+    if (Object.prototype.hasOwnProperty.call(this.currentJobs, id)) {
       delete this.currentJobs[id];
     } else {
       logger.error(`load.endJob(): ${this.jobType} no such id: ${id}`);
@@ -84,7 +83,7 @@ class LoadEstimator {
 
   _addIntegratedLoad() {
     debug(`LoadEstimator._addIntegratedLoad(): jobType = ${this.jobType}`);
-    const currentJobCount = _.size(this.currentJobs);
+    const currentJobCount = Object.keys(this.currentJobs).length;
     const nowMS = Date.now();
     const delta = Math.max(1, nowMS - this.lastIncrementTimeMS) / 1000;
     this.integratedLoad += delta * currentJobCount;
@@ -125,7 +124,7 @@ class LoadEstimator {
     debug(`LoadEstimator._warnOldJobs(): jobType = ${this.jobType}`);
     if (!this.warnOnOldJobs) return;
     const nowMS = Date.now();
-    _.forEach(this.currentJobs, (info, id) => {
+    for (const [id, info] of Object.entries(this.currentJobs)) {
       if (nowMS - info.startMS > config.maxResponseTimeSec * 1000 && !info.warned) {
         const details = {
           jobType: this.jobType,
@@ -137,7 +136,7 @@ class LoadEstimator {
         logger.error('load._warnOldJobs(): job exceeded max response time', details);
         info.warned = true;
       }
-    });
+    }
   }
 }
 
@@ -147,13 +146,15 @@ export function initEstimator(jobType: string, maxJobCount: number, warnOnOldJob
   debug(
     `initEstimator(): jobType = ${jobType}, maxJobCount = ${maxJobCount}, warnOnOldJobs = ${warnOnOldJobs}`,
   );
-  if (_.has(estimators, jobType)) throw new Error(`duplicate jobType: ${jobType}`);
+  if (Object.prototype.hasOwnProperty.call(estimators, jobType)) {
+    throw new Error(`duplicate jobType: ${jobType}`);
+  }
   estimators[jobType] = new LoadEstimator(jobType, maxJobCount, warnOnOldJobs);
 }
 
 export function startJob(jobType: string, id: string, maxJobCount?: number) {
   debug(`startJob(): jobType = ${jobType}, id = ${id}, maxJobCount = ${maxJobCount}`);
-  if (!_.has(estimators, jobType)) {
+  if (!Object.prototype.hasOwnProperty.call(estimators, jobType)) {
     // lazy estimator creation, needed for unit tests
     estimators[jobType] = new LoadEstimator(jobType, maxJobCount);
   }
@@ -167,7 +168,7 @@ export function endJob(jobType: string, id: string) {
 }
 
 export function close() {
-  debug(`close(): ${_.size(estimators)} estimators`);
+  debug(`close(): ${Object.keys(estimators).length} estimators`);
   for (const jobType in estimators) {
     estimators[jobType].close();
     delete estimators[jobType];

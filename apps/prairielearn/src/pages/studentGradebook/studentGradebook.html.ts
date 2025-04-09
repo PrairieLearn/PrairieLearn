@@ -6,10 +6,10 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import {
+  AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  AssessmentAccessRuleSchema,
 } from '../../lib/db-types.js';
 
 export const StudentGradebookRowSchema = z.object({

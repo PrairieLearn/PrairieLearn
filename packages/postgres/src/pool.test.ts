@@ -1,19 +1,19 @@
 import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import { use as chaiUse, assert } from 'chai';
+import { assert, use as chaiUse } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { z, ZodError } from 'zod';
+import { ZodError, z } from 'zod';
 
 import {
-  queryAsync,
-  queryRows,
-  queryRow,
-  queryOptionalRow,
-  callRows,
-  callRow,
   callOptionalRow,
+  callRow,
+  callRows,
+  queryAsync,
   queryCursor,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
   queryValidatedCursor,
 } from './default-pool.js';
 import { makePostgresTestUtils } from './test-utils.js';

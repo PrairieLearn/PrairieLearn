@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 import oauthSignature from 'oauth-signature';
 import { z } from 'zod';
 
@@ -19,7 +18,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const parameters = _.clone(req.body);
+    const parameters = structuredClone(req.body);
     const signature = req.body.oauth_signature;
     delete parameters.oauth_signature;
 

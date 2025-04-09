@@ -16,7 +16,7 @@ import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
-import { syncCourseData, type GroupRole } from './sync/util.js';
+import { type GroupRole, syncCourseData } from './sync/util.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

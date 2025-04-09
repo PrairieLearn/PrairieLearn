@@ -5,8 +5,8 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  uploadInstanceQuestionScores,
   uploadAssessmentInstanceScores,
+  uploadInstanceQuestionScores,
 } from '../../lib/score-upload.js';
 
 import {

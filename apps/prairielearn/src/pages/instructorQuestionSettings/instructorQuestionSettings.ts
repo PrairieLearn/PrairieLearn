@@ -17,10 +17,11 @@ import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
 import {
   FileModifyEditor,
-  QuestionRenameEditor,
-  QuestionDeleteEditor,
-  QuestionCopyEditor,
   MultiEditor,
+  QuestionCopyEditor,
+  QuestionDeleteEditor,
+  QuestionRenameEditor,
+  propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
@@ -137,6 +138,24 @@ router.post(
         if (Array.isArray(req.body.tags)) return req.body.tags;
         return [req.body.tags];
       });
+
+      questionInfo.gradingMethod = propertyValueWithDefault(
+        questionInfo.gradingMethod,
+        req.body.grading_method,
+        'Internal',
+      );
+
+      questionInfo.singleVariant = propertyValueWithDefault(
+        questionInfo.singleVariant,
+        req.body.single_variant === 'on',
+        false,
+      );
+
+      questionInfo.showCorrectAnswer = propertyValueWithDefault(
+        questionInfo.showCorrectAnswer,
+        req.body.show_correct_answer === 'on',
+        true,
+      );
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 

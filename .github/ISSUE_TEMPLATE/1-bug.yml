@@ -1,0 +1,10 @@
+name: Bug report
+description: An unexpected problem or unintended behavior
+body:
+  - type: textarea
+    attributes:
+      label: Details
+      placeholder: Type your description here...
+    validations:
+      required: true
+type: Bug

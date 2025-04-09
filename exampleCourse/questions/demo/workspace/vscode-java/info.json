@@ -1,0 +1,21 @@
+{
+  "uuid": "1050acce-0350-4117-9455-42431d3c1085",
+  "title": "Workspace demo: VS Code (Java)",
+  "topic": "Workspace",
+  "singleVariant": true,
+  "tags": ["jonatan"],
+  "type": "v3",
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-vscode-java",
+    "port": 8080,
+    "home": "/home/coder/workspace",
+    "gradedFiles": ["Square.java"]
+  },
+  "gradingMethod": "External",
+  "showCorrectAnswer": false,
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-java",
+    "timeout": 5
+  }
+}

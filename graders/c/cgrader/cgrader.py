@@ -49,6 +49,7 @@ INVALID_PRIMITIVES = frozenset(("no_sanitize", "disable_sanitizer_instrumentatio
 ASAN_FLAGS = ("-fsanitize=address", "-static-libasan", "-g", "-O0")
 
 
+OutputMatch = str | re.Pattern[str] | Iterable[str | re.Pattern[str]]
 OutputMatchingOption = Literal["all", "partial", "any"]
 
 
@@ -415,9 +416,9 @@ class CGrader:
         self,
         command: str | Iterable[str],
         input: str | None = None,  # noqa: A002
-        exp_output: str | Iterable[str] | None = None,
+        exp_output: OutputMatch | None = None,
         must_match_all_outputs: OutputMatchingOption | bool = "any",  # noqa: FBT001
-        reject_output: str | Iterable[str] | None = None,
+        reject_output: OutputMatch | None = None,
         field: str | None = None,
         ignore_case: bool = True,  # noqa: FBT001
         timeout: float = 1,
@@ -430,7 +431,7 @@ class CGrader:
         highlight_matches: bool = False,  # noqa: FBT001
     ) -> TestResult:
         if args is not None:
-            if isinstance(args, str | float | int):
+            if isinstance(args, (str, float, int)):
                 args = [args]
             args = list(map(str, args))
             assert is_str_list(args)
@@ -447,12 +448,12 @@ class CGrader:
         if exp_output is None:
             exp_output = []
             must_match_all_outputs = True
-        elif isinstance(exp_output, str):
+        elif isinstance(exp_output, (str, re.Pattern)):
             exp_output = [exp_output]
 
         if reject_output is None:
             reject_output = []
-        elif isinstance(reject_output, str):
+        elif isinstance(reject_output, (str, re.Pattern)):
             reject_output = [reject_output]
 
         if must_match_all_outputs is True:
@@ -466,7 +467,7 @@ class CGrader:
             # If t is not a string, convert it to its string representation
             t = str(t)
             return (
-                t.strip(),
+                t.strip() if ignore_consec_spaces else t.rstrip(),
                 re.compile(
                     (
                         r"\s+".join(map(re.escape, re.split(r"\s+", t)))
@@ -597,7 +598,7 @@ class CGrader:
             "output": output,
             "message": msg or "",
         }
-        if images and isinstance(images, str | dict):
+        if images and isinstance(images, (str, dict)):
             test["images"] = [images]
         elif images:
             test["images"] = list(images)

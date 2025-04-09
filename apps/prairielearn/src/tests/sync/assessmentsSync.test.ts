@@ -1783,7 +1783,7 @@ describe('Assessment syncing', () => {
       title: 'test zone',
       questions: [
         {
-          id: 'i do not exist',
+          id: 'i do not exist ',
           points: [1, 2, 3],
         },
       ],
@@ -1793,7 +1793,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment?.sync_errors,
-      /The following questions do not exist in this course: i do not exist/,
+      /The following questions do not exist in this course: "i do not exist "/,
     );
   });
 
@@ -1849,7 +1849,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment?.sync_errors,
-      /The following questions are used more than once: test/,
+      /The following questions are used more than once: "test"/,
     );
   });
 
@@ -2301,7 +2301,7 @@ describe('Assessment syncing', () => {
     console.log(syncedData.assessment.sync_errors);
     assert.match(
       syncedData.assessment?.sync_errors,
-      /The following questions are marked as draft and therefore cannot be used in assessments: __drafts__\/draft_1/,
+      /The following questions are marked as draft and therefore cannot be used in assessments: "__drafts__\/draft_1"/,
     );
   });
 
@@ -2384,5 +2384,60 @@ describe('Assessment syncing', () => {
       const syncedAssessment = await findSyncedAssessment('fail');
       assert.isNotOk(syncedAssessment?.sync_warnings);
     });
+  });
+  it('syncs JSON data for grade rate minutes correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.gradeRateMinutes = 1;
+    assessment.zones?.push({
+      title: 'zone 1',
+      gradeRateMinutes: 2,
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 1,
+          gradeRateMinutes: 3,
+        },
+        {
+          points: 1,
+          gradeRateMinutes: 4,
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              gradeRateMinutes: 5,
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.equal(syncedData.assessment.json_grade_rate_minutes, 1);
+    assert.equal(syncedData.zones[0].json_grade_rate_minutes, 2);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID,
+    );
+    assert.equal(firstAssessmentQuestion?.grade_rate_minutes, 3);
+    assert.equal(firstAssessmentQuestion?.json_grade_rate_minutes, 3);
+
+    const alternativeGroup = syncedData.alternative_groups.find((ag) => ag.number === 2);
+    assert.equal(alternativeGroup?.json_grade_rate_minutes, 4);
+
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+    );
+    assert.equal(secondAssessmentQuestion?.grade_rate_minutes, 5);
+    assert.equal(secondAssessmentQuestion?.json_grade_rate_minutes, 5);
+
+    const thirdAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
+    );
+    assert.equal(thirdAssessmentQuestion?.grade_rate_minutes, 4);
+    assert.equal(thirdAssessmentQuestion?.json_grade_rate_minutes, null);
   });
 });

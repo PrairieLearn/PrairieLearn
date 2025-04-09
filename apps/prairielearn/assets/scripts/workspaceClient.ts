@@ -75,6 +75,9 @@ $(function () {
 
   let previousState: null | string = null;
   function setState(state: string) {
+    // Simplify the state machine by ignoring duplicate states.
+    if (state === previousState) return;
+
     if (state === 'running') {
       showWorkspaceFrame();
 
@@ -89,7 +92,16 @@ $(function () {
       workspaceFrame.src = 'about:blank';
       if (previousState === 'running') {
         showStoppedFrame();
-      } else {
+      } else if (previousState !== 'uninitialized') {
+        // When the workspace is first created, it will be in the `uninitialized`
+        // state. It then transitions to the `stopped` state, and then immediately
+        // to `launching`.
+        //
+        // We don't want to consider the initial transition to `stopped` as a
+        // failure, so we specifically ignore transitions from `uninitialized`.
+        //
+        // Put differently: we'll really only show the failure message if we
+        // transition directly from `launching` to `stopped`.
         showFailedFrame();
       }
     }

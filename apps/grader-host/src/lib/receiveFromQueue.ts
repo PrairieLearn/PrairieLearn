@@ -1,9 +1,9 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import {
-  ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
+  ReceiveMessageCommand,
   type SQSClient,
 } from '@aws-sdk/client-sqs';
 import { z } from 'zod';
@@ -18,8 +18,8 @@ const GradingJobMessageSchema = z.object({
   jobId: z.string(),
   /** The Docker image that the grading job will be executed in. */
   image: z.string(),
-  /** The entrypoint for the container. */
-  entrypoint: z.string(),
+  /** The entrypoint for the container. If null, uses the default entrypoint for the image. */
+  entrypoint: z.string().nullable(),
   /** The number of seconds after which the grading job will time out. */
   timeout: z.number(),
   /** Whether or not the container should have internet access. */

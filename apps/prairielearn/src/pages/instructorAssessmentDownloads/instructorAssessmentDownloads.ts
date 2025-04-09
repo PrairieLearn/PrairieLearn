@@ -27,8 +27,8 @@ import { getGroupConfig } from '../../lib/groups.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {
-  InstructorAssessmentDownloads,
   type Filenames,
+  InstructorAssessmentDownloads,
 } from './instructorAssessmentDownloads.html.js';
 
 const router = express.Router();
@@ -235,7 +235,10 @@ async function pipeCursorToArchive<T>(
   extractFiles: (row: T) => ArchiveFile[] | null,
 ) {
   const archive = archiver('zip');
-  const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(' ', '');
+  const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replaceAll(
+    ' ',
+    '',
+  );
   const prefix = `${dirname}/`;
   archive.append('', { name: prefix });
   archive.pipe(res);

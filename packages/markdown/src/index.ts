@@ -1,6 +1,6 @@
-import type { Root as HastRoot, Element } from 'hast';
+import type { Element, Root as HastRoot } from 'hast';
 import type { Root as MdastRoot, Text } from 'mdast';
-import type { Math, InlineMath } from 'mdast-util-math';
+import type { InlineMath, Math } from 'mdast-util-math';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import rehypeStringify from 'rehype-stringify';
@@ -8,7 +8,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkParse from 'remark-parse';
 import remark2rehype from 'remark-rehype';
-import { type TransformCallback, type Transformer, type Processor, unified } from 'unified';
+import { type Processor, type TransformCallback, type Transformer, unified } from 'unified';
 import type { Node } from 'unist';
 import { visit } from 'unist-util-visit';
 import type { VFile } from 'vfile';

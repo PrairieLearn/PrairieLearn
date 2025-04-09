@@ -145,8 +145,7 @@ function AssessmentQuestionRow({
                 href="#"
                 class="ms-2 text-info"
                 data-bs-toggle="tooltip"
-                data-boundary="window"
-                title="This question uses a rubric"
+                data-bs-title="This question uses a rubric"
               >
                 <i class="fas fa-list-check"></i><span class="visually-hidden">(uses rubric)</span>
               </a>
@@ -265,9 +264,9 @@ function GraderAssignmentModal({
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="__action" value="assign_graders" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      ${courseStaff.length > 0
-        ? html`<button type="submit" class="btn btn-primary">Assign</button>`
-        : ''}
+      <button type="submit" class="btn btn-primary" ${courseStaff.length === 0 ? 'disabled' : ''}>
+        Assign
+      </button>
     `,
   });
 }

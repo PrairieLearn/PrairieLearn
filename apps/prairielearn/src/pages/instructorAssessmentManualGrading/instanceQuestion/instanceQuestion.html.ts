@@ -24,10 +24,14 @@ export function InstanceQuestion({
   resLocals,
   conflict_grading_job,
   graders,
+  assignedGrader,
+  lastGrader,
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
+  assignedGrader: User | null;
+  lastGrader: User | null;
 }) {
   return PageLayout({
     resLocals: {
@@ -85,11 +89,11 @@ export function InstanceQuestion({
           `
         : ''}
       ${conflict_grading_job
-        ? ConflictGradingJobModal({ resLocals, conflict_grading_job, graders })
+        ? ConflictGradingJobModal({ resLocals, conflict_grading_job, graders, lastGrader })
         : ''}
       <div class="row">
         <div class="col-lg-8 col-12">
-          ${QuestionContainer({ resLocals, questionContext: 'manual_grading' })}
+          ${QuestionContainer({ resLocals, questionContext: 'manual_grading', showFooter: false })}
         </div>
 
         <div class="col-lg-4 col-12">
@@ -118,6 +122,8 @@ export function InstanceQuestion({
             assessment: resLocals.assessment,
             assessment_instance: resLocals.assessment_instance,
             instance_question: resLocals.instance_question,
+            assignedGrader,
+            lastGrader,
             question: resLocals.question,
             variant: resLocals.variant,
             instance_group: resLocals.instance_group,
@@ -139,11 +145,14 @@ function ConflictGradingJobModal({
   resLocals,
   conflict_grading_job,
   graders,
+  lastGrader,
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
+  lastGrader: User | null;
 }) {
+  const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
   return html`
     <div id="conflictGradingJobModal" class="modal fade">
       <div class="modal-dialog modal-xl">
@@ -159,9 +168,9 @@ function ConflictGradingJobModal({
           </div>
           <div class="modal-body">
             <div class="alert alert-danger" role="alert">
-              The submission you have just graded has already been graded by
-              ${resLocals.instance_question.last_grader_name}. Your score and feedback have not been
-              applied. Please review the feedback below and select how you would like to proceed.
+              The submission you have just graded has already been graded by ${lastGraderName}. Your
+              score and feedback have not been applied. Please review the feedback below and select
+              how you would like to proceed.
             </div>
             <div class="row mb-2">
               <div class="col-lg-6 col-12">
@@ -172,7 +181,7 @@ function ConflictGradingJobModal({
                     DateFromISOString.parse(resLocals.instance_question.modified_at),
                     resLocals.course_instance.display_timezone,
                   )},
-                  by ${resLocals.instance_question.last_grader_name}
+                  by ${lastGraderName}
                 </div>
                 <div class="card">
                   ${GradingPanel({

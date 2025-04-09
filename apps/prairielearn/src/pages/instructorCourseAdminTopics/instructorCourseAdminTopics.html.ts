@@ -3,6 +3,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
+import { TopicDescription } from '../../components/TopicDescription.html.js';
 import { type Topic } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminTopics({
@@ -50,7 +51,7 @@ export function InstructorCourseAdminTopics({
                     <td class="align-middle">${topic.number}</td>
                     <td class="align-middle">${TopicBadge(topic)}</td>
                     <td class="align-middle">${topic.color}</td>
-                    <td class="align-middle">${topic.description}</td>
+                    <td class="align-middle">${TopicDescription(topic)}</td>
                   </tr>
                 `;
               })}

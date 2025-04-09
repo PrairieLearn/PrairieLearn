@@ -1,6 +1,5 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -154,7 +153,7 @@ describe('Instructor assessment editing', function () {
       locals.pageData.forEach((obj) => assert.isObject(obj));
     });
     it('should contain the assessment instance', function () {
-      elemList = _.filter(locals.pageData, (row) => row.uid === 'dev@example.com');
+      elemList = locals.pageData.filter((row) => row.uid === 'dev@example.com');
       assert.lengthOf(elemList, 1);
       locals.instructorAssessmentInstanceUrl =
         locals.instructorBaseUrl + '/assessment_instance/' + elemList[0].assessment_instance_id;
@@ -460,10 +459,7 @@ describe('Instructor assessment editing', function () {
       locals.gradebookData.forEach((obj) => assert.isObject(obj));
     });
     it('should contain a row for the dev user', function () {
-      locals.gradebookDataRow = _.filter(
-        locals.gradebookData,
-        (row) => row.uid === 'dev@example.com',
-      );
+      locals.gradebookDataRow = locals.gradebookData.filter((row) => row.uid === 'dev@example.com');
       assert.lengthOf(locals.gradebookDataRow, 1);
     });
     it('should contain the correct score and assessment instance ID in the dev user row', function () {

@@ -12,7 +12,7 @@ export function sanitizeObject<T>(value: T): T {
   } else if (Array.isArray(value)) {
     return value.map(sanitizeObject) as T;
   } else if (typeof value === 'string') {
-    return value.replace('\u0000', '\\u0000') as T;
+    return value.replaceAll('\u0000', '\\u0000') as T;
   } else if (typeof value === 'object') {
     const sanitized = Object.entries(value).map(([key, value]) => {
       return [key, sanitizeObject(value)];

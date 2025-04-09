@@ -153,7 +153,7 @@ describe('API', function () {
       locals.assessment_id = assessment.assessment_id;
     });
 
-    step('GET to API for single assesment succeeds', async function () {
+    step('GET to API for single assessment succeeds', async function () {
       locals.apiAssessmentUrl =
         locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}`;
 
@@ -323,6 +323,16 @@ describe('API', function () {
       const json = (await res.json()) as any;
       assert.exists(json.course_instance_id);
       assert.exists(json.course_title);
+    });
+
+    step('GET to API for course instance info fails in exam mode', async () => {
+      const res = await fetch(locals.apiCourseInstanceUrl, {
+        headers: {
+          'Private-Token': locals.api_token,
+          Cookie: 'pl_test_mode=Exam',
+        },
+      });
+      assert.equal(res.status, 403);
     });
   });
 });

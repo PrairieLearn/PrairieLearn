@@ -56,7 +56,12 @@ export function AdministratorWorkspaces({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Workspace hosts</h1>
-          <button class="btn btn-light ms-auto" id="toggle-all-workspaces" data-state="collapsed">
+          <button
+            type="button"
+            class="btn btn-light ms-auto"
+            id="toggle-all-workspaces"
+            data-state="collapsed"
+          >
             Expand all
           </button>
         </div>

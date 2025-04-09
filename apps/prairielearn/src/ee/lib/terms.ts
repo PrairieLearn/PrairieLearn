@@ -1,11 +1,9 @@
 import { type Response } from 'express';
-import { z } from 'zod';
-
-import { callRow } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { setCookie } from '../../lib/cookie.js';
-import { EnumModeSchema, type User } from '../../lib/db-types.js';
+import { type User } from '../../lib/db-types.js';
+import { ipToMode } from '../../lib/exam-mode.js';
 import { HttpRedirect } from '../../lib/redirect.js';
 
 function hasUserAcceptedTerms(user: User): boolean {
@@ -31,11 +29,11 @@ function hasUserAcceptedTerms(user: User): boolean {
 export async function shouldRedirectToTermsPage(user: User, ip: string) {
   if (!config.requireTermsAcceptance || hasUserAcceptedTerms(user)) return false;
 
-  const { mode } = await callRow(
-    'ip_to_mode',
-    [ip, new Date(), user.user_id],
-    z.object({ mode: EnumModeSchema }),
-  );
+  const { mode } = await ipToMode({
+    ip,
+    date: new Date(),
+    authn_user_id: user.user_id,
+  });
   return mode === 'Public';
 }
 

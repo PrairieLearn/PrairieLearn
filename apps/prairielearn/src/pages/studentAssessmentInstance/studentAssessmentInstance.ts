@@ -6,7 +6,7 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
 import { AssessmentInstanceSchema } from '../../lib/db-types.js';
-import { uploadFile, deleteFile } from '../../lib/file-store.js';
+import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
   canUserAssignGroupRoles,
   getGroupConfig,

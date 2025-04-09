@@ -44,9 +44,6 @@ export function InstructorGradebook({
       <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
         from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
       <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
-      <script src="${nodeModulesAssetPath(
-          'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-        )}"></script>
       <link
         href="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.css')}"
         rel="stylesheet"
@@ -57,6 +54,7 @@ export function InstructorGradebook({
         )}"
         rel="stylesheet"
       />
+      ${compiledScriptTag('bootstrap-table-sticky-header.js')}
       ${compiledScriptTag('instructorGradebookClient.ts')}
       ${compiledStylesheetTag('instructorGradebook.css')}
       ${EncodedData<InstructorGradebookData>(
@@ -143,6 +141,7 @@ function RoleDescriptionModal() {
   return Modal({
     id: 'role-help',
     title: 'Roles',
+    form: false,
     body: html`
       <ul>
         <li>

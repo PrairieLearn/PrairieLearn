@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { use as chaiUse, assert } from 'chai';
+import { assert, use as chaiUse } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 
 import * as namedLocks from '@prairielearn/named-locks';

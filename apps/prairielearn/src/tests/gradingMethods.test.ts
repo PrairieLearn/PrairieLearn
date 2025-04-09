@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 
-import { setUser, parseInstanceQuestionId, saveOrGrade, type User } from './helperClient.js';
+import { type User, parseInstanceQuestionId, saveOrGrade, setUser } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

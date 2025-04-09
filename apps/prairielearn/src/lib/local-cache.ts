@@ -1,15 +1,3 @@
-// Store all intervalIDs so we can clear them later.
-const intervalIDs: NodeJS.Timeout[] = [];
-
-/**
- * Clear all setIntervals. Will allow the process to exit cleanly.
- */
-export function close() {
-  for (const intervalID of intervalIDs) {
-    clearInterval(intervalID);
-  }
-}
-
 export class LocalCache {
   expirySec: number | null;
   data: Record<any, any>;
@@ -28,8 +16,8 @@ export class LocalCache {
     };
 
     if (this.expirySec != null) {
-      const intervalID = setInterval(clearOldData, this.expirySec * 1000);
-      intervalIDs.push(intervalID);
+      // Unref the timer so it doesn't prevent the process from exiting.
+      setInterval(clearOldData, this.expirySec * 1000).unref();
     }
   }
 

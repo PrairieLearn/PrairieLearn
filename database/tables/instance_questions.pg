@@ -14,6 +14,7 @@ columns
     id: bigint not null default nextval('instance_questions_id_seq'::regclass)
     incremental_submission_points_array: double precision[]
     incremental_submission_score_array: double precision[]
+    is_ai_graded: boolean not null default false
     last_grader: bigint
     last_submission_score: double precision
     manual_points: double precision

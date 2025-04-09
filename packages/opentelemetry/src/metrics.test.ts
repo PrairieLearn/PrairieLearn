@@ -1,12 +1,12 @@
 import { type Meter } from '@opentelemetry/api';
 import {
-  InMemoryMetricExporter,
   AggregationTemporality,
+  type Histogram,
+  InMemoryMetricExporter,
   MeterProvider,
   PeriodicExportingMetricReader,
-  type Histogram,
 } from '@opentelemetry/sdk-metrics';
-import { use as chaiUse, assert } from 'chai';
+import { assert, use as chaiUse } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 
 import { instrumentedWithMetrics } from './metrics.js';

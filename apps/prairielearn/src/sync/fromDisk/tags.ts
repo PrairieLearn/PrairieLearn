@@ -7,7 +7,7 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { TagSchema, type Tag } from '../../lib/db-types.js';
+import { type Tag, TagSchema } from '../../lib/db-types.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
@@ -56,8 +56,7 @@ export async function sync(
     makeImplicitEntity: (name) => ({
       name,
       color: 'gray1',
-      description:
-        'Auto-generated from use in a question; add this tag to your infoCourse.json file to customize',
+      description: name,
     }),
     comparisonProperties: ['color', 'description'],
     isInfoCourseValid,

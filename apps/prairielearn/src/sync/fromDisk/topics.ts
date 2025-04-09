@@ -50,8 +50,7 @@ export async function sync(courseId: string, courseData: CourseData) {
     makeImplicitEntity: (name) => ({
       name,
       color: 'gray1',
-      description:
-        'Auto-generated from use in a question; add this topic to your infoCourse.json file to customize',
+      description: name,
     }),
     comparisonProperties: ['color', 'description'],
     isInfoCourseValid,

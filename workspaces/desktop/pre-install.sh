@@ -10,11 +10,12 @@ yes | unminimize
 
 # create base system
 apt-get install xfce4 x11vnc novnc xvfb dbus-x11 wget nodejs npm gosu python3 -y --no-install-recommends
+
 groupadd -g 1001 prairielearner
 useradd -u 1001 -g 1001 -m -d /home/prairielearner -s /bin/bash prairielearner
 
 # install needed apps
-apt-get install xfce4-terminal build-essential geany emacs-gtk vim-gtk3 nano gedit less -y
+apt-get install xfce4-terminal build-essential geany emacs-gtk vim-gtk3 nano gedit less -y --no-install-recommends
 
 # install firefox without snap (https://askubuntu.com/a/1369163)
 apt-get purge firefox -y

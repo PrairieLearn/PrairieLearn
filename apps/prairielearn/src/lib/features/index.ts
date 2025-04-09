@@ -11,6 +11,10 @@ const featureNames = [
   'ai-question-generation',
   // Should only be applied to institutions.
   'lti13',
+  // Should only be applied globally.
+  'enhanced-navigation-user-toggle',
+  // Can be applied to any context.
+  'enhanced-navigation',
 ] as const;
 
 const features = new FeatureManager(featureNames);

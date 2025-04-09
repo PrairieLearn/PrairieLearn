@@ -9,10 +9,10 @@ import { config } from '../lib/config.js';
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import {
-  getCourseData,
   COURSE_INSTANCE_ID,
-  writeCourseToTempDirectory,
+  getCourseData,
   overwriteAndSyncCourseData,
+  writeCourseToTempDirectory,
 } from './sync/util.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

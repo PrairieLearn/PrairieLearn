@@ -10,18 +10,18 @@ import { z } from 'zod';
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
   loadSqlEquiv,
+  queryAsync,
   queryRow,
   queryRows,
-  queryAsync,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import {
   AssessmentInstanceSchema,
-  DateFromISOString,
-  Lti13InstanceSchema,
-  Lti13CourseInstanceSchema,
   AssessmentSchema,
+  DateFromISOString,
+  Lti13CourseInstanceSchema,
+  Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -267,6 +267,7 @@ export class Lti13Claim {
   get(property: _.PropertyPath): any {
     this.assertValid();
     // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
+    // eslint-disable-next-line you-dont-need-lodash-underscore/get
     return _.get(this.claims, property);
   }
 

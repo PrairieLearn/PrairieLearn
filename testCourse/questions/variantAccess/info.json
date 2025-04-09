@@ -1,0 +1,12 @@
+{
+  "uuid": "62739113-03d5-421b-af1e-18b9c1bf458a",
+  "title": "Test access to a variant and its resources",
+  "topic": "Test",
+  "type": "v3",
+  "sharePublicly": true,
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-xtermjs",
+    "port": 8080,
+    "home": "/home/prairie"
+  }
+}

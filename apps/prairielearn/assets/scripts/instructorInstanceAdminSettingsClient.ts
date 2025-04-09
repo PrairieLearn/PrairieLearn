@@ -1,7 +1,6 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import './lib/clipboardPopover.js';
-import './lib/qrCodeButton.js';
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';
 

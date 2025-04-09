@@ -55,7 +55,7 @@ export function Home({
       <h1 class="visually-hidden">PrairieLearn Homepage</h1>
       ${ActionsHeader()}
 
-      <div id="content" class="container py-5">
+      <div class="container py-5">
         ${DevModeCard()} ${AdminInstitutionsCard({ adminInstitutions })}
         ${InstructorCoursesCard({ instructorCourses })}
         ${StudentCoursesCard({

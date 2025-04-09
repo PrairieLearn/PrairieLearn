@@ -11,7 +11,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
-import { type Question, type AiQuestionGenerationPrompt } from '../../../lib/db-types.js';
+import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
 
 export function InstructorAiGenerateDraftEditor({
   resLocals,
@@ -132,7 +132,7 @@ export function InstructorAiGenerateDraftEditor({
                       type="button"
                       class="btn btn-sm btn-primary"
                       data-bs-toggle="tooltip"
-                      title="Finalize a question to use it on assessments and make manual edits"
+                      data-bs-title="Finalize a question to use it on assessments and make manual edits"
                     >
                       <i class="fa fa-check" aria-hidden="true"></i>
                       Finalize question
@@ -232,9 +232,8 @@ function PromptHistory({
               <button
                 type="submit"
                 class="btn btn-sm btn-ghost revert-to-revision-button"
-                aria-label="Revert to this revision"
                 data-bs-toggle="tooltip"
-                title="Revert to this revision"
+                data-bs-title="Revert to this revision"
               >
                 <i class="fa fa-undo" aria-hidden="true"></i>
               </button>

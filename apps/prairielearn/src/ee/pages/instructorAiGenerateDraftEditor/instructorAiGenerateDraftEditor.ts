@@ -3,7 +3,8 @@ import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRows, queryAsync, queryRow } from '@prairielearn/postgres';
+import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
@@ -11,8 +12,8 @@ import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationPromptSchema,
-  IdSchema,
   type Course,
+  IdSchema,
   type Question,
   type User,
 } from '../../../lib/db-types.js';
@@ -299,7 +300,26 @@ router.post(
         req.body.qid,
       );
 
-      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/settings');
+      const client = getCourseFilesClient();
+
+      const result = await client.batchDeleteQuestions.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        question_ids: [question.id],
+      });
+
+      if (result.status === 'error') {
+        throw new error.HttpStatusError(
+          500,
+          'Draft deletion failed, but question creation succeeded.',
+        );
+      }
+
+      flash('success', `Your question is ready for use as ${qid}.`);
+
+      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
       await saveRevisedQuestion({
         course: res.locals.course,

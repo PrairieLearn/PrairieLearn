@@ -1,9 +1,8 @@
 #!/bin/bash
 
-if [ -z "$1" ]
-then
-   echo "Usage: $0 <dump-file>"
-   exit
+if [ -z "$1" ]; then
+    echo "Usage: $0 <dump-file>"
+    exit
 fi
 
 INPUT_DUMP="$1"

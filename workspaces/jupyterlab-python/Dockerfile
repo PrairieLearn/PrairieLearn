@@ -1,4 +1,5 @@
-FROM quay.io/jupyter/minimal-notebook:2025-02-26
+FROM quay.io/jupyter/minimal-notebook:2025-03-31
+ARG CACHEBUST=2025-04-04-17-34-59
 
 ENV XDG_DATA_HOME=/tmp/local/share
 ENV XDG_CACHE_HOME=/tmp/cache
@@ -17,4 +18,8 @@ RUN /bin/bash /install.sh
 COPY jupyter_server_config.py /etc/jupyter/
 
 USER jovyan
-CMD ["pl-gosu-helper.sh", "start.sh", "jupyter", "lab"]
+# This is replicating the entrypoint that Jupyter had specified in their base
+# image, but we inject our pl-gosu-helper.sh before the Jupyter start script.
+# Jupyter chose to use tini for benefits like "reaping zombies and performing
+# signal forwarding" (quoting from the tini GitHub page).
+ENTRYPOINT ["tini", "-g", "--", "pl-gosu-helper.sh", "start.sh", "jupyter", "lab"]

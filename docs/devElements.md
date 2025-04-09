@@ -2,7 +2,7 @@
 
 See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/elements) for example elements.
 
-Element code uses the libraries in [the `python/prairielearn` module](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/python/prairielearn).
+Element code uses the [`prairielearn` module](https://prairielearn.readthedocs.io/en/latest/python-reference/) for common functionality like parsing attributes and computing scores.
 
 ## Anatomy of an element
 
@@ -176,7 +176,7 @@ Note that the key used in the dynamic dependencies will be shared among all elem
 - For element scripts: use the name of the element, followed by a slash, followed by the name of the script. For example, if the element is named `pl-my-element` and the script is named `my-element.js`, then the key should be `pl-my-element/my-element.js`.
 - For `clientFilesCourse` scripts: use any course-specific convention that does not clash with the naming above.
 
-You can also find the types of dependencies defined in these schema files:
+You can also find more detail about the types of dependencies in the schema references:
 
-- [Schema for system-wide elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoElementCore.json)
-- [Schema for course-specific elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoElementCourse.json)
+- [System-wide elements](./schemas/infoElementCore.md)
+- [Course-specific elements](./schemas/infoElementCourse.md)

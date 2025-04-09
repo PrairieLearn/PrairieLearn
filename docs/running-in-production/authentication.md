@@ -9,7 +9,7 @@ PrairieLearn currently has a few ways to do user authentication.
 
 To start, create a [Google Cloud account](https://cloud.google.com/) and then:
 
-- Click [console](https://console.cloud.google.com/) to login to your console.
+- Click [console](https://console.cloud.google.com/) to log in to your console.
 - Create a project then got to [APIs & Services](https://console.cloud.google.com/apis/dashboard).
   - Go to `OAuth consent screen` and complete the consent form.
   - Proceed to `Credentials` and create a new `OAuth client ID`.

@@ -145,4 +145,16 @@ describe('Enroll page (non-enterprise)', () => {
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
+
+  // We want to block access in Exam mode since a student could theoretically
+  // use the name of a course on the enrollment page to infiltrate information
+  // into an exam.
+  step('ensure that access is blocked in Exam mode', async () => {
+    const res = await fetch(`${baseUrl}/enroll`, {
+      headers: {
+        Cookie: 'pl_test_mode=Exam',
+      },
+    });
+    assert.equal(res.status, 403);
+  });
 });

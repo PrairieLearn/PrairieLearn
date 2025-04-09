@@ -4,8 +4,8 @@ import asyncHandler from 'express-async-handler';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import {
-  InstructorAssessmentAccess,
   AssessmentAccessRulesSchema,
+  InstructorAssessmentAccess,
 } from './instructorAssessmentAccess.html.js';
 
 const router = express.Router();

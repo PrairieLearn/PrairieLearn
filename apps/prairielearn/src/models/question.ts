@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryRow, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
 import { type Question, QuestionSchema } from '../lib/db-types.js';
 

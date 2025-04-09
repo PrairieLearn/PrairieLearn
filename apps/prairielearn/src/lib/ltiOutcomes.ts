@@ -33,7 +33,7 @@ const exampleRequest = {
   },
 };
 function xmlReplaceResult(sourcedId: string, score: number, identifier: string) {
-  const Obj = _.clone(exampleRequest);
+  const Obj = structuredClone(exampleRequest);
 
   Obj.imsx_POXEnvelopeRequest.imsx_POXHeader.imsx_POXRequestHeaderInfo.imsx_messageIdentifier =
     identifier;
@@ -112,6 +112,7 @@ export async function updateScore(assessment_instance_id: string) {
 
   // Inspect the XML result, log the action
   const result = await parser.parseStringPromise(await res.text());
+  // eslint-disable-next-line you-dont-need-lodash-underscore/get
   const imsx_codeMajor = _.get(
     result,
     [

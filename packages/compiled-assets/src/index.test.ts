@@ -8,13 +8,13 @@ import fetch from 'node-fetch';
 import tmp from 'tmp-promise';
 
 import {
-  init,
-  close,
-  handler,
+  type CompiledAssetsOptions,
   build,
+  close,
   compiledScriptPath,
   compiledStylesheetPath,
-  type CompiledAssetsOptions,
+  handler,
+  init,
 } from './index.js';
 
 async function testProject(options: CompiledAssetsOptions) {

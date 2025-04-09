@@ -12,7 +12,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 interface SharedQuestion {
   id: string;
   qid: string;
-  shared_publicly: boolean;
+  share_publicly: boolean;
 }
 
 export async function selectSharedQuestions(courseId: string): Promise<SharedQuestion[]> {
@@ -22,7 +22,7 @@ export async function selectSharedQuestions(courseId: string): Promise<SharedQue
     z.object({
       id: IdSchema,
       qid: z.string(),
-      shared_publicly: z.boolean(),
+      share_publicly: z.boolean(),
     }),
   );
 }
@@ -55,7 +55,7 @@ export function checkInvalidPublicSharingRemovals(
 ): boolean {
   const invalidUnshares: string[] = [];
   sharedQuestions.forEach((question) => {
-    if (!question.shared_publicly) {
+    if (!question.share_publicly) {
       return;
     }
 

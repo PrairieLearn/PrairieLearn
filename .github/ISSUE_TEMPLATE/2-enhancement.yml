@@ -1,0 +1,10 @@
+name: Feature request / enhancement
+description: A request, idea, or new functionality
+body:
+  - type: textarea
+    attributes:
+      label: Details
+      placeholder: Type your description here...
+    validations:
+      required: true
+type: Enhancement

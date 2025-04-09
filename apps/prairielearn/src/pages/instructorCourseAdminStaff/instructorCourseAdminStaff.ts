@@ -29,8 +29,8 @@ import {
 } from '../../models/course-permissions.js';
 
 import {
-  InstructorCourseAdminStaff,
   CourseUsersRowSchema,
+  InstructorCourseAdminStaff,
 } from './instructorCourseAdminStaff.html.js';
 
 const debug = debugfn('prairielearn:instructorCourseAdminStaff');

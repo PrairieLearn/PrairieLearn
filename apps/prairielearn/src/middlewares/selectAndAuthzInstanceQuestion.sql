@@ -76,12 +76,7 @@ SELECT
   users_get_displayed_role (u.user_id, ci.id) AS instance_role,
   to_jsonb(g) AS instance_group,
   groups_uid_list (g.id) AS instance_group_uid_list,
-  to_jsonb(iq) || to_jsonb(iqnag) || jsonb_build_object(
-    'assigned_grader_name',
-    COALESCE(uag.name, uag.uid),
-    'last_grader_name',
-    COALESCE(ulg.name, ulg.uid)
-  ) AS instance_question,
+  to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
   jsonb_build_object(
     'id',
     iqi.id,
@@ -119,8 +114,6 @@ FROM
     AND g.deleted_at IS NULL
   )
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
-  LEFT JOIN users AS uag ON (uag.user_id = iq.assigned_grader)
-  LEFT JOIN users AS ulg ON (ulg.user_id = iq.last_grader)
   JOIN LATERAL authz_assessment_instance (
     ai.id,
     $authz_data,

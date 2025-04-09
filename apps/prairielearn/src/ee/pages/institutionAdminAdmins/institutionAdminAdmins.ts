@@ -6,7 +6,7 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryValidatedRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { parseUidsString } from '../../../lib/user.js';
-import { selectUserByUid } from '../../../models/user.js';
+import { selectOptionalUserByUid } from '../../../models/user.js';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 import {
   deleteInstitutionAdministrator,
@@ -67,7 +67,7 @@ router.post(
       const invalidUids: string[] = [];
       await runInTransactionAsync(async () => {
         for (const uid of uids) {
-          const user = await selectUserByUid(uid);
+          const user = await selectOptionalUserByUid(uid);
 
           // Specifically check that the user is in the institution to prevent
           // someone from enumerating users in other institutions.

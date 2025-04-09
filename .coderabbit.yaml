@@ -27,6 +27,12 @@ reviews:
   finishing_touches:
     docstrings:
       enabled: true
+  tools:
+    # Our ESLint config relies on a package that exists in this repository but
+    # must be built and linked first, which it doesn't know how to do. To
+    # prevent spurious warnings, we just disable ESLint for now.
+    eslint:
+      enabled: false
 
 chat:
   auto_reply: true

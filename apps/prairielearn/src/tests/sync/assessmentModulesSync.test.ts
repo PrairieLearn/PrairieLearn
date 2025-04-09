@@ -1,10 +1,10 @@
 import { assert } from 'chai';
 
 import {
+  type AssessmentModule,
   AssessmentModuleSchema,
   AssessmentSchema,
   CourseSchema,
-  type AssessmentModule,
 } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
@@ -191,8 +191,7 @@ describe('Assessment modules syncing', () => {
     const syncedAssessmentModule = syncedAssessmentModules.find((am) => am.name === 'X');
     checkAssessmentModule(syncedAssessmentModule, {
       name: 'X',
-      heading:
-        'X (Auto-generated from use in an assessment; add this assessment module to your infoCourse.json file to customize)',
+      heading: 'X',
       number: 1,
     });
   });

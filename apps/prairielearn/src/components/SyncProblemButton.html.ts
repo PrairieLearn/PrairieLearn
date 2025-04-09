@@ -1,6 +1,6 @@
 import { AnsiUp } from 'ansi_up';
 
-import { html, unsafeHtml, escapeHtml } from '@prairielearn/html';
+import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 
 const ansiUp = new AnsiUp();
 
@@ -20,12 +20,11 @@ ${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
     <button
       class="btn btn-xs btn-ghost me-1"
       data-bs-toggle="popover"
-      data-bs-trigger="hover"
       data-bs-container="body"
       data-bs-html="true"
-      title="${title}"
+      data-bs-title="${title}"
       data-bs-content="${escapeHtml(popoverContent)}"
-      data-custom-class="popover-wide"
+      data-bs-custom-class="popover-wide"
     >
       <i class="fa ${classes}" aria-hidden="true"></i>
     </button>

@@ -1,13 +1,13 @@
 import {
-  type Meter,
-  ValueType,
-  type MetricOptions,
-  type Histogram,
   type Counter,
-  type UpDownCounter,
+  type Histogram,
+  type Meter,
+  type MetricOptions,
   type ObservableCounter,
-  type ObservableUpDownCounter,
   type ObservableGauge,
+  type ObservableUpDownCounter,
+  type UpDownCounter,
+  ValueType,
 } from '@opentelemetry/api';
 
 const histogramCache = new WeakMap<Meter, Map<string, Histogram>>();

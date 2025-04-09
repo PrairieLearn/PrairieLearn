@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
-import { trace, context, suppressTracing, SpanStatusCode } from '@prairielearn/opentelemetry';
+import { SpanStatusCode, context, suppressTracing, trace } from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
@@ -162,11 +162,11 @@ export async function init() {
 
   logger.verbose(
     'initializing cron',
-    _.map(jobs, (j) => _.pick(j, ['name', 'intervalSec'])),
+    jobs.map(({ name, intervalSec }) => ({ name, intervalSec })),
   );
 
   const jobsByPeriodSec = _.groupBy(jobs, 'intervalSec');
-  _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
+  for (const [intervalSec, jobsList] of Object.entries(jobsByPeriodSec)) {
     const intervalSecNum = Number.parseInt(intervalSec);
     if (intervalSec === 'daily') {
       queueDailyJobs(jobsList);
@@ -175,7 +175,7 @@ export async function init() {
     } else if (intervalSecNum > 0) {
       queueJobs(jobsList, intervalSecNum);
     } // zero or negative intervalSec jobs are not run
-  });
+  }
 }
 
 export async function stop() {

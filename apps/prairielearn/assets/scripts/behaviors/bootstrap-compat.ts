@@ -1,5 +1,3 @@
-import { observe } from 'selector-observer';
-
 import { makeMigrator } from '../lib/bootstrap-compat-utils.js';
 
 console.log('Enabling Bootstrap compatibility layer.');
@@ -56,40 +54,13 @@ makeMigrator({
   selector: BOOTSTRAP_LEGACY_ATTRIBUTES.map((attr) => `[${attr}]`).join(','),
   migrate(el, { migrateAttribute }) {
     BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
-      if (el.hasAttribute(attr)) {
-        const val = el.getAttribute(attr);
-        // We need to manually handle `data-boundary="window"` since it no longer works
-        // in Bootstrap 5; see below.
-        // See https://github.com/twbs/bootstrap/issues/34110#issuecomment-1064395197.
-        if (attr === 'data-boundary' && val === 'window') {
-          return;
-        }
+      // `tom-select` uses a `data-content` attribute on `option` elements.
+      // This is unrelated to Bootstrap, so we don't want to do anything with this.
+      if (attr === 'data-content' && el.tagName === 'OPTION') return;
 
+      if (el.hasAttribute(attr)) {
         migrateAttribute(el, attr, attr.replace('data-', 'data-bs-'));
       }
-    });
-  },
-});
-
-// Bootstrap 5 no longer supports `data-boundary="window"` for dropdowns.
-// While Popper.js supports a `strategy: 'fixed'` option, it is not
-// configurable via a data attribute, so we need to patch the creation of
-// such dropdowns.
-//
-// If the following PR is merged, we can use the attribute instead:
-// https://github.com/twbs/bootstrap/pull/34120
-//
-// Note that we only handle dropdowns here; we don't want to take over the
-// creation of poppers and tooltips.
-observe('[data-toggle="dropdown"][data-boundary="window"]', {
-  add(el) {
-    new window.bootstrap.Dropdown(el, {
-      popperConfig(defaultConfig) {
-        return {
-          ...defaultConfig,
-          strategy: 'fixed',
-        };
-      },
     });
   },
 });

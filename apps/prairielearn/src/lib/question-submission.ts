@@ -3,14 +3,19 @@ import _ from 'lodash';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { validateVariantAgainstQuestion } from '../models/variant.js';
+import { selectAndAuthzVariant } from '../models/variant.js';
 
 import { saveAndGradeSubmission, saveSubmission } from './grading.js';
 
 export async function processSubmission(
   req: Request,
   res: Response,
-  studentSubmission = false,
+  options: {
+    /** Whether the submission is associated with a student assessment instance.  */
+    studentSubmission?: boolean;
+    /** Whether this processing is happening on a public question preview route. */
+    publicQuestionPreview?: boolean;
+  } = {},
 ): Promise<string> {
   let variant_id: string, submitted_answer: Record<string, any>;
   if (res.locals.question.type === 'Freeform') {
@@ -34,7 +39,7 @@ export async function processSubmission(
     user_id: res.locals.user.user_id,
     auth_user_id: res.locals.authn_user.user_id,
     submitted_answer,
-    ...(studentSubmission
+    ...(options.studentSubmission
       ? {
           credit: res.locals.authz_result.credit,
           mode: res.locals.authz_data.mode,
@@ -42,11 +47,17 @@ export async function processSubmission(
         }
       : {}),
   };
-  const variant = await validateVariantAgainstQuestion(
-    submission.variant_id,
-    res.locals.question.id,
-    res.locals.instance_question?.id,
-  );
+  const variant = await selectAndAuthzVariant({
+    unsafe_variant_id: submission.variant_id,
+    variant_course: res.locals.course,
+    question_id: res.locals.question.id,
+    course_instance_id: res.locals.course_instance?.id,
+    instance_question_id: res.locals.instance_question?.id,
+    authz_data: res.locals.authz_data,
+    authn_user: res.locals.authn_user,
+    user: res.locals.user,
+    is_administrator: res.locals.is_administrator,
+  });
 
   // This is also checked when we try to save a submission, but if that check
   // fails, it's reported as a 500. We report with a friendlier error message
@@ -61,7 +72,7 @@ export async function processSubmission(
   }
 
   if (req.body.__action === 'grade') {
-    const overrideRateLimits = !studentSubmission;
+    const overrideRateLimits = !options.studentSubmission;
     await saveAndGradeSubmission(
       submission,
       variant,
