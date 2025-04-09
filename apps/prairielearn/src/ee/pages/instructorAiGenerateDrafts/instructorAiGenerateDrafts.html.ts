@@ -108,7 +108,7 @@ export function InstructorAIGenerateDrafts({
             </div>
 
             <div class="js-hidden-inputs-container ${hasDrafts ? 'd-none' : ''}">
-              <div class="mb-3">
+              <div class="mb-3 d-none">
                 <label class="form-label" for="user-prompt-llm-user-input">
                   How should students input their solution? What choices or input boxes are they
                   given?
@@ -126,7 +126,7 @@ export function InstructorAIGenerateDrafts({
                 </div>
               </div>
 
-              <div class="mb-3">
+              <div class="mb-3 d-none">
                 <label class="form-label" for="user-prompt-llm-grading">
                   How is the correct answer determined?
                 </label>
@@ -260,33 +260,8 @@ function SampleQuestionSelector({
           data-bs-parent="#sample-question-accordion"
         >
           <div class="accordion-body">
-            <ul class="nav nav-pills" id="sample-question-selector" role="tablist">
-              ${examplePrompts.map(
-                (examplePrompt, index) => html`
-                  <li class="nav-item" role="presentation">
-                    <button
-                      class="nav-link ${index === 0 ? 'active' : ''}"
-                      id="${examplePrompt.id}-pill"
-                      data-bs-toggle="pill"
-                      data-bs-target="#${examplePrompt.id}"
-                      type="button"
-                      role="tab"
-                      aria-selected="${index === 0 ? 'true' : ''}"
-                      data-id="${examplePrompt.id}"
-                    >
-                      ${examplePrompt.name}
-                    </button>
-                  </li>
-                `,
-              )}
-            </ul>
-
-            <div class="tab-content pt-3">
+            <div class="tab-content">
               ${SampleQuestionDemo(initialPrompt)}
-              <button id="fill-prompts" type="button" class="btn btn-primary me-2 mt-3">
-                <i class="fa fa-clone" aria-hidden="true"></i>
-                Fill prompts
-              </button>
             </div>
           </div>
         </div>
@@ -298,9 +273,37 @@ function SampleQuestionSelector({
 function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
   return html`
     <div id="question-demo" class="card shadow">
-      <div class="card-header d-flex align-items-center">
+      <div class="card-header d-flex align-items-center p-3 gap-3">
+        <div id="sample-question-selector" class="dropdown">
+          <button
+            id="sample-question-selector-button"
+            type="button"
+            class="btn dropdown-toggle dropdown-menu-right border border-gray d-flex justify-content-between align-items-center bg-white pe-4"
+            style="max-width: 100%;"
+            aria-label="Change example question"
+            aria-haspopup="true"
+            aria-expanded="false"
+            data-bs-toggle="dropdown"
+            data-bs-boundary="window"
+          >
+            <span class="text-truncate overflow-hidden">${initialPrompt.name}</span>
+          </button>
+          <div class="dropdown-menu py-0">
+            <div class="overflow-auto">
+              ${examplePrompts.map((a, index) => {
+                return html`
+                  <a  
+                    class="dropdown-item ${index === 0 ? 'active' : ''}"
+                    data-id="${a.id}"
+                  >
+                    ${a.name}
+                  </a>
+                `;
+              })}
+            </div>
+          </div>
+        </div>
         <span class="badge rounded-pill bg-success me-3">Try me!</span>
-        <p id="question-demo-name" class="mb-0">${initialPrompt.name}</p>
       </div>
       <div class="card-body">
         <div id="question-content"></div>
@@ -327,6 +330,11 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
         </span>
       </div>
       <div class="card-footer d-flex justify-content-end">
+        <button id="fill-prompts" type="button" class="btn btn-primary me-2">
+          <i class="fa fa-clone" aria-hidden="true"></i>
+          Fill prompts
+        </button>
+        <div class="flex-grow-1"></div>
         <button id="new-variant-button" type="button" class="btn btn-primary me-2">
           New variant
         </button>

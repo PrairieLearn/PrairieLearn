@@ -1,3 +1,4 @@
+
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import { examplePrompts } from '../../src/lib/aiGeneratedQuestionSamples.js';
@@ -14,11 +15,15 @@ onDocumentReady(() => {
 
   const sampleQuestionSelector = document.querySelector(
     '#sample-question-selector',
-  ) as HTMLSelectElement;
+  ) as HTMLDivElement;
 
-  const questionDemoName = questionDemo.querySelector(
-    '#question-demo-name',
-  ) as HTMLParagraphElement;
+  const sampleQuestionSelectorButton = sampleQuestionSelector.querySelector(  
+    '#sample-question-selector-button',
+  ) as HTMLButtonElement;
+
+  const sampleQuestionSelectorDropdownMenu = sampleQuestionSelector.querySelector(
+    '.dropdown-menu',
+  ) as HTMLSelectElement;
 
   const questionContent = questionDemo.querySelector('#question-content') as HTMLDivElement;
   const gradeButton = questionDemo.querySelector('#grade-button') as HTMLButtonElement;
@@ -46,7 +51,7 @@ onDocumentReady(() => {
     }
 
     // Find the selected sample question tab
-    const selectedTab = sampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
+    const selectedTab = sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
     const id = selectedTab.dataset.id;
     const examplePrompt = examplePrompts.find((examplePrompt) => examplePrompt.id === id);
 
@@ -115,8 +120,6 @@ onDocumentReady(() => {
     // Update the examples
     const examplePrompt = examplePrompts.find((examplePrompt) => examplePrompt.id === id);
     if (examplePrompt) {
-      questionDemoName.innerHTML = examplePrompt.name;
-
       // Update the answer label
       if (examplePrompt.answerLabel) {
         answerLabelContainer.classList.remove('d-none');
@@ -151,28 +154,48 @@ onDocumentReady(() => {
   }
 
   // Generate the initial variant when the page loads
+
   generateSampleQuestionVariant('dot-product');
 
   // Generate a new variant when the new variant button is clicked
-  newVariantButton?.addEventListener('click', () => {
-    const selectedTab = sampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
+  newVariantButton.addEventListener('click', () => {
+    const selectedTab = sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
     if (selectedTab.dataset.id) {
       generateSampleQuestionVariant(selectedTab.dataset.id);
     }
   });
 
-  // Generate a new variant when the example question tab is changed
-  sampleQuestionSelector?.addEventListener('shown.bs.tab', (event) => {
-    const newTab = event.target as HTMLAnchorElement;
-    const selection = newTab.dataset;
-    if (selection.id) {
-      generateSampleQuestionVariant(selection.id);
+  // When a new example question is selected, update the dropdown and
+  // generate a new variant.
+  sampleQuestionSelectorDropdownMenu.addEventListener('click', (event) => {
+    if (event?.target) {
+      const selectedTab = event.target as HTMLAnchorElement;
+      const selectedId = selectedTab.dataset.id;
+
+      if (selectedId) {
+        const previousTab = sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
+        if (previousTab) {
+          previousTab.classList.remove('active');
+        }
+        selectedTab.classList.add('active');
+        sampleQuestionSelectorButton.innerHTML = selectedTab.innerHTML;
+        generateSampleQuestionVariant(selectedId);
+      }
     }
-  });
+  })
+
+  // Generate a new variant when the example question tab is changed
+  // sampleQuestionSelector?.addEventListener('shown.bs.tab', (event) => {
+  //   const newTab = event.target as HTMLAnchorElement;
+  //   const selection = newTab.dataset;
+  //   if (selection.id) {
+  //     generateSampleQuestionVariant(selection.id);
+  //   }
+  // });
 
   // Grade the question when the grade button is clicked
   gradeButton?.addEventListener('click', () => {
-    const selectedTab = sampleQuestionSelector?.querySelector('.active') as HTMLAnchorElement;
+    const selectedTab = sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
     if (selectedTab.dataset.id) {
       const response = userResponse.value;
       const answer = gradeButton.dataset.answer;
