@@ -60,22 +60,22 @@ RUN OLD_UID="$(id -u rstudio)" \
     && unset OLD_UID OLD_GID NEW_UID NEW_GID
 
 USER 0
-RUN apt-get update && \
+RUN apt-get update \
     # Run 'unminimize' to add docs
-    apt-get install -y --no-install-recommends man-db unminimize \
+    && apt-get install -y --no-install-recommends man-db unminimize \
     && yes | unminimize \
     && apt-get install -y --no-install-recommends \
-    # Reverse proxy workaround for PrairieLearn:
-    nginx \
-    gettext \
-    gosu \
-    fonts-dejavu \
-    # Utilities for convenience debugging this container:
-    less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 && \
+        # Reverse proxy workaround for PrairieLearn:
+        nginx \
+        gettext \
+        gosu \
+        fonts-dejavu \
+        # Utilities for convenience debugging this container:
+        less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 \
     # Test:
-    gosu nobody true && \
+    && gosu nobody true \
     # Cleanup:
-    apt-get clean \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && find /tmp -not -path /tmp -delete
 
