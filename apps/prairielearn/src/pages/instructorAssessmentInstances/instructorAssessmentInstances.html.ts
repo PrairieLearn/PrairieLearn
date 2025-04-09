@@ -20,9 +20,6 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
     headContent: html`
       <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
       <script src="${nodeModulesAssetPath(
-          'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-        )}"></script>
-      <script src="${nodeModulesAssetPath(
           'bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js',
         )}"></script>
       <link
@@ -35,7 +32,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
         )}"
         rel="stylesheet"
       />
-
+      ${compiledScriptTag('bootstrap-table-sticky-header.js')}
       ${compiledScriptTag('instructorAssessmentInstancesClient.tsx')}
     `,
     content: html`
@@ -92,6 +89,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                       ${resLocals.authz_data.has_course_instance_permission_edit
                         ? html`
                             <button
+                              type="button"
                               class="dropdown-item"
                               data-bs-toggle="modal"
                               data-bs-target="#deleteAllAssessmentInstancesModal"
@@ -99,6 +97,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                               <i class="fas fa-times" aria-hidden="true"></i> Delete all instances
                             </button>
                             <button
+                              type="button"
                               class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
                               data-bs-placement="left"
                               data-bs-toggle-popover
@@ -107,6 +106,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                               all instances
                             </button>
                             <button
+                              type="button"
                               class="dropdown-item"
                               data-bs-toggle="modal"
                               data-bs-target="#grade-all-form"
@@ -115,6 +115,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                               instances
                             </button>
                             <button
+                              type="button"
                               class="dropdown-item"
                               data-bs-toggle="modal"
                               data-bs-target="#closeAllAssessmentInstancesModal"
@@ -187,6 +188,7 @@ function RoleHelpModal() {
   return Modal({
     id: 'role-help',
     title: 'Roles',
+    form: false,
     body: html`
       <ul>
         <li>
@@ -215,6 +217,7 @@ function FingerprintChangesHelpModal() {
   return Modal({
     id: 'fingerprint-changes-help',
     title: 'Client Fingerprints',
+    form: false,
     body: html`
       <p>
         Client fingerprints are a record of a user's IP address, user agent and session. These
@@ -239,6 +242,7 @@ function DurationHelpModal() {
   return Modal({
     id: 'duration-help',
     title: 'Duration',
+    form: false,
     body: html`
       <p>
         The "Duration" is the amount of time that a student has spent actively working on the
@@ -282,6 +286,7 @@ function TimeRemainingHelpModal() {
   return Modal({
     id: 'time-remaining-help',
     title: 'Time Remaining',
+    form: false,
     body: html`
       <p>
         For open assessments with a time limit, this column will indicate the number of minutes

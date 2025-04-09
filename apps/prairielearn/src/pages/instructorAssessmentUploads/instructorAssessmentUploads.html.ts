@@ -81,52 +81,54 @@ function AssessmentUploadCard({
         ? html`
             <div class="table-responsive pb-0">
               <table class="table" aria-label="Score uploads">
-                <tr>
-                  <td style="width: 1%">
-                    <button
-                      type="button"
-                      class="btn btn-primary text-nowrap"
-                      data-bs-toggle="modal"
-                      data-bs-target="#upload-instance-question-scores-form"
-                    >
-                      <i class="fas fa-upload"></i> Upload new question scores
-                    </button>
-                  </td>
-                  <td>
-                    <p>
-                      Upload a CSV file to set per-question scores for individual students.
-                      <a data-bs-toggle="collapse" href="#uploadInstanceQuestionScoresHelp">
-                        Show details...
-                      </a>
-                    </p>
-                    <div class="collapse" id="uploadInstanceQuestionScoresHelp">
-                      ${CsvHelpInstanceQuestionScores()}
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="width: 1%">
-                    <button
-                      type="button"
-                      class="btn btn-primary text-nowrap"
-                      data-bs-toggle="modal"
-                      data-bs-target="#upload-assessment-instance-scores-form"
-                    >
-                      <i class="fas fa-upload"></i> Upload new total scores
-                    </button>
-                  </td>
-                  <td>
-                    <p>
-                      Upload a CSV file to set the total assessment score for individual students.
-                      <a data-bs-toggle="collapse" href="#uploadAssessmentScoresHelp"
-                        >Show details...</a
+                <tbody>
+                  <tr>
+                    <td style="width: 1%">
+                      <button
+                        type="button"
+                        class="btn btn-primary text-nowrap"
+                        data-bs-toggle="modal"
+                        data-bs-target="#upload-instance-question-scores-form"
                       >
-                    </p>
-                    <div class="collapse" id="uploadAssessmentScoresHelp">
-                      ${CsvHelpAssessmentInstanceScores()}
-                    </div>
-                  </td>
-                </tr>
+                        <i class="fas fa-upload"></i> Upload new question scores
+                      </button>
+                    </td>
+                    <td>
+                      <p>
+                        Upload a CSV file to set per-question scores for individual students.
+                        <a data-bs-toggle="collapse" href="#uploadInstanceQuestionScoresHelp">
+                          Show details...
+                        </a>
+                      </p>
+                      <div class="collapse" id="uploadInstanceQuestionScoresHelp">
+                        ${CsvHelpInstanceQuestionScores()}
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="width: 1%">
+                      <button
+                        type="button"
+                        class="btn btn-primary text-nowrap"
+                        data-bs-toggle="modal"
+                        data-bs-target="#upload-assessment-instance-scores-form"
+                      >
+                        <i class="fas fa-upload"></i> Upload new total scores
+                      </button>
+                    </td>
+                    <td>
+                      <p>
+                        Upload a CSV file to set the total assessment score for individual students.
+                        <a data-bs-toggle="collapse" href="#uploadAssessmentScoresHelp"
+                          >Show details...</a
+                        >
+                      </p>
+                      <div class="collapse" id="uploadAssessmentScoresHelp">
+                        ${CsvHelpAssessmentInstanceScores()}
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
               </table>
             </div>
           `

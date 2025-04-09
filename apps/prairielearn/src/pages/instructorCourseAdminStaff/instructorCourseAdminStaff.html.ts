@@ -85,12 +85,13 @@ export function InstructorCourseAdminStaff({
           <div class="ms-auto">
             <button
               type="button"
-              class="btn btn-light btn-sm ms-auto"
+              class="btn btn-light btn-sm"
+              aria-label="Remove all student data access"
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
               data-bs-placement="auto"
-              title="Remove all student data access"
+              data-bs-title="Remove all student data access"
               data-bs-content="${escapeHtml(
                 CoursePermissionsRemoveStudentDataAccessForm({
                   csrfToken: resLocals.__csrf_token,
@@ -103,12 +104,13 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ms-auto"
+              class="btn btn-light btn-sm"
+              aria-label="Delete users with no access"
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
               data-bs-placement="auto"
-              title="Delete users with no access"
+              data-bs-title="Delete users with no access"
               data-bs-content="${escapeHtml(
                 CoursePermissionsDeleteNoAccessForm({
                   csrfToken: resLocals.__csrf_token,
@@ -121,12 +123,13 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ms-auto"
+              class="btn btn-light btn-sm"
+              aria-label="Delete non-owners"
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
               data-bs-placement="auto"
-              title="Delete non-owners"
+              data-bs-title="Delete non-owners"
               data-bs-content="${escapeHtml(
                 CoursePermissionsDeleteNonOwnersForm({
                   csrfToken: resLocals.__csrf_token,
@@ -139,12 +142,13 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm ms-auto"
+              class="btn btn-light btn-sm"
+              aria-label="Add users"
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
               data-bs-placement="auto"
-              title="Add users"
+              data-bs-title="Add users"
               data-bs-content="${escapeHtml(
                 CoursePermissionsInsertForm({
                   csrfToken: resLocals.__csrf_token,
@@ -166,7 +170,7 @@ export function InstructorCourseAdminStaff({
           user: resLocals.user,
           isAdministrator: resLocals.is_administrator,
         })}
-        <small class="card-footer">
+        <div class="card-footer small">
           ${hasUnknownUsers(courseUsers)
             ? html`
                 <p class="alert alert-warning">
@@ -190,7 +194,7 @@ export function InstructorCourseAdminStaff({
                 </div>
               `
             : ''}
-        </small>
+        </div>
       </div>
     `,
   });
@@ -369,11 +373,13 @@ function StaffTable({
   return html`
     <table class="table table-sm table-hover table-striped" aria-label="Course staff members">
       <thead>
-        <th>UID</th>
-        <th>Name</th>
-        <th>Course content access</th>
-        <th>Student data access</th>
-        <th>Actions</th>
+        <tr>
+          <th>UID</th>
+          <th>Name</th>
+          <th>Course content access</th>
+          <th>Student data access</th>
+          <th>Actions</th>
+        </tr>
       </thead>
       <tbody>
         ${courseUsers.map((courseUser) => {
@@ -694,41 +700,45 @@ function AccessLevelsTable() {
       style="max-width: 45em"
       aria-label="Recommended access levels"
     >
-      <tr>
-        <th scope="col">Role</th>
-        <th class="text-center" scope="col">Course content access</th>
-        <th class="text-center" scope="col">Student data access</th>
-      </tr>
-      <tr>
-        <td>Instructor</td>
-        <td class="text-center">Course content owner</td>
-        <td class="text-center">Student data editor</td>
-      </tr>
-      <tr>
-        <td>TAs developing course content</td>
-        <td class="text-center">Course content editor</td>
-        <td class="text-center">Student data editor</td>
-      </tr>
-      <tr>
-        <td>Student content developers (not TAs)</td>
-        <td class="text-center">Course content editor</td>
-        <td class="text-center">None</td>
-      </tr>
-      <tr>
-        <td>TAs involved in grading</td>
-        <td class="text-center">None</td>
-        <td class="text-center">Student data editor</td>
-      </tr>
-      <tr>
-        <td>Other TAs</td>
-        <td class="text-center">None</td>
-        <td class="text-center">Student data viewer</td>
-      </tr>
-      <tr>
-        <td>Instructors from other classes</td>
-        <td class="text-center">Course content viewer</td>
-        <td class="text-center">None</td>
-      </tr>
+      <thead>
+        <tr>
+          <th scope="col">Role</th>
+          <th class="text-center" scope="col">Course content access</th>
+          <th class="text-center" scope="col">Student data access</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Instructor</td>
+          <td class="text-center">Course content owner</td>
+          <td class="text-center">Student data editor</td>
+        </tr>
+        <tr>
+          <td>TAs developing course content</td>
+          <td class="text-center">Course content editor</td>
+          <td class="text-center">Student data editor</td>
+        </tr>
+        <tr>
+          <td>Student content developers (not TAs)</td>
+          <td class="text-center">Course content editor</td>
+          <td class="text-center">None</td>
+        </tr>
+        <tr>
+          <td>TAs involved in grading</td>
+          <td class="text-center">None</td>
+          <td class="text-center">Student data editor</td>
+        </tr>
+        <tr>
+          <td>Other TAs</td>
+          <td class="text-center">None</td>
+          <td class="text-center">Student data viewer</td>
+        </tr>
+        <tr>
+          <td>Instructors from other classes</td>
+          <td class="text-center">Course content viewer</td>
+          <td class="text-center">None</td>
+        </tr>
+      </tbody>
     </table>
   `;
 }

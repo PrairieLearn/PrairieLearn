@@ -233,11 +233,12 @@ function ImageTable({
                         ${image.questions.length} question${image.questions.length > 1 ? 's' : ''}
 
                         <button
+                          type="button"
                           class="btn btn-xs btn-secondary"
                           data-bs-toggle="popover"
                           data-bs-container="body"
                           data-bs-html="true"
-                          title="Questions using ${image.image}"
+                          data-bs-title="Questions using ${image.image}"
                           data-bs-content="${escapeHtml(
                             ListQuestionsPopover({ image, urlPrefix }),
                           )}"
