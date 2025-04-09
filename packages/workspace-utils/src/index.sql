@@ -161,7 +161,7 @@ FROM
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN course_instances AS ci ON (ci.course_id = a.course_instance_id)
+  LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
   w.id = $workspace_id
 ON CONFLICT (

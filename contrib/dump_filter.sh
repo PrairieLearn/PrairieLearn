@@ -12,8 +12,8 @@ OUTPUT_JSON_DIR="${OUTPUT_NAME}.tables"
 
 echo "Dumping ${COURSE_SHORT_NAME} ${COURSE_INSTANCE_SHORT_NAME} into ${OUTPUT_DUMP} and ${OUTPUT_JSON_DIR}"
 
-TEMPLATE_DB=proddb  # database to copy (will not be changed)
-TMP_DB=filterdb     # temporary working database (will be destroyed)
+TEMPLATE_DB=proddb # database to copy (will not be changed)
+TMP_DB=filterdb    # temporary working database (will be destroyed)
 
 echo "Reading data from DB ${TEMPLATE_DB} and using temporary DB ${TMP_DB}"
 
@@ -52,7 +52,7 @@ createdb --template=${TEMPLATE_DB} ${TMP_DB}
 # drop pg_stat_statements
 
 # Dropping pg_stat_statements...
-psql --dbname=${TMP_DB} --file=- <<EOF
+psql --dbname=${TMP_DB} --file=- << EOF
 drop extension pg_stat_statements;
 \gexec
 EOF
@@ -60,7 +60,7 @@ EOF
 # drop all unnecessary tables
 
 # Dropping all tables not in output table list...
-psql --dbname=${TMP_DB} --file=- <<EOF
+psql --dbname=${TMP_DB} --file=- << EOF
 select format('drop table %I cascade', tablename)
 from pg_catalog.pg_tables
 where schemaname = 'public'
@@ -71,7 +71,7 @@ EOF
 # drop all views
 
 # Dropping all views...
-psql --dbname=${TMP_DB} --file=- <<EOF
+psql --dbname=${TMP_DB} --file=- << EOF
 select format('drop view %I cascade', viewname)
 from pg_catalog.pg_views
 where schemaname = 'public'
@@ -84,7 +84,7 @@ EOF
 # on the foreign key constraints.
 
 # Saving required assessment_instances to ai_tmp...
-psql --dbname=${TMP_DB} --file=- <<EOF
+psql --dbname=${TMP_DB} --file=- << EOF
 create table ai_tmp as
 select ai.*
 from assessment_instances as ai
@@ -97,7 +97,7 @@ and ci.short_name = '${COURSE_INSTANCE_SHORT_NAME}';
 EOF
 
 # Saving required instance_questions to iq_tmp...
-psql --dbname=${TMP_DB} --file=- <<EOF
+psql --dbname=${TMP_DB} --file=- << EOF
 create table iq_tmp as
 select iq.*
 from instance_questions as iq
@@ -111,7 +111,7 @@ and ci.short_name = '${COURSE_INSTANCE_SHORT_NAME}';
 EOF
 
 # Saving required variants to v_tmp...
-psql --dbname=${TMP_DB} --file=- <<EOF
+psql --dbname=${TMP_DB} --file=- << EOF
 create table v_tmp as
 select v.*
 from variants as v
@@ -126,7 +126,7 @@ and ci.short_name = '${COURSE_INSTANCE_SHORT_NAME}';
 EOF
 
 # Saving required submissions to s_tmp...
-psql --dbname=${TMP_DB} --file=- <<EOF
+psql --dbname=${TMP_DB} --file=- << EOF
 create table s_tmp as
 select s.*
 from submissions as s
@@ -153,7 +153,7 @@ psql --dbname=${TMP_DB} --command="DELETE FROM pl_courses WHERE short_name != '$
 # Deleting all courses_instances except the one we want...
 psql --dbname=${TMP_DB} --command="DELETE FROM course_instances WHERE short_name != '${COURSE_INSTANCE_SHORT_NAME}';"
 # Deleting all users except ones used by other retained tables...
-psql --dbname=${TMP_DB} --file=- <<EOF
+psql --dbname=${TMP_DB} --file=- << EOF
 delete from users
 where user_id not in (
     select distinct user_id
@@ -213,8 +213,8 @@ pg_dump -Fc --file="${OUTPUT_DUMP}" ${TMP_DB}
 
 # Writing JSON data to ${OUTPUT_JSON_DIR}...
 mkdir -p "${OUTPUT_JSON_DIR}"
-for table in ${CLEAN_OUTPUT_TABLE_LIST} ; do
-    psql --tuples-only --dbname=${TMP_DB} --file=- <<EOF
+for table in ${CLEAN_OUTPUT_TABLE_LIST}; do
+    psql --tuples-only --dbname=${TMP_DB} --file=- << EOF
 \pset format unaligned
 select json_agg(t) from ${table} as t
 \g ${OUTPUT_JSON_DIR}/${table}.json

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
@@ -70,7 +70,7 @@ export function InstructorInstanceAdminLti13({
                   data-bs-toggle="dropdown"
                   aria-haspopup="true"
                   aria-expanded="false"
-                  data-boundary="window"
+                  data-bs-boundary="window"
                 >
                   ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
                 </button>

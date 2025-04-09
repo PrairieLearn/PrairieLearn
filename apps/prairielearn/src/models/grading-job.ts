@@ -1,6 +1,6 @@
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { GradingJobSchema, type GradingJob } from '../lib/db-types.js';
+import { type GradingJob, GradingJobSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
