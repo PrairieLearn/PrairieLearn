@@ -16,10 +16,10 @@ import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentModule,
+  AssessmentModuleSchema,
   AssessmentSchema,
   type AssessmentSet,
   AssessmentSetSchema,
-  AssessmentModuleSchema,
 } from '../../lib/db-types.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
@@ -154,7 +154,11 @@ export function InstructorAssessments({
                                 ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                                 : ''}
                             </a>
-                            ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
+                            ${IssueBadge({
+                              count: row.open_issue_count,
+                              urlPrefix,
+                              issueAid: row.tid,
+                            })}
                           </td>
 
                           <td class="align-middle">${row.tid}</td>

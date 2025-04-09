@@ -27,7 +27,15 @@ SELECT
   q.qid,
   q.title AS question_title,
   row_to_json(top) AS topic,
-  q.id AS question_id,
+  (
+    SELECT
+      COALESCE(JSONB_AGG(tg.name), '[]'::jsonb) AS tags
+    FROM
+      question_tags AS qt
+      JOIN tags AS tg ON (tg.id = qt.tag_id)
+    WHERE
+      q.id = qt.question_id
+  ) AS question_tags,
   admin_assessment_question_number (aq.id) as assessment_question_number,
   ag.number AS alternative_group_number,
   ag.number_choose AS alternative_group_number_choose,

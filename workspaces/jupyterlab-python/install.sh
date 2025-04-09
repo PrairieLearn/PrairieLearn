@@ -12,7 +12,7 @@ NEW_UID=1001
 NEW_GID=1001
 groupmod -g $NEW_GID $GROUP_NAME
 usermod -u $NEW_UID -g $NEW_GID $USER_NAME
-for d in /home /tmp ; do
+for d in /home /tmp; do
     find $d -user $OLD_UID -execdir chown -h $NEW_UID {} +
     find $d -group $OLD_GID -execdir chgrp -h $NEW_GID {} +
 done
@@ -29,13 +29,25 @@ chmod 0755 /usr/local/bin/pl-gosu-helper.sh
 # Install all Python dependencies.
 pip3 install -r /requirements.txt
 
+# This extension must be installed with `conda` and not `pip`. We don't know
+# exactly why that is. See the following GitHub issue for more background:
+# https://github.com/jupyterlab/jupyter-collaboration/issues/462
+conda install --yes jupyter-collaboration==3.1.0
+
 # Clear various caches to minimize the final image size.
 apt-get clean
 pip3 cache purge
+conda clean --all
 
 # Suppress the opt-in dialog for announcements.
 # https://stackoverflow.com/questions/75511508/how-to-stop-this-message-would-you-like-to-receive-official-jupyter-news
 jupyter labextension disable @jupyterlab/apputils-extension:announcements
+
+# Remove buttons and menu options that show a "shareable link".
+# These confuse instructors by misleading them into thinking that a student
+# would be able to access random workspaces by these links.
+jupyter labextension disable @jupyterlab/filebrowser-extension:share-file
+jupyter labextension disable @jupyter/collaboration-extension:shared-link
 
 # Delete ourself.
 rm /requirements.txt /install.sh

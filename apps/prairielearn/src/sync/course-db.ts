@@ -3,7 +3,7 @@ import * as path from 'path';
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
-import { parseISO, isValid, isAfter, isFuture, isPast } from 'date-fns';
+import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
@@ -895,7 +895,7 @@ async function loadAndValidateJson<T extends { uuid: string }>({
     return loadedJson;
   }
 
-  loadedJson.data = _.defaults(loadedJson.data, defaults);
+  loadedJson.data = { ...defaults, ...loadedJson.data };
   infofile.addWarnings(loadedJson, validationResult.warnings);
   return loadedJson;
 }
@@ -1124,6 +1124,16 @@ async function validateQuestion(
   return { warnings, errors };
 }
 
+/**
+ * Formats a set of QIDs into a string for use in error messages.
+ * @returns A comma-separated list of double-quoted QIDs.
+ */
+function formatQids(qids: Set<string>) {
+  return Array.from(qids)
+    .map((qid) => `"${qid}"`)
+    .join(', ');
+}
+
 async function validateAssessment(
   assessment: Assessment,
   questions: Record<string, InfoFile<Question>>,
@@ -1172,10 +1182,10 @@ async function validateAssessment(
     });
   }
 
-  const foundQids = new Set();
-  const duplicateQids = new Set();
-  const missingQids = new Set();
-  const draftQids = new Set();
+  const foundQids = new Set<string>();
+  const duplicateQids = new Set<string>();
+  const missingQids = new Set<string>();
+  const draftQids = new Set<string>();
   const checkAndRecordQid = (qid: string): void => {
     if (qid[0] === '@') {
       // Question is being imported from another course. We hold off on validating this until
@@ -1317,20 +1327,16 @@ async function validateAssessment(
   });
 
   if (duplicateQids.size > 0) {
-    errors.push(
-      `The following questions are used more than once: ${[...duplicateQids].join(', ')}`,
-    );
+    errors.push(`The following questions are used more than once: ${formatQids(duplicateQids)}`);
   }
 
   if (missingQids.size > 0) {
-    errors.push(
-      `The following questions do not exist in this course: ${[...missingQids].join(', ')}`,
-    );
+    errors.push(`The following questions do not exist in this course: ${formatQids(missingQids)}`);
   }
 
   if (draftQids.size > 0) {
     errors.push(
-      `The following questions are marked as draft and therefore cannot be used in assessments: ${[...draftQids].join(', ')}`,
+      `The following questions are marked as draft and therefore cannot be used in assessments: ${formatQids(draftQids)}`,
     );
   }
 
