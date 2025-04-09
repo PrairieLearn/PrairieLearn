@@ -3929,7 +3929,7 @@ __metadata:
     html-rewriter-wasm: "npm:^0.4.1"
     html-validate: "npm:^9.5.2"
     htmx.org: "npm:^1.9.12"
-    http-proxy-middleware: "npm:^3.0.3"
+    http-proxy-middleware: "npm:^3.0.4"
     http-status: "npm:^2.1.0"
     ioredis: "npm:^5.6.0"
     is-plain-obj: "npm:^4.1.0"
@@ -10719,9 +10719,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"http-proxy-middleware@npm:^3.0.3":
-  version: 3.0.3
-  resolution: "http-proxy-middleware@npm:3.0.3"
+"http-proxy-middleware@npm:^3.0.4":
+  version: 3.0.4
+  resolution: "http-proxy-middleware@npm:3.0.4"
   dependencies:
     "@types/http-proxy": "npm:^1.17.15"
     debug: "npm:^4.3.6"
@@ -10729,7 +10729,7 @@ __metadata:
     is-glob: "npm:^4.0.3"
     is-plain-object: "npm:^5.0.0"
     micromatch: "npm:^4.0.8"
-  checksum: 10c0/c4d68a10d8d42f02e59f7dc8249c98d1ac03aecee177b42c2d8b6a0cb6b71c6688e759e5387f4cdb570150070ca1c6808b38010cbdf67f4500a2e75671a36e05
+  checksum: 10c0/16a3a6bad2a120989c2c5da83c4012d59167330e0e6d51e8667315f882942da25c2fdddfc981ae53644828e292b51552f6b22fb56b757d1fa6c51c86ba6fa7d5
   languageName: node
   linkType: hard
 
