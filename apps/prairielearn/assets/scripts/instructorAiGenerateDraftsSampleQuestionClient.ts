@@ -1,3 +1,4 @@
+import _ from 'lodash';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
@@ -24,7 +25,7 @@ onDocumentReady(() => {
     '#sample-question-selector',
   ) as HTMLDivElement;
 
-  const sampleQuestionSelectorButton = sampleQuestionSelector.querySelector(  
+  const sampleQuestionSelectorButton = sampleQuestionSelector.querySelector(
     '#sample-question-selector-button',
   ) as HTMLButtonElement;
 
@@ -40,22 +41,24 @@ onDocumentReady(() => {
     '#previous-question-button',
   ) as HTMLButtonElement;
 
-  const nextQuestionButton = document.querySelector(
-    '#next-question-button',
-  ) as HTMLButtonElement;
+  const nextQuestionButton = document.querySelector('#next-question-button') as HTMLButtonElement;
 
   const questionContent = questionDemo.querySelector('#question-content') as HTMLDivElement;
   const gradeButton = questionDemo.querySelector('#grade-button') as HTMLButtonElement;
-  const userNumberResponse = questionDemo.querySelector('#user-number-response') as HTMLInputElement;
+  const userNumberResponse = questionDemo.querySelector(
+    '#user-number-response',
+  ) as HTMLInputElement;
 
-  const multipleChoiceResponse = questionDemo.querySelector('#multiple-choice-response') as HTMLDivElement;
+  const multipleChoiceResponse = questionDemo.querySelector(
+    '#multiple-choice-response',
+  ) as HTMLDivElement;
   const multipleChoiceResponseOptions = multipleChoiceResponse.querySelector(
     '#multiple-choice-response-options',
   ) as HTMLDivElement;
   const multipleChoiceFeedbackContainer = multipleChoiceResponse.querySelector(
     '#multiple-choice-feedback-container',
   ) as HTMLDivElement;
-  
+
   const answerLabelContainer = questionDemo.querySelector(
     '#answer-label-container',
   ) as HTMLSpanElement;
@@ -70,7 +73,7 @@ onDocumentReady(() => {
   const newVariantButton = questionDemo.querySelector('#new-variant-button') as HTMLButtonElement;
 
   const fillPromptsButton = document.querySelector('#fill-prompts');
-  
+
   function getSelectedSampleQuestion(): HTMLAnchorElement | null {
     return sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
   }
@@ -96,8 +99,12 @@ onDocumentReady(() => {
     }
   });
 
-  function setGrade(state: 'correct' | 'incorrect' | 'no-grade', answerType: 'number' | 'radio' | 'checkbox') {
-    const feedbackContainer = answerType === 'number' ? answerUnitsFeedbackContainer : multipleChoiceFeedbackContainer;
+  function setGrade(
+    state: 'correct' | 'incorrect' | 'no-grade',
+    answerType: 'number' | 'radio' | 'checkbox',
+  ) {
+    const feedbackContainer =
+      answerType === 'number' ? answerUnitsFeedbackContainer : multipleChoiceFeedbackContainer;
 
     switch (state) {
       case 'correct':
@@ -137,6 +144,9 @@ onDocumentReady(() => {
       case 'mcq-test':
         variant = generateMCQTestVariant();
         break;
+      case 'checkbox-test':
+        variant = generateCheckboxTestVariant();
+        break;
       default:
         variant = {
           question: '',
@@ -153,7 +163,6 @@ onDocumentReady(() => {
     // Store the answer in the grade button
     gradeButton.dataset.answer = variant.correctAnswer;
 
-
     // Update the examples
     const examplePrompt = examplePrompts.find((examplePrompt) => examplePrompt.id === id);
     if (examplePrompt) {
@@ -162,15 +171,15 @@ onDocumentReady(() => {
 
       // Clear the response feedback
       setGrade('no-grade', examplePrompt.answerType);
-      
+
       // Update the feature list
-       featureList.innerHTML = examplePrompt.features.reduce(
+      featureList.innerHTML = examplePrompt.features.reduce(
         (acc, feature) => `${acc}
 <li>${feature}</li>`,
         '',
-       );
+      );
 
-       if (examplePrompt.answerType === 'number') {
+      if (examplePrompt.answerType === 'number') {
         // Display the numeric input
         const responseContainer = questionDemo.querySelector(
           '#response-container',
@@ -189,10 +198,10 @@ onDocumentReady(() => {
         } else if (examplePrompt.atol) {
           placeholderText = `${placeholderText} (atol=${examplePrompt.atol})`;
         }
-        
+
         // Update the response placeholder text
         userNumberResponse.placeholder = placeholderText;
-    
+
         // Update the answer label
         if (examplePrompt.answerLabel) {
           answerLabelContainer.classList.remove('d-none');
@@ -213,7 +222,7 @@ onDocumentReady(() => {
 
         // Update the text displaying the answer
         answer.innerHTML = `Answer: ${variant.correctAnswer}`;
-      } else if (examplePrompt.answerType === 'radio') {
+      } else if (examplePrompt.answerType === 'radio' || examplePrompt.answerType === 'checkbox') {
         // Display the multiple choice input
         const responseContainer = questionDemo.querySelector(
           '#response-container',
@@ -227,23 +236,46 @@ onDocumentReady(() => {
             // Create a letter for the option based on its index
             const optionLetter = String.fromCharCode(index + 'a'.charCodeAt(0));
             return `${acc}
-<div class="form-check">
-  <input class="form-check-input" type="radio" name="multiple-choice-response" id="option-${optionLetter}" value="${option}">
-  <label class="form-check-label" for="option-${optionLetter}">
-    (${optionLetter}) ${option}
-  </label>
-</div>`},
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="${examplePrompt.answerType === 'radio' ? 'radio' : 'checkbox'}"
+                  name="multiple-choice-response"
+                  id="option-${optionLetter}"
+                  value="${option}"
+                />
+                <label class="form-check-label" for="option-${optionLetter}">
+                  (${optionLetter}) ${option}
+                </label>
+              </div>`;
+          },
           '',
         );
 
-        // Update the text displaying the answer
-        const correctOptionIndex = variant.options?.indexOf(variant.correctAnswer);
+        if (examplePrompt.answerType === 'radio') {
+          // Update the text displaying the answer
+          const correctOptionIndex = variant.options?.indexOf(variant.correctAnswer);
 
-        if (correctOptionIndex !== undefined) {
-          const correctOptionLetter = String.fromCharCode(correctOptionIndex + 'a'.charCodeAt(0));
-          answer.innerHTML = `Answer: (${correctOptionLetter}) ${variant.correctAnswer}`;
+          if (correctOptionIndex !== undefined) {
+            const correctOptionLetter = String.fromCharCode(correctOptionIndex + 'a'.charCodeAt(0));
+            answer.innerHTML = `Answer: (${correctOptionLetter}) ${variant.correctAnswer}`;
+          } else {
+            answer.innerHTML = `Answer: ${variant.correctAnswer}`;
+          }
         } else {
-          answer.innerHTML = `Answer: ${variant.correctAnswer}`;
+          const correctOptions = variant.correctAnswer.split(',');
+          answer.innerHTML = 'Answer:';
+          for (const correctOption of correctOptions) {
+            const correctOptionIndex = variant.options?.indexOf(correctOption.trim());
+            if (correctOptionIndex !== undefined) {
+              const correctOptionLetter = String.fromCharCode(
+                correctOptionIndex + 'a'.charCodeAt(0),
+              );
+              answer.innerHTML += ` (${correctOptionLetter}) ${correctOption}`;
+            } else {
+              answer.innerHTML += ` ${correctOption}`;
+            }
+          }
         }
       }
 
@@ -290,7 +322,7 @@ onDocumentReady(() => {
         generateSampleQuestionVariant(selectedId);
       }
     }
-  })
+  });
 
   previousQuestionButton.addEventListener('click', () => {
     const selectedTab = getSelectedSampleQuestion();
@@ -317,10 +349,10 @@ onDocumentReady(() => {
 
       sampleQuestionSelectorButtonText.innerHTML = previousOption.innerHTML;
       if (previousOptionId) {
-        generateSampleQuestionVariant(previousOptionId);  
+        generateSampleQuestionVariant(previousOptionId);
       }
     }
-  })
+  });
 
   nextQuestionButton.addEventListener('click', () => {
     const selectedTab = getSelectedSampleQuestion();
@@ -347,32 +379,34 @@ onDocumentReady(() => {
 
       sampleQuestionSelectorButtonText.innerHTML = nextOption.innerHTML;
       if (nextOptionId) {
-        generateSampleQuestionVariant(nextOptionId);  
+        generateSampleQuestionVariant(nextOptionId);
       }
     }
-  })
+  });
 
   // Grade the question when the grade button is clicked
   gradeButton?.addEventListener('click', () => {
-    const selectedTab =  getSelectedSampleQuestion();
+    const selectedTab = getSelectedSampleQuestion();
     if (!selectedTab) return;
 
-    const response = userNumberResponse.value;
     const answer = gradeButton.dataset.answer;
 
-    const examplePrompt = examplePrompts.find((examplePrompt) => examplePrompt.id === selectedTab.dataset.id);
+    const examplePrompt = examplePrompts.find(
+      (examplePrompt) => examplePrompt.id === selectedTab.dataset.id,
+    );
     if (!examplePrompt) return;
 
     if (examplePrompt.answerType === 'number') {
+      const response = userNumberResponse.value;
       const rtol = examplePrompt.rtol;
       const atol = examplePrompt.atol;
       const answerNum = parseFloat(answer ?? '0');
-      
+
       if (answerNum) {
         const responseNum = parseFloat(response);
         const relativeError = Math.abs((responseNum - answerNum) / answerNum);
         const absoluteError = Math.abs(responseNum - answerNum);
-        
+
         const relativeErrorValid = rtol ? relativeError <= rtol : false;
         const absoluteErrorValid = atol ? absoluteError <= atol : false;
         const perfectMatch = response === answer;
@@ -398,9 +432,24 @@ onDocumentReady(() => {
         'input[type="radio"]:checked',
       ) as HTMLInputElement;
       const selectedValue = selectedOption?.value;
-      const correctAnswer = gradeButton.dataset.answer; 
+      const correctAnswer = gradeButton.dataset.answer;
 
       if (selectedValue === correctAnswer) {
+        setGrade('correct', examplePrompt.answerType);
+      } else {
+        setGrade('incorrect', examplePrompt.answerType);
+      }
+    } else if (examplePrompt.answerType === 'checkbox') {
+      const selectedOptions = multipleChoiceResponseOptions.querySelectorAll(
+        'input[type="checkbox"]:checked',
+      ) as NodeListOf<HTMLInputElement>;
+      const selectedValues = new Set(Array.from(selectedOptions).map((option) => option.value));
+
+      const correctAnswer = gradeButton.dataset.answer;
+      const correctValues = new Set(correctAnswer?.split(',').map((option) => option.trim()) ?? []);
+
+      // The selected and correct values sets must be equal for a correct answer
+      if (_.isEqual(selectedValues, correctValues)) {
         setGrade('correct', examplePrompt.answerType);
       } else {
         setGrade('incorrect', examplePrompt.answerType);
@@ -548,6 +597,22 @@ function generateMCQTestVariant(): SampleQuestionVariantInfo {
             </p>
         `,
     options: shuffledOptions,
-    correctAnswer: 'Paris', 
-  }
+    correctAnswer: 'Paris',
+  };
+}
+
+function generateCheckboxTestVariant(): SampleQuestionVariantInfo {
+  // Shuffle the options
+  const options = ['Berlin', 'Madrid', 'Paris', 'Rome'];
+  const shuffledOptions = options.sort(() => Math.random() - 0.5);
+
+  return {
+    question: `
+            <p>
+                What are the capitals of France and Spain?
+            </p>
+        `,
+    options: shuffledOptions,
+    correctAnswer: 'Paris, Madrid',
+  };
 }

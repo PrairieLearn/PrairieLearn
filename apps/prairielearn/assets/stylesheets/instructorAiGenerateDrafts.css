@@ -38,7 +38,7 @@
 }
 
 #response-container.number #multiple-choice-response,
-#response-container.multiple-choice #number-response  {
+#response-container.multiple-choice #number-response {
   display: none;
 }
 

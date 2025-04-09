@@ -274,13 +274,17 @@ function SampleQuestionSelector({
                     data-bs-toggle="dropdown"
                     data-bs-boundary="window"
                   >
-                    <span id="sample-question-selector-button-text" class="text-truncate overflow-hidden me-4">${examplePrompts[0].name}</span>
+                    <span
+                      id="sample-question-selector-button-text"
+                      class="text-truncate overflow-hidden me-4"
+                      >${examplePrompts[0].name}</span
+                    >
                   </button>
                   <div class="dropdown-menu py-0">
                     <div class="overflow-auto">
                       ${examplePrompts.map((a, index) => {
                         return html`
-                          <a  
+                          <a
                             id="prompt-${a.id}"
                             class="dropdown-item ${index === 0 ? 'active' : ''}"
                             data-id="${a.id}"
@@ -307,7 +311,11 @@ function SampleQuestionSelector({
               </ul>
               ${SampleQuestionDemo(initialPrompt)}
               <p class="font-weight-bold mb-1 mt-3">Prompt</p>
-              <p>Generate a question by randomly creating two vectors (e.g., 3-dimensional). Ask the student to calculate the dot product of these vectors. Include the vector components in the prompt.</p>
+              <p>
+                Generate a question by randomly creating two vectors (e.g., 3-dimensional). Ask the
+                student to calculate the dot product of these vectors. Include the vector components
+                in the prompt.
+              </p>
               <button id="fill-prompts" type="button" class="btn btn-primary me-2">
                 <i class="fa fa-clone" aria-hidden="true"></i>
                 Fill prompts
@@ -329,7 +337,10 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
       </div>
       <div class="card-body">
         <div id="question-content"></div>
-        <div id="response-container" class="${initialPrompt.answerType === 'number' ? 'number' : 'multiple-choice'}">
+        <div
+          id="response-container"
+          class="${initialPrompt.answerType === 'number' ? 'number' : 'multiple-choice'}"
+        >
           <span id="number-response" class="input-group">
             <span id="answer-label-container" class="input-group-text">
               <span id="answer-label">
@@ -353,8 +364,7 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
             </span>
           </span>
           <div id="multiple-choice-response">
-            <div id="multiple-choice-response-options">
-            </div>
+            <div id="multiple-choice-response-options"></div>
             <div id="multiple-choice-feedback-container">
               <span id="feedback-badge-correct" class="badge bg-success">100%</span>
               <span id="feedback-badge-incorrect" class="badge bg-danger">0%</span>
@@ -373,7 +383,6 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
     </div>
   `;
 }
-
 
 // <div>
 // <div class="form-check">
@@ -410,7 +419,6 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
 // </div>
 // </div>
 // </div>
-
 
 export function GenerationFailure({
   urlPrefix,
