@@ -3,7 +3,7 @@
 Based on <https://gist.github.com/facelessuser/0b129c1faf7f3f59c0de40eeaaab5691/>.
 
 ```python
-from prairielearn import ...
+from prairielearn.colors import ...
 ```
 
 """
