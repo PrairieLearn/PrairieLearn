@@ -55,3 +55,22 @@ WHERE
   AND ssa.sharing_sets IS NOT NULL
 ORDER BY
   q.qid;
+
+-- BLOCK check_question_used_in_other_courses
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      assessment_questions AS aq
+      JOIN assessments AS a ON (a.id = aq.assessment_id)
+      JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+      JOIN pl_courses AS c ON (c.id = ci.course_id)
+    WHERE
+      aq.question_id = $question_id
+      AND c.id != $course_id
+      AND aq.deleted_at IS NULL
+      AND a.deleted_at IS NULL
+      AND ci.deleted_at IS NULL
+      AND c.deleted_at IS NULL
+  ) AS used;
