@@ -136,8 +136,6 @@ export function makeWorkspaceProxyMiddleware() {
       );
 
       if (result.rows.length === 0) {
-        // If updating this message, also update the message our Sentry
-        // `beforeSend` handler.
         throw new HttpStatusError(404, 'Workspace is not running');
       }
 

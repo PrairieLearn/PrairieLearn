@@ -161,6 +161,107 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             <div class="mb-3">
+              <label for="text">Text</label>
+              <textarea class="form-control" id="text" name="text" ${canEdit ? '' : 'disabled'}>
+${resLocals.assessment.text}</textarea
+              >
+              <small class="form-text text-muted">
+                HTML text shown on the assessment overview page.
+              </small>
+            </div>
+            <div class="mb-3">
+              <div class="mb-3 form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="allow_issue_reporting"
+                  name="allow_issue_reporting"
+                  ${canEdit ? '' : 'disabled'}
+                  ${resLocals.assessment.allow_issue_reporting ? 'checked' : ''}
+                />
+                <label class="form-check-label" for="allow_issue_reporting">
+                  Allow issue reporting
+                </label>
+                <div class="small text-muted">
+                  Whether to allow students to report issues for assessment questions.
+                </div>
+              </div>
+            </div>
+            ${resLocals.assessment.type === 'Exam'
+              ? html`
+                  <div class="mb-3 form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="multiple_instance"
+                      name="multiple_instance"
+                      ${canEdit ? '' : 'disabled'}
+                      ${resLocals.assessment.multiple_instance ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="multiple_instance">
+                      Multiple instances
+                    </label>
+                    <div class="small text-muted">
+                      Whether to allow students to create additional instances of the assessment.
+                    </div>
+                  </div>
+                `
+              : ''}
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="allow_personal_notes"
+                name="allow_personal_notes"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.assessment.allow_personal_notes ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="allow_personal_notes"
+                >Allow personal notes</label
+              >
+              <div class="small text-muted">
+                Whether students are allowed to upload personal notes for this assessment.
+              </div>
+            </div>
+            ${resLocals.assessment.type === 'Exam'
+              ? html`
+                  <div class="mb-3 form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="auto_close"
+                      name="auto_close"
+                      ${canEdit ? '' : 'disabled'}
+                      ${resLocals.assessment.auto_close ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="auto_close">Auto close</label>
+                    <div class="small text-muted">
+                      Whether to automatically close the assessment after 6 hours of inactivity.
+                    </div>
+                  </div>
+                `
+              : ''}
+            ${resLocals.assessment.type === 'Exam'
+              ? html`
+                  <div class="mb-3 form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="require_honor_code"
+                      name="require_honor_code"
+                      ${canEdit ? '' : 'disabled'}
+                      ${resLocals.assessment.require_honor_code ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="require_honor_code">
+                      Require honor code
+                    </label>
+                    <div class="small text-muted">
+                      Requires the student to accept an honor code before starting exam assessments.
+                    </div>
+                  </div>
+                `
+              : ''}
+            <div class="mb-3">
               <label class="form-label" for="studentLink">Student Link</label>
               <span class="input-group">
                 <input
@@ -220,9 +321,8 @@ export function InstructorAssessmentSettings({
                       data-testid="edit-assessment-configuration-link"
                       href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
                         .id}/file_edit/${infoAssessmentPath}"
+                      >Edit assessment configuration</a
                     >
-                      Edit assessment configuration
-                    </a>
                     in <code>infoAssessment.json</code>
                   `
                 : html`

@@ -1,4 +1,5 @@
 FROM prairielearn/prairielearn:latest
+ARG CACHEBUST=2025-04-04-17-34-59
 
 WORKDIR /PrairieLearn/
 
@@ -13,4 +14,4 @@ RUN groupadd executor \
 # do anything for this image, so we'll just disable it here.
 HEALTHCHECK NONE
 
-CMD make -s start-executor
+CMD [ "make", "-s", "start-executor" ]

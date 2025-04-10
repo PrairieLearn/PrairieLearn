@@ -179,6 +179,25 @@ export function getUniqueNames({
   }
 }
 
+/**
+ * Returns the new value if it differs from the default value. Otherwise, returns undefined.
+ * This is helpful for setting JSON properties that we only want to write to if they are different
+ * than the default value.
+ */
+export function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+  if (existingValue === undefined) {
+    if (newValue !== defaultValue) {
+      return newValue;
+    }
+  } else {
+    if (existingValue !== defaultValue && newValue === defaultValue) {
+      return undefined;
+    } else {
+      return newValue;
+    }
+  }
+}
+
 interface BaseEditorOptions<ResLocals = object> {
   locals: {
     authz_data: Record<string, any>;

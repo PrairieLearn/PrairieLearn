@@ -2095,23 +2095,6 @@ if (esMain(import.meta) && config.startServer) {
         // enabled. Otherwise, allow Sentry to install its own stuff so
         // that request isolation works correctly.
         skipOpenTelemetrySetup: config.openTelemetryEnabled,
-
-        beforeSend: (event) => {
-          // This will be necessary until we can consume the following change:
-          // https://github.com/chimurai/http-proxy-middleware/pull/823
-          //
-          // The following error message should match the error that's thrown
-          // from the `router` function in our `http-proxy-middleware` config.
-          if (
-            event.exception?.values?.some(
-              (value) => value.type === 'Error' && value.value === 'Workspace is not running',
-            )
-          ) {
-            return null;
-          }
-
-          return event;
-        },
       });
     }
 

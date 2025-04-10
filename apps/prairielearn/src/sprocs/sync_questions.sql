@@ -147,7 +147,6 @@ BEGIN
         show_correct_answer = (src.data->>'show_correct_answer')::boolean,
         template_directory = src.data->>'template_directory',
         topic_id = aggregates.topic_id,
-        shared_publicly = (src.data->>'share_publicly')::boolean,
         share_publicly = (src.data->>'share_publicly')::boolean,
         share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         external_grading_enabled = (src.data->>'external_grading_enabled')::boolean,
