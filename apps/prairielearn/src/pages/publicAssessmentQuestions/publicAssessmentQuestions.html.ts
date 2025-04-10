@@ -5,8 +5,7 @@ import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
 } from '../../components/AssessmentQuestions.html.js';
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { type Assessment, type Course } from '../../lib/db-types.js';
@@ -25,48 +24,37 @@ export function PublicAssessmentQuestions({
   course_instance_id: string;
   questions: AssessmentQuestionRow[];
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
-      </head>
-      <body>
-        ${Navbar({
-          resLocals,
-          navPage: 'public_assessment',
-          navSubPage: 'questions',
-          navbarType: 'public',
-        })}
-        <main id="content" class="container">
-          ${course.sharing_name
-            ? html`
-                <div class="card mb-4">
-                  <div class="card-header bg-primary text-white d-flex align-items-center">
-                    ${assessment.title} ${assessment.number}: Questions
-                  </div>
-                  ${AssessmentQuestionsTable({
-                    questions,
-                    urlPrefix: resLocals.urlPrefix,
-                    course_id: course.id,
-                    course_instance_id,
-                    course_sharing_name: course.sharing_name,
-                  })}
-                </div>
-              `
-            : html`<p>
-                This course doesn't have a sharing name. If you are an Owner of this course, please
-                choose a sharing name on the
-                <a
-                  href="${resLocals.plainUrlPrefix}/course/${resLocals.course
-                    .id}/course_admin/sharing"
-                  >course sharing settings page</a
-                >.
-              </p>`}
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Questions',
+    navContext: {
+      type: 'public',
+      page: 'public_assessment',
+      subPage: 'questions',
+    },
+    content: course.sharing_name
+      ? html`
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              ${assessment.title} ${assessment.number}: Questions
+            </div>
+            ${AssessmentQuestionsTable({
+              questions,
+              urlPrefix: resLocals.urlPrefix,
+              course_id: course.id,
+              course_instance_id,
+              course_sharing_name: course.sharing_name,
+            })}
+          </div>
+        `
+      : html`<p>
+          This course doesn't have a sharing name. If you are an Owner of this course, please choose
+          a sharing name on the
+          <a href="${resLocals.plainUrlPrefix}/course/${resLocals.course.id}/course_admin/sharing"
+            >course sharing settings page</a
+          >.
+        </p>`,
+  });
 }
 
 function AssessmentQuestionsTable({

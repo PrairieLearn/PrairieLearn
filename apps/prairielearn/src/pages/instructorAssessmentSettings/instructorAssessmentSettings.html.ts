@@ -52,6 +52,11 @@ export function InstructorAssessmentSettings({
         title: 'Student Link QR Code',
         content: studentLink,
       })}
+      ${QRCodeModal({
+        id: 'publicLinkModal',
+        title: 'Public Link QR Code',
+        content: publicLink,
+      })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
@@ -407,7 +412,7 @@ function AssessmentSharing({
       </p>
       <div>
         <label for="publicLink">Public Link</label>
-        <div class="input-group">
+        <span class="input-group">
           <input
             type="text"
             class="form-control"
@@ -416,26 +421,24 @@ function AssessmentSharing({
             value="${publicLink}"
             disabled
           />
-          <div>
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-secondary btn-copy"
-              data-clipboard-text="${publicLink}"
-              aria-label="Copy public link"
-            >
-              <i class="far fa-clipboard"></i>
-            </button>
-            <button
-              type="button"
-              title="Public Link QR Code"
-              aria-label="Public Link QR Code"
-              class="btn btn-sm btn-outline-secondary js-qrcode-button"
-              data-qr-code-content="${publicLink}"
-            >
-              <i class="fas fa-qrcode"></i>
-            </button>
-          </div>
-        </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary btn-copy"
+            data-clipboard-text="${publicLink}"
+            aria-label="Copy public link"
+          >
+            <i class="far fa-clipboard"></i>
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+            aria-label="Public Link QR Code"
+            data-bs-toggle="modal"
+            data-bs-target="#publicLinkModal"
+          >
+            <i class="fas fa-qrcode"></i>
+          </button>
+        </span>
         <small class="form-text text-muted">
           The link that other instructors can use to view this assessment.
         </small>
