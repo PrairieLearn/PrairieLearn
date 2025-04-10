@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 import tempfile
-from typing import Literal, cast
+from typing import Literal, cast, get_args
 
 from utils import (
     buildx_builder,
@@ -34,7 +34,7 @@ BASE_IMAGE_MAPPING = {
 
 BASE_IMAGES = list(set(BASE_IMAGE_MAPPING.values()))
 
-CACHE_STRATEGY_TYPE = Literal["none", "pull", "update"]
+CacheStrategy = Literal["none", "pull", "update"]
 
 
 def get_image_path(image: str) -> str:
@@ -123,7 +123,7 @@ def build_image(
     should_push: bool = False,
     base_image_digest: str | None = None,
     metadata_dir: str | None = None,
-    cache_strategy: CACHE_STRATEGY_TYPE = "none",
+    cache_strategy: CacheStrategy = "none",
 ) -> str:
     """Builds a Docker image. Returns the digest of the built image."""
     base_image = BASE_IMAGE_MAPPING.get(image)
@@ -165,16 +165,16 @@ def build_image(
             args.extend([
                 "--pull",  # Always attempt to pull all referenced images
                 "--cache-from",
-                f"type=registry,ref={image}:buildcache-{platform}",
+                f"type=registry,ref={image}:buildcache-{platform.replace('/', '-')}",
             ])
         elif cache_strategy == "update":
             # We want to not only pull from the cache, but also push to it.
             args.extend([
                 "--pull",  # Always attempt to pull all referenced images
                 "--cache-from",
-                f"type=registry,ref={image}:buildcache-{platform}",
+                f"type=registry,ref={image}:buildcache-{platform.replace('/', '-')}",
                 "--cache-to",
-                f"type=registry,ref={image}:buildcache-{platform},mode=max",
+                f"type=registry,ref={image}:buildcache-{platform.replace('/', '-')},mode=max",
             ])
         else:
             args.extend([
@@ -220,7 +220,7 @@ def build_images(
     should_push: bool = False,
     only_changed: bool = False,
     metadata_dir: str | None = None,
-    cache_strategy: CACHE_STRATEGY_TYPE = "none",
+    cache_strategy: CacheStrategy = "none",
 ) -> None:
     validate_image_order(images)
 
@@ -256,9 +256,9 @@ if __name__ == "__main__":
     should_push = os.environ.get("PUSH_IMAGES", "false").lower() == "true"
     only_changed = os.environ.get("ONLY_CHANGED", "false").lower() == "true"
     cache_strategy = os.environ.get("CACHE_STRATEGY", "none").lower()
-    if cache_strategy not in ["none", "pull", "update"]:
+    if cache_strategy not in get_args(CacheStrategy):
         raise ValueError(f"Invalid cache strategy: {cache_strategy}")
-    cache_strategy = cast(CACHE_STRATEGY_TYPE, cache_strategy)
+    cache_strategy = cast(CacheStrategy, cache_strategy)
 
     if metadata_dir:
         os.makedirs(metadata_dir, exist_ok=True)
