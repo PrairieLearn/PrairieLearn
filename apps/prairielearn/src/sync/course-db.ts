@@ -394,6 +394,7 @@ export interface Question {
   externalGradingOptions: QuestionExternalGradingOptions;
   workspaceOptions?: QuestionWorkspaceOptions;
   dependencies: Record<string, string>;
+  authors: string[];
   sharingSets?: string[];
   sharePublicly: boolean;
   shareSourcePublicly: boolean;

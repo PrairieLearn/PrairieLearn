@@ -189,6 +189,7 @@ export interface Question {
   title: string;
   topic: string;
   tags?: string[];
+  authors?: string[];
   sharingSets?: string[];
   sharePublicly?: boolean;
   shareSourcePublicly?: boolean;
