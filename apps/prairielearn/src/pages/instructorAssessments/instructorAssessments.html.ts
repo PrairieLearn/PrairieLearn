@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
@@ -13,6 +11,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
+import type { AssessmentRow, AssessmentStatsRow } from '../../lib/assessment.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentModule,
@@ -23,20 +22,6 @@ import {
 } from '../../lib/db-types.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
-
-export const AssessmentStatsRowSchema = AssessmentSchema.extend({
-  needs_statistics_update: z.boolean().optional(),
-});
-type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
-
-export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
-  start_new_assessment_group: z.boolean(),
-  assessment_set: AssessmentSetSchema,
-  assessment_module: AssessmentModuleSchema,
-  label: z.string(),
-  open_issue_count: z.coerce.number(),
-});
-type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
 export function InstructorAssessments({
   resLocals,
