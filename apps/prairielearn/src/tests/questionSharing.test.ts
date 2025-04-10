@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -640,5 +641,84 @@ describe('Question Sharing', function () {
         await ensureInvalidSharingOperationFailsToSync();
       },
     );
+  });
+
+  describe('Test sharing set undo operations', function () {
+    const testSharingSetName = 'test-sharing-set';
+    let testSharingSetId: string;
+
+    step('Create an empty sharing set', async () => {
+      sharingCourseData.course.sharingSets = [
+        { name: testSharingSetName, description: 'Sharing set for testing' },
+      ];
+      await fs.writeJSON(
+        path.join(sharingCourseOriginDir, 'infoCourse.json'),
+        sharingCourseData.course,
+      );
+
+      await commitAndPullSharingCourse();
+    });
+
+    step('Verify that empty sharing set can be deleted', async () => {
+      sharingCourseData.course.sharingSets = [];
+      await fs.writeJSON(
+        path.join(sharingCourseOriginDir, 'infoCourse.json'),
+        sharingCourseData.course,
+      );
+
+      const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourseLiveDir, logger);
+      assert.equal(syncResult.status, 'complete');
+      assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
+
+      const result = await sqldb.queryRows(
+        sql.select_sharing_set,
+        { sharing_set_name: testSharingSetName },
+        z.string(),
+      );
+      assert.equal(result.length, 0, 'Empty sharing set should be deleted');
+    });
+
+    step('Re-create the sharing set and add a question to it', async () => {
+      sharingCourseData.course.sharingSets = [
+        { name: testSharingSetName, description: 'Sharing set for testing' },
+      ];
+      await fs.writeJSON(
+        path.join(sharingCourseOriginDir, 'infoCourse.json'),
+        sharingCourseData.course,
+      );
+
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [testSharingSetName];
+      await fs.writeJSON(
+        path.join(sharingCourseOriginDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[SHARING_QUESTION_QID],
+      );
+
+      await commitAndPullSharingCourse();
+
+      const result = await sqldb.queryOneRowAsync(sql.select_sharing_set, {
+        sharing_set_name: testSharingSetName,
+      });
+      testSharingSetId = result.rows[0].id;
+    });
+
+    step('Verify that non-empty sharing set cannot be deleted', async () => {
+      sharingCourseData.course.sharingSets = [];
+      await fs.writeJSON(
+        path.join(sharingCourseOriginDir, 'infoCourse.json'),
+        sharingCourseData.course,
+      );
+
+      const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourseLiveDir, logger);
+      assert.equal(syncResult.status, 'sharing_error');
+
+      const result = await sqldb.queryOneRowAsync(sql.select_sharing_set, {
+        sharing_set_name: testSharingSetName,
+      });
+      assert.equal(
+        result.rows[0].id,
+        testSharingSetId,
+        'Non-empty sharing set should not be deleted',
+      );
+    });
   });
 });

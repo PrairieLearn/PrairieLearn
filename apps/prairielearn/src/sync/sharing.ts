@@ -80,27 +80,24 @@ export async function checkInvalidSharingSetDeletions(
   courseData: CourseData,
   logger: ServerJobLogger,
 ): Promise<boolean> {
-  const sharingSets = await sqldb.queryRows(
-    sql.select_sharing_sets,
+  // Get all sharing sets that can't be deleted (have questions or are shared with courses)
+  const result = await sqldb.queryRows(
+    sql.select_non_deletable_sharing_sets,
     { course_id: courseId },
     z.string(),
   );
+  const nonDeletableSharingSets = new Set(result);
 
-  const invalidSharingSetDeletions: string[] = [];
   const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
-  sharingSets.forEach((sharingSet) => {
-    if (!sharingSetNames.includes(sharingSet)) {
-      invalidSharingSetDeletions.push(sharingSet);
-    }
-  });
+  const invalidDeletions = Array.from(nonDeletableSharingSets).filter(
+    (name) => !sharingSetNames.includes(name),
+  );
 
-  const existInvalidSharingSetDeletions = invalidSharingSetDeletions.length > 0;
-  if (existInvalidSharingSetDeletions) {
-    logger.error(
-      `✖ Course sync completely failed. The following sharing sets cannot be removed from 'infoCourse.json': ${invalidSharingSetDeletions.join(', ')}`,
-    );
+  if (invalidDeletions.length > 0) {
+    logger.error(`Cannot remove sharing sets that are not empty: ${invalidDeletions.join(', ')}`);
   }
-  return existInvalidSharingSetDeletions;
+
+  return invalidDeletions.length > 0;
 }
 
 export function checkInvalidSharingSetAdditions(
