@@ -104,6 +104,7 @@ interface QuestionAlternative {
   forceMaxPoints?: boolean;
   triesPerVariant?: number;
   questionParams?: any[];
+  gradeRateMinutes?: number;
 }
 
 interface ZoneQuestion {
@@ -119,6 +120,7 @@ interface ZoneQuestion {
   triesPerVariant?: number;
   canSubmit?: string[];
   canView?: string[];
+  gradeRateMinutes?: number;
   questionParams?: any[];
 }
 
@@ -130,6 +132,7 @@ interface Zone {
   questions?: ZoneQuestion[];
   canSubmit?: string[];
   canView?: string[];
+  gradeRateMinutes?: number;
   questionParams?: any[];
 }
 
@@ -161,6 +164,7 @@ export interface Assessment {
   hasRoles?: boolean;
   canSubmit?: string[];
   canView?: string[];
+  gradeRateMinutes?: number;
   questionParams?: any[];
 }
 

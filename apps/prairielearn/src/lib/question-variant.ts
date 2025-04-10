@@ -1,5 +1,4 @@
 import fg from 'fast-glob';
-import _ from 'lodash';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -66,14 +65,8 @@ async function makeVariant(
 
   question.question_params = questionParams;
   const questionModule = questionServers.getModule(question.type);
-  const { courseIssues, data } = await questionModule.generate(
-    question,
-    course,
-    variant_seed,
-    questionParams,
-  );
-
-  const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+  const { courseIssues, data } = await questionModule.generate(question, course, variant_seed);
+  const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
   let variant: VariantCreationData = {
     variant_seed,
     params: data.params || {},
@@ -102,7 +95,7 @@ async function makeVariant(
       variant,
     );
     courseIssues.push(...prepareCourseIssues);
-    const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+    const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
     variant = {
       variant_seed,
       params: data.params || {},

@@ -902,7 +902,7 @@ async function loadAndValidateJson<T extends { uuid: string }>({
     return loadedJson;
   }
 
-  loadedJson.data = _.defaults(loadedJson.data, defaults);
+  loadedJson.data = { ...defaults, ...loadedJson.data };
   infofile.addWarnings(loadedJson, validationResult.warnings);
   return loadedJson;
 }
