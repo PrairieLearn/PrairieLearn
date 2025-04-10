@@ -24,31 +24,21 @@ const examplePrompts = [
     id: 'Select median of 5 random numbers',
     promptGeneral:
       'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
-    promptUserInput:
-      'Each random number generated should be a potential answer to the multiple-choice question. Randomize the order of the numbers.',
-    promptGrading: 'The correct answer is the median of the numbers.',
   },
   {
     id: 'Multiply random integers',
     promptGeneral:
       'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B.',
-    promptUserInput: 'Provide an integer input box for the user to enter the product.',
-    promptGrading: 'The correct answer is the product of A and B.',
   },
   {
     id: 'Answer to Ultimate Question',
     promptGeneral:
       'Write a question asking "What Is The Answer to the Ultimate Question of Life, the Universe, and Everything?".',
-    promptUserInput: 'Provide an integer box for the user to answer.',
-    promptGrading: 'The correct answer is 42.',
   },
   {
     id: 'Calculate Projectile Distance',
     promptGeneral:
       'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
-    promptUserInput: 'Provide a numerical input box for the user to enter an answer.',
-    promptGrading:
-      'The correct answer is the distance that the projectile will travel, using the corresponding formula.',
   },
 ];
 
@@ -113,8 +103,7 @@ export function InstructorAIGenerateDrafts({
 
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
-                Give a high-level overview of the question. What internal parameters need to be
-                generated and what information should be provided to students?
+                Give a high-level overview of the question.
               </label>
               <textarea
                 name="prompt"
@@ -133,40 +122,6 @@ export function InstructorAIGenerateDrafts({
             </div>
 
             <div class="js-hidden-inputs-container ${hasDrafts ? 'd-none' : ''}">
-              <div class="mb-3">
-                <label class="form-label" for="user-prompt-llm-user-input">
-                  How should students input their solution? What choices or input boxes are they
-                  given?
-                </label>
-                <textarea
-                  name="prompt_user_input"
-                  id="user-prompt-llm-user-input"
-                  class="form-control js-textarea-autosize"
-                  style="resize: none;"
-                ></textarea>
-                <div class="form-text form-muted">
-                  <em>
-                    Example: students should enter the solution using a decimal number. The answer
-                    should be in seconds.
-                  </em>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label" for="user-prompt-llm-grading">
-                  How is the correct answer determined?
-                </label>
-                <textarea
-                  name="prompt_grading"
-                  id="user-prompt-llm-grading"
-                  class="form-control js-textarea-autosize"
-                  style="resize: none;"
-                ></textarea>
-                <div class="form-text form-muted">
-                  <em> Example: the answer is computed as sqrt(2 * h / g) where g = 9.81 m/s^2 </em>
-                </div>
-              </div>
-
               ${
                 // We think this will mostly be useful in local dev or for
                 // global admins who will want to iterate rapidly and don't
@@ -187,8 +142,6 @@ export function InstructorAIGenerateDrafts({
                               html`<option
                                 value="${question.id}"
                                 data-prompt-general="${question.promptGeneral}"
-                                data-prompt-user-input="${question.promptUserInput}"
-                                data-prompt-grading="${question.promptGrading}"
                               >
                                 ${question.id}
                               </option>`,
