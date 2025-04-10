@@ -5,7 +5,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { formatTimezone, type Timezone } from '../../lib/timezones.js';
+import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
 
 export function InstructorInstanceAdminSettings({
