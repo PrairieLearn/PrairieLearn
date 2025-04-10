@@ -2487,7 +2487,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.assessment.json_can_submit?.toString(), 'Recorder');
     assert.equal(syncedData.zones[0].json_can_view?.toString(), 'Manager,Recorder,Contributor');
     assert.equal(syncedData.zones[0].json_can_submit?.toString(), 'Recorder,Contributor');
-    assert.equal(syncedData.assessment_questions[0].json_can_view?.toString(), 'Contributor');
-    assert.equal(syncedData.assessment_questions[0].json_can_submit?.toString(), 'Contributor');
+    assert.equal(syncedData.alternative_groups[0].json_can_view?.toString(), 'Contributor');
+    assert.equal(syncedData.alternative_groups[0].json_can_submit?.toString(), 'Contributor');
   });
 });
