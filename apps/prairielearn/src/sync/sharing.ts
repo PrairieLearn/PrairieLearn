@@ -80,16 +80,14 @@ export async function checkInvalidSharingSetDeletions(
   courseData: CourseData,
   logger: ServerJobLogger,
 ): Promise<boolean> {
-  // Get all sharing sets that can't be deleted (have questions or are shared with courses)
-  const result = await sqldb.queryRows(
+  const nonDeletableSharingSets = await sqldb.queryRows(
     sql.select_non_deletable_sharing_sets,
     { course_id: courseId },
     z.string(),
   );
-  const nonDeletableSharingSets = new Set(result);
 
   const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
-  const invalidDeletions = Array.from(nonDeletableSharingSets).filter(
+  const invalidDeletions = nonDeletableSharingSets.filter(
     (name) => !sharingSetNames.includes(name),
   );
 
