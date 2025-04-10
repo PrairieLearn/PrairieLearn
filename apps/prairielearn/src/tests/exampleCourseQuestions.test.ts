@@ -86,18 +86,18 @@ describe('Auto-test questions in exampleCourse', () => {
     );
   });
 
-  describe('Auto-test questions in exampleCourse with process-questions-in-worker enabled', function () {
+  describe('Auto-test questions in exampleCourse with process-questions-in-server enabled', function () {
     this.timeout(60000);
 
     before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
     after('shut down testing server', helperServer.after);
 
-    const originalProcessQuestionsInWorker = config.features['process-questions-in-worker'];
-    before('enable process-questions-in-worker', () => {
-      config.features['process-questions-in-worker'] = true;
+    const originalProcessQuestionsInWorker = config.features['process-questions-in-server'];
+    before('enable process-questions-in-server', () => {
+      config.features['process-questions-in-server'] = true;
     });
-    after('restore process-questions-in-worker', () => {
-      config.features['process-questions-in-worker'] = originalProcessQuestionsInWorker;
+    after('restore process-questions-in-server', () => {
+      config.features['process-questions-in-server'] = originalProcessQuestionsInWorker;
     });
 
     // Only test the first 10 questions so that this test doesn't take too long.
