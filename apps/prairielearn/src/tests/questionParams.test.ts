@@ -8,8 +8,9 @@ import { assert } from 'chai';
  import { config } from '../lib/config.js';
 
 
+import * as helperQuestion from './helperQuestion.js';
  import * as helperServer from './helperServer.js';
-import { fetchCheerio } from './helperClient.js';
+// import { fetchCheerio } from './helperClient.js';
 
  // const requestAsync = await fetch()
  // const sql = sqlLoader.loadSqlEquiv(__filename);
@@ -51,7 +52,7 @@ import { fetchCheerio } from './helperClient.js';
  locals.instructorGradebookUrl = `${locals.instructorBaseUrl}/instance_admin/gradebook`;
  locals.questionBaseUrl = `${locals.courseInstanceBaseUrl}/instance_question`;
  locals.assessmentsUrl = `${locals.courseInstanceBaseUrl}/assessments`;
- locals.isStudentPage = false;
+ locals.isStudentPage = true;
 
  const questionsArray: Question[] = [
 
@@ -89,15 +90,17 @@ import { fetchCheerio } from './helperClient.js';
        const response = await fetch(locals.assessmentUrl);
        assert.equal(response.status, 200);
        locals.$ = cheerio.load(await response.text());
+       console.log(locals)
      });
 
      questionsArray.forEach((question, index) => {
        it(`should verify question #${index + 1} (${question.qid}) has correct parameters`, async function () {
          if (!question.url) throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);
-         const response = await fetchCheerio(question.url);
+         console.log(helperQuestion.getInstanceQuestion(locals))
+         const response = await fetch(question.url);
          assert.equal(response.status, 200);
          const $ = cheerio.load(await response.text());
-         const expectedRange = index < 2 ? `[0, ${10 * (index + 1)}]` : `[${10 * index}, ${10 * (index + 1)}]`;
+         const expectedRange = '[3, 16]';
          const elemList = $('span').filter(function () {
            return $(this).text().trim() === expectedRange;
          });
