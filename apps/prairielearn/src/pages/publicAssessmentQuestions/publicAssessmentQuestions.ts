@@ -24,6 +24,7 @@ router.get(
     const course = await selectCourseByCourseInstanceId(course_instance_id.toString());
     res.locals.course = course;
     const assessment = await selectAssessmentById(assessment_id);
+    res.locals.assessment = assessment;
 
     const questions = await selectAssessmentQuestions({
       assessment_id,

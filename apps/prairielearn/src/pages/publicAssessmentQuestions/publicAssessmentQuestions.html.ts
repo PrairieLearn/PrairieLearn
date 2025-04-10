@@ -35,7 +35,7 @@ export function PublicAssessmentQuestions({
         ${Navbar({
           resLocals,
           navPage: 'public_assessment',
-          // navSubPage: 'questions',
+          navSubPage: 'questions',
           navbarType: 'public',
         })}
         <main id="content" class="container">
