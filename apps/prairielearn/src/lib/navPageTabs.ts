@@ -9,14 +9,6 @@ import { ProgressCircle } from '../components/ProgressCircle.html.js';
  */
 export function getNavPageTabs(hasEnhancedNavigation: boolean) {
   const navPagesTabs = {
-    public_assessment: [
-      {
-        activeSubPage: 'questions',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
-        iconClasses: 'far fa-file-alt',
-        tabLabel: 'Questions',
-      },
-    ],
     public_question: [
       {
         activeSubPage: 'file_view',
