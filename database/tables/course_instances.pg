@@ -6,6 +6,7 @@ columns
     enrollment_limit: integer
     hide_in_enroll_page: boolean default false
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
+    json_comment: text
     long_name: text
     short_name: text
     sync_errors: text
