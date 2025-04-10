@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 
 import { selectAssessmentQuestions } from '../../models/assessment-question.js';
-import { checkAssessmentPublic, selectAssessmentById } from '../../models/assessment.js';
+import { selectAssessmentById, selectAssessmentIsPublic } from '../../models/assessment.js';
 import { selectCourseByCourseInstanceId } from '../../models/course.js';
 
 import { PublicAssessmentQuestions } from './publicAssessmentQuestions.html.js';
@@ -16,14 +16,14 @@ router.get(
   asyncHandler(async (req, res) => {
     const assessment_id = req.params.assessment_id;
     const course_instance_id = req.params.course_instance_id;
-    const isAssessmentPublic = await checkAssessmentPublic(assessment_id);
+    const isAssessmentPublic = await selectAssessmentIsPublic(assessment_id);
     if (!isAssessmentPublic) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
 
     const course = await selectCourseByCourseInstanceId(course_instance_id.toString());
     res.locals.course = course;
-    res.locals.assessment = await selectAssessmentById(assessment_id);
+    const assessment = await selectAssessmentById(assessment_id);
 
     const questions = await selectAssessmentQuestions({
       assessment_id,
@@ -39,7 +39,7 @@ router.get(
     res.send(
       PublicAssessmentQuestions({
         resLocals: res.locals,
-        assessment: res.locals.assessment,
+        assessment,
         course,
         course_instance_id,
         questions,

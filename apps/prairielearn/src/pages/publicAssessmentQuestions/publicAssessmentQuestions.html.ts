@@ -32,7 +32,12 @@ export function PublicAssessmentQuestions({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${Navbar({ resLocals })}
+        ${Navbar({
+          resLocals,
+          navPage: 'public_assessment',
+          // navSubPage: 'questions',
+          navbarType: 'public',
+        })}
         <main id="content" class="container">
           ${course.sharing_name
             ? html`
@@ -108,12 +113,12 @@ function AssessmentQuestionsTable({
                 <td>
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {
-                        return html`${AssessmentBadge({
+                        return AssessmentBadge({
                           assessment,
                           plainUrlPrefix: urlPrefix,
                           course_instance_id,
                           publicURL: true,
-                        })}`;
+                        });
                       })
                     : ''}
                 </td>

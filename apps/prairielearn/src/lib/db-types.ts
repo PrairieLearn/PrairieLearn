@@ -115,7 +115,7 @@ export const AssessmentSchema = z.object({
   score_stat_n_zero_perc: z.number(),
   score_stat_number: z.number(),
   score_stat_std: z.number(),
-  share_source_publicly: z.boolean().default(false),
+  share_source_publicly: z.boolean(),
   shuffle_questions: z.boolean().nullable(),
   statistics_last_updated_at: DateFromISOString,
   stats_last_updated: DateFromISOString.nullable(),

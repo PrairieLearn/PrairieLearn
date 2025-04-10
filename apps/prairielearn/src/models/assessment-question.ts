@@ -13,24 +13,6 @@ import {
   ZoneSchema,
 } from '../lib/db-types.js';
 
-export async function selectAssessmentQuestions(params: {
-  assessment_id: string;
-  course_id: string;
-}): Promise<AssessmentQuestionRow[]> {
-  const { assessment_id, course_id } = params;
-
-  const rows = await sqldb.queryRows(
-    sql.select_assessment_questions,
-    {
-      assessment_id,
-      course_id,
-    },
-    AssessmentQuestionRowSchema,
-  );
-
-  return rows;
-}
-
 export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
   alternative_group_number: AlternativeGroupSchema.shape.number,
@@ -57,3 +39,21 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   zone_title: ZoneSchema.shape.title,
 });
 export type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
+
+export async function selectAssessmentQuestions(params: {
+  assessment_id: string;
+  course_id: string;
+}): Promise<AssessmentQuestionRow[]> {
+  const { assessment_id, course_id } = params;
+
+  const rows = await sqldb.queryRows(
+    sql.select_assessment_questions,
+    {
+      assessment_id,
+      course_id,
+    },
+    AssessmentQuestionRowSchema,
+  );
+
+  return rows;
+}
