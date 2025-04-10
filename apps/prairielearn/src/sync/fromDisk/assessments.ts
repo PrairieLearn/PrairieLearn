@@ -118,9 +118,7 @@ function getParamsForAssessment(
         gradeRateMinutes: number;
         jsonGradeRateMinutes: number;
         canView: string[] | null;
-        jsonCanView: string[] | null;
         canSubmit: string[] | null;
-        jsonCanSubmit: string[] | null;
         advanceScorePerc: number;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
@@ -141,9 +139,7 @@ function getParamsForAssessment(
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
-            jsonCanView: alternative.canView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
-            jsonCanSubmit: alternative.canSubmit,
           };
         });
       } else if (question.id) {
@@ -161,9 +157,7 @@ function getParamsForAssessment(
             gradeRateMinutes: questionGradeRateMinutes,
             jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
-            jsonCanView: question.canView,
             canSubmit: questionCanSubmit,
-            jsonCanSubmit: question.canSubmit,
           },
         ];
       }
@@ -223,9 +217,7 @@ function getParamsForAssessment(
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
-          json_can_view: alternative.jsonCanView,
           can_submit: alternative.canSubmit,
-          json_can_submit: alternative.jsonCanSubmit,
           advance_score_perc: alternative.advanceScorePerc,
           effective_advance_score_perc:
             alternative.advanceScorePerc ??
@@ -241,6 +233,9 @@ function getParamsForAssessment(
         number_choose: question.numberChoose,
         advance_score_perc: question.advanceScorePerc,
         json_grade_rate_minutes: question.gradeRateMinutes,
+        json_can_view: question.canView,
+        json_can_submit: question.canSubmit,
+        json_has_alternatives: !!question.alternatives,
         questions,
       };
     });
