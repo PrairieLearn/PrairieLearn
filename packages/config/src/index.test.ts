@@ -4,7 +4,7 @@ import { assert } from 'chai';
 import { withFile } from 'tmp-promise';
 import { z } from 'zod';
 
-import { ConfigLoader, makeLiteralConfigSource, makeFileConfigSource } from './index.js';
+import { ConfigLoader, makeFileConfigSource, makeLiteralConfigSource } from './index.js';
 
 describe('config', () => {
   it('loads config with defaults', async () => {

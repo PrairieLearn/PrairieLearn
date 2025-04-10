@@ -72,7 +72,7 @@ The `info.json` file for each question defines properties of the question. For e
 | `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)                                                |
 | `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                  |
 | `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                  |
-| `shareSourcePublicly`    | boolean | Whether the the source code of the question should be available                                                                                                        |
+| `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                            |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                             |
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoQuestion.json)
@@ -345,7 +345,7 @@ A few special behaviors have been added to enable Markdown to work better within
 
 ## Markdown code blocks
 
-Fenced code blocks (those using triple-backticks ` ``` `) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following markdown:
+Fenced code blocks (those using triple-backticks ` ``` `) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following Markdown:
 
 <!-- prettier-ignore -->
 ````html
@@ -490,7 +490,7 @@ For most elements, there are four different ways of auto-grading the student ans
 3. Write a [custom `grade(data)`](#question-serverpy) function in server.py that checks `data["submitted_answers"][VAR_NAME]` and sets scores. This can do anything, including having multiple correct answers, testing properties of the submitted answer for correctness, compute correct answers of some elements based on the value of other elements, etc.
 4. Write an [external grader](externalGrading.md), though this is typically applied to more complex questions like coding.
 
-If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements.md#pl-answer-panel-element) that any correct answer would be accepted and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
+If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements.md#pl-answer-panel-element) that any correct answer would be accepted, and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
 
 ### Custom grading best practices
 
@@ -514,7 +514,7 @@ def grade(data):
     set_weighted_score_data(data)
 ```
 
-More detailed information can be found in the docstrings for these functions. If you would prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
+More detailed information can be found in the docstrings for these functions. If you prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
 
 To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#question-serverpy) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feedback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
 

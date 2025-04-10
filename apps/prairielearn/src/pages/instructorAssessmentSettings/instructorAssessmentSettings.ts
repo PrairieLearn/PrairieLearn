@@ -15,8 +15,8 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { AssessmentModuleSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
 import {
   AssessmentCopyEditor,
-  AssessmentRenameEditor,
   AssessmentDeleteEditor,
+  AssessmentRenameEditor,
   FileModifyEditor,
   MultiEditor,
 } from '../../lib/editors.js';

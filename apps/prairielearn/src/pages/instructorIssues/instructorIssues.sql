@@ -34,6 +34,7 @@ WITH
       issues AS i
       LEFT JOIN questions AS q ON (q.id = i.question_id)
       LEFT JOIN users AS u ON (u.user_id = i.user_id)
+      LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
     WHERE
       i.course_id = $course_id
       AND (
@@ -67,6 +68,14 @@ WITH
       AND (
         $filter_not_users::text[] IS NULL
         OR u.uid NOT ILIKE ANY ($filter_not_users::text[])
+      )
+      AND (
+        $filter_assessments::text[] IS NULL
+        OR a.tid ILIKE ANY ($filter_assessments::text[])
+      )
+      AND (
+        $filter_not_assessments::text[] IS NULL
+        OR a.tid NOT ILIKE ANY ($filter_not_assessments::text[])
       )
       AND (
         $filter_query_text::text IS NULL
