@@ -23,7 +23,7 @@
       "source.fixAll.eslint": "explicit"
     }
   },
-  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][markdown][toml][shellscript]": {
+  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][markdown][toml][shellscript][dockerfile]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },

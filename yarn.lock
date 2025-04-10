@@ -4305,6 +4305,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@reteps/dockerfmt@npm:^0.2.5":
+  version: 0.2.6
+  resolution: "@reteps/dockerfmt@npm:0.2.6"
+  checksum: 10c0/753a4bfa34f84b4e13346d251337aeaa968a3988b05f61fcbca97b22d56107c42db034859fd10f0dc7e9c299fa3a0fe3fcec6382697073cf9f8bfb1a96862256
+  languageName: node
+  linkType: hard
+
 "@sa11y/common@npm:7.0.0":
   version: 7.0.0
   resolution: "@sa11y/common@npm:7.0.0"
@@ -13043,13 +13050,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mvdan-sh@npm:^0.10.1":
-  version: 0.10.1
-  resolution: "mvdan-sh@npm:0.10.1"
-  checksum: 10c0/cfdd3c6429aad170014892f7934ff60a4418b32e4c14db10f0d3cfb7743f37385e2a3a8c58c65b7c4fbfe44838d9e8cf8c93897b9763a08224c32957a72621c0
-  languageName: node
-  linkType: hard
-
 "nan@npm:^2.14.0, nan@npm:^2.17.0, nan@npm:^2.18.0, nan@npm:^2.22.2":
   version: 2.22.2
   resolution: "nan@npm:2.22.2"
@@ -14102,7 +14102,7 @@ __metadata:
     node-gyp: "npm:^11.2.0"
     prettier: "npm:^3.5.3"
     prettier-plugin-pkg: "npm:^0.18.1"
-    prettier-plugin-sh: "npm:^0.16.0"
+    prettier-plugin-sh: "npm:^0.17.1"
     prettier-plugin-toml: "npm:^2.0.3"
     pyright: "npm:^1.1.398"
     s3rver: "npm:^3.7.1"
@@ -14134,15 +14134,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier-plugin-sh@npm:^0.16.0":
-  version: 0.16.0
-  resolution: "prettier-plugin-sh@npm:0.16.0"
+"prettier-plugin-sh@npm:^0.17.1":
+  version: 0.17.1
+  resolution: "prettier-plugin-sh@npm:0.17.1"
   dependencies:
-    mvdan-sh: "npm:^0.10.1"
-    sh-syntax: "npm:^0.4.2"
+    "@reteps/dockerfmt": "npm:^0.2.5"
+    sh-syntax: "npm:^0.5.6"
   peerDependencies:
     prettier: ^3.0.3
-  checksum: 10c0/d83a6716d271f24da006c0bbe08fb3be18ebcf6e88cddb0d83af8c4377a04ad718e7cbd9bfb2e80e1e3f12008c920888e06c68c9f5bbe8233bf0e4e8b6de4a82
+  checksum: 10c0/f4746fe95d8f6b0ea4c5cae0029db4207a7567e32e29a571aaed0b2110a223fb5c0d5d191cf84ea3d33c4697df39e2eeb5d6b423050420ed05ba57f0ef86f684
   languageName: node
   linkType: hard
 
@@ -15065,12 +15065,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sh-syntax@npm:^0.4.2":
-  version: 0.4.2
-  resolution: "sh-syntax@npm:0.4.2"
+"sh-syntax@npm:^0.5.6":
+  version: 0.5.6
+  resolution: "sh-syntax@npm:0.5.6"
   dependencies:
-    tslib: "npm:^2.6.2"
-  checksum: 10c0/0bfe3b3ffcfa7b59a91d432e2f77e6cd4ccb0f267fe6fcce95b9be4ddf34169a8e2721060e067385574e3248818860b682af24b1cb4b5803167e1666bc6fec24
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/0a545ca724da66b97ab24e01e39e46fe3d3819350c687a278bf147328c144a62b2c3632daeb87eb84dba705ef3d81ba46d5bb684cf77355411520153301502cd
   languageName: node
   linkType: hard
 
