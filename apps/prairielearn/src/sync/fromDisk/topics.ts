@@ -12,6 +12,7 @@ interface DesiredTopic {
   name: string;
   color: string;
   description?: string | null;
+  comment?: string;
 }
 
 export async function sync(courseId: string, courseData: CourseData) {
@@ -63,7 +64,7 @@ export async function sync(courseId: string, courseData: CourseData) {
         await queryAsync(sql.insert_topics, {
           course_id: courseId,
           topics: topicsToCreate.map((t) =>
-            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
           ),
         });
       }
@@ -72,7 +73,7 @@ export async function sync(courseId: string, courseData: CourseData) {
         await queryAsync(sql.update_topics, {
           course_id: courseId,
           topics: topicsToUpdate.map((t) =>
-            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
           ),
         });
       }

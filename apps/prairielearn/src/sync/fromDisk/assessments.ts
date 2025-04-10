@@ -79,6 +79,7 @@ function getParamsForAssessment(
         show_closed_assessment: accessRule.showClosedAssessment ?? true,
         show_closed_assessment_score: accessRule.showClosedAssessmentScore ?? true,
         active: accessRule.active ?? true,
+        comment: accessRule.comment ?? null,
       };
     });
 
@@ -90,6 +91,7 @@ function getParamsForAssessment(
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
+      comment: zone.comment,
     };
   });
 
@@ -116,6 +118,7 @@ function getParamsForAssessment(
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number;
+        comment: string | null;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -135,6 +138,7 @@ function getParamsForAssessment(
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
+            comment: alternative.comment ?? null,
           };
         });
       } else if (question.id) {
@@ -152,6 +156,7 @@ function getParamsForAssessment(
             gradeRateMinutes: questionGradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
+            comment: question.comment ?? null,
           },
         ];
       }
@@ -218,6 +223,7 @@ function getParamsForAssessment(
             zone.advanceScorePerc ??
             assessment.advanceScorePerc ??
             0,
+          comment: alternative.comment,
         };
       });
 
@@ -226,6 +232,7 @@ function getParamsForAssessment(
         number_choose: question.numberChoose,
         advance_score_perc: question.advanceScorePerc,
         questions,
+        comment: question.id ? null : question.comment,
       };
     });
   });
@@ -265,6 +272,7 @@ function getParamsForAssessment(
     student_group_join: !!assessment.studentGroupJoin,
     student_group_leave: !!assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
+    comment: assessment.comment,
     has_roles: !!assessment.groupRoles,
     allowAccess,
     zones,

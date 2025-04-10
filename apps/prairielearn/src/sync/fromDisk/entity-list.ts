@@ -61,7 +61,13 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
   entitiesToUpdate: DesiredEntity<Entity>[];
   entitiesToDelete: string[];
 } {
-  const fullComparisonProperties = ['name', 'number', 'implicit', ...comparisonProperties];
+  const fullComparisonProperties = [
+    'name',
+    'number',
+    'implicit',
+    'comment',
+    ...comparisonProperties,
+  ];
 
   const existingEntitiesMap = new Map(existingEntities.map((entity) => [entity.name, entity]));
   const desiredEntities = new Map<string, DesiredEntity<Entity>>();

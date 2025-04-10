@@ -1,3 +1,6 @@
+ALTER TABLE alternative_groups
+ADD COLUMN json_comment text;
+
 ALTER TABLE assessment_access_rules
 ADD COLUMN json_comment text;
 
