@@ -48,28 +48,34 @@ export function getInvalidRenames(
   return existInvalidRenames;
 }
 
-export function checkInvalidPublicSharingRemovals(
+export async function checkInvalidPublicSharingRemovals(
   sharedQuestions: SharedQuestion[],
   courseData: CourseData,
   logger: ServerJobLogger,
-): boolean {
+): Promise<boolean> {
   const invalidUnshares: string[] = [];
-  sharedQuestions.forEach((question) => {
+  for (const question of sharedQuestions) {
     if (!question.share_publicly) {
-      return;
+      continue;
     }
 
-    // TODO: allow if question is not used in anyone else's assessments
-    const questionData = courseData.questions[question.qid].data;
+    const questionData = courseData.questions[question.qid]?.data;
     if (!questionData?.sharePublicly) {
-      invalidUnshares.push(question.qid);
+      // Check if the question is being used in other courses' assessments
+      const isUsedInOtherCourses = await checkQuestionUsedInOtherCourses(
+        question.id,
+        courseData.course.data?.id,
+      );
+      if (isUsedInOtherCourses) {
+        invalidUnshares.push(question.qid);
+      }
     }
-  });
+  }
 
   const existInvalidUnshares = invalidUnshares.length > 0;
   if (existInvalidUnshares) {
     logger.error(
-      `✖ Course sync completely failed. The following questions are are publicly shared and cannot be unshared: ${invalidUnshares.join(', ')}`,
+      `✖ Course sync completely failed. The following questions are publicly shared and cannot be unshared because they are being used in other courses' assessments: ${invalidUnshares.join(', ')}`,
     );
   }
   return existInvalidUnshares;
@@ -223,4 +229,15 @@ export function checkInvalidDraftQuestionSharing(
   }
 
   return draftQuestionsWithSharingSets.length > 0 || draftQuestionsWithPublicSharing.length > 0;
+}
+
+export async function checkQuestionUsedInOtherCourses(
+  questionId: string,
+  courseId: string,
+): Promise<boolean> {
+  return await sqldb.queryRow(
+    sql.check_question_used_in_other_courses,
+    { question_id: questionId, course_id: courseId },
+    z.boolean(),
+  );
 }
