@@ -92,12 +92,12 @@ describe('Auto-test questions in exampleCourse', () => {
     before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
     after('shut down testing server', helperServer.after);
 
-    const originalProcessQuestionsInWorker = config.features['process-questions-in-server'];
+    const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
     before('enable process-questions-in-server', () => {
       config.features['process-questions-in-server'] = true;
     });
     after('restore process-questions-in-server', () => {
-      config.features['process-questions-in-server'] = originalProcessQuestionsInWorker;
+      config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
     });
 
     // Only test the first 10 questions so that this test doesn't take too long.
