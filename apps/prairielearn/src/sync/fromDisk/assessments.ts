@@ -91,6 +91,7 @@ function getParamsForAssessment(
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
+      grade_rate_minutes: zone.gradeRateMinutes,
       comment: zone.comment,
     };
   });
@@ -115,6 +116,7 @@ function getParamsForAssessment(
         forceMaxPoints: boolean;
         triesPerVariant: number;
         gradeRateMinutes: number;
+        jsonGradeRateMinutes: number;
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number;
@@ -136,6 +138,7 @@ function getParamsForAssessment(
             triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant ?? 1,
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
+            jsonGradeRateMinutes: alternative.gradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
             comment: alternative.comment ?? null,
@@ -154,6 +157,7 @@ function getParamsForAssessment(
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
+            jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             comment: question.comment ?? null,
@@ -212,6 +216,7 @@ function getParamsForAssessment(
           force_max_points: alternative.forceMaxPoints,
           tries_per_variant: alternative.triesPerVariant,
           grade_rate_minutes: alternative.gradeRateMinutes,
+          json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
@@ -231,6 +236,7 @@ function getParamsForAssessment(
         number: alternativeGroupNumber,
         number_choose: question.numberChoose,
         advance_score_perc: question.advanceScorePerc,
+        json_grade_rate_minutes: question.gradeRateMinutes,
         questions,
         comment: question.id ? null : question.comment,
       };
@@ -278,6 +284,7 @@ function getParamsForAssessment(
     zones,
     alternativeGroups,
     groupRoles,
+    grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
   };
