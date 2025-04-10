@@ -160,21 +160,23 @@ def build_image(
                 image,
             ])
 
+        cache_ref = f"{image}:buildcache-{platform.replace('/', '-')}"
+
         if cache_strategy == "pull":
             # We just want to pull from the cache.
             args.extend([
                 "--pull",  # Always attempt to pull all referenced images
                 "--cache-from",
-                f"type=registry,ref={image}:buildcache-{platform.replace('/', '-')}",
+                f"type=registry,ref={cache_ref}",
             ])
         elif cache_strategy == "update":
             # We want to not only pull from the cache, but also push to it.
             args.extend([
                 "--pull",  # Always attempt to pull all referenced images
                 "--cache-from",
-                f"type=registry,ref={image}:buildcache-{platform.replace('/', '-')}",
+                f"type=registry,ref={cache_ref}",
                 "--cache-to",
-                f"type=registry,ref={image}:buildcache-{platform.replace('/', '-')},mode=max",
+                f"type=registry,ref={cache_ref},mode=max",
             ])
         else:
             args.extend([
