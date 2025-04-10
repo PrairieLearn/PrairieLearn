@@ -29,6 +29,6 @@ while read -r COVERAGE_REPORT; do
     RELATIVE_PATH=$(echo $COVERAGE_REPORT | sed 's/\/PrairieLearn\///')
     HOST_COVERAGE_REPORT=$ROOT_DIR/$RELATIVE_PATH
     echo "Copying $COVERAGE_REPORT to $HOST_COVERAGE_REPORT"
-    mkdir -p $(dirname $HOST_COVERAGE_REPORT)
+    mkdir -p "$(dirname $HOST_COVERAGE_REPORT)"
     docker container cp $CONTAINER_NAME:$COVERAGE_REPORT $HOST_COVERAGE_REPORT
 done < /tmp/coverage_reports.txt

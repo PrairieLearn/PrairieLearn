@@ -78,7 +78,7 @@ END
 
 echo_and_eval() {
     echo "$@"
-    eval "$@"
+    "$@"
 }
 
 echo_and_eval $DOCKEREXEC
