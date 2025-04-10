@@ -29,15 +29,9 @@ chmod 0755 /usr/local/bin/pl-gosu-helper.sh
 # Install all Python dependencies.
 pip3 install -r /requirements.txt
 
-# This extension must be installed with `conda` and not `pip`. We don't know
-# exactly why that is. See the following GitHub issue for more background:
-# https://github.com/jupyterlab/jupyter-collaboration/issues/462
-conda install --yes jupyter-collaboration==3.1.0
-
 # Clear various caches to minimize the final image size.
 apt-get clean
 pip3 cache purge
-conda clean --all
 
 # Suppress the opt-in dialog for announcements.
 # https://stackoverflow.com/questions/75511508/how-to-stop-this-message-would-you-like-to-receive-official-jupyter-news
