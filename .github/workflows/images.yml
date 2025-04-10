@@ -36,6 +36,7 @@ jobs:
     with:
       group: graders
       images: prairielearn/grader-c,prairielearn/grader-java,prairielearn/grader-python,prairielearn/grader-r
+      cache_images: prairielearn/grader-c,prairielearn/grader-python
     secrets: inherit
 
   build-core-images:
@@ -43,6 +44,7 @@ jobs:
     with:
       group: core
       images: prairielearn/plbase,prairielearn/prairielearn,prairielearn/executor
+      cache_images: prairielearn/prairielearn
     secrets: inherit
 
   report-image-sizes:
