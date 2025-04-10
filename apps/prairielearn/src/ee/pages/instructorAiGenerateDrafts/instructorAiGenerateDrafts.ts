@@ -97,8 +97,6 @@ router.post(
         courseId: res.locals.course.id,
         authnUserId: res.locals.authn_user.user_id,
         promptGeneral: req.body.prompt,
-        promptUserInput: req.body.prompt_user_input,
-        promptGrading: req.body.prompt_grading,
         userId: res.locals.authn_user.user_id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
