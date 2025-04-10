@@ -1,4 +1,9 @@
-"""Utility functions for parsing and evaluating SymPy expressions."""
+"""Utility functions for parsing and evaluating SymPy expressions.
+
+```python
+from prairielearn.sympy_utils import ...
+```
+"""
 
 import ast
 import copy

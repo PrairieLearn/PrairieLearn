@@ -1,4 +1,9 @@
-"""Utilities for working with unicode strings."""
+"""Utilities for working with unicode strings.
+
+```python
+from prairielearn import ...
+```
+"""
 
 import unicodedata
 
