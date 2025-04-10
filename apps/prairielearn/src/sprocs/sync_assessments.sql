@@ -167,6 +167,7 @@ BEGIN
             allow_personal_notes = (valid_assessment.data->>'allow_personal_notes')::boolean,
             group_work = (valid_assessment.data->>'group_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
+            json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision,
             json_can_view = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_view')),
             json_can_submit = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_submit')),
             sync_errors = NULL,
@@ -325,6 +326,7 @@ BEGIN
                 number_choose,
                 best_questions,
                 advance_score_perc,
+                json_grade_rate_minutes,
                 json_can_view,
                 json_can_submit
             )
@@ -336,6 +338,7 @@ BEGIN
                 (zone->>'number_choose')::integer,
                 (zone->>'best_questions')::integer,
                 (zone->>'advance_score_perc')::double precision,
+                (zone->>'grade_rate_minutes')::double precision,
                 ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_view')),
                 ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_submit'))
             )
@@ -346,6 +349,7 @@ BEGIN
                 number_choose = EXCLUDED.number_choose,
                 best_questions = EXCLUDED.best_questions,
                 advance_score_perc = EXCLUDED.advance_score_perc,
+                json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
                 json_can_view = EXCLUDED.json_can_view,
                 json_can_submit = EXCLUDED.json_can_submit
             RETURNING id INTO new_zone_id;
@@ -357,18 +361,21 @@ BEGIN
                     number_choose,
                     advance_score_perc,
                     assessment_id,
-                    zone_id
+                    zone_id,
+                    json_grade_rate_minutes
                 ) VALUES (
                     (alternative_group->>'number')::integer,
                     (alternative_group->>'number_choose')::integer,
                     (alternative_group->>'advance_score_perc')::double precision,
                     new_assessment_id,
-                    new_zone_id
+                    new_zone_id,
+                    (alternative_group->>'json_grade_rate_minutes')::double precision
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
                     number_choose = EXCLUDED.number_choose,
                     zone_id = EXCLUDED.zone_id,
-                    advance_score_perc = EXCLUDED.advance_score_perc
+                    advance_score_perc = EXCLUDED.advance_score_perc,
+                    json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes
                 RETURNING id INTO new_alternative_group_id;
 
                 -- Insert an assessment question for each question in this alternative group
@@ -414,6 +421,7 @@ BEGIN
                         force_max_points,
                         tries_per_variant,
                         grade_rate_minutes,
+                        json_grade_rate_minutes,
                         deleted_at,
                         assessment_id,
                         question_id,
@@ -433,6 +441,7 @@ BEGIN
                         (assessment_question->>'force_max_points')::boolean,
                         (assessment_question->>'tries_per_variant')::integer,
                         (assessment_question->>'grade_rate_minutes')::double precision,
+                        (assessment_question->>'json_grade_rate_minutes')::double precision,
                         NULL,
                         new_assessment_id,
                         new_question_id,
@@ -453,6 +462,7 @@ BEGIN
                         force_max_points = EXCLUDED.force_max_points,
                         tries_per_variant = EXCLUDED.tries_per_variant,
                         grade_rate_minutes = EXCLUDED.grade_rate_minutes,
+                        json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
                         deleted_at = EXCLUDED.deleted_at,
                         alternative_group_id = EXCLUDED.alternative_group_id,
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,

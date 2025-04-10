@@ -1,4 +1,5 @@
 FROM amazonlinux:2023
+ARG CACHEBUST=2025-04-04-17-34-59
 
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
