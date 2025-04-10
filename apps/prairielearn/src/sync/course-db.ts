@@ -194,6 +194,7 @@ interface Tag {
   name: string;
   color: string;
   description?: string;
+  comment?: string;
 }
 
 interface SharingSet {
@@ -205,6 +206,7 @@ interface Topic {
   name: string;
   color: string;
   description?: string;
+  comment?: string;
 }
 
 interface AssessmentSet {
@@ -212,6 +214,7 @@ interface AssessmentSet {
   name: string;
   heading: string;
   color: string;
+  comment?: string;
 }
 
 interface AssessmentModule {
@@ -232,6 +235,7 @@ interface Course {
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
   sharingSets?: SharingSet[];
+  comment?: string;
 }
 
 interface CourseInstanceAllowAccess {
@@ -240,6 +244,7 @@ interface CourseInstanceAllowAccess {
   startDate: string;
   endDate: string;
   institution: string;
+  comment?: string;
 }
 
 export interface CourseInstance {
@@ -253,6 +258,7 @@ export interface CourseInstance {
   allowAccess: CourseInstanceAllowAccess[];
   allowIssueReporting: boolean;
   groupAssessmentsBy: 'Set' | 'Module';
+  comment?: string;
 }
 
 export interface AssessmentAllowAccess {
@@ -268,6 +274,7 @@ export interface AssessmentAllowAccess {
   password: string;
   showClosedAssessment: boolean;
   showClosedAssessmentScore: boolean;
+  comment?: string;
 }
 
 interface QuestionAlternative {
@@ -283,6 +290,7 @@ interface QuestionAlternative {
   gradeRateMinutes: number;
   canView: string[];
   canSubmit: string[];
+  comment?: string;
 }
 
 interface ZoneQuestion {
@@ -300,6 +308,7 @@ interface ZoneQuestion {
   gradeRateMinutes: number;
   canView: string[];
   canSubmit: string[];
+  comment?: string;
 }
 
 interface Zone {
@@ -312,6 +321,7 @@ interface Zone {
   gradeRateMinutes: number;
   canView: string[];
   canSubmit: string[];
+  comment?: string;
 }
 
 interface GroupRole {
@@ -352,6 +362,7 @@ export interface Assessment {
   gradeRateMinutes: number;
   requireHonorCode: boolean;
   allowPersonalNotes: boolean;
+  comment?: string;
 }
 
 interface QuestionExternalGradingOptions {
@@ -362,6 +373,7 @@ interface QuestionExternalGradingOptions {
   timeout: number;
   enableNetworking: boolean;
   environment: Record<string, string | null>;
+  comment?: string;
 }
 
 interface QuestionWorkspaceOptions {
@@ -373,6 +385,7 @@ interface QuestionWorkspaceOptions {
   rewriteUrl: string;
   enableNetworking: boolean;
   environment: Record<string, string | null>;
+  comment?: string;
 }
 
 export interface Question {
@@ -397,6 +410,7 @@ export interface Question {
   sharingSets?: string[];
   sharePublicly: boolean;
   shareSourcePublicly: boolean;
+  comment?: string;
 }
 
 export interface CourseInstanceData {
@@ -851,6 +865,7 @@ export async function loadCourseInfo({
       useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
+    comment: info.comment,
   };
 
   loadedData.data = course;

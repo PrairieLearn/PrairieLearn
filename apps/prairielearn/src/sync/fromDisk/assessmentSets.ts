@@ -13,6 +13,7 @@ interface DesiredAssessmentSet {
   abbreviation: string;
   heading: string;
   color: string;
+  comment?: string;
 }
 
 export async function sync(courseId: string, courseData: CourseData) {
@@ -94,6 +95,7 @@ export async function sync(courseId: string, courseData: CourseData) {
               as.color,
               as.number,
               as.implicit,
+              as.comment,
             ]),
           ),
         });
@@ -110,6 +112,7 @@ export async function sync(courseId: string, courseData: CourseData) {
               as.color,
               as.number,
               as.implicit,
+              as.comment,
             ]),
           ),
         });

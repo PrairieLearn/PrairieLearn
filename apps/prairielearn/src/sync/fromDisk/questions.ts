@@ -41,6 +41,7 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
     grading_method: q.gradingMethod || 'Internal',
     single_variant: !!q.singleVariant,
     show_correct_answer: q.showCorrectAnswer === undefined ? true : q.showCorrectAnswer,
+    comment: q.comment,
     external_grading_enabled: q.externalGradingOptions && q.externalGradingOptions.enabled,
     external_grading_image: q.externalGradingOptions && q.externalGradingOptions.image,
     external_grading_files: q.externalGradingOptions && q.externalGradingOptions.serverFilesCourse,
@@ -49,6 +50,7 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
     external_grading_enable_networking:
       q.externalGradingOptions && q.externalGradingOptions.enableNetworking,
     external_grading_environment: q.externalGradingOptions?.environment ?? {},
+    external_grading_comment: q.externalGradingOptions?.comment,
     dependencies: q.dependencies || {},
     workspace_image: q.workspaceOptions && q.workspaceOptions.image,
     workspace_port: q.workspaceOptions && q.workspaceOptions.port,
@@ -58,6 +60,7 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
     workspace_url_rewrite: q.workspaceOptions && q.workspaceOptions.rewriteUrl,
     workspace_enable_networking: q.workspaceOptions && q.workspaceOptions.enableNetworking,
     workspace_environment: q.workspaceOptions?.environment ?? {},
+    workspace_comment: q.workspaceOptions?.comment,
     share_publicly: q.sharePublicly ?? false,
     share_source_publicly: q.shareSourcePublicly ?? false,
   };

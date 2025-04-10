@@ -19,6 +19,7 @@ interface DesiredTag {
   name: string;
   color: string;
   description?: string | null;
+  comment?: string;
 }
 
 export async function sync(
@@ -75,7 +76,7 @@ export async function sync(
           {
             course_id: courseId,
             tags: tagsToCreate.map((t) =>
-              JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+              JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
             ),
           },
           TagSchema,
@@ -86,7 +87,7 @@ export async function sync(
         await queryAsync(sql.update_tags, {
           course_id: courseId,
           tags: tagsToUpdate.map((t) =>
-            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
           ),
         });
       }

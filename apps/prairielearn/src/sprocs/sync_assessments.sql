@@ -168,6 +168,7 @@ BEGIN
             group_work = (valid_assessment.data->>'group_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision,
+            json_comment = (valid_assessment.data->>'comment')::text,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
         FROM
@@ -270,7 +271,8 @@ BEGIN
                 end_date,
                 show_closed_assessment,
                 show_closed_assessment_score,
-                active)
+                active,
+                json_comment)
             (
                 SELECT
                     new_assessment_id,
@@ -285,7 +287,8 @@ BEGIN
                     input_date(access_rule->>'end_date', ci.display_timezone),
                     (access_rule->>'show_closed_assessment')::boolean,
                     (access_rule->>'show_closed_assessment_score')::boolean,
-                    (access_rule->>'active')::boolean
+                    (access_rule->>'active')::boolean,
+                    (access_rule->>'comment')::text
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -304,7 +307,8 @@ BEGIN
                 end_date = EXCLUDED.end_date,
                 show_closed_assessment = EXCLUDED.show_closed_assessment,
                 show_closed_assessment_score = EXCLUDED.show_closed_assessment_score,
-                active = EXCLUDED.active;
+                active = EXCLUDED.active,
+                json_comment = EXCLUDED.json_comment;
         END LOOP;
 
         -- Delete excess access rules
@@ -324,7 +328,8 @@ BEGIN
                 number_choose,
                 best_questions,
                 advance_score_perc,
-                json_grade_rate_minutes
+                json_grade_rate_minutes,
+                json_comment
             )
             VALUES (
                 new_assessment_id,
@@ -334,7 +339,8 @@ BEGIN
                 (zone->>'number_choose')::integer,
                 (zone->>'best_questions')::integer,
                 (zone->>'advance_score_perc')::double precision,
-                (zone->>'grade_rate_minutes')::double precision
+                (zone->>'grade_rate_minutes')::double precision,
+                (zone->>'comment')::text
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
@@ -343,7 +349,8 @@ BEGIN
                 number_choose = EXCLUDED.number_choose,
                 best_questions = EXCLUDED.best_questions,
                 advance_score_perc = EXCLUDED.advance_score_perc,
-                json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes
+                json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
+                json_comment = EXCLUDED.json_comment
             RETURNING id INTO new_zone_id;
 
             -- Insert each alternative group in this zone
@@ -354,20 +361,23 @@ BEGIN
                     advance_score_perc,
                     assessment_id,
                     zone_id,
-                    json_grade_rate_minutes
+                    json_grade_rate_minutes,
+                    json_comment
                 ) VALUES (
                     (alternative_group->>'number')::integer,
                     (alternative_group->>'number_choose')::integer,
                     (alternative_group->>'advance_score_perc')::double precision,
                     new_assessment_id,
                     new_zone_id,
-                    (alternative_group->>'json_grade_rate_minutes')::double precision
+                    (alternative_group->>'json_grade_rate_minutes')::double precision,
+                    (alternative_group->>'comment')::text
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
                     number_choose = EXCLUDED.number_choose,
                     zone_id = EXCLUDED.zone_id,
                     advance_score_perc = EXCLUDED.advance_score_perc,
-                    json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes
+                    json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
+                    json_comment = EXCLUDED.json_comment
                 RETURNING id INTO new_alternative_group_id;
 
                 -- Insert an assessment question for each question in this alternative group
@@ -420,7 +430,8 @@ BEGIN
                         alternative_group_id,
                         number_in_alternative_group,
                         advance_score_perc,
-                        effective_advance_score_perc
+                        effective_advance_score_perc,
+                        json_comment
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
@@ -438,7 +449,8 @@ BEGIN
                         new_alternative_group_id,
                         (assessment_question->>'number_in_alternative_group')::integer,
                         (assessment_question->>'advance_score_perc')::double precision,
-                        (assessment_question->>'effective_advance_score_perc')::double precision
+                        (assessment_question->>'effective_advance_score_perc')::double precision,
+                        (assessment_question->>'comment')::text
                     ) ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
@@ -456,7 +468,8 @@ BEGIN
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,
                         question_id = EXCLUDED.question_id,
                         advance_score_perc = EXCLUDED.advance_score_perc,
-                        effective_advance_score_perc = EXCLUDED.effective_advance_score_perc
+                        effective_advance_score_perc = EXCLUDED.effective_advance_score_perc,
+                        json_comment = EXCLUDED.json_comment
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 
