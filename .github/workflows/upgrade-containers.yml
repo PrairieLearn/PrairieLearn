@@ -3,10 +3,8 @@ name: Upgrade Containers
 on:
   workflow_dispatch:
   schedule:
-    # At 12:00 (for testing)
-    - cron: '0 12 * * *'
-    # At 12:00 on day-of-month 15.
-    # - cron: '0 12 15 * *'
+    # At 14:00 (8am CST, 9am CDT) on day-of-month 15.
+    - cron: '0 14 15 * *'
 
 jobs:
   upgrade-containers:
