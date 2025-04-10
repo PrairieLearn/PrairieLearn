@@ -47,7 +47,7 @@ source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
 nvm install 20
 npm install yarn@latest -g
-for f in /nvm/current/bin/* ; do ln -s $f "/usr/local/bin/$(basename $f)" ; done
+for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 
 echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
