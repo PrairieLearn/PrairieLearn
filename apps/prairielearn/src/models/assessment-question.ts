@@ -40,12 +40,13 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
 });
 export type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
 
-export async function selectAssessmentQuestions(params: {
+export async function selectAssessmentQuestions({
+  assessment_id,
+  course_id,
+}: {
   assessment_id: string;
   course_id: string;
 }): Promise<AssessmentQuestionRow[]> {
-  const { assessment_id, course_id } = params;
-
   const rows = await sqldb.queryRows(
     sql.select_assessment_questions,
     {

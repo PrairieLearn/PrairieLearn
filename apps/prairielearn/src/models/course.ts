@@ -13,7 +13,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { type Course, CourseSchema, IdSchema } from '../lib/db-types.js';
+import { type Course, CourseSchema } from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';
 
@@ -41,17 +41,12 @@ export async function selectCourseById(course_id: string): Promise<Course> {
 }
 
 export async function selectCourseByCourseInstanceId(course_instance_id: string): Promise<Course> {
-  const course_id = await selectCourseIdByInstanceId(course_instance_id);
-  return await selectCourseById(course_id);
-}
-
-export async function selectCourseIdByInstanceId(course_instance_id: string): Promise<string> {
   return await queryRow(
-    sql.select_course_id_by_instance_id,
+    sql.select_course_by_instance_id,
     {
       course_instance_id,
     },
-    IdSchema,
+    CourseSchema,
   );
 }
 
