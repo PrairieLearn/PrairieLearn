@@ -124,6 +124,8 @@ def build_image(
     base_image_digest: str | None = None,
     metadata_dir: str | None = None,
     cache_strategy: CacheStrategy = "none",
+    cache_only: list[str]
+    | None = None,  # Only will use the cache strategy for these images -- all others will be built with cache_strategy="none".
 ) -> str:
     """Builds a Docker image. Returns the digest of the built image."""
     base_image = BASE_IMAGE_MAPPING.get(image)
@@ -162,14 +164,16 @@ def build_image(
 
         cache_ref = f"{image}:buildcache-{platform.replace('/', '-')}"
 
-        if cache_strategy == "pull":
+        should_cache = cache_only is not None and image in cache_only
+
+        if cache_strategy == "pull" and should_cache:
             # We just want to pull from the cache.
             args.extend([
                 "--pull",  # Always attempt to pull all referenced images
                 "--cache-from",
                 f"type=registry,ref={cache_ref}",
             ])
-        elif cache_strategy == "update":
+        elif cache_strategy == "update" and should_cache:
             # We want to not only pull from the cache, but also push to it.
             args.extend([
                 "--pull",  # Always attempt to pull all referenced images
@@ -223,6 +227,7 @@ def build_images(
     only_changed: bool = False,
     metadata_dir: str | None = None,
     cache_strategy: CacheStrategy = "none",
+    cache_only: list[str] | None = None,
 ) -> None:
     validate_image_order(images)
 
@@ -247,6 +252,7 @@ def build_images(
             base_image_digest=base_image_digest,
             metadata_dir=metadata_dir,
             cache_strategy=cache_strategy,
+            cache_only=cache_only,
         )
 
         image_digests[image] = digest
@@ -258,6 +264,12 @@ if __name__ == "__main__":
     should_push = os.environ.get("PUSH_IMAGES", "false").lower() == "true"
     only_changed = os.environ.get("ONLY_CHANGED", "false").lower() == "true"
     cache_strategy = os.environ.get("CACHE_STRATEGY", "none").lower()
+    cache_only_str = os.environ.get("CACHE_ONLY", "")
+    if cache_only_str:
+        cache_only = cache_only_str.split(",")
+    else:
+        cache_only = None
+
     if cache_strategy not in get_args(CacheStrategy):
         raise ValueError(f"Invalid cache strategy: {cache_strategy}")
     cache_strategy = cast(CacheStrategy, cache_strategy)
@@ -290,4 +302,5 @@ if __name__ == "__main__":
             only_changed=only_changed,
             metadata_dir=metadata_dir,
             cache_strategy=cache_strategy,
+            cache_only=cache_only,
         )
