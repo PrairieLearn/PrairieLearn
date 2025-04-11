@@ -1,142 +1,11 @@
-// import { assert } from 'chai';
-//  import * as cheerio from 'cheerio';
-//  // import { promisify } from 'util';
-//  import fetch from 'node-fetch';
-
-//  import * as sqldb from '@prairielearn/postgres'
-
-//  import { config } from '../lib/config.js';
-
-
-// import * as helperQuestion from './helperQuestion.js';
-//  import * as helperServer from './helperServer.js';
-// // import { fetchCheerio } from './helperClient.js';
-
-//  // const requestAsync = await fetch()
-//  // const sql = sqlLoader.loadSqlEquiv(__filename);
-//  const sql = sqldb.loadSqlEquiv(import.meta.url)
-//  interface Question {
-//    qid: string;
-//    type: string;
-//    id?: number;
-//    url?: string;
-//    points?: number;
-//  }
-
-//  const locals: {
-//    [key: string]: any;
-//    siteUrl?: string;
-//    baseUrl?: string;
-//    courseBaseUrl?: string;
-//    courseInstanceBaseUrl?: string;
-//    instructorBaseUrl?: string;
-//    instructorAssessmentsUrl?: string;
-//    instructorGradebookUrl?: string;
-//    questionBaseUrl?: string;
-//    assessmentsUrl?: string;
-//    isStudentPage?: boolean;
-//    totalPoints?: number;
-//    questions?: Question[];
-//    assessment_id?: string;
-//    assessmentInstanceUrl?: string;
-//    assessmentUrl?: string;
-//    instance_questions?: Question[];
-//  } = {};
-
-//  locals.siteUrl = `http://localhost:${config.serverPort}`;
-//  locals.baseUrl = `${locals.siteUrl}/pl`;
-//  locals.courseBaseUrl = `${locals.baseUrl}/course/1`;
-//  locals.courseInstanceBaseUrl = `${locals.baseUrl}/course_instance/1`;
-//  locals.instructorBaseUrl = `${locals.courseInstanceBaseUrl}/instructor`;
-//  locals.instructorAssessmentsUrl = `${locals.instructorBaseUrl}/instance_admin/assessments`;
-//  locals.instructorGradebookUrl = `${locals.instructorBaseUrl}/instance_admin/gradebook`;
-//  locals.questionBaseUrl = `${locals.courseInstanceBaseUrl}/instance_question`;
-//  locals.assessmentsUrl = `${locals.courseInstanceBaseUrl}/assessments`;
-//  locals.isStudentPage = true;
-
-//  const questionsArray: Question[] = [
-
-//    { qid: 'addNumbersParameterized/2', type: 'Freeform' },
-
-//  ];
-
-//  describe('Parameterized questions', function () {
-//    this.timeout(40000);
-
-//    before('set up testing server', helperServer.before());
-//    after('shut down testing server', helperServer.after);
-
-//    it('should verify database contains expected questions', async function () {
-//      const result = await sqldb.queryAsync(sql.select_questions, []);
-//      assert.notEqual(result.rowCount, 0, 'No questions found in DB');
-//      locals.questions = result.rows.map(row => ({
-//        qid: row.directory,
-//        id: row.id,
-//        url: `${locals.questionBaseUrl}/${row.id}/`,
-//        type: 'Freeform'
-//      }));
-//      questionsArray.forEach(question => {
-//        const foundQuestion = locals.questions?.find(q => q.qid === question.qid);
-//        assert.isDefined(foundQuestion, `Question ${question.qid} not found`);
-//        Object.assign(question, foundQuestion);
-//      });
-//    });
-
-//    describe('Assessment inheritance tests', function () {
-//      before('initialize assessment', async function () {
-//        const hwResult = await sqldb.queryOneRowAsync(sql.select_hw, []);
-//        locals.assessment_id = hwResult.rows[0].id;
-//        locals.assessmentUrl = `${locals.courseInstanceBaseUrl}/assessment/${locals.assessment_id}/`;
-//        const response = await fetch(locals.assessmentUrl);
-//        assert.equal(response.status, 200);
-//        locals.$ = cheerio.load(await response.text());
-//       //  console.log(locals)
-//      });
-
-//   //    questionsArray.forEach((question, index) => {
-//   //      it(`should verify question #${index + 1} (${question.qid}) has correct parameters`, async function () {
-//   //        if (!question.url) throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);
-//   //       //  console.log(helperQuestion.getInstanceQuestion(locals))
-//   //        const response = await fetch(question.url);
-//   //        console.log("Response: ")
-//   //        console.log(await response.text())
-//   //        console.log(await response)
-//   //        assert.equal(response.status, 200);
-//   //        const $ = cheerio.load(await response.text());
-//   //        const expectedRange = '[3, 16]';
-//   //        const elemList = $('span').filter(function () {
-//   //          return $(this).text().trim() === expectedRange;
-//   //        });
-//   //        assert.lengthOf(elemList, 1, `Expected range ${expectedRange} not found for question ${question.qid}`);
-//   //      });
-//   //    });
-//   questionsArray.forEach((question, index) => {
-//     describe(question.qid, () => {
-//       helperQuestion.getInstanceQuestion(locals);
-//       it(`should verify question #${index + 1} (${question.qid}) has correct parameters`, async function () {
-//         if (!question.url) throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);
-//         console.log(helperQuestion.getInstanceQuestion(locals))
-//         const response = await fetch(question.url);
-//         assert.equal(response.status, 200);
-//         const $ = cheerio.load(await response.text());
-//         const expectedRange = '[3, 16]';
-//         const elemList = $('span').filter(function () {
-//           return $(this).text().trim() === expectedRange;
-//         });
-//         assert.lengthOf(elemList, 1, `Expected range ${expectedRange} not found for question ${question.qid}`);
-//       });
-//     });
-//   });
-//    });
-//  });
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
+
 import { config } from '../lib/config.js';
 
-import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -191,14 +60,12 @@ describe('Parameterized questions', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  // First, verify our database contains the questions.
   it('should verify database contains expected questions', async function () {
     const result = await sqldb.queryAsync(sql.select_questions, []);
     assert.notEqual(result.rowCount, 0, 'No questions found in DB');
     locals.questions = result.rows.map(row => ({
       qid: row.directory,
       id: row.id,
-      // Initially, set a placeholder URL. It will be updated after the assessment instance is created.
       url: `${locals.questionBaseUrl}/${row.id}/`,
       type: 'Freeform'
     }));
@@ -228,7 +95,10 @@ describe('Parameterized questions', function () {
     describe('GET to assessment_instance URL', function () {
       let page = '';
       before(async function () {
-        const res = await fetch(locals.assessmentInstanceUrl!);
+        if (!locals.assessmentInstanceUrl) {
+          throw new Error('assessmentInstanceUrl is undefined');
+        }
+        const res = await fetch(locals.assessmentInstanceUrl);
         assert.equal(res.status, 200);
         page = await res.text();
         locals.$ = cheerio.load(page);
@@ -254,37 +124,34 @@ describe('Parameterized questions', function () {
         locals.instance_questions = result.rows;
       });
 
-      // For each question, update its instance question ID and URL based on the assessment instance page.
       questionsArray.forEach(function (question, i) {
         it(`should have question #${i + 1} as QID ${question.qid}`, function () {
-          // Set the instance question id from the database.
-          question.id = locals.instance_questions![i].id;
-          assert.equal(locals.instance_questions![i].qid, question.qid);
-          // Build the URL using the instance question id.
+          if (!locals.instance_questions) {
+            throw new Error('assessmentInstanceUrl is undefined');
+          }
+          question.id = locals.instance_questions[i].id;
+          assert.equal(locals.instance_questions[i].qid, question.qid);
           const urlTail = `/pl/course_instance/1/instance_question/${question.id}/`;
           question.url = locals.siteUrl + urlTail;
-          // Verify that the assessment instance page contains a link to this question.
-          const elemList = locals.$!(`td a[href="${urlTail}"]`);
+          if (!locals.$) {
+            throw new Error("'locals.$' is undefined");
+          }
+          const elemList = locals.$(`td a[href="${urlTail}"]`);
           assert.lengthOf(elemList, 1, `Link for question ${question.qid} not found`);
         });
       });
     });
 
-    // Now, for each question, run the test which fetches the instance question.
     questionsArray.forEach((question, index) => {
       describe(question.qid, () => {
-        // This helper registers additional describe/it blocks required for setting up the question.
-        // helperQuestion.getInstanceQuestion(locals);
         it(`should verify question #${index + 1} (${question.qid}) has correct parameters`, async function () {
           if (!question.url)
-            throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);
+            {throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);}
           console.log(`Fetching instance question URL: ${question.url}`);
           const response = await fetch(question.url);
-          // console.log(await response.text())
           assert.equal(response.status, 200);
           const $ = cheerio.load(await response.text());
           const expectedRange = '[3, 16]';
-          // Optionally, you can change 'span' to a more student-specific selector if needed.
           const elemList = $('span').filter(function () {
             return $(this).text().trim() === expectedRange;
           });
