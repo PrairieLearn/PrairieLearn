@@ -29,6 +29,7 @@ router.get(
     const questions = await selectAssessmentQuestions({
       assessment_id,
       course_id: course.id,
+      public_page: true,
     });
 
     // Filter out non-public assessments

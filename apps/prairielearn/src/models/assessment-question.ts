@@ -43,15 +43,20 @@ export type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
 export async function selectAssessmentQuestions({
   assessment_id,
   course_id,
+  public_page = false,
 }: {
   assessment_id: string;
   course_id: string;
+  public_page: boolean;
 }): Promise<AssessmentQuestionRow[]> {
   const rows = await sqldb.queryRows(
     sql.select_assessment_questions,
     {
       assessment_id,
+      // these last two variables are needed to properly display
+      // the source course of shared questions in the QID
       course_id,
+      public_page,
     },
     AssessmentQuestionRowSchema,
   );

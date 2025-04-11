@@ -59,7 +59,8 @@ SELECT
   q.sync_errors,
   q.sync_warnings,
   CASE
-    WHEN q.course_id = $course_id THEN qid
+    WHEN q.course_id = $course_id
+    AND NOT $public_page THEN qid
     ELSE '@' || c.sharing_name || '/' || q.qid
   END AS display_name
 FROM
