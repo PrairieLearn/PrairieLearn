@@ -47,7 +47,7 @@ export async function selectAssessmentQuestions({
 }: {
   assessment_id: string;
   course_id: string;
-  public_page: boolean;
+  public_page?: boolean;
 }): Promise<AssessmentQuestionRow[]> {
   const rows = await sqldb.queryRows(
     sql.select_assessment_questions,
