@@ -50,9 +50,7 @@ locals.questionBaseUrl = `${locals.courseInstanceBaseUrl}/instance_question`;
 locals.assessmentsUrl = `${locals.courseInstanceBaseUrl}/assessments`;
 locals.isStudentPage = true;
 
-const questionsArray: Question[] = [
-  { qid: 'addNumbersParameterized/2', type: 'Freeform' },
-];
+const questionsArray: Question[] = [{ qid: 'addNumbersParameterized/2', type: 'Freeform' }];
 
 describe('Parameterized questions', function () {
   this.timeout(40000);
@@ -63,14 +61,14 @@ describe('Parameterized questions', function () {
   it('should verify database contains expected questions', async function () {
     const result = await sqldb.queryAsync(sql.select_questions, []);
     assert.notEqual(result.rowCount, 0, 'No questions found in DB');
-    locals.questions = result.rows.map(row => ({
+    locals.questions = result.rows.map((row) => ({
       qid: row.directory,
       id: row.id,
       url: `${locals.questionBaseUrl}/${row.id}/`,
-      type: 'Freeform'
+      type: 'Freeform',
     }));
-    questionsArray.forEach(question => {
-      const foundQuestion = locals.questions?.find(q => q.qid === question.qid);
+    questionsArray.forEach((question) => {
+      const foundQuestion = locals.questions?.find((q) => q.qid === question.qid);
       assert.isDefined(foundQuestion, `Question ${question.qid} not found`);
       Object.assign(question, foundQuestion);
     });
@@ -119,7 +117,9 @@ describe('Parameterized questions', function () {
       it(`should create ${questionsArray.length} instance_questions`, async function () {
         const result = await sqldb.queryAsync(sql.select_instance_questions, []);
         if (result.rowCount !== questionsArray.length) {
-          throw new Error(`expected ${questionsArray.length} instance_questions, got: ` + result.rowCount);
+          throw new Error(
+            `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
+          );
         }
         locals.instance_questions = result.rows;
       });
@@ -145,8 +145,9 @@ describe('Parameterized questions', function () {
     questionsArray.forEach((question, index) => {
       describe(question.qid, () => {
         it(`should verify question #${index + 1} (${question.qid}) has correct parameters`, async function () {
-          if (!question.url)
-            {throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);}
+          if (!question.url) {
+            throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);
+          }
           console.log(`Fetching instance question URL: ${question.url}`);
           const response = await fetch(question.url);
           assert.equal(response.status, 200);
@@ -155,7 +156,11 @@ describe('Parameterized questions', function () {
           const elemList = $('span').filter(function () {
             return $(this).text().trim() === expectedRange;
           });
-          assert.lengthOf(elemList, 1, `Expected range ${expectedRange} not found for question ${question.qid}`);
+          assert.lengthOf(
+            elemList,
+            1,
+            `Expected range ${expectedRange} not found for question ${question.qid}`,
+          );
         });
       });
     });

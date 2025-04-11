@@ -81,7 +81,6 @@ router.get(
       },
       InstanceQuestionRowSchema,
     );
-    
 
     const assessmentInstanceLog = await selectAssessmentInstanceLog(
       res.locals.assessment_instance.id,
