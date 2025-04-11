@@ -557,7 +557,7 @@ function AuthnOverrides({
       <label class="visually-hidden" for="effective-uid">UID</label>
       <input
         id="effective-uid"
-        type="email"
+        type="text"
         placeholder="student@example.com"
         class="form-control form-control-sm me-2 flex-grow-1 js-effective-uid-input"
       />
