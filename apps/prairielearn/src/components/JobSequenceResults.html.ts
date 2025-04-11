@@ -67,16 +67,18 @@ export function JobSequenceResults({
                       : ''}
                   `
                 : ''}
-              <div class="float-end form-check">
-                <input
-                  type="checkbox"
-                  class="js-toggle-verbose form-check-input"
-                  id="toggle-verbose-${job.id}"
-                  data-target-id="output-${job.id}"
-                />
-                <label class="form-check-label" for="toggle-verbose-${job.id}">
-                  Show verbose messages
-                </label>
+              <div class="d-flex justify-content-end float-md-end">
+                <div class="form-check form-switch">
+                  <input
+                    type="checkbox"
+                    class="js-toggle-verbose form-check-input"
+                    id="toggle-verbose-${job.id}"
+                    data-target-id="output-${job.id}"
+                  />
+                  <label class="form-check-label" for="toggle-verbose-${job.id}">
+                    Show verbose messages
+                  </label>
+                </div>
               </div>
               <p class="mb-1">
                 Started ${job.start_date ? `at ${formatDate(job.start_date, timeZone)}` : ''}
