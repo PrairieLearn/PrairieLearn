@@ -1,6 +1,5 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { AnsiUp } from 'ansi_up';
 import { execa } from 'execa';
 import * as shlex from 'shlex';
 import { z } from 'zod';
@@ -10,7 +9,7 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
-import { chalk } from './chalk.js';
+import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
 import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
@@ -222,8 +221,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   private flush(force = false) {
     if (Date.now() - this.lastSent > 1000 || force) {
-      const ansiUp = new AnsiUp();
-      const ansifiedOutput = ansiUp.ansi_to_html(this.output);
+      const ansifiedOutput = ansiToHtml(this.output);
       socketServer.io
         ?.to('job-' + this.jobId)
         .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
@@ -381,10 +379,7 @@ export function connection(socket) {
     queryRow(sql.select_job, { job_id: msg.job_id }, JobSchema).then(
       (job) => {
         const status = job.status;
-
-        const ansiUp = new AnsiUp();
-        const output = ansiUp.ansi_to_html(liveJobs[msg.job_id]?.output ?? job.output ?? '');
-
+        const output = ansiToHtml(liveJobs[msg.job_id]?.output ?? job.output);
         callback({ status, output });
       },
       (err) => {
