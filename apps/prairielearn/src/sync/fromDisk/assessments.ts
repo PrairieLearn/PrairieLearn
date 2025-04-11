@@ -279,6 +279,7 @@ function getParamsForAssessment(
     grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
+    share_source_publicly: assessment.shareSourcePublicly ?? false,
   };
 }
 

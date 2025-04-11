@@ -189,6 +189,43 @@ export async function checkInvalidSharingSetRemovals(
   return existInvalidSharingSetRemovals;
 }
 
+export function checkInvalidSharedAssessments(
+  courseData: CourseData,
+  logger: ServerJobLogger,
+): boolean {
+  const invalidSharedAssessments = new Set<string>();
+  for (const courseInstanceKey in courseData.courseInstances) {
+    const courseInstance = courseData.courseInstances[courseInstanceKey];
+    for (const tid in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[tid];
+      if (!assessment?.data?.shareSourcePublicly) {
+        continue;
+      }
+      for (const zone of assessment?.data?.zones ?? []) {
+        for (const question of zone.questions ?? []) {
+          if (!question.id) {
+            continue;
+          }
+          const infoJson = courseData.questions[question.id];
+          if (!infoJson?.data?.sharePublicly) {
+            // Only `sharePublicly` and not `shareSourcePublicly` because we want to import the questions,
+            // not copy the questions into the destination course
+            invalidSharedAssessments.add(tid);
+          }
+        }
+      }
+    }
+  }
+
+  const existInvalidSharedAssessment = invalidSharedAssessments.size > 0;
+  if (existInvalidSharedAssessment) {
+    logger.error(
+      `✖ Course sync completely failed. The following assessments have their source publicly shared, but contain questions which are not publicly shared: ${Array.from(invalidSharedAssessments).join(', ')}`,
+    );
+  }
+  return existInvalidSharedAssessment;
+}
+
 export function checkInvalidDraftQuestionSharing(
   courseData: CourseData,
   logger: ServerJobLogger,
