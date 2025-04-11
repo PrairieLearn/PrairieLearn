@@ -29,6 +29,7 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
   if (Array.isArray(workspace_args)) {
     workspace_args = shlex.join(workspace_args);
   }
+
   return {
     type: q.type === 'v3' ? 'Freeform' : q.type,
     title: q.title,
@@ -60,6 +61,7 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
     workspace_environment: q.workspaceOptions?.environment ?? {},
     share_publicly: q.sharePublicly ?? false,
     share_source_publicly: q.shareSourcePublicly ?? false,
+    question_params: q.questionParams ?? {},
   };
 }
 

@@ -32,6 +32,7 @@ DECLARE
     question_grading_method enum_grading_method;
     computed_manual_points double precision;
     computed_max_auto_points double precision;
+
 BEGIN
     -- The sync algorithm used here is described in the preprint
     -- "Preserving identity during opportunistic unidirectional
@@ -169,7 +170,8 @@ BEGIN
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision,
             sync_errors = NULL,
-            sync_warnings = valid_assessment.warnings
+            sync_warnings = valid_assessment.warnings,
+            question_params = (valid_assessment.data ->> 'question_params')::JSONB
         FROM
             (
                 SELECT
@@ -324,6 +326,7 @@ BEGIN
                 number_choose,
                 best_questions,
                 advance_score_perc,
+                question_params,
                 json_grade_rate_minutes
             )
             VALUES (
@@ -334,6 +337,8 @@ BEGIN
                 (zone->>'number_choose')::integer,
                 (zone->>'best_questions')::integer,
                 (zone->>'advance_score_perc')::double precision,
+                (zone->>'question_params')::JSONB
+,
                 (zone->>'grade_rate_minutes')::double precision
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
@@ -343,6 +348,7 @@ BEGIN
                 number_choose = EXCLUDED.number_choose,
                 best_questions = EXCLUDED.best_questions,
                 advance_score_perc = EXCLUDED.advance_score_perc,
+                question_params = EXCLUDED.question_params,
                 json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes
             RETURNING id INTO new_zone_id;
 
@@ -354,6 +360,7 @@ BEGIN
                     advance_score_perc,
                     assessment_id,
                     zone_id,
+                    question_params,
                     json_grade_rate_minutes
                 ) VALUES (
                     (alternative_group->>'number')::integer,
@@ -361,12 +368,14 @@ BEGIN
                     (alternative_group->>'advance_score_perc')::double precision,
                     new_assessment_id,
                     new_zone_id,
+                    (alternative_group->>'question_params')::JSONB,
                     (alternative_group->>'json_grade_rate_minutes')::double precision
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
                     number_choose = EXCLUDED.number_choose,
                     zone_id = EXCLUDED.zone_id,
                     advance_score_perc = EXCLUDED.advance_score_perc,
+                    question_params = EXCLUDED.question_params,
                     json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes
                 RETURNING id INTO new_alternative_group_id;
 
@@ -420,7 +429,8 @@ BEGIN
                         alternative_group_id,
                         number_in_alternative_group,
                         advance_score_perc,
-                        effective_advance_score_perc
+                        effective_advance_score_perc,
+                        question_params
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
@@ -438,7 +448,8 @@ BEGIN
                         new_alternative_group_id,
                         (assessment_question->>'number_in_alternative_group')::integer,
                         (assessment_question->>'advance_score_perc')::double precision,
-                        (assessment_question->>'effective_advance_score_perc')::double precision
+                        (assessment_question->>'effective_advance_score_perc')::double precision,
+                        (assessment_question->>'question_params')::JSONB
                     ) ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
@@ -456,7 +467,8 @@ BEGIN
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,
                         question_id = EXCLUDED.question_id,
                         advance_score_perc = EXCLUDED.advance_score_perc,
-                        effective_advance_score_perc = EXCLUDED.effective_advance_score_perc
+                        effective_advance_score_perc = EXCLUDED.effective_advance_score_perc,
+                        question_params = EXCLUDED.question_params
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 

@@ -55,6 +55,7 @@ interface Course {
   sharingSets?: SharingSet[];
   assessmentSets: AssessmentSet[];
   assessmentModules?: Module[];
+  questionParams?: any[];
 }
 
 interface CourseInstanceAllowAccess {
@@ -71,6 +72,7 @@ interface CourseInstance {
   timezone?: string;
   allowAccess?: CourseInstanceAllowAccess[];
   groupAssessmentsBy?: 'Set' | 'Module';
+  questionParams?: any[];
 }
 
 export interface GroupRole {
@@ -101,6 +103,7 @@ interface QuestionAlternative {
   id?: string;
   forceMaxPoints?: boolean;
   triesPerVariant?: number;
+  questionParams?: any[];
   gradeRateMinutes?: number;
 }
 
@@ -118,6 +121,7 @@ interface ZoneQuestion {
   canSubmit?: string[];
   canView?: string[];
   gradeRateMinutes?: number;
+  questionParams?: any[];
 }
 
 interface Zone {
@@ -129,6 +133,7 @@ interface Zone {
   canSubmit?: string[];
   canView?: string[];
   gradeRateMinutes?: number;
+  questionParams?: any[];
 }
 
 export interface Assessment {
@@ -160,6 +165,7 @@ export interface Assessment {
   canSubmit?: string[];
   canView?: string[];
   gradeRateMinutes?: number;
+  questionParams?: any[];
 }
 
 interface QuestionExternalGradingOptions {
