@@ -43,7 +43,6 @@ export function PublicAssessmentQuestions({
               urlPrefix: resLocals.urlPrefix,
               course_id: course.id,
               course_instance_id,
-              course_sharing_name: course.sharing_name,
             })}
           </div>
         `
@@ -62,13 +61,11 @@ function AssessmentQuestionsTable({
   urlPrefix,
   course_id,
   course_instance_id,
-  course_sharing_name,
 }: {
   questions: AssessmentQuestionRow[];
   urlPrefix: string;
   course_id: string;
   course_instance_id: string;
-  course_sharing_name: string;
 }) {
   const nTableCols = 4;
   return html`
