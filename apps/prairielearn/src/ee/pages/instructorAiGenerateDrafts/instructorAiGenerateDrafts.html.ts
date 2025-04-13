@@ -333,7 +333,7 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
             <div id="multiple-choice-response-options"></div>
             <div id="multiple-choice-feedback-container">
               <span class="badge bg-success feedback-badge-correct">100%</span>
-              <span class="feedback-badge-partially-correct" class="badge bg-warning text-dark"
+              <span class="feedback-badge-partially-correct badge bg-warning text-dark"
                 >0%</span
               >
               <span class="badge bg-danger feedback-badge-incorrect">0%</span>
