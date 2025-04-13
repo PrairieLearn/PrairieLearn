@@ -11,14 +11,16 @@ interface SampleQuestionVariantInfo {
 }
 
 onDocumentReady(() => {
-  const questionDemoContainer = document.querySelector('#question-demo-container') as HTMLDivElement;
+  const questionDemoContainer = document.querySelector(
+    '#question-demo-container',
+  ) as HTMLDivElement;
 
   function getSelectedSampleQuestion(): HTMLAnchorElement | null {
     return sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
   }
 
   const fillPromptsButton = document.querySelector('#fill-prompts');
-  
+
   // Fill the prompt when the button is clicked
   fillPromptsButton?.addEventListener('click', () => {
     function setInputValue(selector: string, value: string) {
@@ -85,7 +87,6 @@ onDocumentReady(() => {
     }
   }
 
-
   const sampleQuestionSelector = document.querySelector(
     '#sample-question-selector',
   ) as HTMLDivElement;
@@ -106,12 +107,16 @@ onDocumentReady(() => {
     '#question-demo-name',
   ) as HTMLParagraphElement;
   const featureList = document.querySelector('#feature-list') as HTMLUListElement;
-  const questionContent = questionDemoContainer.querySelector('#question-content') as HTMLDivElement;
+  const questionContent = questionDemoContainer.querySelector(
+    '#question-content',
+  ) as HTMLDivElement;
 
   const responseContainer = questionDemoContainer.querySelector(
     '#response-container',
   ) as HTMLDivElement;
-  const userInputResponse = questionDemoContainer.querySelector('#user-input-response') as HTMLInputElement;
+  const userInputResponse = questionDemoContainer.querySelector(
+    '#user-input-response',
+  ) as HTMLInputElement;
 
   const multipleChoiceResponseOptions = multipleChoiceResponse.querySelector(
     '#multiple-choice-response-options',
@@ -208,13 +213,15 @@ onDocumentReady(() => {
 
         if (examplePrompt.answerType === 'number') {
           // Add relative and absolute tolerance if available
-          {if (examplePrompt.rtol && examplePrompt.atol) {
-            placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol}, atol=${examplePrompt.atol})`;
-          } else if (examplePrompt.rtol) {
-            placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol})`;
-          } else if (examplePrompt.atol) {
-            placeholderText = `${placeholderText} (atol=${examplePrompt.atol})`;
-          }}
+          {
+            if (examplePrompt.rtol && examplePrompt.atol) {
+              placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol}, atol=${examplePrompt.atol})`;
+            } else if (examplePrompt.rtol) {
+              placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol})`;
+            } else if (examplePrompt.atol) {
+              placeholderText = `${placeholderText} (atol=${examplePrompt.atol})`;
+            }
+          }
         }
 
         // Update the response placeholder text
@@ -306,9 +313,10 @@ onDocumentReady(() => {
   // Generate the initial variant when the page loads
   generateSampleQuestionVariant(examplePrompts[0].id);
 
-  
-  const newVariantButton = questionDemoContainer.querySelector('#new-variant-button') as HTMLButtonElement;
-  
+  const newVariantButton = questionDemoContainer.querySelector(
+    '#new-variant-button',
+  ) as HTMLButtonElement;
+
   // Generate a new variant when the new variant button is clicked
   newVariantButton.addEventListener('click', () => {
     const selectedTab = getSelectedSampleQuestion();
@@ -346,11 +354,11 @@ onDocumentReady(() => {
     );
 
     if (
-      (direction === 'previous' && examplePromptIndex > 0) || 
+      (direction === 'previous' && examplePromptIndex > 0) ||
       (direction === 'next' && examplePromptIndex < examplePrompts.length - 1)
     ) {
       // Find the example prompt in the specified direction
-      const targetPrompt = examplePrompts[examplePromptIndex + (direction === 'previous' ?  -1 : 1)];
+      const targetPrompt = examplePrompts[examplePromptIndex + (direction === 'previous' ? -1 : 1)];
 
       // Find its corresponding option
       const targetOption = sampleQuestionSelector.querySelector(
@@ -367,8 +375,7 @@ onDocumentReady(() => {
         generateSampleQuestionVariant(targetOptionId);
       }
     }
-
-  }
+  };
 
   const previousQuestionButton = document.querySelector(
     '#previous-question-button',
@@ -416,7 +423,7 @@ onDocumentReady(() => {
 
       const absoluteError = Math.abs(responseNum - answerNum);
 
-      const relativeErrorValid = (rtol && answerNum !== 0) ? relativeError <= rtol : false;
+      const relativeErrorValid = rtol && answerNum !== 0 ? relativeError <= rtol : false;
       const absoluteErrorValid = atol ? absoluteError <= atol : false;
 
       // If rtol and atol are both not set, we only check for an exact match
@@ -463,7 +470,7 @@ onDocumentReady(() => {
 
       const correctValuesSet = new Set(correctValues);
 
-      // Award a point for every correct option selected and incorrect option not selected. 
+      // Award a point for every correct option selected and incorrect option not selected.
       let numCorrect = 0;
       for (const option of optionValues) {
         if (selectedOptionValuesSet.has(option) === correctValuesSet.has(option)) {
@@ -552,7 +559,9 @@ function identifyEvenOrOddNumbersVariant(): SampleQuestionVariantInfo {
 
   // Randomly select between even and odd
   const isEven = Math.random() < 0.5;
-  const correctAnswer = shuffledNumbers.filter((num) => (isEven ? num % 2 === 0 : num % 2 !== 0)).join(', ');
+  const correctAnswer = shuffledNumbers
+    .filter((num) => (isEven ? num % 2 === 0 : num % 2 !== 0))
+    .join(', ');
 
   return {
     question: `
@@ -688,7 +697,7 @@ function verifyCompassDirection(): SampleQuestionVariantInfo {
 
   const incorrectDirections = ['North', 'South', 'East', 'West'].filter((d) => d !== direction);
   const randomIncorrectDirection =
-  incorrectDirections[Math.floor(Math.random() * incorrectDirections.length)];
+    incorrectDirections[Math.floor(Math.random() * incorrectDirections.length)];
 
   return {
     question: `
@@ -716,7 +725,7 @@ function computePolynomialRoot(): SampleQuestionVariantInfo {
     discriminant = b * b - 4 * a * c;
     i++;
   }
-  
+
   // If we fail to find real roots after 1000 tries, we set a specific case
   if (i === 1000) {
     a = 1;
