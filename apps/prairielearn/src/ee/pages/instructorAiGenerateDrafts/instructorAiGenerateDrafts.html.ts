@@ -241,7 +241,7 @@ function SampleQuestionSelector({
                       class="w-100 me-4 text-start"
                       style="white-space: normal;"
                     >
-                      ${examplePrompts[0].name}
+                      ${initialPrompt.name}
                     </span>
                   </button>
                   <div class="dropdown-menu py-0">
@@ -269,13 +269,11 @@ function SampleQuestionSelector({
               </div>
               <p class="fw-bold mb-1 mt-3">Question features</p>
               <ul id="feature-list">
-                <li>Random number generation</li>
-                <li>LaTex support</li>
-                <li>Decimal input response</li>
+                ${initialPrompt.features.map((feature) => html`<li>${feature}</li>`)}
               </ul>
               ${SampleQuestionDemo(initialPrompt)}
               <p class="fw-bold mb-1 mt-3">Prompt</p>
-              <p id="sample-question-prompt"></p>
+              <p id="sample-question-prompt">${initialPrompt.promptGeneral}</p>
               <button id="fill-prompts" type="button" class="btn btn-primary me-2">
                 <i class="fa fa-clone" aria-hidden="true"></i>
                 Fill prompt
