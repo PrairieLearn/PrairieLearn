@@ -213,14 +213,12 @@ onDocumentReady(() => {
 
         if (examplePrompt.answerType === 'number') {
           // Add relative and absolute tolerance if available
-          {
-            if (examplePrompt.rtol && examplePrompt.atol) {
-              placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol}, atol=${examplePrompt.atol})`;
-            } else if (examplePrompt.rtol) {
-              placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol})`;
-            } else if (examplePrompt.atol) {
-              placeholderText = `${placeholderText} (atol=${examplePrompt.atol})`;
-            }
+          if (examplePrompt.rtol && examplePrompt.atol) {
+            placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol}, atol=${examplePrompt.atol})`;
+          } else if (examplePrompt.rtol) {
+            placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol})`;
+          } else if (examplePrompt.atol) {
+            placeholderText = `${placeholderText} (atol=${examplePrompt.atol})`;
           }
         }
 
