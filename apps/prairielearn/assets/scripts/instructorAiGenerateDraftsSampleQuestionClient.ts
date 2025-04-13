@@ -284,18 +284,21 @@ onDocumentReady(() => {
           }
         } else {
           const correctOptions = variant.correctAnswer.split(',');
-          answer.innerHTML = 'Answer:';
+          answer.innerHTML = 'Answer: ';
+          const correctAnswersWithLetters = [];
           for (const correctOption of correctOptions) {
             const correctOptionIndex = variant.options?.indexOf(correctOption.trim());
             if (correctOptionIndex !== undefined) {
               const correctOptionLetter = String.fromCharCode(
                 correctOptionIndex + 'a'.charCodeAt(0),
               );
-              answer.innerHTML += ` (${correctOptionLetter}) ${correctOption}`;
+              correctAnswersWithLetters.push(`(${correctOptionLetter}) ${correctOption}`);
             } else {
-              answer.innerHTML += ` ${correctOption}`;
+              correctAnswersWithLetters.push(correctOption);
             }
           }
+
+          answer.innerHTML += correctAnswersWithLetters.sort().join(', ');
         }
       }
     }
