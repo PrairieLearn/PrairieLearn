@@ -53,7 +53,7 @@ onDocumentReady(() => {
   ) as HTMLDivElement;
 
   const multipleChoicePartiallyCorrectBadge = multipleChoiceFeedbackContainer.querySelector(
-    '#feedback-badge-partially-correct',
+    '.feedback-badge-partially-correct',
   ) as HTMLDivElement;
 
   // Update the grading feedback based on the user's response and type of displayed question
@@ -552,7 +552,12 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
 
 function identifyEvenOrOddNumbersVariant(): SampleQuestionVariantInfo {
   // Randomly generate 8 integers between 1 and 100
-  const numbers = Array.from({ length: 8 }, () => Math.floor(Math.random() * 100) + 1);
+  const numbers = [];
+  let startNumber = 0;
+  for (let i = 0; i < 8; i++) {
+    startNumber += Math.floor(Math.random() * 10) + 1;
+    numbers.push(startNumber);
+  }
 
   // Shuffle the numbers
   const shuffledNumbers = numbers.sort(() => Math.random() - 0.5);

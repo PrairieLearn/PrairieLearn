@@ -32,10 +32,13 @@ export const examplePrompts: ExamplePrompt[] = [
   {
     id: 'convert-radians-to-degrees',
     name: 'Convert angle in radians to degrees',
-    features: ['Random parameters', 'Integer input'],
+    features: ['Random parameters', 'Number input', 'Single correct answer'],
     promptGeneral:
       'Prompt the user to convert a random angle in radians, in terms of pi, to degrees.',
+    answerLabel: '$$ \\theta =$$',
     answerType: 'number',
+    rtol: 0.01,
+    atol: 1e-8,
   },
   {
     id: 'multiply-two-numbers',
@@ -80,7 +83,7 @@ export const examplePrompts: ExamplePrompt[] = [
     ],
     promptGeneral:
       'Give the user a random second degree polynomial, and prompt them to respond with its smallest root.',
-    answerLabel: 'Smallest root',
+    answerLabel: 'Smallest root = ',
     answerType: 'number',
     rtol: 0.01,
     atol: 1e-8,
@@ -96,6 +99,7 @@ export const examplePrompts: ExamplePrompt[] = [
     ],
     promptGeneral:
       'Give the user the length of two legs a and b, each with at most one decimal after the decimal point, and prompt the user to find the length of the hypotenuse. Provide the hypotenuse formula. ',
+    answerLabel: '$$ c =$$',
     answerType: 'number',
     rtol: 0.01,
     atol: 1e-8,
@@ -106,6 +110,7 @@ export const examplePrompts: ExamplePrompt[] = [
     features: ['Random parameters', 'String input', 'Single correct answer'],
     promptGeneral:
       'Give the user a random word with an irregular plural form in its singular form, and ask them to find its plural form.',
+    answerLabel: 'Plural form',
     answerType: 'string',
   },
 ];
