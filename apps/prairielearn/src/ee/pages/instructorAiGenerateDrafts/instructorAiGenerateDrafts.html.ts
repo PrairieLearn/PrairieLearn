@@ -229,7 +229,7 @@ function SampleQuestionSelector({
                     id="sample-question-selector-button"
                     type="button"
                     style="width: 100%;"
-                    class="btn dropdown-toggle dropdown-menu-right border border-gray d-flex justify-content-between align-items-center bg-white"
+                    class="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
                     aria-label="Change example question"
                     aria-haspopup="true"
                     aria-expanded="false"
@@ -267,14 +267,14 @@ function SampleQuestionSelector({
                   Next
                 </button>
               </div>
-              <p class="font-weight-bold mb-1 mt-3">Question features</p>
+              <p class="fw-bold mb-1 mt-3">Question features</p>
               <ul id="feature-list">
                 <li>Random number generation</li>
                 <li>LaTex support</li>
                 <li>Decimal input response</li>
               </ul>
               ${SampleQuestionDemo(initialPrompt)}
-              <p class="font-weight-bold mb-1 mt-3">Prompt</p>
+              <p class="fw-bold mb-1 mt-3">Prompt</p>
               <p id="sample-question-prompt"></p>
               <button id="fill-prompts" type="button" class="btn btn-primary me-2">
                 <i class="fa fa-clone" aria-hidden="true"></i>
@@ -290,7 +290,7 @@ function SampleQuestionSelector({
 
 function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
   return html`
-    <div id="question-demo" class="card shadow">
+    <div id="question-demo-container" class="card shadow">
       <div class="card-header d-flex align-items-center p-3 gap-3">
         <p id="question-demo-name" class="mb-0">${initialPrompt.name}</p>
         <span class="badge rounded-pill bg-success me-3">Try me!</span>
@@ -321,22 +321,22 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
               aria-label="Sample question response"
             />
             <span
-              id="answer-units-feedback-container"
+              id="input-feedback-and-units-container"
               class="input-group-text ${initialPrompt.answerUnits ? 'show-units' : ''}"
             >
               <span id="answer-units">${initialPrompt.answerUnits}</span>
-              <span id="feedback-badge-correct" class="badge bg-success">100%</span>
-              <span id="feedback-badge-incorrect" class="badge bg-danger">0%</span>
+              <span class="badge bg-success feedback-badge-correct">100%</span>
+              <span class="badge bg-danger feedback-badge-incorrect">0%</span>
             </span>
           </span>
           <div id="multiple-choice-response">
             <div id="multiple-choice-response-options"></div>
             <div id="multiple-choice-feedback-container">
-              <span id="feedback-badge-correct" class="badge bg-success">100%</span>
-              <span id="feedback-badge-partially-correct" class="badge bg-warning text-dark"
+              <span class="badge bg-success feedback-badge-correct">100%</span>
+              <span class="feedback-badge-partially-correct" class="badge bg-warning text-dark"
                 >0%</span
               >
-              <span id="feedback-badge-incorrect" class="badge bg-danger">0%</span>
+              <span class="badge bg-danger feedback-badge-incorrect">0%</span>
             </div>
           </div>
         </div>

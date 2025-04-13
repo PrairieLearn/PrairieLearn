@@ -4,7 +4,7 @@ export interface ExamplePrompt {
   promptGeneral: string;
   features: string[];
   answerType: 'number' | 'radio' | 'checkbox' | 'string';
-  /* Describes what the answer of the user is, e.g. dot product or velocity */
+  /* Describes what the question answer is, e.g. dot product or velocity */
   answerLabel?: string;
   answerUnits?: string;
   /* Placeholder text to be displayed in the response input field */

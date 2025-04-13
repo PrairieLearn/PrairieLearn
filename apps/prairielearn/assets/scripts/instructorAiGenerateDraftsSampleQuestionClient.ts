@@ -11,78 +11,15 @@ interface SampleQuestionVariantInfo {
 }
 
 onDocumentReady(() => {
-  const questionDemo = document.querySelector('#question-demo') as HTMLDivElement;
-
-  const questionDemoName = questionDemo.querySelector(
-    '#question-demo-name',
-  ) as HTMLParagraphElement;
-
-  const featureList = document.querySelector('#feature-list') as HTMLUListElement;
-
-  const sampleQuestionSelector = document.querySelector(
-    '#sample-question-selector',
-  ) as HTMLDivElement;
-
-  const sampleQuestionSelectorButton = sampleQuestionSelector.querySelector(
-    '#sample-question-selector-button',
-  ) as HTMLButtonElement;
-
-  const sampleQuestionSelectorButtonText = sampleQuestionSelectorButton.querySelector(
-    '#sample-question-selector-button-text',
-  ) as HTMLSpanElement;
-
-  const sampleQuestionSelectorDropdownMenu = sampleQuestionSelector.querySelector(
-    '.dropdown-menu',
-  ) as HTMLSelectElement;
-
-  const previousQuestionButton = document.querySelector(
-    '#previous-question-button',
-  ) as HTMLButtonElement;
-
-  const nextQuestionButton = document.querySelector('#next-question-button') as HTMLButtonElement;
-
-  const questionContent = questionDemo.querySelector('#question-content') as HTMLDivElement;
-  const gradeButton = questionDemo.querySelector('#grade-button') as HTMLButtonElement;
-
-  const userInputResponse = questionDemo.querySelector('#user-input-response') as HTMLInputElement;
-
-  const multipleChoiceResponse = questionDemo.querySelector(
-    '#multiple-choice-response',
-  ) as HTMLDivElement;
-  const multipleChoiceResponseOptions = multipleChoiceResponse.querySelector(
-    '#multiple-choice-response-options',
-  ) as HTMLDivElement;
-  const multipleChoiceFeedbackContainer = multipleChoiceResponse.querySelector(
-    '#multiple-choice-feedback-container',
-  ) as HTMLDivElement;
-  const multipleChoicePartiallyCorrectBadge = multipleChoiceFeedbackContainer.querySelector(
-    '#feedback-badge-partially-correct',
-  ) as HTMLDivElement;
-
-  const answerLabelContainer = questionDemo.querySelector(
-    '#answer-label-container',
-  ) as HTMLSpanElement;
-  const answerLabel = questionDemo.querySelector('#answer-label') as HTMLSpanElement;
-
-  const answerUnitsFeedbackContainer = questionDemo.querySelector(
-    '#answer-units-feedback-container',
-  ) as HTMLSpanElement;
-  const answerUnits = questionDemo.querySelector('#answer-units') as HTMLSpanElement;
-  const answer = questionDemo.querySelector('#answer') as HTMLSpanElement;
-
-  const newVariantButton = questionDemo.querySelector('#new-variant-button') as HTMLButtonElement;
-
-  const sampleQuestionPrompt = document.querySelector(
-    '#sample-question-prompt',
-  ) as HTMLParagraphElement;
-
-  const fillPromptsButton = document.querySelector('#fill-prompts');
+  const questionDemoContainer = document.querySelector('#question-demo-container') as HTMLDivElement;
 
   function getSelectedSampleQuestion(): HTMLAnchorElement | null {
     return sampleQuestionSelector.querySelector('.active') as HTMLAnchorElement;
   }
 
-  // Fill the prompts of the selected question to the prompt input fields
+  const fillPromptsButton = document.querySelector('#fill-prompts');
+  
+  // Fill the prompt when the button is clicked
   fillPromptsButton?.addEventListener('click', () => {
     function setInputValue(selector: string, value: string) {
       const input = document.querySelector(selector) as HTMLInputElement;
@@ -101,6 +38,23 @@ onDocumentReady(() => {
     }
   });
 
+  const inputFeedbackAndUnitsContainer = questionDemoContainer.querySelector(
+    '#input-feedback-and-units-container',
+  ) as HTMLSpanElement;
+
+  const multipleChoiceResponse = questionDemoContainer.querySelector(
+    '#multiple-choice-response',
+  ) as HTMLDivElement;
+
+  const multipleChoiceFeedbackContainer = multipleChoiceResponse.querySelector(
+    '#multiple-choice-feedback-container',
+  ) as HTMLDivElement;
+
+  const multipleChoicePartiallyCorrectBadge = multipleChoiceFeedbackContainer.querySelector(
+    '#feedback-badge-partially-correct',
+  ) as HTMLDivElement;
+
+  // Update the grading feedback based on the user's response and type of displayed question
   function setGrade(
     state: 'correct' | 'partially-correct' | 'incorrect' | 'no-grade',
     answerType: 'number' | 'radio' | 'checkbox' | 'string',
@@ -108,7 +62,7 @@ onDocumentReady(() => {
   ) {
     const feedbackContainer =
       answerType === 'number' || answerType === 'string'
-        ? answerUnitsFeedbackContainer
+        ? inputFeedbackAndUnitsContainer
         : multipleChoiceFeedbackContainer;
 
     feedbackContainer.classList.remove('correct');
@@ -130,6 +84,51 @@ onDocumentReady(() => {
       default:
     }
   }
+
+
+  const sampleQuestionSelector = document.querySelector(
+    '#sample-question-selector',
+  ) as HTMLDivElement;
+
+  const sampleQuestionSelectorButton = sampleQuestionSelector.querySelector(
+    '#sample-question-selector-button',
+  ) as HTMLButtonElement;
+
+  const sampleQuestionSelectorButtonText = sampleQuestionSelectorButton.querySelector(
+    '#sample-question-selector-button-text',
+  ) as HTMLSpanElement;
+
+  const sampleQuestionSelectorDropdownMenu = sampleQuestionSelector.querySelector(
+    '.dropdown-menu',
+  ) as HTMLSelectElement;
+
+  const questionDemoName = questionDemoContainer.querySelector(
+    '#question-demo-name',
+  ) as HTMLParagraphElement;
+  const featureList = document.querySelector('#feature-list') as HTMLUListElement;
+  const questionContent = questionDemoContainer.querySelector('#question-content') as HTMLDivElement;
+
+  const responseContainer = questionDemoContainer.querySelector(
+    '#response-container',
+  ) as HTMLDivElement;
+  const userInputResponse = questionDemoContainer.querySelector('#user-input-response') as HTMLInputElement;
+
+  const multipleChoiceResponseOptions = multipleChoiceResponse.querySelector(
+    '#multiple-choice-response-options',
+  ) as HTMLDivElement;
+
+  const gradeButton = questionDemoContainer.querySelector('#grade-button') as HTMLButtonElement;
+
+  const answerLabelContainer = questionDemoContainer.querySelector(
+    '#answer-label-container',
+  ) as HTMLSpanElement;
+  const answerLabel = questionDemoContainer.querySelector('#answer-label') as HTMLSpanElement;
+  const answerUnits = questionDemoContainer.querySelector('#answer-units') as HTMLSpanElement;
+  const answer = questionDemoContainer.querySelector('#answer') as HTMLSpanElement;
+
+  const sampleQuestionPrompt = document.querySelector(
+    '#sample-question-prompt',
+  ) as HTMLParagraphElement;
 
   function generateSampleQuestionVariant(id: string) {
     let variant: SampleQuestionVariantInfo;
@@ -171,7 +170,7 @@ onDocumentReady(() => {
         };
     }
 
-    // Clear the user free response field
+    // Clear the user input response field
     userInputResponse.value = '';
 
     // Set the question content to that of the variant
@@ -183,7 +182,7 @@ onDocumentReady(() => {
     // Update the examples
     const examplePrompt = examplePrompts.find((examplePrompt) => examplePrompt.id === id);
     if (examplePrompt) {
-      // Update the question demo text
+      // Update the question demo name
       questionDemoName.innerHTML = examplePrompt.name ?? '';
 
       // Update the sample question prompt
@@ -200,23 +199,22 @@ onDocumentReady(() => {
       );
 
       if (examplePrompt.answerType === 'number' || examplePrompt.answerType === 'string') {
-        // Display the free response input
-        const responseContainer = questionDemo.querySelector(
-          '#response-container',
-        ) as HTMLDivElement;
+        // Display the input response
         responseContainer.classList.remove('multiple-choice-response');
         responseContainer.classList.add('input-response');
 
         // Create the response field placeholder text
         let placeholderText: string = examplePrompt.answerType;
 
-        // Add relative and absolute tolerance if available
-        if (examplePrompt.rtol && examplePrompt.atol) {
-          placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol}, atol=${examplePrompt.atol})`;
-        } else if (examplePrompt.rtol) {
-          placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol})`;
-        } else if (examplePrompt.atol) {
-          placeholderText = `${placeholderText} (atol=${examplePrompt.atol})`;
+        if (examplePrompt.answerType === 'number') {
+          // Add relative and absolute tolerance if available
+          {if (examplePrompt.rtol && examplePrompt.atol) {
+            placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol}, atol=${examplePrompt.atol})`;
+          } else if (examplePrompt.rtol) {
+            placeholderText = `${placeholderText} (rtol=${examplePrompt.rtol})`;
+          } else if (examplePrompt.atol) {
+            placeholderText = `${placeholderText} (atol=${examplePrompt.atol})`;
+          }}
         }
 
         // Update the response placeholder text
@@ -232,11 +230,11 @@ onDocumentReady(() => {
         }
 
         // Update the answer units
-        if (examplePrompt.answerUnits) {
-          answerUnitsFeedbackContainer.classList.add('show-units');
+        if (examplePrompt.answerType === 'number' && examplePrompt.answerUnits) {
+          inputFeedbackAndUnitsContainer.classList.add('show-units');
           answerUnits.innerHTML = examplePrompt.answerUnits;
         } else {
-          answerUnitsFeedbackContainer.classList.remove('show-units');
+          inputFeedbackAndUnitsContainer.classList.remove('show-units');
           answerUnits.innerHTML = '';
         }
 
@@ -244,9 +242,6 @@ onDocumentReady(() => {
         answer.innerHTML = `Answer: ${variant.correctAnswer}`;
       } else if (examplePrompt.answerType === 'radio' || examplePrompt.answerType === 'checkbox') {
         // Display the multiple choice input
-        const responseContainer = questionDemo.querySelector(
-          '#response-container',
-        ) as HTMLDivElement;
         responseContainer.classList.remove('input-response');
         responseContainer.classList.add('multiple-choice-response');
 
@@ -260,7 +255,7 @@ onDocumentReady(() => {
                 <input
                   class="form-check-input"
                   type="${examplePrompt.answerType === 'radio' ? 'radio' : 'checkbox'}"
-                  name="multiple-choice-response"
+                  name="option-${optionLetter}"
                   id="option-${optionLetter}"
                   value="${option}"
                 />
@@ -298,6 +293,7 @@ onDocumentReady(() => {
             }
           }
 
+          // Update the text displaying the answer, sorted by their option letter.
           answer.innerHTML += correctAnswersWithLetters.sort().join(', ');
         }
       }
@@ -310,6 +306,9 @@ onDocumentReady(() => {
   // Generate the initial variant when the page loads
   generateSampleQuestionVariant(examplePrompts[0].id);
 
+  
+  const newVariantButton = questionDemoContainer.querySelector('#new-variant-button') as HTMLButtonElement;
+  
   // Generate a new variant when the new variant button is clicked
   newVariantButton.addEventListener('click', () => {
     const selectedTab = getSelectedSampleQuestion();
@@ -337,7 +336,7 @@ onDocumentReady(() => {
     }
   });
 
-  previousQuestionButton.addEventListener('click', () => {
+  const navigateSampleQuestions = (direction: 'previous' | 'next') => {
     const selectedTab = getSelectedSampleQuestion();
     if (!selectedTab) return;
 
@@ -346,55 +345,43 @@ onDocumentReady(() => {
       (examplePrompt) => examplePrompt.id === selectedTabId,
     );
 
-    if (examplePromptIndex > 0) {
-      // Find the example prompt before the current one
-      const previousPrompt = examplePrompts[examplePromptIndex - 1];
+    if (
+      (direction === 'previous' && examplePromptIndex > 0) || 
+      (direction === 'next' && examplePromptIndex < examplePrompts.length - 1)
+    ) {
+      // Find the example prompt in the specified direction
+      const targetPrompt = examplePrompts[examplePromptIndex + (direction === 'previous' ?  -1 : 1)];
 
       // Find its corresponding option
-      const previousOption = sampleQuestionSelector.querySelector(
-        `#prompt-${previousPrompt.id}`,
+      const targetOption = sampleQuestionSelector.querySelector(
+        `#prompt-${targetPrompt.id}`,
       ) as HTMLAnchorElement;
 
-      const previousOptionId = previousOption.dataset.id;
+      const targetOptionId = targetOption.dataset.id;
 
-      previousOption.classList.add('active');
+      targetOption.classList.add('active');
       selectedTab.classList.remove('active');
 
-      sampleQuestionSelectorButtonText.innerHTML = previousOption.innerHTML;
-      if (previousOptionId) {
-        generateSampleQuestionVariant(previousOptionId);
+      sampleQuestionSelectorButtonText.innerHTML = targetOption.innerHTML;
+      if (targetOptionId) {
+        generateSampleQuestionVariant(targetOptionId);
       }
     }
+
+  }
+
+  const previousQuestionButton = document.querySelector(
+    '#previous-question-button',
+  ) as HTMLButtonElement;
+
+  previousQuestionButton.addEventListener('click', () => {
+    navigateSampleQuestions('previous');
   });
 
+  const nextQuestionButton = document.querySelector('#next-question-button') as HTMLButtonElement;
+
   nextQuestionButton.addEventListener('click', () => {
-    const selectedTab = getSelectedSampleQuestion();
-    if (!selectedTab) return;
-
-    const selectedTabId = selectedTab.dataset.id;
-    const examplePromptIndex = examplePrompts.findIndex(
-      (examplePrompt) => examplePrompt.id === selectedTabId,
-    );
-
-    if (examplePromptIndex < examplePrompts.length - 1) {
-      // Find the example prompt after the current one
-      const nextPrompt = examplePrompts[examplePromptIndex + 1];
-
-      // Find its corresponding option
-      const nextOption = sampleQuestionSelector.querySelector(
-        `#prompt-${nextPrompt.id}`,
-      ) as HTMLAnchorElement;
-
-      const nextOptionId = nextOption.dataset.id;
-
-      nextOption.classList.add('active');
-      selectedTab.classList.remove('active');
-
-      sampleQuestionSelectorButtonText.innerHTML = nextOption.innerHTML;
-      if (nextOptionId) {
-        generateSampleQuestionVariant(nextOptionId);
-      }
-    }
+    navigateSampleQuestions('next');
   });
 
   // Grade the question when the grade button is clicked
@@ -411,34 +398,41 @@ onDocumentReady(() => {
 
     if (examplePrompt.answerType === 'number') {
       const response = userInputResponse.value;
-      const rtol = examplePrompt.rtol;
-      const atol = examplePrompt.atol;
 
       const answerNum = parseFloat(answer ?? '0');
 
-      if (!isNaN(answerNum)) {
-        const responseNum = parseFloat(response);
-        const relativeError = Math.abs((responseNum - answerNum) / answerNum);
-        const absoluteError = Math.abs(responseNum - answerNum);
+      if (isNaN(answerNum)) {
+        setGrade('incorrect', examplePrompt.answerType);
+        return;
+      }
 
-        const relativeErrorValid = rtol ? relativeError <= rtol : false;
-        const absoluteErrorValid = atol ? absoluteError <= atol : false;
-        const perfectMatch = response === answer;
+      const responseNum = parseFloat(response);
 
-        let isValid = perfectMatch;
+      const rtol = examplePrompt.rtol;
+      const atol = examplePrompt.atol;
 
-        if (rtol) {
-          isValid = isValid || relativeErrorValid;
-        }
-        if (atol) {
-          isValid = isValid || absoluteErrorValid;
-        }
+      // Do not use relative error if the answer is 0 to avoid division by zero
+      const relativeError = answerNum !== 0 ? Math.abs((responseNum - answerNum) / answerNum) : 0;
 
-        if (isValid) {
-          setGrade('correct', examplePrompt.answerType);
-        } else {
-          setGrade('incorrect', examplePrompt.answerType);
-        }
+      const absoluteError = Math.abs(responseNum - answerNum);
+
+      const relativeErrorValid = (rtol && answerNum !== 0) ? relativeError <= rtol : false;
+      const absoluteErrorValid = atol ? absoluteError <= atol : false;
+
+      // If rtol and atol are both not set, we only check for an exact match
+      let isValid = response === answer;
+
+      if (rtol) {
+        isValid = isValid || relativeErrorValid;
+      }
+      if (atol) {
+        isValid = isValid || absoluteErrorValid;
+      }
+
+      if (isValid) {
+        setGrade('correct', examplePrompt.answerType);
+      } else {
+        setGrade('incorrect', examplePrompt.answerType);
       }
     } else if (examplePrompt.answerType === 'radio') {
       const selectedOption = multipleChoiceResponseOptions.querySelector(
@@ -469,6 +463,7 @@ onDocumentReady(() => {
 
       const correctValuesSet = new Set(correctValues);
 
+      // Award a point for every correct option selected and incorrect option not selected. 
       let numCorrect = 0;
       for (const option of optionValues) {
         if (selectedOptionValuesSet.has(option) === correctValuesSet.has(option)) {
@@ -478,7 +473,6 @@ onDocumentReady(() => {
 
       const percentCorrect = Math.floor((numCorrect / optionValues.length) * 100);
 
-      // The selected and correct values sets must be equal for a correct answer
       if (numCorrect === optionValues.length) {
         setGrade('correct', examplePrompt.answerType);
       } else if (numCorrect > 0) {
@@ -558,10 +552,7 @@ function identifyEvenOrOddNumbersVariant(): SampleQuestionVariantInfo {
 
   // Randomly select between even and odd
   const isEven = Math.random() < 0.5;
-  const selectedNumbers = shuffledNumbers.filter((num) => (isEven ? num % 2 === 0 : num % 2 !== 0));
-
-  // Create the correct answer string
-  const correctAnswer = selectedNumbers.join(', ');
+  const correctAnswer = shuffledNumbers.filter((num) => (isEven ? num % 2 === 0 : num % 2 !== 0)).join(', ');
 
   return {
     question: `
@@ -579,7 +570,7 @@ function convertRadiansToDegreesVariant(): SampleQuestionVariantInfo {
   const numerator = Math.floor(Math.random() * 10) + 1;
   const denominator = Math.floor(Math.random() * 10) + 2;
 
-  // Randomly generate an angle between 0 and 2pi
+  // Randomly generate an angle between 0 and 2 * PI
   const angleInRadians = (numerator / denominator) * Math.PI;
 
   // Convert radians to degrees
@@ -689,22 +680,24 @@ function verifyCompassDirection(): SampleQuestionVariantInfo {
   ];
 
   const randomIndex = Math.floor(Math.random() * european_countries_and_relative_directions.length);
+
+  // Randomly select two countries and the direction between them
   const { country1, country2, direction } = european_countries_and_relative_directions[randomIndex];
 
-  const correctStatement = Math.random() < 0.5;
+  const displayCorrectStatement = Math.random() < 0.5;
 
-  const incorrectStatements = ['North', 'South', 'East', 'West'].filter((d) => d !== direction);
-  const randomIncorrectStatement =
-    incorrectStatements[Math.floor(Math.random() * incorrectStatements.length)];
+  const incorrectDirections = ['North', 'South', 'East', 'West'].filter((d) => d !== direction);
+  const randomIncorrectDirection =
+  incorrectDirections[Math.floor(Math.random() * incorrectDirections.length)];
 
   return {
     question: `
       <p>
-        Is the direction from ${country1} to ${country2} ${correctStatement ? direction : randomIncorrectStatement}?
+        Is the direction from ${country1} to ${country2} ${displayCorrectStatement ? direction : randomIncorrectDirection}?
       </p>
     `,
     options: ['True', 'False'],
-    correctAnswer: correctStatement ? 'True' : 'False',
+    correctAnswer: displayCorrectStatement ? 'True' : 'False',
   };
 }
 
@@ -715,11 +708,21 @@ function computePolynomialRoot(): SampleQuestionVariantInfo {
   let discriminant = -1;
 
   // Keep generating random coefficients until we get real roots
-  while (discriminant < 0) {
+  let i = 0;
+  while (i < 1000 && discriminant < 0) {
     a = Math.round((Math.random() * 4 + 1) * 100) / 100;
     b = Math.round((Math.random() * 20 - 10) * 100) / 100;
     c = Math.round((Math.random() * 20 - 10) * 100) / 100;
     discriminant = b * b - 4 * a * c;
+    i++;
+  }
+  
+  // If we fail to find real roots after 1000 tries, we set a specific case
+  if (i === 1000) {
+    a = 1;
+    b = 1;
+    c = 0;
+    discriminant = 1;
   }
 
   // Compute the roots
