@@ -665,11 +665,22 @@ function identifyNthPlanet(): SampleQuestionVariantInfo {
   const otherPlanets = planets.filter((_, index) => index !== randomIndex);
   const shuffledOtherPlanets = otherPlanets.sort(() => Math.random() - 0.5).slice(0, 3);
   const shuffledOptions = [nthPlanet, ...shuffledOtherPlanets].sort(() => Math.random() - 0.5);
-  
+
+  const displayedRandomIndex = randomIndex + 1;
+
+  let indexPostfix = 'th';
+  if (displayedRandomIndex === 1) {
+    indexPostfix = 'st';
+  } else if (displayedRandomIndex === 2) {
+    indexPostfix = 'nd';
+  } else if (displayedRandomIndex === 3) {
+    indexPostfix = 'rd';
+  } 
+
   return {
     question: `
       <p>
-        Which planet is the ${randomIndex + 1}th planet from the sun?
+        Which planet is the ${displayedRandomIndex}${indexPostfix} planet from the sun?
       </p>
     `,
     options: shuffledOptions,

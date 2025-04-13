@@ -2,10 +2,8 @@ export interface ExamplePrompt {
   id: string;
   name: string;
   promptGeneral: string;
-  promptUserInput: string;
-  promptGrading: string;
   features: string[];
-  answerType: 'number' | 'radio' | 'checkbox';
+  answerType: 'number' | 'radio' | 'checkbox' | 'string';
   /* Describes what the answer of the user is, e.g. dot product or velocity */
   answerLabel?: string;
   answerUnits?: string;
@@ -16,83 +14,78 @@ export interface ExamplePrompt {
 
 export const examplePrompts: ExamplePrompt[] = [
   {
-    id: 'dot-product',
-    name: 'Dot product of two vectors',
-    features: ['Test feature 1', 'Test feature 2'],
+    id: 'cities-in-random-country',
+    name: 'Identify cities in a random country',
+    features: ['Random parameters', 'Checkbox input', 'Multiple correct answers', 'Partial credit'],
     promptGeneral:
-      'Generate a question by randomly creating two vectors (e.g., 3-dimensional). Ask the student to calculate the dot product of these vectors. Include the vector components in the prompt.',
-    promptUserInput: 'Provide a single numeric input field for the computed dot product.',
-    promptGrading:
-      'Calculate the dot product of the two vectors internally and compare it with the student’s submitted value.',
-    answerType: 'number',
-    answerLabel: 'Dot Product',
-    rtol: 0.01,
-    atol: 1e-8,
-  },
-  {
-    id: 'median',
-    name: 'Median of random numbers',
-    features: ['Test feature 1', 'Test feature 2'],
-    promptGeneral:
-      'Write a free response question that asks the user to determine the median of an arbitrary-length sequence of random numbers between 1 and 100. Display all the numbers to the user and instruct them to provide the median as their answer.',
-    promptUserInput:
-      'Generate a sequence of random numbers and display them in a sorted order. The user should calculate and enter the median value of these numbers.',
-    promptGrading: 'The correct answer is the median of the displayed numbers.',
-    answerType: 'number',
-    answerLabel: 'Median',
-    rtol: 0.01,
-    atol: 1e-8,
-  },
-  {
-    id: 'bit-shifting',
-    name: 'Bit shifting',
-    features: ['Test feature 1', 'Test feature 2'],
-    promptGeneral:
-      'Generate a question where an arbitrarily-generated bit string is provided along with instructions to shift the bits either to the left or to the right by a specified number of positions. The prompt should include the original bit string, the direction of the shift, and the number of positions to shift. This should be a logical shift. The number of positions to shift by should be randomized.',
-    promptUserInput:
-      'Provide a text input box where students can type the resulting bit string after performing the specified bit shifting operation.',
-    promptGrading:
-      "Internally perform the given bit shift on the generated bit string and compare the resulting bit string with the student's input.",
-    answerType: 'number',
-    answerLabel: 'Bit String',
-    rtol: 0.01,
-    atol: 1e-8,
-  },
-  {
-    id: 'projectile-distance',
-    name: 'Calculate projectile distance',
-    features: ['Test feature 1', 'Test feature 2'],
-    promptGeneral:
-      'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
-    promptUserInput: 'Provide a numerical input box for the user to enter an answer.',
-    promptGrading:
-      'The correct answer is the distance that the projectile will travel, using the corresponding formula.',
-    answerType: 'number',
-    answerLabel: 'Horizontal Distance',
-    answerUnits: 'm',
-    rtol: 0.01,
-    atol: 1e-8,
-  },
-  {
-    id: 'mcq-test',
-    name: 'Single MCQ Test',
-    features: ['Test feature 1', 'Test feature 2'],
-    promptGeneral:
-      'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
-    promptUserInput: 'Provide a numerical input box for the user to enter an answer.',
-    promptGrading:
-      'The correct answer is the distance that the projectile will travel, using the corresponding formula.',
-    answerType: 'radio',
-  },
-  {
-    id: 'checkbox-test',
-    name: 'Checkbox MCQ Test',
-    features: ['Test feature 1', 'Test feature 2'],
-    promptGeneral:
-      'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
-    promptUserInput: 'Provide a numerical input box for the user to enter an answer.',
-    promptGrading:
-      'The correct answer is the distance that the projectile will travel, using the corresponding formula.',
+      'Generate a list of cities and countries. Then, randomly select a country, and provide the user with a list of cities that seem like they could be in the country. Make a random number of the options actually correct.',
     answerType: 'checkbox',
+  },
+  { 
+    id: 'identify-even-or-odd-numbers', 
+    name: 'Identify even or odd numbers',
+    features: ['Random parameters', 'Checkbox input', 'Multiple correct answers', 'Partial credit'],
+    promptGeneral: 'Generate a random list of 8 integers, and prompt the user to select either even or odd numbers, at random.',
+    answerType: 'checkbox'
+  },
+  { 
+    id: 'convert-radians-to-degrees', 
+    name: 'Convert angle in radians to degrees',
+    features: ['Random parameters', 'Integer input'],
+    promptGeneral: 'Prompt the user to convert a random angle in radians, in terms of pi, to degrees.',
+    answerType: 'number'
+  },
+  { 
+    id: 'multiply-two-numbers', 
+    name: 'Multiply two random numbers',
+    features: ['Random parameters', 'Multiple choice input', 'Single correct answer'],
+    promptGeneral: 'Generate two random integers, a and b. Give the user a list of 4 randomly generated options for their product. One should be correct.',
+    answerType: 'radio'
+  },
+  { 
+    id: 'identify-rainbow-color', 
+    name: 'Identify the rainbow color',
+    features: ['Random parameters', 'Multiple choice input', 'Single correct answer'],
+    promptGeneral: 'Generate a list of random colors. Ask the user which can be found in a rainbow. One color should be the answer.',
+    answerType: 'radio'
+  },
+  { 
+    id: 'identify-nth-planet', 
+    name: 'Identify the n-th planet away from the sun',
+    features: ['Random parameters', 'Multiple choice input', 'Single correct answer'],
+    promptGeneral: 'Randomly pick a number n between 1 and the number of planets in the solar system. Ask the user which planet is the nth planet away from the sun, providing 4 options, one of which is correct.',
+    answerType: 'radio'
+  },
+  { 
+    id: 'verify-compass-direction', 
+    name: 'Identify the correct compass direction between two random countries',
+    features: ['Random parameters', 'True/false question'],
+    promptGeneral: 'Randomly pick two countries in Europe, and randomly pick a compass direction. Ask the user if the selected direction between the two countries is correct or not. The user should be able to pick between true or false multiple choice options.',
+    answerType: 'radio'
+  },
+  { 
+    id: 'compute-polynomial-roots', 
+    name: 'Compute roots of a random polynomial',
+    features: ['Random parameters', 'Multiple number inputs', 'Relative and absolute tolerance'],
+    promptGeneral: 'Give the user a random second degree polynomial, and give them two number input fields to input a smaller and larger root.',
+    answerType: 'number',
+    rtol: 0.01,
+    atol: 1e-08
+  },
+  { 
+    id: 'compute-hypotenuse-length', 
+    name: 'Compute random triangle hypotenuse length',
+    features: ['Random parameters', 'Number input', 'Relative and absolute tolerance'],
+    promptGeneral: 'Give the user the length of two legs a and b, each with at most one decimal after the decimal point, and prompt the user to find the length of the hypotenuse. Provide the hypotenuse formula. ',
+    answerType: 'number',
+    rtol: 0.01,
+    atol: 1e-08
+  },
+  { 
+    id: 'find-irregular-plural', 
+    name: 'Find the plural form of a random word',
+    features: ['Random parameters', 'String input'],
+    promptGeneral: 'Give the user a random word with an irregular plural form in its singular form, and ask them to find its plural form.',
+    answerType: 'string'
   },
 ];
