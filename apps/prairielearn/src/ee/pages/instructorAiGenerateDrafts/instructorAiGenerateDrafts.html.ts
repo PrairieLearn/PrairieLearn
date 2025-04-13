@@ -94,7 +94,7 @@ export function InstructorAIGenerateDrafts({
 
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
-                Give a high-level overview of the question.
+                Describe the question and how students should respond. 
               </label>
               <textarea
                 name="prompt"
@@ -102,9 +102,6 @@ export function InstructorAIGenerateDrafts({
                 class="form-control js-textarea-autosize"
                 style="resize: none;"
               ></textarea>
-              <div class="form-text form-muted">
-                <em id="user-prompt-llm-example"> Example: ${examplePrompts[0].promptGeneral} </em>
-              </div>
             </div>
 
             <div class="js-hidden-inputs-container ${hasDrafts ? 'd-none' : ''}">
@@ -283,7 +280,7 @@ function SampleQuestionSelector({
               </p>
               <button id="fill-prompts" type="button" class="btn btn-primary me-2">
                 <i class="fa fa-clone" aria-hidden="true"></i>
-                Fill prompts
+                Fill prompt
               </button>
             </div>
           </div>
@@ -325,7 +322,6 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
               type="text"
               class="form-control"
               aria-label="Sample question response"
-              placeholder="rtol=2"
             />
             <span
               id="answer-units-feedback-container"

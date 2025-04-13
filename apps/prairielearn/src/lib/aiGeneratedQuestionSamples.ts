@@ -64,10 +64,11 @@ export const examplePrompts: ExamplePrompt[] = [
     answerType: 'radio'
   },
   { 
-    id: 'compute-polynomial-roots', 
-    name: 'Compute roots of a random polynomial',
-    features: ['Random parameters', 'Multiple number inputs', 'Relative and absolute tolerance'],
-    promptGeneral: 'Give the user a random second degree polynomial, and give them two number input fields to input a smaller and larger root.',
+    id: 'compute-polynomial-root', 
+    name: 'Compute smallest root of a random polynomial',
+    features: ['Random parameters', 'Number inputs', 'Single correct answer', 'Relative and absolute tolerance'],
+    promptGeneral: 'Give the user a random second degree polynomial, and prompt them to respond with its smallest root.',
+    answerLabel: 'Smallest root',
     answerType: 'number',
     rtol: 0.01,
     atol: 1e-08
@@ -75,7 +76,7 @@ export const examplePrompts: ExamplePrompt[] = [
   { 
     id: 'compute-hypotenuse-length', 
     name: 'Compute random triangle hypotenuse length',
-    features: ['Random parameters', 'Number input', 'Relative and absolute tolerance'],
+    features: ['Random parameters', 'Number input', 'Single correct answer', 'Relative and absolute tolerance'],
     promptGeneral: 'Give the user the length of two legs a and b, each with at most one decimal after the decimal point, and prompt the user to find the length of the hypotenuse. Provide the hypotenuse formula. ',
     answerType: 'number',
     rtol: 0.01,
@@ -84,7 +85,7 @@ export const examplePrompts: ExamplePrompt[] = [
   { 
     id: 'find-irregular-plural', 
     name: 'Find the plural form of a random word',
-    features: ['Random parameters', 'String input'],
+    features: ['Random parameters', 'String input', 'Single correct answer'],
     promptGeneral: 'Give the user a random word with an irregular plural form in its singular form, and ask them to find its plural form.',
     answerType: 'string'
   },

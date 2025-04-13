@@ -130,11 +130,6 @@ onDocumentReady(() => {
     }
   }
 
-  function setEmTagValue(selector: string, value: string) {
-    const input = document.querySelector(selector) as HTMLInputElement;
-    input.innerHTML = value;
-  }
-
   function generateSampleQuestionVariant(id: string) {
     let variant: SampleQuestionVariantInfo;
     switch (id) {
@@ -159,8 +154,8 @@ onDocumentReady(() => {
       case 'verify-compass-direction':
         variant = verifyCompassDirection();
         break;
-      case 'compute-polynomial-roots':
-        variant = computePolynomialRoots();
+      case 'compute-polynomial-root':
+        variant = computePolynomialRoot();
         break;
       case 'compute-hypotenuse-length':
         variant = computeHypotenuseLength();
@@ -302,8 +297,6 @@ onDocumentReady(() => {
           }
         }
       } 
-
-      setEmTagValue('#user-prompt-llm-example', `Example: ${examplePrompt.promptGeneral ?? ''}`);
     }
 
     // Render the MathJax content
@@ -416,6 +409,7 @@ onDocumentReady(() => {
       const response = userInputResponse.value;
       const rtol = examplePrompt.rtol;
       const atol = examplePrompt.atol;
+
       const answerNum = parseFloat(answer ?? '0');
 
       if (answerNum) {
@@ -429,12 +423,11 @@ onDocumentReady(() => {
 
         let isValid = perfectMatch;
 
-        if (rtol && atol) {
-          isValid = relativeErrorValid && absoluteErrorValid;
-        } else if (rtol) {
-          isValid = relativeErrorValid;
-        } else if (atol) {
-          isValid = absoluteErrorValid;
+        if (rtol) {
+          isValid = isValid || relativeErrorValid;
+        }
+        if (atol) {
+          isValid = isValid || absoluteErrorValid;
         }
 
         if (isValid) {
@@ -732,7 +725,7 @@ function verifyCompassDirection(): SampleQuestionVariantInfo {
   };
 }
 
-function computePolynomialRoots(): SampleQuestionVariantInfo {
+function computePolynomialRoot(): SampleQuestionVariantInfo {
   let a = 0;
   let b = 0;
   let c = 0;
@@ -751,20 +744,15 @@ function computePolynomialRoots(): SampleQuestionVariantInfo {
   const root1 = Math.round(((-b - sqrtD) / (2 * a)) * 100) / 100;
   const root2 = Math.round(((-b + sqrtD) / (2 * a)) * 100) / 100;
 
-  // Order the roots
-  // const [smaller, larger] = [root1, root2].sort((x, y) => x - y);
-
   return {
     question: `
       <p>
-        Compute the roots of the following polynomial:
+        Compute the smallest root of the following polynomial:
 
         $$ ${a}x^2 + ${b}x + ${c} = 0 $$
-
-        <strong>Enter the smaller root first, and the larger root second.</strong>
       </p>
     `,
-    correctAnswer: `${root1}, ${root2}`,
+    correctAnswer: Math.min(root1, root2).toString(),
   };
 }
 
