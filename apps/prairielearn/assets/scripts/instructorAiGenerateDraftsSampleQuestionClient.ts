@@ -44,10 +44,7 @@ onDocumentReady(() => {
   const questionContent = questionDemo.querySelector('#question-content') as HTMLDivElement;
   const gradeButton = questionDemo.querySelector('#grade-button') as HTMLButtonElement;
 
-  const userInputResponse = questionDemo.querySelector(
-    '#user-input-response',
-  ) as HTMLInputElement;
-
+  const userInputResponse = questionDemo.querySelector('#user-input-response') as HTMLInputElement;
 
   const multipleChoiceResponse = questionDemo.querySelector(
     '#multiple-choice-response',
@@ -59,7 +56,7 @@ onDocumentReady(() => {
     '#multiple-choice-feedback-container',
   ) as HTMLDivElement;
   const multipleChoicePartiallyCorrectBadge = multipleChoiceFeedbackContainer.querySelector(
-    '#feedback-badge-partially-correct'
+    '#feedback-badge-partially-correct',
   ) as HTMLDivElement;
 
   const answerLabelContainer = questionDemo.querySelector(
@@ -75,7 +72,9 @@ onDocumentReady(() => {
 
   const newVariantButton = questionDemo.querySelector('#new-variant-button') as HTMLButtonElement;
 
-  const sampleQuestionPrompt = document.querySelector('#sample-question-prompt') as HTMLParagraphElement;
+  const sampleQuestionPrompt = document.querySelector(
+    '#sample-question-prompt',
+  ) as HTMLParagraphElement;
 
   const fillPromptsButton = document.querySelector('#fill-prompts');
 
@@ -103,12 +102,14 @@ onDocumentReady(() => {
   });
 
   function setGrade(
-    state: 'correct' | 'partially-correct' | 'incorrect' | 'no-grade', 
-    answerType: 'number' | 'radio' | 'checkbox' | 'string', 
-    partialCredit?: number 
+    state: 'correct' | 'partially-correct' | 'incorrect' | 'no-grade',
+    answerType: 'number' | 'radio' | 'checkbox' | 'string',
+    partialCredit?: number,
   ) {
     const feedbackContainer =
-      (answerType === 'number' || answerType === 'string') ? answerUnitsFeedbackContainer : multipleChoiceFeedbackContainer;
+      answerType === 'number' || answerType === 'string'
+        ? answerUnitsFeedbackContainer
+        : multipleChoiceFeedbackContainer;
 
     feedbackContainer.classList.remove('correct');
     feedbackContainer.classList.remove('partially-correct');
@@ -120,7 +121,7 @@ onDocumentReady(() => {
       case 'partially-correct':
         feedbackContainer.classList.add('partially-correct');
         if (partialCredit) {
-          multipleChoicePartiallyCorrectBadge.innerHTML = `${partialCredit}%`
+          multipleChoicePartiallyCorrectBadge.innerHTML = `${partialCredit}%`;
         }
         break;
       case 'incorrect':
@@ -296,7 +297,7 @@ onDocumentReady(() => {
             }
           }
         }
-      } 
+      }
     }
 
     // Render the MathJax content
@@ -412,7 +413,7 @@ onDocumentReady(() => {
 
       const answerNum = parseFloat(answer ?? '0');
 
-      if (answerNum) {
+      if (!isNaN(answerNum)) {
         const responseNum = parseFloat(response);
         const relativeError = Math.abs((responseNum - answerNum) / answerNum);
         const absoluteError = Math.abs(responseNum - answerNum);
@@ -449,7 +450,7 @@ onDocumentReady(() => {
         setGrade('incorrect', examplePrompt.answerType);
       }
     } else if (examplePrompt.answerType === 'checkbox') {
-      const allOptions =  multipleChoiceResponseOptions.querySelectorAll(
+      const allOptions = multipleChoiceResponseOptions.querySelectorAll(
         'input[type="checkbox"]',
       ) as NodeListOf<HTMLInputElement>;
       const optionValues = Array.from(allOptions).map((option) => option.value);
@@ -478,7 +479,7 @@ onDocumentReady(() => {
       if (numCorrect === optionValues.length) {
         setGrade('correct', examplePrompt.answerType);
       } else if (numCorrect > 0) {
-        setGrade('partially-correct', examplePrompt.answerType, percentCorrect)
+        setGrade('partially-correct', examplePrompt.answerType, percentCorrect);
       } else {
         setGrade('incorrect', examplePrompt.answerType);
       }
@@ -506,16 +507,16 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
     Australia: ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide'],
     India: ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata'],
   };
-  
+
   const countryNames = Object.keys(countries);
   const randomCountry = countryNames[Math.floor(Math.random() * countryNames.length)];
   const cities = countries[randomCountry as keyof typeof countries];
-  
+
   // Pick between 1 and 5 correct cities
   const numCorrectCities = Math.floor(Math.random() * 5) + 1;
   const shuffledCorrect = [...cities].sort(() => Math.random() - 0.5);
   const correctCities = shuffledCorrect.slice(0, numCorrectCities);
-  
+
   // Gather all incorrect cities
   const incorrectCitiesPool: string[] = [];
   for (const country of countryNames) {
@@ -523,17 +524,17 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
       incorrectCitiesPool.push(...countries[country as keyof typeof countries]);
     }
   }
-  
+
   // Shuffle and pick required number of incorrect cities to make 6 total options
   const numIncorrectCities = 6 - numCorrectCities;
   const shuffledIncorrect = incorrectCitiesPool.sort(() => Math.random() - 0.5);
   const selectedIncorrectCities = shuffledIncorrect.slice(0, numIncorrectCities);
-  
+
   // Combine and shuffle options
   const allOptions = [...correctCities, ...selectedIncorrectCities].sort(() => Math.random() - 0.5);
-  
+
   const correctAnswer = correctCities.join(', ');
-  
+
   return {
     question: `
           <p>
@@ -562,19 +563,19 @@ function identifyEvenOrOddNumbersVariant(): SampleQuestionVariantInfo {
   return {
     question: `
       <p>
-        Select all of the following numbers that are <strong>odd</strong>:
+        Select all of the following numbers that are <strong>${isEven ? 'even' : 'odd'}</strong>:
       </p>
     `,
-    options: shuffledNumbers.map(number => number.toString()),
+    options: shuffledNumbers.map((number) => number.toString()),
     correctAnswer,
   };
 }
 
 function convertRadiansToDegreesVariant(): SampleQuestionVariantInfo {
-  // Generate a random numerator and denominator 
+  // Generate a random numerator and denominator
   const numerator = Math.floor(Math.random() * 10) + 1;
   const denominator = Math.floor(Math.random() * 10) + 2;
-  
+
   // Randomly generate an angle between 0 and 2pi
   const angleInRadians = (numerator / denominator) * Math.PI;
 
@@ -587,7 +588,7 @@ function convertRadiansToDegreesVariant(): SampleQuestionVariantInfo {
         Convert the angle $ \\theta = \\frac{${numerator}\\pi}{${denominator}} $ (in radians) to degrees.
       </p>
     `,
-    correctAnswer: angleInDegrees.toFixed(2).replace(/\.0+$/,''),
+    correctAnswer: angleInDegrees.toFixed(2).replace(/\.0+$/, ''),
   };
 }
 
@@ -604,7 +605,7 @@ function multiplyTwoNumbersVariant(): SampleQuestionVariantInfo {
   }
   const shuffledOptions = options.sort(() => Math.random() - 0.5);
   const correctAnswer = product.toString();
-  
+
   return {
     question: `
       <p>
@@ -624,9 +625,7 @@ function identifyRainbowColor(): SampleQuestionVariantInfo {
   const correctAnswer = rainbowColors[Math.floor(Math.random() * rainbowColors.length)];
 
   // Select 3 random incorrect answers
-  const incorrectAnswers = nonRainbowColors
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 3);
+  const incorrectAnswers = nonRainbowColors.sort(() => Math.random() - 0.5).slice(0, 3);
 
   return {
     question: `
@@ -634,25 +633,13 @@ function identifyRainbowColor(): SampleQuestionVariantInfo {
         Which of the following colors can be found in a rainbow?
       </p>
     `,
-    options: [
-      correctAnswer,
-      ...incorrectAnswers,
-    ],
+    options: [correctAnswer, ...incorrectAnswers],
     correctAnswer,
   };
 }
 
 function identifyNthPlanet(): SampleQuestionVariantInfo {
-  const planets = [
-    'Mercury',
-    'Venus',
-    'Earth',
-    'Mars',
-    'Jupiter',
-    'Saturn',
-    'Uranus',
-    'Neptune',
-  ];
+  const planets = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
   const randomIndex = Math.floor(Math.random() * planets.length);
   const nthPlanet = planets[randomIndex];
   const otherPlanets = planets.filter((_, index) => index !== randomIndex);
@@ -668,7 +655,7 @@ function identifyNthPlanet(): SampleQuestionVariantInfo {
     indexPostfix = 'nd';
   } else if (displayedRandomIndex === 3) {
     indexPostfix = 'rd';
-  } 
+  }
 
   return {
     question: `
@@ -702,14 +689,10 @@ function verifyCompassDirection(): SampleQuestionVariantInfo {
   const { country1, country2, direction } = european_countries_and_relative_directions[randomIndex];
 
   const correctStatement = Math.random() < 0.5;
-  
-  const incorrectStatements = [
-    'North',
-    'South',
-    'East',
-    'West',
-  ].filter((d) => d !== direction);
-  const randomIncorrectStatement = incorrectStatements[Math.floor(Math.random() * incorrectStatements.length)];
+
+  const incorrectStatements = ['North', 'South', 'East', 'West'].filter((d) => d !== direction);
+  const randomIncorrectStatement =
+    incorrectStatements[Math.floor(Math.random() * incorrectStatements.length)];
 
   return {
     question: `
@@ -717,10 +700,7 @@ function verifyCompassDirection(): SampleQuestionVariantInfo {
         Is the direction from ${country1} to ${country2} ${correctStatement ? direction : randomIncorrectStatement}?
       </p>
     `,
-    options: [
-      'True',
-      'False',
-    ],
+    options: ['True', 'False'],
     correctAnswer: correctStatement ? 'True' : 'False',
   };
 }
@@ -733,9 +713,9 @@ function computePolynomialRoot(): SampleQuestionVariantInfo {
 
   // Keep generating random coefficients until we get real roots
   while (discriminant < 0) {
-    a = Math.round((Math.random() * 4 + 1) * 100) / 100;  
+    a = Math.round((Math.random() * 4 + 1) * 100) / 100;
     b = Math.round((Math.random() * 20 - 10) * 100) / 100;
-    c = Math.round((Math.random() * 20 - 10) * 100) / 100; 
+    c = Math.round((Math.random() * 20 - 10) * 100) / 100;
     discriminant = b * b - 4 * a * c;
   }
 

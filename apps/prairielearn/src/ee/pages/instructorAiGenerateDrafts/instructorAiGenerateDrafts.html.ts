@@ -94,7 +94,7 @@ export function InstructorAIGenerateDrafts({
 
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
-                Describe the question and how students should respond. 
+                Describe the question and how students should respond.
               </label>
               <textarea
                 name="prompt"
@@ -275,9 +275,7 @@ function SampleQuestionSelector({
               </ul>
               ${SampleQuestionDemo(initialPrompt)}
               <p class="font-weight-bold mb-1 mt-3">Prompt</p>
-              <p id="sample-question-prompt">
-              
-              </p>
+              <p id="sample-question-prompt"></p>
               <button id="fill-prompts" type="button" class="btn btn-primary me-2">
                 <i class="fa fa-clone" aria-hidden="true"></i>
                 Fill prompt
@@ -301,21 +299,20 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
         <div id="question-content"></div>
         <div
           id="response-container"
-          class="${
-            run(() => {
-              if (initialPrompt.answerType === 'number' || initialPrompt.answerType === 'string') {
-                return 'input-response';
-              } else if (initialPrompt.answerType === 'checkbox' || initialPrompt.answerType === 'radio') {
-                return 'multiple-choice-response'
-              } 
-            })
-          }"
+          class="${run(() => {
+            if (initialPrompt.answerType === 'number' || initialPrompt.answerType === 'string') {
+              return 'input-response';
+            } else if (
+              initialPrompt.answerType === 'checkbox' ||
+              initialPrompt.answerType === 'radio'
+            ) {
+              return 'multiple-choice-response';
+            }
+          })}"
         >
           <span id="input-response" class="input-group">
             <span id="answer-label-container" class="input-group-text">
-              <span id="answer-label">
-                ${initialPrompt.answerLabel}
-              </span>
+              <span id="answer-label"> ${initialPrompt.answerLabel} </span>
             </span>
             <input
               id="user-input-response"
@@ -336,7 +333,9 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
             <div id="multiple-choice-response-options"></div>
             <div id="multiple-choice-feedback-container">
               <span id="feedback-badge-correct" class="badge bg-success">100%</span>
-              <span id="feedback-badge-partially-correct" class="badge bg-warning text-dark">0%</span>
+              <span id="feedback-badge-partially-correct" class="badge bg-warning text-dark"
+                >0%</span
+              >
               <span id="feedback-badge-incorrect" class="badge bg-danger">0%</span>
             </div>
           </div>
