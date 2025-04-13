@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
@@ -93,8 +94,7 @@ export function InstructorAIGenerateDrafts({
 
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
-                Give a high-level overview of the question. What internal parameters need to be
-                generated and what information should be provided to students?
+                Give a high-level overview of the question.
               </label>
               <textarea
                 name="prompt"
@@ -108,41 +108,6 @@ export function InstructorAIGenerateDrafts({
             </div>
 
             <div class="js-hidden-inputs-container ${hasDrafts ? 'd-none' : ''}">
-              <div class="mb-3 d-none">
-                <label class="form-label" for="user-prompt-llm-user-input">
-                  How should students input their solution? What choices or input boxes are they
-                  given?
-                </label>
-                <textarea
-                  name="prompt_user_input"
-                  id="user-prompt-llm-user-input"
-                  class="form-control js-textarea-autosize"
-                  style="resize: none;"
-                ></textarea>
-                <div class="form-text form-muted">
-                  <em id="user-prompt-llm-user-input-example">
-                    Example: ${examplePrompts[0].promptUserInput}
-                  </em>
-                </div>
-              </div>
-
-              <div class="mb-3 d-none">
-                <label class="form-label" for="user-prompt-llm-grading">
-                  How is the correct answer determined?
-                </label>
-                <textarea
-                  name="prompt_grading"
-                  id="user-prompt-llm-grading"
-                  class="form-control js-textarea-autosize"
-                  style="resize: none;"
-                ></textarea>
-                <div class="form-text form-muted">
-                  <em id="user-prompt-llm-grading-example">
-                    Example: ${examplePrompts[0].promptGrading}
-                  </em>
-                </div>
-              </div>
-
               <button type="submit" class="btn btn-primary w-100">
                 <span
                   class="spinner-grow spinner-grow-sm d-none me-1"
@@ -266,8 +231,8 @@ function SampleQuestionSelector({
                   <button
                     id="sample-question-selector-button"
                     type="button"
-                    class="btn dropdown-toggle dropdown-menu-right border border-gray d-flex justify-content-between align-items-center bg-white flex-grow-1"
-                    style="max-width: 100%;"
+                    style="width: 100%;"
+                    class="btn dropdown-toggle dropdown-menu-right border border-gray d-flex justify-content-between align-items-center bg-white"
                     aria-label="Change example question"
                     aria-haspopup="true"
                     aria-expanded="false"
@@ -276,9 +241,11 @@ function SampleQuestionSelector({
                   >
                     <span
                       id="sample-question-selector-button-text"
-                      class="text-truncate overflow-hidden me-4"
-                      >${examplePrompts[0].name}</span
+                      class="w-100 me-4 text-start"
+                      style="white-space: normal;"
                     >
+                      ${examplePrompts[0].name}
+                    </span>
                   </button>
                   <div class="dropdown-menu py-0">
                     <div class="overflow-auto">
@@ -297,10 +264,10 @@ function SampleQuestionSelector({
                   </div>
                 </div>
                 <button id="previous-question-button" type="button" class="btn btn-primary">
-                  Previous question
+                  Previous
                 </button>
                 <button id="next-question-button" type="button" class="btn btn-primary">
-                  Next question
+                  Next
                 </button>
               </div>
               <p class="font-weight-bold mb-1 mt-3">Question features</p>
@@ -311,10 +278,8 @@ function SampleQuestionSelector({
               </ul>
               ${SampleQuestionDemo(initialPrompt)}
               <p class="font-weight-bold mb-1 mt-3">Prompt</p>
-              <p>
-                Generate a question by randomly creating two vectors (e.g., 3-dimensional). Ask the
-                student to calculate the dot product of these vectors. Include the vector components
-                in the prompt.
+              <p id="sample-question-prompt">
+              
               </p>
               <button id="fill-prompts" type="button" class="btn btn-primary me-2">
                 <i class="fa fa-clone" aria-hidden="true"></i>
@@ -339,16 +304,24 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
         <div id="question-content"></div>
         <div
           id="response-container"
-          class="${initialPrompt.answerType === 'number' ? 'number' : 'multiple-choice'}"
+          class="${
+            run(() => {
+              if (initialPrompt.answerType === 'number' || initialPrompt.answerType === 'string') {
+                return 'input-response';
+              } else if (initialPrompt.answerType === 'checkbox' || initialPrompt.answerType === 'radio') {
+                return 'multiple-choice-response'
+              } 
+            })
+          }"
         >
-          <span id="number-response" class="input-group">
+          <span id="input-response" class="input-group">
             <span id="answer-label-container" class="input-group-text">
               <span id="answer-label">
-                ${initialPrompt.answerLabel ? `${initialPrompt.answerLabel} = ` : ''}
+                ${initialPrompt.answerLabel}
               </span>
             </span>
             <input
-              id="user-number-response"
+              id="user-input-response"
               type="text"
               class="form-control"
               aria-label="Sample question response"
@@ -367,15 +340,16 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
             <div id="multiple-choice-response-options"></div>
             <div id="multiple-choice-feedback-container">
               <span id="feedback-badge-correct" class="badge bg-success">100%</span>
+              <span id="feedback-badge-partially-correct" class="badge bg-warning text-dark">0%</span>
               <span id="feedback-badge-incorrect" class="badge bg-danger">0%</span>
             </div>
           </div>
         </div>
       </div>
-      <div class="card-footer d-flex justify-content-end align-items-center">
+      <div class="card-footer d-flex justify-content-end align-items-center gap-2">
         <p class="my-0"><i id="answer">Answer:</i></p>
         <div class="flex-grow-1"></div>
-        <button id="new-variant-button" type="button" class="btn btn-primary me-2">
+        <button id="new-variant-button" type="button" class="btn btn-primary text-nowrap">
           New variant
         </button>
         <button id="grade-button" type="button" class="btn btn-primary">Grade</button>
@@ -383,42 +357,6 @@ function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
     </div>
   `;
 }
-
-// <div>
-// <div class="form-check">
-//   <input class="form-check-input" type="radio" name="exampleRadios" id="exampleRadios1" value="option1" checked>
-//   <label class="form-check-label" for="exampleRadios1">
-//     (a) Default radio
-//   </label>
-// </div>
-// <div class="form-check">
-//   <input class="form-check-input" type="radio" name="exampleRadios" id="exampleRadios2" value="option2">
-//   <label class="form-check-label" for="exampleRadios2">
-//     (b) Second default radio
-//   </label>
-// </div>
-// <div class="form-check">
-//   <input class="form-check-input" type="radio" name="exampleRadios" id="exampleRadios3" value="option3">
-//   <label class="form-check-label" for="exampleRadios3">
-//     (c) Radio 3
-//   </label>
-// </div>
-// </div>
-// <div>
-// <div class="form-check">
-//   <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
-//   <label class="form-check-label" for="flexCheckDefault">
-//     Default checkbox
-//   </label>
-// </div>
-// <div class="form-check">
-//   <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked>
-//   <label class="form-check-label" for="flexCheckChecked">
-//     Checked checkbox
-//   </label>
-// </div>
-// </div>
-// </div>
 
 export function GenerationFailure({
   urlPrefix,

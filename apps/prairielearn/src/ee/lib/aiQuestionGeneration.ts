@@ -110,7 +110,6 @@ async function checkRender(
 export async function makeContext(
   client: OpenAI,
   prompt: string,
-  promptUserInput: string | undefined,
   mandatoryElementNames: string[],
   authnUserId: string,
 ): Promise<string> {
@@ -139,27 +138,26 @@ export async function makeContext(
 
   // If a prompt specifies how user input is handled, try to find documentation for those types of input
   // and save as last doc. Regeneration prompts don't use this, so promptUserInput may be undefined.
-  if (promptUserInput !== undefined) {
-    const embeddingUserInput = await createEmbedding(
-      client,
-      promptUserInput,
-      openAiUserFromAuthn(authnUserId),
-    );
+  const embeddingUserInput = await createEmbedding(
+    client,
+    prompt,
+    openAiUserFromAuthn(authnUserId),
+  );
 
-    const elementDoc = await queryRow(
-      sql.select_nearby_documents_from_file,
-      {
-        embedding: vectorToString(embeddingUserInput),
-        doc_path: 'docs/elements.md',
-        limit: 1,
-      },
-      QuestionGenerationContextEmbeddingSchema,
-    );
-    if (numElements > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
-      // Override the last (least relevant) doc.
-      docs[numElements - 1] = elementDoc;
-    }
+  const elementDoc = await queryRow(
+    sql.select_nearby_documents_from_file,
+    {
+      embedding: vectorToString(embeddingUserInput),
+      doc_path: 'docs/elements.md',
+      limit: 1,
+    },
+    QuestionGenerationContextEmbeddingSchema,
+  );
+  if (numElements > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
+    // Override the last (least relevant) doc.
+    docs[numElements - 1] = elementDoc;
   }
+
 
   return docs
     .concat(mandatoryElements)
@@ -222,8 +220,6 @@ export async function generateQuestion({
   courseId,
   authnUserId,
   promptGeneral,
-  promptUserInput,
-  promptGrading,
   userId,
   hasCoursePermissionEdit,
 }: {
@@ -231,8 +227,6 @@ export async function generateQuestion({
   courseId: string;
   authnUserId: string;
   promptGeneral: string;
-  promptUserInput: string;
-  promptGrading: string;
   userId: string;
   hasCoursePermissionEdit: boolean;
 }): Promise<{
@@ -254,15 +248,10 @@ export async function generateQuestion({
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    const userPrompt = `${promptGeneral}
-    
-    You should provide the following input methods for students to answer: ${promptUserInput}
-    
-    To calculate the right answer, you should: ${promptGrading}`;
 
-    job.info(`prompt is ${userPrompt}`);
+    job.info(`prompt is ${promptGeneral}`);
 
-    const context = await makeContext(client, userPrompt, promptUserInput, [], authnUserId);
+    const context = await makeContext(client, promptGeneral, [], authnUserId);
 
     const sysPrompt = `
 ${promptPreamble(context)}
@@ -279,7 +268,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       model: MODEL_NAME,
       messages: [
         { role: 'system', content: sysPrompt },
-        { role: 'user', content: userPrompt },
+        { role: 'user', content: promptGeneral },
       ],
       user: openAiUserFromAuthn(authnUserId),
     });
@@ -329,7 +318,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       question_id: saveResults.question_id,
       prompting_user_id: authnUserId,
       prompt_type: 'initial',
-      user_prompt: userPrompt,
+      user_prompt: promptGeneral,
       system_prompt: sysPrompt,
       response: completion.choices[0].message.content,
       html: results?.html,
@@ -358,7 +347,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         job,
         client,
         authnUserId,
-        originalPrompt: userPrompt,
+        originalPrompt: promptGeneral,
         revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
         originalHTML: html || '',
         originalPython: typeof results?.python === 'string' ? results?.python : undefined,
@@ -455,7 +444,7 @@ async function regenInternal({
     tags = Array.from(traverseForTagNames(ast));
   }
 
-  const context = await makeContext(client, originalPrompt, undefined, tags, authnUserId);
+  const context = await makeContext(client, originalPrompt, tags, authnUserId);
 
   const sysPrompt = `
 ${promptPreamble(context)}
