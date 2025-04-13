@@ -37,9 +37,17 @@
   margin-right: 0.5rem;
 }
 
-#response-container.number #multiple-choice-response,
-#response-container.multiple-choice #number-response {
+#multiple-choice-response,
+#input-response {
   display: none;
+}
+
+#response-container.multiple-choice-response #multiple-choice-response {
+  display: block;
+}
+
+#response-container.input-response #input-response {
+  display: flex;
 }
 
 #multiple-choice-feedback-container {
@@ -48,11 +56,27 @@
 }
 
 #multiple-choice-feedback-container #feedback-badge-correct,
+#multiple-choice-feedback-container #feedback-badge-partially-correct,
 #multiple-choice-feedback-container #feedback-badge-incorrect {
   display: none;
 }
 
 #multiple-choice-feedback-container.correct #feedback-badge-correct,
+#multiple-choice-feedback-container.partially-correct #feedback-badge-partially-correct,
 #multiple-choice-feedback-container.incorrect #feedback-badge-incorrect {
   display: block;
+}
+
+#string-response #feedback-badge-correct,
+#string-response #feedback-badge-incorrect {
+  display: none;
+}
+
+#string-response.correct #feedback-badge-correct,
+#string-response.incorrect #feedback-badge-incorrect {
+  display: block;
+}
+
+#answer-label > mjx-container {
+  margin: 0;
 }

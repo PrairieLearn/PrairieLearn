@@ -1,5 +1,3 @@
-import _ from 'lodash';
-
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import { examplePrompts } from '../../src/lib/aiGeneratedQuestionSamples.js';
@@ -45,9 +43,11 @@ onDocumentReady(() => {
 
   const questionContent = questionDemo.querySelector('#question-content') as HTMLDivElement;
   const gradeButton = questionDemo.querySelector('#grade-button') as HTMLButtonElement;
-  const userNumberResponse = questionDemo.querySelector(
-    '#user-number-response',
+
+  const userInputResponse = questionDemo.querySelector(
+    '#user-input-response',
   ) as HTMLInputElement;
+
 
   const multipleChoiceResponse = questionDemo.querySelector(
     '#multiple-choice-response',
@@ -57,6 +57,9 @@ onDocumentReady(() => {
   ) as HTMLDivElement;
   const multipleChoiceFeedbackContainer = multipleChoiceResponse.querySelector(
     '#multiple-choice-feedback-container',
+  ) as HTMLDivElement;
+  const multipleChoicePartiallyCorrectBadge = multipleChoiceFeedbackContainer.querySelector(
+    '#feedback-badge-partially-correct'
   ) as HTMLDivElement;
 
   const answerLabelContainer = questionDemo.querySelector(
@@ -71,6 +74,8 @@ onDocumentReady(() => {
   const answer = questionDemo.querySelector('#answer') as HTMLSpanElement;
 
   const newVariantButton = questionDemo.querySelector('#new-variant-button') as HTMLButtonElement;
+
+  const sampleQuestionPrompt = document.querySelector('#sample-question-prompt') as HTMLParagraphElement;
 
   const fillPromptsButton = document.querySelector('#fill-prompts');
 
@@ -94,30 +99,34 @@ onDocumentReady(() => {
     // Set the prompt input values based on the selected question tab
     if (examplePrompt) {
       setInputValue('#user-prompt-llm', examplePrompt.promptGeneral ?? '');
-      setInputValue('#user-prompt-llm-user-input', examplePrompt.promptUserInput ?? '');
-      setInputValue('#user-prompt-llm-grading', examplePrompt.promptGrading ?? '');
     }
   });
 
   function setGrade(
-    state: 'correct' | 'incorrect' | 'no-grade',
-    answerType: 'number' | 'radio' | 'checkbox',
+    state: 'correct' | 'partially-correct' | 'incorrect' | 'no-grade', 
+    answerType: 'number' | 'radio' | 'checkbox' | 'string', 
+    partialCredit?: number 
   ) {
     const feedbackContainer =
-      answerType === 'number' ? answerUnitsFeedbackContainer : multipleChoiceFeedbackContainer;
+      (answerType === 'number' || answerType === 'string') ? answerUnitsFeedbackContainer : multipleChoiceFeedbackContainer;
 
+    feedbackContainer.classList.remove('correct');
+    feedbackContainer.classList.remove('partially-correct');
+    feedbackContainer.classList.remove('incorrect');
     switch (state) {
       case 'correct':
         feedbackContainer.classList.add('correct');
-        feedbackContainer.classList.remove('incorrect');
+        break;
+      case 'partially-correct':
+        feedbackContainer.classList.add('partially-correct');
+        if (partialCredit) {
+          multipleChoicePartiallyCorrectBadge.innerHTML = `${partialCredit}%`
+        }
         break;
       case 'incorrect':
         feedbackContainer.classList.add('incorrect');
-        feedbackContainer.classList.remove('correct');
         break;
-      case 'no-grade':
-        feedbackContainer.classList.remove('correct');
-        feedbackContainer.classList.remove('incorrect');
+      default:
     }
   }
 
@@ -129,23 +138,35 @@ onDocumentReady(() => {
   function generateSampleQuestionVariant(id: string) {
     let variant: SampleQuestionVariantInfo;
     switch (id) {
-      case 'dot-product':
-        variant = generateDotProductVariant();
+      case 'cities-in-random-country':
+        variant = citiesInRandomCountryVariant();
         break;
-      case 'median':
-        variant = generateMedianVariant();
+      case 'identify-even-or-odd-numbers':
+        variant = identifyEvenOrOddNumbersVariant();
         break;
-      case 'bit-shifting':
-        variant = generateBitShiftingVariant();
+      case 'convert-radians-to-degrees':
+        variant = convertRadiansToDegreesVariant();
         break;
-      case 'projectile-distance':
-        variant = generateProjectileDistanceVariant();
+      case 'multiply-two-numbers':
+        variant = multiplyTwoNumbersVariant();
         break;
-      case 'mcq-test':
-        variant = generateMCQTestVariant();
+      case 'identify-rainbow-color':
+        variant = identifyRainbowColor();
         break;
-      case 'checkbox-test':
-        variant = generateCheckboxTestVariant();
+      case 'identify-nth-planet':
+        variant = identifyNthPlanet();
+        break;
+      case 'verify-compass-direction':
+        variant = verifyCompassDirection();
+        break;
+      case 'compute-polynomial-roots':
+        variant = computePolynomialRoots();
+        break;
+      case 'compute-hypotenuse-length':
+        variant = computeHypotenuseLength();
+        break;
+      case 'find-irregular-plural':
+        variant = findIrregularPlural();
         break;
       default:
         variant = {
@@ -154,8 +175,8 @@ onDocumentReady(() => {
         };
     }
 
-    // Clear the user response field
-    userNumberResponse.value = '';
+    // Clear the user free response field
+    userInputResponse.value = '';
 
     // Set the question content to that of the variant
     questionContent.innerHTML = variant.question;
@@ -169,6 +190,9 @@ onDocumentReady(() => {
       // Update the question demo text
       questionDemoName.innerHTML = examplePrompt.name ?? '';
 
+      // Update the sample question prompt
+      sampleQuestionPrompt.innerHTML = examplePrompt.promptGeneral ?? '';
+
       // Clear the response feedback
       setGrade('no-grade', examplePrompt.answerType);
 
@@ -179,13 +203,13 @@ onDocumentReady(() => {
         '',
       );
 
-      if (examplePrompt.answerType === 'number') {
-        // Display the numeric input
+      if (examplePrompt.answerType === 'number' || examplePrompt.answerType === 'string') {
+        // Display the free response input
         const responseContainer = questionDemo.querySelector(
           '#response-container',
         ) as HTMLDivElement;
-        responseContainer.classList.remove('multiple-choice');
-        responseContainer.classList.add('number');
+        responseContainer.classList.remove('multiple-choice-response');
+        responseContainer.classList.add('input-response');
 
         // Create the response field placeholder text
         let placeholderText: string = examplePrompt.answerType;
@@ -200,12 +224,12 @@ onDocumentReady(() => {
         }
 
         // Update the response placeholder text
-        userNumberResponse.placeholder = placeholderText;
+        userInputResponse.placeholder = placeholderText;
 
         // Update the answer label
         if (examplePrompt.answerLabel) {
           answerLabelContainer.classList.remove('d-none');
-          answerLabel.innerHTML = `${examplePrompt.answerLabel} = `;
+          answerLabel.innerHTML = examplePrompt.answerLabel;
         } else {
           answerLabelContainer.classList.add('d-none');
           answerLabel.innerHTML = '';
@@ -227,8 +251,8 @@ onDocumentReady(() => {
         const responseContainer = questionDemo.querySelector(
           '#response-container',
         ) as HTMLDivElement;
-        responseContainer.classList.remove('number');
-        responseContainer.classList.add('multiple-choice');
+        responseContainer.classList.remove('input-response');
+        responseContainer.classList.add('multiple-choice-response');
 
         // Add the options to the question
         multipleChoiceResponseOptions.innerHTML = (variant.options ?? []).reduce(
@@ -277,17 +301,9 @@ onDocumentReady(() => {
             }
           }
         }
-      }
+      } 
 
       setEmTagValue('#user-prompt-llm-example', `Example: ${examplePrompt.promptGeneral ?? ''}`);
-      setEmTagValue(
-        '#user-prompt-llm-user-input-example',
-        `Example: ${examplePrompt.promptUserInput ?? ''}`,
-      );
-      setEmTagValue(
-        '#user-prompt-llm-grading-example',
-        `Example: ${examplePrompt.promptGrading ?? ''}`,
-      );
     }
 
     // Render the MathJax content
@@ -295,7 +311,7 @@ onDocumentReady(() => {
   }
 
   // Generate the initial variant when the page loads
-  generateSampleQuestionVariant('dot-product');
+  generateSampleQuestionVariant(examplePrompts[0].id);
 
   // Generate a new variant when the new variant button is clicked
   newVariantButton.addEventListener('click', () => {
@@ -397,7 +413,7 @@ onDocumentReady(() => {
     if (!examplePrompt) return;
 
     if (examplePrompt.answerType === 'number') {
-      const response = userNumberResponse.value;
+      const response = userInputResponse.value;
       const rtol = examplePrompt.rtol;
       const atol = examplePrompt.atol;
       const answerNum = parseFloat(answer ?? '0');
@@ -440,16 +456,44 @@ onDocumentReady(() => {
         setGrade('incorrect', examplePrompt.answerType);
       }
     } else if (examplePrompt.answerType === 'checkbox') {
+      const allOptions =  multipleChoiceResponseOptions.querySelectorAll(
+        'input[type="checkbox"]',
+      ) as NodeListOf<HTMLInputElement>;
+      const optionValues = Array.from(allOptions).map((option) => option.value);
+
       const selectedOptions = multipleChoiceResponseOptions.querySelectorAll(
         'input[type="checkbox"]:checked',
       ) as NodeListOf<HTMLInputElement>;
-      const selectedValues = new Set(Array.from(selectedOptions).map((option) => option.value));
+      const selectedOptionValues = Array.from(selectedOptions).map((option) => option.value);
+      const selectedOptionValuesSet = new Set(selectedOptionValues);
 
       const correctAnswer = gradeButton.dataset.answer;
-      const correctValues = new Set(correctAnswer?.split(',').map((option) => option.trim()) ?? []);
+      const correctValues = correctAnswer?.split(',').map((option) => option.trim()) ?? [];
+
+      const correctValuesSet = new Set(correctValues);
+
+      let numCorrect = 0;
+      for (const option of optionValues) {
+        if (selectedOptionValuesSet.has(option) === correctValuesSet.has(option)) {
+          numCorrect++;
+        }
+      }
+
+      const percentCorrect = Math.floor((numCorrect / optionValues.length) * 100);
 
       // The selected and correct values sets must be equal for a correct answer
-      if (_.isEqual(selectedValues, correctValues)) {
+      if (numCorrect === optionValues.length) {
+        setGrade('correct', examplePrompt.answerType);
+      } else if (numCorrect > 0) {
+        setGrade('partially-correct', examplePrompt.answerType, percentCorrect)
+      } else {
+        setGrade('incorrect', examplePrompt.answerType);
+      }
+    } else if (examplePrompt.answerType === 'string') {
+      const response = userInputResponse.value;
+      const correctAnswer = gradeButton.dataset.answer;
+
+      if (response === correctAnswer) {
         setGrade('correct', examplePrompt.answerType);
       } else {
         setGrade('incorrect', examplePrompt.answerType);
@@ -458,161 +502,332 @@ onDocumentReady(() => {
   });
 });
 
-function generateDotProductVariant(): SampleQuestionVariantInfo {
-  const vector1 = {
-    x: Math.floor(Math.random() * 10),
-    y: Math.floor(Math.random() * 10),
-    z: Math.floor(Math.random() * 10),
+function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
+  const countries = {
+    'the USA': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'],
+    Canada: ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa'],
+    France: ['Paris', 'Lyon', 'Marseille', 'Nice', 'Toulouse'],
+    Germany: ['Berlin', 'Munich', 'Hamburg', 'Frankfurt', 'Stuttgart'],
+    Japan: ['Tokyo', 'Osaka', 'Kyoto', 'Nagoya', 'Sapporo'],
+    Brazil: ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza'],
+    Australia: ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide'],
+    India: ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata'],
   };
-  const vector2 = {
-    x: Math.floor(Math.random() * 10),
-    y: Math.floor(Math.random() * 10),
-    z: Math.floor(Math.random() * 10),
-  };
-
-  const dotProduct = vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
-
+  
+  const countryNames = Object.keys(countries);
+  const randomCountry = countryNames[Math.floor(Math.random() * countryNames.length)];
+  const cities = countries[randomCountry as keyof typeof countries];
+  
+  // Pick between 1 and 5 correct cities
+  const numCorrectCities = Math.floor(Math.random() * 5) + 1;
+  const shuffledCorrect = [...cities].sort(() => Math.random() - 0.5);
+  const correctCities = shuffledCorrect.slice(0, numCorrectCities);
+  
+  // Gather all incorrect cities
+  const incorrectCitiesPool: string[] = [];
+  for (const country of countryNames) {
+    if (country !== randomCountry) {
+      incorrectCitiesPool.push(...countries[country as keyof typeof countries]);
+    }
+  }
+  
+  // Shuffle and pick required number of incorrect cities to make 6 total options
+  const numIncorrectCities = 6 - numCorrectCities;
+  const shuffledIncorrect = incorrectCitiesPool.sort(() => Math.random() - 0.5);
+  const selectedIncorrectCities = shuffledIncorrect.slice(0, numIncorrectCities);
+  
+  // Combine and shuffle options
+  const allOptions = [...correctCities, ...selectedIncorrectCities].sort(() => Math.random() - 0.5);
+  
+  const correctAnswer = correctCities.join(', ');
+  
   return {
     question: `
-<p>
-    Given two vectors:
-</p>
-<p>
-  $
-  \\mathbf{u} = \\begin{bmatrix} ${vector1.x} \\\\ ${vector1.y} \\\\ ${vector1.z} \\end{bmatrix}
-
-  \\quad \\text{and} \\quad
-
-  \\mathbf{v} = \\begin{bmatrix} ${vector2.x} \\\\ ${vector2.y} \\\\ ${vector2.z} \\end{bmatrix}
-  $
-</p>
-<p>
-    Calculate the dot product $ \\mathbf{u} \\cdot \\mathbf{v} $.
-</p>`,
-    correctAnswer: dotProduct.toString(),
+          <p>
+              Identify the cities that are in <strong>${randomCountry}</strong>.
+          </p>
+      `,
+    options: allOptions,
+    correctAnswer,
   };
 }
 
-function generateMedianVariant(): SampleQuestionVariantInfo {
-  // The number of items in the list, between 5 and 10
-  const numberOfItems = Math.floor(Math.random() * 5) + 5;
+function identifyEvenOrOddNumbersVariant(): SampleQuestionVariantInfo {
+  // Randomly generate 8 integers between 1 and 100
+  const numbers = Array.from({ length: 8 }, () => Math.floor(Math.random() * 100) + 1);
 
-  const randomArray = Array.from({ length: numberOfItems }, () => Math.floor(Math.random() * 100));
+  // Shuffle the numbers
+  const shuffledNumbers = numbers.sort(() => Math.random() - 0.5);
 
-  const sortedArray = randomArray.sort((a, b) => a - b);
-  const middleIndex = Math.floor(sortedArray.length / 2);
-  let median;
-  if (sortedArray.length % 2 === 0) {
-    median = (sortedArray[middleIndex - 1] + sortedArray[middleIndex]) / 2;
-  } else {
-    median = sortedArray[middleIndex];
+  // Randomly select between even and odd
+  const isEven = Math.random() < 0.5;
+  const selectedNumbers = shuffledNumbers.filter((num) => (isEven ? num % 2 === 0 : num % 2 !== 0));
+
+  // Create the correct answer string
+  const correctAnswer = selectedNumbers.join(', ');
+
+  return {
+    question: `
+      <p>
+        Select all of the following numbers that are <strong>odd</strong>:
+      </p>
+    `,
+    options: shuffledNumbers.map(number => number.toString()),
+    correctAnswer,
+  };
+}
+
+function convertRadiansToDegreesVariant(): SampleQuestionVariantInfo {
+  // Generate a random numerator and denominator 
+  const numerator = Math.floor(Math.random() * 10) + 1;
+  const denominator = Math.floor(Math.random() * 10) + 2;
+  
+  // Randomly generate an angle between 0 and 2pi
+  const angleInRadians = (numerator / denominator) * Math.PI;
+
+  // Convert radians to degrees
+  const angleInDegrees = (angleInRadians * 180) / Math.PI;
+
+  return {
+    question: `
+      <p>
+        Convert the angle $ \\theta = \\frac{${numerator}\\pi}{${denominator}} $ (in radians) to degrees.
+      </p>
+    `,
+    correctAnswer: angleInDegrees.toFixed(2).replace(/\.0+$/,''),
+  };
+}
+
+function multiplyTwoNumbersVariant(): SampleQuestionVariantInfo {
+  const a = Math.floor(Math.random() * 10) + 1;
+  const b = Math.floor(Math.random() * 10) + 1;
+  const product = a * b;
+  const options = [product];
+  while (options.length < 4) {
+    const randomOption = Math.floor(Math.random() * 100) + 1;
+    if (!options.includes(randomOption)) {
+      options.push(randomOption);
+    }
+  }
+  const shuffledOptions = options.sort(() => Math.random() - 0.5);
+  const correctAnswer = product.toString();
+  
+  return {
+    question: `
+      <p>
+      If $ a = ${a} $ and $ b = ${b} $, what is their product, $ a \\cdot b $?
+      </p>
+    `,
+    options: shuffledOptions.map((option) => option.toString()),
+    correctAnswer,
+  };
+}
+
+function identifyRainbowColor(): SampleQuestionVariantInfo {
+  const rainbowColors = ['Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Indigo', 'Violet'];
+  const nonRainbowColors = ['Copper', 'Brown', 'Gray', 'Black', 'White', 'Gold', 'Cyan'];
+
+  // Select one random correct answer
+  const correctAnswer = rainbowColors[Math.floor(Math.random() * rainbowColors.length)];
+
+  // Select 3 random incorrect answers
+  const incorrectAnswers = nonRainbowColors
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3);
+
+  return {
+    question: `
+      <p>
+        Which of the following colors can be found in a rainbow?
+      </p>
+    `,
+    options: [
+      correctAnswer,
+      ...incorrectAnswers,
+    ],
+    correctAnswer,
+  };
+}
+
+function identifyNthPlanet(): SampleQuestionVariantInfo {
+  const planets = [
+    'Mercury',
+    'Venus',
+    'Earth',
+    'Mars',
+    'Jupiter',
+    'Saturn',
+    'Uranus',
+    'Neptune',
+  ];
+  const randomIndex = Math.floor(Math.random() * planets.length);
+  const nthPlanet = planets[randomIndex];
+  const otherPlanets = planets.filter((_, index) => index !== randomIndex);
+  const shuffledOtherPlanets = otherPlanets.sort(() => Math.random() - 0.5).slice(0, 3);
+  const shuffledOptions = [nthPlanet, ...shuffledOtherPlanets].sort(() => Math.random() - 0.5);
+  
+  return {
+    question: `
+      <p>
+        Which planet is the ${randomIndex + 1}th planet from the sun?
+      </p>
+    `,
+    options: shuffledOptions,
+    correctAnswer: nthPlanet,
+  };
+}
+
+function verifyCompassDirection(): SampleQuestionVariantInfo {
+  const european_countries_and_relative_directions = [
+    { country1: 'Italy', country2: 'Switzerland', direction: 'North' },
+    { country1: 'Spain', country2: 'Portugal', direction: 'West' },
+    { country1: 'Norway', country2: 'Sweden', direction: 'South' },
+    { country1: 'Finland', country2: 'Estonia', direction: 'South' },
+    { country1: 'Austria', country2: 'Czech Republic', direction: 'North' },
+    { country1: 'Belgium', country2: 'Netherlands', direction: 'North' },
+    { country1: 'Greece', country2: 'Turkey', direction: 'East' },
+    { country1: 'Ireland', country2: 'United Kingdom', direction: 'East' },
+    { country1: 'Denmark', country2: 'Germany', direction: 'South' },
+    { country1: 'Switzerland', country2: 'Austria', direction: 'North' },
+    { country1: 'Hungary', country2: 'Slovakia', direction: 'North' },
+    { country1: 'Croatia', country2: 'Serbia', direction: 'East' },
+    { country1: 'Finland', country2: 'Norway', direction: 'West' },
+  ];
+
+  const randomIndex = Math.floor(Math.random() * european_countries_and_relative_directions.length);
+  const { country1, country2, direction } = european_countries_and_relative_directions[randomIndex];
+
+  const correctStatement = Math.random() < 0.5;
+  
+  const incorrectStatements = [
+    'North',
+    'South',
+    'East',
+    'West',
+  ].filter((d) => d !== direction);
+  const randomIncorrectStatement = incorrectStatements[Math.floor(Math.random() * incorrectStatements.length)];
+
+  return {
+    question: `
+      <p>
+        Is the direction from ${country1} to ${country2} ${correctStatement ? direction : randomIncorrectStatement}?
+      </p>
+    `,
+    options: [
+      'True',
+      'False',
+    ],
+    correctAnswer: correctStatement ? 'True' : 'False',
+  };
+}
+
+function computePolynomialRoots(): SampleQuestionVariantInfo {
+  let a = 0;
+  let b = 0;
+  let c = 0;
+  let discriminant = -1;
+
+  // Keep generating random coefficients until we get real roots
+  while (discriminant < 0) {
+    a = Math.round((Math.random() * 4 + 1) * 100) / 100;  
+    b = Math.round((Math.random() * 20 - 10) * 100) / 100;
+    c = Math.round((Math.random() * 20 - 10) * 100) / 100; 
+    discriminant = b * b - 4 * a * c;
   }
 
+  // Compute the roots
+  const sqrtD = Math.sqrt(discriminant);
+  const root1 = Math.round(((-b - sqrtD) / (2 * a)) * 100) / 100;
+  const root2 = Math.round(((-b + sqrtD) / (2 * a)) * 100) / 100;
+
+  // Order the roots
+  // const [smaller, larger] = [root1, root2].sort((x, y) => x - y);
+
   return {
     question: `
-        <p>
-            Select the median of the following numbers: ${randomArray.map((num) => num.toString()).join(', ')}
-        </p>
-        `,
-    correctAnswer: median.toString(),
+      <p>
+        Compute the roots of the following polynomial:
+
+        $$ ${a}x^2 + ${b}x + ${c} = 0 $$
+
+        <strong>Enter the smaller root first, and the larger root second.</strong>
+      </p>
+    `,
+    correctAnswer: `${root1}, ${root2}`,
   };
 }
 
-function generateBitShiftingVariant(): SampleQuestionVariantInfo {
-  // The length of the bit string, between 3 and 7
-  const bitLength = Math.floor(Math.random() * 5) + 3;
+function computeHypotenuseLength(): SampleQuestionVariantInfo {
+  // Generate two random legs of a right triangle
+  const leg_a = Math.floor(Math.random() * 10) + 1;
+  const leg_b = Math.floor(Math.random() * 10) + 1;
 
-  // Randomly generated bit string of length bitLength
-  const bitString = Math.floor(Math.random() * Math.pow(2, bitLength));
-  const bitStringBinary = bitString.toString(2).padStart(bitLength, '0');
-
-  // Random number between 1 and bitLength-1, inclusive
-  const shiftAmount = Math.floor(Math.random() * (bitLength - 1)) + 1;
-  const numPositions = shiftAmount === 1 ? '1 position' : `${shiftAmount} positions`;
-
-  // Perform a logical left shift by slicing off the first shiftAmount bits and appending zeros.
-  const shiftedString = bitStringBinary.slice(shiftAmount) + '0'.repeat(shiftAmount);
+  // Compute the hypotenuse using the Pythagorean theorem
+  const hypotenuse = Math.sqrt(leg_a ** 2 + leg_b ** 2);
+  const hypotenuseRounded = Math.round(hypotenuse * 100) / 100;
 
   return {
     question: `
-            <p>
-                You are given the bit string: <code>${bitStringBinary}</code>.
-            </p>
-            <p>
-                Perform a logical left shift by ${numPositions} on the bit string.
-            </p>
-        `,
-    correctAnswer: shiftedString,
+      <p>
+        You are given the lengths of two legs of a right triangle: $ ${leg_a} $ and $ ${leg_b} $. Use the Pythagorean theorem to find the length of the hypotenuse $ c $. The formula for the hypotenuse is:
+
+        $$ c = \\sqrt{a^2 + b^2} $$
+
+        What is the length of the hypotenuse $ c $?
+      </p>
+    `,
+    correctAnswer: hypotenuseRounded.toString(),
   };
 }
 
-function generateProjectileDistanceVariant(): SampleQuestionVariantInfo {
-  // Initial velocity is between 10 and 20 m/s
-  const initialVelocity = Math.floor(Math.random() * 10) + 10;
+function findIrregularPlural(): SampleQuestionVariantInfo {
+  const irregularPluralWords = [
+    { singular: 'child', plural: 'children' },
+    { singular: 'man', plural: 'men' },
+    { singular: 'woman', plural: 'women' },
+    { singular: 'tooth', plural: 'teeth' },
+    { singular: 'foot', plural: 'feet' },
+    { singular: 'mouse', plural: 'mice' },
+    { singular: 'goose', plural: 'geese' },
+    { singular: 'person', plural: 'people' },
+    { singular: 'cactus', plural: 'cacti' },
+    { singular: 'focus', plural: 'foci' },
+    { singular: 'fungus', plural: 'fungi' },
+    { singular: 'nucleus', plural: 'nuclei' },
+    { singular: 'syllabus', plural: 'syllabi' },
+    { singular: 'analysis', plural: 'analyses' },
+    { singular: 'diagnosis', plural: 'diagnoses' },
+    { singular: 'oasis', plural: 'oases' },
+    { singular: 'thesis', plural: 'theses' },
+    { singular: 'crisis', plural: 'crises' },
+    { singular: 'phenomenon', plural: 'phenomena' },
+    { singular: 'criterion', plural: 'criteria' },
+    { singular: 'datum', plural: 'data' },
+    { singular: 'alumnus', plural: 'alumni' },
+    { singular: 'appendix', plural: 'appendices' },
+    { singular: 'index', plural: 'indices' },
+    { singular: 'matrix', plural: 'matrices' },
+    { singular: 'ox', plural: 'oxen' },
+    { singular: 'leaf', plural: 'leaves' },
+    { singular: 'loaf', plural: 'loaves' },
+    { singular: 'knife', plural: 'knives' },
+    { singular: 'life', plural: 'lives' },
+    { singular: 'wife', plural: 'wives' },
+    { singular: 'elf', plural: 'elves' },
+    { singular: 'calf', plural: 'calves' },
+    { singular: 'half', plural: 'halves' },
+    { singular: 'scarf', plural: 'scarves' },
+  ];
 
-  // Launch angle is between 30 and 60 degrees
-  const launchAngle = Math.floor(Math.random() * 30) + 30;
-
-  // Acceleration due to gravity in m/s^2
-  const gravity = 9.81;
-
-  // Convert the launch angle from degrees to radians
-  const angleInRadians = launchAngle * (Math.PI / 180);
-
-  // Calculate the vertical component of the initial velocity
-  const initialVelocityY = initialVelocity * Math.sin(angleInRadians);
-
-  // Compute the time of flight (total time in the air)
-  const timeOfFlight = (2 * initialVelocityY) / gravity;
-
-  // Calculate the horizontal component of the initial velocity
-  const initialVelocityX = initialVelocity * Math.cos(angleInRadians);
-
-  // Compute the horizontal displacement using the x component and time of flight
-  const horizontalDisplacement = initialVelocityX * timeOfFlight;
-
-  const launchAngleRounded = Math.round(launchAngle * 100) / 100;
-  const initialVelocityRounded = Math.round(initialVelocity * 100) / 100;
-  const horizontalDisplacementRounded = Math.round(horizontalDisplacement * 100) / 100;
-
-  return {
-    question: `
-            <p>
-                A projectile is launched at an angle of $ ${launchAngleRounded}^{\\circ} $ with an initial velocity of $ ${initialVelocityRounded} $ m/s. Assuming no wind resistance, calculate how far the projectile will travel horizontally.
-            </p>
-        `,
-    correctAnswer: horizontalDisplacementRounded.toString(),
-  };
-}
-
-function generateMCQTestVariant(): SampleQuestionVariantInfo {
-  // Shuffle the options
-  const options = ['Berlin', 'Madrid', 'Paris', 'Rome'];
-  const shuffledOptions = options.sort(() => Math.random() - 0.5);
+  // Randomly select one of them
+  const randomIndex = Math.floor(Math.random() * irregularPluralWords.length);
 
   return {
     question: `
-            <p>
-                What is the capital of France?
-            </p>
-        `,
-    options: shuffledOptions,
-    correctAnswer: 'Paris',
-  };
-}
-
-function generateCheckboxTestVariant(): SampleQuestionVariantInfo {
-  // Shuffle the options
-  const options = ['Berlin', 'Madrid', 'Paris', 'Rome'];
-  const shuffledOptions = options.sort(() => Math.random() - 0.5);
-
-  return {
-    question: `
-            <p>
-                What are the capitals of France and Spain?
-            </p>
-        `,
-    options: shuffledOptions,
-    correctAnswer: 'Paris, Madrid',
+      <p>
+        What is the plural form of "${irregularPluralWords[randomIndex].singular}"?
+      </p>
+    `,
+    correctAnswer: irregularPluralWords[randomIndex].plural,
   };
 }
