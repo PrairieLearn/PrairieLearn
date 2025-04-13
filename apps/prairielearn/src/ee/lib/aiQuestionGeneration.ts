@@ -102,7 +102,6 @@ async function checkRender(
  *
  * @param client The OpenAI client to use.
  * @param prompt The user's question generation prompt.
- * @param promptUserInput The user's indication of how to create student input boxes.
  * @param mandatoryElementNames Elements that we must pull documentation for.
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
@@ -208,8 +207,6 @@ function extractFromCompletion(
  * @param courseId The ID of the current course.
  * @param authnUserId The authenticated user's ID.
  * @param promptGeneral The prompt for how to generate a question.
- * @param promptUserInput The prompt for how to take user input.
- * @param promptGrading The prompt for how to grade user input.
  * @param userId The ID of the generating/saving user.
  * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
