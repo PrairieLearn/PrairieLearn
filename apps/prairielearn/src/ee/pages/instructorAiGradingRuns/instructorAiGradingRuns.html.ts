@@ -28,10 +28,7 @@ export function InstructorAIGradingRuns({ resLocals }: { resLocals: Record<strin
           <form id="ai-grading-form" name="ai-grading-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <small class="form-text text-muted">
-              Grading student work using AI. More customizations will be enabled here in the future.
-              <br />
-              Select "Grade All" to grade all ungraded submissions. Select "Test Accuracy" to test
-              accuracy of AI using human-graded examples.
+              Grading student work using AI. 
             </small>
             <div class="d-flex gap-2 mt-3">
               <button
@@ -39,9 +36,9 @@ export function InstructorAIGradingRuns({ resLocals }: { resLocals: Record<strin
                 class="btn btn-success"
                 name="__action"
                 value="ai_grade_assessment"
-                data-toggle="tooltip"
-                data-placement="bottom"
-                title="Grade all ungraded submissions using AI"
+                data-bs-toggle="tooltip"
+                data-bs-placement="bottom"
+                data-bs-title="Grade all ungraded submissions using AI"
               >
                 Grade All
               </button>
@@ -50,9 +47,9 @@ export function InstructorAIGradingRuns({ resLocals }: { resLocals: Record<strin
                 class="btn btn-primary"
                 name="__action"
                 value="ai_grade_assessment_test"
-                data-toggle="tooltip"
-                data-placement="bottom"
-                title="Test accuracy of AI using human-graded examples"
+                data-bs-toggle="tooltip"
+                data-bs-placement="bottom"
+                data-bs-title="Test accuracy of AI using human-graded examples"
               >
                 Test Accuracy
               </button>
