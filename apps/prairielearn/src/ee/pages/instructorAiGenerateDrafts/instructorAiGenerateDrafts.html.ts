@@ -103,7 +103,7 @@ export function InstructorAIGenerateDrafts({
 
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
-                Give a high-level overview of the question.
+                Give a high-level overview of the question, including what parameters should be generated and how students should provide their response.
               </label>
               <textarea
                 name="prompt"
