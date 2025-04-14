@@ -152,9 +152,9 @@ export function InstructorInstanceAdminSettings({
                 ${canEdit ? '' : 'disabled'}
                 ${resLocals.course_instance.hide_in_enroll_page ? 'checked' : ''}
               />
-              <label class="form-check-label" for="hide_in_enroll_page"
-                >Hide in enrollment page</label
-              >
+              <label class="form-check-label" for="hide_in_enroll_page">
+                Hide in enrollment page
+              </label>
               <div class="small text-muted">
                 If enabled, hides the course instance in the enrollment page, so that only direct
                 links to the course can be used for enrollment.
