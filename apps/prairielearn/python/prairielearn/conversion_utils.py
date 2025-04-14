@@ -141,7 +141,7 @@ def to_json(
     | complex scalar | `complex` | including numpy |
     | non-complex ndarray | `ndarray` | assumes each element can be json serialized |
     | complex ndarray | `complex_ndarray` | |
-    | `sympy.Expr` | `sympy` | any scalar sympy expression |
+    | `sympy.Expr` | `sympy` | any scalar SymPy expression |
     | `sympy.Matrix` | `sympy_matrix` | |
     | `pandas.DataFrame` | `dataframe` | `df_encoding_version=1` |
     | `pandas.DataFrame` | `dataframe_v2` | `df_encoding_version=2` |
@@ -163,7 +163,7 @@ def to_json(
     If v is an ndarray, this function preserves its dtype (by adding `'_dtype'` as
     a third field in the dictionary).
 
-    If v can be json serialized or does not have a standard type, then it is
+    If v can be JSON serialized or does not have a standard type, then it is
     returned without change.
 
     Returns:

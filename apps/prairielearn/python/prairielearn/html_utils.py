@@ -62,12 +62,7 @@ def get_enum_attrib(
     return enum_type[upper_enum_str.replace("-", "_")]
 
 
-def compat_array(arr: list[str]) -> list[str]:
-    """Convert elements to maintain backward compatibility with both hyphen and underscore formats.
-
-    Returns:
-        An array with all elements using underscores instaed of hyphens.
-    """
+def _compat_array(arr: list[str]) -> list[str]:
     new_arr = []
     for i in arr:
         new_arr.extend((i, i.replace("-", "_")))
@@ -85,8 +80,8 @@ def check_attribs(
             raise ValueError(f'Required attribute "{name}" missing')
     extra_attribs = list(
         set(element.attrib)
-        - set(compat_array(required_attribs))
-        - set(compat_array(optional_attribs))
+        - set(_compat_array(required_attribs))
+        - set(_compat_array(optional_attribs))
     )
     for name in extra_attribs:
         raise ValueError(f'Unknown attribute "{name}"')

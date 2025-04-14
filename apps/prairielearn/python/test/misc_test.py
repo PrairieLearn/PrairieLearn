@@ -107,7 +107,7 @@ def r_types_dataframe() -> pd.DataFrame:
     [city_dataframe(), breast_cancer_dataframe(), r_types_dataframe()],
 )
 def test_encoding_pandas(df: pd.DataFrame) -> None:
-    """Test that new json encoding works"""
+    """Test that new JSON encoding works"""
     # Test encoding as json doesn't throw exceptions
     json_df = pl.to_json(df, df_encoding_version=2)
     json_str = json.dumps(json_df)

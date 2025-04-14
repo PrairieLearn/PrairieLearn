@@ -39,7 +39,7 @@ Examples:
 
 
 class SympyJson(TypedDict):
-    """A class with type signatures for the sympy json dict"""
+    """A class with type signatures for the SymPy JSON dict"""
 
     _type: Literal["sympy"]
     _value: str
@@ -49,10 +49,10 @@ class SympyJson(TypedDict):
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
-    """Check if the input is a valid sympy json dict.
+    """Check if the input is a valid SymPy JSON dict.
 
     Returns:
-        True if the input is a valid sympy json dict, False otherwise.
+        True if the input is a valid SymPy JSON dict, False otherwise.
     """
     return (
         isinstance(json, dict)
@@ -187,7 +187,7 @@ class _Constants:
 
 
 class BaseSympyError(Exception):
-    """Exception base class for sympy parsing errors"""
+    """Exception base class for SymPy parsing errors"""
 
 
 class HasConflictingVariableError(BaseSympyError):
@@ -389,7 +389,7 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
 def sympy_check(
     expr: sympy.Expr, locals_for_eval: LocalsForEval, *, allow_complex: bool
 ) -> None:
-    """Check the sympy expression for complex numbers, invalid symbols, and floats."""
+    """Check the SymPy expression for complex numbers, invalid symbols, and floats."""
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
@@ -413,10 +413,10 @@ def sympy_check(
 def evaluate(
     expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> sympy.Expr:
-    """Evaluate a sympy expression string with a given set of locals, and return only the result.
+    """Evaluate a SymPy expression string with a given set of locals, and return only the result.
 
     Returns:
-        A sympy expression.
+        A SymPy expression.
     """
     return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
 
@@ -424,10 +424,10 @@ def evaluate(
 def evaluate_with_source(
     expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> tuple[sympy.Expr, str]:
-    """Evaluate a sympy expression string with a given set of locals.
+    """Evaluate a SymPy expression string with a given set of locals.
 
     Returns:
-        A tuple of the sympy expression and the code that was used to generate it.
+        A tuple of the SymPy expression and the code that was used to generate it.
     """
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
@@ -496,12 +496,12 @@ def convert_string_to_sympy(
     assumptions: AssumptionsDictT | None = None,
 ) -> sympy.Expr:
     """
-    Convert a string to a sympy expression, with optional restrictions on
+    Convert a string to a SymPy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
     raise an exception with a message that can be displayed to the user.
 
     Parameters:
-        expr: The string to convert to a sympy expression.
+        expr: The string to convert to a SymPy expression.
         variables: A list of variable names that are allowed in the expression.
         allow_hidden: Whether to allow hidden variables (like pi and e).
         allow_complex: Whether to allow complex numbers (like i).
@@ -636,10 +636,10 @@ def point_to_error(expr: str, ind: int, w: int = 5) -> str:
 def sympy_to_json(
     a: sympy.Expr, *, allow_complex: bool = True, allow_trig_functions: bool = True
 ) -> SympyJson:
-    """Convert a sympy expression to a json-seralizable dictionary.
+    """Convert a SymPy expression to a JSON-seralizable dictionary.
 
     Returns:
-        A json-serializable representation of the sympy expression.
+        A JSON-serializable representation of the SymPy expression.
     """
     const = _Constants()
 
@@ -690,10 +690,10 @@ def json_to_sympy(
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
 ) -> sympy.Expr:
-    """Convert a json-seralizable dictionary created by [sympy_to_json][prairielearn.sympy_utils.sympy_to_json] to a sympy expression.
+    """Convert a json-seralizable dictionary created by [sympy_to_json][prairielearn.sympy_utils.sympy_to_json] to a SymPy expression.
 
     Returns:
-        A sympy expression.
+        A SymPy expression.
     """
     if "_type" not in sympy_expr_dict:
         raise ValueError("json must have key _type for conversion to sympy")
@@ -725,7 +725,7 @@ def validate_string_as_sympy(
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
 ) -> str | None:
-    """Try to parse expr as a sympy expression. If it fails, return a string with an appropriate error message for display on the frontend.
+    """Try to parse expr as a SymPy expression. If it fails, return a string with an appropriate error message for display on the frontend.
 
     Returns:
         None if the expression is valid, or an error message string if it is not.

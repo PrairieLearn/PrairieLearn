@@ -16,7 +16,6 @@ def test_external_exports():
             check_answers_names,
             check_attribs,
             clean_identifier_name,
-            compat_array,
             determine_score_params,
             escape_invalid_string,
             escape_unicode_string,

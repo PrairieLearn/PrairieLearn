@@ -207,7 +207,7 @@ def chr2ind(char):
     characters convert to -1.
 
     Examples:
-        >>> I = ind2chr(c)
+        >>> i = ind2chr(c)
     """
     if char in string.ascii_uppercase:
         return string.ascii_uppercase.index(char)
@@ -221,10 +221,10 @@ def chr2ind(char):
 
 def read_library(input_filename):
     """Reads the library.tex file and returns a tree of
-    Library()/Zone()/Question()/Variant()/Answer() objects.
+    `Library()/Zone()/Question()/Variant()/Answer()` objects.
 
     Examples:
-        >>> Library = read_library(input_filename)
+        >>> library = read_library(input_filename)
     """
     log_and_print(f"Reading library file: {input_filename}")
     try:
