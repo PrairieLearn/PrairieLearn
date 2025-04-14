@@ -14,12 +14,14 @@ import { type AssessmentQuestionRow } from '../../models/assessment-question.js'
 export function PublicAssessmentQuestions({
   resLocals,
   assessment,
+  assessment_set_name,
   course,
   course_instance_id,
   questions,
 }: {
   resLocals: Record<string, any>;
   assessment: Assessment;
+  assessment_set_name: string;
   course: Course;
   course_instance_id: string;
   questions: AssessmentQuestionRow[];
@@ -36,7 +38,7 @@ export function PublicAssessmentQuestions({
       ? html`
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${assessment.title} ${assessment.number}: Questions
+              ${assessment_set_name} ${assessment.number}: Questions
             </div>
             ${AssessmentQuestionsTable({
               questions,

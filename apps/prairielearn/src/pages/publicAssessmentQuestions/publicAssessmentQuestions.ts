@@ -1,9 +1,11 @@
+import { assert } from 'chai';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
 import { selectAssessmentQuestions } from '../../models/assessment-question.js';
+import { selectAssessmentSetById } from '../../models/assessment-set.js';
 import { selectAssessmentById, selectAssessmentIsPublic } from '../../models/assessment.js';
 import { selectCourseByCourseInstanceId } from '../../models/course.js';
 
@@ -26,6 +28,9 @@ router.get(
     const assessment = await selectAssessmentById(assessment_id);
     res.locals.assessment = assessment;
 
+    assert(assessment.assessment_set_id);
+    const assessment_set_name = (await selectAssessmentSetById(assessment.assessment_set_id)).name;
+
     const questions = await selectAssessmentQuestions({
       assessment_id,
       course_id: course.id,
@@ -42,6 +47,7 @@ router.get(
       PublicAssessmentQuestions({
         resLocals: res.locals,
         assessment,
+        assessment_set_name,
         course,
         course_instance_id,
         questions,
