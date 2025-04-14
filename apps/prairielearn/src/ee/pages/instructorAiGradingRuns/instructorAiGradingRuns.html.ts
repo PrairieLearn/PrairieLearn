@@ -11,7 +11,8 @@ export function InstructorAIGradingRuns({ resLocals }: { resLocals: Record<strin
       page: 'assessment',
       subPage: 'manual_grading',
     },
-    content: html` <div class="mb-3">
+    content: html`
+      <div class="mb-3">
         <a
           href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
             .id}/manual_grading/assessment_question/${resLocals.assessment_question.id}"
