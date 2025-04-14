@@ -1,6 +1,5 @@
 import assert from 'node:assert';
 
-import * as cheerio from 'cheerio';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -175,8 +174,10 @@ export async function aiGradeTest({
         continue;
       }
 
-      const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
-      const locals = { ...urls, manualGradingInterface: true };
+      const locals = {
+        ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+        questionRenderContext: 'ai_grading',
+      };
       // Get question html
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
@@ -193,9 +194,7 @@ export async function aiGradeTest({
         job.error('Error occurred');
         job.fail('Errors occurred while AI grading, see output for details');
       }
-      const $ = cheerio.load(render_question_results.data.questionHtml, null, false);
-      $('script').remove();
-      const questionPrompt = $.html();
+      const questionPrompt = render_question_results.data.questionHtml;
 
       let submission_embedding = await queryOptionalRow(
         sql.select_embedding_for_submission,

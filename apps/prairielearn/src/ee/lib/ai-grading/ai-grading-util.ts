@@ -1,4 +1,3 @@
-import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
 import { z } from 'zod';
 
@@ -183,7 +182,10 @@ export async function generateSubmissionEmbedding({
     { instance_question_id: instance_question.id },
     SubmissionVariantSchema,
   );
-  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+  const locals = {
+    ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+    questionRenderContext: 'ai_grading',
+  };
   const questionModule = questionServers.getModule(question.type);
   const render_submission_results = await questionModule.render(
     { question: false, submissions: true, answer: false },
@@ -192,15 +194,9 @@ export async function generateSubmissionEmbedding({
     submission,
     [submission],
     question_course,
-    // We deliberately do not set `manualGradingInterface: true` when rendering
-    // the submission. The expectation is that instructors will use elements lik
-    // `<pl-manual-grading-only>` to provide extra instructions to the LLM. We
-    // don't want to mix in instructions like that with the student's response.
-    urls,
+    locals,
   );
-  const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
-  $('script').remove();
-  const submission_text = $.html();
+  const submission_text = render_submission_results.data.submissionHtmls[0];
   const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
