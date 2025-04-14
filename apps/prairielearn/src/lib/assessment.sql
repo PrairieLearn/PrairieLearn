@@ -98,8 +98,7 @@ WITH
       current_timestamp
     WHERE
       $group_id::BIGINT IS NOT NULL
-    ON CONFLICT (group_id) DO
-    UPDATE
+    ON CONFLICT (group_id) DO UPDATE
     SET
       last_access = EXCLUDED.last_access
   ),
@@ -111,8 +110,7 @@ WITH
       current_timestamp
     WHERE
       $group_id::BIGINT IS NULL
-    ON CONFLICT (user_id) DO
-    UPDATE
+    ON CONFLICT (user_id) DO UPDATE
     SET
       last_access = EXCLUDED.last_access
   )
