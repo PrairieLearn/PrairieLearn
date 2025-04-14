@@ -329,6 +329,7 @@ def get_color_attrib(
 
 
 def inner_html(element: lxml.html.HtmlElement) -> str:
+    """Get the inner HTML of an lxml element."""
     inner = element.text
     if inner is None:
         inner = ""

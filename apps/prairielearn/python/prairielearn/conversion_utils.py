@@ -94,6 +94,10 @@ that can be serialized / deserialized.
 
 
 def is_int_json_serializable(n: int) -> bool:
+    """Check if an integer is less than Number.MAX_SAFE_INTEGER and greater than Number.MIN_SAFE_INTEGER.
+
+    See <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER>.
+    """
     return -((2**53) - 1) <= n <= 2**53 - 1
 
 
