@@ -125,11 +125,11 @@ def eng_notation(value: float, precision: int, filler: str) -> str:
     filler is placed between the decimal value and 10s exponent
 
     Examples:
-        >>> sci_notation(123, 1, 'E')
+        >>> eng_notation(123, 1, 'E')
         100E0
-        >>> sci_notation(1230, 3, 'E')
+        >>> eng_notation(1230, 3, 'E')
         1.23E3
-        >>> sci_notation(.126, 2, 'E')
+        >>> eng_notation(.126, 2, 'E')
         120E-3
 
     Returns:
