@@ -223,13 +223,12 @@ nav:
           - python-reference/index.md
           - 'Colors': python-reference/prairielearn/colors.md
           - 'Conversion': python-reference/prairielearn/conversion_utils.md
-          - 'Element attributes': python-reference/prairielearn/attribute_utils.md
+          - 'HTML': python-reference/prairielearn/html_utils.md
           - 'Element extensions': python-reference/prairielearn/extension_utils.md
-          - 'Grading': python-reference/prairielearn/grading_utils.md
+          - 'Questions': python-reference/prairielearn/question_utils.md
           - 'Numerical precision': python-reference/prairielearn/to_precision.md
           - 'Other': python-reference/prairielearn/misc_utils.md
           - 'SymPy': python-reference/prairielearn/sympy_utils.md
-          - 'Unicode': python-reference/prairielearn/unicode_utils.md
       - 'Workspaces': 'workspaces/index.md'
       - 'Manual grading': 'manualGrading/index.md'
       - 'Question sharing': 'questionSharing.md'

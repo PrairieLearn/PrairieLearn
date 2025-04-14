@@ -1,37 +1,5 @@
-"""Utilities for working with unicode strings.
-
-```python
-from prairielearn import ...
-```
-"""
-
-import unicodedata
-
-from text_unidecode import unidecode
-
-
-def full_unidecode(input_str: str) -> str:
-    """Do unidecode of input and replace the unicode minus with the normal one."""
-    return unidecode(input_str.replace("\u2212", "-"))
-
-
-def escape_unicode_string(string: str) -> str:
-    """
-    Replace invisible/unprintable characters with a
-    text representation of their hex id: <U+xxxx>
-
-    A character is considered invisible if its category is "control" or "format", as
-    reported by the 'unicodedata' library.
-
-    More info on unicode categories:
-    https://en.wikipedia.org/wiki/Unicode_character_property#General_Category
-    """
-
-    def escape_unprintable(x: str) -> str:
-        category = unicodedata.category(x)
-        if category in ("Cc", "Cf"):
-            return f"<U+{ord(x):x}>"
-        else:
-            return x
-
-    return "".join(map(escape_unprintable, string))
+# TODO: deprecate this file in favor of the new prairielearn.misc_utils module
+from prairielearn.misc_utils import (
+    escape_unicode_string as escape_unicode_string,  # noqa: PLC0414
+)
+from prairielearn.misc_utils import full_unidecode as full_unidecode  # noqa: PLC0414

@@ -1,10 +1,11 @@
-"""Utilities for working with element attributes.
+"""Utilities for working with HTML elements. Used for reading attributes and sanitizing HTML.
 
 ```python
 from prairielearn import ...
 ```
 """
 
+import html
 import re
 from enum import Enum
 from typing import Any, TypeVar, overload
@@ -12,6 +13,7 @@ from typing import Any, TypeVar, overload
 import lxml.html
 
 from prairielearn.colors import PLColor
+from prairielearn.misc_utils import escape_unicode_string
 
 EnumT = TypeVar("EnumT", bound=Enum)
 
@@ -322,3 +324,18 @@ def get_color_attrib(
         return PLColor(val).to_string(hex=True)
     else:
         raise ValueError(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
+
+
+def inner_html(element: lxml.html.HtmlElement) -> str:
+    inner = element.text
+    if inner is None:
+        inner = ""
+    inner = html.escape(str(inner))
+    for child in element:
+        inner += lxml.html.tostring(child, method="html").decode("utf-8")
+    return inner
+
+
+def escape_invalid_string(string: str) -> str:
+    """Wrap and escape string in `<code>` tags."""
+    return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'

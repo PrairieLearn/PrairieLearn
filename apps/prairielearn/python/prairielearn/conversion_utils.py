@@ -18,7 +18,8 @@ import pandas as pd
 import sympy
 from typing_extensions import assert_never
 
-from prairielearn.misc_utils import escape_invalid_string
+from prairielearn.html_utils import escape_invalid_string
+from prairielearn.misc_utils import full_unidecode
 from prairielearn.sympy_utils import (
     convert_string_to_sympy,
     is_sympy_json,
@@ -26,7 +27,6 @@ from prairielearn.sympy_utils import (
     sympy_to_json,
 )
 from prairielearn.to_precision import to_precision
-from prairielearn.unicode_utils import full_unidecode
 
 if TYPE_CHECKING:
     from numpy.core.arrayprint import _FormatDict
@@ -91,6 +91,10 @@ _JSONPythonType = (
 This represents additional object formats (i.e. non-standard Python types)
 that can be serialized / deserialized.
 """
+
+
+def is_int_json_serializable(n: int) -> bool:
+    return -((2**53) - 1) <= n <= 2**53 - 1
 
 
 @overload

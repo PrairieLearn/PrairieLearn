@@ -1,4 +1,4 @@
-"""Utilities for grading and comparing answers in PrairieLearn.
+"""Utilities for grading questions and updating question data.
 
 ```python
 from prairielearn import ...
@@ -7,14 +7,58 @@ from prairielearn import ...
 
 import math
 from collections.abc import Callable
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict
 
 import numpy as np
 import numpy.typing as npt
 from numpy.typing import ArrayLike
-from typing_extensions import assert_never
+from typing_extensions import NotRequired, assert_never
 
-from prairielearn.misc_utils import QuestionData
+
+class PartialScore(TypedDict):
+    """A class with type signatures for the partial scores dict.
+
+    For more information see the [element developer guide](../../devElements.md).
+    """
+
+    score: float | None
+    weight: NotRequired[int]
+    feedback: NotRequired[str | dict[str, str] | Any]
+
+
+# TODO: This type definition should not yet be seen as authoritative, it may
+# need to be modified as we expand type checking to cover more of the element code.
+# The fields below containing 'Any' in the types are ones which are used
+# in different ways by different question elements. Ideally we would have
+# QuestionData be a generic type so that question elements could declare types
+# for their answer data, feedback data, etc., but TypedDicts with Generics are
+# not yet supported: https://bugs.python.org/issue44863
+class QuestionData(TypedDict):
+    """A class with type signatures for the data dictionary.
+
+    For more information see the [element developer guide](../../devElements.md).
+    """
+
+    params: dict[str, Any]
+    correct_answers: dict[str, Any]
+    submitted_answers: dict[str, Any]
+    format_errors: dict[str, Any]
+    partial_scores: dict[str, PartialScore]
+    score: float
+    feedback: dict[str, Any]
+    variant_seed: str
+    options: dict[str, Any]
+    raw_submitted_answers: dict[str, Any]
+    editable: bool
+    panel: Literal["question", "submission", "answer"]
+    extensions: dict[str, Any]
+    num_valid_submissions: int
+    manual_grading: bool
+    answers_names: dict[str, bool]
+
+
+class ElementTestData(QuestionData):
+    test_type: Literal["correct", "incorrect", "invalid"]
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
@@ -230,10 +274,6 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
         part["score"] is not None and math.isclose(part["score"], 1.0)
         for part in partial_scores.values()
     )
-
-
-def is_int_json_serializable(n: int) -> bool:
-    return -((2**53) - 1) <= n <= 2**53 - 1
 
 
 def add_files_format_error(data: QuestionData, error: str) -> None:

@@ -9,12 +9,22 @@ import collections
 import importlib
 import importlib.util
 import os
+import re
 from collections import namedtuple
 from collections.abc import Callable
 from types import ModuleType
 from typing import Any, TypeVar
 
-from prairielearn.misc_utils import QuestionData, clean_identifier_name
+from prairielearn.question_utils import QuestionData
+
+
+def clean_identifier_name(name: str) -> str:
+    """Escapes a string so that it becomes a valid Python identifier."""
+    # Strip invalid characters and weird leading characters so we have
+    # a decent python identifier
+    name = re.sub(r"[^a-zA-Z0-9_]", "_", name)
+    name = re.sub(r"^[^a-zA-Z]+", "", name)
+    return name
 
 
 def load_extension(data: QuestionData, extension_name: str) -> Any:
