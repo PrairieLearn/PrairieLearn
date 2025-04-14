@@ -8,10 +8,10 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
   loadSqlEquiv,
-  queryRows,
-  queryOptionalRow,
   queryCursor,
+  queryOptionalRow,
   queryRow,
+  queryRows,
 } from '@prairielearn/postgres';
 
 import {
@@ -224,7 +224,7 @@ router.post(
       }
 
       const editor = new AssessmentAddEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         title: req.body.title,
         aid: req.body.aid,
         type: req.body.type,

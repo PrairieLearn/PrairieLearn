@@ -75,7 +75,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     correct_answer = pl.get_float_attrib(element, "correct-answer", None)
     if correct_answer is not None:
         if name in data["correct_answers"]:
-            raise Exception(f"duplicate correct_answers variable name: {name}")
+            raise ValueError(f"duplicate correct_answers variable name: {name}")
         data["correct_answers"][name] = correct_answer
 
     custom_format = pl.get_string_attrib(element, "custom-format", None)
@@ -83,7 +83,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         try:
             _ = ("{:" + custom_format + "}").format(0)
         except ValueError:
-            raise Exception(f"invalid custom format: {custom_format}") from None
+            raise ValueError(f"invalid custom format: {custom_format}") from None
 
 
 def format_true_ans(
@@ -96,6 +96,14 @@ def format_true_ans(
         comparison = pl.get_enum_attrib(
             element, "comparison", ComparisonType, COMPARISON_DEFAULT
         )
+
+        # Correct answers may be specified as strings, so we need to convert them
+        # to numbers for formatting. See the note in `grade()` for why we cast to
+        # these specific types.
+        if np.iscomplexobj(correct_answer):
+            correct_answer = np.complex128(correct_answer)
+        else:
+            correct_answer = np.float64(correct_answer)
 
         if custom_format is not None:
             correct_answer = ("{:" + custom_format + "}").format(correct_answer)
@@ -287,11 +295,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
-        else:
-            if raw_submitted_answer is not None:
-                html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    raw_submitted_answer
-                )
+        elif raw_submitted_answer is not None:
+            html_params["raw_submitted_answer"] = pl.escape_unicode_string(
+                raw_submitted_answer
+            )
         # Add true answer to be able to display it in the submitted answer panel
         if show_correct_answer:
             html_params["correct_answer"] = format_true_ans(element, data, name)
@@ -352,13 +359,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_answer = data["submitted_answers"].get(name, None)
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
         submitted_answer = blank_value
-    value, newdata = pl.string_fraction_to_number(
-        submitted_answer, allow_fractions, allow_complex
-    )
 
-    if value is not None:
+    res = pl.string_fraction_to_number(
+        submitted_answer, allow_fractions=allow_fractions, allow_complex=allow_complex
+    )
+    if res[0] is not None:
+        _, newdata = res
         data["submitted_answers"][name] = newdata["submitted_answers"]
     else:
+        _, newdata = res
         data["format_errors"][name] = get_format_string(
             allow_complex, allow_fractions, newdata["format_errors"]
         )
@@ -497,7 +506,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             # Get max error according to numpy.allclose()
-            eps = np.absolute(correct_answer) * rtol + atol
+            eps = np.absolute(correct_answer_converted) * rtol + atol
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])
         elif comparison is ComparisonType.SIGFIG:
@@ -506,7 +515,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             if correct_answer == 0:
                 n = digits - 1
             else:
-                n = -int(np.floor(np.log10(np.abs(correct_answer)))) + (digits - 1)
+                n = -int(np.floor(np.log10(np.abs(correct_answer_converted)))) + (
+                    digits - 1
+                )
             eps = 0.51 * (10**-n)
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])

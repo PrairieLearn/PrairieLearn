@@ -29,6 +29,8 @@ SELECT
   aset.name,
   aset.color,
   (aset.abbreviation || a.number) as label,
+  to_jsonb(aset) as assessment_set,
+  to_jsonb(am) as assessment_module,
   (
     LAG(
       CASE
@@ -49,12 +51,6 @@ SELECT
         a.id
     ) IS NULL
   ) AS start_new_assessment_group,
-  (
-    CASE
-      WHEN $assessments_group_by = 'Set' THEN aset.heading
-      ELSE am.heading
-    END
-  ) AS assessment_group_heading,
   coalesce(ic.open_issue_count, 0) AS open_issue_count
 FROM
   assessments AS a

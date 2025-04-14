@@ -98,7 +98,7 @@ def generate(data):
         torque_sign = "negative"
         data["params"]["gamma"] = 180
 
-    for i in range(0, 7):
+    for i in range(7):
         data["params"]["visible" + str(i)] = "false"
 
     question = random.choice([1, 2, 3, 4, 5, 6])

@@ -10,7 +10,7 @@ def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Get the position of the anchor point of the vector
     rpos = np.array([x1, y1])
     # Defining the direction of the vector
-    dir = np.array([math.cos(theta), math.sin(theta)])
+    direction = np.array([math.cos(theta), math.sin(theta)])
     # Defining the error box limit in the direction of the vector
     max_forward = offset_forward + tol
     max_backward = offset_backward + tol
@@ -18,7 +18,7 @@ def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Defining the error box limit in the direction perpendicular to the vector
     max_perp = tol
     hbox = 2 * max_perp
-    pc = rpos - (wbox / 2 - max_forward) * dir
+    pc = rpos - (wbox / 2 - max_forward) * direction
     return (pc, hbox, wbox, max_forward, max_backward)
 
 
@@ -52,9 +52,7 @@ class BaseElement:
         return True
 
     def get_attributes():
-        """
-        Returns a list of attributes that the element may contain.
-        """
+        """Return a list of attributes that the element may contain."""
         return []
 
 
@@ -743,17 +741,14 @@ class Vector(BaseElement):
         if ref["disregard_sense"]:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
-        else:
-            if error_fwd > angtol:
-                return False
+        elif error_fwd > angtol:
+            return False
 
         # Get position of student answer relative to reference answer
-        basis = np.array(
-            [
-                [np.cos(rang_rad), -np.sin(rang_rad)],
-                [np.sin(rang_rad), np.cos(rang_rad)],
-            ]
-        ).T
+        basis = np.array([
+            [np.cos(rang_rad), -np.sin(rang_rad)],
+            [np.sin(rang_rad), np.cos(rang_rad)],
+        ]).T
         epos_rel = basis @ (epos - rpos)
         rely, relx = epos_rel
 
@@ -1186,21 +1181,18 @@ class DistributedLoad(BaseElement):
         if ref["disregard_sense"]:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
-        else:
-            if error_fwd > angtol:
-                return False
+        elif error_fwd > angtol:
+            return False
 
         # Check width
         if abserr(elen, rlen) > tol:
             return False
 
         # Get position of student answer relative to reference answer
-        basis = np.array(
-            [
-                [-np.sin(rang_rad), -np.cos(rang_rad)],
-                [np.cos(rang_rad), -np.sin(rang_rad)],
-            ]
-        ).T
+        basis = np.array([
+            [-np.sin(rang_rad), -np.cos(rang_rad)],
+            [np.cos(rang_rad), -np.sin(rang_rad)],
+        ]).T
         epos_rel = basis @ (epos - rpos)
         rely, relx = epos_rel
         if relx > tol or relx < -tol or rely > max_forward or rely < -max_backward:
@@ -1969,35 +1961,33 @@ class GraphLine(BaseElement):
                 y3 = line[2]["y"]
                 curved_line = True
             else:
-                raise Exception(
+                raise ValueError(
                     "pl-graph-line error: the attribute end-points expects a list of size 2 or 3."
                 )
         else:
-            raise Exception(
+            raise ValueError(
                 "pl-graph-line error: required attribute end-points is missing."
             )
 
         if "end-gradients" in el.attrib:
             if curved_line:
-                raise Exception(
+                raise ValueError(
                     "pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both."
                 )
-            else:
-                grads = json.loads(pl.get_string_attrib(el, "end-gradients"))
-                if len(grads) != 2:
-                    raise Exception(
-                        "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
-                    )
-                grad1 = grads[0]
-                grad2 = grads[1]
-                if abs(grad1 - grad2) < 1e-9:
-                    raise Exception(
-                        "The provided gradients are not compatible to compute a quadratic curve between the given points."
-                    )
-                else:
-                    x3 = ((y2 - grad2 * x2) - (y1 - grad1 * x1)) / (grad1 - grad2)
-                    y3 = (y1 - grad1 * x1) + grad1 * x3
-                    curved_line = True
+            grads = json.loads(pl.get_string_attrib(el, "end-gradients"))
+            if len(grads) != 2:
+                raise ValueError(
+                    "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
+                )
+            grad1 = grads[0]
+            grad2 = grads[1]
+            if abs(grad1 - grad2) < 1e-9:
+                raise ValueError(
+                    "The provided gradients are not compatible to compute a quadratic curve between the given points."
+                )
+            x3 = ((y2 - grad2 * x2) - (y1 - grad1 * x1)) / (grad1 - grad2)
+            y3 = (y1 - grad1 * x1) + grad1 * x3
+            curved_line = True
 
         if "draw-error-box" in el.attrib:
             obj_draw = el.attrib["draw-error-box"] == "true"
@@ -2038,15 +2028,13 @@ class GraphLine(BaseElement):
         if not curved_line:
             obj.update({"x2": x0 + x2, "y2": y0 - y2, "type": "pl-controlled-line"})
         else:
-            obj.update(
-                {
-                    "x3": x0 + x2,
-                    "y3": y0 - y2,
-                    "x2": x0 + x3,
-                    "y2": y0 - y3,
-                    "type": "pl-controlled-curved-line",
-                }
-            )
+            obj.update({
+                "x3": x0 + x2,
+                "y3": y0 - y2,
+                "x2": x0 + x3,
+                "y2": y0 - y3,
+                "type": "pl-controlled-curved-line",
+            })
         return obj
 
     def grading_name(element):
@@ -2057,15 +2045,15 @@ class GraphLine(BaseElement):
             n_end_points = len(line)
             n_grads = len(grads)
             if n_end_points < 2 or n_end_points > 3:
-                raise Exception(
+                raise ValueError(
                     "pl-graph-line error: the attribute end-points expects a list of size 2 or 3."
                 )
-            if n_grads != 0 and n_grads != 2:
-                raise Exception(
+            if n_grads not in (0, 2):
+                raise ValueError(
                     "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
                 )
             if n_end_points > 2 and n_grads > 0:
-                raise Exception(
+                raise ValueError(
                     "pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both."
                 )
             if n_end_points == 3:
@@ -2408,13 +2396,13 @@ elements["pl-switch"] = Switch
 class UnplaceableBaseElement(BaseElement):
     # Used only to get attributes
     def generate(element):
-        raise Exception("Cannot create element!")
+        raise RuntimeError("Cannot create element!")
 
     def is_gradable():
         return False
 
-    def grade(ref, st, tol, angtol):
-        raise Exception(
+    def grade(element, st, tol, angtol):
+        raise NotImplementedError(
             "This element should not be graded!  If you see this message, something has gone terribly wrong!"
         )
 

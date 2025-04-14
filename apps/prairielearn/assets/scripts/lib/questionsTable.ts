@@ -1,6 +1,4 @@
-import _ from 'lodash';
-
-import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js';
@@ -46,20 +44,23 @@ onDocumentReady(() => {
     urlPrefix,
     plainUrlPrefix,
   } = decodeData('questions-table-data');
+
   window.topicList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
-    return _.keyBy(_.map(data, (row) => row.topic.name));
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    return Object.fromEntries(data.map(({ topic }) => [topic.name, topic.name]));
   };
 
   window.tagsList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
-    return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name));
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    return Object.fromEntries(
+      data.flatMap((row) => row.tags ?? []).map(({ name }) => [name, name]),
+    );
   };
 
   window.sharingSetsList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
-    const sharing_sets = _.keyBy(
-      _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    const sharing_sets = Object.fromEntries(
+      data.flatMap((row) => row.sharing_sets ?? []).map(({ name }) => [name, name]),
     );
     sharing_sets['Public'] = 'Public';
     sharing_sets['Public source'] = 'Public source';
@@ -67,8 +68,8 @@ onDocumentReady(() => {
   };
 
   window.versionList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
-    return _.keyBy(_.map(data, (row) => row.display_type));
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    return Object.fromEntries(data.map(({ display_type }) => [display_type, display_type]));
   };
 
   window.qidFormatter = function (_qid: any, question: QuestionsPageData) {
@@ -88,7 +89,7 @@ onDocumentReady(() => {
     // We only want to show the sharing name prefix for publicly-shared questions.
     // Those that only have their source shared publicly (and thus that are not
     // available to be imported by other courses) won't show the prefix.
-    const prefix = qidPrefix && question.shared_publicly ? qidPrefix : '';
+    const prefix = qidPrefix && question.share_publicly ? qidPrefix : '';
 
     text += html`
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
@@ -97,7 +98,7 @@ onDocumentReady(() => {
     `;
     if (question.open_issue_count > 0) {
       text += html`<a
-        class="badge badge-pill badge-danger ml-1"
+        class="badge rounded-pill text-bg-danger ms-1"
         href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
           question.qid ?? '',
         )}"
@@ -117,7 +118,7 @@ onDocumentReady(() => {
 
   window.sharingSetFormatter = function (_sharing_sets: any, question: QuestionsPageData) {
     const items = [];
-    if (question.shared_publicly) {
+    if (question.share_publicly) {
       items.push(html`<span class="badge color-green3">Public</span>`);
     }
     if (question.share_source_publicly) {
@@ -178,12 +179,14 @@ onDocumentReady(() => {
   };
 
   const assessmentsByCourseInstanceList = function (ci_id: string) {
-    const data = $('#questionsTable').bootstrapTable('getData');
-    const assessments = _.filter(
-      _.flatten(_.map(data, (row) => row.assessments)),
-      (row) => row && row.course_instance_id === ci_id,
-    );
-    return _.assign(_.keyBy(_.map(assessments, (row) => row.label)), { '(None)': '(None)' });
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    const assessments = data
+      .flatMap((row) => row.assessments ?? [])
+      .filter((row) => row && row.course_instance_id === ci_id);
+    return {
+      ...Object.fromEntries(assessments.map(({ label }) => [label, label])),
+      '(None)': '(None)',
+    };
   };
 
   course_instance_ids.forEach((courseInstanceId: string) => {
@@ -237,7 +240,7 @@ onDocumentReady(() => {
       icon: 'fa-plus',
       attributes: { title: 'Create a new question' },
       event: () => {
-        $('form[name=add-question-form]').submit();
+        $('#createQuestionModal').modal('show');
       },
     };
   }
@@ -254,6 +257,28 @@ onDocumentReady(() => {
   }
 
   $('#questionsTable').bootstrapTable(tableSettings);
+
+  // The startFromInput either has value 'Template' or 'Empty question'
+  const startFromInput = document.querySelector<HTMLInputElement>('#start_from');
+
+  // The templateQuestionInput lets the user select the template question to start from, and is only
+  // enabled when the startFromInput is set to 'Template'
+  const templateQuestionInput = document.querySelector<HTMLInputElement>('#template_qid');
+
+  // The templateContainerDiv is hidden when the startFromInput is set to 'Empty question',
+  // otherwise it is shown.
+  const templateContainerDiv = document.querySelector<HTMLDivElement>('#templateContainer');
+
+  if (!startFromInput || !templateQuestionInput || !templateContainerDiv) {
+    return;
+  }
+
+  startFromInput.addEventListener('change', () => {
+    // If the startFromInput is set to 'Template', the templateQuestionInput should be visible and enabled
+    // Otherwise, it should be hidden and disabled.
+    templateQuestionInput.disabled = startFromInput.value !== 'Template';
+    templateContainerDiv.hidden = startFromInput.value !== 'Template';
+  });
 
   $(document).keydown((event) => {
     if (

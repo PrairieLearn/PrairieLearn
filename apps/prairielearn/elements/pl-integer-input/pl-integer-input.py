@@ -4,7 +4,7 @@ from typing import Any
 
 import chevron
 import lxml.html
-import numpy
+import numpy as np
 import prairielearn as pl
 from typing_extensions import assert_never
 
@@ -101,7 +101,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         info_params = {
             "format": True,
             "base": base,
-            "default_base": base == BASE_DEFAULT or base == 0,
+            "default_base": base in (BASE_DEFAULT, 0),
             "zero_base": base == 0,
         }
 
@@ -111,9 +111,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             placeholder = pl.get_string_attrib(element, "placeholder")
         else:
             placeholder = (
-                "integer"
-                if base == BASE_DEFAULT or base == 0
-                else f"integer in base {base}"
+                "integer" if base in (BASE_DEFAULT, 0) else f"integer in base {base}"
             )
 
         html_params = {
@@ -145,7 +143,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "submission": True,
             "label": label,
             "base": base,
-            "default_base": base == BASE_DEFAULT or base == 0,
+            "default_base": base in (BASE_DEFAULT, 0),
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
         }
@@ -167,7 +165,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:
                     a_sub_parsed = pl.from_json(a_sub)
                 a_sub_display = (
-                    numpy.base_repr(a_sub_parsed, base)
+                    np.base_repr(a_sub_parsed, base)
                     if base > 0
                     else data["raw_submitted_answers"].get(name, str(a_sub_parsed))
                 )
@@ -182,11 +180,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
-        else:
-            if raw_submitted_answer is not None:
-                html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    raw_submitted_answer
-                )
+        elif raw_submitted_answer is not None:
+            html_params["raw_submitted_answer"] = pl.escape_unicode_string(
+                raw_submitted_answer
+            )
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
@@ -206,7 +203,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if isinstance(a_tru, str):
             a_tru_str = a_tru
         else:
-            a_tru_str = numpy.base_repr(a_tru, base if base > 0 else 10)
+            a_tru_str = np.base_repr(a_tru, base if base > 0 else 10)
         html_params = {
             "answer": True,
             "label": label,
@@ -247,7 +244,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 "format_error": True,
                 "format_error_message": "the submitted answer was blank.",
                 "base": base,
-                "default_base": base == BASE_DEFAULT or base == 0,
+                "default_base": base in (BASE_DEFAULT, 0),
                 "zero_base": base == 0,
             }
 
@@ -261,7 +258,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         opts = {
             "format_error": True,
             "base": base,
-            "default_base": base == BASE_DEFAULT or base == 0,
+            "default_base": base in (BASE_DEFAULT, 0),
             "zero_base": base == 0,
         }
 
@@ -327,15 +324,15 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     result = data["test_type"]
     if result == "correct":
         if base > 0:
-            data["raw_submitted_answers"][name] = numpy.base_repr(a_tru_parsed, base)
+            data["raw_submitted_answers"][name] = np.base_repr(a_tru_parsed, base)
         elif random.choice([True, False]):
-            data["raw_submitted_answers"][name] = numpy.base_repr(a_tru_parsed, 10)
+            data["raw_submitted_answers"][name] = np.base_repr(a_tru_parsed, 10)
         else:
             # Use 0x format
             data["raw_submitted_answers"][name] = f"{a_tru_parsed:#x}"
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
-        data["raw_submitted_answers"][name] = numpy.base_repr(
+        data["raw_submitted_answers"][name] = np.base_repr(
             a_tru_parsed + (random.randint(1, 11) * random.choice([-1, 1])),
             base if base > 0 else 10,
         )
