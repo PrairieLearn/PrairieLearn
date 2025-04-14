@@ -12,7 +12,6 @@ def test_external_exports():
             ElementTestData,
             PartialScore,
             QuestionData,
-            _get_attrib,
             _string_from_complex_sigfig,
             add_files_format_error,
             add_submitted_file,
