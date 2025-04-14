@@ -1,4 +1,9 @@
-"""Utility functions for parsing and evaluating SymPy expressions."""
+"""Utility functions for parsing and evaluating SymPy expressions.
+
+```python
+from prairielearn.sympy_utils import ...
+```
+"""
 
 import ast
 import copy
@@ -18,7 +23,7 @@ from sympy.parsing.sympy_parser import (
 )
 from typing_extensions import NotRequired
 
-from prairielearn.unicode_utils import full_unidecode
+from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
