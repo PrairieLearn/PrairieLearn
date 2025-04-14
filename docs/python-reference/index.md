@@ -33,7 +33,7 @@ import prairielearn.sympy_utils as psu
     from prairielearn.sympy_utils import Z
     ```
 
-    You should **not** directly import the remaining dotted modules (e.g. `prairielearn.conversion_utils`), as they may not have a stable interface.
+    You should **not** directly import the remaining dotted modules (e.g. `prairielearn.conversion_utils`), as they do not have a stable interface.
 
 !!! warning
 
