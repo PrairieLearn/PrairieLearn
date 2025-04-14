@@ -244,7 +244,7 @@ export async function generateQuestion({
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    job.info(`prompt is ${promptGeneral}`);
+    job.info(`Prompt: "${promptGeneral}"`);
 
     const context = await makeContext(client, promptGeneral, [], authnUserId);
 
