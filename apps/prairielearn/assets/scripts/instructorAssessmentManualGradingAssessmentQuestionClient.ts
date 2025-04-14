@@ -68,10 +68,12 @@ onDocumentReady(() => {
           id: 'js-ai-grade-button',
           title: 'AI grading',
         },
-        html: html`<a class="btn btn-secondary" href="${aiGradingUrl}">
-          <i class="fa fa-pen" aria-hidden="true"></i>
-          AI Grading
-        </a>`.toString(),
+        html: html`
+          <a class="btn btn-secondary" href="${aiGradingUrl}">
+            <i class="fa fa-pen" aria-hidden="true"></i>
+            AI Grading
+          </a>
+        `.toString(),
       },
       showStudentInfo: {
         text: 'Show student info',
