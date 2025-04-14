@@ -31,8 +31,8 @@ export function InstructorAIGradingRuns({ resLocals }: { resLocals: Record<strin
               Grading student work using AI. More customizations will be enabled here in the future.
               <br />
               Select "Grade All" to grade all ungraded submissions. Select "Test Accuracy" to test
-              accuracy of AI using human-graded examples.</small
-            >
+              accuracy of AI using human-graded examples.
+            </small>
             <div class="d-flex gap-2 mt-3">
               <button
                 type="submit"
