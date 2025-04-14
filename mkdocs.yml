@@ -221,7 +221,7 @@ nav:
       - 'External grading': 'externalGrading.md'
       - 'Python autograder':
           - 'python-grader/index.md'
-          - 'Reference Docs': python-grader/reference-docs.md
+          - 'API reference': python-grader/reference-docs.md
       - 'C/C++ autograder': 'c-grader/index.md'
       - 'Java autograder': 'java-grader/index.md'
       - 'Python API reference':
