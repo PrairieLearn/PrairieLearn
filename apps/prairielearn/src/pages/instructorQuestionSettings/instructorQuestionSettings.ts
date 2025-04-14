@@ -9,6 +9,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
@@ -16,9 +17,11 @@ import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
 import {
   FileModifyEditor,
-  QuestionRenameEditor,
-  QuestionDeleteEditor,
+  MultiEditor,
   QuestionCopyEditor,
+  QuestionDeleteEditor,
+  QuestionRenameEditor,
+  propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
@@ -26,7 +29,6 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
-import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
@@ -110,46 +112,7 @@ router.post(
       if (!(await fs.pathExists(infoPath))) {
         throw new error.HttpStatusError(400, 'Question info file does not exist');
       }
-      const paths = getPaths(undefined, res.locals);
 
-      const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
-
-      const origHash = req.body.orig_hash;
-      questionInfo.title = req.body.title;
-      questionInfo.topic = req.body.topic;
-      // If only a single tag is provided, it will be a string. If multiple tags are provided, it will be an array.
-      if (req.body.tags) {
-        if (Array.isArray(req.body.tags)) {
-          questionInfo.tags = req.body.tags;
-        } else {
-          questionInfo.tags = [req.body.tags];
-        }
-      } else {
-        // If no tags are provided, we remove this propoerty from questionInfo.
-        delete questionInfo.tags;
-      }
-
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
-
-      const editor = new FileModifyEditor({
-        locals: res.locals,
-        container: {
-          rootPath: paths.rootPath,
-          invalidRootPaths: paths.invalidRootPaths,
-        },
-        filePath: path.join(paths.rootPath, 'info.json'),
-        editContents: b64EncodeUnicode(formattedJson),
-        origHash,
-      });
-
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch {
-        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-      }
-
-      // QID is not maintained in the info.json file, we must handle this separately.
       if (!req.body.qid) {
         throw new error.HttpStatusError(400, `Invalid QID (was falsy): ${req.body.qid}`);
       }
@@ -159,34 +122,92 @@ router.post(
           `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
         );
       }
-      let qid_new;
-      try {
-        qid_new = path.normalize(req.body.qid);
-      } catch {
-        throw new error.HttpStatusError(
-          400,
-          `Invalid QID (could not be normalized): ${req.body.qid}`,
-        );
-      }
-      if (res.locals.question.qid !== qid_new) {
-        const editor = new QuestionRenameEditor({
-          locals: res.locals,
-          qid_new,
-        });
-        const serverJob = await editor.prepareServerJob();
+
+      const paths = getPaths(undefined, res.locals);
+
+      const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
+
+      const origHash = req.body.orig_hash;
+      questionInfo.title = req.body.title;
+      questionInfo.topic = req.body.topic;
+      questionInfo.tags = run(() => {
+        // If no tags are provided, remove the entire property.
+        if (!req.body.tags) return undefined;
+
+        // Handle multiple and single tags.
+        if (Array.isArray(req.body.tags)) return req.body.tags;
+        return [req.body.tags];
+      });
+
+      questionInfo.gradingMethod = propertyValueWithDefault(
+        questionInfo.gradingMethod,
+        req.body.grading_method,
+        'Internal',
+      );
+
+      questionInfo.singleVariant = propertyValueWithDefault(
+        questionInfo.singleVariant,
+        req.body.single_variant === 'on',
+        false,
+      );
+
+      questionInfo.showCorrectAnswer = propertyValueWithDefault(
+        questionInfo.showCorrectAnswer,
+        req.body.show_correct_answer === 'on',
+        true,
+      );
+
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
+
+      const qid_new = run(() => {
         try {
-          await editor.executeWithServerJob(serverJob);
+          return path.normalize(req.body.qid);
         } catch {
-          return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+          throw new error.HttpStatusError(
+            400,
+            `Invalid QID (could not be normalized): ${req.body.qid}`,
+          );
         }
+      });
+
+      const editor = new MultiEditor(
+        {
+          locals: res.locals as any,
+          // This won't reflect if the operation is an update or a rename; we think that's OK.
+          description: `Update question ${res.locals.question.qid}`,
+        },
+        [
+          // Each of these editors will no-op if there wasn't any change.
+          new FileModifyEditor({
+            locals: res.locals as any,
+            container: {
+              rootPath: paths.rootPath,
+              invalidRootPaths: paths.invalidRootPaths,
+            },
+            filePath: path.join(paths.rootPath, 'info.json'),
+            editContents: b64EncodeUnicode(formattedJson),
+            origHash,
+          }),
+          new QuestionRenameEditor({
+            locals: res.locals as any,
+            qid_new,
+          }),
+        ],
+      );
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch {
+        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
+
       flash('success', 'Question settings updated successfully');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'copy_question') {
       if (idsEqual(req.body.to_course_id, res.locals.course.id)) {
         // In this case, we are making a duplicate of this question in the same course
         const editor = new QuestionCopyEditor({
-          locals: res.locals,
+          locals: res.locals as any,
         });
         const serverJob = await editor.prepareServerJob();
         try {
@@ -214,7 +235,8 @@ router.post(
       }
     } else if (req.body.__action === 'delete_question') {
       const editor = new QuestionDeleteEditor({
-        locals: res.locals,
+        locals: res.locals as any,
+        questions: res.locals.question,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -239,7 +261,7 @@ router.get(
     // `originalUrl` so that this router doesn't have to be aware of where it's
     // mounted.
     const host = getCanonicalHost(req);
-    let questionTestPath = new URL(`${host}${req.originalUrl}`).pathname;
+    let questionTestPath = new URL(req.originalUrl, host).pathname;
     if (!questionTestPath.endsWith('/')) {
       questionTestPath += '/';
     }
@@ -292,8 +314,7 @@ router.get(
       user_id: res.locals.user.user_id,
       is_administrator: res.locals.is_administrator,
     });
-    const infoPath = encodePath(path.join('questions', res.locals.question.qid, 'info.json'));
-
+    const infoPath = path.join('questions', res.locals.question.qid, 'info.json');
     const fullInfoPath = path.join(res.locals.course.path, infoPath);
     const questionInfoExists = await fs.pathExists(fullInfoPath);
 

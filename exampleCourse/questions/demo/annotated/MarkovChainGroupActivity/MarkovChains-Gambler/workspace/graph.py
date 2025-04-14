@@ -49,7 +49,7 @@ def _draw_edge_inc_matrix(mat, mat_label, layout="dot"):
     for node in mat_label:
         G.add_node(node)
 
-    edges, nodes = mat.shape
+    edges, _ = mat.shape
     for e in range(edges):
         out_node = np.where(mat[e] == -1)[0][0]
         in_node = np.where(mat[e] == 1)[0][0]

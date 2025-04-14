@@ -1,3 +1,5 @@
+import type { HtmlValue } from '@prairielearn/html';
+
 export type NavbarType =
   | 'plain'
   | 'student'
@@ -29,6 +31,7 @@ export type NavPage =
   | 'news_item'
   | 'news_items'
   | 'user_settings'
+  | 'password'
   | undefined;
 
 // This type is provisionally very lenient, to avoid problems with existing
@@ -40,4 +43,13 @@ export interface NavContext {
   type: NavbarType;
   page: NavPage;
   subPage?: NavSubPage;
+}
+
+export interface TabInfo {
+  activeSubPage: NavSubPage | NavSubPage[];
+  urlSuffix: string | ((resLocals: Record<string, any>) => string);
+  iconClasses: string;
+  tabLabel: string;
+  htmlSuffix?: (resLocals: Record<string, any>) => HtmlValue;
+  renderCondition?: (resLocals: Record<string, any>) => boolean;
 }

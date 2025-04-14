@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import lxml.html
 from prairielearn.internal.traverse import (
     ElementReplacement,
@@ -5,10 +7,13 @@ from prairielearn.internal.traverse import (
     traverse_and_replace,
 )
 
+if TYPE_CHECKING:
+    from lxml.etree import QName
+
 
 def test_traverse_and_execute() -> None:
     text: list[str] = []
-    tags: list[str] = []
+    tags: list[str | bytearray | bytes | QName] = []
 
     def capture_element(element: lxml.html.HtmlElement) -> None:
         if element.text:
@@ -248,6 +253,29 @@ def test_traverse_indentation() -> None:
     assert html == original_html
 
 
+def test_traverse_pre_html4_entities() -> None:
+    original_html = "<pre>1 &lt; 2 &amp;&amp; 3 &gt; 2</pre>"
+    html = traverse_and_replace(
+        original_html,
+        lambda e: e,
+    )
+    assert html == original_html
+
+
+# This test specifically checks for HTML5 entity handling, which `lxml`
+# doesn't natively support: https://gitlab.gnome.org/GNOME/libxml2/-/issues/857
+#
+# We specifically expect to get back the actual Unicode characters, not the
+# original named entities.
+def test_traverse_pre_html5_entities() -> None:
+    original_html = "<pre>&langle;v, w&rangle;</pre>"
+    html = traverse_and_replace(
+        original_html,
+        lambda e: e,
+    )
+    assert html == "<pre>⟨v, w⟩</pre>"
+
+
 def test_traverse_and_replace_attribute_quotes() -> None:
     def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
         if e.tag == "span":
@@ -303,6 +331,32 @@ def test_traverse_and_replace_angle_brackets() -> None:
 
     html = traverse_and_replace("<pl-code></pl-code>", replace)
     assert html == "<pre><code>&lt;div&gt;</code></pre>"
+
+
+def test_traverse_and_replace_trailing_entity() -> None:
+    def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
+        if e.tag == "div":
+            return "<span><span>Goodbye</span> &amp;</span>"
+        return e
+
+    html = traverse_and_replace("<div>Hello</div>", replace)
+    assert html == "<span><span>Goodbye</span> &amp;</span>"
+
+
+def test_traverse_and_replace_comment_trailing_entity() -> None:
+    def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
+        return e
+
+    html = traverse_and_replace("hello <!-- comment --> &amp;", replace)
+    assert html == "hello <!-- comment --> &amp;"
+
+
+def test_traverse_and_replace_processing_instruction_trailing_entity() -> None:
+    def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
+        return e
+
+    html = traverse_and_replace('hello <?xml version="1.0"?> &amp;', replace)
+    assert html == 'hello <!--?xml version="1.0"?--> &amp;'
 
 
 def test_traverse_and_replace_xml_processing_instruction() -> None:

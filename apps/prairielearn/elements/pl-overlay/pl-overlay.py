@@ -130,12 +130,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             f"top: {y}px; left: {x}px; transform: {transform}; z-index: {next(z_index)}"
         )
 
-        locations.append(
-            {
-                "html": pl.inner_html(child),
-                "outer_style": style,
-            }
-        )
+        locations.append({
+            "html": pl.inner_html(child),
+            "outer_style": style,
+        })
 
     html_params = {
         "width": width,

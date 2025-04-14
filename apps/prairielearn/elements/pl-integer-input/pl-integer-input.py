@@ -321,14 +321,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     if a_tru_parsed is None:
         raise ValueError(f"Could not parse correct answer: {a_tru}")
 
-    # TODO: Enable this typeguard
-    # if not isinstance(
-    #     a_tru_parsed, int | float | complex | np.complexfloating | np.number
-    # ):
-    #     raise TypeError(
-    #         f"Correct answer '{a_tru}' is not a valid type, got {type(a_tru)}"
-    #     )
-
     result = data["test_type"]
     if result == "correct":
         if base > 0:
@@ -341,7 +333,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = np.base_repr(
-            a_tru_parsed + (random.randint(1, 11) * random.choice([-1, 1])),  # type: ignore
+            a_tru_parsed + (random.randint(1, 11) * random.choice([-1, 1])),
             base if base > 0 else 10,
         )
         data["partial_scores"][name] = {"score": 0, "weight": weight}

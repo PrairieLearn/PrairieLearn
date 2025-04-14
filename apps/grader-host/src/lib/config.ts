@@ -1,5 +1,5 @@
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
-import { SQSClient, GetQueueUrlCommand } from '@aws-sdk/client-sqs';
+import { GetQueueUrlCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { z } from 'zod';
 
 import {
