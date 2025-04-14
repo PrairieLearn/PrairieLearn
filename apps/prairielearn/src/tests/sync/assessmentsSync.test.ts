@@ -2478,16 +2478,31 @@ describe('Assessment syncing', () => {
           canView: ['Contributor'],
           canSubmit: ['Contributor'],
         },
+        {
+          points: 1,
+          canView: ['Manager'],
+          canSubmit: ['Recorder'],
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
       ],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedData = await getSyncedAssessmentData('newhomework');
-    assert.equal(syncedData.assessment.json_can_view?.toString(), 'Manager');
-    assert.equal(syncedData.assessment.json_can_submit?.toString(), 'Recorder');
-    assert.equal(syncedData.zones[0].json_can_view?.toString(), 'Manager,Recorder,Contributor');
-    assert.equal(syncedData.zones[0].json_can_submit?.toString(), 'Recorder,Contributor');
-    assert.equal(syncedData.alternative_groups[0].json_can_view?.toString(), 'Contributor');
-    assert.equal(syncedData.alternative_groups[0].json_can_submit?.toString(), 'Contributor');
+    assert.deepEqual(syncedData.assessment.json_can_view, ['Manager']);
+    assert.deepEqual(syncedData.assessment.json_can_submit, ['Recorder']);
+    assert.deepEqual(syncedData.zones[0].json_can_view, ['Manager', 'Recorder', 'Contributor']);
+    assert.deepEqual(syncedData.zones[0].json_can_submit, ['Recorder', 'Contributor']);
+    assert.deepEqual(syncedData.alternative_groups[0].json_can_view, ['Contributor']);
+    assert.deepEqual(syncedData.alternative_groups[0].json_can_submit, ['Contributor']);
+    assert.equal(syncedData.alternative_groups[0].json_has_alternatives, false);
+    assert.equal(syncedData.alternative_groups[1].json_has_alternatives, true);
   });
 });
