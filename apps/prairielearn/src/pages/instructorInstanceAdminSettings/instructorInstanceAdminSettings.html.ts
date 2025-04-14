@@ -113,8 +113,12 @@ export function InstructorInstanceAdminSettings({
                 )}
               </select>
               <small class="form-text text-muted">
-                The allowable timezones are from the tz database. It's best to use a city-based
-                timezone that has the same times as you.
+                The allowable timezones are from the
+                <a
+                  href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                  target="_blank"
+                  >tz database</a
+                >. It's best to use a city-based timezone that has the same times as you.
               </small>
             </div>
             <div class="mb-3">
@@ -139,8 +143,7 @@ export function InstructorInstanceAdminSettings({
                 </option>
               </select>
               <small class="form-text text-muted">
-                Determines how assessments will be grouped on the
-                student assessments page.
+                Determines how assessments will be grouped on the student assessments page.
               </small>
             </div>
             <div class="mb-3 form-check">
