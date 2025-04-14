@@ -1,4 +1,4 @@
-"""Utilities for grading and comparing answers in PrairieLearn.
+"""Utilities for grading in PrairieLearn.
 
 ```python
 from prairielearn import ...
@@ -14,21 +14,21 @@ import numpy.typing as npt
 from numpy.typing import ArrayLike
 from typing_extensions import assert_never
 
-from prairielearn.misc_utils import QuestionData
+from prairielearn.question_utils import QuestionData
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
+def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
     return is_correct_ndarray2d_dd(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
+def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
     return is_correct_ndarray2d_sf(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
+def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
     return is_correct_ndarray2d_ra(*args, **kwargs)
 
 
@@ -195,83 +195,3 @@ def determine_score_params(
         return ("partial", math.floor(score * 100))
 
     return ("incorrect", True)
-
-
-def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None:
-    """
-    Set overall question score to be weighted average of all partial scores. Use
-    weight_default to fill in a default weight for a score if one is missing.
-    """
-    weight_total = 0
-    score_total = 0.0
-    for part in data["partial_scores"].values():
-        score = part["score"]
-        weight = part.get("weight", weight_default)
-
-        if score is None:
-            raise ValueError("Can't set weighted score data if score is None.")
-
-        score_total += score * weight
-        weight_total += weight
-
-    data["score"] = score_total / weight_total
-
-
-def set_all_or_nothing_score_data(data: QuestionData) -> None:
-    """Give points to main question score if all partial scores are correct."""
-    data["score"] = 1.0 if all_partial_scores_correct(data) else 0.0
-
-
-def all_partial_scores_correct(data: QuestionData) -> bool:
-    """Return true if all questions are correct in partial scores and it's nonempty."""
-    partial_scores = data["partial_scores"]
-
-    if len(partial_scores) == 0:
-        return False
-
-    return all(
-        part["score"] is not None and math.isclose(part["score"], 1.0)
-        for part in partial_scores.values()
-    )
-
-
-def is_int_json_serializable(n: int) -> bool:
-    """Check if an integer is less than Number.MAX_SAFE_INTEGER and greater than Number.MIN_SAFE_INTEGER.
-
-    See <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER>.
-    """
-    return -((2**53) - 1) <= n <= 2**53 - 1
-
-
-def add_files_format_error(data: QuestionData, error: str) -> None:
-    """Add a format error to the data dictionary."""
-    if data["format_errors"].get("_files") is None:
-        data["format_errors"]["_files"] = []
-    if isinstance(data["format_errors"]["_files"], list):
-        data["format_errors"]["_files"].append(error)
-    else:
-        data["format_errors"]["_files"] = [
-            '"_files" was present in "format_errors" but was not an array',
-            error,
-        ]
-
-
-def add_submitted_file(
-    data: QuestionData,
-    file_name: str,
-    base64_contents: str,
-    *,
-    mimetype: str | None = None,
-) -> None:
-    """Add a submitted file to the data dictionary."""
-    if data["submitted_answers"].get("_files") is None:
-        data["submitted_answers"]["_files"] = []
-    if isinstance(data["submitted_answers"]["_files"], list):
-        submitted_file = {"name": file_name, "contents": base64_contents}
-        if mimetype is not None:
-            submitted_file["mimetype"] = mimetype
-        data["submitted_answers"]["_files"].append(submitted_file)
-    else:
-        add_files_format_error(
-            data, '"_files" is present in "submitted_answers" but is not an array'
-        )

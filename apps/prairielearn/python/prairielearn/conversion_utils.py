@@ -18,7 +18,8 @@ import pandas as pd
 import sympy
 from typing_extensions import assert_never
 
-from prairielearn.misc_utils import escape_invalid_string
+from prairielearn.html_utils import escape_invalid_string
+from prairielearn.misc_utils import full_unidecode
 from prairielearn.sympy_utils import (
     convert_string_to_sympy,
     is_sympy_json,
@@ -26,7 +27,6 @@ from prairielearn.sympy_utils import (
     sympy_to_json,
 )
 from prairielearn.to_precision import to_precision
-from prairielearn.unicode_utils import full_unidecode
 
 if TYPE_CHECKING:
     from numpy.core.arrayprint import _FormatDict
@@ -91,6 +91,10 @@ _JSONPythonType = (
 This represents additional object formats (i.e. non-standard Python types)
 that can be serialized / deserialized.
 """
+
+
+def is_int_json_serializable(n: int) -> bool:
+    return -((2**53) - 1) <= n <= 2**53 - 1
 
 
 @overload
@@ -553,7 +557,6 @@ def string_from_2darray(
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
-    """Return the 2D array 'A' as a string in the specified language."""
     result = string_from_numpy(A, language, presentation_type, digits)
     return result
 
@@ -880,7 +883,6 @@ def latex_from_2darray(
 def string_partition_first_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
-    """Split a string at the first occurrence of left and right delimiters."""
     # Split at first left delimiter
     (s_before_left, _, s) = s.partition(left)
     # Split at first right delimiter
@@ -892,7 +894,6 @@ def string_partition_first_interval(
 def string_partition_outer_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
-    """Split a string at the first left delimiter and last right delimiter."""
     # Split at first left delimiter
     (s_before_left, _, s) = s.partition(left)
     # Split at last right delimiter
