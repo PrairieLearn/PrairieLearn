@@ -24,17 +24,15 @@ export function AssessmentBadge({
   }
 
   if (publicURL) {
-    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}/assessment/${assessment.assessment_id}/questions`;
+    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}`;
   } else if (urlPrefix === undefined) {
     // Construct the URL prefix with the appropriate course instance
     urlPrefix = `${plainUrlPrefix}/course_instance/${course_instance_id}/instructor`;
   }
-
   return html`
     <a
-      href="${urlPrefix}"
+      href="${urlPrefix}/assessment/${assessment.assessment_id}"
       class="badge color-${assessment.color} color-hover"
-      onclick="event.stopPropagation();"
     >
       ${assessment.label}
     </a>
