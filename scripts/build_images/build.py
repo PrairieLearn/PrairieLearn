@@ -234,10 +234,7 @@ def build_images(
     cache_strategy: CacheStrategy = "none",
     cache_only: list[str] | None = None,
 ) -> None:
-    """Builds a list of Docker images.
-
-    Build the images in the order they are given, and skip any images that have not changed since the last build.
-    """
+    """Builds a list of Docker images in the order they are given."""
     validate_image_order(images)
 
     image_digests: dict[str, str] = {}

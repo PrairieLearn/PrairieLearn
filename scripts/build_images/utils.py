@@ -20,7 +20,8 @@ def print_and_run_command(
     command: list[str], *, capture_output: bool = False
 ) -> subprocess.CompletedProcess[str]:
     """Run a command and print it to the console.
-    If running in GitHub Actions, format the command for better output.
+
+    If running in GitHub Actions, the command is formatted for better output.
     """
     is_actions = os.environ.get("GITHUB_ACTIONS")
     if is_actions:

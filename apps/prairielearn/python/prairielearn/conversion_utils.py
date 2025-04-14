@@ -575,7 +575,7 @@ def string_from_2darray(
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
-    """Return the 2D array 'A' as a string in the specified language."""
+    """Return the 2D array as a string in the specified language."""
     result = string_from_numpy(A, language, presentation_type, digits)
     return result
 

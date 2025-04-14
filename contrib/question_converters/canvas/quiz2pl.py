@@ -120,7 +120,7 @@ def image_file_extension(content_type: str) -> str:
 
 
 def handle_images(question_dir: str, text: str) -> str:
-    """Download canvas image links and replace them with `pl-figure` elements."""
+    """Download Canvas image links and replace them with `pl-figure` elements."""
     # We use regex instead of a proper HTML parser because we want to limit this
     # script to only using the Python standard library.
     image_count = count(1)
