@@ -1,7 +1,7 @@
 import { mapSeries } from 'async';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
 import {
@@ -38,33 +38,35 @@ export default async function ({
   assessment_id: string;
   mode: AssessmentInstance['mode'];
 }): Promise<AdministratorQueryResult> {
-  const columns = Object.keys(UserRowSchema.shape).concat([
-    'assessment_id',
-    'assessment',
-    'assessment_instance_id',
-  ]);
-  const assessment = await selectOptionalAssessmentById(assessment_id);
-  if (!assessment) return { rows: [], columns };
+  return await runInTransactionAsync(async () => {
+    const columns = Object.keys(UserRowSchema.shape).concat([
+      'assessment_id',
+      'assessment',
+      'assessment_instance_id',
+    ]);
+    const assessment = await selectOptionalAssessmentById(assessment_id);
+    if (!assessment) return { rows: [], columns };
 
-  const users = assessment.group_work
-    ? await queryRows(sql.select_groups, { assessment_id }, GroupRowSchema)
-    : await queryRows(sql.select_users, { assessment_id }, UserRowSchema);
-  if (assessment.group_work) columns.splice(0, 0, 'group_name');
+    const users = assessment.group_work
+      ? await queryRows(sql.select_groups, { assessment_id }, GroupRowSchema)
+      : await queryRows(sql.select_users, { assessment_id }, UserRowSchema);
+    if (assessment.group_work) columns.splice(0, 0, 'group_name');
 
-  const rows = await mapSeries(users, async (user: UserRow | GroupRow) => ({
-    ...user,
-    assessment_id: assessment.id,
-    assessment: assessment.title,
-    assessment_instance_id: await makeAssessmentInstance({
-      assessment,
-      user_id: user.user_id,
-      authn_user_id: user.user_id,
-      mode,
-      date: new Date(),
-      time_limit_min: null,
-      client_fingerprint_id: null,
-    }),
-  }));
+    const rows = await mapSeries(users, async (user: UserRow | GroupRow) => ({
+      ...user,
+      assessment_id: assessment.id,
+      assessment: assessment.title,
+      assessment_instance_id: await makeAssessmentInstance({
+        assessment,
+        user_id: user.user_id,
+        authn_user_id: user.user_id,
+        mode,
+        date: new Date(),
+        time_limit_min: null,
+        client_fingerprint_id: null,
+      }),
+    }));
 
-  return { rows, columns };
+    return { rows, columns };
+  });
 }
