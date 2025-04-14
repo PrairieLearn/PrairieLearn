@@ -7,6 +7,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  type Assessment,
   type AssessmentInstance,
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
@@ -92,9 +93,8 @@ export function renderText(
 /**
  * Create a new assessment instance and all the questions in it.
  *
- * @param assessment_id - The assessment to create the assessment instance for.
+ * @param assessment - The assessment to create the assessment instance for.
  * @param user_id - The user who will own the new assessment instance.
- * @param group_work - If the assessment will support group work.
  * @param authn_user_id - The current authenticated user.
  * @param mode - The mode for the new assessment instance.
  * @param time_limit_min - The time limit for the new assessment instance.
@@ -102,18 +102,16 @@ export function renderText(
  * @returns The ID of the new assessment instance.
  */
 export async function makeAssessmentInstance({
-  assessment_id,
+  assessment,
   user_id,
-  group_work,
   authn_user_id,
   mode,
   time_limit_min,
   date,
   client_fingerprint_id,
 }: {
-  assessment_id: string;
+  assessment: Assessment;
   user_id: string;
-  group_work: boolean;
   authn_user_id: string;
   mode: AssessmentInstance['mode'];
   time_limit_min: number | null;
@@ -122,8 +120,8 @@ export async function makeAssessmentInstance({
 }): Promise<string> {
   return await sqldb.runInTransactionAsync(async () => {
     let group_id: string | null = null;
-    if (group_work) {
-      group_id = await getGroupId(assessment_id, user_id);
+    if (assessment.group_work) {
+      group_id = await getGroupId(assessment.id, user_id);
       if (group_id == null) {
         throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
       }
@@ -132,7 +130,7 @@ export async function makeAssessmentInstance({
     const { assessment_instance_id, created } = await sqldb.queryRow(
       sql.insert_assessment_instance,
       {
-        assessment_id,
+        assessment_id: assessment.id,
         group_id,
         user_id,
         mode,

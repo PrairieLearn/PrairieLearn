@@ -67,9 +67,8 @@ router.get(
       const time_limit_min = null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
       const assessment_instance_id = await makeAssessmentInstance({
-        assessment_id: res.locals.assessment.id,
+        assessment: res.locals.assessment,
         user_id: res.locals.user.user_id,
-        group_work: res.locals.assessment.group_work,
         authn_user_id: res.locals.authn_user.user_id,
         mode: res.locals.authz_data.mode,
         time_limit_min,
@@ -141,9 +140,8 @@ router.post(
         res.locals.assessment.type === 'Exam' ? res.locals.authz_result.time_limit_min : null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
       const assessment_instance_id = await makeAssessmentInstance({
-        assessment_id: res.locals.assessment.id,
+        assessment: res.locals.assessment,
         user_id: res.locals.user.user_id,
-        group_work: res.locals.assessment.group_work,
         authn_user_id: res.locals.authn_user.user_id,
         mode: res.locals.authz_data.mode,
         time_limit_min,
