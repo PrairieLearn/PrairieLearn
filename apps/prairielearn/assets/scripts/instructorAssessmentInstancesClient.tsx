@@ -149,18 +149,21 @@ onDocumentReady(() => {
   $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
     const modal = $(this);
 
-    modal.parents('form').on('submit', (e) => {
-      e.preventDefault();
-      $.post(
-        $(e.target).attr('action') ?? '',
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      modal.modal('hide');
-    });
+    modal
+      .parents('form')
+      .off('submit')
+      .on('submit', (e) => {
+        e.preventDefault();
+        $.post(
+          $(e.target).attr('action') ?? '',
+          $(e.target).serialize(),
+          function () {
+            refreshTable();
+          },
+          'json',
+        );
+        modal.modal('hide');
+      });
 
     // @ts-expect-error -- The BS5 types don't include the `relatedTarget` property on jQuery events.
     const { relatedTarget } = event;
@@ -182,18 +185,21 @@ onDocumentReady(() => {
   $('#deleteAllAssessmentInstancesModal').on('show.bs.modal', function () {
     const modal = $(this);
 
-    modal.parents('form').on('submit', (e) => {
-      e.preventDefault();
-      $.post(
-        $(e.target).attr('action') ?? '',
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      modal.modal('hide');
-    });
+    modal
+      .parents('form')
+      .off('submit')
+      .on('submit', (e) => {
+        e.preventDefault();
+        $.post(
+          $(e.target).attr('action') ?? '',
+          $(e.target).serialize(),
+          function () {
+            refreshTable();
+          },
+          'json',
+        );
+        modal.modal('hide');
+      });
   });
 
   $('[data-bs-toggle="modal"]').on('click', function (e) {
