@@ -3,7 +3,10 @@ import { Chalk } from 'chalk';
 export const chalk = new Chalk({ level: 3 });
 
 const ansiUp = new AnsiUp();
-// Set a custom style for faint text that allows it to be hidden
+// Set a custom style for faint text that allows it to be hidden. This only
+// affects pages that set `--verbose-display` to a specific value, pages that
+// don't set this variable will not be affected and will use the default CSS
+// display value.
 ansiUp.faintStyle = 'opacity: 0.7; display: var(--verbose-display);';
 
 export function ansiToHtml(ansiString: string | null): string {
