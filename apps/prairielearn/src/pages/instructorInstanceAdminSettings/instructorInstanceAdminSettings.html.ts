@@ -139,7 +139,7 @@ export function InstructorInstanceAdminSettings({
                 </option>
               </select>
               <small class="form-text text-muted">
-                Determines which assessment category will be used to group assessments on the
+                Determines how assessments will be grouped on the
                 student assessments page.
               </small>
             </div>
