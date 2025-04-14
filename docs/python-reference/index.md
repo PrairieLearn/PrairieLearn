@@ -62,8 +62,8 @@ import prairielearn.sympy_utils as psu
             - misc_utils
             - sympy_utils
             - extension_utils
-            - grading_utils
+            - question_utils
             - conversion_utils
-            - attribute_utils
+            - html_utils
             - colors
-            - unicode_utils
+            - to_precision
