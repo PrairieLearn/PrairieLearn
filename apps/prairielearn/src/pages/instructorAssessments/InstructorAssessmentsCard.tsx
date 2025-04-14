@@ -56,7 +56,7 @@ export function InstructorAssessmentsCard({
               onClick={() => setCreateAssessmentModalOpen(true)}
             >
               <i class="fa fa-plus" aria-hidden="true"></i>
-              <span class="d-none d-sm-inline ml-1">Add assessment</span>
+              <span class="d-none d-sm-inline ml-s">Add assessment</span>
             </button>
           )}
         </div>
