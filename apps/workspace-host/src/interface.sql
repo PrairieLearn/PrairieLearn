@@ -48,8 +48,7 @@ INSERT INTO
   )
 VALUES
   ($instance_id, $hostname, 'ready', NOW(), NOW())
-ON CONFLICT (instance_id) DO
-UPDATE
+ON CONFLICT (instance_id) DO UPDATE
 SET
   hostname = EXCLUDED.hostname,
   state = EXCLUDED.state,

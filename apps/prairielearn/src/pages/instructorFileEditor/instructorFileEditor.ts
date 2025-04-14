@@ -10,14 +10,14 @@ import { isBinaryFile } from 'isbinaryfile';
 import { HttpStatusError } from '@prairielearn/error';
 import {
   loadSqlEquiv,
-  queryOptionalRow,
-  queryRows,
   queryAsync,
+  queryOptionalRow,
   queryRow,
+  queryRows,
 } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
-import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema, IdSchema } from '../../lib/db-types.js';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
@@ -196,7 +196,7 @@ router.post(
       });
 
       const editor = new FileModifyEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         container,
         filePath: paths.workingPath,
         editContents: req.body.file_edit_contents,

@@ -1,12 +1,11 @@
 import * as async from 'async';
 import { type Request, type Response } from 'express';
-import _ from 'lodash';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
 
-import { validateVariantAgainstQuestion } from '../models/variant.js';
+import { selectAndAuthzVariant } from '../models/variant.js';
 
 import { type Variant } from './db-types.js';
 
@@ -14,6 +13,7 @@ interface IssueForErrorData {
   variantId: string;
   studentMessage: string | null;
   courseData: Record<string, any>;
+  userId: string | null;
   authnUserId: string | null;
 }
 
@@ -39,6 +39,7 @@ export async function insertIssue({
   courseCaused,
   courseData,
   systemData,
+  userId,
   authnUserId,
 }: IssueData): Promise<void> {
   // Truncate all strings in the data objects to 1000 characters. This ensures
@@ -59,6 +60,7 @@ export async function insertIssue({
     courseCaused,
     truncatedCourseData,
     truncatedSystemData,
+    userId,
     authnUserId,
   ]);
 }
@@ -84,6 +86,7 @@ export async function insertIssueForError(
  *
  * @param courseIssues - List of issue objects for to be written.
  * @param variant - The variant associated with the issues.
+ * @param user_id - The user submitting the issues.
  * @param authn_user_id - The currently authenticated user.
  * @param studentMessage - The message to display to the student.
  * @param courseData - Arbitrary data to be associated with the issues.
@@ -91,6 +94,7 @@ export async function insertIssueForError(
 export async function writeCourseIssues(
   courseIssues: ErrorMaybeWithData[],
   variant: Variant,
+  user_id: string | null,
   authn_user_id: string | null,
   studentMessage: string | null,
   courseData: Record<string, any>,
@@ -100,6 +104,7 @@ export async function writeCourseIssues(
       variantId: variant.id,
       studentMessage,
       courseData,
+      userId: user_id,
       authnUserId: authn_user_id,
     });
   });
@@ -117,25 +122,38 @@ export async function reportIssueFromForm(
     throw new HttpStatusError(400, 'A description of the issue must be provided');
   }
 
-  const variant = await validateVariantAgainstQuestion(
-    req.body.__variant_id,
-    res.locals.question.id,
-    studentSubmission ? res.locals.instance_question?.id : null,
-  );
+  const variant = await selectAndAuthzVariant({
+    unsafe_variant_id: req.body.__variant_id,
+    variant_course: res.locals.course,
+    question_id: res.locals.question.id,
+    course_instance_id: res.locals.course_instance?.id,
+    instance_question_id: studentSubmission ? res.locals.instance_question?.id : null,
+    authz_data: res.locals.authz_data,
+    authn_user: res.locals.authn_user,
+    user: res.locals.user,
+    is_administrator: res.locals.is_administrator,
+  });
   await insertIssue({
     variantId: variant.id,
     studentMessage: description,
     instructorMessage: `${studentSubmission ? 'student' : 'instructor'}-reported issue`,
     manuallyReported: true,
     courseCaused: true,
-    courseData: _.pick(res.locals, [
-      'variant',
-      'question',
-      'course_instance',
-      'course',
-      ...(studentSubmission ? ['instance_question', 'assessment_instance', 'assessment'] : []),
-    ]),
+    courseData: {
+      variant,
+      question: res.locals.question,
+      course_instance: res.locals.course_instance,
+      course: res.locals.course,
+      ...(studentSubmission
+        ? {
+            instance_question: res.locals.instance_question,
+            assessment_instance: res.locals.assessment_instance,
+            assessment: res.locals.assessment,
+          }
+        : {}),
+    },
     systemData: {},
+    userId: res.locals.user.user_id,
     authnUserId: res.locals.authn_user.user_id,
   });
   return variant.id;
