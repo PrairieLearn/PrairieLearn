@@ -224,7 +224,7 @@ nav:
           - 'Reference Docs': python-grader/reference-docs.md
       - 'C/C++ autograder': 'c-grader/index.md'
       - 'Java autograder': 'java-grader/index.md'
-      - 'Python Reference':
+      - 'Python API reference':
           - python-reference/index.md
           - 'Colors': python-reference/prairielearn/colors.md
           - 'Conversion': python-reference/prairielearn/conversion_utils.md
