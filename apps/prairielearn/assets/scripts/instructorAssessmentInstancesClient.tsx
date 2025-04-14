@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
-import { h, render, Fragment } from 'preact';
+import { Fragment, h, render } from 'preact';
 import React, { useState } from 'preact/hooks';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
@@ -149,7 +149,7 @@ onDocumentReady(() => {
   $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
     const modal = $(this);
 
-    modal.find('form').on('submit', (e) => {
+    modal.parents('form').on('submit', (e) => {
       e.preventDefault();
       $.post(
         $(e.target).attr('action') ?? '',
@@ -182,7 +182,7 @@ onDocumentReady(() => {
   $('#deleteAllAssessmentInstancesModal').on('show.bs.modal', function () {
     const modal = $(this);
 
-    modal.find('form').on('submit', (e) => {
+    modal.parents('form').on('submit', (e) => {
       e.preventDefault();
       $.post(
         $(e.target).attr('action') ?? '',
