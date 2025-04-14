@@ -24,6 +24,7 @@ def test_external_exports():
             escape_invalid_string,
             escape_unicode_string,
             from_json,
+            full_unidecode,
             get_boolean_attrib,
             get_color_attrib,
             get_enum_attrib,
@@ -72,8 +73,7 @@ def test_external_exports():
             PrairieLearnColor,
             get_css_color,
         )
-        from prairielearn.misc_utils import full_unidecode
-        from prairielearn.sympy_utils import (
+        from python_helper_sympy import (
             STANDARD_OPERATORS,
             AssumptionsDictT,
             ASTWhiteListT,
@@ -110,10 +110,7 @@ def test_external_exports():
             sympy_to_json,
             validate_string_as_sympy,
         )
-        from prairielearn.to_precision import (
-            _number_profile,
-            _place_dot,
-            _sci_notation,
+        from to_precision import (
             eng_notation,
             sci_notation,
             std_notation,
