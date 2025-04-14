@@ -59,6 +59,7 @@ export function InstructorAIGradingRuns({ resLocals }: { resLocals: Record<strin
             </div>
           </form>
         </div>
-      </div>`,
+      </div>
+    `,
   });
 }
