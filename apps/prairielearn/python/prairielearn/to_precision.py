@@ -32,6 +32,9 @@ def to_precision(
             ref: http://www.mathsisfun.com/definitions/engineering-notation.html
         'std' or 'standard' - returns standard notation
             ref: http://www.mathsisfun.com/definitions/standard-notation.html
+
+    Returns:
+        string of value with the proper precision and notation
     """
     value = float(value)
 
@@ -60,8 +63,6 @@ def std_notation(value: float, precision: int, _extra: Any = None) -> str:
     """Standard notation (US version).
     <http://www.mathsisfun.com/definitions/standard-notation.html>
 
-    returns a string of value with the proper precision
-
     Examples:
         >>> std_notation(5, 2)
         5.0
@@ -71,6 +72,9 @@ def std_notation(value: float, precision: int, _extra: Any = None) -> str:
         5400
         >>> std_notation(0.05363, 3)
         0.0536
+
+    Returns:
+        string of value with the proper precision
 
     created by William Rusnack
         github.com/BebeSparkelSparkel
@@ -86,7 +90,6 @@ def sci_notation(value: float, precision: int, filler: str) -> str:
     """Scientific notation.
     <https://www.mathsisfun.com/numbers/scientific-notation.html>
 
-    returns a string of value with the proper precision and 10s exponent
     filler is placed between the decimal value and 10s exponent
 
     Examples:
@@ -96,6 +99,9 @@ def sci_notation(value: float, precision: int, filler: str) -> str:
         1.23E2
         >>> sci_notation(.126, 2, 'E')
         1.3E-1
+
+    Returns:
+        string of value with the proper precision and 10s exponent
 
     created by William Rusnack
         github.com/BebeSparkelSparkel
@@ -116,7 +122,6 @@ def eng_notation(value: float, precision: int, filler: str) -> str:
     """Engineering notation.
     <http://www.mathsisfun.com/definitions/engineering-notation.html>
 
-    returns a string of value with the proper precision and 10s exponent that is divisable by 3
     filler is placed between the decimal value and 10s exponent
 
     Examples:
@@ -126,6 +131,9 @@ def eng_notation(value: float, precision: int, filler: str) -> str:
         1.23E3
         >>> sci_notation(.126, 2, 'E')
         120E-3
+
+    Returns:
+        string of value with the proper precision and 10s exponent that is divisable by 3
 
     created by William Rusnack
         github.com/BebeSparkelSparkel
@@ -176,6 +184,9 @@ def _place_dot(digits: str, power: int) -> str:
         0.123
         >>> _place_dot(123, 5)
         0.00123
+
+    Returns:
+        string of digits with the dot in the correct location
 
     created by William Rusnack
         github.com/BebeSparkelSparkel

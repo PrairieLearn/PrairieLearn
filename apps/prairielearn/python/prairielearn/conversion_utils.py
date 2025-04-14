@@ -97,6 +97,9 @@ def is_int_json_serializable(n: int) -> bool:
     """Check if an integer is less than Number.MAX_SAFE_INTEGER and greater than Number.MIN_SAFE_INTEGER.
 
     See <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER>.
+
+    Returns:
+        True if it can be serialized by JS code.
     """
     return -((2**53) - 1) <= n <= 2**53 - 1
 
@@ -162,6 +165,9 @@ def to_json(
 
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
+
+    Returns:
+        The serialized value
     """
     if np_encoding_version not in {1, 2}:
         raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
@@ -275,6 +281,9 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
 
     If v does not have the format `{'_type': ..., '_value': ...}`, then it is
     returned without change.
+
+    Returns:
+        The deserialized value
     """
     if isinstance(v, dict) and "_type" in v:
         v_json = cast(_JSONSerializedType, v)
@@ -371,14 +380,16 @@ def numpy_to_matlab(
     wtype: str = "f",
     style: Literal["legacy", "space", "comma"] = "legacy",
 ) -> str:
-    """
-    Return np_object as a MATLAB-formatted string in which each number has "ndigits"
-    digits after the decimal and is formatted as "wtype" (e.g., 'f', 'g', etc.).
+    """Converts np_object to a MATLAB-formatted string in which each number has "ndigits" digits
+    after the decimal and is formatted as "wtype" (e.g., 'f', 'g', etc.).
 
     This function assumes that np_object is one of these things:
 
         - a number (float or complex)
         - a 2D ndarray (float or complex)
+
+    Returns:
+        A MATLAB-formatted string
     """
     if np.isscalar(np_object):
         scalar_str = "{:.{indigits}{iwtype}}".format(
@@ -485,6 +496,9 @@ def string_from_numpy(
     to_precision module to "digits" significant figures.
 
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
+
+    Returns:
+        A formatted version of the NumPy array.
     """
     # if A is a scalar
     if np.isscalar(A):
@@ -567,9 +581,13 @@ def string_from_2darray(
 
 
 def string_from_number_sigfig(a: _NumericScalarType | str, digits: int = 2) -> str:
-    """
-    Return "a" as a string in which the number, or both the real and imaginary parts of the
-    number, have digits significant digits. This function assumes that "a" is of type float or complex.
+    """Convert a number to a string with the specified significant digits.
+
+    This function assumes that `a` is of type float or complex.
+
+    Returns:
+        `a` as a string in which the number, or both the real and imaginary parts of the
+    number, have digits significant digits.
     """
     assert np.isscalar(a)
     assert not isinstance(a, (memoryview, bytes))
@@ -585,9 +603,12 @@ def string_from_number_sigfig(a: _NumericScalarType | str, digits: int = 2) -> s
 def _string_from_complex_sigfig(
     a: complex | np.complex64 | np.complex128, digits: int = 2
 ) -> str:
-    """
-    Return "a" as a string in which the real and imaginary parts have digits significant digits.
-    This function assumes that "a" is a complex number.
+    """Convert a complex number to a string.
+
+    This function assumes that `a` is a complex number.
+
+    Returns:
+        `a` as a string in which the real and imaginary parts have digits significant digits.
     """
     re = to_precision(a.real, digits)
     im = to_precision(np.abs(a.imag), digits)
@@ -603,7 +624,7 @@ def numpy_to_matlab_sf(
     style: Literal["legacy", "comma", "space"] = "legacy",
 ) -> str:
     """
-    Return A as a MATLAB-formatted string in which each number has
+    Convert A to a MATLAB-formatted string in which each number has
     ndigits significant digits.
 
     This function assumes that A is one of these things:
@@ -615,6 +636,9 @@ def numpy_to_matlab_sf(
     - legacy: formats 1d arrays with commas and 2d arrays with spaces
     - comma: formats all arrays with commas
     - space: formats all arrays with spaces
+
+    Returns:
+        A as a MATLAB-formatted string
     """
     if np.isscalar(A):
         assert not isinstance(A, (memoryview, str, bytes))
@@ -663,7 +687,11 @@ def numpy_to_matlab_sf(
 
 
 def string_to_integer(s: str, base: int = 10) -> int | None:
-    """Parse a string that is an integer, and return a number with type int, or None on parse error."""
+    """Parse a string that is an integer.
+
+    Returns:
+        An integer or `None` on parse error.
+    """
     if not isinstance(s, str):
         return None
 
@@ -683,8 +711,10 @@ def string_to_number(
     s: str, *, allow_complex: bool = True
 ) -> np.float64 | np.complex128 | None:
     """
-    Parse a string that can be interpreted either as float or (optionally) complex,
-    and return a number with type np.float64 or np.complex128, or None on parse error.
+    Parse a string that can be interpreted either as float or (optionally) complex.
+
+    Returns:
+        A number with type `np.float64` or `np.complex128`, or `None` on parse error.
     """
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace("\u2212", "-")
@@ -730,12 +760,11 @@ def string_fraction_to_number(
     tuple[None, _PartialDataFormatErrors]
     | tuple[np.float64 | np.complex128, _PartialDataSubmittedAnswers]
 ):
-    """
-    Parse a string containing a decimal number with support for answers expressing
+    """Parse a string containing a decimal number with support for answers expressing
     as a fraction.
 
-    Returns a tuple with the parsed value in the first entry and a dictionary with
-    the intended value of "data" in the second entry.
+    Returns:
+        A tuple with the parsed value in the first entry and a dictionary with the intended value of "data" in the second entry.
 
     On successful parsing, "data" will contain a 'submitted_answers' key that is the
     JSON encoded parsed answer.
@@ -826,8 +855,8 @@ def latex_from_2darray(
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
-    r"""
-    latex_from_2darray
+    r"""Convert a NumPy array to LaTeX.
+
     This function assumes that A is one of these things:
             - a number (float or complex)
             - a 2D ndarray (float or complex)
@@ -841,6 +870,9 @@ def latex_from_2darray(
     to_precision module to "digits" significant figures.
 
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
+
+    Returns:
+        The input formatted in LaTeX.
     """
     # if A is a scalar
     if np.isscalar(A):
@@ -888,7 +920,11 @@ def latex_from_2darray(
 def string_partition_first_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
-    """Split a string at the first occurrence of left and right delimiters."""
+    """Split a string at the first occurrence of left and right delimiters.
+
+    Returns:
+        A tuple
+    """
     # Split at first left delimiter
     (s_before_left, _, s) = s.partition(left)
     # Split at first right delimiter
@@ -900,7 +936,11 @@ def string_partition_first_interval(
 def string_partition_outer_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
-    """Split a string at the first left delimiter and last right delimiter."""
+    """Split a string at the first left delimiter and last right delimiter.
+
+    Returns:
+        A tuple
+    """
     # Split at first left delimiter
     (s_before_left, _, s) = s.partition(left)
     # Split at last right delimiter
@@ -915,6 +955,9 @@ def string_to_2darray(
     """
     Parse a string that is either a scalar or a 2D array in matlab or python
     format. Each number must be interpretable as type float or complex.
+
+    Returns:
+        A 2-element tuple with the value, and any errors.
     """
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace("\u2212", "-")

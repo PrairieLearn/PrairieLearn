@@ -49,7 +49,11 @@ class SympyJson(TypedDict):
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
-    """Check if the input is a valid sympy json dict."""
+    """Check if the input is a valid sympy json dict.
+
+    Returns:
+        True if the input is a valid sympy json dict, False otherwise.
+    """
     return (
         isinstance(json, dict)
         and json.get("_type") == "sympy"
@@ -409,14 +413,22 @@ def sympy_check(
 def evaluate(
     expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> sympy.Expr:
-    """Evaluate a sympy expression string with a given set of locals, and return only the result."""
+    """Evaluate a sympy expression string with a given set of locals, and return only the result.
+
+    Returns:
+        A sympy expression.
+    """
     return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
 
 
 def evaluate_with_source(
     expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> tuple[sympy.Expr, str]:
-    """Evaluate a sympy expression string with a given set of locals."""
+    """Evaluate a sympy expression string with a given set of locals.
+
+    Returns:
+        A tuple of the sympy expression and the code that was used to generate it.
+    """
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
     expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
@@ -503,6 +515,9 @@ def convert_string_to_sympy(
         >>> convert_string_to_sympy("-infty")
         -sympy.oo
         >>> convert_string_to_sympy("z**2 + y - x", variables=["x", "y", "z"], allow_complex=True, assumptions={"x": {"positive": False}, "z": {"complex": True}})
+
+    Returns:
+        A sympy expression.
     """
     return convert_string_to_sympy_with_source(
         expr,
@@ -529,7 +544,9 @@ def convert_string_to_sympy_with_source(
     Convert a string to a sympy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
     raise an exception with a message that can be displayed to the user.
-    Returns a tuple of the sympy expression and the source code that was used to generate it.
+
+    Returns:
+        A tuple of the sympy expression and the source code that was used to generate it.
     """
     const = _Constants()
 
@@ -605,7 +622,11 @@ def convert_string_to_sympy_with_source(
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
-    """Generate a string with a pointer to error in expr with index ind"""
+    """Generate a string with a pointer to error in expr with index ind
+
+    Returns:
+        A string with the error location in the expression.
+    """
     w_left: str = " " * (ind - max(0, ind - w))
     w_right: str = " " * (min(ind + w, len(expr)) - ind)
     initial: str = html.escape(expr[ind - len(w_left) : ind + len(w_right)])
@@ -615,7 +636,11 @@ def point_to_error(expr: str, ind: int, w: int = 5) -> str:
 def sympy_to_json(
     a: sympy.Expr, *, allow_complex: bool = True, allow_trig_functions: bool = True
 ) -> SympyJson:
-    """Convert a sympy expression to a json-seralizable dictionary."""
+    """Convert a sympy expression to a json-seralizable dictionary.
+
+    Returns:
+        A json-serializable representation of the sympy expression.
+    """
     const = _Constants()
 
     # Get list of variables in the sympy expression
@@ -665,7 +690,11 @@ def json_to_sympy(
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
 ) -> sympy.Expr:
-    """Convert a json-seralizable dictionary created by [sympy_to_json][prairielearn.sympy_utils.sympy_to_json] to a sympy expression."""
+    """Convert a json-seralizable dictionary created by [sympy_to_json][prairielearn.sympy_utils.sympy_to_json] to a sympy expression.
+
+    Returns:
+        A sympy expression.
+    """
     if "_type" not in sympy_expr_dict:
         raise ValueError("json must have key _type for conversion to sympy")
     if sympy_expr_dict["_type"] != "sympy":
@@ -696,7 +725,11 @@ def validate_string_as_sympy(
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
 ) -> str | None:
-    """Try to parse expr as a sympy expression. If it fails, return a string with an appropriate error message for display on the frontend."""
+    """Try to parse expr as a sympy expression. If it fails, return a string with an appropriate error message for display on the frontend.
+
+    Returns:
+        None if the expression is valid, or an error message string if it is not.
+    """
     try:
         expr_parsed = convert_string_to_sympy(
             expr,
@@ -800,10 +833,7 @@ def get_items_list(items_string: str | None) -> list[str]:
 
 
 def greek_unicode_transform(input_str: str) -> str:
-    """
-    Return input_str where all unicode greek letters are replaced
-    by their spelled-out english names.
-    """
+    """Return input_str where all unicode greek letters are replaced by their spelled-out english names."""
     # From https://gist.github.com/beniwohli/765262
     greek_alphabet = {
         "\u0391": "Alpha",
