@@ -547,11 +547,11 @@ def generate(data):
   data["correct_answers"]["c"] = a - b
 ```
 
-Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The [`question_utils.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/question_utils.py) file from the `prairielearn` Python library also offers several functions to perform more specialized comparisons:
+Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The [`grading_utils.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/grading_utils.py) file from the `prairielearn` Python library also offers several functions to perform more specialized comparisons:
 
-- [`is_correct_scalar_ra`][prairielearn.question_utils.is_correct_scalar_ra] compares floats using relative and absolute tolerances.
-- [`is_correct_scalar_sf`][prairielearn.question_utils.is_correct_scalar_sf] compares floats up to a specified number of significant figures.
-- [`is_correct_scalar_dd`][prairielearn.question_utils.is_correct_scalar_dd] compares floats up to a specified number of digits.
+- [`is_correct_scalar_ra`][prairielearn.grading_utils.is_correct_scalar_ra] compares floats using relative and absolute tolerances.
+- [`is_correct_scalar_sf`][prairielearn.grading_utils.is_correct_scalar_sf] compares floats up to a specified number of significant figures.
+- [`is_correct_scalar_dd`][prairielearn.grading_utils.is_correct_scalar_dd] compares floats up to a specified number of digits.
 
 More detailed information can be found in the docstrings for these functions.
 
