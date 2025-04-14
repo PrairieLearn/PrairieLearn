@@ -405,4 +405,21 @@ describe('Course instance syncing', () => {
     assert.isNull(newCourseInstanceRow2?.deleted_at);
     assert.equal(newCourseInstanceRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
+
+  it('syncs JSON comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.comment =
+      'course instance comment';
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
+      {
+        comment: 'course instance access rule comment',
+      },
+    ];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    assert.equal(syncedCourseInstances[0].json_comment, 'course instance comment');
+    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    assert.equal(syncedAccessRules[0].json_comment, 'course instance access rule comment');
+  });
 });

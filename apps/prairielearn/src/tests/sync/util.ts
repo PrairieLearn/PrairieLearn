@@ -19,12 +19,14 @@ export interface Tag {
   name: string;
   color: string;
   description?: string;
+  comment?: string;
 }
 
 export interface Topic {
   name: string;
   color: string;
   description?: string;
+  comment?: string;
 }
 
 interface SharingSet {
@@ -37,6 +39,7 @@ export interface AssessmentSet {
   name: string;
   heading: string;
   color: string;
+  comment?: string;
 }
 
 interface Module {
@@ -55,6 +58,7 @@ interface Course {
   sharingSets?: SharingSet[];
   assessmentSets: AssessmentSet[];
   assessmentModules?: Module[];
+  comment?: string;
 }
 
 interface CourseInstanceAllowAccess {
@@ -62,6 +66,7 @@ interface CourseInstanceAllowAccess {
   startDate?: string;
   endDate?: string;
   institution?: string;
+  comment?: string;
 }
 
 interface CourseInstance {
@@ -71,6 +76,7 @@ interface CourseInstance {
   timezone?: string;
   allowAccess?: CourseInstanceAllowAccess[];
   groupAssessmentsBy?: 'Set' | 'Module';
+  comment?: string;
 }
 
 export interface GroupRole {
@@ -90,6 +96,7 @@ interface AssessmentAllowAccess {
   timeLimitMin?: number;
   password?: string;
   active?: boolean;
+  comment?: string;
 }
 
 interface QuestionAlternative {
@@ -118,6 +125,7 @@ interface ZoneQuestion {
   canSubmit?: string[];
   canView?: string[];
   gradeRateMinutes?: number;
+  comment?: string;
 }
 
 interface Zone {
@@ -129,6 +137,7 @@ interface Zone {
   canSubmit?: string[];
   canView?: string[];
   gradeRateMinutes?: number;
+  comment?: string;
 }
 
 export interface Assessment {
@@ -160,6 +169,7 @@ export interface Assessment {
   canSubmit?: string[];
   canView?: string[];
   gradeRateMinutes?: number;
+  comment?: string;
 }
 
 interface QuestionExternalGradingOptions {
@@ -170,6 +180,7 @@ interface QuestionExternalGradingOptions {
   timeout?: number;
   enableNetworking?: boolean;
   environment?: Record<string, string | null>;
+  comment?: string;
 }
 
 interface QuestionWorkspaceOptions {
@@ -181,6 +192,7 @@ interface QuestionWorkspaceOptions {
   rewriteUrl?: string;
   enableNetworking?: boolean;
   environment?: Record<string, string | null>;
+  comment?: string;
 }
 
 export interface Question {
@@ -202,6 +214,7 @@ export interface Question {
   options?: Record<string, unknown>;
   externalGradingOptions?: QuestionExternalGradingOptions;
   workspaceOptions?: QuestionWorkspaceOptions;
+  comment?: string;
 }
 
 export interface CourseInstanceData {

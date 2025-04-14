@@ -229,4 +229,24 @@ describe('Assessment set syncing', () => {
       number: 1,
     });
   });
+
+  it('syncs JSON comments correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessmentSet = {
+      name: 'assessment set with comment',
+      abbreviation: 'com',
+      heading: 'assessment set with comment',
+      color: 'red1',
+      comment: 'assessment set comment',
+    };
+    courseData.course.assessmentSets.push(assessmentSet);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedAssessmentSets = await util.dumpTableWithSchema(
+      'assessment_sets',
+      AssessmentSetSchema,
+    );
+    const syncedAssessmentSet = syncedAssessmentSets.find((as) => as.name === assessmentSet.name);
+    assert.equal(syncedAssessmentSet?.json_comment, 'assessment set comment');
+  });
 });

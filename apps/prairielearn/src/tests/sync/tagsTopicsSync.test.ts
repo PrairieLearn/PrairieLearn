@@ -303,4 +303,19 @@ describe('Tag/topic syncing', () => {
     assert.equal(syncedTags[0].name, 'X');
     assert.equal(syncedTags[0].number, 1);
   });
+
+  it('syncs JSON comments correctly', async () => {
+    const courseData = util.getCourseData();
+    const newEntity = makeEntity();
+    newEntity.comment = 'test comment';
+    courseData.course.tags.push(newEntity);
+    courseData.course.topics.push(newEntity);
+    await util.writeAndSyncCourseData(courseData);
+    const syncedTags = await util.dumpTable('tags');
+    const syncedTag = syncedTags.find((t) => t.name === newEntity.name);
+    assert.equal(syncedTag?.json_comment, 'test comment');
+    const syncedTopics = await util.dumpTable('topics');
+    const syncedTopic = syncedTopics.find((t) => t.name === newEntity.name);
+    assert.equal(syncedTopic?.json_comment, 'test comment');
+  });
 });

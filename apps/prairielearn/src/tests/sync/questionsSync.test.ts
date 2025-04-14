@@ -445,4 +445,27 @@ describe('Question syncing', () => {
     assert.isOk(syncedQuestion);
     assert.isTrue(syncedQuestion.draft);
   });
+
+  it('syncs JSON comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].comment = 'Question comment';
+    courseData.questions[util.QUESTION_ID].workspaceOptions = {
+      image: 'docker-image',
+      port: 8080,
+      home: '/home/user',
+      comment: 'Workspace comment',
+    };
+    courseData.questions[util.QUESTION_ID].externalGradingOptions = {
+      image: 'docker-image',
+      comment: 'External grading comment',
+    };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.equal(syncedQuestion?.json_comment, 'Question comment');
+    assert.equal(syncedQuestion?.json_workspace_comment, 'Workspace comment');
+    assert.equal(syncedQuestion?.json_external_grading_comment, 'External grading comment');
+  });
 });

@@ -2440,4 +2440,57 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion?.grade_rate_minutes, 4);
     assert.equal(thirdAssessmentQuestion?.json_grade_rate_minutes, null);
   });
+
+  it('syncs JSON comments correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.comment = 'assessment comment';
+    assessment.allowAccess = [
+      {
+        comment: 'access rule',
+      },
+    ];
+    assessment.zones?.push({
+      title: 'zone 1',
+      comment: 'zone comment',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 1,
+          comment: 'question comment',
+        },
+        {
+          points: 1,
+          comment: 'alternative group comment',
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.equal(syncedData.assessment.json_comment, 'assessment comment');
+
+    const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
+    const rulesForAssessment = syncedAssessmentAccessRules.filter((aar) =>
+      idsEqual(aar.assessment_id, syncedData.assessment.id),
+    );
+    assert.lengthOf(rulesForAssessment, 1);
+    assert.equal(rulesForAssessment[0].json_comment, 'access rule');
+
+    assert.equal(syncedData.zones[0].json_comment, 'zone comment');
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID,
+    );
+    assert.equal(firstAssessmentQuestion?.json_comment, 'question comment');
+    assert.equal(syncedData.alternative_groups[1].json_comment, 'alternative group comment');
+  });
 });
