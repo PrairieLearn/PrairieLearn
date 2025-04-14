@@ -1,7 +1,7 @@
 import { Fragment } from '@prairielearn/preact-cjs';
 
 import { PreactPageLayout } from '../../../components/PageLayout.html.js';
-import { renderHtmlDocument, renderForClientHydration } from '../../../lib/preact.js';
+import { renderForClientHydration, renderHtmlDocument } from '../../../lib/preact.js';
 import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 

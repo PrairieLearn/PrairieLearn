@@ -3,10 +3,10 @@ import { render } from 'preact-render-to-string/jsx';
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
 import { type HtmlSafeString } from '@prairielearn/html';
 import {
-  type ComponentType,
   type Attributes,
-  type VNode,
+  type ComponentType,
   Fragment,
+  type VNode,
 } from '@prairielearn/preact-cjs';
 
 import { renderHtml } from './preact-html.js';

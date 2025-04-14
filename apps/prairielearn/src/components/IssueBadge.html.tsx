@@ -44,7 +44,7 @@ export function IssueBadgePreact({
   return (
     <a
       class={clsx('badge rounded-pill text-bg-danger', className)}
-      href={`${urlPrefix}/course_admin/issues${'?q=query'}`}
+      href={`${urlPrefix}/course_admin/issues?q=${query}`}
       aria-label={`${count} open ${count === 1 ? 'issue' : 'issues'}`}
     >
       {count}

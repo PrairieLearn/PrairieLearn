@@ -1,6 +1,6 @@
 import { type ComponentType } from '@prairielearn/preact-cjs';
 
-import { deferredPromise, type DeferredPromise } from '../../../../src/lib/deferred.js';
+import { type DeferredPromise, deferredPromise } from '../../../../src/lib/deferred.js';
 
 export class ReactFragmentsRegistry {
   private fragments: Record<string, DeferredPromise<ComponentType<any>>> = {};
