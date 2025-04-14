@@ -54,6 +54,10 @@ export async function getSamlOptions({
     privateKey: samlProvider.private_key,
     decryptionPvk: samlProvider.private_key,
 
+    // The identifier format will vary from institution to institution. Remove
+    // the default to avoid confusing SSO staff at institutions.
+    identifierFormat: null,
+
     // By default, `node-saml` will include a `RequestedAuthnContext`
     // element that requests password-based authentication. However,
     // some institutions use passwordless auth, so we disable this and

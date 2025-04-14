@@ -16,7 +16,7 @@ import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
-import { syncCourseData, type GroupRole } from './sync/util.js';
+import { type GroupRole, syncCourseData } from './sync/util.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -61,14 +61,13 @@ async function switchUserAndLoadAssessment(
  * Joins group as current user with CSRF token and loads page with cheerio.
  */
 async function joinGroup(assessmentUrl: string, joinCode: string) {
-  const form = {
-    __action: 'join_group',
-    __csrf_token: locals.__csrf_token,
-    join_code: joinCode,
-  };
   const res = await fetch(assessmentUrl, {
     method: 'POST',
-    body: new URLSearchParams(form),
+    body: new URLSearchParams({
+      __action: 'join_group',
+      __csrf_token: locals.__csrf_token,
+      join_code: joinCode,
+    }),
   });
   assert.isOk(res.ok);
   locals.$ = cheerio.load(await res.text());
@@ -78,13 +77,12 @@ async function joinGroup(assessmentUrl: string, joinCode: string) {
  * Leaves group as current user
  */
 async function leaveGroup(assessmentUrl: string) {
-  const form = {
-    __action: 'leave_group',
-    __csrf_token: locals.__csrf_token,
-  };
   const res = await fetch(assessmentUrl, {
     method: 'POST',
-    body: new URLSearchParams(form),
+    body: new URLSearchParams({
+      __action: 'leave_group',
+      __csrf_token: locals.__csrf_token,
+    }),
   });
   assert.isOk(res.ok);
 }
@@ -159,14 +157,13 @@ async function updateGroupRoles(
   for (let i = 0; i < elemList.length; i++) {
     checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
   }
-  const form = {
-    __action: 'update_group_roles',
-    __csrf_token: locals.__csrf_token,
-    ...checkedElementIds,
-  };
   const res = await fetch(assessmentUrl, {
     method: 'POST',
-    body: new URLSearchParams(form),
+    body: new URLSearchParams({
+      __action: 'update_group_roles',
+      __csrf_token: locals.__csrf_token,
+      ...checkedElementIds,
+    }),
   });
   assert.isOk(res.ok);
 }
@@ -237,14 +234,13 @@ describe('Test group based assessments with custom group roles from student side
   step('can create a group as first user', async function () {
     await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
     locals.group_name = 'groupBB';
-    const form = {
-      __action: 'create_group',
-      __csrf_token: locals.__csrf_token,
-      groupName: locals.group_name,
-    };
     const res = await fetch(locals.assessmentUrl, {
       method: 'POST',
-      body: new URLSearchParams(form),
+      body: new URLSearchParams({
+        __action: 'create_group',
+        __csrf_token: locals.__csrf_token,
+        groupName: locals.group_name,
+      }),
     });
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -414,14 +410,13 @@ describe('Test group based assessments with custom group roles from student side
     for (const { roleId, groupUserId } of roleUpdates) {
       checkedElementIds[`user_role_${groupUserId}-${roleId}`] = 'on';
     }
-    const form = {
-      __action: 'update_group_roles',
-      __csrf_token: locals.__csrf_token,
-      ...checkedElementIds,
-    };
     const res = await fetch(locals.assessmentUrl, {
       method: 'POST',
-      body: new URLSearchParams(form),
+      body: new URLSearchParams({
+        __action: 'update_group_roles',
+        __csrf_token: locals.__csrf_token,
+        ...checkedElementIds,
+      }),
     });
 
     // Second user cannot update group roles
@@ -1027,14 +1022,13 @@ describe('Test group based assessments with custom group roles from student side
 
   step('first user can create a group in assessment without roles', async function () {
     locals.group_name = 'groupAA';
-    const form = {
-      __action: 'create_group',
-      __csrf_token: locals.__csrf_token,
-      groupName: locals.group_name,
-    };
     const res = await fetch(locals.assessmentUrlWithoutRoles, {
       method: 'POST',
-      body: new URLSearchParams(form),
+      body: new URLSearchParams({
+        __action: 'create_group',
+        __csrf_token: locals.__csrf_token,
+        groupName: locals.group_name,
+      }),
     });
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -1145,14 +1139,13 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
   step('create group as first user', async function () {
     locals.group_name = 'groupBB';
-    const form = {
-      __action: 'create_group',
-      __csrf_token: locals.__csrf_token,
-      groupName: locals.group_name,
-    };
     const joinRes = await fetch(assessmentUrl, {
       method: 'POST',
-      body: new URLSearchParams(form),
+      body: new URLSearchParams({
+        __action: 'create_group',
+        __csrf_token: locals.__csrf_token,
+        groupName: locals.group_name,
+      }),
     });
     assert.isOk(joinRes.ok);
     locals.$ = cheerio.load(await joinRes.text());

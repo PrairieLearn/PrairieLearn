@@ -1,4 +1,4 @@
-import { scaleLinear, scaleBand, axisBottom, axisLeft, range, select } from 'd3';
+import { axisBottom, axisLeft, range, scaleBand, scaleLinear, select } from 'd3';
 
 interface Data {
   label: string;
@@ -71,7 +71,9 @@ export function parallelHistograms(
     .insert('svg', ':first-child')
     .attr('width', totalWidth)
     .attr('height', totalHeight)
-    .attr('class', 'center-block statsPlot');
+    .attr('class', 'center-block statsPlot')
+    // We are deliberately setting role="none" here as we do not have any meaningful information to expose to screen readers.
+    .attr('role', 'none');
 
   const verticalGridLinear = axisBottom(xLinear)
     .tickSize(-height)

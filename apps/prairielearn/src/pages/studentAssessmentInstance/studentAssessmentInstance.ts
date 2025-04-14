@@ -1,14 +1,12 @@
 import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import * as error from '@prairielearn/error';
 import { HttpStatusError } from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
 import { AssessmentInstanceSchema } from '../../lib/db-types.js';
-import { uploadFile, deleteFile } from '../../lib/file-store.js';
+import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
   canUserAssignGroupRoles,
   getGroupConfig,
@@ -175,6 +173,7 @@ router.post(
       const requireOpen = true;
       await assessment.gradeAssessmentInstance(
         res.locals.assessment_instance.id,
+        res.locals.user.user_id,
         res.locals.authn_user.user_id,
         requireOpen,
         closeExam,
@@ -208,20 +207,10 @@ router.post(
         res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'regenerate_instance') {
-      if (!assessment.canDeleteAssessmentInstance(res.locals)) {
-        throw new error.HttpStatusError(403, 'Access denied');
-      }
-
-      await assessment.deleteAssessmentInstance(
-        res.locals.assessment.id,
-        res.locals.assessment_instance.id,
-        res.locals.authn_user.user_id,
-      );
-
-      flash('success', 'Your previous assessment instance was deleted.');
-      res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
     } else {
+      // The 'regenerate_instance' action is handled in the
+      // studentAssessmentAccess middleware, so it doesn't need to be handled
+      // here.
       next(new HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
   }),

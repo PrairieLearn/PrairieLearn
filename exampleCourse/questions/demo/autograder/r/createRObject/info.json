@@ -9,7 +9,6 @@
   "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-r",
-    "entrypoint": "/r_autograder/run.sh",
     "timeout": 20
   }
 }

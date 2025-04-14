@@ -60,13 +60,12 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
   });
 
   step('start the exam', async () => {
-    const form = {
-      __action: 'new_instance',
-      __csrf_token: context.__csrf_token,
-    };
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'new_instance',
+        __csrf_token: context.__csrf_token,
+      }),
       headers,
     });
     assert.isTrue(response.ok);
@@ -84,13 +83,12 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
   });
 
   step('simulate a time limit expiration', async () => {
-    const form = {
-      __action: 'timeLimitFinish',
-      __csrf_token: context.__csrf_token,
-    };
     const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'timeLimitFinish',
+        __csrf_token: context.__csrf_token,
+      }),
       headers: headersTimeLimit,
     });
     assert.equal(response.status, 403);
@@ -102,7 +100,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     assert.lengthOf(response.$('a:contains("Question 1")'), 0);
 
     // we should have the "assessment closed" message
-    const msg = response.$('div.test-suite-assessment-closed-message');
+    const msg = response.$('[data-testid="assessment-closed-message"]');
     assert.lengthOf(msg, 1);
     assert.match(msg.text(), /Assessment .* is no longer available/);
   });
@@ -119,7 +117,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     });
     assert.equal(response.status, 403);
 
-    assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
+    assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
     assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
   });
 

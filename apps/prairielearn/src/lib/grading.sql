@@ -50,6 +50,7 @@ WITH
   updated_variant AS (
     UPDATE variants
     SET
+      params = $params,
       true_answer = $true_answer
     WHERE
       id = $variant_id
@@ -164,7 +165,8 @@ WITH
       requires_manual_grading = (
         requires_manual_grading
         OR $requires_manual_grading
-      )
+      ),
+      is_ai_graded = FALSE
     WHERE
       id = $instance_question_id
   )

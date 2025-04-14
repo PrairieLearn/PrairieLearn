@@ -36,12 +36,15 @@ WITH
             d.start_date DESC NULLS LAST,
             d.end_date DESC NULLS LAST,
             ci.id DESC
+        ) FILTER (
+          WHERE
+            ci.id IS NOT NULL
         ),
         '[]'::jsonb
       ) AS course_instances
     FROM
       pl_courses AS c
-      JOIN course_instances AS ci ON (
+      LEFT JOIN course_instances AS ci ON (
         ci.course_id = c.id
         AND ci.deleted_at IS NULL
       ),
