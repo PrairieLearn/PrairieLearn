@@ -32,7 +32,7 @@ export function AssessmentBadge({
   return html`
     <a
       href="${urlPrefix}/assessment/${assessment.assessment_id}"
-      class="badge color-${assessment.color} color-hover"
+      class="btn btn-badge color-${assessment.color}"
     >
       ${assessment.label}
     </a>
