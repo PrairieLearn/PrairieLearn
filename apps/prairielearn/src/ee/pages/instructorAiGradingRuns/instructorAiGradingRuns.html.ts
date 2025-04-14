@@ -27,9 +27,7 @@ export function InstructorAIGradingRuns({ resLocals }: { resLocals: Record<strin
           <h1 class="h3 text-center">AI Grading</h1>
           <form id="ai-grading-form" name="ai-grading-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <small class="form-text text-muted">
-              Grading student work using AI. 
-            </small>
+            <small class="form-text text-muted"> Grading student work using AI. </small>
             <div class="d-flex gap-2 mt-3">
               <button
                 type="submit"
