@@ -69,7 +69,7 @@ export const AlternativeGroupSchema = z.object({
   json_grade_rate_minutes: z.number().nullable(),
   json_can_view: z.string().array().nullable(),
   json_can_submit: z.string().array().nullable(),
-  json_has_alternatives: z.boolean(),
+  json_has_alternatives: z.boolean().nullable(),
   number: z.number().nullable(),
   number_choose: z.number().nullable(),
   zone_id: IdSchema,
