@@ -1,6 +1,6 @@
 import { render } from 'preact-render-to-string/jsx';
 
-import { unsafeHtml, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, unsafeHtml } from '@prairielearn/html';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 // This function must live outside of `preact.tsx` so that it can be imported
