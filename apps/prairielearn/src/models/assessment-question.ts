@@ -7,6 +7,7 @@ import {
   AlternativeGroupSchema,
   AssessmentQuestionSchema,
   AssessmentsFormatForQuestionSchema,
+  IdSchema,
   QuestionSchema,
   TagSchema,
   TopicSchema,
@@ -18,7 +19,8 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   alternative_group_number: AlternativeGroupSchema.shape.number,
   alternative_group_size: z.number(),
   assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
-  display_name: z.string().nullable(),
+  course_id: IdSchema,
+  course_sharing_name: z.string().nullable(),
   number: z.string().nullable(),
   open_issue_count: z.coerce.number().nullable(),
   other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
@@ -40,24 +42,12 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
 });
 export type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
 
-export async function selectAssessmentQuestions({
-  assessment_id,
-  course_id,
-  public_page = false,
-}: {
-  assessment_id: string;
-  course_id: string;
-  public_page?: boolean;
-}): Promise<AssessmentQuestionRow[]> {
+export async function selectAssessmentQuestions(
+  assessment_id: string,
+): Promise<AssessmentQuestionRow[]> {
   const rows = await sqldb.queryRows(
     sql.select_assessment_questions,
-    {
-      assessment_id,
-      // these last two variables are needed to properly display
-      // the source course of shared questions in the QID
-      course_id,
-      public_page,
-    },
+    { assessment_id },
     AssessmentQuestionRowSchema,
   );
 

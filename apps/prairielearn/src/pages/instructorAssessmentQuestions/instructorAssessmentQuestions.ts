@@ -13,10 +13,7 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const questions = await selectAssessmentQuestions({
-      assessment_id: res.locals.assessment.id,
-      course_id: res.locals.course.id,
-    });
+    const questions = await selectAssessmentQuestions(res.locals.assessment.id);
     res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
   }),
 );

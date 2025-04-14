@@ -14,6 +14,7 @@ import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import type { Course } from '../../lib/db-types.js';
 import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function InstructorAssessmentQuestions({
@@ -49,6 +50,7 @@ export function InstructorAssessmentQuestions({
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions</h1>
         </div>
         ${AssessmentQuestionsTable({
+          course: resLocals.course,
           questions,
           assessmentType: resLocals.assessment.type,
           urlPrefix: resLocals.urlPrefix,
@@ -86,12 +88,14 @@ export function InstructorAssessmentQuestions({
 }
 
 function AssessmentQuestionsTable({
+  course,
   questions,
   urlPrefix,
   assessmentType,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
 }: {
+  course: Course;
   questions: AssessmentQuestionRow[];
   assessmentType: string;
   urlPrefix: string;
@@ -171,7 +175,9 @@ function AssessmentQuestionsTable({
                           output: question.sync_warnings,
                         })
                       : ''}
-                  ${question.display_name}
+                  ${course.id === question.course_id
+                    ? question.qid
+                    : html`@${question.course_sharing_name}/${question.qid}`}
                 </td>
                 <td>${TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>

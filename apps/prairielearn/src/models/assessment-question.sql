@@ -58,11 +58,8 @@ SELECT
   aq.effective_advance_score_perc AS assessment_question_advance_score_perc,
   q.sync_errors,
   q.sync_warnings,
-  CASE
-    WHEN q.course_id = $course_id
-    AND NOT $public_page THEN qid
-    ELSE '@' || c.sharing_name || '/' || q.qid
-  END AS display_name
+  q.course_id,
+  c.sharing_name AS course_sharing_name
 FROM
   assessment_questions AS aq
   JOIN questions AS q ON (q.id = aq.question_id)

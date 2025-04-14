@@ -31,11 +31,7 @@ router.get(
     assert(assessment.assessment_set_id);
     const assessment_set_name = (await selectAssessmentSetById(assessment.assessment_set_id)).name;
 
-    const questions = await selectAssessmentQuestions({
-      assessment_id,
-      course_id: course.id,
-      public_page: true,
-    });
+    const questions = await selectAssessmentQuestions(assessment_id);
 
     // Filter out non-public assessments
     for (const question of questions) {

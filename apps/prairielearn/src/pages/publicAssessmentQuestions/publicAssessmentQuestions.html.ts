@@ -94,7 +94,7 @@ function AssessmentQuestionsTable({
                     ${AssessmentQuestionNumber(question)}${question.title}
                   </a>
                 </td>
-                <td>${question.display_name}</td>
+                <td>@${question.course_sharing_name}/${question.qid}</td>
                 <td>${TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>
                 <td>
