@@ -1,9 +1,14 @@
 import { clsx } from 'clsx';
 
-import { html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 import { type VNode } from '@prairielearn/preact-cjs';
 
-import { compiledStylesheetPath, compiledStylesheetTag } from '../lib/assets.js';
+import {
+  compiledScriptPath,
+  compiledScriptTag,
+  compiledStylesheetPath,
+  compiledStylesheetTag,
+} from '../lib/assets.js';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.html.js';
@@ -53,10 +58,12 @@ export function PageLayout({
   const marginBottom = options.marginBottom ?? true;
 
   if (resLocals.has_enhanced_navigation) {
-    // The left navbar is only shown if the user is in a
-    // page within a course or course instance.
-    const showSideNav =
-      navContext.type !== 'student' && navContext.type !== 'public' && resLocals.course;
+    // The side navbar is only available if the user is in a page within a course or course instance.
+    const sideNavEnabled =
+      resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
+
+    const sideNavExpanded = sideNavEnabled && resLocals.side_nav_expanded;
+
     let showContextNavigation = true;
 
     // ContextNavigation is shown if either:
@@ -100,12 +107,20 @@ export function PageLayout({
             pageNote: options.pageNote,
           })}
           ${compiledStylesheetTag('pageLayout.css')} ${headContent}
+          ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
         </head>
         <body
+          ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
-          hx-ext="${options.hxExt ?? ''}"
         >
-          <div class="app-container ${!showSideNav ? 'no-sidebar' : ''}">
+          <div
+            id="app-container"
+            class="${clsx(
+              'app-container',
+              sideNavEnabled && 'side-nav-enabled',
+              !sideNavExpanded && 'collapsed',
+            )}"
+          >
             <div class="app-top-nav">
               ${Navbar({
                 resLocals,
@@ -115,7 +130,7 @@ export function PageLayout({
                 isInPageLayout: true,
               })}
             </div>
-            ${showSideNav
+            ${sideNavEnabled
               ? html`
                   <div class="app-side-nav">
                     ${SideNav({
@@ -126,11 +141,12 @@ export function PageLayout({
                   </div>
                 `
               : ''}
-            <div class="${showSideNav ? 'app-main' : ''}">
-              <div class="${showSideNav ? 'app-main-container' : ''}">
+            <div class="${sideNavEnabled ? 'app-main' : ''}">
+              <div class="${sideNavEnabled ? 'app-main-container' : ''}">
                 ${resLocals.assessment &&
                 resLocals.assessments &&
                 AssessmentNavigation({
+                  subPage: navContext.subPage,
                   courseInstance: resLocals.course_instance,
                   assessment: resLocals.assessment,
                   assessments: resLocals.assessments,
@@ -145,12 +161,13 @@ export function PageLayout({
                 ${preContent}
                 <main
                   id="content"
-                  class="
-                    ${options.fullWidth ? 'container-fluid' : 'container'}
-                    ${marginBottom ? 'mb-4' : ''}
-                    ${options.fullHeight ? 'flex-grow-1' : ''}
-                    pt-3 ${showSideNav ? 'px-3' : ''}
-                  "
+                  class="${clsx(
+                    options.fullWidth ? 'container-fluid' : 'container',
+                    marginBottom && 'mb-4',
+                    options.fullHeight && 'flex-grow-1',
+                    'pt-3',
+                    sideNavEnabled && 'px-3',
+                  )}"
                 >
                   ${content}
                 </main>
@@ -242,10 +259,12 @@ export function PreactPageLayout({
   const marginBottom = options.marginBottom ?? true;
 
   if (resLocals.has_enhanced_navigation) {
-    // The left navbar is only shown if the user is in a
-    // page within a course or course instance.
-    const showSideNav =
-      navContext.type !== 'student' && navContext.type !== 'public' && resLocals.course;
+    // The side navbar is only available if the user is in a page within a course or course instance.
+    const sideNavEnabled =
+      resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
+
+    const sideNavExpanded = sideNavEnabled && resLocals.side_nav_expanded;
+
     let showContextNavigation = true;
 
     // ContextNavigation is shown if either:
@@ -289,9 +308,17 @@ export function PreactPageLayout({
           />
           <link rel="stylesheet" href={compiledStylesheetPath('pageLayout.css')} />
           {headContent}
+          <script src={compiledScriptPath('pageLayoutClient.ts')} />
         </head>
         <body class={options.fullHeight ? 'd-flex flex-column h-100' : ''} hx-ext={options.hxExt}>
-          <div class={clsx('app-container', { 'no-sidebar': !showSideNav })}>
+          <div
+            id="app-container"
+            class={clsx(
+              'app-container',
+              sideNavEnabled && 'side-nav-enabled',
+              !sideNavExpanded && 'collapsed',
+            )}
+          >
             <div class="app-top-nav">
               <PreactNavbar
                 resLocals={resLocals}
@@ -301,7 +328,7 @@ export function PreactPageLayout({
                 isInPageLayout
               />
             </div>
-            {showSideNav ? (
+            {sideNavEnabled ? (
               <div
                 class="app-side-nav"
                 // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
@@ -316,13 +343,14 @@ export function PreactPageLayout({
             ) : (
               ''
             )}
-            <div class={showSideNav ? 'app-main' : ''}>
-              <div class={showSideNav ? 'app-main-container' : ''}>
+            <div class={sideNavEnabled ? 'app-main' : ''}>
+              <div class={sideNavEnabled ? 'app-main-container' : ''}>
                 {resLocals.assessment && resLocals.assessments && (
                   <div
                     // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
                     dangerouslySetInnerHTML={{
                       __html: AssessmentNavigation({
+                        subPage: navContext.subPage,
                         courseInstance: resLocals.course_instance,
                         assessment: resLocals.assessment,
                         assessments: resLocals.assessments,
@@ -347,11 +375,11 @@ export function PreactPageLayout({
                 <main
                   id="content"
                   class={clsx(
-                    'pt-3',
                     options.fullWidth ? 'container-fluid' : 'container',
-                    marginBottom ? 'mb-4' : '',
-                    options.fullHeight ? 'flex-grow-1' : '',
-                    showSideNav ? 'px-3' : '',
+                    marginBottom && 'mb-4',
+                    options.fullHeight && 'flex-grow-1',
+                    'pt-3',
+                    sideNavEnabled && 'px-3',
                   )}
                 >
                   {content}

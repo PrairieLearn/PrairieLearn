@@ -1,13 +1,13 @@
 {
   "name": "@prairielearn/flash",
-  "version": "2.0.11",
+  "version": "2.0.14",
   "type": "module",
-  "main": "dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/flash"
   },
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.17.23",
+    "@types/node": "^20.17.30",
     "c8": "^10.1.3",
     "chai": "^5.2.0",
     "mocha": "^11.1.0",

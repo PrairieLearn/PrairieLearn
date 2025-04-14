@@ -87,9 +87,7 @@ BEGIN
     -- update the submission
 
     UPDATE submissions AS s
-    SET
-        grading_requested_at = now(),
-        grading_method = main.grading_method
+    SET grading_requested_at = now()
     WHERE s.id = submission_id;
 
     -- ######################################################################

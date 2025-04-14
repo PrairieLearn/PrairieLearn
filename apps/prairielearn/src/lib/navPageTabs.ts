@@ -134,6 +134,14 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
           },
 
           {
+            activeSubPage: 'sharing',
+            urlSuffix: '/course_admin/sharing',
+            iconClasses: 'fas fa-share-nodes',
+            tabLabel: 'Sharing',
+            renderCondition: (resLocals) => resLocals.question_sharing_enabled,
+          },
+
+          {
             activeSubPage: 'tags',
             urlSuffix: '/course_admin/tags',
             iconClasses: 'fas fa-hashtag',
@@ -145,14 +153,6 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             urlSuffix: '/course_admin/topics',
             iconClasses: 'fas fa-quote-right',
             tabLabel: 'Topics',
-          },
-
-          {
-            activeSubPage: 'sharing',
-            urlSuffix: '/course_admin/sharing',
-            iconClasses: 'fas fa-share-nodes',
-            tabLabel: 'Sharing',
-            renderCondition: (resLocals) => resLocals.question_sharing_enabled,
           },
         ]
       : [
@@ -168,6 +168,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
               ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
+                className: 'mx-1',
               }),
             renderCondition: ({ authz_data, course }) =>
               authz_data.has_course_permission_edit && course.show_getting_started,
@@ -317,7 +318,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         tabLabel: 'Statistics',
       },
       {
-        activeSubPage: 'instances',
+        activeSubPage: ['instances', 'assessment_instance'],
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/instances`,
         iconClasses: 'fas fa-user-graduate',
         tabLabel: 'Students',

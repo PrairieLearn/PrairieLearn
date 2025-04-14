@@ -3,15 +3,15 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import {
+  retryFailedBatchedMigrationJobs,
   selectAllBatchedMigrations,
   selectBatchedMigration,
   selectRecentJobsWithStatus,
-  retryFailedBatchedMigrationJobs,
 } from '@prairielearn/migrations';
 
 import {
-  AdministratorBatchedMigrations,
   AdministratorBatchedMigration,
+  AdministratorBatchedMigrations,
 } from './administratorBatchedMigrations.html.js';
 
 const router = Router({ mergeParams: true });

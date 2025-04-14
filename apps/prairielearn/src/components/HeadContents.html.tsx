@@ -1,6 +1,6 @@
 import { Fragment } from '@prairielearn/preact-cjs';
 
-import { nodeModulesAssetPath, assetPath, compiledScriptPath } from '../lib/assets.js';
+import { assetPath, compiledScriptPath, nodeModulesAssetPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
 import {
   type Assessment,

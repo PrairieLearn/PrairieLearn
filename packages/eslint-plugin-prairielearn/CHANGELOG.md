@@ -1,5 +1,23 @@
 # @prairielearn/eslint-plugin
 
+## 2.1.2
+
+### Patch Changes
+
+- 03f1008: Upgrade all JavaScript dependencies
+
+## 2.1.1
+
+### Patch Changes
+
+- 984dc62: Upgrade all JavaScript dependencies
+
+## 2.1.0
+
+### Minor Changes
+
+- 284df1c: Introduce `jsx-no-dollar-interpolation` rule
+
 ## 2.0.9
 
 ### Patch Changes

@@ -1,5 +1,8 @@
-import { html, type HtmlValue } from '@prairielearn/html';
+import clsx from 'clsx';
 
+import { type HtmlValue, html } from '@prairielearn/html';
+
+import { IssueBadge } from './IssueBadge.html.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
@@ -39,9 +42,7 @@ const sideNavPagesTabs = {
         ProgressCircle({
           value: navbarCompleteGettingStartedTasksCount,
           maxValue: navbarTotalGettingStartedTasksCount,
-          options: {
-            mlAuto: true,
-          },
+          className: 'ms-auto',
         }),
       renderCondition: ({ authz_data, course }) =>
         authz_data.has_course_permission_edit && course.show_getting_started,
@@ -68,6 +69,8 @@ const sideNavPagesTabs = {
       urlSuffix: '/course_admin/issues',
       iconClasses: 'fas fa-bug fa-fw',
       tabLabel: 'Issues',
+      htmlSuffix: ({ navbarOpenIssueCount }) =>
+        IssueBadge({ count: navbarOpenIssueCount, suppressLink: true, className: 'ms-auto' }),
     },
     {
       activePages: ['course_admin'],
@@ -154,20 +157,18 @@ export function SideNav({
   subPage: NavSubPage;
 }) {
   return html`
-    <div class="side-nav">
-      ${CourseNav({
-        resLocals,
-        page,
-        subPage,
-      })}
-      ${resLocals.course_instance
-        ? CourseInstanceNav({
-            resLocals,
-            page,
-            subPage,
-          })
-        : ''}
-    </div>
+    ${CourseNav({
+      resLocals,
+      page,
+      subPage,
+    })}
+    ${resLocals.course_instance
+      ? CourseInstanceNav({
+          resLocals,
+          page,
+          subPage,
+        })
+      : ''}
   `;
 }
 
@@ -183,24 +184,37 @@ function CourseNav({
   const courseSideNavPageTabs = sideNavPagesTabs.course_admin;
 
   return html`
-    <div class="side-nav-section-header">Course</div>
-    <div class="side-nav-group mb-3">
-      <div class="dropdown">
+    <div class="side-nav-header">
+      <p class="header-text">Course</p>
+      <button
+        id="side-nav-toggler"
+        type="button"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        data-bs-title="${resLocals.side_nav_expanded ? 'Collapse side nav' : 'Expand side nav'}"
+      >
+        <i
+          id="side-nav-toggler-icon"
+          class="${clsx(
+            'bi',
+            resLocals.side_nav_expanded ? 'bi-arrow-bar-left' : 'bi-arrow-bar-right',
+          )}"
+        ></i>
+      </button>
+    </div>
+    <div class="side-nav-group">
+      <div id="course-dropdown" class="dropdown">
         <button
           type="button"
           class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
-          data-toggle="dropdown"
           aria-label="Change course"
           aria-haspopup="true"
           aria-expanded="false"
-          data-boundary="window"
-          ${!resLocals.authz_data.overrides
-            ? html`
-                hx-get="/pl/navbar/course/${resLocals.course.id}/switcher" hx-trigger="mouseover
-                once, focus once, show.bs.dropdown once delay:200ms"
-                hx-target="#sideNavCourseDropdownContent"
-              `
-            : ''}
+          data-bs-toggle="dropdown"
+          data-bs-boundary="window"
+          hx-get="/pl/navbar/course/${resLocals.course.id}/switcher"
+          hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
+          hx-target="#sideNavCourseDropdownContent"
         >
           <span> ${resLocals.course.short_name} </span>
         </button>
@@ -217,15 +231,15 @@ function CourseNav({
             </div>
           </div>
         </div>
-        ${courseSideNavPageTabs.map((tabInfo) =>
-          SideNavLink({
-            resLocals,
-            navPage: page,
-            navSubPage: subPage,
-            tabInfo,
-          }),
-        )}
       </div>
+      ${courseSideNavPageTabs.map((tabInfo) =>
+        SideNavLink({
+          resLocals,
+          navPage: page,
+          navSubPage: subPage,
+          tabInfo,
+        }),
+      )}
     </div>
   `;
 }
@@ -242,24 +256,26 @@ function CourseInstanceNav({
   const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
 
   return html`
-    <div class="side-nav-section-header">Course instance</div>
+    <div class="side-nav-header">
+      <div class="header-text">Course instance</div>
+    </div>
     <div class="side-nav-group mb-3">
       <div>
-        <div class="dropdown">
+        <div id="course-instance-dropdown" class="dropdown">
           <button
             type="button"
             class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
-            data-toggle="dropdown"
             aria-label="Change course instance"
             aria-haspopup="true"
             aria-expanded="false"
-            data-boundary="window"
+            data-bs-toggle="dropdown"
+            data-bs-boundary="window"
             hx-get="/pl/navbar/course/${resLocals.course.id}/course_instance_switcher/${resLocals
-              .course_instance.id}"
+              .course_instance?.id ?? ''}"
             hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
             hx-target="#sideNavCourseInstancesDropdownContent"
           >
-            <span> ${resLocals.course_instance.short_name} </span>
+            <span> ${resLocals.course_instance?.short_name ?? 'Select a course instance...'} </span>
           </button>
           <div class="dropdown-menu py-0 overflow-hidden">
             <div
@@ -275,14 +291,16 @@ function CourseInstanceNav({
             </div>
           </div>
         </div>
-        ${courseInstanceSideNavPageTabs.map((tabInfo) =>
-          SideNavLink({
-            resLocals,
-            navPage: page,
-            navSubPage: subPage,
-            tabInfo,
-          }),
-        )}
+        ${resLocals.course_instance
+          ? courseInstanceSideNavPageTabs.map((tabInfo) =>
+              SideNavLink({
+                resLocals,
+                navPage: page,
+                navSubPage: subPage,
+                tabInfo,
+              }),
+            )
+          : ''}
       </div>
     </div>
   `;
@@ -320,14 +338,20 @@ function SideNavLink({
     isActive = activeSubPages.includes(navSubPage);
   }
 
+  const sideNavExpanded = resLocals.side_nav_expanded;
+
   return html`
     <a
       href="${urlPrefix}${urlSuffix}"
       class="side-nav-link ${isActive ? 'side-nav-link-active' : ''}"
       aria-current="${isActive ? 'page' : ''}"
+      data-bs-toggle="${!sideNavExpanded ? 'tooltip' : ''}"
+      data-bs-placement="right"
+      data-bs-title="${tabLabel}"
     >
-      <i class="${iconClasses}"></i>
-      ${tabLabel} ${htmlSuffix?.(resLocals) || ''}
+      <i class="icon flex-shrink-0 ${iconClasses}"></i>
+      <span class="side-nav-link-text">${tabLabel}</span>
+      <div class="suffix">${htmlSuffix?.(resLocals) || ''}</div>
     </a>
   `;
 }

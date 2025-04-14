@@ -1,4 +1,4 @@
-import { Router, type Response } from 'express';
+import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 

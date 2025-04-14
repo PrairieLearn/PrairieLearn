@@ -1,7 +1,7 @@
 import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
-import { loadSqlEquiv, queryRows, queryRow, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
@@ -83,6 +83,7 @@ async function checkRender(
     course,
     user,
     authn_user: user, // We don't have a separate authn user in this case.
+    is_administrator: false,
   };
   await getAndRenderVariant(null, null, locals);
 

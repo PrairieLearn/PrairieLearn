@@ -3,11 +3,11 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
 import {
-  queryAsync,
-  queryRows,
   loadSqlEquiv,
+  queryAsync,
   queryOneRowAsync,
   queryRow,
+  queryRows,
 } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
@@ -17,6 +17,7 @@ import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { switchUserAndLoadAssessment } from './utils/group.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -36,37 +37,6 @@ async function generateThreeStudentUsers() {
   const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
   assert.lengthOf(rows, 3);
   return rows;
-}
-
-/**
- * Switches active user and loads assessment, returning the user's CSRF
- * token value from a form on the page
- */
-async function switchUserAndLoadAssessment(
-  studentUser: User,
-  assessmentUrl: string,
-  formName: string | null,
-  formContainer = 'body',
-): Promise<{ $: cheerio.CheerioAPI; csrfToken: string }> {
-  // Load config
-  config.authUid = studentUser.uid;
-  config.authName = studentUser.name;
-  config.authUin = studentUser.uin;
-
-  // Load assessment
-  const res = await fetch(assessmentUrl);
-  assert.isOk(res.ok);
-  const page = await res.text();
-  const $ = cheerio.load(page);
-
-  // Check that the correct CSRF form exists
-  const elementQuery = `${formContainer} form${formName ? `[name="${formName}"]` : ''} input[name="__csrf_token"]`;
-  const csrfTokenElement = $(elementQuery);
-  assert.nestedProperty(csrfTokenElement[0], 'attribs.value', 'CSRF token value must exist');
-  assert.isString(csrfTokenElement.attr('value'), 'CSRF token must be a string');
-  const csrfToken = csrfTokenElement.attr('value') as string; // guaranteed to be string by assertion
-
-  return { $, csrfToken };
 }
 
 /**

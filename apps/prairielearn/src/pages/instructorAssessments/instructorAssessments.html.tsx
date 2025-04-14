@@ -4,6 +4,8 @@ import { html } from '@prairielearn/html';
 import { Fragment } from '@prairielearn/preact-cjs';
 import { run } from '@prairielearn/run';
 
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout, PreactPageLayout } from '../../components/PageLayout.html.js';
@@ -103,13 +105,21 @@ export function InstructorAssessments({
                         ${row.start_new_assessment_group
                           ? html`
                               <tr>
-                                <th colspan="7" scope="row">${row.assessment_group_heading}</th>
+                                <th colspan="7" scope="row">
+                                  ${assessmentsGroupBy === 'Set'
+                                    ? AssessmentSetHeading({ assessment_set: row.assessment_set })
+                                    : AssessmentModuleHeading({
+                                        assessment_module: row.assessment_module,
+                                      })}
+                                </th>
                               </tr>
                             `
                           : ''}
                         <tr id="row-${row.id}">
                           <td class="align-middle" style="width: 1%">
-                            <span class="badge color-${row.color}">${row.label}</span>
+                            <span class="badge color-${row.assessment_set.color}">
+                              ${row.label}
+                            </span>
                           </td>
                           <td class="align-middle">
                             ${row.sync_errors
@@ -127,7 +137,11 @@ export function InstructorAssessments({
                             ${row.group_work
                               ? html` <i class="fas fa-users text-primary" aria-hidden="true"></i> `
                               : ''}
-                            ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
+                            ${IssueBadge({
+                              count: row.open_issue_count,
+                              urlPrefix,
+                              issueAid: row.tid,
+                            })}
                           </td>
 
                           <td class="align-middle">${row.tid}</td>

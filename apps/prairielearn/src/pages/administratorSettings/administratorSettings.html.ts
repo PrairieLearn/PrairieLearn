@@ -138,6 +138,7 @@ export function AdministratorSettings({ resLocals }) {
             <button type="button" class="btn btn-warning">Warning</button>
             <button type="button" class="btn btn-info">Info</button>
             <button type="button" class="btn btn-light">Light</button>
+            <button type="button" class="btn btn-med-light">Medium Light</button>
             <button type="button" class="btn btn-dark">Dark</button>
             <button type="button" class="btn btn-link">Link</button>
           </div>
@@ -194,7 +195,7 @@ export function AdministratorSettings({ resLocals }) {
           <div>
             <button type="button" class="btn btn-xs btn-ghost">Extra small</button>
             <button type="button" class="btn btn-sm btn-ghost">Small</button>
-            <button type="button" class="btn btn btn-ghost">Default</button>
+            <button type="button" class="btn btn-ghost">Default</button>
             <button type="button" class="btn btn-lg btn-ghost">Large</button>
           </div>
         </div>

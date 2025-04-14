@@ -5,6 +5,8 @@ import { Fragment } from '@prairielearn/preact-cjs';
 import { useEffect, useState } from '@prairielearn/preact-cjs/hooks';
 import { run } from '@prairielearn/run';
 
+import { AssessmentModuleHeadingPreact } from '../../components/AssessmentModuleHeading.html.js';
+import { AssessmentSetHeadingPreact } from '../../components/AssessmentSetHeading.html.js';
 import { HistminiPreact } from '../../components/HistminiPreact.js';
 import { IssueBadgePreact } from '../../components/IssueBadge.html.js';
 import { ScorebarPreact } from '../../components/Scorebar.html.js';
@@ -23,11 +25,13 @@ type StatsOverride =
 
 export function InstructorAssessmentsTable({
   rows,
+  assessmentsGroupBy,
   assessmentIdsNeedingStatsUpdate,
   urlPrefix,
   csvFilename,
 }: {
   rows: AssessmentRow[];
+  assessmentsGroupBy: 'Set' | 'Module';
   assessmentIdsNeedingStatsUpdate: string[];
   urlPrefix: string;
   csvFilename: string;
@@ -98,13 +102,17 @@ export function InstructorAssessmentsTable({
                   {row.start_new_assessment_group ? (
                     <tr>
                       <th colspan={7} scope="row">
-                        {row.assessment_group_heading}
+                        {assessmentsGroupBy === 'Set'
+                          ? AssessmentSetHeadingPreact({ assessmentSet: row.assessment_set })
+                          : AssessmentModuleHeadingPreact({
+                              assessmentModule: row.assessment_module,
+                            })}
                       </th>
                     </tr>
                   ) : null}
                   <tr id={`row-${row.id}`}>
                     <td class="align-middle" style="width: 1%">
-                      <span class={`badge color-${row.color}`}>{row.label}</span>
+                      <span class={`badge color-${row.assessment_set.color}`}>{row.label}</span>
                     </td>
                     <td class="align-middle">
                       {/** TODO: make these into components */}

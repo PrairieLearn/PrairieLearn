@@ -1,4 +1,4 @@
-import { escapeHtml, html, type HtmlValue, joinHtml } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html, joinHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import type {
@@ -234,7 +234,7 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
         <input type="hidden" name="__variant_id" value="${variant.id}" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
         <div class="mb-3 text-right">
-          <button class="btn btn-small btn-warning" name="__action" value="report_issue">
+          <button type="submit" class="btn btn-sm btn-warning" name="__action" value="report_issue">
             Report error
           </button>
         </div>

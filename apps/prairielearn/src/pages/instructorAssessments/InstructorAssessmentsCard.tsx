@@ -63,6 +63,7 @@ export function InstructorAssessmentsCard({
         {rows.length > 0 ? (
           <InstructorAssessmentsTable
             rows={rows}
+            assessmentsGroupBy={assessmentsGroupBy}
             assessmentIdsNeedingStatsUpdate={assessmentIdsNeedingStatsUpdate}
             csvFilename={csvFilename}
             urlPrefix={urlPrefix}
