@@ -42,12 +42,12 @@ ln -s /usr/bin/redis6-cli /usr/bin/redis-cli && ln -s /usr/bin/redis6-server /us
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm
 cd /nvm
-git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
+git checkout $(git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1))
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
 nvm install 20
 npm install yarn@latest -g
-for f in /nvm/current/bin/* ; do ln -s $f /usr/local/bin/`basename $f` ; done
+for f in /nvm/current/bin/*; do ln -s $f /usr/local/bin/$(basename $f); done
 
 echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
@@ -80,13 +80,13 @@ export UV_PYTHON_DOWNLOADS=manual
 export UV_PYTHON_PREFERENCE=only-managed
 export UV_COMPILE_BYTECODE=1
 
-if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]] ; then
+if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]]; then
     # https://gregoryszorc.com/docs/python-build-standalone/main/running.html
     # v3: 64-bit Intel/AMD CPUs approximately newer than Haswell (released in 2013) and Excavator (released in 2015)
     UV_ARCH="linux-x86_64_v3-gnu"
-elif [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "aarch64" ]] ; then
+elif [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "aarch64" ]]; then
     UV_ARCH="linux-aarch64-gnu"
-elif [[ "$(uname)" = "Darwin" ]] && [[ "$(uname -m)" = "arm64" ]] ; then
+elif [[ "$(uname)" = "Darwin" ]] && [[ "$(uname -m)" = "arm64" ]]; then
     UV_ARCH="macos-aarch64-none"
 else
     echo "Unsupported architecture combination" >&2

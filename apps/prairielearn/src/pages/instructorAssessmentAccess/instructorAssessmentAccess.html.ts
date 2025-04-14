@@ -90,11 +90,11 @@ export function InstructorAssessmentAccess({
                             <button
                               type="button"
                               class="btn btn-xs btn-warning"
-                              data-toggle="popover"
-                              data-container="body"
-                              data-placement="auto"
-                              title="Hidden UIDs"
-                              data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
+                              data-bs-toggle="popover"
+                              data-bs-container="body"
+                              data-bs-placement="auto"
+                              data-bs-title="Hidden UIDs"
+                              data-bs-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
                             >
                               Hidden
                             </button>

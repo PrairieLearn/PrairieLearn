@@ -36,7 +36,7 @@ from prairielearn.internal import question_phases
 
 saved_path = copy.copy(sys.path)
 
-drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
+drop_privileges = int(os.environ.get("DROP_PRIVILEGES", "0")) == 1
 
 # If we're configured to drop privileges (that is, if we're running in a
 # Docker container), various tools like matplotlib and fontconfig will be
@@ -46,21 +46,33 @@ drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
 #
 # To work around this, we'll set `$XDG_CONFIG_HOME` and `$XDG_CACHE_HOME` to
 # directories created in `/tmp` that are world-writable. matplotlib and
-# fontconfig should respect these environment variables; other tools should as
-# well. If they don't, special cases can be added below.
+# fontconfig should respect these environment variables; other tools should too.
+#
+# Note that `mktexfmt` does _not_ respect those environment variables, so we'll
+# also set `$TEXMFCONFIG`, `$TEXMFVAR`, and `$TEXMFHOME` to directories created
+# in `/tmp` that are world-writable. This allows LaTeX to run properly.
 if drop_privileges:
     config_home_path = "/tmp/xdg_config"
     cache_home_path = "/tmp/xdg_cache"
+    texmf_config_path = "/tmp/texmf-config"
+    texmf_var_path = "/tmp/texmf-var"
+    texmf_home_path = "/tmp/texmf-home"
 
     oldmask = os.umask(000)
 
     os.makedirs(config_home_path, mode=0o777, exist_ok=True)
     os.makedirs(cache_home_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_config_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_var_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_home_path, mode=0o777, exist_ok=True)
 
     os.umask(oldmask)
 
     os.environ["XDG_CONFIG_HOME"] = config_home_path
     os.environ["XDG_CACHE_HOME"] = cache_home_path
+    os.environ["TEXMFCONFIG"] = texmf_config_path
+    os.environ["TEXMFVAR"] = texmf_var_path
+    os.environ["TEXMFHOME"] = texmf_home_path
 
 # Silence matplotlib's FontManager logs; these can cause trouble with our
 # expectation that code execution doesn't log anything to stdout/stderr.
@@ -147,7 +159,7 @@ def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> 
         zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
     except Exception:
-        print(f"Error converting this object to json:\n{obj}\n")
+        print(f"Error converting this object to json:\n{obj}\n", file=sys.stderr)
         raise
 
 
@@ -171,12 +183,20 @@ def worker_loop() -> None:
         # return the results. The caller should terminate us with a
         # SIGTERM.
         while True:
-            # wait for a single line of input
+            # Wait for a single line of input
             json_inp = sys.stdin.readline()
-            # unpack the input line as JSON
-            inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
 
-            # get the contents of the JSON input
+            # Sometimes we seem to get an empty line, so we'll just ignore it.
+            if not json_inp.strip():
+                continue
+
+            # Unpack the input line as JSON. If that fails, log the line for debugging.
+            try:
+                inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"Error decoding JSON input: {json_inp}") from exc
+
+            # Get the contents of the JSON input
             file = inp.get("file", None)
             fcn = inp.get("fcn", None)
             args = inp.get("args", None)

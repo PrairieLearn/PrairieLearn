@@ -9,10 +9,10 @@ import {
 } from '@prairielearn/postgres';
 
 import {
-  WorkspaceHostSchema,
-  WorkspaceLogSchema,
   type WorkspaceHost,
+  WorkspaceHostSchema,
   type WorkspaceLog,
+  WorkspaceLogSchema,
 } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);

@@ -1,13 +1,15 @@
 import { z } from 'zod';
 
-import { escapeHtml, html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
+import { TagDescription } from '../../components/TagDescription.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
+import { TopicDescription } from '../../components/TopicDescription.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -124,14 +126,14 @@ export function InstructorQuestionSettings({
           <form name="edit-question-settings-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
-            <div class="form-group">
-              <label for="qid">QID</label>
+            <div class="mb-3">
+              <label class="form-label" for="qid">QID</label>
               ${questionGHLink
-                ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
+                ? html`<a target="_blank" href="${questionGHLink}">view on GitHub</a>`
                 : ''}
               <input
                 type="text"
-                class="form-control text-monospace"
+                class="form-control font-monospace"
                 id="qid"
                 name="qid"
                 value="${resLocals.question.qid}"
@@ -145,9 +147,9 @@ export function InstructorQuestionSettings({
                 separate directories.
               </small>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
               <h2 class="h4">General</h2>
-              <label for="title">Title</label>
+              <label class="form-label" for="title">Title</label>
               <input
                 type="text"
                 class="form-control"
@@ -165,65 +167,143 @@ export function InstructorQuestionSettings({
                 class="table two-column-description"
                 aria-label="Question topic, tags, and assessments"
               >
-                <tr>
-                  <th class="align-middle">
-                    <label for="topic">Topic</label>
-                  </th>
-                  <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
-                  <!-- This is used by tom-select to style the active item in the dropdown -->
-                  <td style="--bs-tertiary-bg: #f8f9fa">
-                    ${canEdit
-                      ? html`
-                          <select id="topic" name="topic" placeholder="Select a topic">
-                            ${courseTopics.map((topic) => {
-                              return html`
-                                <option
-                                  value="${topic.name}"
-                                  data-color="${topic.color}"
-                                  data-name="${topic.name}"
-                                  data-description="${topic.description}"
-                                  ${topic.name === resLocals.topic.name ? 'selected' : ''}
-                                ></option>
-                              `;
-                            })}
-                          </select>
-                        `
-                      : TopicBadge(resLocals.topic)}
-                  </td>
-                </tr>
-                <tr>
-                  <th class="align-middle">
-                    <label for="tags">Tags</label>
-                  </th>
-                  <td>
-                    ${canEdit
-                      ? html`
-                          <select id="tags" name="tags" placeholder="Select tags" multiple>
-                            ${courseTags.length > 0
-                              ? courseTags.map((tag) => {
-                                  return html`
-                                    <option
-                                      value="${tag.name}"
-                                      data-color="${tag.color}"
-                                      data-name="${tag.name}"
-                                      data-description="${tag.description}"
-                                      ${selectedTags.has(tag.name) ? 'selected' : ''}
-                                    ></option>
-                                  `;
-                                })
-                              : ''}
-                          </select>
-                        `
-                      : TagBadgeList(resLocals.tags)}
-                  </td>
-                </tr>
-                ${shouldShowAssessmentsList
-                  ? html`<tr>
-                      <th class="align-middle">Assessments</th>
-                      <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
-                    </tr>`
-                  : ''}
+                <tbody>
+                  <tr>
+                    <th class="align-middle">
+                      <label id="topic-label" for="topic">Topic</label>
+                    </th>
+                    <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
+                    <!-- This is used by tom-select to style the active item in the dropdown -->
+                    <td style="--bs-tertiary-bg: #f8f9fa">
+                      ${canEdit
+                        ? html`
+                            <select
+                              id="topic"
+                              name="topic"
+                              placeholder="Select a topic"
+                              aria-labelledby="topic-label"
+                            >
+                              ${courseTopics.map((topic) => {
+                                return html`
+                                  <option
+                                    value="${topic.name}"
+                                    data-color="${topic.color}"
+                                    data-name="${topic.name}"
+                                    data-description="${topic.implicit
+                                      ? ''
+                                      : TopicDescription(topic)}"
+                                    ${topic.name === resLocals.topic.name ? 'selected' : ''}
+                                  ></option>
+                                `;
+                              })}
+                            </select>
+                          `
+                        : TopicBadge(resLocals.topic)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th class="align-middle">
+                      <label id="tags-label" for="tags">Tags</label>
+                    </th>
+                    <td>
+                      ${canEdit
+                        ? html`
+                            <select
+                              id="tags"
+                              name="tags"
+                              placeholder="Select tags"
+                              aria-labelledby="tags-label"
+                              multiple
+                            >
+                              ${courseTags.length > 0
+                                ? courseTags.map((tag) => {
+                                    return html`
+                                      <option
+                                        value="${tag.name}"
+                                        data-color="${tag.color}"
+                                        data-name="${tag.name}"
+                                        data-description="${tag.implicit
+                                          ? ''
+                                          : TagDescription(tag)}"
+                                        ${selectedTags.has(tag.name) ? 'selected' : ''}
+                                      ></option>
+                                    `;
+                                  })
+                                : ''}
+                            </select>
+                          `
+                        : TagBadgeList(resLocals.tags)}
+                    </td>
+                  </tr>
+                  ${shouldShowAssessmentsList
+                    ? html`<tr>
+                        <th class="align-middle">Assessments</th>
+                        <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
+                      </tr>`
+                    : ''}
+                </tbody>
               </table>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="grading_method">Grading method</label>
+              <select
+                class="form-select"
+                id="grading_method"
+                name="grading_method"
+                ${canEdit ? '' : 'disabled'}
+              >
+                <option
+                  value="Internal"
+                  ${resLocals.question.grading_method === 'Internal' ? 'selected' : ''}
+                >
+                  Internal
+                </option>
+                <option
+                  value="External"
+                  ${resLocals.question.grading_method === 'External' ? 'selected' : ''}
+                >
+                  External
+                </option>
+                <option
+                  value="Manual"
+                  ${resLocals.question.grading_method === 'Manual' ? 'selected' : ''}
+                >
+                  Manual
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                The grading method used for this question.
+              </small>
+            </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="single_variant"
+                name="single_variant"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.question.single_variant ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="single_variant">Single variant</label>
+              <div class="small text-muted">
+                If enabled, students will only be able to try a single variant of this question on
+                any given assessment.
+              </div>
+            </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="show_correct_answer"
+                name="show_correct_answer"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.question.show_correct_answer ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="show_correct_answer">Show correct answer</label>
+              <div class="small text-muted">
+                If enabled, the correct answer panel will be shown after all submission attempts
+                have been exhausted.
+              </div>
             </div>
             ${canEdit
               ? html`
@@ -303,58 +383,52 @@ export function InstructorQuestionSettings({
         </div>
         ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) || canEdit
           ? html`
-            <div class="card-footer">
-                ${
-                  editableCourses.length > 0 &&
-                  resLocals.authz_data.has_course_permission_view &&
-                  resLocals.question.course_id === resLocals.course.id
-                    ? html`
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-primary"
-                          id="copyQuestionButton"
-                          data-toggle="popover"
-                          data-container="body"
-                          data-html="true"
-                          data-placement="auto"
-                          title="Copy this question"
-                          data-content="${escapeHtml(
-                            CopyForm({
-                              csrfToken: resLocals.__csrf_token,
-                              editableCourses,
-                              courseId: resLocals.course.id,
-                            }),
-                          )}"
-                        >
-                          <i class="fa fa-clone"></i>
-                          <span>Make a copy of this question</span>
-                        </button>
-                      `
-                    : ''
-                }
-                ${
-                  canEdit
-                    ? html`
-                        <button
-                          class="btn btn-sm btn-primary"
-                          id
-                          href="#"
-                          data-toggle="modal"
-                          data-target="#deleteQuestionModal"
-                        >
-                          <i class="fa fa-times" aria-hidden="true"></i> Delete this question
-                        </button>
-                        ${DeleteQuestionModal({
-                          qid: resLocals.question.qid,
-                          assessmentsWithQuestion,
-                          csrfToken: resLocals.__csrf_token,
-                        })}
-                      `
-                    : ''
-                }
+              <div class="card-footer">
+                ${editableCourses.length > 0 &&
+                resLocals.authz_data.has_course_permission_view &&
+                resLocals.question.course_id === resLocals.course.id
+                  ? html`
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        id="copyQuestionButton"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-placement="auto"
+                        data-bs-title="Copy this question"
+                        data-bs-content="${escapeHtml(
+                          CopyForm({
+                            csrfToken: resLocals.__csrf_token,
+                            editableCourses,
+                            courseId: resLocals.course.id,
+                          }),
+                        )}"
+                      >
+                        <i class="fa fa-clone"></i>
+                        <span>Make a copy of this question</span>
+                      </button>
+                    `
+                  : ''}
+                ${canEdit
+                  ? html`
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#deleteQuestionModal"
+                      >
+                        <i class="fa fa-times" aria-hidden="true"></i> Delete this question
+                      </button>
+                      ${DeleteQuestionModal({
+                        qid: resLocals.question.qid,
+                        assessmentsWithQuestion,
+                        csrfToken: resLocals.__csrf_token,
+                      })}
+                    `
+                  : ''}
               </div>
-            </div>
-          `
+            `
           : ''}
       </div>
     `,
@@ -374,11 +448,11 @@ function CopyForm({
     <form name="copy-question-form" method="POST">
       <input type="hidden" name="__action" value="copy_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <div class="form-group">
-        <label for="to-course-id-select">
+      <div class="mb-3">
+        <label class="form-label" for="to-course-id-select">
           The copied question will be added to the following course:
         </label>
-        <select class="custom-select" id="to-course-id-select" name="to_course_id" required>
+        <select class="form-select" id="to-course-id-select" name="to_course_id" required>
           ${editableCourses.map((c) => {
             return html`
               <option value="${c.id}" ${idsEqual(c.id, courseId) ? 'selected' : ''}>
@@ -389,7 +463,7 @@ function CopyForm({
         </select>
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Submit</button>
       </div>
     </form>
@@ -443,7 +517,7 @@ function DeleteQuestionModal({
     footer: html`
       <input type="hidden" name="__action" value="delete_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     `,
   });
@@ -459,10 +533,15 @@ function QuestionTestsForm({
   return html`
     <form name="question-tests-form" method="POST" action="${questionTestPath}">
       <input type="hidden" name="__csrf_token" value="${questionTestCsrfToken}" />
-      <button class="btn btn-sm btn-outline-primary" name="__action" value="test_once">
+      <button
+        type="submit"
+        class="btn btn-sm btn-outline-primary"
+        name="__action"
+        value="test_once"
+      >
         Test once with full details
       </button>
-      <button class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
+      <button type="submit" class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
         Test 100 times with only results
       </button>
     </form>
@@ -476,16 +555,16 @@ function QuestionSharing({
   question: Question;
   sharingSetsIn: SharingSetRow[];
 }) {
-  if (!question.shared_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
+  if (!question.share_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
     return html`<p>This question is not being shared.</p>`;
   }
 
   const details: HtmlValue[] = [];
 
-  if (question.shared_publicly) {
+  if (question.share_publicly) {
     details.push(html`
       <p>
-        <span class="badge color-green3 mr-1">Public</span>
+        <span class="badge color-green3 me-1">Public</span>
         This question is publicly shared and can be imported by other courses.
       </p>
     `);
@@ -494,7 +573,7 @@ function QuestionSharing({
   if (question.share_source_publicly) {
     details.push(html`
       <p>
-        <span class="badge color-green3 mr-1">Public source</span>
+        <span class="badge color-green3 me-1">Public source</span>
         This question's source is publicly shared.
       </p>
     `);

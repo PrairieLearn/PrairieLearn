@@ -1,7 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
-import { Navbar } from '../../../components/Navbar.html.js';
+import { PageLayout } from '../../../components/PageLayout.html.js';
 import { type Course, type Institution } from '../../../lib/db-types.js';
 
 export function InstitutionAdminCourses({
@@ -13,23 +12,19 @@ export function InstitutionAdminCourses({
   courses: Course[];
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: `Courses — ${institution.short_name}` })}
-      </head>
-      <body>
-        ${Navbar({
-          resLocals: { ...resLocals, institution },
-          navbarType: 'institution',
-          navPage: 'institution_admin',
-          navSubPage: 'courses',
-        })}
-        <main id="content" class="container mb-4">${CoursesCard({ courses })}</main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals: {
+      ...resLocals,
+      institution,
+    },
+    pageTitle: `Courses — ${institution.short_name}`,
+    navContext: {
+      type: 'institution',
+      page: 'institution_admin',
+      subPage: 'courses',
+    },
+    content: CoursesCard({ courses }),
+  });
 }
 
 function CoursesCard({ courses }: { courses: Course[] }) {

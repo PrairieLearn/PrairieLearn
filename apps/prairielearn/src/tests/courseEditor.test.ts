@@ -389,7 +389,7 @@ function testEdit(params) {
         let elemList = locals.$(params.button);
         assert.lengthOf(elemList, 1);
 
-        const $ = cheerio.load(elemList[0].attribs['data-content']);
+        const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
         elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
