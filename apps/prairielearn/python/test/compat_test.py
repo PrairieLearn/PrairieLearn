@@ -73,6 +73,7 @@ def test_external_exports():
             PrairieLearnColor,
             get_css_color,
         )
+        from prairielearn.misc_utils import full_unidecode
         from prairielearn.sympy_utils import (
             STANDARD_OPERATORS,
             AssumptionsDictT,
@@ -119,6 +120,5 @@ def test_external_exports():
             std_notation,
             to_precision,
         )
-        from prairielearn.unicode_utils import full_unidecode
     except ImportError:
         pytest.fail("One or more exports have been moved.")

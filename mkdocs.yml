@@ -287,7 +287,6 @@ not_in_nav: |
   schemas/questionOptionsMultipleChoice.md
   schemas/questionOptionsMultipleTrueFalse.md
   schemas/questionOptionsv3.md
-  python-reference/prairielearn/unicode_utils.md
 
 validation:
   omitted_files: warn

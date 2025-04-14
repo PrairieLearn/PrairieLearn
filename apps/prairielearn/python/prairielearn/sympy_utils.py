@@ -23,7 +23,7 @@ from sympy.parsing.sympy_parser import (
 )
 from typing_extensions import NotRequired
 
-from prairielearn.unicode_utils import full_unidecode
+from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
