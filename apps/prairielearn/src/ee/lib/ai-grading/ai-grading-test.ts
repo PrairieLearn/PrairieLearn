@@ -269,14 +269,14 @@ export async function aiGradeTest({
           job.info(`Raw response:\n${response.content}`);
 
           if (response.parsed) {
-            const { appliedRubricItems, selectedRubricDescriptions } =
+            const { appliedRubricItems, appliedRubricDescription } =
               aiGradingUtil.parseAiRubricItems({
                 ai_rubric_items: response.parsed.rubric_items,
                 rubric_items,
               });
             testRubricResults.push({
               reference_items: referenceRubricDescriptions,
-              ai_items: selectedRubricDescriptions,
+              ai_items: appliedRubricDescription,
             });
 
             await runInTransactionAsync(async () => {
@@ -324,7 +324,7 @@ export async function aiGradeTest({
               job.info(`- ${item}`);
             }
             job.info('AI rubric items:');
-            for (const item of selectedRubricDescriptions) {
+            for (const item of appliedRubricDescription) {
               job.info(`- ${item}`);
             }
           } else if (response.refusal) {

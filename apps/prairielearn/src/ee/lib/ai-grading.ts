@@ -240,13 +240,13 @@ function parseAiRubricItems({
   appliedRubricItems: {
     rubric_item_id: string;
   }[];
-  selectedRubricDescriptions: Set<string>;
+  appliedRubricDescription: Set<string>;
 } {
   // Compute the set of selected rubric descriptions.
-  const selectedRubricDescriptions = new Set<string>();
+  const appliedRubricDescription = new Set<string>();
   Object.entries(ai_rubric_items).forEach(([description, selected]) => {
     if (selected) {
-      selectedRubricDescriptions.add(description);
+      appliedRubricDescription.add(description);
     }
   });
 
@@ -260,10 +260,10 @@ function parseAiRubricItems({
   // fetched it. We'll optimistically apply all the rubric items
   // that were selected. If an item was deleted, we'll allow the
   // grading to fail; the user can then try again.
-  const appliedRubricItems = Array.from(selectedRubricDescriptions).map((description) => ({
+  const appliedRubricItems = Array.from(appliedRubricDescription).map((description) => ({
     rubric_item_id: rubricItemsByDescription[description].id,
   }));
-  return { appliedRubricItems, selectedRubricDescriptions };
+  return { appliedRubricItems, appliedRubricDescription };
 }
 
 export async function aiGrade({
@@ -457,12 +457,12 @@ export async function aiGrade({
           job.info(`Raw response:\n${response.content}`);
 
           if (response.parsed) {
-            const { appliedRubricItems, selectedRubricDescriptions } = parseAiRubricItems({
+            const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
               ai_rubric_items: response.parsed.rubric_items,
               rubric_items,
             });
             job.info('Selected rubric items:');
-            for (const item of selectedRubricDescriptions) {
+            for (const item of appliedRubricDescription) {
               job.info(`- ${item}`);
             }
 
