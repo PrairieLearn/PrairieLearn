@@ -15,22 +15,20 @@ RUN apt-get update \
 # Install Python and required packages via uv.
 # This is a prerequisite for the VS Code extensions in the following steps.
 USER coder
+WORKDIR "/home/coder"
 
 COPY requirements.txt /
 
 # /home/coder/.venv/bin/python3 -> /home/coder/.local/bin/python3 -> /home/coder/.local/share/uv/python/*/bin/python3.10
-RUN cd $HOME \
-    && curl -LO https://astral.sh/uv/install.sh \
+RUN curl -LO https://astral.sh/uv/install.sh \
     && sh install.sh && rm install.sh \
     && source "$HOME/.local/bin/env" \
     && uv python install --default --preview 3.10 \
     && uv venv \
-    && pwd && ls \
+    && pwd && ls && ls /usr/bin/ \
     && echo "source $HOME/.venv/bin/activate" >> ~/.bashrc && source $HOME/.venv/bin/activate \
     && uv pip install --no-cache-dir -r /requirements.txt && uv cache clean
 
-USER coder
- 
 # After installing Python we install some VS Code extensions.
 RUN code-server --disable-telemetry --force \
     # vscode support for python, including debugger
@@ -39,3 +37,5 @@ RUN code-server --disable-telemetry --force \
     --install-extension KevinRose.vsc-python-indent \
     # Clear the extension cache to reduce image size.
     && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs
+
+WORKDIR "/home/coder/workspace"
