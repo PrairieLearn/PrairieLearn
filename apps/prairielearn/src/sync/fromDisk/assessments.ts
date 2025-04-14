@@ -81,7 +81,6 @@ function getParamsForAssessment(
         active: accessRule.active ?? true,
       };
     });
-
   const zones = (assessment.zones ?? []).map((zone, index) => {
     return {
       number: index + 1,
@@ -90,6 +89,7 @@ function getParamsForAssessment(
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
+      question_params: zone.questionParams || {},
       grade_rate_minutes: zone.gradeRateMinutes,
     };
   });
@@ -118,6 +118,7 @@ function getParamsForAssessment(
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number;
+        questionParams: Record<string, any>;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -138,6 +139,7 @@ function getParamsForAssessment(
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
+            questionParams: alternative?.questionParams || {},
           };
         });
       } else if (question.id) {
@@ -156,6 +158,7 @@ function getParamsForAssessment(
             jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
+            questionParams: question.questionParams,
           },
         ];
       }
@@ -184,13 +187,7 @@ function getParamsForAssessment(
             (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
           const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints,
-            pointsList: undefined,
-          };
+          return { ...alternative, hasSplitPoints, maxPoints, initPoints, pointsList: undefined };
         } else {
           throw new Error(`Unknown assessment type: ${assessment.type}`);
         }
@@ -223,15 +220,16 @@ function getParamsForAssessment(
             zone.advanceScorePerc ??
             assessment.advanceScorePerc ??
             0,
+          question_params: question.questionParams,
         };
       });
-
       return {
         number: alternativeGroupNumber,
         number_choose: question.numberChoose,
         advance_score_perc: question.advanceScorePerc,
         json_grade_rate_minutes: question.gradeRateMinutes,
         questions,
+        question_params: question.questionParams, // this is correct here!
       };
     });
   });
@@ -286,10 +284,7 @@ function parseSharedQuestionReference(qid) {
   const firstSlash = qid.indexOf('/');
   if (firstSlash === -1) {
     // No QID, invalid question reference. An error will be recorded when trying to locate this question
-    return {
-      sharing_name: qid.substring(1, qid.length),
-      qid: '',
-    };
+    return { sharing_name: qid.substring(1, qid.length), qid: '' };
   }
 
   return {
@@ -451,7 +446,6 @@ export async function sync(
       }
     }
   }
-
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
     return JSON.stringify([
       tid,

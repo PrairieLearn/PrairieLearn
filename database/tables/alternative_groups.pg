@@ -5,6 +5,7 @@ columns
     json_grade_rate_minutes: double precision
     number: integer
     number_choose: integer
+    question_params: jsonb default '{}'::jsonb
     zone_id: bigint not null
 
 indexes

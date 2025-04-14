@@ -16,9 +16,7 @@ import { writeCourseIssues } from './issues.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const VariantWithFormattedDateSchema = VariantSchema.extend({
-  formatted_date: z.string(),
-});
+const VariantWithFormattedDateSchema = VariantSchema.extend({ formatted_date: z.string() });
 type VariantWithFormattedDate = z.infer<typeof VariantWithFormattedDateSchema>;
 
 const InstanceQuestionDataSchema = z.object({
@@ -47,10 +45,13 @@ interface VariantCreationData {
  * @param course - The course for the question.
  * @param options - Options controlling the creation: options = {variant_seed}
  */
+
 async function makeVariant(
   question: Question,
   course: Course,
   options: { variant_seed?: string | null },
+  questionParams?: any,
+  // assessmentConfig: any,
 ): Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   variant: VariantCreationData;
@@ -62,6 +63,7 @@ async function makeVariant(
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
   }
 
+  question.question_params = questionParams;
   const questionModule = questionServers.getModule(question.type);
   const { courseIssues, data } = await questionModule.generate(question, course, variant_seed);
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
@@ -219,12 +221,14 @@ async function makeAndInsertVariant(
   options: { variant_seed?: string | null },
   require_open: boolean,
   client_fingerprint_id: string | null,
+  questionParams?: any,
 ): Promise<VariantWithFormattedDate> {
   const question = await selectQuestion(question_id, instance_question_id);
   const { courseIssues, variant: variantData } = await makeVariant(
     question,
     question_course,
     options,
+    questionParams,
   );
 
   const variant = await sqldb.runInTransactionAsync(async () => {
@@ -353,6 +357,7 @@ export async function ensureVariant(
   options: { variant_seed?: string | null },
   require_open: boolean,
   client_fingerprint_id: string | null,
+  questionParams,
 ): Promise<VariantWithFormattedDate> {
   if (instance_question_id != null) {
     // See if we have a useable existing variant, otherwise make a new one. This
@@ -376,6 +381,7 @@ export async function ensureVariant(
     options,
     require_open,
     client_fingerprint_id,
+    questionParams,
   );
 }
 
