@@ -41,12 +41,8 @@ RUN arch="$(uname -m)" \
 USER 0
 RUN /home/coder/conda/bin/mamba init --system
 
-# Install VS Code extensions and clear the extension cache to reduce image size.
-# We have first installed Python in the previous step, as specified in the
-# documentation of the ms-python.python extension.
-USER coder
- 
 # After installing Python we install some VS Code extensions.
+USER coder
 RUN code-server --disable-telemetry --force \
     # vscode support for python, including debugger
     --install-extension ms-python.python \
