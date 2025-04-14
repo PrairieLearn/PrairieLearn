@@ -44,6 +44,7 @@ jobs:
         env:
           IMAGES: ${{ inputs.images }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          CACHE_STRATEGY: ${{ github.ref == 'refs/heads/master' && 'update' || 'pull' }}
           METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           ONLY_CHANGED: true
 
