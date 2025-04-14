@@ -124,8 +124,8 @@ def build_image(
     base_image_digest: str | None = None,
     metadata_dir: str | None = None,
     cache_strategy: CacheStrategy = "none",
-    cache_only: list[str]
-    | None = None,  # Only will use the cache strategy for these images -- all others will be built with cache_strategy="none".
+    # Only will use the cache strategy for these images -- all others will be built with cache_strategy="none".
+    cache_only: list[str] | None = None,
 ) -> str:
     """Builds a Docker image. Returns the digest of the built image."""
     base_image = BASE_IMAGE_MAPPING.get(image)
