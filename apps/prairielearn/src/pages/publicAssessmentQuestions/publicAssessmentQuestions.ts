@@ -1,4 +1,5 @@
-import { assert } from 'chai';
+import assert from 'node:assert';
+
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 

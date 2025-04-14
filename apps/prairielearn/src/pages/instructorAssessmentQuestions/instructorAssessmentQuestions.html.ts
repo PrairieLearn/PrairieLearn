@@ -15,6 +15,7 @@ import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import type { Course } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
 import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function InstructorAssessmentQuestions({
@@ -175,7 +176,7 @@ function AssessmentQuestionsTable({
                           output: question.sync_warnings,
                         })
                       : ''}
-                  ${course.id === question.course_id
+                  ${idsEqual(course.id, question.course_id)
                     ? question.qid
                     : html`@${question.course_sharing_name}/${question.qid}`}
                 </td>
