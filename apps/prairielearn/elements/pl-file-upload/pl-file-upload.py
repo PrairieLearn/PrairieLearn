@@ -53,9 +53,13 @@ def match_regex_with_files(
 
 
 def glob_to_regex(glob_pattern: str) -> str:
-    """
-    Translate a glob pattern into a regex that can be handled consistently across Python and JS
-    Returns the regex as string, or raises a ValueError if the glob is invalid
+    """Translate a glob pattern into a regex that can be handled consistently across Python and JS.
+
+    Returns:
+        The regex as a string
+
+    Raises:
+        ValueError: If the glob pattern is invalid
     """
     if "/" in glob_pattern:
         raise ValueError(
