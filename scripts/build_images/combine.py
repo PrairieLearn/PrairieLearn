@@ -8,7 +8,11 @@ from utils import get_env_or_exit, print_and_run_command
 def combine_images_from_metadata_dir(
     metadata_dir: str, *, tags: list[str], registry: str
 ) -> list[str]:
-    # Read all manifests, collect the digests, and group them by image name.
+    """This combines images from the metadata directory into a single image.
+
+    It reads the metadata files in the directory, collects the digests for each image,
+    and then creates a new image grouping the digests by image name.
+    """
     digests_by_image: defaultdict[str, list[str]] = defaultdict(list)
 
     for file in os.listdir(metadata_dir):

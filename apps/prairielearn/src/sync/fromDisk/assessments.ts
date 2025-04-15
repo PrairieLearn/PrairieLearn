@@ -91,6 +91,8 @@ function getParamsForAssessment(
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
       grade_rate_minutes: zone.gradeRateMinutes,
+      json_can_view: zone.canView,
+      json_can_submit: zone.canSubmit,
     };
   });
 
@@ -231,6 +233,9 @@ function getParamsForAssessment(
         number_choose: question.numberChoose,
         advance_score_perc: question.advanceScorePerc,
         json_grade_rate_minutes: question.gradeRateMinutes,
+        json_can_view: question.canView,
+        json_can_submit: question.canSubmit,
+        json_has_alternatives: !!question.alternatives,
         questions,
       };
     });
@@ -272,6 +277,8 @@ function getParamsForAssessment(
     student_group_leave: !!assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
     has_roles: !!assessment.groupRoles,
+    json_can_view: assessment.canView,
+    json_can_submit: assessment.canSubmit,
     allowAccess,
     zones,
     alternativeGroups,
@@ -279,6 +286,7 @@ function getParamsForAssessment(
     grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
+    share_source_publicly: assessment.shareSourcePublicly ?? false,
   };
 }
 
@@ -412,7 +420,12 @@ export async function sync(
       course_instance_id: courseInstanceId,
       institution_id: institutionId,
     });
-    if (!questionSharingEnabled && config.checkSharingOnSync) {
+    const consumePublicQuestionsEnabled = await features.enabled('consume-public-questions', {
+      course_id: courseId,
+      course_instance_id: courseInstanceId,
+      institution_id: institutionId,
+    });
+    if (!(questionSharingEnabled || consumePublicQuestionsEnabled) && config.checkSharingOnSync) {
       for (const [tid, qids] of assessmentImportedQids.entries()) {
         if (qids.length > 0) {
           infofile.addError(
