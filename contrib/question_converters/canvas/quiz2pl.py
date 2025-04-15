@@ -98,10 +98,9 @@ def clean_question_text(text: str) -> str:
     all questions. This code is not needed in PrairieLearn, and in fact can
     cause problems in CBTF environments since they'll be forbidden from loading
     by most firewalls/proxies. We just remove them.
-
-    We use regex instead of a proper HTML parser because we want to limit this
-    script to only using the Python standard library.
     """
+    # We use regex instead of a proper HTML parser because we want to limit this
+    # script to only using the Python standard library.
     text = re.sub(r"<link[^>]*>", "", text)
     text = re.sub(r"<script[^>]*>.*?</script>", "", text)
 
