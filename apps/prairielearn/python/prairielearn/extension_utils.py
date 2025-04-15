@@ -19,7 +19,12 @@ from prairielearn.question_utils import QuestionData
 
 
 def clean_identifier_name(name: str) -> str:
-    """Escapes a string so that it becomes a valid Python identifier."""
+    """Escapes a string so that it becomes a valid Python identifier.
+
+
+    Returns:
+        The input as a valid Python identifier
+    """
     # Strip invalid characters and weird leading characters so we have
     # a decent python identifier
     name = re.sub(r"[^a-zA-Z0-9_]", "_", name)
@@ -30,7 +35,12 @@ def clean_identifier_name(name: str) -> str:
 def load_extension(data: QuestionData, extension_name: str) -> Any:
     """
     Load a single specific extension by name for an element.
-    Returns a dictionary of defined variables and functions.
+
+    Returns:
+        A dictionary of defined variables and functions.
+
+    Raises:
+        ValueError: If the extension isn't defined in the provided `data`
     """
     if "extensions" not in data:
         raise ValueError("load_extension() must be called from an element!")
@@ -81,7 +91,12 @@ def load_extension(data: QuestionData, extension_name: str) -> Any:
 def load_all_extensions(data: QuestionData) -> dict[str, Any]:
     """
     Load all available extensions for a given element.
-    Returns an ordered dictionary mapping the extension name to its defined variables and functions
+
+    Returns:
+        An ordered dictionary mapping the extension name to its defined variables and functions
+
+    Raises:
+        ValueError: If the element does not have any extensions defined.
     """
     if "extensions" not in data:
         raise ValueError("load_all_extensions() must be called from an element!")
@@ -96,7 +111,11 @@ def load_all_extensions(data: QuestionData) -> dict[str, Any]:
 
 
 def load_host_script(script_name: str) -> ModuleType:
-    """Small convenience function to load a host element script from an extension."""
+    """Small convenience function to load a host element script from an extension.
+
+    Returns:
+        The imported module
+    """
     # Chop off the file extension because it's unnecessary here
     script_name = script_name.removesuffix(".py")
     return __import__(script_name)

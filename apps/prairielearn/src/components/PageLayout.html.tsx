@@ -110,8 +110,8 @@ export function PageLayout({
           ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
         </head>
         <body
-          ${options.hxExt ? html`hx-ext="${options.hxExt}"` : ''}
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
+          hx-ext="${options.hxExt ?? ''}"
         >
           <div
             id="app-container"
@@ -192,8 +192,8 @@ export function PageLayout({
         ${headContent}
       </head>
       <body
-        ${options.hxExt ? html`hx-ext="${options.hxExt}"` : ''}
         class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
+        hx-ext="${options.hxExt}"
       >
         ${Navbar({
           resLocals,

@@ -18,23 +18,28 @@ from prairielearn.question_utils import QuestionData
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_dd(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_sf(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_ra(*args, **kwargs)
 
 
 def is_correct_ndarray2d_dd(
     a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a certain number of decimal digits after the decimal place.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -50,6 +55,11 @@ def is_correct_ndarray2d_dd(
 def is_correct_ndarray2d_sf(
     a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a certain number of significant figures.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -68,6 +78,11 @@ def is_correct_ndarray2d_ra(
     rtol: float = 1e-5,
     atol: float = 1e-8,
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a relative and absolute tolerance.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     # Check if each element is correct
     return np.allclose(a_sub, a_tru, rtol, atol)
 
@@ -75,12 +90,20 @@ def is_correct_ndarray2d_ra(
 def is_correct_scalar_ra(
     a_sub: ArrayLike, a_tru: ArrayLike, rtol: float = 1e-5, atol: float = 1e-8
 ) -> bool:
-    """Compare a_sub and a_tru using relative tolerance rtol and absolute tolerance atol."""
+    """Compare a_sub and a_tru using relative tolerance rtol and absolute tolerance atol.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     return bool(np.allclose(a_sub, a_tru, rtol, atol))
 
 
 def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
-    """Compare a_sub and a_tru using digits many digits after the decimal place."""
+    """Compare a_sub and a_tru using digits many digits after the decimal place.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
         real_comp = is_correct_scalar_dd(a_sub.real, a_tru.real, digits=digits)  # type: ignore
@@ -101,7 +124,11 @@ def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
 
 
 def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
-    """Compare a_sub and a_tru using digits many significant figures."""
+    """Compare a_sub and a_tru using digits many significant figures.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
         real_comp = is_correct_scalar_sf(a_sub.real, a_tru.real, digits=digits)  # type: ignore
@@ -126,7 +153,13 @@ def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
 
 
 def check_answers_names(data: QuestionData, name: str) -> None:
-    """Check that answers names are distinct using property in data dict."""
+    """Check that answers names are distinct using property in data dict.
+
+    Updates the data dictionary with the name if it is not already present.
+
+    Raises:
+        KeyError: If the name is already present in the data dictionary.
+    """
     if name in data["answers_names"]:
         raise KeyError(f'Duplicate "answers-name" attribute: "{name}"')
     data["answers_names"][name] = True
@@ -134,29 +167,52 @@ def check_answers_names(data: QuestionData, name: str) -> None:
 
 def grade_answer_parameterized(
     data: QuestionData,
-    question_name: str,
+    name: str,
     grade_function: Callable[[Any], tuple[bool | float, str | None]],
     weight: int = 1,
 ) -> None:
     """
-    Grade question question_name. grade_function should take in a single parameter
-    (which will be the submitted answer) and return a 2-tuple:
-        - The first element of the 2-tuple should either be:
-            - a boolean indicating whether the question should be marked correct
-            - a partial score between 0 and 1, inclusive
-        - The second element of the 2-tuple should either be:
-            - a string containing feedback
-            - None, if there is no feedback (usually this should only occur if the answer is correct)
+    Grade the answer for the input `name` using the provided `grade_function`.
+
+    Updates the `data` dictionary with the partial score and feedback for the question.
+
+    `grade_function` should take in a single parameter (which will be the submitted answer) and return a 2-tuple.
+
+    The first element of the 2-tuple should either be:
+
+    - a boolean indicating whether the question should be marked correct
+    - a partial score between 0 and 1, inclusive
+
+    The second element of the 2-tuple should either be:
+
+    - a string containing feedback
+    - `None`, if there is no feedback (usually this should only occur if the answer is correct)
+
+    Examples:
+        >>> def grading_function(submitted_answer):
+        ...     if submitted_answer == "foo":
+        ...         return True, None
+        ...     elif submitted_answer == "bar":
+        ...         return 0.5, "Almost there!"
+        ...     return False, "Try again!"
+        >>> data = {
+        ...     "submitted_answers": {"my_string_input": "bar"},
+        ...     "partial_scores": {},
+        ...     "answers_names": {},
+        ... }
+        >>> grade_answer_parameterized(data, "my_string_input", grading_function, weight=2)
+        >>> data["partial_scores"]
+        {"my_string_input": {"score": 0.5, "weight": 2, "feedback": "Almost there!"}}
     """
     # Create the data dictionary at first
-    data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
+    data["partial_scores"][name] = {"score": 0.0, "weight": weight}
 
     # If there is no submitted answer, we shouldn't do anything. Issues with blank
     # answers should be handled in parse.
-    if question_name not in data["submitted_answers"]:
+    if name not in data["submitted_answers"]:
         return
 
-    submitted_answer = data["submitted_answers"][question_name]
+    submitted_answer = data["submitted_answers"][name]
 
     # Run passed-in grading function
     result, feedback_content = grade_function(submitted_answer)
@@ -171,10 +227,10 @@ def grade_answer_parameterized(
         assert_never(result)
 
     # Set corresponding partial score and feedback
-    data["partial_scores"][question_name]["score"] = partial_score
+    data["partial_scores"][name]["score"] = partial_score
 
     if feedback_content:
-        data["partial_scores"][question_name]["feedback"] = feedback_content
+        data["partial_scores"][name]["feedback"] = feedback_content
 
 
 def determine_score_params(
@@ -185,6 +241,17 @@ def determine_score_params(
     score for a particular question. For elements following PrairieLearn
     conventions, the return value can be used as a key/value pair in the
     dictionary passed to an element's Mustache template to display a score badge.
+
+    Returns:
+        A tuple containing the key and value for the score badge.
+
+    Examples:
+        >>> determine_score_params(1)
+        ("correct", True)
+        >>> determine_score_params(0)
+        ("incorrect", True)
+        >>> determine_score_params(0.5)
+        ("partial", 50)
     """
     if score >= 1:
         return ("correct", True)

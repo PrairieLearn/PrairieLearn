@@ -32,6 +32,12 @@ def get_enum_attrib(
     Also, alter the enum names to comply with PL naming convention automatically
     (replacing underscores with dashes and uppercasing). If a default value is
     provided, it must be a member of the given enum.
+
+    Returns:
+        The value of attribute `name`, as part of the enum.
+
+    Raises:
+        ValueError: If the attribute is not a valid enum value.
     """
     enum_val, is_default = (
         _get_attrib(element, name)
@@ -59,7 +65,7 @@ def get_enum_attrib(
     return enum_type[upper_enum_str.replace("-", "_")]
 
 
-def compat_array(arr: list[str]) -> list[str]:
+def _compat_array(arr: list[str]) -> list[str]:
     new_arr = []
     for i in arr:
         new_arr.extend((i, i.replace("-", "_")))
@@ -71,13 +77,14 @@ def check_attribs(
     required_attribs: list[str],
     optional_attribs: list[str],
 ) -> None:
+    """Verify that the element has all required attributes and no unknown attributes."""
     for name in required_attribs:
         if not has_attrib(element, name):
             raise ValueError(f'Required attribute "{name}" missing')
     extra_attribs = list(
         set(element.attrib)
-        - set(compat_array(required_attribs))
-        - set(compat_array(optional_attribs))
+        - set(_compat_array(required_attribs))
+        - set(_compat_array(optional_attribs))
     )
     for name in extra_attribs:
         raise ValueError(f'Unknown attribute "{name}"')
@@ -86,15 +93,21 @@ def check_attribs(
 def _get_attrib(
     element: lxml.html.HtmlElement, name: str, *args: Any
 ) -> tuple[Any, bool]:
-    """
-    Return the named attribute for the element, or the default value
-    if the attribute is missing.  The default value is optional. If no
+    """Get the attribute of an HTML element.
+
+    The default value is optional. If no
     default value is provided and the attribute is missing then an
     exception is thrown. The second return value indicates whether the
     default value was returned.
 
+    Returns:
+        The named attribute for the element, or the default value if the attribute is missing.
+
+    Raises:
+        ValueError: If the function is called with too many arguments.
+
     Internal function, do not all. Use one of the typed variants
-    instead (e.g., get_string_attrib()).
+    instead (e.g., `get_string_attrib()`).
     """
     # It seems like we could use keyword arguments with a default
     # value to handle the "default" argument, but we want to be able
@@ -119,9 +132,10 @@ def _get_attrib(
 
 
 def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
-    """
-    Return true if the element has an attribute of that name,
-    false otherwise.
+    """If an HTML element has an attribute `name` set.
+
+    Returns:
+        `True` if the element has an attribute of that name, `False` otherwise.
     """
     old_name = name.replace("-", "_")
     return name in element.attrib or old_name in element.attrib
@@ -149,6 +163,9 @@ def get_string_attrib(
     Return the named attribute for the element, or the (optional)
     default value. If the default value is not provided and the
     attribute is missing then an exception is thrown.
+
+    Returns:
+        The string value of attribute `name`.
     """
     str_val, _ = _get_attrib(element, name, *args)
     return str_val
@@ -179,6 +196,12 @@ def get_boolean_attrib(
     default value. If the default value is not provided and the
     attribute is missing then an exception is thrown. If the attribute
     is not a valid boolean then an exception is thrown.
+
+    Returns:
+        The boolean value of attribute `name`.
+
+    Raises:
+        ValueError: If the attribute is not a valid boolean value.
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
@@ -232,6 +255,12 @@ def get_integer_attrib(
     default value. If the default value is not provided and the
     attribute is missing then an exception is thrown. If the attribute
     is not a valid integer then an exception is thrown.
+
+    Returns:
+        The int value of attribute `name`.
+
+    Raises:
+        ValueError: If the attribute is not a valid integer value.
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
@@ -271,6 +300,16 @@ def get_float_attrib(
     default value. If the default value is not provided and the
     attribute is missing then an exception is thrown. If the attribute
     is not a valid floating-point number then an exception is thrown.
+
+    Returns:
+        The float value of attribute `name`.
+
+    Raises:
+        ValueError: If the attribute is not a valid floating-point number.
+
+    Examples:
+        >>> get_float_attrib(element, "stroke-width", 4.0)
+        10.0
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
@@ -305,6 +344,12 @@ def get_color_attrib(
     not provided and the attribute is missing then an exception is thrown. If
     the attribute is not a valid RGB string then it will be checked against various
     named colors.  If the attribute is still not valid an exception is thrown.
+
+    Returns:
+        A CSS color string.
+
+    Raises:
+        ValueError: If the attribute is not a valid CSS color string.
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
@@ -327,6 +372,11 @@ def get_color_attrib(
 
 
 def inner_html(element: lxml.html.HtmlElement) -> str:
+    """Get the inner HTML of an lxml element.
+
+    Returns:
+        The inner HTML of the element as a string.
+    """
     inner = element.text
     if inner is None:
         inner = ""
@@ -337,5 +387,9 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
 
 
 def escape_invalid_string(string: str) -> str:
-    """Wrap and escape string in `<code>` tags."""
+    """Wrap and escape string in `<code>` tags.
+
+    Returns:
+        The sanitized user input wrapped in a code block.
+    """
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'

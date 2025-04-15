@@ -4,7 +4,6 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import { aiGrade } from '../../../ee/lib/ai-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -126,23 +125,6 @@ router.post(
       } else {
         res.send({});
       }
-    } else if (req.body.__action === 'ai_grade_assessment') {
-      // check if AI grading is enabled
-      const ai_grading_enabled = await features.enabledFromLocals('ai-grading', res.locals);
-      if (!ai_grading_enabled) {
-        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-      }
-
-      const jobSequenceId = await aiGrade({
-        question: res.locals.question,
-        course: res.locals.course,
-        course_instance_id: res.locals.course_instance.id,
-        assessment_question: res.locals.assessment_question,
-        urlPrefix: res.locals.urlPrefix,
-        authn_user_id: res.locals.authn_user.user_id,
-        user_id: res.locals.user.user_id,
-      });
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

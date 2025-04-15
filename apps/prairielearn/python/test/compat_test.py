@@ -4,9 +4,7 @@ import pytest
 
 
 def test_external_exports():
-    """
-    Checks that no exports have been moved. As time goes on, this list may not be exhaustive.
-    """
+    """Checks that no exports have been moved. As time goes on, this list may not be exhaustive."""
     try:
         from prairielearn import (
             ElementTestData,
@@ -18,7 +16,6 @@ def test_external_exports():
             check_answers_names,
             check_attribs,
             clean_identifier_name,
-            compat_array,
             determine_score_params,
             escape_invalid_string,
             escape_unicode_string,
