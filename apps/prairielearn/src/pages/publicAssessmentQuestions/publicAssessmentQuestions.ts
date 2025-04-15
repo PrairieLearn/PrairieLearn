@@ -30,7 +30,7 @@ router.get(
     res.locals.assessment = assessment;
 
     assert(assessment.assessment_set_id);
-    const assessment_set_name = (await selectAssessmentSetById(assessment.assessment_set_id)).name;
+    const assessment_set = await selectAssessmentSetById(assessment.assessment_set_id);
 
     const questions = await selectAssessmentQuestions(assessment_id);
 
@@ -44,7 +44,7 @@ router.get(
       PublicAssessmentQuestions({
         resLocals: res.locals,
         assessment,
-        assessment_set_name,
+        assessment_set,
         course,
         course_instance_id,
         questions,

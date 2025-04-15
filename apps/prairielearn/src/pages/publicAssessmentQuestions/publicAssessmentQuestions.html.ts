@@ -8,20 +8,20 @@ import {
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { type Assessment, type Course } from '../../lib/db-types.js';
+import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
 import { type AssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function PublicAssessmentQuestions({
   resLocals,
   assessment,
-  assessment_set_name,
+  assessment_set,
   course,
   course_instance_id,
   questions,
 }: {
   resLocals: Record<string, any>;
   assessment: Assessment;
-  assessment_set_name: string;
+  assessment_set: AssessmentSet;
   course: Course;
   course_instance_id: string;
   questions: AssessmentQuestionRow[];
@@ -38,7 +38,7 @@ export function PublicAssessmentQuestions({
       ? html`
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${assessment_set_name} ${assessment.number}: Questions
+              ${assessment_set.name} ${assessment.number}: Questions
             </div>
             ${AssessmentQuestionsTable({
               questions,
@@ -49,14 +49,14 @@ export function PublicAssessmentQuestions({
           </div>
         `
       : html`
-        <p>
-          This course doesn't have a sharing name. If you are an Owner of this course, please choose
-          a sharing name on the
-          <a href="${resLocals.plainUrlPrefix}/course/${resLocals.course.id}/course_admin/sharing"
-            >course sharing settings page</a
-          >.
-        </p>
-      `,
+          <p>
+            This course doesn't have a sharing name. If you are an Owner of this course, please
+            choose a sharing name on the
+            <a href="${resLocals.plainUrlPrefix}/course/${resLocals.course.id}/course_admin/sharing"
+              >course sharing settings page</a
+            >.
+          </p>
+        `,
   });
 }
 
