@@ -34,6 +34,7 @@ function getParamsForCourseInstance(courseInstance: CourseInstance | null | unde
     display_timezone: courseInstance.timezone || null,
     access_rules: accessRules,
     assessments_group_by: courseInstance.groupAssessmentsBy,
+    share_source_publicly: courseInstance.shareSourcePublicly || false,
   };
 }
 

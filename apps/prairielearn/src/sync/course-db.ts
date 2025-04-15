@@ -253,6 +253,7 @@ export interface CourseInstance {
   allowAccess: CourseInstanceAllowAccess[];
   allowIssueReporting: boolean;
   groupAssessmentsBy: 'Set' | 'Module';
+  shareSourcePublicly: boolean;
 }
 
 export interface AssessmentAllowAccess {
@@ -401,6 +402,7 @@ export interface Question {
 }
 
 export interface CourseInstanceData {
+  shareSourcePublicly: boolean;
   courseInstance: InfoFile<CourseInstance>;
   assessments: Record<string, InfoFile<Assessment>>;
 }
@@ -448,6 +450,8 @@ export async function loadFullCourse(
       questions,
     );
 
+    const shareSourcePublicly = courseInstance.data?.shareSourcePublicly ?? false;
+
     for (const assessment of Object.values(assessments)) {
       if (assessment.data?.set) {
         assessmentSetsInUse.add(assessment.data?.set);
@@ -457,6 +461,7 @@ export async function loadFullCourse(
     courseInstances[courseInstanceId] = {
       courseInstance,
       assessments,
+      shareSourcePublicly,
     };
   }
 
