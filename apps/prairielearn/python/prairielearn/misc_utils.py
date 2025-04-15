@@ -116,6 +116,14 @@ def partition(
     Returns:
         A tuple with two lists, the first containing items that satisfy the predicate,
         and the second containing items that do not.
+
+    Example:
+        >>> numbers = [1, 2, 3, 4, 5]
+        >>> evens, odds = partition(numbers, lambda x: x % 2 == 0)
+        >>> evens
+        [2, 4]
+        >>> odds
+        [1, 3, 5]
     """
     yes, no = [], []
     for d in data:
