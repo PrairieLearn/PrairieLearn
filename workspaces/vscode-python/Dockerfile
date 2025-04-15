@@ -5,34 +5,29 @@ ARG CACHEBUST=2025-04-15-14-15-50
 # work during installation.
 SHELL ["/bin/bash", "-c"]
 
-# Install Python and required packages via miniconda.
+USER root
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc libc6-dev graphviz graphviz-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python and required packages via uv.
 # This is a prerequisite for the VS Code extensions in the following steps.
 USER coder
-COPY requirements.txt /
-# SC1091: `source` an unknown file is required to activate Conda.
-# hadolint ignore=SC1091
-RUN arch="$(uname -m)" \
-    && curl -sfLO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
-    && chmod +x "Miniforge3-Linux-${arch}.sh" \
-    && ./"Miniforge3-Linux-${arch}.sh" -b -p /home/coder/conda \
-    # Install conda and mamba hooks for future interactive bash sessions:
-    && /home/coder/conda/bin/mamba init bash \
-    # Activate hooks in the current noninteractive session:
-    && . "/home/coder/conda/etc/profile.d/conda.sh" \
-    && . "/home/coder/conda/etc/profile.d/mamba.sh" \
-    && mamba activate \
-    # Installing `pygraphviz` with pip would require `build-essentials`, `graphviz`,
-    # and `graphviz-dev` to be installed at the OS level, which would increase the
-    # image size. Instead, we install it from Conda, which prebuilds it and also
-    # automatically installs a Conda-specific `graphviz` dependency.
-    && mamba install --yes "$(grep pygraphviz /requirements.txt | head -n 1)" \
-    && pip install --no-cache-dir -r /requirements.txt \
-    && rm "Miniforge3-Linux-${arch}.sh" \
-    && mamba clean --all --yes --quiet \
-    && pip cache purge
+WORKDIR "/home/coder"
 
-USER coder
- 
+COPY requirements.txt /
+
+# /home/coder/.venv/bin/python3 -> /home/coder/.local/bin/python3 -> /home/coder/.local/share/uv/python/*/bin/python3.10
+RUN curl -LO https://astral.sh/uv/install.sh \
+    && sh install.sh && rm install.sh \
+    && source "$HOME/.local/bin/env" \
+    && uv python install --default --preview 3.10 \
+    && uv venv \
+    && echo "source $HOME/.venv/bin/activate" >> ~/.bashrc && source "$HOME/.venv/bin/activate" \
+    && uv pip install --no-cache-dir -r /requirements.txt && uv cache clean
+
 # After installing Python we install some VS Code extensions.
 RUN code-server --disable-telemetry --force \
     # vscode support for python, including debugger
@@ -41,3 +36,5 @@ RUN code-server --disable-telemetry --force \
     --install-extension KevinRose.vsc-python-indent \
     # Clear the extension cache to reduce image size.
     && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs
+
+WORKDIR "/home/coder/workspace"
