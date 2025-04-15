@@ -201,27 +201,31 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
                     : `${course.short_name}: ${course.title}`}
                 </td>
                 <td class="js-course-instance-list">
-                  ${course.course_instances.map(
-                    (course_instance) => html`
-                      <a
-                        class="btn btn-outline-primary btn-sm my-1 ${course_instance.expired
-                          ? 'd-none js-inactive-course-instance'
-                          : ''}"
-                        href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor"
-                      >
-                        ${course_instance.long_name}
-                      </a>
-                    `,
-                  )}
+                  ${CourseInstanceList({
+                    course_instances: course.course_instances.filter((ci) => !ci.expired),
+                  })}
                   ${course.course_instances.some((ci) => ci.expired)
-                    ? html`<button
-                        class="btn btn-light btn-xs my-1"
-                        onclick="this.closest('.js-course-instance-list').querySelectorAll('.js-inactive-course-instance').forEach(b => b.classList.remove('d-none')); this.remove();"
-                      >
-                        Show older instances
-                      </button>`
-                    : // TODO Should there be a special case for all instances being expired?
-                      ''}
+                    ? html`
+                        <button
+                          class="btn btn-outline-dark btn-xs my-1"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#older-instances-${course.id}"
+                          aria-expanded="false"
+                          aria-controls="older-instances-${course.id}"
+                        >
+                          Older instances
+                        </button>
+                        <span
+                          class="collapse collapse-horizontal"
+                          id="older-instances-${course.id}"
+                        >
+                          ${CourseInstanceList({
+                            course_instances: course.course_instances.filter((ci) => ci.expired),
+                          })}
+                        </span>
+                      `
+                    : ''}
                 </td>
               </tr>
             `,
@@ -230,6 +234,23 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
       </table>
     </div>
   `;
+}
+
+function CourseInstanceList({
+  course_instances,
+}: {
+  course_instances: InstructorCourse['course_instances'];
+}) {
+  return course_instances.map(
+    (course_instance) => html`
+      <a
+        class="btn btn-outline-primary btn-sm my-1"
+        href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor"
+      >
+        ${course_instance.long_name}
+      </a>
+    `,
+  );
 }
 
 function StudentCoursesCard({
