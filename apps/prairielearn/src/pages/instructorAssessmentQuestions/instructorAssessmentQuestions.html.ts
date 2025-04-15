@@ -178,7 +178,7 @@ function AssessmentQuestionsTable({
                       : ''}
                   ${idsEqual(course.id, question.course_id)
                     ? question.qid
-                    : html`@${question.course_sharing_name}/${question.qid}`}
+                    : `@${question.course_sharing_name}/${question.qid}`}
                 </td>
                 <td>${TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>
