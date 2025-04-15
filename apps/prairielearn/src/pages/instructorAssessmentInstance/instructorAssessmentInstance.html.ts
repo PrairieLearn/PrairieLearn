@@ -11,7 +11,12 @@ import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import { AssessmentQuestionSchema, type ClientFingerprint, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
+import {
+  AssessmentQuestionSchema,
+  type ClientFingerprint,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
@@ -686,10 +691,14 @@ export function InstructorAssessmentInstance({
 }
 
 function ClientFingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint }) {
-  let browserVersion: string = fingerprint.client_hints?.['sec-ch-ua-full-version-list'];
-  const mobile: string = fingerprint.client_hints?.['sec-ch-ua-mobile'];
-  const osPlatform: string = fingerprint.client_hints?.['sec-ch-ua-platform']?.replaceAll('"', '');
-  let osPlatformVersion: string = fingerprint.client_hints?.['sec-ch-ua-platform-version'];
+  let browserVersion: string | undefined =
+    fingerprint.client_hints?.['sec-ch-ua-full-version-list'];
+  const mobile: string | undefined = fingerprint.client_hints?.['sec-ch-ua-mobile'];
+  const osPlatform: string | undefined = fingerprint.client_hints?.[
+    'sec-ch-ua-platform'
+  ]?.replaceAll('"', '');
+  let osPlatformVersion: string | undefined =
+    fingerprint.client_hints?.['sec-ch-ua-platform-version'];
 
   if (browserVersion) {
     const match = browserVersion.match(/^"([^"]+)";v="([^"]+)"/);
