@@ -48,13 +48,15 @@ export function PublicAssessmentQuestions({
             })}
           </div>
         `
-      : html`<p>
+      : html`
+        <p>
           This course doesn't have a sharing name. If you are an Owner of this course, please choose
           a sharing name on the
           <a href="${resLocals.plainUrlPrefix}/course/${resLocals.course.id}/course_admin/sharing"
             >course sharing settings page</a
           >.
-        </p>`,
+        </p>
+      `,
   });
 }
 
