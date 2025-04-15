@@ -153,7 +153,13 @@ def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
 
 
 def check_answers_names(data: QuestionData, name: str) -> None:
-    """Check that answers names are distinct using property in data dict."""
+    """Check that answers names are distinct using property in data dict.
+
+    Updates the data dictionary with the name if it is not already present.
+
+    Raises:
+        KeyError: If the name is already present in the data dictionary.
+    """
     if name in data["answers_names"]:
         raise KeyError(f'Duplicate "answers-name" attribute: "{name}"')
     data["answers_names"][name] = True
@@ -166,14 +172,21 @@ def grade_answer_parameterized(
     weight: int = 1,
 ) -> None:
     """
-    Grade question question_name. grade_function should take in a single parameter
-    (which will be the submitted answer) and return a 2-tuple:
-        - The first element of the 2-tuple should either be:
-            - a boolean indicating whether the question should be marked correct
-            - a partial score between 0 and 1, inclusive
-        - The second element of the 2-tuple should either be:
-            - a string containing feedback
-            - None, if there is no feedback (usually this should only occur if the answer is correct)
+    Grade question `question_name` using the provided `grade_function`.
+
+    Updates the `data` dictionary with the partial score and feedback for the question.
+
+    `grade_function` should take in a single parameter (which will be the submitted answer) and return a 2-tuple.
+
+    The first element of the 2-tuple should either be:
+
+    - a boolean indicating whether the question should be marked correct
+    - a partial score between 0 and 1, inclusive
+
+    The second element of the 2-tuple should either be:
+
+    - a string containing feedback
+    - `None`, if there is no feedback (usually this should only occur if the answer is correct)
     """
     # Create the data dictionary at first
     data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}

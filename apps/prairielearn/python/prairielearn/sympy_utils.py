@@ -341,6 +341,10 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
     """Check the AST of the expression for security, whitelisting only certain nodes.
 
     This prevents the user from executing arbitrary code through `eval_expr`.
+
+    Raises:
+        HasEscapeError: If the expression contains an escape character.
+        HasCommentError: If the expression contains a comment character.
     """
     # Disallow escape character
     ind = expr.find("\\")
@@ -428,6 +432,10 @@ def evaluate_with_source(
 
     Returns:
         A tuple of the SymPy expression and the code that was used to generate it.
+
+    Raises:
+        HasParseError: If the expression cannot be parsed.
+        BaseSympyError: If the expression cannot be evaluated.
     """
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
@@ -547,6 +555,11 @@ def convert_string_to_sympy_with_source(
 
     Returns:
         A tuple of the sympy expression and the source code that was used to generate it.
+
+    Raises:
+        HasInvalidAssumptionError: If the assumptions are not valid.
+        HasConflictingVariableError: If the variable names conflict with existing names.
+        HasConflictingFunctionError: If the function names conflict with existing names.
     """
     const = _Constants()
 
@@ -694,6 +707,9 @@ def json_to_sympy(
 
     Returns:
         A SymPy expression.
+
+    Raises:
+        ValueError: If the input is not a valid SymPy JSON dict.
     """
     if "_type" not in sympy_expr_dict:
         raise ValueError("json must have key _type for conversion to sympy")

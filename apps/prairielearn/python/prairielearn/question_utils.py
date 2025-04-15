@@ -61,6 +61,9 @@ def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None
     """
     Set overall question score to be weighted average of all partial scores. Use
     weight_default to fill in a default weight for a score if one is missing.
+
+    Raises:
+        ValueError: If any of the partial scores have a score of None.
     """
     weight_total = 0
     score_total = 0.0

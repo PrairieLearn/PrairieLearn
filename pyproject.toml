@@ -37,15 +37,15 @@ ignore = [
   "PTH",     # flake8-use-pathlib
 
   # These rules were discussed and disabled
-  "ANN401",  # any-type
-  "D107",    # undocumented-public-init
-  "D203",    # incorrect-blank-line-before-class
-  "D212",    # multi-line-summary-first-line
-  "D205",    # missing-blank-line-after-summary (we use a multi-line description instead of summaries sometimes)
-  "D400",    # missing-trailing-period
-  "D415",    # missing-terminal-punctuation
-  "DOC402",  # docstring-missing-yields
-  "DOC501",  # docstring-missing-exception
+  "ANN401", # any-type
+  "D107",   # undocumented-public-init
+  "D203",   # incorrect-blank-line-before-class
+  "D212",   # multi-line-summary-first-line
+  "D205",   # missing-blank-line-after-summary (we use a multi-line description instead of summaries sometimes)
+  "D400",   # missing-trailing-period
+  "D415",   # missing-terminal-punctuation
+  "DOC402", # docstring-missing-yields
+  # "DOC501",  # docstring-missing-exception
   "FURB101", # read-whole-file
   "FURB103", # write-whole-file
   "FURB118", # reimplemented-operator (confusing)
@@ -127,13 +127,13 @@ convention = "google"
 "graders/**/*.py" = [
   # Boolean default positional argument
   "FBT002",
-  "D",
   # Avoid future changes to graders
   "C419",
   "PYI061",
   "RUF036",
   # We are only strict for our own code
-  "DOC201",
+  "D",
+  "DOC",
 ]
 
 # Directories we don't want strict annotation linting or docstring linting on
@@ -143,9 +143,9 @@ convention = "google"
 "docs/**/*.py" = ["D100", "DOC201"]
 "apps/prairielearn/src/tests/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
 "contrib/**/*.py" = ["ANN", "D", "DOC201"]
-"scripts/**/*.py" = ["D100", "DOC201"]
-"testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
-"exampleCourse/**/*.py" = ["ANN", "D", "DOC201"]
+"scripts/**/*.py" = ["D100", "DOC"]
+"testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC"]
+"exampleCourse/**/*.py" = ["ANN", "D", "DOC"]
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-threejs/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]

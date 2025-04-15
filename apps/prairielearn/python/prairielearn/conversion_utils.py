@@ -168,6 +168,9 @@ def to_json(
 
     Returns:
         The serialized value
+
+    Raises:
+        ValueError: If `np_encoding_version` or `df_encoding_version` is invalid.
     """
     if np_encoding_version not in {1, 2}:
         raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
@@ -284,6 +287,9 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
 
     Returns:
         The deserialized value
+
+    Raises:
+        ValueError: If the JSON object is not in the expected format.
     """
     if isinstance(v, dict) and "_type" in v:
         v_json = cast(_JSONSerializedType, v)
@@ -501,6 +507,9 @@ def string_from_numpy(
 
     Returns:
         A formatted version of the NumPy array.
+
+    Raises:
+        TypeError: If A is not a scalar or a numpy array.
     """
     # if A is a scalar
     if np.isscalar(A):
@@ -774,7 +783,7 @@ def string_fraction_to_number(
 
     If parsing failed, the first entry will be 'None' and the "data" entry will
     contain a 'format_errors' key.
-    """
+    """  # noqa: DOC501 (false positive)
     data: _PartialDataSubmittedAnswers = {}  # type: ignore
     value: np.float64 | np.complex128 = None  # type: ignore
 
@@ -880,6 +889,10 @@ def latex_from_2darray(
 
     Returns:
         The input formatted in LaTeX.
+
+    Raises:
+        TypeError: If A is not a numpy array or scalar.
+        ValueError: If A is not a 2D numpy array.
     """
     # if A is a scalar
     if np.isscalar(A):
@@ -957,6 +970,9 @@ def string_to_2darray(
 
     Returns:
         A 2-element tuple with the value, and any errors.
+
+    Raises:
+        ValueError: If the input isn't the right type or is infinite.
     """
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace("\u2212", "-")
