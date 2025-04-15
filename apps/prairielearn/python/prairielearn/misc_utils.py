@@ -111,7 +111,12 @@ ListItem = TypeVar("ListItem")
 def partition(
     data: Iterable[ListItem], pred: Callable[[ListItem], bool]
 ) -> tuple[list[ListItem], list[ListItem]]:
-    """Implement a partition function, splitting the data into two lists based on the predicate."""
+    """Implement a partition function, splitting the data into two lists based on the predicate.
+
+    Returns:
+        A tuple with two lists, the first containing items that satisfy the predicate,
+        and the second containing items that do not.
+    """
     yes, no = [], []
     for d in data:
         if pred(d):
