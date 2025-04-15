@@ -195,11 +195,6 @@
         this.renderFileList();
 
         if (!isFromDownload) {
-          // Show the preview for the newly-uploaded file
-          const container = this.element.find(`li[data-file="${escapeFileName(name)}"]`);
-          container.find('.file-preview').addClass('show');
-          container.find('.file-preview-button').removeClass('collapsed');
-
           // Ensure that students see a prompt if they try to navigate away
           // from the page without saving the form. This check is initially
           // disabled because we don't want students to see the prompt if they
@@ -369,7 +364,7 @@
         }
         if (fileData) {
           var $download = $(
-            `<a download="${fileName}" class="btn btn-outline-secondary btn-sm mr-1" href="data:application/octet-stream;base64,${fileData}">Download</a>`,
+            `<a download="${fileName}" class="btn btn-outline-secondary btn-sm me-1" href="data:application/octet-stream;base64,${fileData}">Download</a>`,
           );
 
           var $preview = $(
@@ -380,8 +375,10 @@
             `<button type="button" class="btn btn-outline-secondary btn-sm mr-1" id="file-delete-${uuid}-${index}">Delete</button>`,
           );
 
-          var $error = $('<div class="alert alert-danger mt-2 d-none" role="alert"></div>');
-          $preview.append($error);
+          var $previewNotAvailable = $(
+            '<div class="alert alert-info mt-2 d-none" role="alert">Content preview is not available for this type of file.</div>',
+          );
+          $preview.append($previewNotAvailable);
 
           var $imgPreview = $('<img class="mw-100 mt-2 d-none"/>');
           $preview.append($imgPreview);
@@ -409,6 +406,7 @@
                 URL.revokeObjectURL(url);
               });
               $preview.append($objectPreview);
+              this.expandPreviewForFile(fileName);
             } else {
               var fileContents = this.b64DecodeUnicode(fileData);
               if (!this.isBinary(fileContents)) {
@@ -417,18 +415,18 @@
                 $preview.find('code').text('Binary file not previewed.');
               }
               $codePreview.removeClass('d-none');
+              this.expandPreviewForFile(fileName);
             }
           } catch {
             const url = this.b64ToBlobUrl(fileData);
             $imgPreview
               .on('load', () => {
                 $imgPreview.removeClass('d-none');
+                this.expandPreviewForFile(fileName);
                 URL.revokeObjectURL(url);
               })
               .on('error', () => {
-                $error
-                  .text('Content preview is not available for this type of file.')
-                  .removeClass('d-none');
+                $previewNotAvailable.removeClass('d-none');
                 URL.revokeObjectURL(url);
               })
               .attr('src', url);
@@ -439,7 +437,7 @@
           $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
           $fileButtons.append($deleteUpload);
           $fileButtons.append(
-            `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-toggle="collapse" data-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fa fa-angle-down"></span></button>`,
+            `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-bs-toggle="collapse" data-bs-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fa fa-angle-down"></span></button>`,
           );
           $fileStatusContainer.append($fileButtons);
         }
@@ -489,11 +487,17 @@
 
     addWarningMessage(message) {
       var $alert = $(
-        '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>',
+        '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>',
       );
       $alert.append(message);
       this.element.find('.messages').find('.alert').remove();
       this.element.find('.messages').append($alert);
+    }
+
+    expandPreviewForFile(name) {
+      const container = this.element.find(`li[data-file="${escapeFileName(name)}"]`);
+      container.find('.file-preview').addClass('show');
+      container.find('.file-preview-button').removeClass('collapsed');
     }
 
     /**

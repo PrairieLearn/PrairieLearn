@@ -148,7 +148,7 @@ ${submission.feedback?.manual}</textarea
                 </a>
               `
             : ''}
-          <span class="ml-auto">
+          <span class="ms-auto">
             ${!disable
               ? html`
                   <button
@@ -174,13 +174,13 @@ ${submission.feedback?.manual}</textarea
                     <button
                       type="button"
                       class="btn btn-secondary dropdown-toggle dropdown-toggle-split"
-                      data-toggle="dropdown"
+                      data-bs-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
-                      <span class="sr-only">Change assigned grader</span>
+                      <span class="visually-hidden">Change assigned grader</span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-menu dropdown-menu-end">
                       ${(graders || []).map(
                         (grader) => html`
                           <button

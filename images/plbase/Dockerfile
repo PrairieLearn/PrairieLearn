@@ -1,9 +1,8 @@
 FROM amazonlinux:2023
+ARG CACHEBUST=2025-04-15-14-15-50
 
-# plbase-install.sh: script to install all needed packages and dependencies
-# python-requirements.txt: list of python packages to be installed by pip
 COPY plbase-install.sh python-requirements.txt /
 
 RUN /bin/bash /plbase-install.sh
 
-CMD /bin/bash
+CMD [ "/bin/bash" ]

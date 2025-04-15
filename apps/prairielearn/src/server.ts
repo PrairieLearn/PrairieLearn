@@ -19,16 +19,13 @@ import Bowser from 'bowser';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
 import express, {
-  type RequestHandler,
   type Express,
-  type Request,
-  type Response,
   type NextFunction,
+  type Request,
+  type RequestHandler,
+  type Response,
 } from 'express';
 import asyncHandler from 'express-async-handler';
-import { createProxyMiddleware } from 'http-proxy-middleware';
-import type * as httpProxyMiddleware from 'http-proxy-middleware';
-import _ from 'lodash';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
@@ -37,9 +34,8 @@ import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
 
 import { cache } from '@prairielearn/cache';
-import * as error from '@prairielearn/error';
 import { flashMiddleware } from '@prairielearn/flash';
-import { logger, addFileLogging } from '@prairielearn/logger';
+import { addFileLogging, logger } from '@prairielearn/logger';
 import * as migrations from '@prairielearn/migrations';
 import {
   SCHEMA_MIGRATIONS_PATH,
@@ -48,12 +44,14 @@ import {
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
+import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
 import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
+import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
@@ -66,8 +64,6 @@ import { featuresMiddleware } from './lib/features/middleware.js';
 import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
-import { LocalCache } from './lib/local-cache.js';
-import * as nodeMetrics from './lib/node-metrics.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -78,6 +74,7 @@ import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
+import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
@@ -276,35 +273,6 @@ export async function initExpress(): Promise<Express> {
     upload.single('file'),
   );
 
-  /**
-   * Function to strip "sensitive" cookies from requests that will be proxied
-   * to workspace hosts.
-   */
-  function stripSensitiveCookies(proxyReq: http.ClientRequest) {
-    const cookies = proxyReq.getHeader('cookie');
-    if (!cookies) return;
-
-    const items = (cookies as string).split(';');
-    const filteredItems = items.filter((item) => {
-      const name = item.split('=')[0].trim();
-      return (
-        name !== 'pl_authn' &&
-        name !== 'pl2_authn' &&
-        name !== 'pl_assessmentpw' &&
-        name !== 'pl2_assessmentpw' &&
-        name !== 'connect.sid' &&
-        name !== 'prairielearn_session' &&
-        name !== 'pl2_session' &&
-        // The workspace authz cookies use a prefix plus the workspace ID, so
-        // we need to check for that prefix instead of an exact name match.
-        !name.startsWith('pl_authz_workspace_') &&
-        !name.startsWith('pl2_authz_workspace_')
-      );
-    });
-
-    proxyReq.setHeader('cookie', filteredItems.join(';'));
-  }
-
   // Collect metrics on workspace proxy sockets. Note that this only tracks
   // outgoing sockets (those going to workspaces). Incoming sockets are tracked
   // globally for the entire server.
@@ -312,81 +280,6 @@ export async function initExpress(): Promise<Express> {
   const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
   workspaceProxySocketActivityMetrics.start();
 
-  // proxy workspaces to remote machines
-  const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
-  const workspaceProxyOptions: httpProxyMiddleware.Options = {
-    target: 'invalid',
-    ws: true,
-    pathRewrite: async (path) => {
-      try {
-        const match = path.match('/pl/workspace/([0-9]+)/container/(.*)');
-        if (!match) throw new Error(`Could not match path: ${path}`);
-        const workspace_id = parseInt(match[1]);
-        let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);
-        if (workspace_url_rewrite == null) {
-          const sql =
-            'SELECT q.workspace_url_rewrite' +
-            ' FROM questions AS q' +
-            ' JOIN variants AS v ON (v.question_id = q.id)' +
-            ' WHERE v.workspace_id = $workspace_id;';
-          const result = await sqldb.queryOneRowAsync(sql, { workspace_id });
-          workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
-          if (workspace_url_rewrite == null) workspace_url_rewrite = true;
-          workspaceUrlRewriteCache.set(workspace_id, workspace_url_rewrite);
-        }
-        if (!workspace_url_rewrite) {
-          return path;
-        }
-        const pathSuffix = match[2];
-        const newPath = '/' + pathSuffix;
-        return newPath;
-      } catch (err) {
-        logger.error(`Error in pathRewrite for path=${path}: ${err}`);
-        return path;
-      }
-    },
-    logLevel: 'silent',
-    logProvider: (_provider) => logger,
-    router: async (req) => {
-      const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
-      if (!match) throw new Error(`Could not match URL: ${req.url}`);
-
-      const workspace_id = match[1];
-      const result = await sqldb.queryZeroOrOneRowAsync(
-        "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
-        { workspace_id },
-      );
-
-      if (result.rows.length === 0) {
-        // If updating this message, also update the message our Sentry
-        // `beforeSend` handler.
-        throw new error.HttpStatusError(404, 'Workspace is not running');
-      }
-
-      return `http://${result.rows[0].hostname}/`;
-    },
-    onProxyReq: (proxyReq) => {
-      stripSensitiveCookies(proxyReq);
-    },
-    onProxyReqWs: (proxyReq) => {
-      stripSensitiveCookies(proxyReq);
-    },
-    onError: (err, req, res) => {
-      logger.error(`Error proxying workspace request: ${err}`, {
-        err,
-        url: req.url,
-        originalUrl: req.originalUrl,
-      });
-      // Check to make sure we weren't already in the middle of sending a
-      // response before replying with an error 500
-      if (res && !res.headersSent) {
-        res.status?.((err as any).status ?? 500)?.send?.('Error proxying workspace request');
-      }
-    },
-  };
-  const workspaceProxy = createProxyMiddleware((pathname) => {
-    return !!pathname.match('/pl/workspace/([0-9])+/container/');
-  }, workspaceProxyOptions);
   const workspaceAuthRouter = express.Router();
   workspaceAuthRouter.use([
     // We use a short-lived cookie to cache a successful
@@ -416,7 +309,7 @@ export async function initExpress(): Promise<Express> {
       workspaceProxySocketActivityMetrics.addSocket(req.socket);
       next();
     },
-    workspaceProxy,
+    makeWorkspaceProxyMiddleware(),
   ]);
 
   app.use((req, res, next) => {
@@ -582,10 +475,12 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
   app.use('/pl/news_items', (await import('./pages/newsItems/newsItems.js')).default);
   app.use('/pl/news_item', (await import('./pages/newsItem/newsItem.js')).default);
-  app.use(
-    '/pl/request_course',
+  app.use('/pl/request_course', [
+    // Users can post data to this page and then view it, so we'll block access to prevent
+    // students from using to infiltrate or exfiltrate exam information.
+    (await import('./middlewares/forbidAccessInExamMode.js')).default,
     (await import('./pages/instructorRequestCourse/instructorRequestCourse.js')).default,
-  );
+  ]);
 
   if (isEnterprise()) {
     app.use('/pl/terms', (await import('./ee/pages/terms/terms.js')).default);
@@ -606,6 +501,12 @@ export async function initExpress(): Promise<Express> {
       (await import('./pages/navbarCourseInstanceSwitcher/navbarCourseInstanceSwitcher.js'))
         .default,
     ],
+  );
+
+  // Handles updates to the side nav expanded state.
+  app.use(
+    '/pl/side_nav/settings',
+    (await import('./pages/sideNavSettings/sideNavSettings.js')).default,
   );
 
   app.use('/pl/workspace/:workspace_id(\\d+)', [
@@ -702,6 +603,7 @@ export async function initExpress(): Promise<Express> {
 
   // All course instance instructor pages require the authn user to have permissions
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor', [
+    (await import('./middlewares/forbidAccessInExamMode.js')).default,
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
     (await import('./middlewares/selectOpenIssueCount.js')).default,
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
@@ -743,6 +645,7 @@ export async function initExpress(): Promise<Express> {
 
   // all pages under /pl/course require authorization
   app.use('/pl/course/:course_id(\\d+)', [
+    (await import('./middlewares/forbidAccessInExamMode.js')).default,
     (await import('./middlewares/authzCourseOrInstance.js')).default, // set res.locals.course
     (await import('./middlewares/selectOpenIssueCount.js')).default,
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
@@ -1019,6 +922,10 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/assessment_question/:assessment_question_id(\\d+)/ai_grading_runs',
+    (await import('./ee/pages/instructorAiGradingRuns/instructorAiGradingRuns.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/instance_question/:instance_question_id(\\d+)',
     [
       function (req: Request, res: Response, next: NextFunction) {
@@ -1070,7 +977,7 @@ export async function initExpress(): Promise<Express> {
 
   // Submission files
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/submission/:submission_id(\\d+)/file',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     [
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
       (await import('./pages/submissionFile/submissionFile.js')).default(),
@@ -1092,6 +999,7 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
+      (await import('./middlewares/selectAssessments.js')).default,
       (await import('./pages/instructorAssessmentInstance/instructorAssessmentInstance.js'))
         .default,
     ],
@@ -1382,7 +1290,7 @@ export async function initExpress(): Promise<Express> {
 
   // Submission files
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/submission/:submission_id(\\d+)/file',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     [
       (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
       (await import('./pages/submissionFile/submissionFile.js')).default(),
@@ -1528,7 +1436,7 @@ export async function initExpress(): Promise<Express> {
 
   // Submission files
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/submission/:submission_id(\\d+)/file',
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     (await import('./pages/submissionFile/submissionFile.js')).default(),
   );
 
@@ -1758,7 +1666,7 @@ export async function initExpress(): Promise<Express> {
 
   // Submission files
   app.use(
-    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:submission_id(\\d+)/file',
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     [
       (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
       (await import('./pages/submissionFile/submissionFile.js')).default(),
@@ -1788,6 +1696,9 @@ export async function initExpress(): Promise<Express> {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   // Public course pages ///////////////////////////////////////////////
+
+  // Prevent access to public pages when in exam mode.
+  app.use('/pl/public', (await import('./middlewares/forbidAccessInExamMode.js')).default);
 
   app.use('/pl/public/course/:course_id(\\d+)', [
     function (req: Request, res: Response, next: NextFunction) {
@@ -1829,6 +1740,13 @@ export async function initExpress(): Promise<Express> {
       coreElements: false,
     }),
   );
+  app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
+    res.redirect(`${req.params[0]}/questions`);
+  });
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
+    (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
+  );
 
   // Client files for questions
   app.use(
@@ -1848,7 +1766,7 @@ export async function initExpress(): Promise<Express> {
 
   // Submission files
   app.use(
-    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:submission_id(\\d+)/file',
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     [(await import('./pages/submissionFile/submissionFile.js')).default({ publicEndpoint: true })],
   );
 
@@ -1869,6 +1787,18 @@ export async function initExpress(): Promise<Express> {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
+
+  app.use(
+    '/pl/administrator',
+    asyncHandler(async (req, res, next) => {
+      const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
+        user_id: res.locals.authn_user.user_id,
+      });
+      res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+      next();
+    }),
+  );
+
   app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
@@ -1966,7 +1896,9 @@ export async function initExpress(): Promise<Express> {
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-    res.locals.error_id = _.times(12, () => _.sample(chars)).join('');
+    res.locals.error_id = Array.from({ length: 12 })
+      .map(() => chars[Math.floor(Math.random() * chars.length)])
+      .join('');
 
     err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
 
@@ -2157,38 +2089,11 @@ if (esMain(import.meta) && config.startServer) {
         dsn: config.sentryDsn,
         environment: config.sentryEnvironment,
 
-        // Sentry (specifically `import-in-the-middle`, which Sentry uses)
-        // is known to cause issues with loading `openai` as ESM. Their
-        // recommended workaround it to exclude the module from their hooks.
-        // See related issues:
-        // https://github.com/openai/openai-node/issues/903
-        // https://github.com/getsentry/sentry-javascript/issues/12414
-        registerEsmLoaderHooks: {
-          exclude: [/openai/],
-        },
-
         // We have our own OpenTelemetry setup, so ensure Sentry doesn't
         // try to set that up for itself, but only if OpenTelemetry is
         // enabled. Otherwise, allow Sentry to install its own stuff so
         // that request isolation works correctly.
         skipOpenTelemetrySetup: config.openTelemetryEnabled,
-
-        beforeSend: (event) => {
-          // This will be necessary until we can consume the following change:
-          // https://github.com/chimurai/http-proxy-middleware/pull/823
-          //
-          // The following error message should match the error that's thrown
-          // from the `router` function in our `http-proxy-middleware` config.
-          if (
-            event.exception?.values?.some(
-              (value) => value.type === 'Error' && value.value === 'Workspace is not running',
-            )
-          ) {
-            return null;
-          }
-
-          return event;
-        },
       });
     }
 
@@ -2485,7 +2390,21 @@ if (esMain(import.meta) && config.startServer) {
 
     await workspace.init();
     serverJobs.init();
-    nodeMetrics.init();
+
+    if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
+      nodeMetrics.start({
+        awsConfig: makeAwsClientConfig(),
+        intervalSeconds: config.nodeMetricsIntervalSec,
+        dimensions: [
+          { Name: 'Server Group', Value: config.groupName },
+          { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },
+        ],
+        onError(err) {
+          logger.error('Error reporting Node metrics', err);
+          Sentry.captureException(err);
+        },
+      });
+    }
 
     // These should be the last things to start before we actually start taking
     // requests, as they may actually end up executing course code.

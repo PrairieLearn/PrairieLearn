@@ -7,13 +7,13 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { IdSchema, AiQuestionGenerationPromptSchema } from '../../../lib/db-types.js';
+import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
 
 import {
-  InstructorAIGenerateDrafts,
   DraftMetadataWithQidSchema,
   GenerationFailure,
+  InstructorAIGenerateDrafts,
 } from './instructorAiGenerateDrafts.html.js';
 
 const router = express.Router();

@@ -54,14 +54,13 @@ export function AssessmentQuestion({
         from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
       <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
       <script src="${nodeModulesAssetPath(
-          'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-        )}"></script>
-      <script src="${nodeModulesAssetPath(
           'bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js',
         )}"></script>
       <script src="${nodeModulesAssetPath(
           'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js',
         )}"></script>
+
+      ${compiledScriptTag('bootstrap-table-sticky-header.js')}
       ${compiledScriptTag('instructorAssessmentManualGradingAssessmentQuestionClient.ts')}
       ${compiledStylesheetTag('instructorAssessmentManualGradingAssessmentQuestion.css')}
       ${EncodedData<InstanceQuestionTableData>(
@@ -75,6 +74,7 @@ export function AssessmentQuestion({
           aiGradingEnabled,
           courseStaff,
           csrfToken: __csrf_token,
+          aiGradingUrl: `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessment_question.id}/ai_grading_runs`,
         },
         'instance-question-table-data',
       )}
@@ -100,14 +100,6 @@ export function AssessmentQuestion({
         <i class="fas fa-arrow-left"></i>
         Back to ${assessment_set.name} ${assessment.number} Overview
       </a>
-      ${aiGradingEnabled
-        ? html`
-            <form name="start-ai-grading" method="POST" id="ai-grading">
-              <input type="hidden" name="__action" value="ai_grade_assessment" />
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-            </form>
-          `
-        : ''}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}</h1>
@@ -129,7 +121,7 @@ function GradingConflictModal() {
     title: 'Grading conflict detected',
     body: html`<p>Another grader has already graded this submission.</p>`,
     footer: html`
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Dismiss</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Dismiss</button>
       <a class="btn btn-primary conflict-details-link" href="/">See details</a>
     `,
   });

@@ -340,10 +340,9 @@ function addAlert(placeholder, msg, classes = ['alert-danger']) {
   alert.setAttribute('role', 'alert');
   alert.innerText = msg;
   const closeBtn = document.createElement('button');
-  closeBtn.classList.add('close');
-  closeBtn.dataset.dismiss = 'alert';
+  closeBtn.classList.add('btn-close');
+  closeBtn.dataset.bsDismiss = 'alert';
   closeBtn.setAttribute('aria-label', 'Close');
-  closeBtn.innerHTML = '<span aria-hidden="true">&times;</span>';
   alert.appendChild(closeBtn);
   placeholder.appendChild(alert);
 }

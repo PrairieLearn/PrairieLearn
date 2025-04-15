@@ -140,27 +140,36 @@ function LtiCredentialsCard({
                   <tr>
                     <td>
                       <code>${config.ltiRedirectUrl}</code>
-                      <i
-                        class="far fa-copy"
-                        title="Copy to clipboard"
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-ghost"
+                        aria-label="Copy redirect URL to clipboard"
                         onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
-                      ></i>
+                      >
+                        <i class="far fa-copy"></i>
+                      </button>
                     </td>
                     <td>
                       <code>${tc.consumer_key}</code>
-                      <i
-                        class="far fa-copy"
-                        title="Copy to clipboard"
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-ghost"
+                        aria-label="Copy consumer key to clipboard"
                         onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
-                      ></i>
+                      >
+                        <i class="far fa-copy"></i>
+                      </button>
                     </td>
                     <td>
                       <code>${tc.secret}</code>
-                      <i
-                        class="far fa-copy"
-                        title="Copy to clipboard"
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-ghost"
+                        aria-label="Copy shared secret to clipboard"
                         onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
-                      ></i>
+                      >
+                        <i class="far fa-copy"></i>
+                      </button>
                     </td>
                     <td>${tc.created}</td>
                     <td>
@@ -169,12 +178,12 @@ function LtiCredentialsCard({
                         <button
                           type="button"
                           class="btn btn-sm btn-danger"
-                          data-toggle="popover"
-                          data-container="body"
-                          data-html="true"
-                          data-placement="auto"
-                          title="Confirm delete"
-                          data-content="${escapeHtml(html`
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Confirm delete"
+                          data-bs-content="${escapeHtml(html`
                             <form method="post">
                               <input type="hidden" name="__action" value="lti_del_cred" />
                               <input type="hidden" name="__csrf_token" value="${csrfToken}" />
@@ -264,7 +273,7 @@ function LtiLinkTargetsCard({
                         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
                         <input type="hidden" name="lti_link_id" value="${link.id}" />
                         <select
-                          class="custom-select"
+                          class="form-select"
                           onChange="this.form.submit();"
                           name="newAssessment"
                         >

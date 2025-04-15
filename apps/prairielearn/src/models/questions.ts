@@ -3,10 +3,10 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  TopicSchema,
-  SharingSetSchema,
   AssessmentsFormatForQuestionSchema,
+  SharingSetSchema,
   TagSchema,
+  TopicSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
@@ -22,7 +22,7 @@ const QuestionsPageDataSchema = z.object({
   open_issue_count: z.number().default(0),
   topic: TopicSchema,
   tags: z.array(TagSchema).nullable(),
-  shared_publicly: z.boolean(),
+  share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),
   sharing_sets: z.array(SharingSetSchema).nullable().optional(),
   assessments: AssessmentsFormatForQuestionSchema.nullable().optional(),

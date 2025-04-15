@@ -24,7 +24,7 @@ env:
   COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
-  build-workspace-images:
+  test-prairielearn:
     runs-on: ubuntu-latest
 
     env:
@@ -40,200 +40,8 @@ jobs:
           # what images need to be built.
           fetch-depth: 0
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
-      - name: Login to DockerHub
-        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      ######################################################################################################
-      # prairielearn/workspace-desktop
-      - name: Check whether workspaces/desktop was modified
-        run: tools/check_path_modified.sh workspaces/desktop workspaces_desktop_modified
-      - name: Build and push prairielearn/workspace-desktop
-        if: ${{ env.workspaces_desktop_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/desktop
-          platforms: linux/amd64,linux/arm64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          no-cache: true
-          tags: prairielearn/workspace-desktop:${{ env.COMMIT_SHA }}
-
-      ######################################################################################################
-      # prairielearn/workspace-jupyterlab
-      - name: Check whether workspaces/jupyterlab was modified
-        run: tools/check_path_modified.sh workspaces/jupyterlab workspaces_jupyterlab_modified
-      - name: Build and push prairielearn/workspace-jupyterlab
-        if: ${{ env.workspaces_jupyterlab_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/jupyterlab
-          platforms: linux/amd64,linux/arm64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          no-cache: true
-          tags: prairielearn/workspace-jupyterlab:${{ env.COMMIT_SHA }}
-
-      ######################################################################################################
-      # prairielearn/workspace-jupyterlab-python
-      - name: Check whether workspaces/jupyterlab-python was modified
-        run: tools/check_path_modified.sh workspaces/jupyterlab-python workspaces_jupyterlab_python_modified
-      - name: Build and push prairielearn/workspace-jupyterlab-python
-        if: ${{ env.workspaces_jupyterlab_python_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/jupyterlab-python
-          platforms: linux/amd64,linux/arm64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          no-cache: true
-          tags: prairielearn/workspace-jupyterlab-python:${{ env.COMMIT_SHA }}
-
-      ######################################################################################################
-      # prairielearn/workspace-rstudio
-      - name: Check whether workspaces/rstudio was modified
-        run: tools/check_path_modified.sh workspaces/rstudio workspaces_rstudio_modified
-      - name: Build and push prairielearn/workspace-rstudio
-        if: ${{ env.workspaces_rstudio_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/rstudio
-          platforms: linux/amd64,linux/arm64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          no-cache: true
-          tags: prairielearn/workspace-rstudio:${{ env.COMMIT_SHA }}
-
-      ######################################################################################################
-      # prairielearn/workspace-xtermjs
-      - name: Check whether workspaces/xtermjs was modified
-        run: tools/check_path_modified.sh workspaces/xtermjs workspaces_xtermjs_modified
-      - name: Build and push prairielearn/workspace-xtermjs
-        if: ${{ env.workspaces_xtermjs_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/xtermjs
-          platforms: linux/amd64,linux/arm64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          no-cache: true
-          tags: prairielearn/workspace-xtermjs:${{ env.COMMIT_SHA }}
-
-      ######################################################################################################
-      # prairielearn/workspace-vscode-python
-      - name: Check whether workspaces/vscode-python was modified
-        run: tools/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
-      - name: Build and push prairielearn/workspace-vscode-python
-        if: ${{ env.workspaces_vscode_python_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/vscode-python
-          platforms: linux/amd64,linux/arm64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          no-cache: true
-          tags: prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}
-
-  build-grader-images:
-    runs-on: ubuntu-latest
-
-    env:
-      # Secrets aren't accessible for PRs coming from forks, and we also can't
-      # check secrets in an `if` conditional, so we check for the presence of
-      # the secret here and use this value in conditionals below.
-      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # We need the whole history so we can diff against `master` to determine
-          # what images need to be built.
-          fetch-depth: 0
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
-      - name: Login to DockerHub
-        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      ######################################################################################################
-      # grader-c
-      - name: Check whether graders/c was modified
-        run: tools/check_path_modified.sh graders/c graders_c_modified
-      - name: Build and push prairielearn/grader-c
-        if: ${{ env.graders_c_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: graders/c
-          platforms: linux/amd64,linux/arm64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          no-cache: true
-          tags: prairielearn/grader-c:${{ env.COMMIT_SHA }}
-
-      ######################################################################################################
-      # grader-java
-      - name: Check whether graders/java was modified
-        run: tools/check_path_modified.sh graders/java graders_java_modified
-      - name: Build and push prairielearn/grader-java
-        if: ${{ env.graders_java_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: graders/java
-          platforms: linux/amd64,linux/arm64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          no-cache: true
-          tags: prairielearn/grader-java:${{ env.COMMIT_SHA }}
-
-      ######################################################################################################
-      # grader-python
-      - name: Check whether graders/python was modified
-        run: tools/check_path_modified.sh graders/python graders_python_modified
-      - name: Build and push prairielearn/grader-python
-        if: ${{ env.graders_python_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: graders/python
-          platforms: linux/amd64,linux/arm64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          no-cache: true
-          tags: prairielearn/grader-python:${{ env.COMMIT_SHA }}
-
-      ######################################################################################################
-      # grader-r
-      - name: Check whether graders/r was modified
-        run: tools/check_path_modified.sh graders/r graders_r_modified
-      - name: Build and push prairielearn/grader-r
-        if: ${{ env.graders_r_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: graders/r
-          platforms: linux/amd64,linux/arm64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          no-cache: true
-          tags: prairielearn/grader-r:${{ env.COMMIT_SHA }}
-
-  build-core-images:
-    runs-on: ubuntu-latest
-
-    env:
-      # Secrets aren't accessible for PRs coming from forks, and we also can't
-      # check secrets in an `if` conditional, so we check for the presence of
-      # the secret here and use this value in conditionals below.
-      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # We need the whole history so we can diff against `master` to determine
-          # what images need to be built.
-          fetch-depth: 0
-
+      # We won't try to push in this job, but we still authenticate if the
+      # secrets are available so that we don't hit image pull rate limits.
       - name: Login to DockerHub
         if: ${{ env.CAN_PUSH_IMAGE == 'true'}}
         uses: docker/login-action@v3
@@ -242,14 +50,13 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Check whether images/plbase was modified
-        run: tools/check_path_modified.sh images/plbase images_plbase_modified
+        run: scripts/check_path_modified.sh images/plbase images_plbase_modified
       - name: Build and push prairielearn/plbase
         if: ${{ env.images_plbase_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: images/plbase
           platforms: linux/amd64
-          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           tags: prairielearn/plbase:${{ env.COMMIT_SHA }}
 
@@ -274,17 +81,6 @@ jobs:
       - name: Tag executor image as latest
         run: docker tag prairielearn/executor:${{ env.COMMIT_SHA }} prairielearn/executor:latest
 
-      - name: Push prairielearn image to Docker registry
-        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        run: docker push prairielearn/prairielearn:${{ env.COMMIT_SHA }}
-      - name: Push executor image to Docker registry
-        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        run: docker push prairielearn/executor:${{ env.COMMIT_SHA }}
-      # Only push the `:latest` image if we're on the `master` branch.
-      - name: Push latest executor image to Docker registry
-        if: ${{ env.CAN_PUSH_IMAGE == 'true' && github.ref == 'refs/heads/master' }}
-        run: docker push prairielearn/executor:latest
-
       # We run the following steps in this job instead of separately to avoid the
       # overhead of pulling the image another time.
 
@@ -299,33 +95,49 @@ jobs:
         # We put the Postgres data on a tmpfs volume, which should be much faster.
         run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs --tmpfs=/var/postgres -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
       - name: Run the JavaScript tests
-        run: docker exec test_container /PrairieLearn/docker/test_js.sh
+        run: docker exec test_container sh -c "make -s -C /PrairieLearn test-js"
         # The JS tests hang relatively often when someone makes a mistake in a PR,
         # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
         # spinning until it eventually times out. This shorter timeout helps
         # ensure that the tests fail more quickly so that people can fix them.
         timeout-minutes: 30
       - name: Run the Python tests
-        run: docker exec test_container /PrairieLearn/docker/test_python.sh
-        timeout-minutes: 1
+        run: docker exec test_container sh -c "make -s -C /PrairieLearn test-python"
+        timeout-minutes: 5
 
       # Since tests run in the context of the container, we need to copy all
       # the coverage reports out of the container and into the host filesystem.
       - name: Copy coverage reports to the host
-        run: ./tools/copy_docker_coverage_reports.sh test_container
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5.3.1
+        run: ./scripts/copy_docker_coverage_reports.sh test_container
+      - name: Upload JavaScript coverage report to Codecov
+        uses: codecov/codecov-action@v5.4.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          exclude: apps/prairielearn/python
+          flags: javascript
+
+      - name: Upload Python coverage report to Codecov
+        uses: codecov/codecov-action@v5.4.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: apps/prairielearn/python
+          flags: python
 
   native-checks:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
+        with:
+          # We need accurate timestamps to avoid prettier cache invalidation.
+          # We'll use `git restore-mtime`, which requires the full history.
+          fetch-depth: 0
 
       - name: Install OS packages
-        run: sudo apt-get install -y graphviz graphviz-dev
+        uses: awalsh128/cache-apt-pkgs-action@v1.5.0
+        with:
+          packages: graphviz libgraphviz-dev git-restore-mtime
+          version: 1.0
+          execute_install_scripts: true
 
       - name: Install additional dependencies
         run: |-
@@ -337,10 +149,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: pip
-          cache-dependency-path: images/plbase/python-requirements.txt
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'images/plbase/python-requirements.txt'
       - name: Install Python dependencies
-        run: pip install -r images/plbase/python-requirements.txt
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv pip install -r images/plbase/python-requirements.txt
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -355,21 +172,31 @@ jobs:
       - name: Set up Turborepo cache
         uses: actions/cache@v4
         with:
-          path: ./node_modules/.cache/turbo
+          path: .turbo/cache
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-turbo-
 
       - name: Build all code
         run: make build
+      - name: Set up Prettier and ESLint cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache/prettier/.prettier-cache
+            .eslintcache
+          key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
+
       - name: Run the JavaScript linter
-        run: make lint-js
-      - name: Run the HTML linter
-        run: make lint-html
+        # Use git-restore-mtime due to a bug in prettier's content cache (https://github.com/prettier/prettier/issues/17278)
+        run: |
+          git restore-mtime
+          make lint-js-cached
       - name: Run the links linter
         run: make lint-links
       - name: Run the d2 diagram linter
         run: make lint-d2
+
       - name: Run the Python typechecker
         run: make typecheck-python
       - name: Run the Python linter
@@ -381,69 +208,27 @@ jobs:
         run: make lint-docker
       - name: Run the Shellcheck linter
         run: make lint-shell
-      - name: Check for markdown linting errors
+      - name: Run the Markdown linter
         run: make lint-markdown
       - name: Run the GitHub Actions linter
         run: make lint-actions
       - name: Check for warnings in documentation
         run: make build-docs
+      # Ran after the docs build, so we can lint the generated HTML.
+      - name: Run the HTML linter
+        run: make lint-html
       - name: Check dependency structure
         run: make check-dependencies
 
       # The rest of our code is typechecked in the `build` Makefile target, which
       # is run above.
-      - name: Run the TypeScript typechecker for tools
-        run: make typecheck-tools
+      - name: Run the TypeScript typechecker for contrib
+        run: make typecheck-contrib
+      - name: Run the TypeScript typechecker for scripts
+        run: make typecheck-scripts
 
       # This step runs at the end, since it is common for it to fail in
       # dependabot PRs, but we still want all other tests above to run
       # in those cases.
       - name: Check for duplicate Node dependencies
         run: yarn dedupe --check
-
-  report-image-sizes:
-    runs-on: ubuntu-latest
-    needs:
-      - build-workspace-images
-      - build-grader-images
-      - build-core-images
-    if: ${{ always() }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Preinstall node-gyp headers
-        run: yarn dlx node-gyp install
-
-      - name: Install Node dependencies
-        run: yarn workspaces focus @prairielearn/actions-report-image-sizes
-
-      - name: Build
-        run: yarn build
-        working-directory: packages/actions-report-image-sizes
-
-      - name: Report image sizes
-        uses: ./packages/actions-report-image-sizes
-        with:
-          title: All images
-          sha: ${{ env.COMMIT_SHA }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          images: |
-            prairielearn/workspace-desktop
-            prairielearn/workspace-jupyterlab
-            prairielearn/workspace-jupyterlab-python
-            prairielearn/workspace-rstudio
-            prairielearn/workspace-xtermjs
-            prairielearn/workspace-vscode-python
-            prairielearn/grader-c
-            prairielearn/grader-java
-            prairielearn/grader-python
-            prairielearn/grader-r
-            prairielearn/plbase
-            prairielearn/prairielearn
-            prairielearn/executor

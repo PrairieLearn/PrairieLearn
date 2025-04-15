@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
-import { html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.html.js';
 import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
-import { formatTimezone, type Timezone } from '../../../lib/timezones.js';
+import { type Timezone, formatTimezone } from '../../../lib/timezones.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
 
 export const InstitutionStatisticsSchema = z.object({
@@ -67,8 +67,8 @@ export function AdministratorInstitutionGeneral({
       </div>
       <h2 class="h4">General Information</h2>
       <form method="POST" class="mb-3">
-        <div class="form-group">
-          <label for="short_name">Short name</label>
+        <div class="mb-3">
+          <label class="form-label" for="short_name">Short name</label>
           <input
             type="text"
             class="form-control"
@@ -80,8 +80,8 @@ export function AdministratorInstitutionGeneral({
             Use an abbreviation or short name. E.g., "UIUC" or "Berkeley".
           </small>
         </div>
-        <div class="form-group">
-          <label for="long_name">Long name</label>
+        <div class="mb-3">
+          <label class="form-label" for="long_name">Long name</label>
           <input
             type="text"
             class="form-control"
@@ -93,10 +93,10 @@ export function AdministratorInstitutionGeneral({
             Use the full name of the university. E.g., "University of Illinois Urbana-Champaign".
           </small>
         </div>
-        <div class="form-group">
-          <label for="display_timezone">Timezone</label>
+        <div class="mb-3">
+          <label class="form-label" for="display_timezone">Timezone</label>
           <select
-            class="custom-select"
+            class="form-select"
             id="display_timezone"
             name="display_timezone"
             value="${institution.display_timezone}"
@@ -120,8 +120,8 @@ export function AdministratorInstitutionGeneral({
             "America/Chicago".
           </small>
         </div>
-        <div class="form-group">
-          <label for="uid_regexp">UID regexp</label>
+        <div class="mb-3">
+          <label class="form-label" for="uid_regexp">UID regexp</label>
           <input
             type="text"
             class="form-control"
@@ -134,8 +134,10 @@ export function AdministratorInstitutionGeneral({
           </small>
         </div>
         <h2 class="h4">Limits</h2>
-        <div class="form-group">
-          <label for="course_instance_enrollment_limit">Course instance enrollment limit</label>
+        <div class="mb-3">
+          <label class="form-label" for="course_instance_enrollment_limit">
+            Course instance enrollment limit
+          </label>
           <input
             type="number"
             class="form-control"
@@ -150,8 +152,8 @@ export function AdministratorInstitutionGeneral({
             be overridden on individual courses and course instances.
           </small>
         </div>
-        <div class="form-group">
-          <label for="yearly_enrollment_limit">Yearly enrollment limit</label>
+        <div class="mb-3">
+          <label class="form-label" for="yearly_enrollment_limit">Yearly enrollment limit</label>
           <input
             type="number"
             class="form-control"

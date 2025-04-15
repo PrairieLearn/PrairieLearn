@@ -1,6 +1,5 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -154,7 +153,7 @@ describe('Instructor assessment editing', function () {
       locals.pageData.forEach((obj) => assert.isObject(obj));
     });
     it('should contain the assessment instance', function () {
-      elemList = _.filter(locals.pageData, (row) => row.uid === 'dev@example.com');
+      elemList = locals.pageData.filter((row) => row.uid === 'dev@example.com');
       assert.lengthOf(elemList, 1);
       locals.instructorAssessmentInstanceUrl =
         locals.instructorBaseUrl + '/assessment_instance/' + elemList[0].assessment_instance_id;
@@ -179,20 +178,20 @@ describe('Instructor assessment editing', function () {
       );
       assert.lengthOf(elemList, 1);
     });
-    it('should have data-content', function () {
-      assert.isString(elemList[0].attribs['data-content']);
+    it('should have data-bs-content', function () {
+      assert.isString(elemList[0].attribs['data-bs-content']);
     });
-    it('data-content should parse', function () {
-      locals.data$ = cheerio.load(elemList[0].attribs['data-content']);
+    it('data-bs-content should parse', function () {
+      locals.data$ = cheerio.load(elemList[0].attribs['data-bs-content']);
     });
-    it('data-content should have a CSRF token', function () {
+    it('data-bs-content should have a CSRF token', function () {
       elemList = locals.data$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('data-content should have an __action', function () {
+    it('data-bs-content should have an __action', function () {
       elemList = locals.data$('form input[name="__action"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -200,13 +199,13 @@ describe('Instructor assessment editing', function () {
       assert.isString(locals.__action);
       assert.equal(locals.__action, 'edit_question_points');
     });
-    it('data-content should have an instance_question_id', function () {
+    it('data-bs-content should have an instance_question_id', function () {
       elemList = locals.data$('form input[name="instance_question_id"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.instance_question_id = Number.parseInt(elemList[0].attribs.value);
     });
-    it('data-content should have a points input', function () {
+    it('data-bs-content should have a points input', function () {
       elemList = locals.data$('form input[name="points"]');
       assert.lengthOf(elemList, 1);
     });
@@ -245,20 +244,20 @@ describe('Instructor assessment editing', function () {
       );
       assert.lengthOf(elemList, 1);
     });
-    it('should have data-content', function () {
-      assert.isString(elemList[0].attribs['data-content']);
+    it('should have data-bs-content', function () {
+      assert.isString(elemList[0].attribs['data-bs-content']);
     });
-    it('data-content should parse', function () {
-      locals.data$ = cheerio.load(elemList[0].attribs['data-content']);
+    it('data-bs-content should parse', function () {
+      locals.data$ = cheerio.load(elemList[0].attribs['data-bs-content']);
     });
-    it('data-content should have a CSRF token', function () {
+    it('data-bs-content should have a CSRF token', function () {
       elemList = locals.data$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('data-content should have an __action', function () {
+    it('data-bs-content should have an __action', function () {
       elemList = locals.data$('form input[name="__action"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -266,13 +265,13 @@ describe('Instructor assessment editing', function () {
       assert.isString(locals.__action);
       assert.equal(locals.__action, 'edit_question_points');
     });
-    it('data-content should have an instance_question_id', function () {
+    it('data-bs-content should have an instance_question_id', function () {
       elemList = locals.data$('form input[name="instance_question_id"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.instance_question_id = Number.parseInt(elemList[0].attribs.value);
     });
-    it('data-content should have a score_perc input', function () {
+    it('data-bs-content should have a score_perc input', function () {
       elemList = locals.data$('form input[name="score_perc"]');
       assert.lengthOf(elemList, 1);
     });
@@ -309,20 +308,20 @@ describe('Instructor assessment editing', function () {
       elemList = locals.$('#editTotalPointsButton');
       assert.lengthOf(elemList, 1);
     });
-    it('should have data-content', function () {
-      assert.isString(elemList[0].attribs['data-content']);
+    it('should have data-bs-content', function () {
+      assert.isString(elemList[0].attribs['data-bs-content']);
     });
-    it('data-content should parse', function () {
-      locals.data$ = cheerio.load(elemList[0].attribs['data-content']);
+    it('data-bs-content should parse', function () {
+      locals.data$ = cheerio.load(elemList[0].attribs['data-bs-content']);
     });
-    it('data-content should have a CSRF token', function () {
+    it('data-bs-content should have a CSRF token', function () {
       elemList = locals.data$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('data-content should have an __action', function () {
+    it('data-bs-content should have an __action', function () {
       elemList = locals.data$('form input[name="__action"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -330,14 +329,14 @@ describe('Instructor assessment editing', function () {
       assert.isString(locals.__action);
       assert.equal(locals.__action, 'edit_total_points');
     });
-    it('data-content should have the correct assessment_instance_id', function () {
+    it('data-bs-content should have the correct assessment_instance_id', function () {
       elemList = locals.data$('form input[name="assessment_instance_id"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       const assessment_instance_id = Number.parseInt(elemList[0].attribs.value);
       assert.equal(assessment_instance_id, 1);
     });
-    it('data-content should have a points input', function () {
+    it('data-bs-content should have a points input', function () {
       elemList = locals.data$('form input[name="points"]');
       assert.lengthOf(elemList, 1);
     });
@@ -374,20 +373,20 @@ describe('Instructor assessment editing', function () {
       elemList = locals.$('#editTotalScorePercButton');
       assert.lengthOf(elemList, 1);
     });
-    it('should have data-content', function () {
-      assert.isString(elemList[0].attribs['data-content']);
+    it('should have data-bs-content', function () {
+      assert.isString(elemList[0].attribs['data-bs-content']);
     });
-    it('data-content should parse', function () {
-      locals.data$ = cheerio.load(elemList[0].attribs['data-content']);
+    it('data-bs-content should parse', function () {
+      locals.data$ = cheerio.load(elemList[0].attribs['data-bs-content']);
     });
-    it('data-content should have a CSRF token', function () {
+    it('data-bs-content should have a CSRF token', function () {
       elemList = locals.data$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('data-content should have an __action', function () {
+    it('data-bs-content should have an __action', function () {
       elemList = locals.data$('form input[name="__action"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -395,14 +394,14 @@ describe('Instructor assessment editing', function () {
       assert.isString(locals.__action);
       assert.equal(locals.__action, 'edit_total_score_perc');
     });
-    it('data-content should have the correct assessment_instance_id', function () {
+    it('data-bs-content should have the correct assessment_instance_id', function () {
       elemList = locals.data$('form input[name="assessment_instance_id"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       const assessment_instance_id = Number.parseInt(elemList[0].attribs.value);
       assert.equal(assessment_instance_id, 1);
     });
-    it('data-content should have a score_perc input', function () {
+    it('data-bs-content should have a score_perc input', function () {
       elemList = locals.data$('form input[name="score_perc"]');
       assert.lengthOf(elemList, 1);
     });
@@ -460,10 +459,7 @@ describe('Instructor assessment editing', function () {
       locals.gradebookData.forEach((obj) => assert.isObject(obj));
     });
     it('should contain a row for the dev user', function () {
-      locals.gradebookDataRow = _.filter(
-        locals.gradebookData,
-        (row) => row.uid === 'dev@example.com',
-      );
+      locals.gradebookDataRow = locals.gradebookData.filter((row) => row.uid === 'dev@example.com');
       assert.lengthOf(locals.gradebookDataRow, 1);
     });
     it('should contain the correct score and assessment instance ID in the dev user row', function () {
