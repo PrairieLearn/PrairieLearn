@@ -18,23 +18,28 @@ from prairielearn.question_utils import QuestionData
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_dd(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_sf(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
+def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
     return is_correct_ndarray2d_ra(*args, **kwargs)
 
 
 def is_correct_ndarray2d_dd(
     a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a certain number of decimal digits after the decimal place.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -50,6 +55,11 @@ def is_correct_ndarray2d_dd(
 def is_correct_ndarray2d_sf(
     a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a certain number of significant figures.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -68,6 +78,11 @@ def is_correct_ndarray2d_ra(
     rtol: float = 1e-5,
     atol: float = 1e-8,
 ) -> bool:
+    """Check if a submitted 2D numpy array is correct within a relative and absolute tolerance.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     # Check if each element is correct
     return np.allclose(a_sub, a_tru, rtol, atol)
 
@@ -75,12 +90,20 @@ def is_correct_ndarray2d_ra(
 def is_correct_scalar_ra(
     a_sub: ArrayLike, a_tru: ArrayLike, rtol: float = 1e-5, atol: float = 1e-8
 ) -> bool:
-    """Compare a_sub and a_tru using relative tolerance rtol and absolute tolerance atol."""
+    """Compare a_sub and a_tru using relative tolerance rtol and absolute tolerance atol.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     return bool(np.allclose(a_sub, a_tru, rtol, atol))
 
 
 def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
-    """Compare a_sub and a_tru using digits many digits after the decimal place."""
+    """Compare a_sub and a_tru using digits many digits after the decimal place.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
         real_comp = is_correct_scalar_dd(a_sub.real, a_tru.real, digits=digits)  # type: ignore
@@ -101,7 +124,11 @@ def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
 
 
 def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
-    """Compare a_sub and a_tru using digits many significant figures."""
+    """Compare a_sub and a_tru using digits many significant figures.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
         real_comp = is_correct_scalar_sf(a_sub.real, a_tru.real, digits=digits)  # type: ignore
@@ -185,6 +212,9 @@ def determine_score_params(
     score for a particular question. For elements following PrairieLearn
     conventions, the return value can be used as a key/value pair in the
     dictionary passed to an element's Mustache template to display a score badge.
+
+    Returns:
+        A tuple containing the key and value for the score badge.
     """
     if score >= 1:
         return ("correct", True)

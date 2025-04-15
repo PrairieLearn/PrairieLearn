@@ -43,7 +43,6 @@ ignore = [
   "D205",    # missing-blank-line-after-summary (we use a multi-line description instead of summaries sometimes)
   "D400",    # missing-trailing-period
   "D415",    # missing-terminal-punctuation
-  "DOC201",  # docstring-missing-returns
   "DOC402",  # docstring-missing-yields
   "DOC501",  # docstring-missing-exception
   "FURB101", # read-whole-file
@@ -78,11 +77,8 @@ ignore = [
   "TRY003",  # raise-vanilla-args (long messages in raise statements)
 
   # These rules need to be enabled
-  "D100", # undocumented-public-module
   "D101", # undocumented-public-class
   "D102", # undocumented-public-method
-  "D103", # undocumented-public-function
-  "D104", # undocumented-public-package
   "D107", # undocumented-public-init
 ]
 
@@ -110,6 +106,7 @@ convention = "google"
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
 "apps/prairielearn/elements/**/*.py" = [
+  "D100", # TODO: undocumented-public-module
   # Ignore uppercase function parameters (e.g. G for a graph)
   "N803",
   # Allow boolean trap pattern in method signatures
@@ -120,6 +117,7 @@ convention = "google"
   "ARG",
   # ignore docstring linting on functions (has no public API)
   "D103",
+  "DOC201",
 ]
 "apps/prairielearn/python/**/*.py" = ["N803"]
 # Do not require self in method params
@@ -134,33 +132,31 @@ convention = "google"
   "C419",
   "PYI061",
   "RUF036",
+  # We are only strict for our own code
+  "DOC201",
 ]
 
 # Directories we don't want strict annotation linting or docstring linting on
 # For example, code with no public API, elements with known issues, or course content.
-"apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D"]
-"apps/prairielearn/python/zygote.py" = ["D"]
-"docs/hooks/*.py" = ["D"]
-"apps/prairielearn/src/tests/**/*.py" = ["D", "ANN"]
-"apps/prairielearn/python/prairielearn/to_precision.py" = ["D"]
-"contrib/api_download.py" = ["ANN", "D"]
-"contrib/assess-convert.py" = ["ANN", "D"]
-"contrib/generate_submissions.py" = ["ANN", "D"]
-"contrib/generate_text.py" = ["ANN", "D"]
-"contrib/generate_uuids.py" = ["ANN", "D"]
-"contrib/reassign_questions_to_subdirs.py" = ["ANN", "D"]
-"contrib/question_converters/lon-capa/**/*.py" = ["ANN", "D"]
-"contrib/question_converters/randexam/**/*.py" = ["ANN", "D"]
-"contrib/question_converters/smart-physics/**/*.py" = ["ANN", "D"]
-"testCourse/**/*.py" = ["ANN", "D"]
-"exampleCourse/**/*.py" = ["ANN", "D"]
+"apps/prairielearn/python/zygote.py" = ["D100", "D103", "DOC201"]
+"apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D100", "D103", "DOC201"]
+"docs/**/*.py" = ["D100", "DOC201"]
+"apps/prairielearn/src/tests/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
+"contrib/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
+"scripts/**/*.py" = ["D100", "DOC201"]
+"testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
+"exampleCourse/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-threejs/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
-"apps/prairielearn/python/test/**/*.py" = ["D", "ANN"]
+"apps/prairielearn/python/test/**/*.py" = ["ANN", "D100", "D103"]
 # Issues rebuilding workspace
 "workspaces/jupyterlab-python/jupyter_server_config.py" = ["PLW1508"]
+
+[tool.ruff.lint.pydoclint]
+# Skip docstrings which fit on a single line.
+ignore-one-line-docstrings = true
 
 [tool.ruff.format]
 exclude = [
