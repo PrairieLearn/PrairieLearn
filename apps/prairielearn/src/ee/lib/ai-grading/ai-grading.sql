@@ -44,24 +44,6 @@ FROM
 WHERE
   emb.submission_id = $submission_id;
 
--- BLOCK create_embedding_for_submission
-INSERT INTO
-  submission_grading_context_embeddings (
-    embedding,
-    submission_id,
-    submission_text,
-    assessment_question_id
-  )
-VALUES
-  (
-    $embedding,
-    $submission_id,
-    $submission_text,
-    $assessment_question_id
-  )
-RETURNING
-  *;
-
 -- BLOCK select_closest_submission_info
 WITH
   latest_submissions AS (
@@ -116,15 +98,6 @@ WHERE
   AND ri.deleted_at IS NULL
 ORDER BY
   ri.number;
-
--- BLOCK select_rubric_grading_items
-SELECT
-  ri.*
-FROM
-  rubric_grading_items AS rgi
-  JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
-WHERE
-  rgi.rubric_grading_id = $manual_rubric_grading_id;
 
 -- BLOCK insert_ai_grading_job
 INSERT INTO
