@@ -22,7 +22,7 @@ import {
 } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { getAvailableTimezones } from '../../lib/timezones.js';
+import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
@@ -43,7 +43,9 @@ router.get(
       `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`,
       host,
     ).href;
-    const availableTimezones = await getAvailableTimezones();
+    const availableTimezones = await getCanonicalTimezones([
+      res.locals.course_instance.display_timezone,
+    ]);
 
     const infoCourseInstancePath = path.join(
       'courseInstances',
