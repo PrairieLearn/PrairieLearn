@@ -774,14 +774,20 @@ def string_fraction_to_number(
     """Parse a string containing a decimal number with support for answers expressing
     as a fraction.
 
-    Returns:
-        A tuple with the parsed value in the first entry and a dictionary with the intended value of "data" in the second entry.
-
     On successful parsing, "data" will contain a 'submitted_answers' key that is the
     JSON encoded parsed answer.
 
     If parsing failed, the first entry will be 'None' and the "data" entry will
     contain a 'format_errors' key.
+
+    Returns:
+        A tuple with the parsed value in the first entry and a dictionary with the intended value of "data" in the second entry.
+
+    Examples:
+        >>> string_fraction_to_number("1/2", allow_fractions=False, allow_complex=False)
+        (None, {"format_errors": "Fractional answers are not allowed in this input."})
+        >>> string_fraction_to_number("1/2", allow_fractions=True, allow_complex=False)
+        (0.5, {"submitted_answers": 0.5})
     """  # noqa: DOC501 (false positive)
     data: _PartialDataSubmittedAnswers = {}  # type: ignore
     value: np.float64 | np.complex128 = None  # type: ignore
@@ -892,6 +898,10 @@ def latex_from_2darray(
     Raises:
         TypeError: If A is not a numpy array or scalar.
         ValueError: If A is not a 2D numpy array.
+
+    Examples:
+        >>> latex_from_2darray(np.array([[1, 2], [3, 4]]))
+        \begin{bmatrix}  1 & 2\\  3 & 4\\\end{bmatrix}
     """
     # if A is a scalar
     if np.isscalar(A):

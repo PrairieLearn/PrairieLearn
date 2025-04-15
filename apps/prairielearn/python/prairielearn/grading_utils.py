@@ -228,6 +228,14 @@ def determine_score_params(
 
     Returns:
         A tuple containing the key and value for the score badge.
+
+    Examples:
+        >>> determine_score_params(1)
+        ("correct", True)
+        >>> determine_score_params(0)
+        ("incorrect", True)
+        >>> determine_score_params(0.5)
+        ("partial", 50)
     """
     if score >= 1:
         return ("correct", True)

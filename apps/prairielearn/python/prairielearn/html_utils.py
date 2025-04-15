@@ -306,6 +306,10 @@ def get_float_attrib(
 
     Raises:
         ValueError: If the attribute is not a valid floating-point number.
+
+    Examples:
+        >>> get_float_attrib(element, "stroke-width", 4.0)
+        10.0
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
