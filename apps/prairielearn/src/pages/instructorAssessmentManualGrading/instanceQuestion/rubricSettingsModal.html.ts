@@ -322,7 +322,7 @@ function RubricItemRow(
       aria-owns="${child_idxs.join(' ')}"
       ${parent_index ? html`data-parent-item="rubric-item-${parent_index}"` : ''}
     >
-      <td class="text-nowrap js-rubric-item-render-indent">
+      <td class="text-nowrap align-middle js-rubric-item-render-indent">
         ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
         <input
           type="hidden"
@@ -343,24 +343,26 @@ function RubricItemRow(
         >
           <i class="fas fa-arrows-up-down"></i>
         </button>
-        <button type="button" class="btn btn-sm visually-hidden js-rubric-item-move-up-button">
-          Move up
-        </button>
-        <button type="button" class="btn btn-sm visually-hidden js-rubric-item-move-down-button">
+        <button type="button" class="visually-hidden js-rubric-item-move-up-button">Move up</button>
+        <button type="button" class="visually-hidden js-rubric-item-move-down-button">
           Move down
         </button>
-        <button type="button" class="btn btn-sm visually-hidden js-rubric-item-move-in-button">
+        <button type="button" class="visually-hidden js-rubric-item-move-in-button">
           Move inside category
         </button>
-        <button type="button" class="btn btn-sm visually-hidden js-rubric-item-move-out-button">
+        <button type="button" class="visually-hidden js-rubric-item-move-out-button">
           Move outside category
         </button>
-        <button type="button" class="btn btn-sm btn-ghost js-rubric-item-delete text-danger">
+        <button
+          type="button"
+          class="btn btn-sm btn-ghost js-rubric-item-delete text-danger"
+          aria-label="Delete"
+        >
           <i class="fas fa-trash"></i>
           <span class="visually-hidden">Delete</span>
         </button>
       </td>
-      <td>
+      <td class="align-middle">
         <input
           type="number"
           class="form-control js-rubric-item-points"
@@ -371,7 +373,7 @@ function RubricItemRow(
           value="${item?.points}"
         />
       </td>
-      <td>
+      <td class="align-middle">
         <input
           type="text"
           class="form-control js-rubric-item-description"
@@ -382,7 +384,7 @@ function RubricItemRow(
           value="${item?.description}"
         />
       </td>
-      <td>
+      <td class="align-middle">
         ${item?.explanation
           ? html` <label
               for="rubric-item-explanation-button-${item.id}"
@@ -400,7 +402,7 @@ function RubricItemRow(
           <i class="fas fa-pencil"></i>
         </button>
       </td>
-      <td>
+      <td class="align-middle">
         ${item?.grader_note
           ? html`<label
               for="rubric-item-grader-note-button-${item.id}"
@@ -444,7 +446,7 @@ function RubricItemRow(
           </label>
         </div>
       </td>
-      <td class="text-nowrap">
+      <td class="text-nowrap align-middle">
         ${!item
           ? 'New'
           : !item.num_submissions
