@@ -394,6 +394,12 @@ def numpy_to_matlab(
     - a number (float or complex)
     - a 2D ndarray (float or complex)
 
+    The style argument must be one of three values:
+
+    - legacy: formats 1d arrays with commas and 2d arrays with spaces
+    - comma: formats all arrays with commas
+    - space: formats all arrays with spaces
+
     Returns:
         A MATLAB-formatted string
     """
@@ -510,6 +516,14 @@ def string_from_numpy(
 
     Raises:
         TypeError: If A is not a scalar or a numpy array.
+
+    Examples:
+        >>> string_from_numpy(np.zeros((2, 2)), language="mathematica")
+        "{{0.00, 0.00}, {0.00, 0.00}}"
+        >>> string_from_numpy(np.zeros((2, 2)), language="r")
+        "matrix(c(0.00, 0.00, 0.00, 0.00), nrow = 2, ncol = 2, byrow = TRUE)"
+        >>> string_from_numpy(np.zeros((2, 2)), language="sympy")
+        "Matrix([[0.00, 0.00], [0.00, 0.00]])"
     """
     # if A is a scalar
     if np.isscalar(A):
@@ -650,6 +664,10 @@ def numpy_to_matlab_sf(
 
     Returns:
         A as a MATLAB-formatted string
+
+    Examples:
+        >>> numpy_to_matlab_sf(np.array([[1 + 2j, 3 + 4j], [5 + 6j, 7 + 8j]]), style="space")
+        [1.0+2.0j 3.0+4.0j; 5.0+6.0j 7.0+8.0j]
     """
     if np.isscalar(A):
         assert not isinstance(A, (memoryview, str, bytes))

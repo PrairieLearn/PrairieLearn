@@ -187,6 +187,22 @@ def grade_answer_parameterized(
 
     - a string containing feedback
     - `None`, if there is no feedback (usually this should only occur if the answer is correct)
+
+    Examples:
+        >>> def grading_function(submitted_answer):
+        ...     if submitted_answer == "foo":
+        ...         return True, None
+        ...     elif submitted_answer == "bar":
+        ...         return 0.5, "Almost there!"
+        ...     return False, "Try again!"
+        >>> data = {
+        ...     "submitted_answers": {"question_name": "bar"},
+        ...     "partial_scores": {},
+        ...     "answers_names": {},
+        ... }
+        >>> grade_answer_parameterized(data, "question_name", grading_function, weight=2)
+        >>> data["partial_scores"]
+        {"question_name": {"score": 0.5, "weight": 2, "feedback": "Almost there!"}}
     """
     # Create the data dictionary at first
     data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}

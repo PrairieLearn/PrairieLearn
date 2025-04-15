@@ -64,6 +64,17 @@ def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None
 
     Raises:
         ValueError: If any of the partial scores have a score of None.
+
+    Examples:
+        >>> data = {
+        ...     "partial_scores": {
+        ...         "foo": {"score": 0.5, "weight": 1},
+        ...         "bar": {"score": 0.8, "weight": 2}
+        ...     }
+        ... }
+        >>> set_weighted_score_data(data)
+        >>> data["score"]
+        0.7
     """
     weight_total = 0
     score_total = 0.0
@@ -81,12 +92,35 @@ def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None
 
 
 def set_all_or_nothing_score_data(data: QuestionData) -> None:
-    """Give points to main question score if all partial scores are correct."""
+    """Give points to main question score if all partial scores are correct.
+
+    Examples:
+        >>> data = {"partial_scores": {"foo": {"score": 1.0}, "bar": {"score": 1.0}}}
+        >>> set_all_or_nothing_score_data(data)
+        >>> data["score"]
+        1.0
+        >>> data = {"partial_scores": {"foo": {"score": 1.0}, "bar": {"score": 0.5}}}
+        >>> set_all_or_nothing_score_data(data)
+        >>> data["score"]
+        0.0
+    """
     data["score"] = 1.0 if all_partial_scores_correct(data) else 0.0
 
 
 def all_partial_scores_correct(data: QuestionData) -> bool:
-    """Return true if all questions are correct in partial scores and it's nonempty."""
+    """Check if all partial scores are close to 1.
+
+    Returns:
+        `True` if all scores are close to 1 and not an empty list, `False` otherwise.
+
+    Examples:
+        >>> data = {"partial_scores": {"foo":{"score": 1.0}}}
+        >>> all_partial_scores_correct(data)
+        True
+        >>> data = {"partial_scores": {"foo": {"score": 1.0}, "bar": {"score": 0.5}}}
+        >>> all_partial_scores_correct(data)
+        False
+    """
     partial_scores = data["partial_scores"]
 
     if len(partial_scores) == 0:
@@ -99,7 +133,13 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
 
 
 def add_files_format_error(data: QuestionData, error: str) -> None:
-    """Add a format error to the data dictionary."""
+    """Add a format error to the data dictionary.
+
+    Examples:
+        >>> add_files_format_error(data, f"Missing baz in foo.txt")
+        >>> data["format_errors"]
+        {"_files": ["Missing baz in foo.txt"]}
+    """
     if data["format_errors"].get("_files") is None:
         data["format_errors"]["_files"] = []
     if isinstance(data["format_errors"]["_files"], list):
@@ -118,7 +158,13 @@ def add_submitted_file(
     *,
     mimetype: str | None = None,
 ) -> None:
-    """Add a submitted file to the data dictionary."""
+    """Add a submitted file to the data dictionary.
+
+    Examples:
+        >>> add_submitted_file(data, "foo.txt", "base64-contents", mimetype="text/plain")
+        >>> data["submitted_answers"]
+        {"_files": [{"name": "foo.txt", "contents": "base64-contents", "mimetype": "text/plain"}]}
+    """
     if data["submitted_answers"].get("_files") is None:
         data["submitted_answers"]["_files"] = []
     if isinstance(data["submitted_answers"]["_files"], list):
