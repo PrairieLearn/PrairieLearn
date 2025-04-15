@@ -37,7 +37,7 @@ def index2key(i: int) -> str:
     Use when generating ordered lists of the form ['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]
 
     Returns:
-        alphabetic key in the form `[a-z]*` from a given integer (i = 0, 1, 2, ...).
+        Alphabetic key in the form `[a-z]*` from a given integer (i = 0, 1, 2, ...).
     """
     return next(it.islice(iter_keys(), i, None))
 

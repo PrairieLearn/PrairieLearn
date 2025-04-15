@@ -99,7 +99,7 @@ def is_int_json_serializable(n: int) -> bool:
     See <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER>.
 
     Returns:
-        True if it can be serialized by JS code.
+        `True` if it can be serialized by JS code.
     """
     return -((2**53) - 1) <= n <= 2**53 - 1
 
@@ -920,11 +920,7 @@ def latex_from_2darray(
 def string_partition_first_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
-    """Split a string at the first occurrence of left and right delimiters.
-
-    Returns:
-        A tuple
-    """
+    """Split a string at the first occurrence of left and right delimiters."""
     # Split at first left delimiter
     (s_before_left, _, s) = s.partition(left)
     # Split at first right delimiter
@@ -936,11 +932,7 @@ def string_partition_first_interval(
 def string_partition_outer_interval(
     s: str, left: str = "[", right: str = "]"
 ) -> tuple[str, str, str]:
-    """Split a string at the first left delimiter and last right delimiter.
-
-    Returns:
-        A tuple
-    """
+    """Split a string at the first left delimiter and last right delimiter."""
     # Split at first left delimiter
     (s_before_left, _, s) = s.partition(left)
     # Split at last right delimiter

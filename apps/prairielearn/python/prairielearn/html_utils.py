@@ -353,7 +353,7 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
     """Get the inner HTML of an lxml element.
 
     Returns:
-        The inner HTML of the element.
+        The inner HTML of the element as a string.
     """
     inner = element.text
     if inner is None:
