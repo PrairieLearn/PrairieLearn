@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { formatTimezone, type Timezone } from '../../lib/timezones.js';
+import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 
 export function InstructorCourseAdminSettings({
   resLocals,
@@ -36,7 +36,9 @@ export function InstructorCourseAdminSettings({
 
       <div class="card  mb-4">
         <div class="card-header bg-primary text-white d-flex">
-          <h1>Course Settings</h1>
+          <h1>
+            ${resLocals.has_enhanced_navigation ? 'General course settings' : 'Course Settings'}
+          </h1>
         </div>
         <div class="card-body">
           ${!courseInfoExists || !coursePathExists
@@ -112,8 +114,12 @@ export function InstructorCourseAdminSettings({
                 )}
               </select>
               <small class="form-text text-muted">
-                The allowable timezones are from the tz database. It's best to use a city-based
-                timezone that has the same times as you.
+                The allowable timezones are from the
+                <a
+                  href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                  target="_blank"
+                  >tz database</a
+                >. It's best to use a city-based timezone that has the same times as you.
               </small>
             </div>
             <div class="mb-3">

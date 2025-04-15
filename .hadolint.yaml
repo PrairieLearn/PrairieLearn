@@ -2,19 +2,5 @@
 ignored:
   - DL3007 # latest tag is not recommended
   - DL3008 # pin versions in apt get install
-  # Will be resolved in a future PR
-  - DL3003
-  - SC3009
-  - DL3004
-  - DL3009
-  - DL3015
-  - DL3059
-  - SC2238
-  - DL3025
-  - DL3027
-  - SC2086
-  - DL4006
-  - DL3042
-  - SC2046
-  - SC2086
-  - DL3060
+  - DL4006 # TODO: SHELL option -o pipefail before RUN with a pipe in it
+  - DL3041 # Specify version with `dnf install -y <package>-<version>`

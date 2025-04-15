@@ -6,9 +6,9 @@ import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 import {
   getInstitution,
-  getSupportedAuthenticationProviders,
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
+  getSupportedAuthenticationProviders,
 } from '../../lib/institution.js';
 
 import { AdministratorInstitutionSso } from './administratorInstitutionSso.html.js';

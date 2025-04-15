@@ -2,8 +2,10 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
+import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
 
 export function InstructorInstanceAdminSettings({
@@ -11,13 +13,17 @@ export function InstructorInstanceAdminSettings({
   shortNames,
   studentLink,
   infoCourseInstancePath,
+  availableTimezones,
   origHash,
+  canEdit,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
   studentLink: string;
   infoCourseInstancePath: string;
+  availableTimezones: Timezone[];
   origHash: string;
+  canEdit: boolean;
 }) {
   return PageLayout({
     resLocals,
@@ -35,14 +41,43 @@ export function InstructorInstanceAdminSettings({
         course: resLocals.course,
         urlPrefix: resLocals.urlPrefix,
       })}
+      ${QRCodeModal({
+        id: 'studentLinkModal',
+        title: 'Student Link QR Code',
+        content: studentLink,
+      })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
-          <h1>Course instance settings</h1>
+          <h1>
+            ${resLocals.has_enhanced_navigation
+              ? 'General course instance settings'
+              : 'Course instance settings'}
+          </h1>
         </div>
         <div class="card-body">
           <form name="edit-course-instance-settings-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
+            <div class="mb-3">
+              <label class="form-label" for="ciid">CIID</label>
+              <input
+                type="text"
+                class="form-control font-monospace"
+                id="ciid"
+                name="ciid"
+                value="${resLocals.course_instance.short_name}"
+                pattern="[\\-A-Za-z0-9_\\/]+"
+                required
+                data-other-values="${shortNames.join(',')}"
+                ${canEdit ? '' : 'disabled'}
+              />
+              <small class="form-text text-muted">
+                Use only letters, numbers, dashes, and underscores, with no spaces. You may use
+                forward slashes to separate directories. The recommended format is
+                <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple
+                versions, like <code>Fa19honors</code>.
+              </small>
+            </div>
             <div class="mb-3">
               <label class="form-label" for="long_name">Long Name</label>
               <input
@@ -52,37 +87,81 @@ export function InstructorInstanceAdminSettings({
                 name="long_name"
                 value="${resLocals.course_instance.long_name}"
                 required
-                ${resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course
-                  ? ''
-                  : 'disabled'}
+                ${canEdit ? '' : 'disabled'}
               />
               <small class="form-text text-muted">
                 The long name of this course instance (e.g., 'Spring 2015').
               </small>
             </div>
             <div class="mb-3">
-              <label class="form-label" for="ciid">CIID</label>
-              <input
-                type="text"
-                class="form-control"
-                id="ciid"
-                name="ciid"
-                value="${resLocals.course_instance.short_name}"
-                pattern="[\\-A-Za-z0-9_\\/]+"
-                required
-                data-other-values="${shortNames.join(',')}"
-                ${resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course
-                  ? ''
-                  : 'disabled'}
-              />
+              <label class="form-label" for="display_timezone">Timezone</label>
+              <select
+                class="form-select"
+                id="display_timezone"
+                name="display_timezone"
+                ${canEdit ? '' : 'disabled'}
+              >
+                ${availableTimezones.map(
+                  (tz) => html`
+                    <option
+                      value="${tz.name}"
+                      ${tz.name === resLocals.course_instance.display_timezone ? 'selected' : ''}
+                    >
+                      ${formatTimezone(tz)}
+                    </option>
+                  `,
+                )}
+              </select>
               <small class="form-text text-muted">
-                Use only letters, numbers, dashes, and underscores, with no spaces. You may use
-                forward slashes to separate directories. The recommended format is
-                <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple
-                versions, like <code>Fa19honors</code>.
+                The allowable timezones are from the
+                <a
+                  href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                  target="_blank"
+                  >tz database</a
+                >. It's best to use a city-based timezone that has the same times as you.
               </small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="group_assessments_by">Group assessments by</label>
+              <select
+                class="form-select"
+                id="group_assessments_by"
+                name="group_assessments_by"
+                ${canEdit ? '' : 'disabled'}
+              >
+                <option
+                  value="Set"
+                  ${resLocals.course_instance.assessments_group_by === 'Set' ? 'selected' : ''}
+                >
+                  Set
+                </option>
+                <option
+                  value="Module"
+                  ${resLocals.course_instance.assessments_group_by === 'Module' ? 'selected' : ''}
+                >
+                  Module
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                Determines how assessments will be grouped on the student assessments page.
+              </small>
+            </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="hide_in_enroll_page"
+                name="hide_in_enroll_page"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.course_instance.hide_in_enroll_page ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="hide_in_enroll_page">
+                Hide in enrollment page
+              </label>
+              <div class="small text-muted">
+                If enabled, hides the course instance in the enrollment page, so that only direct
+                links to the course can be used for enrollment.
+              </div>
             </div>
             <div class="mb-3">
               <label class="form-label" for="student_link">Student Link</label>
@@ -105,10 +184,10 @@ export function InstructorInstanceAdminSettings({
                 </button>
                 <button
                   type="button"
-                  title="Student Link QR Code"
+                  class="btn btn-sm btn-outline-secondary"
                   aria-label="Student Link QR Code"
-                  class="btn btn-sm btn-outline-secondary js-qrcode-button"
-                  data-qr-code-content="${studentLink}"
+                  data-bs-toggle="modal"
+                  data-bs-target="#studentLinkModal"
                 >
                   <i class="fas fa-qrcode"></i>
                 </button>
@@ -209,13 +288,18 @@ function CopyCourseInstanceForm({
     <div class="card-footer d-flex flex-wrap align-items-center">
       <form name="copy-course-instance-form" class="me-2" method="POST">
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button name="__action" value="copy_course_instance" class="btn btn-sm btn-primary">
+        <button
+          type="submit"
+          name="__action"
+          value="copy_course_instance"
+          class="btn btn-sm btn-primary"
+        >
           <i class="fa fa-clone"></i> Make a copy of this course instance
         </button>
       </form>
       <button
+        type="button"
         class="btn btn-sm btn-primary"
-        href="#"
         data-bs-toggle="modal"
         data-bs-target="#deleteCourseInstanceModal"
       >

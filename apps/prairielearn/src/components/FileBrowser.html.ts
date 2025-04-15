@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import hljs from 'highlight.js';
 import { isBinaryFile } from 'isbinaryfile';
 
-import { escapeHtml, html, type HtmlValue, joinHtml, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 import { run } from '@prairielearn/run';
 
@@ -98,10 +98,6 @@ interface FileRenameInfo {
   dir: string;
 }
 
-function isHidden(item: string) {
-  return item[0] === '.';
-}
-
 export async function browseDirectory({
   paths,
 }: {
@@ -109,10 +105,7 @@ export async function browseDirectory({
 }): Promise<DirectoryListings> {
   const filenames = await fs.readdir(paths.workingPath);
   const all_files = await async.mapLimit(
-    filenames
-      .sort()
-      .map((name, index) => ({ name, index }))
-      .filter((f) => !isHidden(f.name)),
+    filenames.sort().map((name, index) => ({ name, index })),
     3,
     async (file: { name: string; index: number }) => {
       const filepath = path.join(paths.workingPath, file.name);
@@ -143,6 +136,8 @@ export async function browseDirectory({
           sync_warnings: sync_data.warnings,
         } as DirectoryEntryFile;
       } else if (stats.isDirectory()) {
+        // The .git directory is hidden in the browser interface.
+        if (file.name === '.git') return null;
         return {
           id: file.index,
           name: file.name,
@@ -418,9 +413,8 @@ function FileBrowserActions({
             data-bs-container="body"
             data-bs-html="true"
             data-bs-placement="auto"
-            title="Upload file"
+            data-bs-title="Upload file"
             data-bs-content="${escapeHtml(FileUploadForm({ file: fileInfo, csrfToken }))}"
-            data-bs-trigger="click"
             ${fileInfo.canUpload ? '' : 'disabled'}
           >
             <i class="fa fa-arrow-up"></i>
@@ -446,11 +440,10 @@ function FileBrowserActions({
             data-bs-container="body"
             data-bs-html="true"
             data-bs-placement="auto"
-            title="Rename file"
+            data-bs-title="Rename file"
             data-bs-content="${escapeHtml(
               FileRenameForm({ file: fileInfo, csrfToken, isViewingFile: true }),
             )}"
-            data-bs-trigger="click"
             ${fileInfo.canRename ? '' : 'disabled'}
           >
             <i class="fa fa-i-cursor"></i>
@@ -463,9 +456,8 @@ function FileBrowserActions({
             data-bs-container="body"
             data-bs-html="true"
             data-bs-placement="auto"
-            title="Confirm delete"
+            data-bs-title="Confirm delete"
             data-bs-content="${escapeHtml(FileDeleteForm({ file: fileInfo, csrfToken }))}"
-            data-bs-trigger="click"
             ${fileInfo.canDelete ? '' : 'disabled'}
           >
             <i class="far fa-trash-alt"></i>
@@ -493,7 +485,7 @@ function DirectoryBrowserActions({
           data-bs-container="body"
           data-bs-html="true"
           data-bs-placement="auto"
-          title="Upload file"
+          data-bs-title="Upload file"
           data-bs-content="${escapeHtml(
             FileUploadForm({
               file: { id: `New${d.label}`, info: d.info, working_path: d.path },
@@ -501,7 +493,6 @@ function DirectoryBrowserActions({
             }),
           )}
           "
-          data-bs-trigger="click"
         >
           <i class="fa fa-plus"></i>
           <span>Add new ${d.label.toLowerCase()} file</span>
@@ -516,14 +507,13 @@ function DirectoryBrowserActions({
       data-bs-container="body"
       data-bs-html="true"
       data-bs-placement="auto"
-      title="Upload file"
+      data-bs-title="Upload file"
       data-bs-content="${escapeHtml(
         FileUploadForm({
           file: { id: 'New', working_path: paths.workingPath },
           csrfToken,
         }),
       )}"
-      data-bs-trigger="click"
     >
       <i class="fa fa-plus"></i>
       <span>Add new file</span>
@@ -623,10 +613,9 @@ function DirectoryBrowserBody({
                         data-bs-container="body"
                         data-bs-html="true"
                         data-bs-placement="auto"
-                        title="Upload file"
+                        data-bs-title="Upload file"
                         data-bs-content="
                   ${escapeHtml(FileUploadForm({ file: f, csrfToken }))}"
-                        data-bs-trigger="click"
                         ${f.canUpload ? '' : 'disabled'}
                       >
                         <i class="fa fa-arrow-up"></i>
@@ -652,11 +641,10 @@ function DirectoryBrowserBody({
                         data-bs-container="body"
                         data-bs-html="true"
                         data-bs-placement="auto"
-                        title="Rename file"
+                        data-bs-title="Rename file"
                         data-bs-content="${escapeHtml(
                           FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
                         )}"
-                        data-bs-trigger="click"
                         data-testid="rename-file-button"
                         ${f.canRename ? '' : 'disabled'}
                       >
@@ -670,9 +658,8 @@ function DirectoryBrowserBody({
                         data-bs-container="body"
                         data-bs-html="true"
                         data-bs-placement="auto"
-                        title="Confirm delete"
+                        data-bs-title="Confirm delete"
                         data-bs-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
-                        data-bs-trigger="click"
                         data-testid="delete-file-button"
                         ${f.canDelete ? '' : 'disabled'}
                       >

@@ -201,7 +201,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 )
         else:
             a_tru = np.array(pl.from_json(data["correct_answers"].get(name, None)))
-            if a_tru is not None and len(a_tru.shape) == 2:
+            if len(a_tru.shape) == 2:
                 m, n = np.shape(a_tru)
             else:
                 m = pl.get_integer_attrib(element, "rows")
@@ -417,7 +417,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_sub = pl.from_json(a_sub)
 
             # If submitted answer is not a of valid type, score is zero
-            if isinstance(a_sub, Expr | dict):
+            if isinstance(a_sub, (Expr, dict)):
                 data["partial_scores"][name] = {"score": 0, "weight": weight}
                 return
 
@@ -539,7 +539,7 @@ def create_table_for_html_display(
         for j in range(n):
             each_entry_name = name + str(j + 1)
             raw_submitted_answer = data["raw_submitted_answers"].get(
-                each_entry_name, None
+                each_entry_name, ""
             )
             format_errors = data["format_errors"].get(each_entry_name, None)
             if format_errors is None:
@@ -562,7 +562,7 @@ def create_table_for_html_display(
             for j in range(n):
                 each_entry_name = name + str(n * i + j + 1)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
-                    each_entry_name, None
+                    each_entry_name, ""
                 )
                 format_errors = data["format_errors"].get(each_entry_name, None)
                 if format_errors is None:
@@ -611,7 +611,7 @@ def create_table_for_html_display(
         for j in range(n):
             each_entry_name = name + str(j + 1)
             raw_submitted_answer = data["raw_submitted_answers"].get(
-                each_entry_name, None
+                each_entry_name, ""
             )
             display_array += '<td class="allborder">'
             display_array += escape(raw_submitted_answer)
@@ -644,7 +644,7 @@ def create_table_for_html_display(
             for j in range(n):
                 each_entry_name = name + str(n * i + j + 1)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
-                    each_entry_name, None
+                    each_entry_name, ""
                 )
                 display_array += ' <td class="allborder"> '
                 display_array += escape(raw_submitted_answer)

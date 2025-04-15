@@ -126,7 +126,7 @@ export function InstructorIssues({
                 `
               : ''}
           </div>
-          <form name="query-form" method="GET">
+          <form method="GET">
             <div class="input-group">
               <button
                 class="btn btn-med-light dropdown-toggle"
@@ -161,20 +161,28 @@ export function InstructorIssues({
                 value="${filterQuery}"
                 aria-label="Search all issues"
               />
+              <button
+                class="btn btn-med-light"
+                type="submit"
+                data-bs-toggle="tooltip"
+                data-bs-title="Search"
+              >
+                <i class="fa fa-search" aria-hidden="true"></i>
+              </button>
               <a
                 class="btn btn-med-light"
                 href="${urlPrefix}/course_admin/issues?q="
-                title="Clear filters"
+                data-bs-toggle="tooltip"
+                data-bs-title="Clear filters"
               >
                 <i class="fa fa-times" aria-hidden="true"></i>
               </a>
               <button
                 class="btn btn-med-light"
                 type="button"
-                title="Show filter help"
-                data-bs-toggle="modal"
+                data-bs-toggle="modal tooltip"
                 data-bs-target="#filterHelpModal"
-                aria-label="Show filter help"
+                data-bs-title="Filter help"
               >
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
               </button>
@@ -353,6 +361,7 @@ function FilterHelpModal() {
   return Modal({
     id: 'filterHelpModal',
     title: 'Filter help',
+    form: false,
     body: html`
       <p>
         Issues can be filtered and searched in a variety of ways. Filtering is done with the
@@ -360,8 +369,10 @@ function FilterHelpModal() {
       </p>
       <table class="table table-bordered" aria-label="Filtering qualifiers">
         <thead>
-          <th>Qualifier</th>
-          <th>Explanation</th>
+          <tr>
+            <th>Qualifier</th>
+            <th>Explanation</th>
+          </tr>
         </thead>
         <tbody>
           <tr>
@@ -382,24 +393,38 @@ function FilterHelpModal() {
           </tr>
           <tr>
             <td>
-              <code>qid:<em>QID</em></code>
+              <code>assessment:<em>AID</em></code>
             </td>
             <td>
-              Shows all issues with a question ID like <code>QID</code>.
-              <br />
-              <strong>Example:</strong> <code>qid:graph</code> shows all issues associated with
-              questions such as <code>graphConnectivity</code> and <code>speedTimeGraph</code>.
+              Shows all issues with an assessment ID like <code>AID</code>; supports
+              <code>*</code> as a wildcard. For example,
+              <code>assessment:exam/instantFeedback</code> shows all issues associated with the
+              assessment <code>exam/instantFeedback</code>, and <code>assessment:exam/*</code> shows
+              all issues associated with any assessment that starts with <code>exam/</code>, such as
+              <code>exam/instantFeedback</code> and <code>exam/manualGrading</code>.
             </td>
           </tr>
           <tr>
             <td>
-              <code>user:<em>USER</em></code>
+              <code>qid:<em>QID</em></code>
             </td>
             <td>
-              Shows all issues that were reported by a user ID like <code>USER</code>.
-              <br />
-              <strong>Example:</strong> <code>user:student@example.com</code> shows all issues that
-              were reported by <code>student@example.com</code>.
+              Shows all issues with a question ID like <code>QID</code>; supports <code>*</code> as
+              a wildcard. For example, <code>qid:graphConnectivity</code> shows all issues
+              associated with the question <code>graphConnectivity</code>, and
+              <code>qid:graph*</code> shows all issues associated with any question that starts with
+              <code>graph</code>, such as <code>graphConnectivity</code> and
+              <code>graphTheory</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <code>user:<em>UID</em></code>
+            </td>
+            <td>
+              Shows all issues that were reported by a user with a UID like <code>UID</code>. For
+              example, <code>user:student@example.com</code> shows all issues that were reported by
+              <code>student@example.com</code>.
             </td>
           </tr>
         </tbody>
@@ -419,7 +444,7 @@ function FilterHelpModal() {
 
       <h3 class="h4">Combining qualifiers</h3>
       <p>These can be combined to form complex searches. An example:</p>
-      <code><pre>is:open qid:vector answer is wrong</pre></code>
+      <pre><code>is:open qid:vector answer is wrong</code></pre>
       <p>
         This would return any open issues with a QID like <code>vector</code> whose message contains
         text like "answer is wrong".
@@ -443,7 +468,10 @@ function IssueActionButton({ issue, csrfToken }: { issue: Issue; csrfToken: stri
                 class="btn btn-outline-secondary"
                 name="__action"
                 value="close"
-                title="Close issue"
+                aria-label="Close issue"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                data-bs-title="Close issue"
               >
                 <i class="fa fa-times fa-fw" aria-hidden="true"></i>
               </button>
@@ -453,7 +481,10 @@ function IssueActionButton({ issue, csrfToken }: { issue: Issue; csrfToken: stri
                 class="btn btn-outline-secondary"
                 name="__action"
                 value="open"
-                title="Reopen issue"
+                aria-label="Reopen issue"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                data-bs-title="Reopen issue"
               >
                 <i class="fa fa-rotate-right fa-fw" aria-hidden="true"></i>
               </button>

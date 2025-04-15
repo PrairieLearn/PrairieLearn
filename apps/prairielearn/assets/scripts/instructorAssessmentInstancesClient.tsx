@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
-import { h, render, Fragment } from 'preact';
+import { Fragment, h, render } from 'preact';
 import React, { useState } from 'preact/hooks';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
@@ -149,18 +149,21 @@ onDocumentReady(() => {
   $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
     const modal = $(this);
 
-    modal.find('form').on('submit', (e) => {
-      e.preventDefault();
-      $.post(
-        $(e.target).attr('action') ?? '',
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      modal.modal('hide');
-    });
+    modal
+      .parents('form')
+      .off('submit')
+      .on('submit', (e) => {
+        e.preventDefault();
+        $.post(
+          $(e.target).attr('action') ?? '',
+          $(e.target).serialize(),
+          function () {
+            refreshTable();
+          },
+          'json',
+        );
+        modal.modal('hide');
+      });
 
     // @ts-expect-error -- The BS5 types don't include the `relatedTarget` property on jQuery events.
     const { relatedTarget } = event;
@@ -182,18 +185,21 @@ onDocumentReady(() => {
   $('#deleteAllAssessmentInstancesModal').on('show.bs.modal', function () {
     const modal = $(this);
 
-    modal.find('form').on('submit', (e) => {
-      e.preventDefault();
-      $.post(
-        $(e.target).attr('action') ?? '',
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      modal.modal('hide');
-    });
+    modal
+      .parents('form')
+      .off('submit')
+      .on('submit', (e) => {
+        e.preventDefault();
+        $.post(
+          $(e.target).attr('action') ?? '',
+          $(e.target).serialize(),
+          function () {
+            refreshTable();
+          },
+          'json',
+        );
+        modal.modal('hide');
+      });
   });
 
   $('[data-bs-toggle="modal"]').on('click', function (e) {
@@ -247,7 +253,7 @@ onDocumentReady(() => {
                 <button
                   class="btn btn-xs btn-ghost"
                   type="button"
-                  title="Show roles help"
+                  aria-label="Roles help"
                   data-bs-toggle="modal"
                   data-bs-target="#role-help"
                 >
@@ -285,7 +291,7 @@ onDocumentReady(() => {
                 <button
                   class="btn btn-xs btn-ghost"
                   type="button"
-                  title="Show roles help"
+                  aria-label="Roles help"
                   data-bs-toggle="modal"
                   data-bs-target="#role-help"
                 >
@@ -328,7 +334,7 @@ onDocumentReady(() => {
           <button
             class="btn btn-xs btn-ghost"
             type="button"
-            title="Show duration help"
+            aria-label="Duration help"
             data-bs-toggle="modal"
             data-bs-target="#duration-help"
           >
@@ -347,7 +353,7 @@ onDocumentReady(() => {
           <button
             class="btn btn-xs btn-ghost"
             type="button"
-            title="Show remaining time help"
+            aria-label="Remaining time help"
             data-bs-toggle="modal"
             data-bs-target="#time-remaining-help"
           >
@@ -378,7 +384,7 @@ onDocumentReady(() => {
           <button
             class="btn btn-xs btn-ghost"
             type="button"
-            title="Show fingerprint changes help"
+            aria-label="Fingerprint changes help"
             data-bs-toggle="modal"
             data-bs-target="#fingerprint-changes-help"
           >
@@ -655,7 +661,6 @@ onDocumentReady(() => {
           aria-label="Change time limit"
           data-row="${JSON.stringify(row)}"
           data-bs-placement="bottom"
-          data-boundary="window"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
         </a>
@@ -725,7 +730,7 @@ onDocumentReady(() => {
             data-bs-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false"
-            data-boundary="window"
+            data-bs-boundary="window"
           >
             Action
           </button>
@@ -752,8 +757,8 @@ onDocumentReady(() => {
                     class="dropdown-item ${row.open ? '' : 'disabled'}"
                     data-bs-toggle="popover"
                     data-bs-container="body"
-                    data-title="Confirm close"
                     data-bs-html="true"
+                    data-bs-title="Confirm close"
                     data-bs-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
                     data-bs-placement="auto"
                   >
@@ -771,8 +776,8 @@ onDocumentReady(() => {
                     class="dropdown-item"
                     data-bs-toggle="popover"
                     data-bs-container="body"
-                    data-title="Confirm regrade"
                     data-bs-html="true"
+                    data-bs-title="Confirm regrade"
                     data-bs-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
                     data-bs-placement="auto"
                   >
