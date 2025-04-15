@@ -39,7 +39,7 @@ Examples:
 
 
 class SympyJson(TypedDict):
-    """A class with type signatures for the sympy json dict"""
+    """A class with type signatures for the SymPy JSON dict"""
 
     _type: Literal["sympy"]
     _value: str
@@ -49,6 +49,11 @@ class SympyJson(TypedDict):
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
+    """Check if the input is a valid SymPy JSON dict.
+
+    Returns:
+        `True` if the input is a valid SymPy JSON dict, `False` otherwise.
+    """
     return (
         isinstance(json, dict)
         and json.get("_type") == "sympy"
@@ -182,7 +187,7 @@ class _Constants:
 
 
 class BaseSympyError(Exception):
-    """Exception base class for sympy parsing errors"""
+    """Exception base class for SymPy parsing errors"""
 
 
 class HasConflictingVariableError(BaseSympyError):
@@ -333,6 +338,10 @@ class CheckAST(ast.NodeVisitor):
 
 
 def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
+    """Check the AST of the expression for security, whitelisting only certain nodes.
+
+    This prevents the user from executing arbitrary code through `eval_expr`.
+    """
     # Disallow escape character
     ind = expr.find("\\")
     if ind != -1:
@@ -380,6 +389,7 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
 def sympy_check(
     expr: sympy.Expr, locals_for_eval: LocalsForEval, *, allow_complex: bool
 ) -> None:
+    """Check the SymPy expression for complex numbers, invalid symbols, and floats."""
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
@@ -403,12 +413,22 @@ def sympy_check(
 def evaluate(
     expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> sympy.Expr:
+    """Evaluate a SymPy expression string with a given set of locals, and return only the result.
+
+    Returns:
+        A SymPy expression.
+    """
     return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
 
 
 def evaluate_with_source(
     expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
 ) -> tuple[sympy.Expr, str]:
+    """Evaluate a SymPy expression string with a given set of locals.
+
+    Returns:
+        A tuple of the SymPy expression and the code that was used to generate it.
+    """
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
     expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
@@ -476,12 +496,12 @@ def convert_string_to_sympy(
     assumptions: AssumptionsDictT | None = None,
 ) -> sympy.Expr:
     """
-    Convert a string to a sympy expression, with optional restrictions on
+    Convert a string to a SymPy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
     raise an exception with a message that can be displayed to the user.
 
     Parameters:
-        expr: The string to convert to a sympy expression.
+        expr: The string to convert to a SymPy expression.
         variables: A list of variable names that are allowed in the expression.
         allow_hidden: Whether to allow hidden variables (like pi and e).
         allow_complex: Whether to allow complex numbers (like i).
@@ -495,6 +515,9 @@ def convert_string_to_sympy(
         >>> convert_string_to_sympy("-infty")
         -sympy.oo
         >>> convert_string_to_sympy("z**2 + y - x", variables=["x", "y", "z"], allow_complex=True, assumptions={"x": {"positive": False}, "z": {"complex": True}})
+
+    Returns:
+        A sympy expression.
     """
     return convert_string_to_sympy_with_source(
         expr,
@@ -517,6 +540,14 @@ def convert_string_to_sympy_with_source(
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
 ) -> tuple[sympy.Expr, str]:
+    """
+    Convert a string to a sympy expression, with optional restrictions on
+    the variables and functions that can be used. If the string is invalid,
+    raise an exception with a message that can be displayed to the user.
+
+    Returns:
+        A tuple of the sympy expression and the source code that was used to generate it.
+    """
     const = _Constants()
 
     # Create a whitelist of valid functions and variables (and a special flag
@@ -591,7 +622,11 @@ def convert_string_to_sympy_with_source(
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
-    """Generate a string with a pointer to error in expr with index ind"""
+    """Generate a string with a pointer to error in expr with index ind
+
+    Returns:
+        A string with the error location in the expression.
+    """
     w_left: str = " " * (ind - max(0, ind - w))
     w_right: str = " " * (min(ind + w, len(expr)) - ind)
     initial: str = html.escape(expr[ind - len(w_left) : ind + len(w_right)])
@@ -601,6 +636,11 @@ def point_to_error(expr: str, ind: int, w: int = 5) -> str:
 def sympy_to_json(
     a: sympy.Expr, *, allow_complex: bool = True, allow_trig_functions: bool = True
 ) -> SympyJson:
+    """Convert a SymPy expression to a JSON-seralizable dictionary.
+
+    Returns:
+        A JSON-serializable representation of the SymPy expression.
+    """
     const = _Constants()
 
     # Get list of variables in the sympy expression
@@ -650,6 +690,11 @@ def json_to_sympy(
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
 ) -> sympy.Expr:
+    """Convert a json-seralizable dictionary created by [sympy_to_json][prairielearn.sympy_utils.sympy_to_json] to a SymPy expression.
+
+    Returns:
+        A SymPy expression.
+    """
     if "_type" not in sympy_expr_dict:
         raise ValueError("json must have key _type for conversion to sympy")
     if sympy_expr_dict["_type"] != "sympy":
@@ -680,7 +725,11 @@ def validate_string_as_sympy(
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
 ) -> str | None:
-    """Try to parse expr as a sympy expression. If it fails, return a string with an appropriate error message for display on the frontend."""
+    """Try to parse expr as a SymPy expression. If it fails, return a string with an appropriate error message for display on the frontend.
+
+    Returns:
+        `None` if the expression is valid, and an error message otherwise.
+    """
     try:
         expr_parsed = convert_string_to_sympy(
             expr,
@@ -776,6 +825,7 @@ def validate_string_as_sympy(
 
 
 def get_items_list(items_string: str | None) -> list[str]:
+    """Return a list of items from a comma-separated string."""
     if items_string is None:
         return []
 
@@ -783,10 +833,7 @@ def get_items_list(items_string: str | None) -> list[str]:
 
 
 def greek_unicode_transform(input_str: str) -> str:
-    """
-    Return input_str where all unicode greek letters are replaced
-    by their spelled-out english names.
-    """
+    """Return input_str where all unicode greek letters are replaced by their spelled-out english names."""
     # From https://gist.github.com/beniwohli/765262
     greek_alphabet = {
         "\u0391": "Alpha",
