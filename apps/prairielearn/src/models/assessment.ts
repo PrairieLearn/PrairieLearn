@@ -11,10 +11,12 @@ export async function selectAssessmentIsPublic(assessment_id: string): Promise<b
   return isPublic;
 }
 
-export function selectAssessmentById(assessment_id: string): Promise<Assessment> {
-  return queryRow(sql.select_assessment_by_id, { assessment_id }, AssessmentSchema);
+export async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
+  return await queryRow(sql.select_assessment_by_id, { assessment_id }, AssessmentSchema);
 }
 
-export function selectOptionalAssessmentById(assessment_id: string): Promise<Assessment | null> {
-  return queryOptionalRow(sql.select_assessment_by_id, { assessment_id }, AssessmentSchema);
+export async function selectOptionalAssessmentById(
+  assessment_id: string,
+): Promise<Assessment | null> {
+  return await queryOptionalRow(sql.select_assessment_by_id, { assessment_id }, AssessmentSchema);
 }
