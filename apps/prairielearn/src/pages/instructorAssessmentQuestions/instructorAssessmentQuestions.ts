@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
-import { selectAssessmentQuestions } from '../../models/questions.js';
+import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
@@ -13,10 +13,7 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const questions = await selectAssessmentQuestions(
-      res.locals.assessment.id,
-      res.locals.course.id,
-    );
+    const questions = await selectAssessmentQuestions(res.locals.assessment.id);
     res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
   }),
 );

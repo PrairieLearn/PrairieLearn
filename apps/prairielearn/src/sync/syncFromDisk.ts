@@ -2,7 +2,7 @@ import async from 'async';
 
 import * as namedLocks from '@prairielearn/named-locks';
 
-import { chalk, chalkDim } from '../lib/chalk.js';
+import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
@@ -19,13 +19,14 @@ import * as syncSharingSets from './fromDisk/sharing.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import {
-  selectSharedQuestions,
-  getInvalidRenames,
-  checkInvalidSharingSetRemovals,
+  checkInvalidDraftQuestionSharing,
   checkInvalidPublicSharingRemovals,
-  checkInvalidSharingSetDeletions,
-  checkInvalidSharingSetAdditions,
   checkInvalidSharedAssessments,
+  checkInvalidSharingSetAdditions,
+  checkInvalidSharingSetDeletions,
+  checkInvalidSharingSetRemovals,
+  getInvalidRenames,
+  selectSharedQuestions,
 } from './sharing.js';
 
 interface SyncResultSharingError {
@@ -70,6 +71,7 @@ export async function checkSharingConfigurationValid(
     courseData,
     logger,
   );
+  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
   const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
 
@@ -79,7 +81,8 @@ export async function checkSharingConfigurationValid(
     !existInvalidSharingSetDeletions &&
     !existInvalidSharingSetAdditions &&
     !existInvalidSharingSetRemovals &&
-    !existInvalidSharedAssessment;
+    !existInvalidSharedAssessment &&
+    !existInvalidDraftQuestionSharing;
   return sharingConfigurationValid;
 }
 
@@ -193,7 +196,7 @@ export async function syncDiskToSql(
   logger: ServerJobLogger,
 ): Promise<SyncResults> {
   const lockName = getLockNameForCoursePath(courseDir);
-  logger.verbose(chalkDim(`Trying lock ${lockName}`));
+  logger.verbose(`Trying lock ${lockName}`);
   const result = await namedLocks.doWithLock(
     lockName,
     {
@@ -204,12 +207,12 @@ export async function syncDiskToSql(
       },
     },
     async () => {
-      logger.verbose(chalkDim(`Acquired lock ${lockName}`));
+      logger.verbose(`Acquired lock ${lockName}`);
       return await syncDiskToSqlWithLock(course_id, courseDir, logger);
     },
   );
 
-  logger.verbose(chalkDim(`Released lock ${lockName}`));
+  logger.verbose(`Released lock ${lockName}`);
   return result;
 }
 

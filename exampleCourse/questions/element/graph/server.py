@@ -13,7 +13,7 @@ def generate(data):
     data["params"]["weight2"] = random.randint(1, 10)
 
     mat = np.random.random((3, 3))
-    mat = mat / la.norm(mat, 1, axis=0)
+    mat /= la.norm(mat, 1, axis=0)
     data["params"]["labels"] = pl.to_json(["A", "B", "C"])
     data["params"]["matrix"] = pl.to_json(mat)
     data["params"]["symmetric_matrix"] = pl.to_json(np.maximum(mat, mat.T))
@@ -30,7 +30,7 @@ def generate(data):
 
     random_graph = nx.gnm_random_graph(5, 6)
 
-    for in_node, out_node, edge_data in random_graph.edges(data=True):
+    for _, _, edge_data in random_graph.edges(data=True):
         edge_data["label"] = random.choice(string.ascii_lowercase)
 
     data["params"]["random-graph"] = pl.to_json(random_graph)
@@ -42,7 +42,7 @@ def generate(data):
     data["params"]["multigraph"] = pl.to_json(multigraph)
 
     # Generation code for color graph
-    subset_sizes = [5, 5, 4, 3, 2, 4, 4, 3]
+    subset_sizes = (5, 5, 4, 3, 2, 4, 4, 3)
     subset_color = [
         "gold",
         "violet",
@@ -54,10 +54,10 @@ def generate(data):
         "darkorange",
     ]
 
-    extents = nx.utils.pairwise(itertools.accumulate((0,) + tuple(subset_sizes)))
+    extents = nx.utils.pairwise(itertools.accumulate((0, *subset_sizes)))
     layers = [range(start, end) for start, end in extents]
     layered_graph = nx.Graph()
-    for i, (layer, color) in enumerate(zip(layers, subset_color)):
+    for i, (layer, color) in enumerate(zip(layers, subset_color, strict=True)):
         layered_graph.add_nodes_from(layer, layer=i, color=color)
 
     for layer1, layer2 in nx.utils.pairwise(layers):

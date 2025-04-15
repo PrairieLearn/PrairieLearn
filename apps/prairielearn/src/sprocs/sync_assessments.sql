@@ -167,6 +167,9 @@ BEGIN
             allow_personal_notes = (valid_assessment.data->>'allow_personal_notes')::boolean,
             group_work = (valid_assessment.data->>'group_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
+            json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision,
+            json_can_view = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_view')),
+            json_can_submit = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_submit')),
             share_source_publicly = (valid_assessment.data->>'share_source_publicly')::boolean,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
@@ -247,7 +250,7 @@ BEGIN
             DELETE FROM group_roles
             WHERE
                 assessment_id = new_assessment_id
-                AND role_name NOT IN (SELECT unnest(new_group_role_names));
+                AND role_name != ALL (new_group_role_names);
 
         ELSE
             UPDATE group_configs
@@ -323,7 +326,10 @@ BEGIN
                 max_points,
                 number_choose,
                 best_questions,
-                advance_score_perc
+                advance_score_perc,
+                json_grade_rate_minutes,
+                json_can_view,
+                json_can_submit
             )
             VALUES (
                 new_assessment_id,
@@ -332,7 +338,10 @@ BEGIN
                 (zone->>'max_points')::double precision,
                 (zone->>'number_choose')::integer,
                 (zone->>'best_questions')::integer,
-                (zone->>'advance_score_perc')::double precision
+                (zone->>'advance_score_perc')::double precision,
+                (zone->>'grade_rate_minutes')::double precision,
+                ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_view')),
+                ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_submit'))
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
@@ -340,7 +349,10 @@ BEGIN
                 max_points = EXCLUDED.max_points,
                 number_choose = EXCLUDED.number_choose,
                 best_questions = EXCLUDED.best_questions,
-                advance_score_perc = EXCLUDED.advance_score_perc
+                advance_score_perc = EXCLUDED.advance_score_perc,
+                json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
+                json_can_view = EXCLUDED.json_can_view,
+                json_can_submit = EXCLUDED.json_can_submit
             RETURNING id INTO new_zone_id;
 
             -- Insert each alternative group in this zone
@@ -350,18 +362,30 @@ BEGIN
                     number_choose,
                     advance_score_perc,
                     assessment_id,
-                    zone_id
+                    zone_id,
+                    json_grade_rate_minutes,
+                    json_can_view,
+                    json_can_submit,
+                    json_has_alternatives
                 ) VALUES (
                     (alternative_group->>'number')::integer,
                     (alternative_group->>'number_choose')::integer,
                     (alternative_group->>'advance_score_perc')::double precision,
                     new_assessment_id,
-                    new_zone_id
+                    new_zone_id,
+                    (alternative_group->>'json_grade_rate_minutes')::double precision,
+                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_view')),
+                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_submit')),
+                    (alternative_group->>'json_has_alternatives')::boolean
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
                     number_choose = EXCLUDED.number_choose,
                     zone_id = EXCLUDED.zone_id,
-                    advance_score_perc = EXCLUDED.advance_score_perc
+                    advance_score_perc = EXCLUDED.advance_score_perc,
+                    json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
+                    json_can_view = EXCLUDED.json_can_view,
+                    json_can_submit = EXCLUDED.json_can_submit,
+                    json_has_alternatives = EXCLUDED.json_has_alternatives
                 RETURNING id INTO new_alternative_group_id;
 
                 -- Insert an assessment question for each question in this alternative group
@@ -407,6 +431,7 @@ BEGIN
                         force_max_points,
                         tries_per_variant,
                         grade_rate_minutes,
+                        json_grade_rate_minutes,
                         deleted_at,
                         assessment_id,
                         question_id,
@@ -424,6 +449,7 @@ BEGIN
                         (assessment_question->>'force_max_points')::boolean,
                         (assessment_question->>'tries_per_variant')::integer,
                         (assessment_question->>'grade_rate_minutes')::double precision,
+                        (assessment_question->>'json_grade_rate_minutes')::double precision,
                         NULL,
                         new_assessment_id,
                         new_question_id,
@@ -442,6 +468,7 @@ BEGIN
                         force_max_points = EXCLUDED.force_max_points,
                         tries_per_variant = EXCLUDED.tries_per_variant,
                         grade_rate_minutes = EXCLUDED.grade_rate_minutes,
+                        json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
                         deleted_at = EXCLUDED.deleted_at,
                         alternative_group_id = EXCLUDED.alternative_group_id,
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,

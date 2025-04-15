@@ -48,7 +48,7 @@ describe('AdministratorQuery page', function () {
 
     const postResponse = await helperClient.fetchCheerio(queryUuidsUrl, {
       method: 'POST',
-      form: { count: '3', __csrf_token },
+      body: new URLSearchParams({ count: '3', __csrf_token }),
     });
     assert.isTrue(postResponse.ok);
 

@@ -7,6 +7,7 @@ import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  type AssessmentQuestion,
   AssessmentQuestionSchema,
   IdSchema,
   RubricGradingItemSchema,
@@ -14,6 +15,7 @@ import {
   type RubricItem,
   RubricItemSchema,
   RubricSchema,
+  type Submission,
 } from './db-types.js';
 import { idsEqual } from './id.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
@@ -118,28 +120,34 @@ export async function nextUngradedInstanceQuestionUrl(
   return `${urlPrefix}/assessment/${assessment_id}/manual_grading/assessment_question/${assessment_question_id}`;
 }
 
-/** Populates the locals objects for rubric data. Assigns values to `rubric_data` in the locals.
- *
- * @param locals - The locals data to be retrieved and updated. The `assessment_question` is expected to have been retrieved before this call, as well as any value that impacts the mustache rendering, such as `variant` and `submission`.
+/**
+ * Selects a variety of rubric data for a given assessment question.
+ * Also renders the selected rubric items with the submission data.
  */
-export async function populateRubricData(locals: Record<string, any>): Promise<void> {
+export async function selectRubricData({
+  assessment_question,
+  submission,
+}: {
+  assessment_question?: AssessmentQuestion | null;
+  submission: Submission;
+}): Promise<RubricData | null> {
   // If there is no assessment question (e.g., in question preview), there is no rubric
-  if (!locals.assessment_question?.manual_rubric_id) return;
+  if (!assessment_question?.manual_rubric_id) return null;
 
   const rubric_data = await sqldb.queryOptionalRow(
     sql.select_rubric_data,
     {
-      assessment_question_id: locals.assessment_question.id,
-      rubric_id: locals.assessment_question.manual_rubric_id,
+      assessment_question_id: assessment_question.id,
+      rubric_id: assessment_question.manual_rubric_id,
     },
     RubricDataSchema,
   );
 
   // Render rubric items: description, explanation and grader note
   const mustache_data = {
-    correct_answers: locals.submission?.true_answer ?? {},
-    params: locals.submission?.params ?? {},
-    submitted_answers: locals.submission?.submitted_answer,
+    correct_answers: submission?.true_answer ?? {},
+    params: submission?.params ?? {},
+    submitted_answers: submission?.submitted_answer,
   };
 
   await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
@@ -155,7 +163,21 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
     );
   });
 
-  locals.rubric_data = rubric_data;
+  return rubric_data;
+}
+
+/**
+ * Populates the locals objects for rubric data. Assigns values to `rubric_data`
+ * in the locals.
+ *
+ * The `assessment_question` is expected to have been retrieved before this call,
+ * as well as any value that impacts the mustache rendering, such as `submission`.
+ */
+export async function populateRubricData(locals: Record<string, any>): Promise<void> {
+  locals.rubric_data = await selectRubricData({
+    assessment_question: locals.assessment_question,
+    submission: locals.submission,
+  });
 }
 
 /** Builds the locals object for rubric grading data. Can be called with any object that contains a
@@ -447,6 +469,7 @@ export async function updateInstanceQuestionScore(
   check_modified_at: string | null,
   score: InstanceQuestionScoreInput,
   authn_user_id: string,
+  is_ai_graded = false,
 ): Promise<{ grading_job_id: string | null; modified_at_conflict: boolean }> {
   return sqldb.runInTransactionAsync(async () => {
     const current_submission = await sqldb.queryRow(
@@ -592,6 +615,7 @@ export async function updateInstanceQuestionScore(
         {
           submission_id: current_submission.submission_id,
           authn_user_id,
+          grading_method: is_ai_graded ? 'AI' : 'Manual',
           correct: new_auto_score_perc == null ? null : new_auto_score_perc > 50,
           score: new_score_perc == null ? null : new_score_perc / 100,
           auto_points: new_auto_points,
@@ -611,6 +635,7 @@ export async function updateInstanceQuestionScore(
           manual_rubric_grading_id,
           score: new_auto_score_perc == null ? null : new_auto_score_perc / 100,
           correct: new_auto_score_perc == null ? null : new_auto_score_perc > 50,
+          is_ai_graded,
         });
       }
     }
@@ -629,6 +654,7 @@ export async function updateInstanceQuestionScore(
         max_points: current_submission.max_points,
         max_manual_points: current_submission.max_manual_points,
         max_auto_points: current_submission.max_auto_points,
+        is_ai_graded,
       });
 
       await sqldb.callAsync('assessment_instances_grade', [

@@ -1,8 +1,7 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { AnsiUp } from 'ansi_up';
 import { execa } from 'execa';
-import _ from 'lodash';
+import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -10,10 +9,10 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
-import { chalk, chalkDim } from './chalk.js';
+import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
 import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
-import { type JobSequenceWithTokens, JobSequenceWithJobsSchema } from './server-jobs.types.js';
+import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -113,7 +112,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   }
 
   verbose(msg: string) {
-    this.addToOutput(chalkDim(msg) + '\n');
+    this.addToOutput(chalk.dim(msg) + '\n');
   }
 
   async exec(
@@ -121,7 +120,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     args: string[] = [],
     options: ServerJobExecOptions,
   ): Promise<ServerJobResult> {
-    this.addToOutput(chalk.blueBright(`Command: ${file} ${args.join(' ')}\n`));
+    this.addToOutput(chalk.blueBright(`Command: ${shlex.join([file, ...args])}\n`));
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
     const start = performance.now();
@@ -147,7 +146,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
       // Record timing information.
       const duration = (performance.now() - start).toFixed(2);
-      this.addToOutput(chalkDim(`Command completed in ${duration}ms`) + '\n\n');
+      this.addToOutput(chalk.dim(`Command completed in ${duration}ms`) + '\n\n');
     }
 
     return { data: this.data };
@@ -222,8 +221,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   private flush(force = false) {
     if (Date.now() - this.lastSent > 1000 || force) {
-      const ansiUp = new AnsiUp();
-      const ansifiedOutput = ansiUp.ansi_to_html(this.output);
+      const ansifiedOutput = ansiToHtml(this.output);
       socketServer.io
         ?.to('job-' + this.jobId)
         .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
@@ -366,7 +364,7 @@ export async function stop() {
 
 export function connection(socket) {
   socket.on('joinJob', function (msg, callback) {
-    if (!_.has(msg, 'job_id')) {
+    if (!('job_id' in msg)) {
       logger.error('socket.io joinJob called without job_id');
       return;
     }
@@ -381,10 +379,7 @@ export function connection(socket) {
     queryRow(sql.select_job, { job_id: msg.job_id }, JobSchema).then(
       (job) => {
         const status = job.status;
-
-        const ansiUp = new AnsiUp();
-        const output = ansiUp.ansi_to_html(liveJobs[msg.job_id]?.output ?? job.output ?? '');
-
+        const output = ansiToHtml(liveJobs[msg.job_id]?.output ?? job.output);
         callback({ status, output });
       },
       (err) => {
@@ -395,7 +390,7 @@ export function connection(socket) {
   });
 
   socket.on('joinJobSequence', function (msg, callback) {
-    if (!_.has(msg, 'job_sequence_id')) {
+    if (!('job_sequence_id' in msg)) {
       logger.error('socket.io joinJobSequence called without job_sequence_id');
       return;
     }

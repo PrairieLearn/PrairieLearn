@@ -22,22 +22,17 @@ export function AssessmentBadge({
   if (hideLink) {
     return html`<span class="badge color-${assessment.color}">${assessment.label}</span>`;
   }
+
   if (publicURL) {
-    // For public assessments, the URL prefix is different
-    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}/assessment/${assessment.assessment_id}/questions`;
+    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}`;
   } else if (urlPrefix === undefined) {
     // Construct the URL prefix with the appropriate course instance
-    urlPrefix = `${plainUrlPrefix}/assessment/${assessment.assessment_id}/questions`;
-  } else {
-    // Add the assessment ID to the URL prefix
-    urlPrefix = `${urlPrefix}/assessment/${assessment.assessment_id}/questions`;
+    urlPrefix = `${plainUrlPrefix}/course_instance/${course_instance_id}/instructor`;
   }
-
   return html`
     <a
-      href="${urlPrefix}"
-      class="badge color-${assessment.color} color-hover"
-      onclick="event.stopPropagation();"
+      href="${urlPrefix}/assessment/${assessment.assessment_id}"
+      class="btn btn-badge color-${assessment.color}"
     >
       ${assessment.label}
     </a>

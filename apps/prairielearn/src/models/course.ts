@@ -6,14 +6,14 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
-  queryRow,
   queryAsync,
-  queryRows,
   queryOptionalRow,
+  queryRow,
+  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { type Course, CourseSchema, IdSchema } from '../lib/db-types.js';
+import { type Course, CourseSchema } from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';
 
@@ -40,13 +40,13 @@ export async function selectCourseById(course_id: string): Promise<Course> {
   );
 }
 
-export async function selectCourseIdByInstanceId(course_instance_id: string): Promise<string> {
+export async function selectCourseByCourseInstanceId(course_instance_id: string): Promise<Course> {
   return await queryRow(
-    sql.select_course_id_by_instance_id,
+    sql.select_course_by_instance_id,
     {
       course_instance_id,
     },
-    IdSchema,
+    CourseSchema,
   );
 }
 
@@ -214,5 +214,31 @@ export async function insertCourse({
       course_id: course.id,
     });
     return course;
+  });
+}
+
+/**
+ * Update the `show_getting_started` column for a course.
+ */
+export async function updateCourseShowGettingStarted({
+  course_id,
+  show_getting_started,
+}: {
+  course_id: string;
+  show_getting_started: boolean;
+}) {
+  await queryAsync(sql.update_course_show_getting_started, {
+    course_id,
+    show_getting_started,
+  });
+}
+
+/**
+ * Update the `sharing_name` column for a course.
+ */
+export async function updateCourseSharingName({ course_id, sharing_name }): Promise<void> {
+  await queryAsync(sql.update_course_sharing_name, {
+    course_id,
+    sharing_name,
   });
 }

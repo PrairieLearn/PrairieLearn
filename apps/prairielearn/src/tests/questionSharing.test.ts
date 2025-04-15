@@ -34,6 +34,7 @@ const CONSUMING_COURSE_SHARING_NAME = 'consuming-course';
 const SHARING_SET_NAME = 'share-set-example';
 const SHARING_QUESTION_QID = 'shared-via-sharing-set';
 const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
+const DRAFT_QUESTION_QID = '__drafts__/draft_1';
 
 function sharingPageUrl(courseId) {
   return `${baseUrl}/course/${courseId}/course_admin/sharing`;
@@ -142,6 +143,12 @@ describe('Question Sharing', function () {
         uuid: '11111111-1111-1111-1111-111111111111',
         type: 'v3',
         title: 'Shared publicly',
+        topic: 'TOPIC HERE',
+      },
+      [DRAFT_QUESTION_QID]: {
+        uuid: '22222222-2222-2222-2222-222222222222',
+        type: 'v3',
+        title: 'Draft question',
         topic: 'TOPIC HERE',
       },
     };
@@ -675,6 +682,48 @@ describe('Question Sharing', function () {
         const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
 
         assert(sharedAssessmentPage.ok);
+      },
+    );
+
+    step('Try adding a draft question to a sharing set, ensure live does not sync it', async () => {
+      sharingCourseData.questions[DRAFT_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
+
+      const questionDirectory = path.join(sharingCourseLiveDir, 'questions', DRAFT_QUESTION_QID);
+      await fs.ensureDir(questionDirectory);
+      await fs.writeJSON(
+        path.join(questionDirectory, 'info.json'),
+        sharingCourseData.questions[DRAFT_QUESTION_QID],
+      );
+
+      await ensureInvalidSharingOperationFailsToSync();
+    });
+
+    step('Try publicly sharing a draft question, ensure live does not sync it', async () => {
+      delete sharingCourseData.questions[DRAFT_QUESTION_QID].sharingSets;
+      sharingCourseData.questions[DRAFT_QUESTION_QID].sharePublicly = true;
+
+      const questionDirectory = path.join(sharingCourseLiveDir, 'questions', DRAFT_QUESTION_QID);
+      await fs.writeJSON(
+        path.join(questionDirectory, 'info.json'),
+        sharingCourseData.questions[DRAFT_QUESTION_QID],
+      );
+
+      await ensureInvalidSharingOperationFailsToSync();
+    });
+
+    step(
+      'Try publicly sharing the source of a draft question, ensure live does not sync it',
+      async () => {
+        delete sharingCourseData.questions[DRAFT_QUESTION_QID].sharePublicly;
+        sharingCourseData.questions[DRAFT_QUESTION_QID].shareSourcePublicly = true;
+
+        const questionDirectory = path.join(sharingCourseLiveDir, 'questions', DRAFT_QUESTION_QID);
+        await fs.writeJSON(
+          path.join(questionDirectory, 'info.json'),
+          sharingCourseData.questions[DRAFT_QUESTION_QID],
+        );
+
+        await ensureInvalidSharingOperationFailsToSync();
       },
     );
   });

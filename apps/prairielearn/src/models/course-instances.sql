@@ -31,7 +31,13 @@ SELECT
     OR ia.id IS NOT NULL
     OR cip.course_instance_role > 'None',
     FALSE
-  ) AS has_course_instance_permission_view
+  ) AS has_course_instance_permission_view,
+  COALESCE(
+    $is_administrator
+    OR ia.id IS NOT NULL
+    OR cip.course_instance_role >= 'Student Data Editor',
+    FALSE
+  ) AS has_course_instance_permission_edit
 FROM
   pl_courses AS c
   JOIN institutions AS i ON (i.id = c.institution_id)
@@ -89,3 +95,15 @@ FROM
 WHERE
   cip.course_instance_id = $course_instance_id
   AND cip.course_instance_role >= $minimal_role;
+
+-- BLOCK select_course_has_course_instances
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      course_instances as ci
+    WHERE
+      ci.course_id = $course_id
+      AND ci.deleted_at IS NULL
+  );
