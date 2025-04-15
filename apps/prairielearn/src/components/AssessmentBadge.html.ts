@@ -6,9 +6,11 @@ export function AssessmentBadge({
   urlPrefix,
   plainUrlPrefix,
   course_instance_id,
+  publicURL = false,
 }: {
   assessment: { assessment_id: string; color: string; label: string };
   hideLink?: boolean;
+  publicURL?: boolean;
 } & ( // If urlPrefix is not provided, then plainUrlPrefix and course_instance_id must be provided and the appropriate URL prefix will be constructed
   | {
       urlPrefix: string;
@@ -20,7 +22,10 @@ export function AssessmentBadge({
   if (hideLink) {
     return html`<span class="badge color-${assessment.color}">${assessment.label}</span>`;
   }
-  if (urlPrefix === undefined) {
+
+  if (publicURL) {
+    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}`;
+  } else if (urlPrefix === undefined) {
     // Construct the URL prefix with the appropriate course instance
     urlPrefix = `${plainUrlPrefix}/course_instance/${course_instance_id}/instructor`;
   }

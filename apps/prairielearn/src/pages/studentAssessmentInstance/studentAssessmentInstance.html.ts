@@ -32,7 +32,7 @@ import {
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { getRoleNamesForUser, type GroupInfo } from '../../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
@@ -186,8 +186,8 @@ export function StudentAssessmentInstance({
                     <div class="alert alert-warning">
                       This assessment will only be graded after it is finished. You should save
                       answers for all questions and your exam will be graded later. You can use the
-                      <span class="badge badge-outline badge-light">Finish assessment</span> button
-                      below to finish and calculate your final grade.
+                      <span class="badge badge-outline text-bg-light">Finish assessment</span>
+                      button below to finish and calculate your final grade.
                     </div>
                   `
                 : ''}
@@ -297,7 +297,7 @@ export function StudentAssessmentInstance({
                           <tr>
                             <th colspan="${zoneTitleColspan}">
                               <div class="d-flex align-items-center">
-                                <span class="mr-2">${instance_question_row.zone_title}</span>
+                                <span class="me-2">${instance_question_row.zone_title}</span>
                                 ${instance_question_row.zone_has_max_points
                                   ? ZoneInfoPopover({
                                       label: `Maximum ${instance_question_row.zone_max_points} points`,
@@ -480,7 +480,7 @@ export function StudentAssessmentInstance({
                 ? html`
                     ${resLocals.assessment.allow_real_time_grading
                       ? html`
-                          <form name="grade-form" method="POST" class="form-inline">
+                          <form name="grade-form" method="POST">
                             <input type="hidden" name="__action" value="grade" />
                             <input
                               type="hidden"
@@ -544,8 +544,8 @@ export function StudentAssessmentInstance({
                                     here:
                                     <button
                                       class="btn btn-danger"
-                                      data-toggle="modal"
-                                      data-target="#confirmFinishModal"
+                                      data-bs-toggle="modal"
+                                      data-bs-target="#confirmFinishModal"
                                       ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                                     >
                                       Finish assessment
@@ -572,8 +572,8 @@ export function StudentAssessmentInstance({
                               After you have answered all the questions completely, click here:
                               <button
                                 class="btn btn-danger"
-                                data-toggle="modal"
-                                data-target="#confirmFinishModal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#confirmFinishModal"
                                 ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                               >
                                 Finish assessment
@@ -725,10 +725,10 @@ function ZoneInfoPopover({ label, content }: { label: string; content: string })
     <button
       type="button"
       class="btn btn-xs btn-secondary"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-content="${content}"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-content="${content}"
     >
       ${label}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
     </button>
@@ -761,11 +761,11 @@ function RowLabel({
           <span class="text-muted">${rowLabelText}</span>
           <button
             type="button"
-            class="btn btn-xs border text-secondary ml-1"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-content="${lockedPopoverText}"
+            class="btn btn-xs border text-secondary ms-1"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-content="${lockedPopoverText}"
             data-test-id="locked-instance-question-row"
             aria-label="Locked"
           >
@@ -779,11 +779,11 @@ function RowLabel({
       ? html`
           <button
             type="button"
-            class="btn btn-xs border text-secondary ml-1"
-            data-toggle="popover"
-            data-container="body"
-            data-html="true"
-            data-content="Personal notes: ${instance_question_row.file_count}"
+            class="btn btn-xs border text-secondary ms-1"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-content="Personal notes: ${instance_question_row.file_count}"
             aria-label="Has personal note attachments"
           >
             <i class="fas fa-paperclip"></i>
@@ -798,12 +798,12 @@ function ExamQuestionHelpAvailablePoints() {
     <button
       type="button"
       class="btn btn-xs btn-ghost"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Available points"
-      data-content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Available points"
+      data-bs-content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
@@ -815,12 +815,12 @@ function ExamQuestionHelpAwardedPoints() {
     <button
       type="button"
       class="btn btn-xs btn-ghost"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Awarded points"
-      data-content="The number of points already earned, as a fraction of the maximum possible points for the question."
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Awarded points"
+      data-bs-content="The number of points already earned, as a fraction of the maximum possible points for the question."
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
@@ -852,7 +852,7 @@ function ConfirmFinishModal({
     footer: html`
       <input type="hidden" name="__action" value="finish" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
+      <button type="button" data-bs-dismiss="modal" class="btn btn-secondary">Cancel</button>
       <button type="submit" class="btn btn-danger">Finish assessment</button>
     `,
   });

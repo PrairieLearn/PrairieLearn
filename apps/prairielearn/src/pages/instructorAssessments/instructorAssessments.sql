@@ -29,6 +29,8 @@ SELECT
   aset.name,
   aset.color,
   (aset.abbreviation || a.number) as label,
+  to_jsonb(aset) as assessment_set,
+  to_jsonb(am) as assessment_module,
   (
     LAG(
       CASE
@@ -49,12 +51,6 @@ SELECT
         a.id
     ) IS NULL
   ) AS start_new_assessment_group,
-  (
-    CASE
-      WHEN $assessments_group_by = 'Set' THEN aset.heading
-      ELSE am.heading
-    END
-  ) AS assessment_group_heading,
   coalesce(ic.open_issue_count, 0) AS open_issue_count
 FROM
   assessments AS a
@@ -104,3 +100,19 @@ WHERE
   a.uuid = $uuid
   AND a.course_instance_id = $course_instance_id
   AND a.deleted_at IS NULL;
+
+-- BLOCK select_assessment_sets
+SELECT
+  aset.*
+FROM
+  assessment_sets AS aset
+WHERE
+  aset.course_id = $course_id;
+
+-- BLOCK select_assessment_modules
+SELECT
+  am.*
+FROM
+  assessment_modules as am
+WHERE
+  am.course_id = $course_id;

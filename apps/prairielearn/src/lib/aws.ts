@@ -1,14 +1,11 @@
+import { type IncomingMessage } from 'node:http';
 import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
 
-import {
-  S3,
-  type GetObjectOutput,
-  type CompleteMultipartUploadCommandOutput,
-} from '@aws-sdk/client-s3';
+import { type CompleteMultipartUploadCommandOutput, S3 } from '@aws-sdk/client-s3';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { Upload } from '@aws-sdk/lib-storage';
-import { type NodeJsClient } from '@smithy/types';
+import { type NodeJsClient, type SdkStream } from '@smithy/types';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 
@@ -146,6 +143,12 @@ export async function deleteFromS3(s3Bucket: string, s3Path: string, isDirectory
   debug(`Deleted s3://${s3Bucket}/${s3Path}`);
 }
 
+export async function getFromS3(bucket: string, key: string, buffer: true): Promise<Buffer>;
+export async function getFromS3(
+  bucket: string,
+  key: string,
+  buffer: false,
+): Promise<SdkStream<IncomingMessage>>;
 /**
  * Get a file from S3.
  *
@@ -158,8 +161,8 @@ export async function getFromS3(
   bucket: string,
   key: string,
   buffer = true,
-): Promise<Buffer | GetObjectOutput['Body']> {
-  const s3 = new S3(makeS3ClientConfig());
+): Promise<Buffer | SdkStream<IncomingMessage>> {
+  const s3 = new S3(makeS3ClientConfig()) as NodeJsClient<S3>;
   const res = await s3.getObject({ Bucket: bucket, Key: key });
   if (!res.Body) throw new Error('No data returned from S3');
   logger.verbose(`Fetched data from s3://${bucket}/${key}`);

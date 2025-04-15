@@ -57,9 +57,9 @@ describe('API', function () {
       assert(button);
 
       // Load the popover content
-      assert.isString(button.attribs['data-content']);
+      assert.isString(button.attribs['data-bs-content']);
 
-      const data$ = cheerio.load(button.attribs['data-content']);
+      const data$ = cheerio.load(button.attribs['data-bs-content']);
 
       // Validate that the CSRF token is present
       const csrfInput = data$('form input[name="__csrf_token"]').get(0);
@@ -153,7 +153,7 @@ describe('API', function () {
       locals.assessment_id = assessment.assessment_id;
     });
 
-    step('GET to API for single assesment succeeds', async function () {
+    step('GET to API for single assessment succeeds', async function () {
       locals.apiAssessmentUrl =
         locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}`;
 
@@ -323,6 +323,16 @@ describe('API', function () {
       const json = (await res.json()) as any;
       assert.exists(json.course_instance_id);
       assert.exists(json.course_title);
+    });
+
+    step('GET to API for course instance info fails in exam mode', async () => {
+      const res = await fetch(locals.apiCourseInstanceUrl, {
+        headers: {
+          'Private-Token': locals.api_token,
+          Cookie: 'pl_test_mode=Exam',
+        },
+      });
+      assert.equal(res.status, 403);
     });
   });
 });

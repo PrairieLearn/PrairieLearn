@@ -35,8 +35,7 @@ ON CONFLICT (
   ip_address,
   user_agent,
   accept_language
-) DO
-UPDATE
+) DO UPDATE
 SET
   -- Force an update so that `RETURNING` will actually return the row.
   -- This is only triggered to handle race conditions, since there is a select before this insert.
