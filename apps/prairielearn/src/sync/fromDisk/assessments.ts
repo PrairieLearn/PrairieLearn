@@ -419,7 +419,12 @@ export async function sync(
       course_instance_id: courseInstanceId,
       institution_id: institutionId,
     });
-    if (!questionSharingEnabled && config.checkSharingOnSync) {
+    const consumePublicQuestionsEnabled = await features.enabled('consume-public-questions', {
+      course_id: courseId,
+      course_instance_id: courseInstanceId,
+      institution_id: institutionId,
+    });
+    if (!(questionSharingEnabled || consumePublicQuestionsEnabled) && config.checkSharingOnSync) {
       for (const [tid, qids] of assessmentImportedQids.entries()) {
         if (qids.length > 0) {
           infofile.addError(
