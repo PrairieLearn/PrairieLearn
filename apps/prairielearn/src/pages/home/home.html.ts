@@ -206,24 +206,12 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
                   })}
                   ${course.course_instances.some((ci) => ci.expired)
                     ? html`
-                        <button
-                          class="btn btn-outline-dark btn-xs my-1"
-                          type="button"
-                          data-bs-toggle="collapse"
-                          data-bs-target="#older-instances-${course.id}"
-                          aria-expanded="false"
-                          aria-controls="older-instances-${course.id}"
-                        >
-                          Older instances
-                        </button>
-                        <span
-                          class="collapse collapse-horizontal"
-                          id="older-instances-${course.id}"
-                        >
+                        <details>
+                          <summary class="text-muted">Older instances</summary>
                           ${CourseInstanceList({
                             course_instances: course.course_instances.filter((ci) => ci.expired),
                           })}
-                        </span>
+                        </details>
                       `
                     : ''}
                 </td>
