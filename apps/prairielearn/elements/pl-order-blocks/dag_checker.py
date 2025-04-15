@@ -173,6 +173,7 @@ def grade_dag(
 
     return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes()
 
+
 def get_wrong_order_blocks(
     submission: list[str],
     depends_graph: Mapping[str, list[str]],
@@ -200,6 +201,7 @@ def get_wrong_order_blocks(
         seen.add(tag)
 
     return misordered
+
 
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """
