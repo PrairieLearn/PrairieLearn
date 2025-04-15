@@ -38,6 +38,9 @@ def load_extension(data: QuestionData, extension_name: str) -> Any:
 
     Returns:
         A dictionary of defined variables and functions.
+
+    Raises:
+        ValueError: If the extension isn't defined in the provided `data`
     """
     if "extensions" not in data:
         raise ValueError("load_extension() must be called from an element!")
@@ -91,6 +94,9 @@ def load_all_extensions(data: QuestionData) -> dict[str, Any]:
 
     Returns:
         An ordered dictionary mapping the extension name to its defined variables and functions
+
+    Raises:
+        ValueError: If the element does not have any extensions defined.
     """
     if "extensions" not in data:
         raise ValueError("load_all_extensions() must be called from an element!")

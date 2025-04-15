@@ -18,7 +18,7 @@ from text_unidecode import unidecode
 
 
 def iter_keys() -> Generator[str, None, None]:
-    """A continuous alphabetic list of the form ['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...].
+    """A continuous alphabetic list of the form `['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]`.
 
     <https://stackoverflow.com/questions/29351492/how-to-make-a-continuous-alphabetic-list-python-from-a-z-then-from-aa-ab-ac-e/29351603#29351603>
 
@@ -34,7 +34,7 @@ def iter_keys() -> Generator[str, None, None]:
 
 def index2key(i: int) -> str:
     """
-    Use when generating ordered lists of the form ['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]
+    Use when generating ordered lists of the form `['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]`
 
     Returns:
         Alphabetic key in the form `[a-z]*` from a given integer (i = 0, 1, 2, ...).
