@@ -580,13 +580,12 @@ def string_from_numpy(
 
 
 # Deprecated version, keeping for backwards compatibility
-def string_from_2darray(
+def string_from_2darray(  # noqa: D103
     A: npt.NDArray[Any],
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
-    """Return the 2D array as a string in the specified language."""
     result = string_from_numpy(A, language, presentation_type, digits)
     return result
 
