@@ -189,10 +189,12 @@ class ReadState:
 
 
 def ind2chr(index):
-    """c = ind2chr(i)
-
-    Convert the index i to a character c, so that 0 -> 'A', 1 -> 'B',
+    """Convert the index i to a character c, so that 0 -> 'A', 1 -> 'B',
     etc. Invalid indexes convert to the character '*'.
+
+    Examples:
+        >>> c = ind2chr(0)
+        'A'
     """
     index = int(index)
     if index < 0 or index >= len(string.ascii_uppercase):
@@ -201,11 +203,13 @@ def ind2chr(index):
 
 
 def chr2ind(char):
-    """i = ind2chr(c)
-
-    Convert the character c to an index i, so that 'A' -> 0, 'B' -> 1,
+    """Convert the character c to an index i, so that 'A' -> 0, 'B' -> 1,
     etc. Uppercase and lowercase are both converted. Invalid
     characters convert to -1.
+
+    Examples:
+        >>> i = chr2ind('B')
+        1
     """
     if char in string.ascii_uppercase:
         return string.ascii_uppercase.index(char)
@@ -218,10 +222,11 @@ def chr2ind(char):
 
 
 def read_library(input_filename):
-    """library = read_library(input_filename)
+    """Reads the library.tex file and returns a tree of
+    `Library()/Zone()/Question()/Variant()/Answer()` objects.
 
-    Reads the library.tex file and returns a tree of
-    Library()/Zone()/Question()/Variant()/Answer() objects.
+    Examples:
+        >>> library = read_library(input_filename)
     """
     log_and_print(f"Reading library file: {input_filename}")
     try:
@@ -487,10 +492,11 @@ def read_library(input_filename):
 
 
 def check_library(library):
-    """check_library(library)
-
-    Check that the given Library object is valid, printing errors and
+    """Check that the given Library object is valid, printing errors and
     exiting if any problems are found.
+
+    Examples:
+        >>> check_library(library)
     """
     log_and_print("Checking library data")
     errors = []

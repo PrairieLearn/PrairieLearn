@@ -38,6 +38,7 @@ CacheStrategy = Literal["none", "pull", "update"]
 
 
 def get_image_path(image: str) -> str:
+    """Get the path to the Docker context for the given image."""
     if not image.startswith("prairielearn/"):
         raise ValueError(f"Cannot build non-PrairieLearn image: {image}")
 
@@ -65,6 +66,10 @@ def get_image_path(image: str) -> str:
 
 @functools.cache
 def check_path_modified(path: str) -> bool:
+    """Check if the given path has been modified since the last commit.
+
+    This is used to determine if we need to rebuild the image.
+    """
     branch = (
         subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
@@ -229,6 +234,7 @@ def build_images(
     cache_strategy: CacheStrategy = "none",
     cache_only: list[str] | None = None,
 ) -> None:
+    """Builds a list of Docker images in the order they are given."""
     validate_image_order(images)
 
     image_digests: dict[str, str] = {}

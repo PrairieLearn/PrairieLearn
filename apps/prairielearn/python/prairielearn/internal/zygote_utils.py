@@ -22,6 +22,9 @@ def assert_all_integers_within_limits(item: Any) -> None:
 
     We consider an integer to be oversized if it cannot be losslessly parsed
     from JSON into a JavaScript number.
+
+    Raises:
+        ValueError: If any oversized integers are found in the input item.
     """
     item_stack = [item]
 
