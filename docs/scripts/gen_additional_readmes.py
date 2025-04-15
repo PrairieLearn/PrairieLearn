@@ -26,7 +26,7 @@ doc_site_url = mkdocs_gen_files.config.site_url + "/en/latest/"
 
 def build_readme_nav() -> None:
     """Copy all relevant README files into the documentation and create a navigation structure."""
-    nav = mkdocs_gen_files.Nav()
+    nav = mkdocs_gen_files.Nav()  # type: ignore
     for mapping in readmes_mapping:
         base = Path(mapping.src).absolute()
         doc_path = Path(mapping.dest)

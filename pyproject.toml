@@ -38,6 +38,7 @@ ignore = [
 
   # These rules were discussed and disabled
   "ANN401",  # any-type
+  "D107",    # undocumented-public-init
   "D203",    # incorrect-blank-line-before-class
   "D212",    # multi-line-summary-first-line
   "D205",    # missing-blank-line-after-summary (we use a multi-line description instead of summaries sometimes)
@@ -77,9 +78,9 @@ ignore = [
   "TRY003",  # raise-vanilla-args (long messages in raise statements)
 
   # These rules need to be enabled
+  # TODO: D103,D104 (https://github.com/astral-sh/ruff/issues/12434)
   "D101", # undocumented-public-class
   "D102", # undocumented-public-method
-  "D107", # undocumented-public-init
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -106,7 +107,6 @@ convention = "google"
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
 "apps/prairielearn/elements/**/*.py" = [
-  "D100", # TODO: undocumented-public-module
   # Ignore uppercase function parameters (e.g. G for a graph)
   "N803",
   # Allow boolean trap pattern in method signatures
@@ -116,7 +116,7 @@ convention = "google"
   # ignore unused parameters in functions
   "ARG",
   # ignore docstring linting on functions (has no public API)
-  "D103",
+  "D",
   "DOC201",
 ]
 "apps/prairielearn/python/**/*.py" = ["N803"]
@@ -138,19 +138,19 @@ convention = "google"
 
 # Directories we don't want strict annotation linting or docstring linting on
 # For example, code with no public API, elements with known issues, or course content.
-"apps/prairielearn/python/zygote.py" = ["D100", "D103", "DOC201"]
+"apps/prairielearn/python/zygote.py" = ["D100", "D101", "D103", "DOC201"]
 "apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D100", "D103", "DOC201"]
 "docs/**/*.py" = ["D100", "DOC201"]
 "apps/prairielearn/src/tests/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
-"contrib/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
+"contrib/**/*.py" = ["ANN", "D", "DOC201"]
 "scripts/**/*.py" = ["D100", "DOC201"]
 "testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
-"exampleCourse/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
+"exampleCourse/**/*.py" = ["ANN", "D", "DOC201"]
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-threejs/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
-"apps/prairielearn/python/test/**/*.py" = ["ANN", "D100", "D103"]
+"apps/prairielearn/python/test/**/*.py" = ["ANN", "D"]
 # Issues rebuilding workspace
 "workspaces/jupyterlab-python/jupyter_server_config.py" = ["PLW1508"]
 

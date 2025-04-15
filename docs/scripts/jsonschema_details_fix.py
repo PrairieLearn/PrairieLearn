@@ -1,10 +1,15 @@
 import re
+from pathlib import Path
 
 from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.structure.pages import Page
 
+JSON_SCHEMA_REGEX = re.compile(
+    r'<details class="jsonschema-details" open><summary>(.*?)<\/summary>(.*?)<\/details>'
+)
 
-def on_post_page(output: str, page: Page, config: MkDocsConfig) -> str:  # noqa: ARG001
+
+def on_post_page(output: str, page: Page, config: MkDocsConfig) -> str | None:  # noqa: ARG001
     """
     HACK:
     With mdx_truly_sane_lists, a mismatched <p> tag is generated (see https://github.com/radude/mdx_truly_sane_lists/issues/23).
@@ -13,8 +18,11 @@ def on_post_page(output: str, page: Page, config: MkDocsConfig) -> str:  # noqa:
 
     Thus, we manually fix the issue by post-processing the generated markdown to remove the <p> tag.
     """
+    if "schemas" not in Path(page.file.src_uri).parts:
+        return None
+
     output = re.sub(
-        r"<p>(<details><summary>.*<\/summary>)<\/p>",
+        JSON_SCHEMA_REGEX,
         r"\1",
         output,
     )

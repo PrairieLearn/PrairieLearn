@@ -385,8 +385,8 @@ def numpy_to_matlab(
 
     This function assumes that np_object is one of these things:
 
-        - a number (float or complex)
-        - a 2D ndarray (float or complex)
+    - a number (float or complex)
+    - a 2D ndarray (float or complex)
 
     Returns:
         A MATLAB-formatted string
@@ -447,9 +447,9 @@ def string_from_numpy(
 
     This function assumes that A is one of these things:
 
-        - a number (float or complex)
-        - a 1D ndarray (float or complex)
-        - a 2D ndarray (float or complex)
+    - a number (float or complex)
+    - a 1D ndarray (float or complex)
+    - a 2D ndarray (float or complex)
 
     If language is 'python' and A is a 2D ndarray, the string looks like this:
 
@@ -459,7 +459,7 @@ def string_from_numpy(
 
         [ ..., ..., ... ]
 
-    If language is 'matlab' and A is a 2D ndarray, the string looks like this:
+    If language is `'matlab'` and A is a 2D ndarray, the string looks like this:
 
         [ ... ... ; ... ... ]
 
@@ -467,7 +467,7 @@ def string_from_numpy(
 
         [ ..., ..., ... ]
 
-    If language is 'mathematica' and A is a 2D ndarray, the string looks like this:
+    If language is `'mathematica'` and A is a 2D ndarray, the string looks like this:
 
         {{ ..., ... },{ ..., ... }}
 
@@ -475,7 +475,7 @@ def string_from_numpy(
 
         { ..., ..., ... }
 
-    If language is 'r' and A is a 2D ndarray, the string looks like this:
+    If language is `'r'` and A is a 2D ndarray, the string looks like this:
 
         matrix(c(., ., .), nrow=NUM_ROWS, ncol=NUM_COLS, byrow = TRUE)
 
@@ -483,19 +483,21 @@ def string_from_numpy(
 
         c(., ., .)
 
-    If language is 'sympy' and A is a 2D ndarray, the string looks like this:
+    If language is `'sympy'` and A is a 2D ndarray, the string looks like this:
+
         Matrix([[ ..., ... ], [ ..., ... ]])
 
     If A is a 1D ndarray, the string looks like this:
+
         Matrix([ ..., ..., ... ])
 
     In either case, if A is not a 1D or 2D ndarray, the string is a single number,
     not wrapped in brackets.
 
-    If presentation_type is 'sigfig', each number is formatted using the
-    to_precision module to "digits" significant figures.
+    If presentation_type is `'sigfig'`, each number is formatted using the
+    to_precision module to `'digits'` significant figures.
 
-    Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
+    Otherwise, each number is formatted as `'{:.{digits}{presentation_type}}'`.
 
     Returns:
         A formatted version of the NumPy array.
@@ -629,10 +631,11 @@ def numpy_to_matlab_sf(
 
     This function assumes that A is one of these things:
 
-        - a number (float or complex)
-        - a 2D ndarray (float or complex)
+    - a number (float or complex)
+    - a 2D ndarray (float or complex)
 
     The style argument must be one of three values:
+
     - legacy: formats 1d arrays with commas and 2d arrays with spaces
     - comma: formats all arrays with commas
     - space: formats all arrays with spaces
@@ -858,18 +861,22 @@ def latex_from_2darray(
     r"""Convert a NumPy array to LaTeX.
 
     This function assumes that A is one of these things:
-            - a number (float or complex)
-            - a 2D ndarray (float or complex)
+
+    - a number (float or complex)
+    - a 2D ndarray (float or complex)
 
     If A is a scalar, the string is a single number, not wrapped in brackets.
 
     It A is a numpy 2D array, it returns a string with the format:
-        '\begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}'
 
-    If presentation_type is 'sigfig', each number is formatted using the
-    to_precision module to "digits" significant figures.
+    ```
+    \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}
+    ```
 
-    Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
+    If presentation_type is `'sigfig'`, each number is formatted using the
+    to_precision module to `'digits'` significant figures.
+
+    Otherwise, each number is formatted as `'{:.{digits}{presentation_type}}'`.
 
     Returns:
         The input formatted in LaTeX.

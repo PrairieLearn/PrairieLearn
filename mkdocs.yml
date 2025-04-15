@@ -298,5 +298,5 @@ watch:
   - apps/prairielearn/python
 
 hooks:
-  - docs/scripts/d2-svg-file.py
+  - docs/scripts/d2_svg_file.py
   - docs/scripts/jsonschema_details_fix.py
