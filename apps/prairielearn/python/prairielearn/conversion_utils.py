@@ -396,7 +396,7 @@ def numpy_to_matlab(
 
     The style argument must be one of three values:
 
-    - legacy: formats 1d arrays with commas and 2d arrays with spaces
+    - legacy: formats 1D arrays with commas and 2D arrays with spaces
     - comma: formats all arrays with commas
     - space: formats all arrays with spaces
 
