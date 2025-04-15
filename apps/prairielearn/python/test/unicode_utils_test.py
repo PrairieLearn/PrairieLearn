@@ -1,5 +1,5 @@
 import pytest
-from prairielearn.unicode_utils import escape_unicode_string, full_unidecode
+from prairielearn.misc_utils import escape_unicode_string, full_unidecode
 
 
 @pytest.mark.parametrize(
@@ -23,6 +23,7 @@ def test_full_unidecode_parametrized(input_str: str, expected: str):
         ("hello\u200bworld", "hello<U+200b>world"),  # Zero-width space
         ("control\u0001char", "control<U+1>char"),  # Control character
         ("test\u200etext", "test<U+200e>text"),  # Left-to-right mark
+        ("\n", "<U+a>"),  # Newline
         ("", ""),
         ("a\u200bb\u200f", "a<U+200b>b<U+200f>"),
         ("normal text", "normal text"),

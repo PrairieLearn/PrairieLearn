@@ -264,6 +264,9 @@ async function main() {
   const title = core.getInput('title');
   const sha = core.getInput('sha');
 
+  if (!title) throw new Error('Title is required');
+  if (!sha) throw new Error('SHA is required');
+
   const changedImages: ChangedImage[] = [];
 
   for (const image of images) {

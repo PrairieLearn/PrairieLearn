@@ -1,13 +1,15 @@
 import { z } from 'zod';
 
-import { escapeHtml, html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
+import { TagDescription } from '../../components/TagDescription.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
+import { TopicDescription } from '../../components/TopicDescription.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -187,7 +189,9 @@ export function InstructorQuestionSettings({
                                     value="${topic.name}"
                                     data-color="${topic.color}"
                                     data-name="${topic.name}"
-                                    data-description="${topic.description}"
+                                    data-description="${topic.implicit
+                                      ? ''
+                                      : TopicDescription(topic)}"
                                     ${topic.name === resLocals.topic.name ? 'selected' : ''}
                                   ></option>
                                 `;
@@ -218,7 +222,9 @@ export function InstructorQuestionSettings({
                                         value="${tag.name}"
                                         data-color="${tag.color}"
                                         data-name="${tag.name}"
-                                        data-description="${tag.description}"
+                                        data-description="${tag.implicit
+                                          ? ''
+                                          : TagDescription(tag)}"
                                         ${selectedTags.has(tag.name) ? 'selected' : ''}
                                       ></option>
                                     `;
@@ -549,13 +555,13 @@ function QuestionSharing({
   question: Question;
   sharingSetsIn: SharingSetRow[];
 }) {
-  if (!question.shared_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
+  if (!question.share_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
     return html`<p>This question is not being shared.</p>`;
   }
 
   const details: HtmlValue[] = [];
 
-  if (question.shared_publicly) {
+  if (question.share_publicly) {
     details.push(html`
       <p>
         <span class="badge color-green3 me-1">Public</span>

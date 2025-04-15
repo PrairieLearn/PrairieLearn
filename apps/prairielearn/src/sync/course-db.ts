@@ -3,7 +3,7 @@ import * as path from 'path';
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
-import { parseISO, isValid, isAfter, isFuture, isPast } from 'date-fns';
+import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
@@ -350,6 +350,7 @@ export interface Assessment {
   canSubmit: string[];
   advanceScorePerc: number;
   gradeRateMinutes: number;
+  shareSourcePublicly: boolean;
   requireHonorCode: boolean;
   allowPersonalNotes: boolean;
 }
@@ -895,7 +896,7 @@ async function loadAndValidateJson<T extends { uuid: string }>({
     return loadedJson;
   }
 
-  loadedJson.data = _.defaults(loadedJson.data, defaults);
+  loadedJson.data = { ...defaults, ...loadedJson.data };
   infofile.addWarnings(loadedJson, validationResult.warnings);
   return loadedJson;
 }

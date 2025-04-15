@@ -63,10 +63,11 @@ else
     RUN=$2
 fi
 
-IMAGE=$( cat ./questions/$QID/info.json | python3 -c \
-    "import sys, json; print(json.load(sys.stdin)['externalGradingOptions']['image'])" )
+IMAGE=$(cat ./questions/$QID/info.json | python3 -c \
+    "import sys, json; print(json.load(sys.stdin)['externalGradingOptions']['image'])")
 
-DOCKEREXEC=$(cat <<-END
+DOCKEREXEC=$(
+    cat <<- END
 docker run $IT --rm
     -v $PWD:/course
     -v $PWD/serverFilesCourse:/grade/serverFilesCourse
@@ -77,7 +78,7 @@ END
 
 echo_and_eval() {
     echo "$@"
-    eval "$@"
+    "$@"
 }
 
 echo_and_eval $DOCKEREXEC

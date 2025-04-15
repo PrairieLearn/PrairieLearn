@@ -1,4 +1,4 @@
-import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 
 import { type LTI13InstancePlatforms } from '../../src/ee/pages/administratorInstitutionLti13/administratorInstitutionLti13.types.js';
 

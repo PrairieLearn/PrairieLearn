@@ -1,4 +1,6 @@
-# Converting Canvas assessments to PrairieLearn
+# Canvas conversion tool
+
+## Converting Canvas assessments to PrairieLearn
 
 This directory contains scripts that use the Canvas API to import course assessments into
 PrairieLearn. The current version includes a conversion of Canvas classic quizzes. Implementation of
@@ -6,7 +8,7 @@ other converters is pending, and [contributions are
 welcome](https://github.com/PrairieLearn/PrairieLearn).
 
 An earlier version of this script was originally published at
-https://github.com/ubc-cpsc/canvasgrading and has been migrated to this repository by the original author.
+<https://github.com/ubc-cpsc/canvasgrading> and has been migrated to this repository by the original author.
 
 Before running the script, you must create a `config.json` file as follows:
 

@@ -6,10 +6,10 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
-  queryRow,
   queryAsync,
-  queryRows,
   queryOptionalRow,
+  queryRow,
+  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
@@ -35,6 +35,16 @@ export async function selectCourseById(course_id: string): Promise<Course> {
     sql.select_course_by_id,
     {
       course_id,
+    },
+    CourseSchema,
+  );
+}
+
+export async function selectCourseByCourseInstanceId(course_instance_id: string): Promise<Course> {
+  return await queryRow(
+    sql.select_course_by_instance_id,
+    {
+      course_instance_id,
     },
     CourseSchema,
   );

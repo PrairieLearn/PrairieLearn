@@ -15,12 +15,14 @@ jobs:
           sync-labels: false
   # labeler cannot label PRs by title: https://github.com/actions/labeler/issues/55
   title_labeler:
+    # To prevent labeler from removing labels added by this job, it should run beforehand.
+    needs: [labeler]
     name: 'Tag PRs by title'
     permissions:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: fuxingloh/multi-labeler@d4c99ad0944a95de5eff2ca226d681dcfd72e6e9 # v4
+      - uses: fuxingloh/multi-labeler@a4807e972fed31b074807ed7f018883f81b79d46 # v4
         with:
           config-path: .github/title-labeler.yml

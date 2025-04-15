@@ -17,10 +17,10 @@ import { type FeatureName, features } from '../../lib/features/index.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 
 import {
-  AdministratorFeatures,
-  AdministratorFeature,
-  FeatureGrantRowSchema,
   AddFeatureGrantModalBody,
+  AdministratorFeature,
+  AdministratorFeatures,
+  FeatureGrantRowSchema,
 } from './administratorFeatures.html.js';
 
 const router = Router();

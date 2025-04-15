@@ -1,6 +1,5 @@
 import assert from 'node:assert';
 
-import * as cheerio from 'cheerio';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -17,18 +16,18 @@ import {
 
 import { config } from '../../lib/config.js';
 import {
+  type AssessmentQuestion,
+  type Course,
+  IdSchema,
+  type InstanceQuestion,
   InstanceQuestionSchema,
+  type Question,
+  type RubricItem,
+  RubricItemSchema,
+  type SubmissionGradingContextEmbedding,
   SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
   VariantSchema,
-  type Course,
-  type Question,
-  type AssessmentQuestion,
-  type SubmissionGradingContextEmbedding,
-  IdSchema,
-  RubricItemSchema,
-  type RubricItem,
-  type InstanceQuestion,
 } from '../../lib/db-types.js';
 import * as manualGrading from '../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../lib/question-render.js';
@@ -201,7 +200,10 @@ async function generateSubmissionEmbedding({
     { instance_question_id: instance_question.id },
     SubmissionVariantSchema,
   );
-  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+  const locals = {
+    ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+    questionRenderContext: 'ai_grading',
+  };
   const questionModule = questionServers.getModule(question.type);
   const render_submission_results = await questionModule.render(
     { question: false, submissions: true, answer: false },
@@ -210,15 +212,9 @@ async function generateSubmissionEmbedding({
     submission,
     [submission],
     question_course,
-    // We deliberately do not set `manualGradingInterface: true` when rendering
-    // the submission. The expectation is that instructors will use elements lik
-    // `<pl-manual-grading-only>` to provide extra instructions to the LLM. We
-    // don't want to mix in instructions like that with the student's response.
-    urls,
+    locals,
   );
-  const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
-  $('script').remove();
-  const submission_text = $.html();
+  const submission_text = render_submission_results.data.submissionHtmls[0];
   const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
@@ -232,6 +228,42 @@ async function generateSubmissionEmbedding({
     SubmissionGradingContextEmbeddingSchema,
   );
   return new_submission_embedding;
+}
+
+function parseAiRubricItems({
+  ai_rubric_items,
+  rubric_items,
+}: {
+  ai_rubric_items: Record<string, boolean>;
+  rubric_items: RubricItem[];
+}): {
+  appliedRubricItems: {
+    rubric_item_id: string;
+  }[];
+  appliedRubricDescription: Set<string>;
+} {
+  // Compute the set of selected rubric descriptions.
+  const appliedRubricDescription = new Set<string>();
+  Object.entries(ai_rubric_items).forEach(([description, selected]) => {
+    if (selected) {
+      appliedRubricDescription.add(description);
+    }
+  });
+
+  // Build a lookup table for rubric items by description.
+  const rubricItemsByDescription: Record<string, RubricItem> = {};
+  for (const item of rubric_items) {
+    rubricItemsByDescription[item.description] = item;
+  }
+
+  // It's possible that the rubric could have changed since we last
+  // fetched it. We'll optimistically apply all the rubric items
+  // that were selected. If an item was deleted, we'll allow the
+  // grading to fail; the user can then try again.
+  const appliedRubricItems = Array.from(appliedRubricDescription).map((description) => ({
+    rubric_item_id: rubricItemsByDescription[description].id,
+  }));
+  return { appliedRubricItems, appliedRubricDescription };
 }
 
 export async function aiGrade({
@@ -328,8 +360,10 @@ export async function aiGrade({
         SubmissionVariantSchema,
       );
 
-      const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
-      const locals = { ...urls, manualGradingInterface: true };
+      const locals = {
+        ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+        questionRenderContext: 'ai_grading',
+      };
       // Get question html
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
@@ -346,9 +380,7 @@ export async function aiGrade({
         job.error('Error occurred');
         job.fail('Errors occurred while AI grading, see output for details');
       }
-      const $ = cheerio.load(render_question_results.data.questionHtml, null, false);
-      $('script').remove();
-      const questionPrompt = $.html();
+      const questionPrompt = render_question_results.data.questionHtml;
 
       let submission_embedding = await queryOptionalRow(
         sql.select_embedding_for_submission,
@@ -425,33 +457,14 @@ export async function aiGrade({
           job.info(`Raw response:\n${response.content}`);
 
           if (response.parsed) {
-            // Compute the set of selected rubric descriptions.
-            const selectedRubricDescriptions = new Set<string>();
-            Object.entries(response.parsed.rubric_items).forEach(([description, selected]) => {
-              if (selected) {
-                selectedRubricDescriptions.add(description);
-              }
+            const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
+              ai_rubric_items: response.parsed.rubric_items,
+              rubric_items,
             });
             job.info('Selected rubric items:');
-            for (const item of selectedRubricDescriptions) {
+            for (const item of appliedRubricDescription) {
               job.info(`- ${item}`);
             }
-
-            // Build a lookup table for rubric items by description.
-            const rubricItemsByDescription: Record<string, RubricItem> = {};
-            for (const item of rubric_items) {
-              rubricItemsByDescription[item.description] = item;
-            }
-
-            // It's possible that the rubric could have changed since we last
-            // fetched it. We'll optimistically apply all the rubric items
-            // that were selected. If an item was deleted, we'll allow the
-            // grading to fail; the user can then try again.
-            const appliedRubricItems = Array.from(selectedRubricDescriptions).map(
-              (description) => ({
-                rubric_item_id: rubricItemsByDescription[description].id,
-              }),
-            );
 
             // Record the grading results.
             const manual_rubric_data = {
