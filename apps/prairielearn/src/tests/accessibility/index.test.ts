@@ -416,6 +416,21 @@ describe('accessibility', () => {
       'UPDATE questions SET share_publicly = true WHERE id = $question_id',
       { question_id: routeParams.question_id },
     );
+
+    await sqldb.queryOneRowAsync(
+      'UPDATE assessments SET share_source_publicly = true WHERE id = $assessment_id',
+      { assessment_id: routeParams.assessment_id },
+    );
+
+    const courseId = await sqldb.queryOneRowAsync(
+      'SELECT course_id FROM course_instances WHERE id = $course_instance_id',
+      { course_instance_id: routeParams.course_instance_id },
+    );
+
+    await sqldb.queryOneRowAsync(
+      'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
+      { sharing_name: 'test', course_id: courseId.rows[0].course_id },
+    );
   });
   after('shut down testing server', helperServer.after);
 
