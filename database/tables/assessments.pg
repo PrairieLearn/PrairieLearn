@@ -20,6 +20,8 @@ columns
     duration_stat_thresholds: interval[] not null default ARRAY[]::interval[]
     group_work: boolean default false
     id: bigint not null default nextval('assessments_id_seq'::regclass)
+    json_can_submit: text[]
+    json_can_view: text[]
     json_grade_rate_minutes: double precision
     max_bonus_points: double precision
     max_points: double precision
