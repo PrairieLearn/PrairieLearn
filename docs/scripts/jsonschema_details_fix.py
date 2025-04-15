@@ -1,5 +1,4 @@
 import re
-from pathlib import Path
 
 from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.structure.pages import Page
@@ -18,9 +17,6 @@ def on_post_page(output: str, page: Page, config: MkDocsConfig) -> str | None:  
 
     Thus, we manually fix the issue by post-processing the generated markdown to remove the <p> tag.
     """
-    if "schemas" not in Path(page.file.src_uri).parts:
-        return None
-
     output = re.sub(
         JSON_SCHEMA_REGEX,
         r"\1",
