@@ -12,6 +12,7 @@ import {
   GradingJobSchema,
   type InstanceQuestion,
   type Question,
+  type RubricGradingItem,
   SubmissionSchema,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
