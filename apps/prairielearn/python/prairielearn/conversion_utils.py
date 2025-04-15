@@ -1,43 +1,25 @@
-"""Utilities for building questions and elements in PrairieLearn.
+"""Utilities for converting and serializing between different data formats.
 
 ```python
 from prairielearn import ...
-# or ...
-from prairielearn.core import ...
 ```
 """
 
-import collections
-import html
-import importlib
-import importlib.util
-import itertools as it
 import json
-import math
 import numbers
-import os
-import random
 import re
-import string
-import uuid
-from collections import namedtuple
-from collections.abc import Callable, Generator
-from enum import Enum
 from io import StringIO
-from types import ModuleType
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast, overload
 
-import lxml.html
 import networkx as nx
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import sympy
-from numpy.typing import ArrayLike
-from pint import UnitRegistry
-from typing_extensions import NotRequired, assert_never
+from typing_extensions import assert_never
 
-from prairielearn.colors import PLColor
+from prairielearn.html_utils import escape_invalid_string
+from prairielearn.misc_utils import full_unidecode
 from prairielearn.sympy_utils import (
     convert_string_to_sympy,
     is_sympy_json,
@@ -45,214 +27,9 @@ from prairielearn.sympy_utils import (
     sympy_to_json,
 )
 from prairielearn.to_precision import to_precision
-from prairielearn.unicode_utils import escape_unicode_string, full_unidecode
 
 if TYPE_CHECKING:
     from numpy.core.arrayprint import _FormatDict
-
-
-class PartialScore(TypedDict):
-    """A class with type signatures for the partial scores dict.
-
-    For more information see the [element developer guide](../../devElements.md).
-    """
-
-    score: float | None
-    weight: NotRequired[int]
-    feedback: NotRequired[str | dict[str, str] | Any]
-
-
-# TODO: This type definition should not yet be seen as authoritative, it may
-# need to be modified as we expand type checking to cover more of the element code.
-# The fields below containing 'Any' in the types are ones which are used
-# in different ways by different question elements. Ideally we would have
-# QuestionData be a generic type so that question elements could declare types
-# for their answer data, feedback data, etc., but TypedDicts with Generics are
-# not yet supported: https://bugs.python.org/issue44863
-class QuestionData(TypedDict):
-    """A class with type signatures for the data dictionary.
-
-    For more information see the [element developer guide](../../devElements.md).
-    """
-
-    params: dict[str, Any]
-    correct_answers: dict[str, Any]
-    submitted_answers: dict[str, Any]
-    format_errors: dict[str, Any]
-    partial_scores: dict[str, PartialScore]
-    score: float
-    feedback: dict[str, Any]
-    variant_seed: str
-    options: dict[str, Any]
-    raw_submitted_answers: dict[str, Any]
-    editable: bool
-    panel: Literal["question", "submission", "answer"]
-    extensions: dict[str, Any]
-    num_valid_submissions: int
-    manual_grading: bool
-    answers_names: dict[str, bool]
-
-
-class ElementTestData(QuestionData):
-    test_type: Literal["correct", "incorrect", "invalid"]
-
-
-def check_answers_names(data: QuestionData, name: str) -> None:
-    """Check that answers names are distinct using property in data dict."""
-    if name in data["answers_names"]:
-        raise KeyError(f'Duplicate "answers-name" attribute: "{name}"')
-    data["answers_names"][name] = True
-
-
-def get_unit_registry() -> UnitRegistry:
-    """Get a unit registry using cache folder valid on production machines."""
-    pid = os.getpid()
-    cache_dir = f"/tmp/pint_{pid}"
-    return UnitRegistry(cache_folder=cache_dir)
-
-
-def grade_answer_parameterized(
-    data: QuestionData,
-    question_name: str,
-    grade_function: Callable[[Any], tuple[bool | float, str | None]],
-    weight: int = 1,
-) -> None:
-    """
-    Grade question question_name. grade_function should take in a single parameter
-    (which will be the submitted answer) and return a 2-tuple:
-        - The first element of the 2-tuple should either be:
-            - a boolean indicating whether the question should be marked correct
-            - a partial score between 0 and 1, inclusive
-        - The second element of the 2-tuple should either be:
-            - a string containing feedback
-            - None, if there is no feedback (usually this should only occur if the answer is correct)
-    """
-    # Create the data dictionary at first
-    data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
-
-    # If there is no submitted answer, we shouldn't do anything. Issues with blank
-    # answers should be handled in parse.
-    if question_name not in data["submitted_answers"]:
-        return
-
-    submitted_answer = data["submitted_answers"][question_name]
-
-    # Run passed-in grading function
-    result, feedback_content = grade_function(submitted_answer)
-
-    # Try converting partial score
-    if isinstance(result, bool):
-        partial_score = 1.0 if result else 0.0
-    elif isinstance(result, (float, int)):
-        assert 0.0 <= result <= 1.0
-        partial_score = result
-    else:
-        assert_never(result)
-
-    # Set corresponding partial score and feedback
-    data["partial_scores"][question_name]["score"] = partial_score
-
-    if feedback_content:
-        data["partial_scores"][question_name]["feedback"] = feedback_content
-
-
-def determine_score_params(
-    score: float,
-) -> tuple[Literal["correct", "partial", "incorrect"], bool | float]:
-    """
-    Determine appropriate key and value for display on the frontend given the
-    score for a particular question. For elements following PrairieLearn
-    conventions, the return value can be used as a key/value pair in the
-    dictionary passed to an element's Mustache template to display a score badge.
-    """
-    if score >= 1:
-        return ("correct", True)
-    elif score > 0:
-        return ("partial", math.floor(score * 100))
-
-    return ("incorrect", True)
-
-
-EnumT = TypeVar("EnumT", bound=Enum)
-
-
-def get_enum_attrib(
-    element: lxml.html.HtmlElement,
-    name: str,
-    enum_type: type[EnumT],
-    default: EnumT | None = None,
-) -> EnumT:
-    """
-    Return the named attribute for the element parsed as an enum,
-    or the (optional) default value. If the default value is not provided
-    and the attribute is missing then an exception is thrown. An exception
-    is also thrown if the value for the enum provided is invalid.
-    Also, alter the enum names to comply with PL naming convention automatically
-    (replacing underscores with dashes and uppercasing). If a default value is
-    provided, it must be a member of the given enum.
-    """
-    enum_val, is_default = (
-        _get_attrib(element, name)
-        if default is None
-        else _get_attrib(element, name, default)
-    )
-
-    # Default doesn't need to be converted, already a value of the enum
-    if is_default:
-        return enum_val
-
-    if enum_val != enum_val.lower():
-        raise ValueError(
-            f'Value "{enum_val}" assigned to "{name}" cannot have uppercase characters.'
-        )
-
-    upper_enum_str = enum_val.upper()
-    accepted_names = {member.name.replace("_", "-") for member in enum_type}
-
-    if upper_enum_str not in accepted_names:
-        raise ValueError(
-            f"{enum_val} is not a valid type, must be one of: {', '.join(member.name.lower().replace('_', '-') for member in enum_type)}."
-        )
-
-    return enum_type[upper_enum_str.replace("-", "_")]
-
-
-def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None:
-    """
-    Set overall question score to be weighted average of all partial scores. Use
-    weight_default to fill in a default weight for a score if one is missing.
-    """
-    weight_total = 0
-    score_total = 0.0
-    for part in data["partial_scores"].values():
-        score = part["score"]
-        weight = part.get("weight", weight_default)
-
-        if score is None:
-            raise ValueError("Can't set weighted score data if score is None.")
-
-        score_total += score * weight
-        weight_total += weight
-
-    data["score"] = score_total / weight_total
-
-
-def set_all_or_nothing_score_data(data: QuestionData) -> None:
-    """Give points to main question score if all partial scores are correct."""
-    data["score"] = 1.0 if all_partial_scores_correct(data) else 0.0
-
-
-def all_partial_scores_correct(data: QuestionData) -> bool:
-    """Return true if all questions are correct in partial scores and it's nonempty."""
-    partial_scores = data["partial_scores"]
-
-    if len(partial_scores) == 0:
-        return False
-
-    return all(
-        part["score"] is not None and math.isclose(part["score"], 1.0)
-        for part in partial_scores.values()
-    )
 
 
 class _JSONSerializedGeneric(TypedDict):
@@ -316,6 +93,17 @@ that can be serialized / deserialized.
 """
 
 
+def is_int_json_serializable(n: int) -> bool:
+    """Check if an integer is less than `Number.MAX_SAFE_INTEGER` and greater than `Number.MIN_SAFE_INTEGER`.
+
+    See <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER>.
+
+    Returns:
+        `True` if it can be serialized by JS code.
+    """
+    return -((2**53) - 1) <= n <= 2**53 - 1
+
+
 @overload
 def to_json(
     v: _JSONPythonType,
@@ -353,7 +141,7 @@ def to_json(
     | complex scalar | `complex` | including numpy |
     | non-complex ndarray | `ndarray` | assumes each element can be json serialized |
     | complex ndarray | `complex_ndarray` | |
-    | `sympy.Expr` | `sympy` | any scalar sympy expression |
+    | `sympy.Expr` | `sympy` | any scalar SymPy expression |
     | `sympy.Matrix` | `sympy_matrix` | |
     | `pandas.DataFrame` | `dataframe` | `df_encoding_version=1` |
     | `pandas.DataFrame` | `dataframe_v2` | `df_encoding_version=2` |
@@ -370,13 +158,16 @@ def to_json(
 
     If `df_encoding_version` is set to 2, then pandas DataFrames serialize using `'_type': 'dataframe_v2'`.
 
-    See [from_json][prairielearn.core.from_json] for details about the differences between encodings.
+    See [from_json][prairielearn.conversion_utils.from_json] for details about the differences between encodings.
 
     If v is an ndarray, this function preserves its dtype (by adding `'_dtype'` as
     a third field in the dictionary).
 
-    If v can be json serialized or does not have a standard type, then it is
+    If v can be JSON serialized or does not have a standard type, then it is
     returned without change.
+
+    Returns:
+        The serialized value
     """
     if np_encoding_version not in {1, 2}:
         raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
@@ -467,7 +258,7 @@ def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
 
 def from_json(v: _JSONSerializedType | Any) -> Any:
     """
-    Converts a JSON serialized value (from `to_json`) back to its original type.
+    Converts a JSON serialized value (from [`to_json`][prairielearn.conversion_utils.to_json]) back to its original type.
 
     If v has the format `{'_type': ..., '_value': ...}` as would have been created
     using `to_json(...)`, then it is replaced according to the following table:
@@ -490,6 +281,9 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
 
     If v does not have the format `{'_type': ..., '_value': ...}`, then it is
     returned without change.
+
+    Returns:
+        The deserialized value
     """
     if isinstance(v, dict) and "_type" in v:
         v_json = cast(_JSONSerializedType, v)
@@ -577,283 +371,6 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
     return v
 
 
-def inner_html(element: lxml.html.HtmlElement) -> str:
-    inner = element.text
-    if inner is None:
-        inner = ""
-    inner = html.escape(str(inner))
-    for child in element:
-        inner += lxml.html.tostring(child, method="html").decode("utf-8")
-    return inner
-
-
-def compat_array(arr: list[str]) -> list[str]:
-    new_arr = []
-    for i in arr:
-        new_arr.extend((i, i.replace("-", "_")))
-    return new_arr
-
-
-def check_attribs(
-    element: lxml.html.HtmlElement,
-    required_attribs: list[str],
-    optional_attribs: list[str],
-) -> None:
-    for name in required_attribs:
-        if not has_attrib(element, name):
-            raise ValueError(f'Required attribute "{name}" missing')
-    extra_attribs = list(
-        set(element.attrib)
-        - set(compat_array(required_attribs))
-        - set(compat_array(optional_attribs))
-    )
-    for name in extra_attribs:
-        raise ValueError(f'Unknown attribute "{name}"')
-
-
-def _get_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: Any
-) -> tuple[Any, bool]:
-    """
-    Return the named attribute for the element, or the default value
-    if the attribute is missing.  The default value is optional. If no
-    default value is provided and the attribute is missing then an
-    exception is thrown. The second return value indicates whether the
-    default value was returned.
-
-    Internal function, do not all. Use one of the typed variants
-    instead (e.g., get_string_attrib()).
-    """
-    # It seems like we could use keyword arguments with a default
-    # value to handle the "default" argument, but we want to be able
-    # to distinguish between default=None and no default being passed,
-    # which means we need to explicitly handle the optional argument
-    if len(args) > 1:
-        raise ValueError("Only one additional argument is allowed")
-
-    if name in element.attrib:
-        return (element.attrib[name], False)
-
-    # We need to check for the legacy _ version
-    old_name = name.replace("-", "_")
-    if old_name in element.attrib:
-        return (element.attrib[old_name], False)
-
-    # Provide a default if we can
-    if len(args) == 1:
-        return (args[0], True)
-
-    raise ValueError(f'Attribute "{name}" missing and no default is available')
-
-
-def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
-    """
-    Return true if the element has an attribute of that name,
-    false otherwise.
-    """
-    old_name = name.replace("-", "_")
-    return name in element.attrib or old_name in element.attrib
-
-
-# Order here matters, as we want to override the case where the args is omitted
-@overload
-def get_string_attrib(element: lxml.html.HtmlElement, name: str) -> str: ...
-
-
-@overload
-def get_string_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str: ...
-
-
-@overload
-def get_string_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: None
-) -> str | None: ...
-
-
-def get_string_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: str | None
-) -> str | None:
-    """
-    Return the named attribute for the element, or the (optional)
-    default value. If the default value is not provided and the
-    attribute is missing then an exception is thrown.
-    """
-    str_val, _ = _get_attrib(element, name, *args)
-    return str_val
-
-
-# Order here matters, as we want to override the case where the args is omitted
-@overload
-def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool: ...
-
-
-@overload
-def get_boolean_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: bool
-) -> bool: ...
-
-
-@overload
-def get_boolean_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: None
-) -> bool | None: ...
-
-
-def get_boolean_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: bool | None
-) -> bool | None:
-    """
-    Return the named attribute for the element, or the (optional)
-    default value. If the default value is not provided and the
-    attribute is missing then an exception is thrown. If the attribute
-    is not a valid boolean then an exception is thrown.
-    """
-    (val, is_default) = _get_attrib(element, name, *args)
-    if is_default:
-        return val
-
-    true_values = ["true", "t", "1", "True", "T", "TRUE", "yes", "y", "Yes", "Y", "YES"]
-    false_values = [
-        "false",
-        "f",
-        "0",
-        "False",
-        "F",
-        "FALSE",
-        "no",
-        "n",
-        "No",
-        "N",
-        "NO",
-    ]
-
-    if val in true_values:
-        return True
-    elif val in false_values:
-        return False
-    else:
-        raise ValueError(f'Attribute "{name}" must be a boolean value: {val}')
-
-
-# Order here matters, as we want to override the case where the args is omitted
-@overload
-def get_integer_attrib(element: lxml.html.HtmlElement, name: str) -> int: ...
-
-
-@overload
-def get_integer_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: int
-) -> int: ...
-
-
-@overload
-def get_integer_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: None
-) -> int | None: ...
-
-
-def get_integer_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: int | None
-) -> int | None:
-    """
-    Return the named attribute for the element, or the (optional)
-    default value. If the default value is not provided and the
-    attribute is missing then an exception is thrown. If the attribute
-    is not a valid integer then an exception is thrown.
-    """
-    (val, is_default) = _get_attrib(element, name, *args)
-    if is_default:
-        return val
-    try:
-        int_val = int(val)
-    except ValueError:
-        int_val = None
-    if int_val is None:
-        # can't raise this exception directly in the above except
-        # handler because it gives an overly complex displayed error
-        raise ValueError(f'Attribute "{name}" must be an integer: {val}')
-    return int_val
-
-
-@overload
-def get_float_attrib(element: lxml.html.HtmlElement, name: str) -> float: ...
-
-
-@overload
-def get_float_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: float
-) -> float: ...
-
-
-@overload
-def get_float_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: None
-) -> float | None: ...
-
-
-def get_float_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: float | None
-) -> float | None:
-    """
-    Return the named attribute for the element, or the (optional)
-    default value. If the default value is not provided and the
-    attribute is missing then an exception is thrown. If the attribute
-    is not a valid floating-point number then an exception is thrown.
-    """
-    (val, is_default) = _get_attrib(element, name, *args)
-    if is_default:
-        return val
-    try:
-        float_val = float(val)
-    except ValueError:
-        float_val = None
-    if float_val is None:
-        # can't raise this exception directly in the above except
-        # handler because it gives an overly complex displayed error
-        raise ValueError(f'Attribute "{name}" must be a number: {val}')
-    return float_val
-
-
-@overload
-def get_color_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str: ...
-
-
-@overload
-def get_color_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: None
-) -> str | None: ...
-
-
-def get_color_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: str | None
-) -> str | None:
-    """
-    Return a 3-digit or 6-digit hex RGB string in CSS format (e.g., '#123'
-    or '#1a2b3c'), or the (optional) default value. If the default value is
-    not provided and the attribute is missing then an exception is thrown. If
-    the attribute is not a valid RGB string then it will be checked against various
-    named colors.  If the attribute is still not valid an exception is thrown.
-    """
-    (val, is_default) = _get_attrib(element, name, *args)
-    if is_default:
-        # Allow for `None` default
-        if val is None:
-            return val
-
-        if PLColor.match(val) is not None:
-            return PLColor(val).to_string(hex=True)
-        else:
-            return val
-
-    match = re.search(r"^#(?:[0-9a-fA-F]{1,2}){3}$", val)
-    if match:
-        return val
-    elif PLColor.match(val) is not None:
-        return PLColor(val).to_string(hex=True)
-    else:
-        raise ValueError(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
-
-
 _NumericScalarType = numbers.Number | complex | np.generic
 
 
@@ -863,14 +380,16 @@ def numpy_to_matlab(
     wtype: str = "f",
     style: Literal["legacy", "space", "comma"] = "legacy",
 ) -> str:
-    """
-    Return np_object as a MATLAB-formatted string in which each number has "ndigits"
-    digits after the decimal and is formatted as "wtype" (e.g., 'f', 'g', etc.).
+    """Converts np_object to a MATLAB-formatted string in which each number has "ndigits" digits
+    after the decimal and is formatted as "wtype" (e.g., 'f', 'g', etc.).
 
     This function assumes that np_object is one of these things:
 
         - a number (float or complex)
         - a 2D ndarray (float or complex)
+
+    Returns:
+        A MATLAB-formatted string
     """
     if np.isscalar(np_object):
         scalar_str = "{:.{indigits}{iwtype}}".format(
@@ -977,6 +496,9 @@ def string_from_numpy(
     to_precision module to "digits" significant figures.
 
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
+
+    Returns:
+        A formatted version of the NumPy array.
     """
     # if A is a scalar
     if np.isscalar(A):
@@ -1053,14 +575,19 @@ def string_from_2darray(
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
+    """Return the 2D array as a string in the specified language."""
     result = string_from_numpy(A, language, presentation_type, digits)
     return result
 
 
 def string_from_number_sigfig(a: _NumericScalarType | str, digits: int = 2) -> str:
-    """
-    Return "a" as a string in which the number, or both the real and imaginary parts of the
-    number, have digits significant digits. This function assumes that "a" is of type float or complex.
+    """Convert a number to a string with the specified significant digits.
+
+    This function assumes that `a` is of type float or complex.
+
+    Returns:
+        `a` as a string in which the number, or both the real and imaginary parts of the
+    number, have digits significant digits.
     """
     assert np.isscalar(a)
     assert not isinstance(a, (memoryview, bytes))
@@ -1076,9 +603,12 @@ def string_from_number_sigfig(a: _NumericScalarType | str, digits: int = 2) -> s
 def _string_from_complex_sigfig(
     a: complex | np.complex64 | np.complex128, digits: int = 2
 ) -> str:
-    """
-    Return "a" as a string in which the real and imaginary parts have digits significant digits.
-    This function assumes that "a" is a complex number.
+    """Convert a complex number to a string.
+
+    This function assumes that `a` is a complex number.
+
+    Returns:
+        `a` as a string in which the real and imaginary parts have digits significant digits.
     """
     re = to_precision(a.real, digits)
     im = to_precision(np.abs(a.imag), digits)
@@ -1094,7 +624,7 @@ def numpy_to_matlab_sf(
     style: Literal["legacy", "comma", "space"] = "legacy",
 ) -> str:
     """
-    Return A as a MATLAB-formatted string in which each number has
+    Convert A to a MATLAB-formatted string in which each number has
     ndigits significant digits.
 
     This function assumes that A is one of these things:
@@ -1106,6 +636,9 @@ def numpy_to_matlab_sf(
     - legacy: formats 1d arrays with commas and 2d arrays with spaces
     - comma: formats all arrays with commas
     - space: formats all arrays with spaces
+
+    Returns:
+        A as a MATLAB-formatted string
     """
     if np.isscalar(A):
         assert not isinstance(A, (memoryview, str, bytes))
@@ -1153,30 +686,12 @@ def numpy_to_matlab_sf(
         return matrix_str
 
 
-def string_partition_first_interval(
-    s: str, left: str = "[", right: str = "]"
-) -> tuple[str, str, str]:
-    # Split at first left delimiter
-    (s_before_left, _, s) = s.partition(left)
-    # Split at first right delimiter
-    (s, _, s_after_right) = s.partition(right)
-    # Return results
-    return s_before_left, s, s_after_right
-
-
-def string_partition_outer_interval(
-    s: str, left: str = "[", right: str = "]"
-) -> tuple[str, str, str]:
-    # Split at first left delimiter
-    (s_before_left, _, s) = s.partition(left)
-    # Split at last right delimiter
-    (s, _, s_after_right) = s.rpartition(right)
-    # Return results
-    return s_before_left, s, s_after_right
-
-
 def string_to_integer(s: str, base: int = 10) -> int | None:
-    """Parse a string that is an integer, and return a number with type int, or None on parse error."""
+    """Parse a string that is an integer.
+
+    Returns:
+        An integer or `None` on parse error.
+    """
     if not isinstance(s, str):
         return None
 
@@ -1196,8 +711,10 @@ def string_to_number(
     s: str, *, allow_complex: bool = True
 ) -> np.float64 | np.complex128 | None:
     """
-    Parse a string that can be interpreted either as float or (optionally) complex,
-    and return a number with type np.float64 or np.complex128, or None on parse error.
+    Parse a string that can be interpreted either as float or (optionally) complex.
+
+    Returns:
+        A number with type `np.float64` or `np.complex128`, or `None` on parse error.
     """
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace("\u2212", "-")
@@ -1243,12 +760,11 @@ def string_fraction_to_number(
     tuple[None, _PartialDataFormatErrors]
     | tuple[np.float64 | np.complex128, _PartialDataSubmittedAnswers]
 ):
-    """
-    Parse a string containing a decimal number with support for answers expressing
+    """Parse a string containing a decimal number with support for answers expressing
     as a fraction.
 
-    Returns a tuple with the parsed value in the first entry and a dictionary with
-    the intended value of "data" in the second entry.
+    Returns:
+        A tuple with the parsed value in the first entry and a dictionary with the intended value of "data" in the second entry.
 
     On successful parsing, "data" will contain a 'submitted_answers' key that is the
     JSON encoded parsed answer.
@@ -1334,12 +850,106 @@ def string_fraction_to_number(
     return (value, data)
 
 
+def latex_from_2darray(
+    A: _NumericScalarType | npt.NDArray[Any],
+    presentation_type: str = "f",
+    digits: int = 2,
+) -> str:
+    r"""Convert a NumPy array to LaTeX.
+
+    This function assumes that A is one of these things:
+            - a number (float or complex)
+            - a 2D ndarray (float or complex)
+
+    If A is a scalar, the string is a single number, not wrapped in brackets.
+
+    It A is a numpy 2D array, it returns a string with the format:
+        '\begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}'
+
+    If presentation_type is 'sigfig', each number is formatted using the
+    to_precision module to "digits" significant figures.
+
+    Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
+
+    Returns:
+        The input formatted in LaTeX.
+    """
+    # if A is a scalar
+    if np.isscalar(A):
+        assert not isinstance(A, memoryview | str | bytes)
+        if presentation_type == "sigfig":
+            return string_from_number_sigfig(A, digits=digits)
+        else:
+            return "{:.{digits}{presentation_type}}".format(
+                A, digits=digits, presentation_type=presentation_type
+            )
+
+    if not isinstance(A, np.ndarray):
+        raise TypeError("A must be a numpy array or scalar")
+
+    # Using Any annotation here because of weird Pyright-isms.
+    if presentation_type == "sigfig":
+        formatter: Any = {
+            "float_kind": lambda x: to_precision(x, digits),
+            "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
+        }
+    else:
+        formatter: Any = {
+            "float_kind": lambda x: "{:.{digits}{presentation_type}}".format(
+                x, digits=digits, presentation_type=presentation_type
+            ),
+            "complex_kind": lambda x: "{:.{digits}{presentation_type}}".format(
+                x, digits=digits, presentation_type=presentation_type
+            ),
+        }
+
+    if A.ndim != 2:
+        raise ValueError("input should be a 2D numpy array")
+    lines = (
+        np.array2string(A, formatter=formatter)
+        .replace("[", "")
+        .replace("]", "")
+        .splitlines()
+    )
+    rv = [r"\begin{bmatrix}"]
+    rv.extend("  " + " & ".join(line.split()) + r"\\" for line in lines)
+    rv.append(r"\end{bmatrix}")
+    return "".join(rv)
+
+
+def string_partition_first_interval(
+    s: str, left: str = "[", right: str = "]"
+) -> tuple[str, str, str]:
+    """Split a string at the first occurrence of left and right delimiters."""
+    # Split at first left delimiter
+    (s_before_left, _, s) = s.partition(left)
+    # Split at first right delimiter
+    (s, _, s_after_right) = s.partition(right)
+    # Return results
+    return s_before_left, s, s_after_right
+
+
+def string_partition_outer_interval(
+    s: str, left: str = "[", right: str = "]"
+) -> tuple[str, str, str]:
+    """Split a string at the first left delimiter and last right delimiter."""
+    # Split at first left delimiter
+    (s_before_left, _, s) = s.partition(left)
+    # Split at last right delimiter
+    (s, _, s_after_right) = s.rpartition(right)
+    # Return results
+    return s_before_left, s, s_after_right
+
+
 def string_to_2darray(
     s: str, *, allow_complex: bool = True
 ) -> tuple[npt.NDArray[Any] | None, dict[str, str]]:
     """
     Parse a string that is either a scalar or a 2D array in matlab or python
     format. Each number must be interpretable as type float or complex.
+
+    Returns:
+        A 2-element tuple with the value, and any errors.
     """
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace("\u2212", "-")
@@ -1648,338 +1258,3 @@ def string_to_2darray(
         # Return result with no error
         return (matrix, {"format_type": "python"})
     assert_never(result_type)
-
-
-def latex_from_2darray(
-    A: _NumericScalarType | npt.NDArray[Any],
-    presentation_type: str = "f",
-    digits: int = 2,
-) -> str:
-    r"""
-    latex_from_2darray
-    This function assumes that A is one of these things:
-            - a number (float or complex)
-            - a 2D ndarray (float or complex)
-
-    If A is a scalar, the string is a single number, not wrapped in brackets.
-
-    It A is a numpy 2D array, it returns a string with the format:
-        '\begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}'
-
-    If presentation_type is 'sigfig', each number is formatted using the
-    to_precision module to "digits" significant figures.
-
-    Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
-    """
-    # if A is a scalar
-    if np.isscalar(A):
-        assert not isinstance(A, (memoryview, str, bytes))
-        if presentation_type == "sigfig":
-            return string_from_number_sigfig(A, digits=digits)
-        else:
-            return "{:.{digits}{presentation_type}}".format(
-                A, digits=digits, presentation_type=presentation_type
-            )
-
-    if not isinstance(A, np.ndarray):
-        raise TypeError("A must be a numpy array or scalar")
-
-    # Using Any annotation here because of weird Pyright-isms.
-    if presentation_type == "sigfig":
-        formatter: Any = {
-            "float_kind": lambda x: to_precision(x, digits),
-            "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
-        }
-    else:
-        formatter: Any = {
-            "float_kind": lambda x: "{:.{digits}{presentation_type}}".format(
-                x, digits=digits, presentation_type=presentation_type
-            ),
-            "complex_kind": lambda x: "{:.{digits}{presentation_type}}".format(
-                x, digits=digits, presentation_type=presentation_type
-            ),
-        }
-
-    if A.ndim != 2:
-        raise ValueError("input should be a 2D numpy array")
-    lines = (
-        np.array2string(A, formatter=formatter)
-        .replace("[", "")
-        .replace("]", "")
-        .splitlines()
-    )
-    rv = [r"\begin{bmatrix}"]
-    rv.extend("  " + " & ".join(line.split()) + r"\\" for line in lines)
-    rv.append(r"\end{bmatrix}")
-    return "".join(rv)
-
-
-# This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
-    return is_correct_ndarray2d_dd(*args, **kwargs)
-
-
-# This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
-    return is_correct_ndarray2d_sf(*args, **kwargs)
-
-
-# This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: N802
-    return is_correct_ndarray2d_ra(*args, **kwargs)
-
-
-def is_correct_ndarray2d_dd(
-    a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
-) -> bool:
-    # Check if each element is correct
-    m = a_sub.shape[0]
-    n = a_sub.shape[1]
-    for i in range(m):
-        for j in range(n):
-            if not is_correct_scalar_dd(a_sub[i, j], a_tru[i, j], digits):
-                return False
-
-    # All elements were close
-    return True
-
-
-def is_correct_ndarray2d_sf(
-    a_sub: npt.NDArray[Any], a_tru: npt.NDArray[Any], digits: int = 2
-) -> bool:
-    # Check if each element is correct
-    m = a_sub.shape[0]
-    n = a_sub.shape[1]
-    for i in range(m):
-        for j in range(n):
-            if not is_correct_scalar_sf(a_sub[i, j], a_tru[i, j], digits):
-                return False
-
-    # All elements were close
-    return True
-
-
-def is_correct_ndarray2d_ra(
-    a_sub: npt.NDArray[Any],
-    a_tru: npt.NDArray[Any],
-    rtol: float = 1e-5,
-    atol: float = 1e-8,
-) -> bool:
-    # Check if each element is correct
-    return np.allclose(a_sub, a_tru, rtol, atol)
-
-
-def is_correct_scalar_ra(
-    a_sub: ArrayLike, a_tru: ArrayLike, rtol: float = 1e-5, atol: float = 1e-8
-) -> bool:
-    """Compare a_sub and a_tru using relative tolerance rtol and absolute tolerance atol."""
-    return bool(np.allclose(a_sub, a_tru, rtol, atol))
-
-
-def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
-    """Compare a_sub and a_tru using digits many digits after the decimal place."""
-    # If answers are complex, check real and imaginary parts separately
-    if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
-        real_comp = is_correct_scalar_dd(a_sub.real, a_tru.real, digits=digits)  # type: ignore
-        imag_comp = is_correct_scalar_dd(a_sub.imag, a_tru.imag, digits=digits)  # type: ignore
-        return real_comp and imag_comp
-
-    if np.abs(a_tru) == math.inf:
-        return a_sub == a_tru
-    elif np.isnan(a_tru):
-        return np.isnan(a_sub)  # type: ignore
-    # Get bounds on submitted answer
-    eps = 0.51 * (10**-digits)
-    lower_bound = a_tru - eps
-    upper_bound = a_tru + eps
-
-    # Check if submitted answer is in bounds
-    return bool((a_sub > lower_bound) & (a_sub < upper_bound))
-
-
-def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
-    """Compare a_sub and a_tru using digits many significant figures."""
-    # If answers are complex, check real and imaginary parts separately
-    if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
-        real_comp = is_correct_scalar_sf(a_sub.real, a_tru.real, digits=digits)  # type: ignore
-        imag_comp = is_correct_scalar_sf(a_sub.imag, a_tru.imag, digits=digits)  # type: ignore
-        return real_comp and imag_comp
-
-    # Get bounds on submitted answer
-    if a_tru == 0:
-        n = digits - 1
-    elif np.abs(a_tru) == math.inf:
-        return a_sub == a_tru
-    elif np.isnan(a_tru):
-        return np.isnan(a_sub)  # type: ignore
-    else:
-        n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
-    eps = 0.51 * (10**-n)
-    lower_bound = a_tru - eps
-    upper_bound = a_tru + eps
-
-    # Check if submitted answer is in bounds
-    return bool((a_sub > lower_bound) & (a_sub < upper_bound))
-
-
-def get_uuid() -> str:
-    """
-    Return the string representation of a new random UUID.
-    First character of this uuid is guaranteed to be an alpha
-    (at the expense of a slight loss in randomness).
-
-    This is done because certain web components need identifiers to
-    start with letters and not numbers.
-    """
-    uuid_string = str(uuid.uuid4())
-    random_char = random.choice("abcdef")
-
-    return random_char + uuid_string[1:]
-
-
-def escape_invalid_string(string: str) -> str:
-    """Wrap and escape string in <code> tags."""
-    return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
-
-
-def clean_identifier_name(name: str) -> str:
-    """Escapes a string so that it becomes a valid Python identifier."""
-    # Strip invalid characters and weird leading characters so we have
-    # a decent python identifier
-    name = re.sub(r"[^a-zA-Z0-9_]", "_", name)
-    name = re.sub(r"^[^a-zA-Z]+", "", name)
-    return name
-
-
-def load_extension(data: QuestionData, extension_name: str) -> Any:
-    """
-    Load a single specific extension by name for an element.
-    Returns a dictionary of defined variables and functions.
-    """
-    if "extensions" not in data:
-        raise ValueError("load_extension() must be called from an element!")
-    if extension_name not in data["extensions"]:
-        raise ValueError(f"Could not find extension {extension_name}!")
-
-    ext_info = data["extensions"][extension_name]
-    if "controller" not in ext_info:
-        # Nothing to load, just return an empty dict
-        return {}
-
-    T = TypeVar("T")
-
-    # wrap extension functions so that they execute in their own directory
-    def wrap(f: Callable[..., T]) -> Callable[..., T]:
-        # If not a function, just return
-        if not callable(f):
-            return f
-
-        def wrapped_function(*args: Any, **kwargs: Any) -> T:
-            old_wd = os.getcwd()
-            os.chdir(ext_info["directory"])
-            ret_val = f(*args, **kwargs)
-            os.chdir(old_wd)
-            return ret_val
-
-        return wrapped_function
-
-    # Load any Python functions and variables from the defined controller
-    script = os.path.join(ext_info["directory"], ext_info["controller"])
-    loaded = {}
-    spec = importlib.util.spec_from_file_location(f"{extension_name}-{script}", script)
-    if not spec or not spec.loader:
-        raise ValueError(f"Could not load extension {extension_name}-{script}!")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-
-    # Filter out extra names so we only get user defined functions and variables
-    loaded = {
-        f: wrap(module.__dict__[f]) for f in module.__dict__ if not f.startswith("__")
-    }
-
-    # Return functions and variables as a namedtuple, so we get the nice dot access syntax
-    module_tuple = namedtuple(clean_identifier_name(extension_name), loaded.keys())  # noqa: PYI024 # pyright: ignore[reportUntypedNamedTuple]
-    return module_tuple(**loaded)
-
-
-def load_all_extensions(data: QuestionData) -> dict[str, Any]:
-    """
-    Load all available extensions for a given element.
-    Returns an ordered dictionary mapping the extension name to its defined variables and functions
-    """
-    if "extensions" not in data:
-        raise ValueError("load_all_extensions() must be called from an element!")
-    if len(data["extensions"]) == 0:
-        return {}
-
-    loaded_extensions = collections.OrderedDict()
-    for name in sorted(data["extensions"].keys()):
-        loaded_extensions[name] = load_extension(data, name)
-
-    return loaded_extensions
-
-
-def load_host_script(script_name: str) -> ModuleType:
-    """Small convenience function to load a host element script from an extension."""
-    # Chop off the file extension because it's unnecessary here
-    script_name = script_name.removesuffix(".py")
-    return __import__(script_name)
-
-
-def iter_keys() -> Generator[str, None, None]:
-    """
-    from:
-    https://stackoverflow.com/questions/29351492/how-to-make-a-continuous-alphabetic-list-python-from-a-z-then-from-aa-ab-ac-e/29351603#29351603
-    """
-    ascii_set = string.ascii_lowercase
-
-    return (
-        "".join(s) for size in it.count(1) for s in it.product(ascii_set, repeat=size)
-    )
-
-
-def index2key(i: int) -> str:
-    """
-    Use when generating ordered lists of the form ['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]
-
-    Returns alphabetic key in the form [a-z]* from a given integer (i = 0, 1, 2, ...).
-    """
-    return next(it.islice(iter_keys(), i, None))
-
-
-def is_int_json_serializable(n: int) -> bool:
-    return -((2**53) - 1) <= n <= 2**53 - 1
-
-
-def add_files_format_error(data: QuestionData, error: str) -> None:
-    """Add a format error to the data dictionary."""
-    if data["format_errors"].get("_files") is None:
-        data["format_errors"]["_files"] = []
-    if isinstance(data["format_errors"]["_files"], list):
-        data["format_errors"]["_files"].append(error)
-    else:
-        data["format_errors"]["_files"] = [
-            '"_files" was present in "format_errors" but was not an array',
-            error,
-        ]
-
-
-def add_submitted_file(
-    data: QuestionData,
-    file_name: str,
-    base64_contents: str,
-    *,
-    mimetype: str | None = None,
-) -> None:
-    """Add a submitted file to the data dictionary."""
-    if data["submitted_answers"].get("_files") is None:
-        data["submitted_answers"]["_files"] = []
-    if isinstance(data["submitted_answers"]["_files"], list):
-        submitted_file = {"name": file_name, "contents": base64_contents}
-        if mimetype is not None:
-            submitted_file["mimetype"] = mimetype
-        data["submitted_answers"]["_files"].append(submitted_file)
-    else:
-        add_files_format_error(
-            data, '"_files" is present in "submitted_answers" but is not an array'
-        )

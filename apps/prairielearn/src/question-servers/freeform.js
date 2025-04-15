@@ -1868,10 +1868,10 @@ async function getContext(question, course) {
   // Select which rendering strategy we'll use. This is computed here so that
   // in can factor into the cache key.
   const useNewQuestionRenderer = course?.options?.useNewQuestionRenderer ?? false;
-  const useExperimentalRenderer = await features.enabled('process-questions-in-worker', {
+  const useExperimentalRenderer = !(await features.enabled('process-questions-in-server', {
     institution_id: course.institution_id,
     course_id: course.id,
-  });
+  }));
 
   const renderer = useExperimentalRenderer
     ? 'experimental'
