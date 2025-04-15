@@ -4,15 +4,18 @@ const featureNames = [
   'course-instance-billing',
   'enforce-plan-grants-for-questions',
   // Should only be applied to courses/institutions.
-  'process-questions-in-worker',
+  'process-questions-in-server',
   'question-sharing',
-  'bot-grading',
+  'consume-public-questions',
+  'ai-grading',
   'disable-public-workspaces',
   'ai-question-generation',
-  'bootstrap-4',
   // Should only be applied to institutions.
   'lti13',
-  'terms-clickthrough',
+  // Should only be applied globally.
+  'enhanced-navigation-user-toggle',
+  // Can be applied to any context.
+  'enhanced-navigation',
 ] as const;
 
 const features = new FeatureManager(featureNames);

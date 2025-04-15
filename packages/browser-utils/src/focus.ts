@@ -70,7 +70,6 @@ export function trapFocus(element: Element): FocusTrap {
   const previousActiveElement = document.activeElement ?? document.body;
 
   function keyDown(e: KeyboardEvent) {
-    console.log('handling keydown', e.key);
     if (e.key !== 'Tab') return;
 
     const focusable = focusableChildren(element);
@@ -97,7 +96,11 @@ export function trapFocus(element: Element): FocusTrap {
   return {
     deactivate() {
       document.removeEventListener('keydown', keyDown);
-      (previousActiveElement as HTMLElement)?.focus();
+      // Restore focus to the previously active element, but only if focus is
+      // currently inside the trap container.
+      if (element.contains(document.activeElement)) {
+        (previousActiveElement as HTMLElement)?.focus({ preventScroll: true });
+      }
     },
   };
 }

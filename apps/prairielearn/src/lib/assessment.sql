@@ -640,7 +640,10 @@ WITH
     (
       SELECT
         3.7 AS event_order,
-        'Manual grading results'::TEXT AS event_name,
+        CASE
+          WHEN gj.grading_method = 'Manual' THEN 'Manual grading results'::TEXT
+          ELSE 'AI grading results'::TEXT
+        END AS event_name,
         'blue2'::TEXT AS event_color,
         gj.graded_at AS date,
         u.user_id AS auth_user_id,
@@ -704,7 +707,7 @@ WITH
         LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
-        AND gj.grading_method = 'Manual'
+        AND gj.grading_method IN ('Manual', 'AI')
         AND gj.graded_at IS NOT NULL
     )
     UNION
@@ -737,7 +740,7 @@ WITH
             ELSE (s.submitted_answer - '_files')
           END,
           'true_answer',
-          v.true_answer
+          s.true_answer
         ) AS data
       FROM
         grading_jobs AS gj

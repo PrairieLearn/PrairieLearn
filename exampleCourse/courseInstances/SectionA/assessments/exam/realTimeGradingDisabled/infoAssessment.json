@@ -5,9 +5,7 @@
   "set": "Exam",
   "number": "2",
   "allowRealTimeGrading": false,
-  "allowAccess": [
-    { "mode": "Public", "credit": 100, "timeLimitMin": 3, "showClosedAssessment": false }
-  ],
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 3, "showClosedAssessment": false }],
   "zones": [
     {
       "title": "Warm-up",

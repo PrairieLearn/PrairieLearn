@@ -9,17 +9,6 @@ WHERE
   AND aset.abbreviation = 'HW'
   AND a.group_work is TRUE;
 
--- BLOCK generate_and_enroll_3_users
-SELECT
-  user_id,
-  uid,
-  name,
-  uin
-FROM
-  users_randomly_generate (3, 1)
-ORDER BY
-  user_id;
-
 -- BLOCK select_group_users
 SELECT
   *

@@ -1,6 +1,6 @@
-import { PoolConfig } from 'pg';
+import { type PoolConfig } from 'pg';
 
-import { PostgresPool, PoolClient } from '@prairielearn/postgres';
+import { type PoolClient, PostgresPool } from '@prairielearn/postgres';
 
 interface NamedLocksConfig {
   /**

@@ -12,11 +12,17 @@
   transform: rotateX(180deg);
 }
 
-[id^='file-preview'] .file-preview pre {
+[id^='file-preview'] .file-preview-container {
+  overflow: auto;
   max-height: 200px;
 }
 
 [id^='file-preview'] .file-preview-expand {
   border-top-right-radius: 0;
   border-top-left-radius: 0;
+}
+
+[id^='file-preview'] .nb-input pre {
+  padding: 1rem;
+  background-color: #f5f2f0;
 }

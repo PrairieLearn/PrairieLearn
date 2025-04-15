@@ -1,10 +1,12 @@
-import { AnsiUp } from 'ansi_up';
-
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { Assessment, Course, CourseInstance, Question } from '../lib/db-types.js';
-
-const ansiUp = new AnsiUp();
+import { ansiToHtml } from '../lib/chalk.js';
+import {
+  type Assessment,
+  type Course,
+  type CourseInstance,
+  type Question,
+} from '../lib/db-types.js';
 
 export function CourseSyncErrorsAndWarnings({
   authz_data,
@@ -112,8 +114,8 @@ function SyncErrorsAndWarnings({
     return '';
   }
 
-  const syncErrorsAnsified = syncErrors ? unsafeHtml(ansiUp.ansi_to_html(syncErrors)) : null;
-  const syncWarningsAnsified = syncWarnings ? unsafeHtml(ansiUp.ansi_to_html(syncWarnings)) : null;
+  const syncErrorsAnsified = syncErrors ? unsafeHtml(ansiToHtml(syncErrors)) : null;
+  const syncWarningsAnsified = syncWarnings ? unsafeHtml(ansiToHtml(syncWarnings)) : null;
   const infoFileName = fileEditUrl.split('/').pop();
 
   return html`

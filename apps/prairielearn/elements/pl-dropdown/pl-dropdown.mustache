@@ -1,17 +1,16 @@
-
 {{#question}}
-    <span class="d-inline-block form-group form-inline">
-        <select name="{{answers-name}}" class="custom-select w-auto" {{^editable}}disabled{{/editable}}>
+    <span class="d-inline-block mb-3">
+        <select name="{{answers-name}}" class="form-select w-auto" {{^editable}}disabled{{/editable}}>
             {{#options}}
                 <option value="{{value}}" {{#selected}}selected{{/selected}}>{{{value}}}</option>
             {{/options}}
         </select>
         {{#has_submission}}
             {{#correct}}
-                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
             {{/correct}}
             {{^correct}}
-                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
             {{/correct}}
         {{/has_submission}}
     </span>
@@ -25,22 +24,31 @@
 
             {{#display-score-badge}}
                 {{#correct}}
-                    <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                    <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
                 {{/correct}}
                 {{^correct}}
-                    <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                    <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
                 {{/correct}}
             {{/display-score-badge}}
         {{/parse-error}}
-
         {{#parse-error}}
-            <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <button class="btn btn-sm btn-secondary small border ml-1"
-                    data-placement="auto" data-trigger="focus" data-toggle="popover"
-                    data-html="true" title="Format Error" tabindex="0" data-container="body"
-                    data-content="{{parse-error}}">
-              Why <i class="fa fa-question-circle" aria-hidden="true"></i>
-            </button>
+        <span class="small" style="white-space: nowrap">
+            <span class="badge text-bg-danger">
+                Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            </span>
+            <a
+                class="link-primary"
+                tabindex="0"
+                role="button"
+                data-bs-placement="auto"
+                data-bs-toggle="popover"
+                data-bs-html="true"
+                title="Format error"
+                data-bs-content="{{parse-error}}"
+            >
+            More info…
+            </a>
+        </span>   
         {{/parse-error}}
     </span>
 {{/submission}}

@@ -1,18 +1,20 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
-import { User } from '../../lib/db-types.js';
+import { type User } from '../../lib/db-types.js';
 
-import { CourseAssessmentRow, InstructorGradebookData } from './instructorGradebook.types.js';
+import {
+  type CourseAssessmentRow,
+  type InstructorGradebookData,
+} from './instructorGradebook.types.js';
 
 export function InstructorGradebook({
   resLocals,
@@ -26,74 +28,74 @@ export function InstructorGradebook({
   courseAssessments?: CourseAssessmentRow[];
 }) {
   const { authz_data, urlPrefix, __csrf_token } = resLocals;
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
-        <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
-        from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
-        <script src="${nodeModulesAssetPath(
-            'bootstrap-table/dist/bootstrap-table.min.js',
-          )}"></script>
-        <script src="${nodeModulesAssetPath(
-            'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-          )}"></script>
-        <link
-          href="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.css')}"
-          rel="stylesheet"
-        />
-        <link
-          href="${nodeModulesAssetPath(
-            'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css',
-          )}"
-          rel="stylesheet"
-        />
-        ${compiledScriptTag('instructorGradebookClient.ts')}
-        ${compiledStylesheetTag('instructorGradebook.css')}
-        ${EncodedData<InstructorGradebookData>(
-          {
-            urlPrefix,
-            csvFilename,
-            csrfToken: __csrf_token,
-            hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit,
-            courseAssessments: courseAssessments ?? [],
-          },
-          'gradebook-data',
-        )}
-      </head>
-      <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
-        <main id="content" class="container-fluid">
-          ${CourseInstanceSyncErrorsAndWarnings({
-            authz_data,
-            courseInstance: resLocals.course_instance,
-            course: resLocals.course,
-            urlPrefix,
-          })}
-          ${!authz_data.has_course_instance_permission_view
-            ? StudentDataViewMissing({
-                courseOwners,
-                hasCoursePermissionOwn: authz_data.has_course_permission_own,
-                urlPrefix,
-              })
-            : html`
-                <div class="card mb-4">
-                  <div class="card-header bg-primary text-white">
-                    <h1>Gradebook</h1>
-                  </div>
-                  <table id="gradebook-table" aria-label="Gradebook"></table>
 
-                  <div class="spinning-wheel card-body spinner-border">
-                    <span class="sr-only">Loading...</span>
-                  </div>
-                </div>
-                ${RoleDescriptionModal()}
-              `}
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Gradebook',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'gradebook',
+    },
+    options: {
+      fullWidth: true,
+    },
+    headContent: html`
+      <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
+        from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
+      <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
+      <link
+        href="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.css')}"
+        rel="stylesheet"
+      />
+      <link
+        href="${nodeModulesAssetPath(
+          'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css',
+        )}"
+        rel="stylesheet"
+      />
+      ${compiledScriptTag('bootstrap-table-sticky-header.js')}
+      ${compiledScriptTag('instructorGradebookClient.ts')}
+      ${compiledStylesheetTag('instructorGradebook.css')}
+      ${EncodedData<InstructorGradebookData>(
+        {
+          urlPrefix,
+          csvFilename,
+          csrfToken: __csrf_token,
+          hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit,
+          courseAssessments: courseAssessments ?? [],
+        },
+        'gradebook-data',
+      )}
+    `,
+    content: html`
+      ${CourseInstanceSyncErrorsAndWarnings({
+        authz_data,
+        courseInstance: resLocals.course_instance,
+        course: resLocals.course,
+        urlPrefix,
+      })}
+      ${!authz_data.has_course_instance_permission_view
+        ? StudentDataViewMissing({
+            courseOwners,
+            hasCoursePermissionOwn: authz_data.has_course_permission_own,
+            urlPrefix,
+          })
+        : html`
+            <div class="card mb-4">
+              <div class="card-header bg-primary text-white">
+                <h1>Gradebook</h1>
+              </div>
+              <table id="gradebook-table" aria-label="Gradebook"></table>
+
+              <div class="spinning-wheel card-body spinner-border">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            ${RoleDescriptionModal()}
+          `}
+    `,
+  });
 }
 
 function StudentDataViewMissing({
@@ -139,6 +141,7 @@ function RoleDescriptionModal() {
   return Modal({
     id: 'role-help',
     title: 'Roles',
+    form: false,
     body: html`
       <ul>
         <li>
@@ -158,7 +161,7 @@ function RoleDescriptionModal() {
       </ul>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }

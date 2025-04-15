@@ -19,11 +19,23 @@ SELECT
   END AS formatted_end_date,
   COALESCE(
     $is_administrator
+    OR ia.id IS NOT NULL
     OR cip.course_instance_role > 'None',
     FALSE
-  ) AS has_course_instance_permission_view
+  ) AS has_course_instance_permission_view,
+  COALESCE(
+    $is_administrator
+    OR ia.id IS NOT NULL
+    OR cip.course_instance_role >= 'Student Data Editor',
+    FALSE
+  ) AS has_course_instance_permission_edit
 FROM
   pl_courses AS c
+  JOIN institutions AS i ON (i.id = c.institution_id)
+  LEFT JOIN institution_administrators AS ia ON (
+    ia.institution_id = i.id
+    AND ia.user_id = $user_id
+  )
   JOIN course_instances AS ci ON (
     ci.course_id = c.id
     AND ci.deleted_at IS NULL
@@ -48,12 +60,13 @@ FROM
 WHERE
   c.id = $course_id
   AND c.deleted_at IS NULL
-  --  If either the user is an administrator, the user has a non-None course
-  --  role, or the course is the example course, then select all course
-  --  instances. Otherwise, select all course instances for which the user has a
-  --  non-None course instance role.
+  -- If either the user is a global or institution administrator, the user has
+  -- a non-None course role, or the course is the example course, then select all
+  -- course instances. Otherwise, select all course instances for which the user
+  -- has a non-None course instance role.
   AND (
     $is_administrator
+    OR ia.id IS NOT NULL
     OR cp.course_role > 'None'
     OR cip.course_instance_role > 'None'
     OR c.example_course IS TRUE
@@ -73,3 +86,15 @@ FROM
 WHERE
   cip.course_instance_id = $course_instance_id
   AND cip.course_instance_role >= $minimal_role;
+
+-- BLOCK select_course_has_course_instances
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      course_instances as ci
+    WHERE
+      ci.course_id = $course_id
+      AND ci.deleted_at IS NULL
+  );

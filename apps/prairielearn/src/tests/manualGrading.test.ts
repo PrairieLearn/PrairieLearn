@@ -13,11 +13,11 @@ import {
 } from '../models/course-permissions.js';
 
 import {
-  setUser,
+  type User,
+  assertAlert,
   parseInstanceQuestionId,
   saveOrGrade,
-  User,
-  assertAlert,
+  setUser,
 } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
@@ -263,7 +263,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
           );
           if (item.explanation) {
             assert.equal(
-              container.find('[data-testid="rubric-item-explanation"]').attr('data-content'),
+              container.find('[data-testid="rubric-item-explanation"]').attr('data-bs-content'),
               item.explanation_render ?? `<p>${item.explanation}</p>`,
             );
           } else {
@@ -362,14 +362,14 @@ function checkSettingsResults(
 }
 
 function buildRubricItemFields(items: RubricItem[]): Record<string, string> {
-  return _.fromPairs(
-    _.flatMap(
-      _.toPairs(_.mapKeys(items, (item, index) => (item.id ? `cur${item.id}` : `new${index}`))),
-      ([key, item], order) =>
-        _.map(_.toPairs({ order, ...item }), ([field, value]) => [
-          `rubric_item[${key}][${field}]`,
-          value,
-        ]),
+  return Object.fromEntries(
+    Object.entries(
+      _.mapKeys(items, (item, index) => (item.id ? `cur${item.id}` : `new${index}`)),
+    ).flatMap(([key, item], order) =>
+      Object.entries({ order, ...item }).map(([field, value]) => [
+        `rubric_item[${key}][${field}]`,
+        String(value),
+      ]),
     ),
   );
 }
@@ -1044,9 +1044,8 @@ describe('Manual Grading', function () {
           body: new URLSearchParams({
             __action: 'set_time_limit_all',
             __csrf_token: token,
-            plus_minus: 'unlimited',
+            action: 'unlimited',
             time_add: '0',
-            time_ref: 'minutes',
             reopen_closed: 'on',
           }).toString(),
         });

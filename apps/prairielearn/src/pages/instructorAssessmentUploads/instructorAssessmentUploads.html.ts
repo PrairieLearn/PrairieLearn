@@ -1,11 +1,10 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
@@ -23,39 +22,40 @@ export function InstructorAssessmentUploads({
   resLocals: Record<string, any>;
   uploadJobSequences: UploadJobSequence[];
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
-      </head>
-      <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
-        <main id="content" class="container-fluid">
-          ${AssessmentSyncErrorsAndWarnings({
-            authz_data: resLocals.authz_data,
-            assessment: resLocals.assessment,
-            courseInstance: resLocals.course_instance,
-            course: resLocals.course,
-            urlPrefix: resLocals.urlPrefix,
-          })}
-          ${resLocals.authz_data.has_course_instance_permission_edit
-            ? html`
-                ${UploadInstanceQuestionScoresModal({ csrfToken: resLocals.__csrf_token })}
-                ${UploadAssessmentInstanceScoresModal({ csrfToken: resLocals.__csrf_token })}
-              `
-            : ''}
-          ${AssessmentUploadCard({
-            assessmentSetName: resLocals.assessment_set.name,
-            assessmentNumber: resLocals.assessment.number,
-            authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
-            uploadJobSequences,
-            urlPrefix: resLocals.urlPrefix,
-          })}
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Uploads',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'uploads',
+    },
+    options: {
+      fullWidth: true,
+    },
+    content: html`
+      ${AssessmentSyncErrorsAndWarnings({
+        authz_data: resLocals.authz_data,
+        assessment: resLocals.assessment,
+        courseInstance: resLocals.course_instance,
+        course: resLocals.course,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+      ${resLocals.authz_data.has_course_instance_permission_edit
+        ? html`
+            ${UploadInstanceQuestionScoresModal({ csrfToken: resLocals.__csrf_token })}
+            ${UploadAssessmentInstanceScoresModal({ csrfToken: resLocals.__csrf_token })}
+          `
+        : ''}
+      ${AssessmentUploadCard({
+        assessmentSetName: resLocals.assessment_set.name,
+        assessmentNumber: resLocals.assessment.number,
+        authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
+        uploadJobSequences,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+    `,
+  });
 }
 
 function AssessmentUploadCard({
@@ -81,52 +81,54 @@ function AssessmentUploadCard({
         ? html`
             <div class="table-responsive pb-0">
               <table class="table" aria-label="Score uploads">
-                <tr>
-                  <td style="width: 1%">
-                    <button
-                      type="button"
-                      class="btn btn-primary text-nowrap"
-                      data-toggle="modal"
-                      data-target="#upload-instance-question-scores-form"
-                    >
-                      <i class="fas fa-upload"></i> Upload new question scores
-                    </button>
-                  </td>
-                  <td>
-                    <p>
-                      Upload a CSV file to set per-question scores for individual students.
-                      <a data-toggle="collapse" href="#uploadInstanceQuestionScoresHelp">
-                        Show details...
-                      </a>
-                    </p>
-                    <div class="collapse" id="uploadInstanceQuestionScoresHelp">
-                      ${CsvHelpInstanceQuestionScores()}
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="width: 1%">
-                    <button
-                      type="button"
-                      class="btn btn-primary text-nowrap"
-                      data-toggle="modal"
-                      data-target="#upload-assessment-instance-scores-form"
-                    >
-                      <i class="fas fa-upload"></i> Upload new total scores
-                    </button>
-                  </td>
-                  <td>
-                    <p>
-                      Upload a CSV file to set the total assessment score for individual students.
-                      <a data-toggle="collapse" href="#uploadAssessmentScoresHelp"
-                        >Show details...</a
+                <tbody>
+                  <tr>
+                    <td style="width: 1%">
+                      <button
+                        type="button"
+                        class="btn btn-primary text-nowrap"
+                        data-bs-toggle="modal"
+                        data-bs-target="#upload-instance-question-scores-form"
                       >
-                    </p>
-                    <div class="collapse" id="uploadAssessmentScoresHelp">
-                      ${CsvHelpAssessmentInstanceScores()}
-                    </div>
-                  </td>
-                </tr>
+                        <i class="fas fa-upload"></i> Upload new question scores
+                      </button>
+                    </td>
+                    <td>
+                      <p>
+                        Upload a CSV file to set per-question scores for individual students.
+                        <a data-bs-toggle="collapse" href="#uploadInstanceQuestionScoresHelp">
+                          Show details...
+                        </a>
+                      </p>
+                      <div class="collapse" id="uploadInstanceQuestionScoresHelp">
+                        ${CsvHelpInstanceQuestionScores()}
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="width: 1%">
+                      <button
+                        type="button"
+                        class="btn btn-primary text-nowrap"
+                        data-bs-toggle="modal"
+                        data-bs-target="#upload-assessment-instance-scores-form"
+                      >
+                        <i class="fas fa-upload"></i> Upload new total scores
+                      </button>
+                    </td>
+                    <td>
+                      <p>
+                        Upload a CSV file to set the total assessment score for individual students.
+                        <a data-bs-toggle="collapse" href="#uploadAssessmentScoresHelp"
+                          >Show details...</a
+                        >
+                      </p>
+                      <div class="collapse" id="uploadAssessmentScoresHelp">
+                        ${CsvHelpAssessmentInstanceScores()}
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
               </table>
             </div>
           `
@@ -187,7 +189,7 @@ function CsvHelpInstanceQuestionScores() {
       >.
     </p>
     <p>Alternatively, the CSV file can be in the format:</p>
-    <pre class="ml-4">
+    <pre class="ms-4">
 uid,instance,qid,score_perc,feedback
 student1@example.com,1,addTwoNumbers,34.5,The second step was wrong
 student2@example.com,1,addTwoNumbers,78.92,
@@ -213,7 +215,7 @@ student2@example.com,1,matrixMultiply,100,Great job!</pre
 function CsvHelpAssessmentInstanceScores() {
   return html`
     <p>Upload a CSV file like this:</p>
-    <pre class="ml-4">
+    <pre class="ms-4">
 uid,instance,score_perc
 student1@example.com,1,63.5
 student2@example.com,1,100</pre
@@ -228,13 +230,13 @@ student2@example.com,1,100</pre
       Alternatively, the total assessment points can be changed with a CSV containing a
       <code>points</code> column, like:
     </p>
-    <pre class="ml-4">
+    <pre class="ms-4">
 uid,instance,points
 student1@example.com,1,120
 student2@example.com,1,130.27</pre
     >
     <p>For assessments using group work, use the <code>group_name</code> column instead:</p>
-    <pre class="ml-4">
+    <pre class="ms-4">
 group_name,instance,score_perc
 myhappygroup,1,95
 greatgroup,1,85</pre
@@ -249,24 +251,22 @@ function UploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string })
     formEncType: 'multipart/form-data',
     body: html`
       ${CsvHelpInstanceQuestionScores()}
-      <div class="form-group">
-        <div class="custom-file">
-          <input
-            type="file"
-            name="file"
-            class="custom-file-input"
-            id="uploadInstanceQuestionScoresFileInput"
-          />
-          <label class="custom-file-label" for="uploadInstanceQuestionScoresFileInput">
-            Choose CSV file
-          </label>
-        </div>
+      <div class="mb-3">
+        <label class="form-label" for="uploadInstanceQuestionScoresFileInput">
+          Choose CSV file
+        </label>
+        <input
+          type="file"
+          name="file"
+          class="form-control"
+          id="uploadInstanceQuestionScoresFileInput"
+        />
       </div>
     `,
     footer: html`
       <input type="hidden" name="__action" value="upload_instance_question_scores" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Upload</button>
     `,
   });
@@ -279,24 +279,22 @@ function UploadAssessmentInstanceScoresModal({ csrfToken }: { csrfToken: string 
     formEncType: 'multipart/form-data',
     body: html`
       ${CsvHelpAssessmentInstanceScores()}
-      <div class="form-group">
-        <div class="custom-file">
-          <input
-            type="file"
-            name="file"
-            class="custom-file-input"
-            id="uploadAssessmentInstanceScoresFileInput"
-          />
-          <label class="custom-file-label" for="uploadAssessmentInstanceScoresFileInput"
-            >Choose CSV file</label
-          >
-        </div>
+      <div class="mb-3">
+        <label class="form-label" for="uploadAssessmentInstanceScoresFileInput">
+          Choose CSV file
+        </label>
+        <input
+          type="file"
+          name="file"
+          class="form-control"
+          id="uploadAssessmentInstanceScoresFileInput"
+        />
       </div>
     `,
     footer: html`
       <input type="hidden" name="__action" value="upload_assessment_instance_scores" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Upload</button>
     `,
   });

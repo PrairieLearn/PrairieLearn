@@ -29,8 +29,8 @@ def generate(data):
     for i, name in enumerate(name_list):
         data["params"]["name" + str(i + 1)] = name
 
-    Ix = df["Moment of Inertia - Ix (in^4)"].iloc[select].values
-    h = df["Depth (in)"].iloc[select].values
+    Ix = df["Moment of Inertia - Ix (in^4)"].iloc[select].to_numpy()
+    h = df["Depth (in)"].iloc[select].to_numpy()
 
     M = np.random.randint(2, 8)
     data["params"]["M"] = M

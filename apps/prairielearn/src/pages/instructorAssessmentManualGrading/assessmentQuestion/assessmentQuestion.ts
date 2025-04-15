@@ -4,7 +4,6 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import { botGrade } from '../../../lib/bot-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -25,8 +24,8 @@ router.get(
     const courseStaff = await selectCourseInstanceGraderStaff({
       course_instance_id: res.locals.course_instance.id,
     });
-    const botGradingEnabled = await features.enabledFromLocals('bot-grading', res.locals);
-    res.send(AssessmentQuestion({ resLocals: res.locals, courseStaff, botGradingEnabled }));
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    res.send(AssessmentQuestion({ resLocals: res.locals, courseStaff, aiGradingEnabled }));
   }),
 );
 
@@ -126,23 +125,6 @@ router.post(
       } else {
         res.send({});
       }
-    } else if (req.body.__action === 'bot_grade_assessment') {
-      // check if bot grading is enabled
-      const bot_grading_enabled = await features.enabledFromLocals('bot-grading', res.locals);
-      if (!bot_grading_enabled) {
-        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-      }
-
-      const jobSequenceId = await botGrade({
-        question: res.locals.question,
-        course: res.locals.course,
-        course_instance_id: res.locals.course_instance.id,
-        assessment_question: res.locals.assessment_question,
-        urlPrefix: res.locals.urlPrefix,
-        authn_user_id: res.locals.authn_user.user_id,
-        user_id: res.locals.user.user_id,
-      });
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

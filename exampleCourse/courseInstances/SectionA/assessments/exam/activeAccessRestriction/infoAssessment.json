@@ -6,13 +6,11 @@
   "number": "3",
   "allowAccess": [
     {
-      "mode": "Public",
       "endDate": "2030-01-01T00:00:00",
       "active": false,
       "comment": "This access rule allows students to see the exam on the Assessments page before it starts. Students cannot begin the exam at this time."
     },
     {
-      "mode": "Public",
       "credit": 100,
       "timeLimitMin": 50,
       "startDate": "2030-01-01T00:00:01",
@@ -20,7 +18,6 @@
       "showClosedAssessment": false
     },
     {
-      "mode": "Public",
       "active": false,
       "startDate": "2030-01-04T00:00:01",
       "comment": "This access rule allows students to view their exams two days after all exams finish. Note that students who did not write the exam cannot view it."

@@ -1,7 +1,7 @@
-import { html, unsafeHtml, joinHtml } from '@prairielearn/html';
+import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 
-import { AssessmentQuestion, RubricGradingItem } from '../../../lib/db-types.js';
-import { RubricData, RubricGradingData } from '../../../lib/manualGrading.js';
+import { type AssessmentQuestion, type RubricGradingItem } from '../../../lib/db-types.js';
+import { type RubricData, type RubricGradingData } from '../../../lib/manualGrading.js';
 
 export function RubricInputSection({
   resLocals,
@@ -84,9 +84,7 @@ export function RubricInputSection({
                       ) / 100 || ''}"
                       ${disable ? 'disabled' : ''}
                     />
-                    <span class="input-group-append">
-                      <span class="input-group-text">%</span>
-                    </span>
+                    <span class="input-group-text">%</span>
                   </div>
                 </div>
               `
@@ -178,9 +176,9 @@ function RubricItem(
         data-rubric-item-points="${item.points}"
         data-key-binding="${item.key_binding}"
       />
-      <span class="badge badge-info">${item.key_binding}</span>
+      <span class="badge text-bg-info">${item.key_binding}</span>
       ${is_leaf_node
-        ? html`<span class="float-right text-${item.points >= 0 ? 'success' : 'danger'}">
+        ? html`<span class="float-end text-${item.points >= 0 ? 'success' : 'danger'}">
             <strong>
               <span class="js-manual-grading-points" data-testid="rubric-item-points">
                 [${(item.points >= 0 ? '+' : '') + Math.round(item.points * 100) / 100}]

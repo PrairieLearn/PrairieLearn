@@ -5,7 +5,7 @@
   "set": "Exam",
   "number": "10",
   "gradeRateMinutes": 10,
-  "allowAccess": [{ "mode": "Public", "credit": 100, "timeLimitMin": 50 }],
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 50 }],
   "zones": [
     {
       "questions": [

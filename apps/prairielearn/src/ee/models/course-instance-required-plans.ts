@@ -2,7 +2,7 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { CourseInstanceRequiredPlanSchema, IdSchema } from '../../lib/db-types.js';
 import { insertAuditLog } from '../../models/audit-log.js';
-import { PlanName } from '../lib/billing/plans-types.js';
+import { type PlanName } from '../lib/billing/plans-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

@@ -24,6 +24,7 @@ export function NavbarCourseInstanceSwitcher({
       return html`
         <a
           class="dropdown-item ${isActive ? 'active' : ''}"
+          aria-current="${isActive ? 'page' : ''}"
           href="${plainUrlPrefix}/course_instance/${ci.id}/instructor/instance_admin"
         >
           ${ci.short_name}

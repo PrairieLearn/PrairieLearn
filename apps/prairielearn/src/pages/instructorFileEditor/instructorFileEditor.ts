@@ -10,13 +10,14 @@ import { isBinaryFile } from 'isbinaryfile';
 import { HttpStatusError } from '@prairielearn/error';
 import {
   loadSqlEquiv,
-  queryOptionalRow,
-  queryRows,
   queryAsync,
+  queryOptionalRow,
   queryRow,
+  queryRows,
 } from '@prairielearn/postgres';
 
-import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util.js';
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema, IdSchema } from '../../lib/db-types.js';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
@@ -30,7 +31,6 @@ import {
   type DraftEdit,
   type FileEditorData,
   InstructorFileEditor,
-  InstructorFileEditorNoPermission,
 } from './instructorFileEditor.html.js';
 
 const router = Router();
@@ -41,9 +41,14 @@ router.get(
   asyncHandler(async (req, res) => {
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.example_course) {
-      res
-        .status(403)
-        .send(InstructorFileEditorNoPermission({ resLocals: res.locals, courseOwners: [] }));
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          courseOwners: [],
+          pageTitle: 'File editor',
+          requiredPermissions: 'Editor',
+        }),
+      );
       return;
     }
 
@@ -51,9 +56,14 @@ router.get(
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get edit permissions.
       const courseOwners = await getCourseOwners(res.locals.course.id);
-      res
-        .status(403)
-        .send(InstructorFileEditorNoPermission({ resLocals: res.locals, courseOwners }));
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          courseOwners,
+          pageTitle: 'File editor',
+          requiredPermissions: 'Editor',
+        }),
+      );
       return;
     }
 
@@ -186,7 +196,7 @@ router.post(
       });
 
       const editor = new FileModifyEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         container,
         filePath: paths.workingPath,
         editContents: req.body.file_edit_contents,

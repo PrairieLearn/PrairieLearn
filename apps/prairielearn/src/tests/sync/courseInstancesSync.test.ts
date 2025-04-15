@@ -2,6 +2,7 @@ import * as path from 'path';
 
 import { assert } from 'chai';
 import fs from 'fs-extra';
+import { v4 as uuidv4 } from 'uuid';
 
 import { idsEqual } from '../../lib/id.js';
 import * as helperDb from '../helperDb.js';
@@ -14,7 +15,7 @@ import * as util from './util.js';
 function makeCourseInstance(): util.CourseInstanceData {
   return {
     courseInstance: {
-      uuid: '1e0724c3-47af-4ca3-9188-5227ef0c5549',
+      uuid: uuidv4(),
       longName: 'Test course instance',
     },
     assessments: {},
@@ -49,6 +50,18 @@ describe('Course instance syncing', () => {
 
   it('syncs access rules', async () => {
     const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
+      {
+        startDate: '2024-01-01T00:00:00',
+        endDate: '2024-01-31T00:00:00',
+        uids: ['student@example.com'],
+      },
+      {
+        startDate: '2024-02-01T00:00:00',
+        endDate: '2024-02-28T00:00:00',
+        institution: 'Any',
+      },
+    ];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
@@ -56,6 +69,37 @@ describe('Course instance syncing', () => {
       syncedAccessRules.length,
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess?.length,
     );
+
+    // Ensure that the access rules are correctly synced.
+    const firstRule = syncedAccessRules.find((ar) => ar.number === 1);
+    assert.isOk(firstRule);
+    assert.equal(firstRule.start_date.getTime(), new Date('2024-01-01T06:00:00.000Z').getTime());
+    assert.equal(firstRule.end_date.getTime(), new Date('2024-01-31T06:00:00.000Z').getTime());
+    assert.deepEqual(firstRule.uids, ['student@example.com']);
+    assert.isNull(firstRule.institution);
+
+    const secondRule = syncedAccessRules.find((ar) => ar.number === 2);
+    assert.isOk(secondRule);
+    assert.equal(secondRule.start_date.getTime(), new Date('2024-02-01T06:00:00.000Z').getTime());
+    assert.equal(secondRule.end_date.getTime(), new Date('2024-02-28T06:00:00.000Z').getTime());
+    assert.isNull(secondRule.uids);
+    assert.equal(secondRule.institution, 'Any');
+
+    // Ensure that excess access rules are deleted. Delete the first one and sync again.
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess.shift();
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const newSyncedAccessRule = await util.dumpTable('course_instance_access_rules');
+    assert.equal(newSyncedAccessRule.length, 1);
+
+    // Ensure the remaining access rule is the correct one.
+    const remainingRule = newSyncedAccessRule[0];
+    assert.equal(
+      remainingRule.start_date.getTime(),
+      new Date('2024-02-01T06:00:00.000Z').getTime(),
+    );
+    assert.equal(remainingRule.end_date.getTime(), new Date('2024-02-28T06:00:00.000Z').getTime());
+    assert.isNull(remainingRule.uids);
+    assert.equal(remainingRule.institution, 'Any');
   });
 
   it('soft-deletes and restores course instances', async () => {

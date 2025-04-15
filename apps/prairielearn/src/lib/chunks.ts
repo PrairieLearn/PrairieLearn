@@ -16,12 +16,12 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { getLockNameForCoursePath } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
-import { CourseData } from '../sync/course-db.js';
+import { type CourseData } from '../sync/course-db.js';
 
 import { downloadFromS3, makeS3ClientConfig } from './aws.js';
-import { chalk, chalkDim } from './chalk.js';
+import { chalk } from './chalk.js';
 import { config } from './config.js';
-import { createServerJob, ServerJob } from './server-jobs.js';
+import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -819,19 +819,19 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
   job.info(chalk.bold('Looking up course directory'));
   const result = await sqldb.queryOneRowAsync(sql.select_course_dir, { course_id });
   let courseDir = result.rows[0].path;
-  job.info(chalkDim(`Found course directory: ${courseDir}`));
+  job.verbose(`Found course directory: ${courseDir}`);
   courseDir = path.resolve(process.cwd(), courseDir);
-  job.info(chalkDim(`Resolved course directory: ${courseDir}`));
+  job.verbose(`Resolved course directory: ${courseDir}`);
 
   const lockName = getLockNameForCoursePath(courseDir);
   job.info(chalk.bold(`Acquiring lock ${lockName}`));
 
   await namedLocks.doWithLock(lockName, {}, async () => {
-    job.info(chalkDim('Acquired lock'));
+    job.verbose('Acquired lock');
 
     job.info(chalk.bold(`Loading course data from ${courseDir}`));
     const courseData = await courseDB.loadFullCourse(course_id, courseDir);
-    job.info(chalkDim('Loaded course data'));
+    job.verbose('Loaded course data');
 
     job.info(chalk.bold('Generating all chunks'));
     const chunkOptions = {
@@ -841,10 +841,10 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
     };
     const chunkChanges = await updateChunksForCourse(chunkOptions);
     logChunkChangesToJob(chunkChanges, job);
-    job.info(chalkDim('Generated all chunks'));
+    job.verbose('Generated all chunks');
   });
 
-  job.info(chalkDim('Released lock'));
+  job.verbose('Released lock');
 
   job.info(chalk.green(`Successfully generated chunks for course ID = ${course_id}`));
 }
@@ -907,8 +907,23 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       chunkExists = true;
     }
   } catch (err) {
-    // Allow ENOENT errors to continue, because they mean we don't have the chunk
-    if (err.code !== 'ENOENT') throw err;
+    // If we encounter an EINVAL error, chances are that we're trying to `readlink`
+    // on a directory. This can occur if a question is renamed to a parent directory,
+    // e.g. renamed from `foo/bar/baz` to `foo/bar`. In this case, we should remove
+    // the existing target path and continue.
+    //
+    // Our syncing code guarantees that if a question `foo/bar` exists, then no
+    // question with that same prefix will exist, so we can always safely remove
+    // the existing target directory.
+    //
+    // If the target path isn't a directory, who knows what state we're in, so we
+    // allow the error to propagate.
+    if (err.code === 'EINVAL' && (await fs.stat(targetPath)).isDirectory()) {
+      await fs.remove(targetPath);
+    } else if (err.code !== 'ENOENT') {
+      // Allow ENOENT errors to continue, because they mean we don't have the chunk
+      throw err;
+    }
   }
   if (chunkExists) {
     // If we have the correct link then this chunk is unpacked and

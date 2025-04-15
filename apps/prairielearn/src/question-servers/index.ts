@@ -1,7 +1,13 @@
-import { Question, Course, Variant, Submission } from '../lib/db-types.js';
+import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 
 export type QuestionType = Question['type'];
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
+
+export interface RenderSelection {
+  question?: boolean;
+  submissions?: boolean;
+  answer?: boolean;
+}
 
 type QuestionServerReturnValue<T> = Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
@@ -74,7 +80,7 @@ export interface QuestionServer {
     },
   ) => QuestionServerReturnValue<PrepareResultData>;
   render: (
-    renderSelection: { question: boolean; answer: boolean; submissions: boolean },
+    renderSelection: RenderSelection,
     variant: Variant,
     question: Question,
     submission: Submission | null,

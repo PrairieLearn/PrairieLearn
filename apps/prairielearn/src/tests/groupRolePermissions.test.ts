@@ -3,19 +3,21 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
 import {
-  queryAsync,
-  queryRows,
   loadSqlEquiv,
+  queryAsync,
   queryOneRowAsync,
   queryRow,
+  queryRows,
 } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { UserSchema, GroupRoleSchema, IdSchema } from '../lib/db-types.js';
+import { GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { switchUserAndLoadAssessment } from './utils/group.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -31,55 +33,10 @@ const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';
 const GROUP_NAME = 'groupBB';
 
-const StudentUserSchema = UserSchema.pick({
-  user_id: true,
-  uid: true,
-  name: true,
-  uin: true,
-});
-
-interface StudentUser {
-  user_id: string | null;
-  uid: string;
-  name: string | null;
-  uin: string | null;
-}
-
-async function generateThreeStudentUsers(): Promise<StudentUser[]> {
-  const rows = await queryRows(sql.generate_and_enroll_3_users, StudentUserSchema);
+async function generateThreeStudentUsers() {
+  const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
   assert.lengthOf(rows, 3);
   return rows;
-}
-
-/**
- * Switches active user and loads assessment, returning the user's CSRF
- * token value from a form on the page
- */
-async function switchUserAndLoadAssessment(
-  studentUser: StudentUser,
-  assessmentUrl: string,
-  formName: string | null,
-  formContainer = 'body',
-): Promise<{ $: cheerio.CheerioAPI; csrfToken: string }> {
-  // Load config
-  config.authUid = studentUser.uid;
-  config.authName = studentUser.name;
-  config.authUin = studentUser.uin;
-
-  // Load assessment
-  const res = await fetch(assessmentUrl);
-  assert.isOk(res.ok);
-  const page = await res.text();
-  const $ = cheerio.load(page);
-
-  // Check that the correct CSRF form exists
-  const elementQuery = `${formContainer} form${formName ? `[name="${formName}"]` : ''} input[name="__csrf_token"]`;
-  const csrfTokenElement = $(elementQuery);
-  assert.nestedProperty(csrfTokenElement[0], 'attribs.value', 'CSRF token value must exist');
-  assert.isString(csrfTokenElement.attr('value'), 'CSRF token must be a string');
-  const csrfToken = csrfTokenElement.attr('value') as string; // guaranteed to be string by assertion
-
-  return { $, csrfToken };
 }
 
 /**
@@ -131,7 +88,7 @@ async function joinGroup(
 async function updateGroupRoles(
   roleUpdates: any[],
   groupRoles: any[],
-  studentUsers: StudentUser[],
+  studentUsers: User[],
   csrfToken: string,
   assessmentUrl: string,
   $: cheerio.CheerioAPI,
@@ -353,7 +310,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       lockedRows.each((_, element) => {
         const rowLabelText = $(element).parent('td').find('span').text();
         assert.match(rowLabelText, /HW5\.[23]\./);
-        const popoverText = $(element).attr('data-content');
+        const popoverText = $(element).attr('data-bs-content');
         assert.strictEqual(
           popoverText,
           'Your current group role (Manager) restricts access to this question.',
@@ -416,7 +373,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       assert.isTrue(firstUserSubmitButton.is(':disabled'));
       const popover = $('.btn[aria-label="Submission blocked"]');
       assert.lengthOf(popover, 1);
-      const popoverContent = popover.data('content');
+      const popoverContent = popover.attr('data-bs-content');
       assert.strictEqual(
         popoverContent,
         'Your group role (Manager) is not allowed to submit this question.',
@@ -518,7 +475,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Assert the correct errors show up on screen
-      let errorNotification = $('span.badge-danger:contains(2)');
+      let errorNotification = $('[data-testid="group-role-config-problems"]:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
@@ -538,7 +495,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       $ = assessmentInstanceSecondUserPage;
 
       // Assert that the same errors still show
-      errorNotification = $('span.badge-danger:contains(2)');
+      errorNotification = $('[data-testid="group-role-config-problems"]:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
@@ -562,7 +519,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Check that the errors no longer show
-      errorNotification = $('span.badge-danger');
+      errorNotification = $('[data-testid="group-role-config-problems"]');
       assert.lengthOf(errorNotification, 0, 'no error notification should appear');
       assertAlert($, 'role configuration is currently invalid', 0);
       assertAlert($, 'too many roles', 0);

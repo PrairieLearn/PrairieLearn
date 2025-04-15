@@ -31,12 +31,6 @@ SET
 WHERE
   id = $course_id;
 
--- BLOCK sharing_set_create
-INSERT INTO
-  sharing_sets (course_id, name)
-VALUES
-  ($course_id, $sharing_set_name);
-
 -- BLOCK course_sharing_set_add
 INSERT INTO
   sharing_set_courses (course_id, sharing_set_id)
@@ -54,13 +48,6 @@ WHERE
 RETURNING
   course_id;
 
--- BLOCK choose_sharing_name
-UPDATE pl_courses
-SET
-  sharing_name = $sharing_name
-WHERE
-  id = $course_id;
-
 -- BLOCK select_shared_question_exists
 SELECT
   EXISTS (
@@ -69,7 +56,7 @@ SELECT
     FROM
       questions AS q
     WHERE
-      q.shared_publicly
+      q.share_publicly
       AND course_id = $course_id
     UNION
     SELECT

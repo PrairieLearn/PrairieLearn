@@ -62,3 +62,15 @@ ORDER BY
   short_name,
   long_name,
   id;
+
+-- BLOCK update_feature_grant_enabled
+UPDATE feature_grants
+SET
+  enabled = $enabled
+WHERE
+  id = $id;
+
+-- BLOCK delete_feature_grant
+DELETE FROM feature_grants
+WHERE
+  id = $id;

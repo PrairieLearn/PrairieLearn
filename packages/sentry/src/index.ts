@@ -1,5 +1,5 @@
+import { httpRequestToRequestData, stripUrlQueryAndFragment } from '@sentry/core';
 import * as Sentry from '@sentry/node';
-import { stripUrlQueryAndFragment } from '@sentry/utils';
 import { execa } from 'execa';
 
 /**
@@ -12,7 +12,7 @@ export async function init(options: Sentry.NodeOptions) {
   if (!release) {
     try {
       release = (await execa('git', ['rev-parse', 'HEAD'])).stdout.trim();
-    } catch (e) {
+    } catch {
       // This most likely isn't running in an initialized git repository.
       // Default to not setting a release.
     }
@@ -69,7 +69,8 @@ export function requestHandler() {
         // swallow any errors.
         try {
           event.transaction = extractTransaction(req);
-          return Sentry.addRequestDataToEvent(event, req);
+          event.request = httpRequestToRequestData(req);
+          return event;
         } catch {
           return event;
         }
@@ -83,7 +84,7 @@ export function requestHandler() {
 // We export every type and function from `@sentry/node` *except* for init,
 // which we replace with our own version up above.
 
-export {
+export type {
   Breadcrumb,
   BreadcrumbHint,
   Event,
@@ -91,7 +92,6 @@ export {
   Exception,
   NodeOptions,
   PolymorphicRequest,
-  Request,
   SdkInfo,
   Session,
   SeverityLevel,
@@ -105,7 +105,6 @@ export {
 export {
   addBreadcrumb,
   addEventProcessor,
-  addRequestDataToEvent,
   captureEvent,
   captureException,
   captureMessage,
@@ -114,9 +113,7 @@ export {
   defaultStackParser,
   expressErrorHandler,
   expressIntegration,
-  extractRequestData,
   flush,
-  getCurrentHub,
   getCurrentScope,
   getSentryRelease,
   makeNodeTransport,

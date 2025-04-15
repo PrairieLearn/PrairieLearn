@@ -1,12 +1,11 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
+import { PageLayout } from '../../../components/PageLayout.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
 
-import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
+import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
 export function AdministratorInstitutionLti13({
   institution,
@@ -23,63 +22,56 @@ export function AdministratorInstitutionLti13({
   platform_defaults: LTI13InstancePlatforms;
   canonicalHost: string;
 }): string {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Institution Admin' })}
-        ${compiledScriptTag('administratorInstitutionLti13Client.ts')}
-      </head>
-      <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          institution,
-          navbarType: 'administrator_institution',
-          navPage: 'administrator_institution',
-          navSubPage: 'lti13',
-        })}
-        <main id="content" class="container mb-4">
-          <h2 class="h4">LTI 1.3 / Learning Tools Interoperability</h2>
-          <p>
-            ${lti13Instances.length} instance${lti13Instances.length === 1 ? '' : 's'} configured.
-          </p>
-          <hr />
+  return PageLayout({
+    resLocals: {
+      ...resLocals,
+      institution,
+    },
+    pageTitle: 'LTI 1.3 - Institution Admin',
+    headContent: [compiledScriptTag('administratorInstitutionLti13Client.ts')],
+    navContext: {
+      type: 'administrator_institution',
+      page: 'administrator_institution',
+      subPage: 'lti13',
+    },
+    content: html`
+      <h2 class="h4">LTI 1.3 / Learning Tools Interoperability</h2>
+      <p>${lti13Instances.length} instance${lti13Instances.length === 1 ? '' : 's'} configured.</p>
+      <hr />
 
-          <div class="row">
-            <div class="col-3">
-              ${lti13Instances.length > 0 ? 'Please select an instance:' : ''}
+      <div class="row">
+        <div class="col-3">
+          ${lti13Instances.length > 0 ? 'Please select an instance:' : ''}
 
-              <nav class="nav nav-pills flex-column">
-                ${lti13Instances.map((i) => {
-                  return html`
-                    <a class="nav-link ${i.id === instance?.id ? 'active' : ''}" href="${i.id}">
-                      <span style="white-space: nowrap"> ${i.name ? i.name : `#${i.id}`} </span>
-                      <span style="white-space: nowrap">(${i.platform})</span>
-                    </a>
-                  `;
-                })}
-              </nav>
-              <form method="POST">
-                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                <button
-                  class="btn btn-outline-success btn-block my-4"
-                  type="submit"
-                  name="__action"
-                  value="add_instance"
-                >
-                  Add a new LTI 1.3 instance
-                </button>
-              </form>
-            </div>
+          <nav class="nav nav-pills flex-column">
+            ${lti13Instances.map((i) => {
+              return html`
+                <a class="nav-link ${i.id === instance?.id ? 'active' : ''}" href="${i.id}">
+                  <span style="white-space: nowrap"> ${i.name ? i.name : `#${i.id}`} </span>
+                  <span style="white-space: nowrap">(${i.platform})</span>
+                </a>
+              `;
+            })}
+          </nav>
+          <form method="POST">
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <button
+              class="btn btn-outline-success d-block w-100 my-4"
+              type="submit"
+              name="__action"
+              value="add_instance"
+            >
+              Add a new LTI 1.3 instance
+            </button>
+          </form>
+        </div>
 
-            <div class="col-9">
-              ${LTI13Instance(instance, resLocals, platform_defaults, canonicalHost)}
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+        <div class="col-9">
+          ${LTI13Instance(instance, resLocals, platform_defaults, canonicalHost)}
+        </div>
+      </div>
+    `,
+  });
 }
 
 function LTI13Instance(
@@ -96,8 +88,8 @@ function LTI13Instance(
         <button
           class="btn btn-sm btn-secondary"
           type="button"
-          data-toggle="modal"
-          data-target="#instanceData"
+          data-bs-toggle="modal"
+          data-bs-target="#instanceData"
         >
           <i class="fa-solid fa-screwdriver-wrench"></i> Show details
         </button>
@@ -108,9 +100,12 @@ function LTI13Instance(
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title">LTI 1.3 instance data</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
             <div class="modal-body">
               <pre><code>${JSON.stringify(instance, null, 1)}</code></pre>
@@ -138,8 +133,8 @@ function LTI13Instance(
       <form class="form" method="POST">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_name" />
-        <div class="form-group my-2">
-          <label for="name" class="mr-2">Branded platform name: </label>
+        <div class="mb-3 my-2">
+          <label for="name" class="form-label">Branded platform name: </label>
           <input
             id="name"
             class="form-control"
@@ -167,9 +162,17 @@ function LTI13Instance(
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_platform" />
 
-        <div class="form-group">
-          <label for="choosePlatform">Platform type: </label>
-          <div class="form-check form-check-inline ml-2">
+        <div class="mb-3">
+          <label class="form-label" for="choosePlatform">Platform type: </label>
+          <select class="form-select mb-2" id="choosePlatform" name="platform">
+            ${platform_defaults.map((d) => {
+              return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
+                ${d.platform}
+              </option>`;
+            })}
+          </select>
+
+          <div class="form-check form-check-inline">
             <label class="form-check-label">
               <input
                 id="update_params"
@@ -182,17 +185,9 @@ function LTI13Instance(
               On change, load defaults into form&nbsp;<em>(remember to edit and save!)</em>
             </label>
           </div>
-
-          <select class="custom-select" id="choosePlatform" name="platform">
-            ${platform_defaults.map((d) => {
-              return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
-                ${d.platform}
-              </option>`;
-            })}
-          </select>
         </div>
 
-        <div class="form-group mt-2">
+        <div class="mb-3 mt-2">
           <label for="issuer_params"> Issuer params: </label>
           <textarea
             class="form-control"
@@ -205,7 +200,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
           >
         </div>
 
-        <div class="form-group mt-2">
+        <div class="mb-3 mt-2">
           <label for="client_id">Client ID: </label>
           <input
             id="client_id"
@@ -221,7 +216,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group mt-2">
+        <div class="mb-3 mt-2">
           <label for="custom_fields">Custom fields suggestions: </label>
           <textarea
             class="form-control"
@@ -243,7 +238,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
           <button class="btn btn-info">Save platform options</button>
           <input type="reset" class="btn btn-secondary" value="Reset options" />
         </div>
@@ -297,8 +292,8 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         <input type="hidden" name="__action" value="save_pl_config" />
 
         <h6>Which attributes from the LTI 1.3 user claim should be mapped to PL identities?</h6>
-        <div class="form-group">
-          <label for="name_attribute">Name attribute</label>
+        <div class="mb-3">
+          <label class="form-label" for="name_attribute">Name attribute</label>
           <input
             type="text"
             class="form-control"
@@ -312,8 +307,8 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
-          <label for="name_attribute">UID attribute</label>
+        <div class="mb-3">
+          <label class="form-label" for="name_attribute">UID attribute</label>
           <input
             type="text"
             class="form-control"
@@ -330,8 +325,8 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
-          <label for="name_attribute">UIN attribute</label>
+        <div class="mb-3">
+          <label class="form-label" for="name_attribute">UIN attribute</label>
           <input
             type="text"
             class="form-control"
@@ -349,8 +344,8 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <div class="form-group">
-          <label for="name_attribute">Email attribute</label>
+        <div class="mb-3">
+          <label class="form-label" for="name_attribute">Email attribute</label>
           <input
             type="text"
             class="form-control"
