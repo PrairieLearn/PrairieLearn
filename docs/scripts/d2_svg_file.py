@@ -50,18 +50,13 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     return config
 
 
-SVG_FILE_REGEX = re.compile(
-    r'<svg(.*?)data-svg-file="([a-f0-9]+)"(.*?)><svg([\s\S]*?)<\/svg><\/svg>'
-)
-
-
 def on_page_content(html: str, page: Page, config: MkDocsConfig, files: Files) -> str:  # noqa: ARG001
     """Hook into the page content, replacing the svg with a clickable link."""
     relative_route = page.url.count("/") * "../" + "assets/svg/"
     # Replace data-svg-file with a href to the svg file.
     # This has to be done after we check for missing file references
     return re.sub(
-        SVG_FILE_REGEX,
+        r'<svg(.*?)data-svg-file="([a-f0-9]+)"(.*?)><svg([\s\S]*?)<\/svg><\/svg>',
         rf'<a href="{relative_route}\2.svg"><svg\1 data-svg-file="\2"\3><svg\4</svg></svg></a>',
         html,
     )

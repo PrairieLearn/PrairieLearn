@@ -3,10 +3,6 @@ import re
 from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.structure.pages import Page
 
-JSON_SCHEMA_REGEX = re.compile(
-    r'<details class="jsonschema-details" open><summary>(.*?)<\/summary>(.*?)<\/details>'
-)
-
 
 def on_post_page(output: str, page: Page, config: MkDocsConfig) -> str | None:  # noqa: ARG001
     """
@@ -18,7 +14,7 @@ def on_post_page(output: str, page: Page, config: MkDocsConfig) -> str | None:  
     Thus, we manually fix the issue by post-processing the generated markdown to remove the <p> tag.
     """
     output = re.sub(
-        JSON_SCHEMA_REGEX,
+        r'<details class="jsonschema-details" open><summary>(.*?)<\/summary>(.*?)<\/details>',
         r"\1",
         output,
     )
