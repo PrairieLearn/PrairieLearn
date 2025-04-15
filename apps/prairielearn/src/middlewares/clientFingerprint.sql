@@ -8,7 +8,11 @@ WHERE
   AND user_session_id = $user_session_id
   AND ip_address = $ip_address
   AND user_agent = $user_agent::VARCHAR(255)
-  AND accept_language = $accept_language::VARCHAR(255);
+  AND accept_language = $accept_language::VARCHAR(255)
+  -- While the client hints are not part of the unique key, a change in client
+  -- hints must trigger an UPSERT. So if the comparison fails, this query should
+  -- not return an entry, which causes the next query to update the fingerprint.
+  AND client_hints = $client_hints::JSONB;
 
 --BLOCK insert_client_fingerprint
 INSERT INTO
@@ -37,8 +41,8 @@ ON CONFLICT (
   accept_language
 ) DO UPDATE
 SET
-  -- Force an update so that `RETURNING` will actually return the row.
-  -- This is only triggered to handle race conditions, since there is a select before this insert.
+  -- Changes in client hints are not considered a new fingerprint, so a conflict
+  -- causes them to be updated.
   client_hints = EXCLUDED.client_hints
 RETURNING
   id;

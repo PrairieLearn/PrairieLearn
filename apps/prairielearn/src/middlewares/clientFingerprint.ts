@@ -41,10 +41,6 @@ export async function getClientFingerprintId(req: Request, res: Response) {
     IdSchema,
   );
 
-  const client_hints = Object.fromEntries(
-    Object.entries(req.headers).filter(([key]) => key.startsWith('sec-ch-ua')),
-  );
-
   const params = {
     ip_address: req.ip,
     // We are passing the authn user id here. However, we are checking
@@ -56,6 +52,9 @@ export async function getClientFingerprintId(req: Request, res: Response) {
     user_session_id,
     user_agent: req.headers['user-agent'],
     accept_language: req.headers['accept-language'],
+    client_hints: Object.fromEntries(
+      Object.entries(req.headers).filter(([key]) => key.startsWith('sec-ch-ua')),
+    ),
   };
 
   let client_fingerprint_id = await sqldb.queryOptionalRow(
@@ -65,11 +64,7 @@ export async function getClientFingerprintId(req: Request, res: Response) {
   );
 
   if (!client_fingerprint_id) {
-    client_fingerprint_id = await sqldb.queryRow(
-      sql.insert_client_fingerprint,
-      { ...params, client_hints },
-      IdSchema,
-    );
+    client_fingerprint_id = await sqldb.queryRow(sql.insert_client_fingerprint, params, IdSchema);
   }
 
   return client_fingerprint_id;
