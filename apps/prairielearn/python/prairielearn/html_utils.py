@@ -104,7 +104,7 @@ def _get_attrib(
         The named attribute for the element, or the default value if the attribute is missing.
 
     Raises:
-        ValueError: If the function is called incorrectly.
+        ValueError: If the function is called with too many arguments.
 
     Internal function, do not all. Use one of the typed variants
     instead (e.g., `get_string_attrib()`).
