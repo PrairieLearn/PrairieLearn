@@ -52,7 +52,7 @@ def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
     """Check if the input is a valid SymPy JSON dict.
 
     Returns:
-        True if the input is a valid SymPy JSON dict, False otherwise.
+        `True` if the input is a valid SymPy JSON dict, `False` otherwise.
     """
     return (
         isinstance(json, dict)
@@ -728,7 +728,7 @@ def validate_string_as_sympy(
     """Try to parse expr as a SymPy expression. If it fails, return a string with an appropriate error message for display on the frontend.
 
     Returns:
-        None if the expression is valid, or an error message string if it is not.
+        `None` if the expression is valid, and an error message otherwise.
     """
     try:
         expr_parsed = convert_string_to_sympy(

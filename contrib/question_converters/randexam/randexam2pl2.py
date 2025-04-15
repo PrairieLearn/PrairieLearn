@@ -193,7 +193,8 @@ def ind2chr(index):
     etc. Invalid indexes convert to the character '*'.
 
     Examples:
-        >>> c = ind2chr(i)
+        >>> c = ind2chr(0)
+        'A'
     """
     index = int(index)
     if index < 0 or index >= len(string.ascii_uppercase):
@@ -207,7 +208,8 @@ def chr2ind(char):
     characters convert to -1.
 
     Examples:
-        >>> i = ind2chr(c)
+        >>> i = chr2ind('B')
+        1
     """
     if char in string.ascii_uppercase:
         return string.ascii_uppercase.index(char)

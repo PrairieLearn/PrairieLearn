@@ -129,7 +129,7 @@ def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
     """If an HTML element has an attribute `name` set.
 
     Returns:
-        True if the element has an attribute of that name, False otherwise.
+        `True` if the element has an attribute of that name, `False` otherwise.
     """
     old_name = name.replace("-", "_")
     return name in element.attrib or old_name in element.attrib
