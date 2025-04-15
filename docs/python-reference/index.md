@@ -63,4 +63,3 @@ import prairielearn.sympy_utils as psu
             - conversion_utils
             - html_utils
             - colors
-            - to_precision

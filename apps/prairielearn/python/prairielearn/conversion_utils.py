@@ -94,7 +94,7 @@ that can be serialized / deserialized.
 
 
 def is_int_json_serializable(n: int) -> bool:
-    """Check if an integer is less than Number.MAX_SAFE_INTEGER and greater than Number.MIN_SAFE_INTEGER.
+    """Check if an integer is less than `Number.MAX_SAFE_INTEGER` and greater than `Number.MIN_SAFE_INTEGER`.
 
     See <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER>.
 
@@ -258,7 +258,7 @@ def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
 
 def from_json(v: _JSONSerializedType | Any) -> Any:
     """
-    Converts a JSON serialized value (from `to_json`) back to its original type.
+    Converts a JSON serialized value (from [`to_json`][prairielearn.conversion_utils.to_json]) back to its original type.
 
     If v has the format `{'_type': ..., '_value': ...}` as would have been created
     using `to_json(...)`, then it is replaced according to the following table:

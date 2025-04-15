@@ -113,7 +113,7 @@ plugins:
             show_root_toc_entry: true
             heading_level: 2
             group_by_category: false # e.g. 'classes', 'functions'
-            members_order: source # source, alphabetical
+            members_order: alphabetical # source, alphabetical
 
           inventories:
             - url: https://numpy.org/doc/stable/objects.inv
@@ -293,6 +293,10 @@ validation:
   absolute_links: warn
   unrecognized_links: warn
   anchors: warn
+
+watch:
+  - apps/prairielearn/python
+
 hooks:
   - docs/scripts/d2-svg-file.py
   - docs/scripts/jsonschema_details_fix.py
