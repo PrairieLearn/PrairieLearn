@@ -130,7 +130,7 @@ convention = "google"
   "C419",
   "PYI061",
   "RUF036",
-  # We are only strict for our own code
+  # Strict annotation linting
   "D",
   "DOC",
 ]
