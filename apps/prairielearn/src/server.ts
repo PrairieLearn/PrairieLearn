@@ -1707,6 +1707,15 @@ export async function initExpress(): Promise<Express> {
       next();
     },
   ]);
+  app.use('/pl/public/course/:course_id(\\d+)/overview', [
+    function (req, res, next) {
+      res.locals.course_id = req.params.course_id;
+      res.locals.navbarType = 'public';
+      res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
+      next();
+    },
+    (await import('./pages/publicCourseOverview/publicCourseOverview.js')).default,
+  ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
     function (req, res, next) {
       res.locals.navPage = 'public_question';
