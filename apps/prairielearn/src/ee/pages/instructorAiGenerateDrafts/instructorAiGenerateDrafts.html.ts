@@ -22,22 +22,22 @@ export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 const examplePrompts = [
   {
     id: 'Select median of 5 random numbers',
-    promptGeneral:
+    prompt:
       'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
   },
   {
     id: 'Multiply random integers',
-    promptGeneral:
+    prompt:
       'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B.',
   },
   {
     id: 'Answer to Ultimate Question',
-    promptGeneral:
+    prompt:
       'Write a question asking "What Is The Answer to the Ultimate Question of Life, the Universe, and Everything?".',
   },
   {
     id: 'Calculate Projectile Distance',
-    promptGeneral:
+    prompt:
       'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
   },
 ];
@@ -141,7 +141,7 @@ export function InstructorAIGenerateDrafts({
                             (question) =>
                               html`<option
                                 value="${question.id}"
-                                data-prompt-general="${question.promptGeneral}"
+                                data-prompt="${question.prompt}"
                               >
                                 ${question.id}
                               </option>`,

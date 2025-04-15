@@ -39,7 +39,7 @@ onDocumentReady(() => {
     const options = userPromptExampleSelect.options;
     const selection = options[options.selectedIndex].dataset;
 
-    setInputValue('#user-prompt-llm', selection.promptGeneral ?? '');
+    setInputValue('#user-prompt-llm', selection.prompt ?? '');
   });
 });
 

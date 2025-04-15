@@ -206,7 +206,7 @@ function extractFromCompletion(
  * @param client The OpenAI client to use.
  * @param courseId The ID of the current course.
  * @param authnUserId The authenticated user's ID.
- * @param promptGeneral The prompt for how to generate a question.
+ * @param prompt The prompt for how to generate a question.
  * @param userId The ID of the generating/saving user.
  * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
@@ -215,14 +215,14 @@ export async function generateQuestion({
   client,
   courseId,
   authnUserId,
-  promptGeneral,
+  prompt,
   userId,
   hasCoursePermissionEdit,
 }: {
   client: OpenAI;
   courseId: string;
   authnUserId: string;
-  promptGeneral: string;
+  prompt: string;
   userId: string;
   hasCoursePermissionEdit: boolean;
 }): Promise<{
@@ -244,9 +244,9 @@ export async function generateQuestion({
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    job.info(`Prompt: "${promptGeneral}"`);
+    job.info(`Prompt: "${prompt}"`);
 
-    const context = await makeContext(client, promptGeneral, [], authnUserId);
+    const context = await makeContext(client, prompt, [], authnUserId);
 
     const sysPrompt = `
 ${promptPreamble(context)}
@@ -263,7 +263,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       model: MODEL_NAME,
       messages: [
         { role: 'system', content: sysPrompt },
-        { role: 'user', content: promptGeneral },
+        { role: 'user', content: prompt },
       ],
       user: openAiUserFromAuthn(authnUserId),
     });
@@ -313,7 +313,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       question_id: saveResults.question_id,
       prompting_user_id: authnUserId,
       prompt_type: 'initial',
-      user_prompt: promptGeneral,
+      user_prompt: prompt,
       system_prompt: sysPrompt,
       response: completion.choices[0].message.content,
       html: results?.html,
@@ -342,7 +342,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         job,
         client,
         authnUserId,
-        originalPrompt: promptGeneral,
+        originalPrompt: prompt,
         revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
         originalHTML: html || '',
         originalPython: typeof results?.python === 'string' ? results?.python : undefined,
