@@ -138,3 +138,13 @@ lint-d2:
 
 
 ci: lint typecheck check-dependencies test
+
+# Help Gracefull shutdown
+stop:
+	@scripts/stop_services.sh
+
+clean: stop
+	@rm -f /var/lib/postgresql/data/postmaster.pid
+	@docker system prune -f
+
+restart: stop start

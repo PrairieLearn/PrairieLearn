@@ -109,7 +109,15 @@ const ConfigSchema = z.object({
     .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   cookieDomain: z.string().nullable().default(null),
   serverType: z.enum(['http', 'https']).default('http'),
-  serverPort: z.string().default('3000'),
+  serverPort: z.union([z.string(), z.number()])
+  .transform((val) => String(val))
+  .default('3000')
+  .refine((val) => {
+    const port = Number(val);
+    return port > 0 && port <= 65535;
+  }, {
+    message: 'Port must be between 1 and 65535',
+  }),
   serverTimeout: z.number().default(10 * 60 * 1000), // 10 minutes
   /**
    * How many milliseconds to wait before destroying a socket that is being

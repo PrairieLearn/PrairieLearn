@@ -1981,10 +1981,17 @@ export async function startServer() {
     let done = false;
 
     server.on('error', (err) => {
-      if (!done) {
-        done = true;
-        reject(err);
+      if (err.code === 'EADDRINUSE') {
+        logger.error(`Port ${config.serverPort} is already in use`);
+        // Provide helpful instructions
+        logger.info('To fix this, you can:');
+        logger.info('1. Change the port in config.json');
+        logger.info('2. Find and kill the existing process with:');
+        logger.info(`   lsof -i :${config.serverPort} | grep LISTEN`);
+        logger.info('   kill -9 <PID>');
+        logger.info('3. Wait 60 seconds for the port to become available');
       }
+      throw err;
     });
 
     server.on('listening', () => {

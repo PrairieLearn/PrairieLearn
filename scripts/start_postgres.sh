@@ -15,6 +15,11 @@ if [[ "$ACTION" == "start" ]]; then
     fi
 fi
 
+if [ -f /var/lib/postgresql/data/postmaster.pid ]; then
+  echo "Removing stale postmaster.pid file..."
+  rm -f /var/lib/postgresql/data/postmaster.pid
+fi
+
 mkdir -p $PGDATA
 chown -f postgres:postgres $PGDATA
 su postgres -c 'pg_ctl status' > /dev/null 2>&1
