@@ -10,7 +10,7 @@ from typing import TypedDict
 import chevron
 import lxml.html
 import prairielearn as pl
-from dag_checker import get_wrong_order_blocks, grade_dag, lcs_partial_credit, solve_dag
+from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 from lxml.etree import _Comment
 from typing_extensions import NotRequired, assert_never
 
@@ -66,8 +66,8 @@ class OrderBlocksAnswerData(TypedDict):
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
     distractor_feedback: str | None
-    uuid: str
     ordering_feedback: str | None
+    uuid: str
 
 
 FIRST_WRONG_TYPES = frozenset([
@@ -324,7 +324,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
             "distractor_feedback": distractor_feedback,
-            "ordering_feedback": ordering_feedback,  # only used with DAG grader
+            "ordering_feedback": ordering_feedback,
             "uuid": pl.get_uuid(),
         }
         if is_correct:
@@ -573,9 +573,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "badge_type": attempt.get("badge_type", ""),
                 "icon": attempt.get("icon", ""),
                 "distractor_feedback": attempt.get("distractor_feedback", ""),
-                "ordering_feedback": attempt.get("ordering_feedback", "")
-                if attempt.get("is_misordered", False)
-                else "",
+                "ordering_feedback": attempt.get("ordering_feedback", ""),
             }
             for attempt in data["submitted_answers"].get(answer_name, [])
         ]
@@ -725,7 +723,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             answer["tag"] = (
                 matching_block["tag"] if matching_block is not None else None
             )
-            answer["is_misordered"] = False
             if grading_method is GradingMethodType.RANKING:
                 answer["ranking"] = (
                     matching_block["ranking"] if matching_block is not None else None
@@ -846,10 +843,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     elif grading_method in LCS_GRADABLE_TYPES:
         submission = [ans["tag"] for ans in student_answer]
 
-        tags_with_feedback = [
-            ans["tag"] for ans in student_answer if ans.get("ordering_feedback")
-        ]
-        tags_with_feedback = set(tags_with_feedback)
         depends_graph = {}
         group_belonging = {}
 
@@ -879,11 +872,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         elif grading_method is GradingMethodType.DAG:
             depends_graph, group_belonging = extract_dag(true_answer_list)
-            misordered_blocks = get_wrong_order_blocks(
-                submission, depends_graph, group_belonging, tags_with_feedback
-            )
-            for i in misordered_blocks:
-                student_answer[i]["is_misordered"] = True
+
         num_initial_correct, true_answer_length = grade_dag(
             submission, depends_graph, group_belonging
         )
@@ -891,22 +880,27 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             None if num_initial_correct == len(submission) else num_initial_correct
         )
 
+        print(num_initial_correct)
+        print(first_wrong)
         if feedback_type in FIRST_WRONG_TYPES:
             for block in student_answer[:num_initial_correct]:
                 block["badge_type"] = "badge-success"
                 block["icon"] = "fa-check"
                 block["distractor_feedback"] = ""
+                block["ordering_feedback"] = "1"
 
             if first_wrong is not None:
                 student_answer[first_wrong]["badge_type"] = "badge-danger"
                 student_answer[first_wrong]["icon"] = "fa-xmark"
                 if feedback_type is not FeedbackType.FIRST_WRONG_VERBOSE:
                     student_answer[first_wrong]["distractor_feedback"] = ""
+                    student_answer[first_wrong]["ordering_feedback"] = "2"
 
                 for block in student_answer[first_wrong + 1 :]:
                     block["badge_type"] = ""
                     block["icon"] = ""
                     block["distractor_feedback"] = ""
+                    block["ordering_feedback"] = "3"
 
         num_initial_correct, true_answer_length = grade_dag(
             submission, depends_graph, group_belonging
