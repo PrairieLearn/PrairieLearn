@@ -103,7 +103,8 @@ export function InstructorAIGenerateDrafts({
 
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
-                Give a high-level overview of the question, including what parameters should be generated and how students should provide their response.
+                Give a high-level overview of the question, including what parameters should be
+                generated and how students should provide their response.
               </label>
               <textarea
                 name="prompt"
@@ -121,7 +122,7 @@ export function InstructorAIGenerateDrafts({
               </div>
             </div>
 
-            <div class="js-hidden-inputs-container ${hasDrafts ? 'd-none' : ''}">
+            <div class="${hasDrafts ? 'd-none' : ''}">
               ${
                 // We think this will mostly be useful in local dev or for
                 // global admins who will want to iterate rapidly and don't
@@ -139,10 +140,7 @@ export function InstructorAIGenerateDrafts({
                           <option value=""></option>
                           ${examplePrompts.map(
                             (question) =>
-                              html`<option
-                                value="${question.id}"
-                                data-prompt="${question.prompt}"
-                              >
+                              html`<option value="${question.id}" data-prompt="${question.prompt}">
                                 ${question.id}
                               </option>`,
                           )}
@@ -151,34 +149,26 @@ export function InstructorAIGenerateDrafts({
                     `
                   : ''
               }
-
-              <button type="submit" class="btn btn-primary w-100">
-                <span
-                  class="spinner-grow spinner-grow-sm d-none me-1"
-                  role="status"
-                  aria-hidden="true"
-                  data-loading-class-remove="d-none"
-                >
-                </span>
-                Create question
-              </button>
-
-              <div class="text-muted small text-center mt-2">
-                AI can make mistakes. Review the generated question.
-              </div>
-
-              <div id="generation-results"></div>
             </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+              <span
+                class="spinner-grow spinner-grow-sm d-none me-1"
+                role="status"
+                aria-hidden="true"
+                data-loading-class-remove="d-none"
+              >
+              </span>
+              Create question
+            </button>
+
+            <div class="text-muted small text-center mt-2">
+              AI can make mistakes. Review the generated question.
+            </div>
+
+            <div id="generation-results"></div>
           </form>
-          ${hasDrafts ? html`<div class="reveal-fade"></div>` : ''}
         </div>
-        ${hasDrafts
-          ? html`
-              <div class="p-2 d-flex justify-content-center bg-light js-expand-button-container">
-                <button type="button" class="btn btn-sm btn-link">Expand</button>
-              </div>
-            `
-          : ''}
       </div>
       ${hasDrafts
         ? html`

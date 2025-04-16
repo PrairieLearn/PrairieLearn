@@ -134,7 +134,7 @@ const BENCHMARKS: Benchmark[] = [
   },
   {
     prompt:
-      "A big medicine company is creating a new drug and needs to determine how much of the drug is left in someone's system given its exponential decay. We know the initial concentration of the drug, C0, and the decay constant k. How long will it take for the drug to drop below 1/N of its initial concentration (solve for time t in hours)? The initial concentration C0 is a random number with 1 decimal digit from 200-700 mg. k is a random number with three decimal places from 0-1 1/hour. N is a random integer from 3-7. Students should enter the solution t using a decimal number with 4 decimal points. The answer should be in hours. t = -ln(1/N)/k',
+      "A big medicine company is creating a new drug and needs to determine how much of the drug is left in someone's system given its exponential decay. We know the initial concentration of the drug, C0, and the decay constant k. How long will it take for the drug to drop below 1/N of its initial concentration (solve for time t in hours)? The initial concentration C0 is a random number with 1 decimal digit from 200-700 mg. k is a random number with three decimal places from 0-1 1/hour. N is a random integer from 3-7. Students should enter the solution t using a decimal number with 4 decimal points. The answer should be in hours. t = -ln(1/N)/k",
   },
   {
     prompt:
@@ -350,7 +350,7 @@ async function evaluateGeneratedQuestion({
     'These are not considered errors unless they are factually incorrect or egregiously misleading; do not factor them into your evaluation.',
     '',
     // This should include relevant documentation for the elements used in the
-    // generated question, as well as oru baseline context about how PrairieLearn
+    // generated question, as well as our baseline context about how PrairieLearn
     // works and some example questions. This is a lot of tokens, but it's
     // important for accurate evaluation since it'll tell the LLM about which
     // elements/attributes are available and how elements behave.

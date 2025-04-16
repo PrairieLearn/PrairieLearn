@@ -135,8 +135,7 @@ export async function makeContext(
     QuestionGenerationContextEmbeddingSchema,
   );
 
-  // If a prompt specifies how user input is handled, try to find documentation for those types of input
-  // and save as last doc. Regeneration prompts don't use this, so promptUserInput may be undefined.
+  // Using the prompt, try to find documentation for similar elements and save as the last doc.
   const embeddingUserInput = await createEmbedding(
     client,
     prompt,

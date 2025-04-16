@@ -3,32 +3,6 @@ import { observe } from 'selector-observer';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {
-  const addQuestionCard = document.querySelector('#add-question-card');
-  const hiddenInputsContainer = addQuestionCard?.querySelector('.js-hidden-inputs-container');
-  const revealFade = addQuestionCard?.querySelector('.reveal-fade');
-  const expandButtonContainer = addQuestionCard?.querySelector('.js-expand-button-container');
-  const expandButton = expandButtonContainer?.querySelector('button');
-
-  let formExpanded = false;
-
-  function expandQuestionForm() {
-    if (formExpanded) return;
-
-    revealFade?.remove();
-    expandButtonContainer?.remove();
-    hiddenInputsContainer?.classList?.remove('d-none');
-
-    formExpanded = true;
-  }
-
-  addQuestionCard?.addEventListener('focusin', () => {
-    expandQuestionForm();
-  });
-
-  expandButton?.addEventListener('click', () => {
-    expandQuestionForm();
-  });
-
   const userPromptExampleSelect = document.querySelector<HTMLSelectElement>('#user-prompt-example');
   userPromptExampleSelect?.addEventListener('change', () => {
     function setInputValue(selector: string, value: string) {
