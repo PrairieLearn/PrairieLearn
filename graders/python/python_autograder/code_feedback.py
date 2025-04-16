@@ -37,7 +37,7 @@ class GradingComplete(Exception):  # noqa: N818
     """
 
 
-class GradingTestComplete(Exception):  # noqa: N818
+class TestComplete(Exception):  # noqa: N818
     """
     A general exception to mark that the current test case has finished early.
     Future test cases will still be executed.
@@ -143,7 +143,7 @@ class Feedback:
             >>> Feedback.finish_test("Invalid format")
         """
         cls.add_feedback(fb_text)
-        raise GradingTestComplete
+        raise TestComplete
 
     @staticmethod
     def not_allowed(*_args: Any, **_kwargs: Any) -> NoReturn:
@@ -548,7 +548,7 @@ class Feedback:
 
             if stop_on_exception:
                 raise GradingComplete from exc
-            raise GradingTestComplete from exc
+            raise TestComplete from exc
 
     @classmethod
     def check_plot(
