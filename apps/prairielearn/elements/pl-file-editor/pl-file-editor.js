@@ -107,8 +107,8 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
   const editor_value = this.editor.getValue();
   const default_preview_text = '<p>Begin typing above to preview</p>';
   const html_contents = editor_value
-    ? (await Promise.resolve(this.preview[preview_type]?.(editor_value))) ??
-      `<p>Unknown preview type: <code>${preview_type}</code></p>`
+    ? ((await Promise.resolve(this.preview[preview_type]?.(editor_value))) ??
+      `<p>Unknown preview type: <code>${preview_type}</code></p>`)
     : '';
 
   let preview = this.element.find('.preview')[0];
@@ -124,7 +124,7 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       sanitized_contents.includes('\\[') ||
       sanitized_contents.includes('\\]')
     ) {
-      MathJax.typesetPromise();
+      MathJax.typesetPromise([preview]);
     }
   }
 };

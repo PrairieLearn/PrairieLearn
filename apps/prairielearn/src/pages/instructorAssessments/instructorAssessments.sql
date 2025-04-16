@@ -15,28 +15,7 @@ WITH
       a.id
   )
 SELECT
-  a.id,
-  a.tid,
-  a.course_instance_id,
-  a.type,
-  a.number as assessment_number,
-  a.title,
-  a.group_work AS group_work,
-  a.assessment_set_id,
-  a.sync_errors,
-  a.sync_warnings,
-  a.score_stat_number,
-  a.score_stat_mean,
-  a.score_stat_std,
-  a.score_stat_min,
-  a.score_stat_max,
-  a.score_stat_median,
-  a.score_stat_n_zero,
-  a.score_stat_n_hundred,
-  a.score_stat_n_zero_perc,
-  a.score_stat_n_hundred_perc,
-  a.score_stat_hist,
-  format_interval (a.duration_stat_mean) AS duration_stat_mean_formatted,
+  a.*,
   EXISTS (
     SELECT
       1
@@ -50,6 +29,8 @@ SELECT
   aset.name,
   aset.color,
   (aset.abbreviation || a.number) as label,
+  to_jsonb(aset) as assessment_set,
+  to_jsonb(am) as assessment_module,
   (
     LAG(
       CASE
@@ -70,12 +51,6 @@ SELECT
         a.id
     ) IS NULL
   ) AS start_new_assessment_group,
-  (
-    CASE
-      WHEN $assessments_group_by = 'Set' THEN aset.heading
-      ELSE am.heading
-    END
-  ) AS assessment_group_heading,
   coalesce(ic.open_issue_count, 0) AS open_issue_count
 FROM
   assessments AS a
@@ -105,11 +80,7 @@ ORDER BY
 
 -- BLOCK select_assessment
 SELECT
-  a.id,
-  a.score_stat_number,
-  a.score_stat_mean,
-  a.score_stat_hist,
-  format_interval (a.duration_stat_mean) AS duration_stat_mean_formatted
+  a.*
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -129,3 +100,19 @@ WHERE
   a.uuid = $uuid
   AND a.course_instance_id = $course_instance_id
   AND a.deleted_at IS NULL;
+
+-- BLOCK select_assessment_sets
+SELECT
+  aset.*
+FROM
+  assessment_sets AS aset
+WHERE
+  aset.course_id = $course_id;
+
+-- BLOCK select_assessment_modules
+SELECT
+  am.*
+FROM
+  assessment_modules as am
+WHERE
+  am.course_id = $course_id;

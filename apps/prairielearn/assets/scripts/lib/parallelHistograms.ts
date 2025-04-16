@@ -1,4 +1,4 @@
-import { scaleLinear, scaleBand, axisBottom, axisLeft, range, select } from 'd3';
+import { axisBottom, axisLeft, range, scaleBand, scaleLinear, select } from 'd3';
 
 interface Data {
   label: string;
@@ -7,9 +7,9 @@ interface Data {
 }
 
 export function parallelHistograms(
-  selector: Element,
-  data: Data[],
-  options: {
+  selector: HTMLElement,
+  data?: Data[],
+  options?: {
     width?: number;
     height?: number;
     xTickLabels?: string[] | 'auto';
@@ -24,6 +24,10 @@ export function parallelHistograms(
     rightPadding?: number;
   },
 ) {
+  if (data === undefined) data = JSON.parse(selector.dataset.histograms ?? '[]');
+  if (options === undefined) options = JSON.parse(selector.dataset.options ?? '{}');
+  if (!data) return;
+
   const resolvedOptions = {
     width: 600,
     height: 370,
@@ -67,7 +71,9 @@ export function parallelHistograms(
     .insert('svg', ':first-child')
     .attr('width', totalWidth)
     .attr('height', totalHeight)
-    .attr('class', 'center-block statsPlot');
+    .attr('class', 'center-block statsPlot')
+    // We are deliberately setting role="none" here as we do not have any meaningful information to expose to screen readers.
+    .attr('role', 'none');
 
   const verticalGridLinear = axisBottom(xLinear)
     .tickSize(-height)

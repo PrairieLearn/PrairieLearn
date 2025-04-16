@@ -1,5 +1,85 @@
 # @prairielearn/named-locks
 
+## 3.0.14
+
+### Patch Changes
+
+- 03f1008: Upgrade all JavaScript dependencies
+- Updated dependencies [c24120e]
+- Updated dependencies [03f1008]
+  - @prairielearn/postgres@2.1.10
+
+## 3.0.13
+
+### Patch Changes
+
+- 984dc62: Upgrade all JavaScript dependencies
+- Updated dependencies [984dc62]
+  - @prairielearn/postgres@2.1.9
+
+## 3.0.12
+
+### Patch Changes
+
+- 49bb3fa: Upgrade all JavaScript dependencies
+- Updated dependencies [49bb3fa]
+  - @prairielearn/postgres@2.1.8
+
+## 3.0.11
+
+### Patch Changes
+
+- 4a8b376: Upgrade all JavaScript dependencies
+- Updated dependencies [4a8b376]
+  - @prairielearn/postgres@2.1.7
+
+## 3.0.10
+
+### Patch Changes
+
+- 9d7d790: Upgrade all JavaScript dependencies
+- Updated dependencies [9d7d790]
+  - @prairielearn/postgres@2.1.6
+
+## 3.0.9
+
+### Patch Changes
+
+- 315d931: Upgrade all JavaScript dependencies
+- Updated dependencies [315d931]
+  - @prairielearn/postgres@2.1.5
+
+## 3.0.8
+
+### Patch Changes
+
+- 4b79275: Upgrade all JavaScript dependencies
+- Updated dependencies [4b79275]
+  - @prairielearn/postgres@2.1.4
+
+## 3.0.7
+
+### Patch Changes
+
+- Updated dependencies [852c2e2]
+  - @prairielearn/postgres@2.1.3
+
+## 3.0.6
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+- Updated dependencies [a8438ff]
+  - @prairielearn/postgres@2.1.2
+
+## 3.0.5
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+- Updated dependencies [24a93b8]
+  - @prairielearn/postgres@2.1.1
+
 ## 3.0.4
 
 ### Patch Changes

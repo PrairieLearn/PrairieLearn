@@ -133,7 +133,6 @@ router.post(
 
       await authLib.loadUser(req, res, authnParams, {
         redirect: true,
-        pl_authn_cookie: true,
       });
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);

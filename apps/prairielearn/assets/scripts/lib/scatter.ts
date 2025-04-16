@@ -1,10 +1,10 @@
-import { scaleLinear, axisBottom, axisLeft, select, zip } from 'd3';
+import { axisBottom, axisLeft, scaleLinear, select, zip } from 'd3';
 
 export function scatter(
-  selector: Element,
-  xdata: number[],
-  ydata: number[],
-  options: {
+  selector: HTMLElement,
+  xdata?: number[],
+  ydata?: number[],
+  options?: {
     width?: number;
     height?: number;
     xmin?: number;
@@ -25,6 +25,11 @@ export function scatter(
     labels?: [];
   },
 ) {
+  if (xdata === undefined) xdata = JSON.parse(selector.dataset.xdata ?? '[]');
+  if (ydata === undefined) ydata = JSON.parse(selector.dataset.ydata ?? '[]');
+  if (options === undefined) options = JSON.parse(selector.dataset.options ?? '[]');
+  if (!xdata || !ydata) return;
+
   const resolvedOptions = {
     width: 600,
     height: 600,
@@ -101,6 +106,8 @@ export function scatter(
       height + (resolvedOptions.topMargin ?? 10) + (resolvedOptions.bottomMargin ?? 55),
     )
     .attr('class', 'center-block statsPlot')
+    // We are deliberately setting role="none" here as we do not have any meaningful information to expose to screen readers.
+    .attr('role', 'none')
     .append('g')
     .attr('transform', `translate(${resolvedOptions.leftMargin},${resolvedOptions.topMargin})`);
 

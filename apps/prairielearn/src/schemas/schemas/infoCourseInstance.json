@@ -3,6 +3,7 @@
   "title": "Course instance information",
   "description": "The specification file for a course instance.",
   "type": "object",
+  "additionalProperties": false,
   "required": ["uuid", "longName"],
   "properties": {
     "comment": {
@@ -18,10 +19,13 @@
       "description": "The long name of this course instance (e.g., 'Spring 2015').",
       "type": "string"
     },
+    "shortName": {
+      "description": "DEPRECATED -- do not use.",
+      "type": "string"
+    },
     "timezone": {
-      "description": "The timezone for all date input and display (e.g., \"America/Chicago\", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).",
-      "type": "string",
-      "default": "America/Chicago"
+      "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.",
+      "type": "string"
     },
     "allowIssueReporting": {
       "description": "DEPRECATED -- do not use.",
@@ -50,6 +54,7 @@
       "items": {
         "description": "An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",

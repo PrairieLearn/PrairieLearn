@@ -55,8 +55,7 @@ WITH
         $page_type,
         $path
       )
-    ON CONFLICT (user_id) DO
-    UPDATE
+    ON CONFLICT (user_id) DO UPDATE
     SET
       date = now(),
       user_id = EXCLUDED.user_id,

@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { WorkspaceLogSchema } from '../../lib/db-types.js';
 
 export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
@@ -36,23 +37,17 @@ export function WorkspaceLogs({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Workspace logs',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Workspace logs' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'plain',
-        })}
+        ${Navbar({ resLocals, navbarType: 'plain' })}
 
         <main id="content" class="container">
           <h1 class="mb-4">Workspace logs</h1>
 
           <h2>Versions</h2>
           <div class="table-responsive">
-            <table class="table table-sm">
+            <table class="table table-sm" aria-label="Workspace versions">
               <thead>
                 <th>Version</th>
                 <th>Created</th>
@@ -100,16 +95,10 @@ export function WorkspaceVersionLogs({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Workspace version logs',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Workspace version logs' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'plain',
-        })}
+        ${Navbar({ resLocals, navbarType: 'plain' })}
 
         <main id="content" class="container mb-4">
           <h1 class="mb-4">Workspace version logs</h1>
@@ -120,7 +109,7 @@ export function WorkspaceVersionLogs({
                 <pre class="bg-dark rounded text-white p-3 mb-3"><code>${containerLogs}</code></pre>
               `
             : html`
-                <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center text-monospace">
+                <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center font-monospace">
                   <div class="mb-2">
                     <i
                       class="fa ${containerLogsEnabled && containerLogsExpired
@@ -154,7 +143,7 @@ export function WorkspaceLogsTable({
 }) {
   return html`
     <div class="table-responsive">
-      <table class="table table-sm">
+      <table class="table table-sm" aria-label="Workspace logs">
         <thead>
           <tr>
             <th>Date</th>

@@ -1,13 +1,15 @@
 import { html } from '@prairielearn/html';
 
-import { StripeCheckoutSession } from '../../../../lib/db-types.js';
+import { type StripeCheckoutSession } from '../../../../lib/db-types.js';
 import { type Purchase } from '../purchases.js';
 import { formatStripePrice } from '../stripe.js';
 
 export function UserSettingsPurchasesCard({ purchases }: { purchases: Purchase[] }) {
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex">Purchases</div>
+      <div class="card-header bg-primary text-white d-flex">
+        <h2>Purchases</h2>
+      </div>
 
       ${purchases.length === 0
         ? html` <div class="card-body text-muted">You don't currently have any purchases.</div> `
@@ -19,7 +21,7 @@ export function UserSettingsPurchasesCard({ purchases }: { purchases: Purchase[]
 function PurchaseTable({ purchases }: { purchases: Purchase[] }) {
   return html`
     <div class="table-responsive">
-      <table class="table">
+      <table class="table" aria-label="Purchases">
         <thead>
           <tr>
             <th>ID</th>
@@ -70,10 +72,10 @@ function PurchaseTable({ purchases }: { purchases: Purchase[] }) {
 
 function StripeCheckoutSessionPaymentStatus({ session }: { session: StripeCheckoutSession }) {
   if (session.data.payment_status === 'paid') {
-    return html`<span class="badge badge-success">Payment received</span>`;
+    return html`<span class="badge text-bg-success">Payment received</span>`;
   } else if (session.data.payment_status === 'unpaid') {
-    return html`<span class="badge badge-secondary">Pending</span>`;
+    return html`<span class="badge text-bg-secondary">Pending</span>`;
   } else {
-    return html`<span class="badge badge-warning">Unknown</span>`;
+    return html`<span class="badge text-bg-warning">Unknown</span>`;
   }
 }

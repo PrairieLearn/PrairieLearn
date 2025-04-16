@@ -1,13 +1,12 @@
-import { EC2Client, DescribeTagsCommand } from '@aws-sdk/client-ec2';
-import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import { DescribeTagsCommand, EC2Client } from '@aws-sdk/client-ec2';
+import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import { z } from 'zod';
 
 import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-imds';
 
-const AbstractConfigSchema = z.record(z.string(), z.unknown());
-type AbstractConfig = z.infer<typeof AbstractConfigSchema>;
+type AbstractConfig = Record<string, unknown>;
 
 interface ConfigSource {
   load: (existingConfig: AbstractConfig) => Promise<AbstractConfig>;

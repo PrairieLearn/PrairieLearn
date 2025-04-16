@@ -1,3 +1,5 @@
+# pyright: reportUnusedImport=false
+
 # This program is the glue between python-runner JavaScript code and Python code
 #
 # It will enter an infinite loop waiting for input. For each input, it
@@ -25,16 +27,17 @@ import subprocess
 import sys
 import time
 import types
+from collections.abc import Iterable, Sequence
 from importlib.abc import MetaPathFinder
 from inspect import signature
-from typing import Any, Iterable, Sequence
+from typing import Any
 
-import question_phases
-import zygote_utils as zu
+import prairielearn.internal.zygote_utils as zu
+from prairielearn.internal import question_phases
 
 saved_path = copy.copy(sys.path)
 
-drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
+drop_privileges = int(os.environ.get("DROP_PRIVILEGES", "0")) == 1
 
 # If we're configured to drop privileges (that is, if we're running in a
 # Docker container), various tools like matplotlib and fontconfig will be
@@ -44,21 +47,33 @@ drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
 #
 # To work around this, we'll set `$XDG_CONFIG_HOME` and `$XDG_CACHE_HOME` to
 # directories created in `/tmp` that are world-writable. matplotlib and
-# fontconfig should respect these environment variables; other tools should as
-# well. If they don't, special cases can be added below.
+# fontconfig should respect these environment variables; other tools should too.
+#
+# Note that `mktexfmt` does _not_ respect those environment variables, so we'll
+# also set `$TEXMFCONFIG`, `$TEXMFVAR`, and `$TEXMFHOME` to directories created
+# in `/tmp` that are world-writable. This allows LaTeX to run properly.
 if drop_privileges:
     config_home_path = "/tmp/xdg_config"
     cache_home_path = "/tmp/xdg_cache"
+    texmf_config_path = "/tmp/texmf-config"
+    texmf_var_path = "/tmp/texmf-var"
+    texmf_home_path = "/tmp/texmf-home"
 
     oldmask = os.umask(000)
 
     os.makedirs(config_home_path, mode=0o777, exist_ok=True)
     os.makedirs(cache_home_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_config_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_var_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_home_path, mode=0o777, exist_ok=True)
 
     os.umask(oldmask)
 
     os.environ["XDG_CONFIG_HOME"] = config_home_path
     os.environ["XDG_CACHE_HOME"] = cache_home_path
+    os.environ["TEXMFCONFIG"] = texmf_config_path
+    os.environ["TEXMFVAR"] = texmf_var_path
+    os.environ["TEXMFHOME"] = texmf_home_path
 
 # Silence matplotlib's FontManager logs; these can cause trouble with our
 # expectation that code execution doesn't log anything to stdout/stderr.
@@ -67,22 +82,20 @@ import logging
 logging.getLogger("matplotlib.font_manager").disabled = True
 
 # Pre-load commonly used modules
-sys.path.insert(0, os.path.abspath("../question-servers/freeformPythonLib"))
 import html
 import math
 import random
 
 import chevron
 import lxml.html
-import matplotlib
-import matplotlib.font_manager
+import matplotlib as mpl
 import nltk
-import numpy
+import numpy as np
 import pint
 import prairielearn
 import sklearn
 
-matplotlib.use("PDF")
+mpl.use("PDF")
 
 # Construct initial unit registry to create initial cache file.
 prairielearn.get_unit_registry()
@@ -107,15 +120,34 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
     def find_spec(
         self,
         fullname: str,
-        path: Sequence[str] | None,
-        target: types.ModuleType | None = None,
-    ):
+        _path: Sequence[str] | None,
+        _target: types.ModuleType | None = None,
+    ) -> None:
         if any(
             fullname == module or fullname.startswith(module + ".")
             for module in self.forbidden_modules
         ):
             raise ImportError(f'module "{fullname}" is not allowed.')
-        return None
+        return None  # noqa: PLR1711, RET501
+
+
+# We want to initialize the Faker seed, but only if faker is loaded
+class FakerInitializeMetaPathFinder(MetaPathFinder):
+    def __init__(self, seed: int) -> None:
+        self.seed = seed
+
+    def find_spec(
+        self,
+        fullname: str,
+        _path: Sequence[str] | None,
+        _target: types.ModuleType | None = None,
+    ) -> None:
+        if fullname == "faker" or fullname.startswith("faker."):
+            # Once this initialization is done we no longer need this meta path finder
+            sys.meta_path.remove(self)
+            from faker import Faker
+
+            Faker.seed(self.seed)
 
 
 # This function tries to convert a python object to valid JSON. If an exception
@@ -123,12 +155,12 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
 # helpful because the object - which contains something that cannot be converted
 # to JSON - would otherwise never be displayed to the developer, making it hard to
 # debug the problem.
-def try_dumps(obj: Any, sort_keys=False, allow_nan=False):
+def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> str:
     try:
         zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
     except Exception:
-        print(f"Error converting this object to json:\n{obj}\n")
+        print(f"Error converting this object to json:\n{obj}\n", file=sys.stderr)
         raise
 
 
@@ -372,7 +404,7 @@ def worker_loop(s: socket.socket):
 worker_pid = 0
 
 
-def terminate_worker(signum: int, stack: types.FrameType | None) -> None:
+def terminate_worker(_signum: int, _stack: types.FrameType | None) -> None:
     if worker_pid > 0:
         os.kill(worker_pid, signal.SIGKILL)
     os._exit(0)

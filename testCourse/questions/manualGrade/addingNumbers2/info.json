@@ -1,8 +1,8 @@
 {
-    "uuid": "6c232924-a6e1-473b-9ae4-1df3d5493afc",
-    "title": "Manual Grading: Adding two numbers (with auto points)",
-    "topic": "Algebra",
-    "gradingMethod": "Manual",
-    "tags": ["mwest", "fa17", "tpl101", "v3"],
-    "type": "v3"
+  "uuid": "6c232924-a6e1-473b-9ae4-1df3d5493afc",
+  "title": "Manual Grading: Adding two numbers (with auto points)",
+  "topic": "Algebra",
+  "gradingMethod": "Manual",
+  "tags": ["mwest", "fa17", "tpl101", "v3"],
+  "type": "v3"
 }

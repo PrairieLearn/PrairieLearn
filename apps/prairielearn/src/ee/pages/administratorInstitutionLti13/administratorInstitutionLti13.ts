@@ -9,15 +9,22 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
+import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { getInstitution } from '../../lib/institution.js';
 
 import { AdministratorInstitutionLti13 } from './administratorInstitutionLti13.html.js';
-import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
+import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
+
+const lti13_instance_defaults = {
+  name_attr: 'name',
+  uid_attr: 'email',
+  uin_attr: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
+  email_attr: 'email',
+};
 
 // Middleware to check for feature and access
 router.use(
@@ -134,7 +141,7 @@ router.post(
         institution_id: req.params.institution_id,
         keystore: null,
       });
-      flash('success', `All keys deleted.`);
+      flash('success', 'All keys deleted.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_key') {
       const keystoreJson = await queryAsync(sql.select_keystore, {
@@ -180,16 +187,14 @@ router.post(
         client_params,
         custom_fields: req.body.custom_fields,
       });
-      flash('success', `Platform updated.`);
+      flash('success', 'Platform updated.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_instance') {
       const new_li = await queryRows(
         sql.insert_instance,
         {
+          ...lti13_instance_defaults,
           institution_id: req.params.institution_id,
-          name_attr: 'name',
-          uid_attr: 'email',
-          uin_attr: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
         },
         z.string(),
       );
@@ -204,7 +209,7 @@ router.post(
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
-      flash('success', `Name updated.`);
+      flash('success', 'Name updated.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'save_pl_config') {
       await queryAsync(sql.update_pl_config, {
@@ -215,14 +220,14 @@ router.post(
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
-      flash('success', `PrairieLearn config updated.`);
+      flash('success', 'PrairieLearn config updated.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'remove_instance') {
       await queryAsync(sql.remove_instance, {
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
-      flash('success', `Instance deleted.`);
+      flash('success', 'Instance deleted.');
       return res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

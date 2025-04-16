@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
-import { trace, context, suppressTracing, SpanStatusCode } from '@prairielearn/opentelemetry';
+import { SpanStatusCode, context, suppressTracing, trace } from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
@@ -44,7 +44,7 @@ export let jobs: CronJob[] = [];
 // the jobs will still only run at the required frequency.
 
 export async function init() {
-  debug(`init()`);
+  debug('init()');
   if (!config.cronActive) {
     logger.verbose('cronActive is false, skipping cron initialization');
     return;
@@ -75,11 +75,6 @@ export async function init() {
       name: 'sendExternalGraderDeadLetters',
       module: await import('./sendExternalGraderDeadLetters.js'),
       intervalSec: 'daily',
-    },
-    {
-      name: 'externalGraderLoad',
-      module: await import('./externalGraderLoad.js'),
-      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
     },
     {
       name: 'serverLoad',
@@ -123,6 +118,12 @@ export async function init() {
 
   if (isEnterprise()) {
     jobs.push({
+      name: 'externalGraderLoad',
+      module: await import('../ee/cron/externalGraderLoad.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
+    });
+
+    jobs.push({
       name: 'workspaceHostLoads',
       module: await import('../ee/cron/workspaceHostLoads.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
@@ -161,11 +162,11 @@ export async function init() {
 
   logger.verbose(
     'initializing cron',
-    _.map(jobs, (j) => _.pick(j, ['name', 'intervalSec'])),
+    jobs.map(({ name, intervalSec }) => ({ name, intervalSec })),
   );
 
   const jobsByPeriodSec = _.groupBy(jobs, 'intervalSec');
-  _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
+  for (const [intervalSec, jobsList] of Object.entries(jobsByPeriodSec)) {
     const intervalSecNum = Number.parseInt(intervalSec);
     if (intervalSec === 'daily') {
       queueDailyJobs(jobsList);
@@ -174,7 +175,7 @@ export async function init() {
     } else if (intervalSecNum > 0) {
       queueJobs(jobsList, intervalSecNum);
     } // zero or negative intervalSec jobs are not run
-  });
+  }
 }
 
 export async function stop() {
@@ -221,7 +222,7 @@ function queueJobs(jobsList: CronJob[], intervalSec: number) {
 }
 
 function queueDailyJobs(jobsList: CronJob[]) {
-  debug(`queueDailyJobs()`);
+  debug('queueDailyJobs()');
   function timeToNextMS() {
     const now = Date.now();
     const midnight = new Date(now).setHours(0, 0, 0, 0);
@@ -243,7 +244,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
     return tMS;
   }
   function queueRun() {
-    debug(`queueDailyJobs(): starting run`);
+    debug('queueDailyJobs(): starting run');
     jobTimeouts['daily'] = 0;
     runJobs(jobsList)
       .catch((err) => {
@@ -251,14 +252,14 @@ function queueDailyJobs(jobsList: CronJob[]) {
         Sentry.captureException(err);
       })
       .finally(() => {
-        debug(`queueDailyJobs(): completed run`);
+        debug('queueDailyJobs(): completed run');
         if (jobTimeouts['daily'] === -1) {
           // someone requested a stop
-          debug(`queueDailyJobs(): stop requested`);
+          debug('queueDailyJobs(): stop requested');
           delete jobTimeouts['daily'];
           return;
         }
-        debug(`queueDailyJobs(): waiting for next run time`);
+        debug('queueDailyJobs(): waiting for next run time');
         jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
       });
   }
@@ -267,7 +268,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
 
 // run a list of jobs
 async function runJobs(jobsList: CronJob[]) {
-  debug(`runJobs()`);
+  debug('runJobs()');
   const cronUuid = uuidv4();
   logger.verbose('cron: jobs starting', { cronUuid });
 
@@ -313,7 +314,7 @@ async function runJobs(jobsList: CronJob[]) {
     });
   }
 
-  debug(`runJobs(): done`);
+  debug('runJobs(): done');
   logger.verbose('cron: jobs finished', { cronUuid });
 }
 
@@ -387,9 +388,9 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
 async function runJob(job: CronJob, cronUuid: string) {
   debug(`runJob(): ${job.name}`);
   logger.verbose('cron: starting ' + job.name, { cronUuid });
-  const startTime = Date.now();
+  const startTime = performance.now();
   await job.module.run();
-  const endTime = Date.now();
+  const endTime = performance.now();
   const elapsedTimeMS = endTime - startTime;
   debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
   logger.verbose('cron: ' + job.name + ' success', {

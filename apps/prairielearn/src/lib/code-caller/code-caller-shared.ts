@@ -1,4 +1,9 @@
-import * as opentelemetry from '@prairielearn/opentelemetry';
+import type * as opentelemetry from '@prairielearn/opentelemetry';
+
+export interface CodeCallerResult {
+  result: any;
+  output: string;
+}
 
 export type CallType =
   | 'question'
@@ -15,7 +20,7 @@ export interface PrepareForCourseOptions {
 
 export interface CodeCaller {
   uuid: string;
-  ensureChild: () => Promise<void>;
+  getCoursePath: () => string | null;
   prepareForCourse: (options: PrepareForCourseOptions) => Promise<void>;
   call: (
     type: CallType,

@@ -114,14 +114,15 @@ BEGIN
         graded_at = now(),
         gradable = new_gradable,
         broken = new_broken,
+        params = COALESCE(new_params, params),
+        true_answer = COALESCE(new_true_answer, true_answer),
         format_errors = new_format_errors,
         partial_scores = new_partial_scores,
         score = new_score,
         v2_score = new_v2_score,
         correct = new_correct,
         feedback = new_feedback,
-        submitted_answer = COALESCE(new_submitted_answer, submitted_answer),
-        grading_method = main.grading_method
+        submitted_answer = COALESCE(new_submitted_answer, submitted_answer)
     WHERE id = grading_job.submission_id;
 
     UPDATE variants AS v

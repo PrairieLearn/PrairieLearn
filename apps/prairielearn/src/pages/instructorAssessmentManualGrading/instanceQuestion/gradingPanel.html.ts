@@ -65,19 +65,16 @@ export function GradingPanel({
         ${resLocals.assessment_question.max_points
           ? // Percentage-based grading is only suitable if the question has points
             html`
-              <li class="list-group-item">
-                <div class="form-group row justify-content-center">
-                  <label class="custom-control-inline col-auto mx-0">
-                    <span class="">Points</span>
-                    <div class="custom-control custom-switch mx-2">
-                      <input
-                        class="custom-control-input js-manual-grading-pts-perc-select"
-                        name="use_score_perc"
-                        type="checkbox"
-                      />
-                      <span class="custom-control-label">Percentage</span>
-                    </div>
-                  </label>
+              <li class="list-group-item d-flex justify-content-center">
+                <span>Points</span>
+                <div class="custom-control custom-switch mx-2">
+                  <input
+                    class="custom-control-input js-manual-grading-pts-perc-select"
+                    name="use_score_perc"
+                    id="use-score-perc"
+                    type="checkbox"
+                  />
+                  <label class="custom-control-label" for="use-score-perc">Percentage</label>
                 </div>
               </li>
             `
@@ -102,7 +99,7 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        <li class="form-group list-group-item">
+        <li class="list-group-item">
           <label>
             Feedback:
             <textarea
@@ -122,10 +119,10 @@ ${submission.feedback?.manual}</textarea
         </li>
         ${open_issues.length > 0 && context !== 'existing'
           ? html`
-              <li class="form-group list-group-item">
-                <div class="form-check">
-                  ${open_issues.map(
-                    (issue) => html`
+              <li class="list-group-item">
+                ${open_issues.map(
+                  (issue) => html`
+                    <div class="form-check">
                       <input
                         type="checkbox"
                         id="close-issue-checkbox-${issue.id}"
@@ -136,9 +133,9 @@ ${submission.feedback?.manual}</textarea
                       <label class="w-100 form-check-label" for="close-issue-checkbox-${issue.id}">
                         Close issue #${issue.id}
                       </label>
-                    `,
-                  )}
-                </div>
+                    </div>
+                  `,
+                )}
               </li>
             `
           : ''}
@@ -151,7 +148,7 @@ ${submission.feedback?.manual}</textarea
                 </a>
               `
             : ''}
-          <span class="ml-auto">
+          <span class="ms-auto">
             ${!disable
               ? html`
                   <button
@@ -177,13 +174,13 @@ ${submission.feedback?.manual}</textarea
                     <button
                       type="button"
                       class="btn btn-secondary dropdown-toggle dropdown-toggle-split"
-                      data-toggle="dropdown"
+                      data-bs-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
-                      <span class="sr-only">Change assigned grader</span>
+                      <span class="visually-hidden">Change assigned grader</span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-menu dropdown-menu-end">
                       ${(graders || []).map(
                         (grader) => html`
                           <button

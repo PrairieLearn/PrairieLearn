@@ -1,0 +1,22 @@
+columns
+    course_id: bigint not null
+    course_instance_id: bigint
+    date: timestamp with time zone not null
+    duration: interval not null default '00:00:00'::interval
+    id: bigint not null default nextval('course_instance_usages_id_seq'::regclass)
+    include_in_statistics: boolean not null
+    institution_id: bigint not null
+    type: enum_course_instance_usages_type not null
+    user_id: bigint not null
+
+indexes
+    course_instance_usages_pkey: PRIMARY KEY (id) USING btree (id)
+    course_instance_usages_date_type_course_id_course_instance__key: UNIQUE NULLS NOT DISTINCT (date, type, course_id, course_instance_id, user_id) USING btree (date, type, course_id, course_instance_id, user_id) NULLS NOT DISTINCT
+    course_instance_usages_course_id_idx: USING btree (course_id)
+    course_instance_usages_institution_id_date_idx: USING btree (institution_id, date)
+
+foreign-key constraints
+    course_instance_usages_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_instance_usages_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_instance_usages_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_instance_usages_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

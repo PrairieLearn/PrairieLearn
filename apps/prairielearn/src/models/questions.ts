@@ -1,13 +1,12 @@
-import { AnsiUp } from 'ansi_up';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  TopicSchema,
-  SharingSetSchema,
   AssessmentsFormatForQuestionSchema,
+  SharingSetSchema,
   TagSchema,
+  TopicSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
@@ -23,24 +22,19 @@ const QuestionsPageDataSchema = z.object({
   open_issue_count: z.number().default(0),
   topic: TopicSchema,
   tags: z.array(TagSchema).nullable(),
-  shared_publicly: z.boolean().optional(),
+  share_publicly: z.boolean(),
+  share_source_publicly: z.boolean(),
   sharing_sets: z.array(SharingSetSchema).nullable().optional(),
   assessments: AssessmentsFormatForQuestionSchema.nullable().optional(),
 });
 export type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
 
-export interface QuestionsPageDataAnsified extends QuestionsPageData {
-  sync_errors_ansified?: string | null;
-  sync_warnings_ansified?: string | null;
-}
-
-const ansiUp = new AnsiUp();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function selectQuestionsForCourse(
   course_id: string | number,
   course_instance_ids: string[],
-): Promise<QuestionsPageDataAnsified[]> {
+): Promise<QuestionsPageData[]> {
   const rows = await sqldb.queryRows(
     sql.select_questions_for_course,
     {
@@ -51,8 +45,6 @@ export async function selectQuestionsForCourse(
 
   const questions = rows.map((row) => ({
     ...row,
-    sync_errors_ansified: row.sync_errors && ansiUp.ansi_to_html(row.sync_errors),
-    sync_warnings_ansified: row.sync_warnings && ansiUp.ansi_to_html(row.sync_warnings),
     assessments:
       row.assessments?.filter((assessment) =>
         course_instance_ids.some((id) => idsEqual(id, assessment.course_instance_id)),

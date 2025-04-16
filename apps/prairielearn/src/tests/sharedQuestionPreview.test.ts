@@ -1,3 +1,4 @@
+import { assert } from 'chai';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -7,8 +8,8 @@ import { features } from '../lib/features/index.js';
 
 import {
   testElementClientFiles,
-  testQuestionPreviews,
   testFileDownloads,
+  testQuestionPreviews,
 } from './helperQuestionPreview.js';
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
@@ -54,7 +55,7 @@ describe('Shared Question Preview', function () {
     await features.enable('question-sharing');
   });
 
-  before('Get question IDs from database', async function () {
+  before('Get question IDs from database', async () => {
     for (const testQuestion of testQuestions) {
       testQuestion.id = await sqldb.queryRow(
         sql.select_question_id,
@@ -63,7 +64,6 @@ describe('Shared Question Preview', function () {
         },
         z.string(),
       );
-      await sqldb.queryAsync(sql.update_shared_publicly, { question_id: testQuestion.id });
     }
   });
 
@@ -73,7 +73,7 @@ describe('Shared Question Preview', function () {
     await syncUtil.writeAndSyncCourseData(consumingCourseData);
   });
 
-  describe('Public Question Previews', function () {
+  describe('Public Question Previews', () => {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
@@ -82,18 +82,57 @@ describe('Shared Question Preview', function () {
       isStudentPage: false,
     };
 
-    testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
+    describe('When questions are share_source_publicly but not share_publicly', () => {
+      before(
+        'Make sure questions have share_source_publicly set but not share_publicly',
+        async () => {
+          for (const testQuestion of testQuestions) {
+            await sqldb.queryAsync(sql.update_share_source_publicly, {
+              question_id: testQuestion.id,
+            });
+          }
+        },
+      );
+      testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
+      testFileDownloads(previewPageInfo, downloadFile, false);
+      testElementClientFiles(previewPageInfo, customElement);
 
-    testFileDownloads(previewPageInfo, downloadFile, false);
+      it('blocks access in Exam mode', async () => {
+        const res = await fetch(`${previewPageInfo.questionBaseUrl}/${addNumbers.id}/preview`, {
+          headers: {
+            Cookie: 'pl_test_mode=Exam',
+          },
+        });
+        assert.equal(res.status, 403);
+      });
+    });
 
-    testElementClientFiles(previewPageInfo, customElement);
+    describe('When questions are share_publicly', () => {
+      before('Make sure questions have share_publicly set', async () => {
+        for (const testQuestion of testQuestions) {
+          await sqldb.queryAsync(sql.update_share_publicly, { question_id: testQuestion.id });
+        }
+      });
+      testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
+      testFileDownloads(previewPageInfo, downloadFile, false);
+      testElementClientFiles(previewPageInfo, customElement);
+
+      it('blocks access in Exam mode', async () => {
+        const res = await fetch(`${previewPageInfo.questionBaseUrl}/${addNumbers.id}/preview`, {
+          headers: {
+            Cookie: 'pl_test_mode=Exam',
+          },
+        });
+        assert.equal(res.status, 403);
+      });
+    });
   });
 
-  describe('Shared Question Previews Within a Course', function () {
+  describe('Shared Question Previews Within a Course', () => {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
-      questionBaseUrl: baseUrl + `/course/2/question`,
+      questionBaseUrl: baseUrl + '/course/2/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,
     };
@@ -105,11 +144,11 @@ describe('Shared Question Preview', function () {
     testElementClientFiles(previewPageInfo, customElement);
   });
 
-  describe('Shared Question Previews Within a Course Instance', function () {
+  describe('Shared Question Previews Within a Course Instance', () => {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
-      questionBaseUrl: baseUrl + `/course_instance/2/instructor/question`,
+      questionBaseUrl: baseUrl + '/course_instance/2/instructor/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,
     };

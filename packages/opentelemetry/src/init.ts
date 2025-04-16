@@ -1,5 +1,5 @@
 import { Metadata, credentials } from '@grpc/grpc-js';
-import { metrics } from '@opentelemetry/api';
+import { type ContextManager, metrics } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
@@ -7,37 +7,37 @@ import { OTLPTraceExporter as OTLPTraceExporterHttp } from '@opentelemetry/expor
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
 import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
-import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { ExpressInstrumentation, ExpressLayerType } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
 import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
 import {
-  detectResourcesSync,
-  processDetector,
-  envDetector,
   Resource,
+  detectResourcesSync,
+  envDetector,
+  processDetector,
 } from '@opentelemetry/resources';
 import {
-  PeriodicExportingMetricReader,
-  MeterProvider,
-  PushMetricExporter,
-  ConsoleMetricExporter,
   AggregationTemporality,
+  ConsoleMetricExporter,
+  MeterProvider,
+  PeriodicExportingMetricReader,
+  type PushMetricExporter,
 } from '@opentelemetry/sdk-metrics';
 import {
-  SpanExporter,
-  ReadableSpan,
-  SpanProcessor,
-  SimpleSpanProcessor,
-  BatchSpanProcessor,
-  ParentBasedSampler,
-  TraceIdRatioBasedSampler,
-  AlwaysOnSampler,
   AlwaysOffSampler,
-  Sampler,
+  AlwaysOnSampler,
+  BatchSpanProcessor,
   ConsoleSpanExporter,
+  ParentBasedSampler,
+  type ReadableSpan,
+  type Sampler,
+  SimpleSpanProcessor,
+  type SpanExporter,
+  type SpanProcessor,
+  TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-base';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
@@ -107,14 +107,16 @@ const instrumentations = [
     ],
   }),
   new HttpInstrumentation({
-    ignoreIncomingPaths: [
-      // socket.io requests are generally just long-polling; they don't add
-      // useful information for us.
-      /\/socket.io\//,
-      // We get several of these per second; they just chew through our event quota.
-      // They don't really do anything interesting anyways.
-      /\/pl\/webhooks\/ping/,
-    ],
+    ignoreIncomingRequestHook(req) {
+      return [
+        // socket.io requests are generally just long-polling; they don't add
+        // useful information for us.
+        /\/socket.io\//,
+        // We get several of these per second; they just chew through our event quota.
+        // They don't really do anything interesting anyways.
+        /\/pl\/webhooks\/ping/,
+      ].some((re) => re.test(req.url ?? '/'));
+    },
   }),
   new IORedisInstrumentation(),
   new PgInstrumentation(),
@@ -137,6 +139,7 @@ interface OpenTelemetryConfigEnabled {
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
   openTelemetrySpanProcessor?: 'batch' | 'simple' | SpanProcessor;
+  contextManager?: ContextManager;
   honeycombApiKey?: string | null;
   honeycombDataset?: string | null;
   serviceName?: string;
@@ -282,7 +285,22 @@ export async function init(config: OpenTelemetryConfig) {
   // and ultimately tells us how to configure OpenTelemetry.
 
   let resource = detectResourcesSync({
-    detectors: [awsEc2Detector, processDetector, envDetector],
+    // The AWS resource detector always tries to reach out to the EC2 metadata
+    // service endpoint. When running locally, or otherwise in a non-AWS environment,
+    // this will typically fail immediately wih `EHOSTDOWN`, but will sometimes wait
+    // 5 seconds before failing with a network timeout error. This causes problems
+    // when running tests, as 5 seconds is longer than Mocha lets tests and hooks run
+    // for by default. This causes nondeterministic test failures when the EC2 metadata
+    // request fails with a network timeout.
+    //
+    // To work around this, the AWS resource detector is only enabled when running in
+    // a production environment. In general this is reasonable, as we only care about
+    // AWS resource detection in production-like environments.
+    detectors: [
+      process.env.NODE_ENV === 'production' ? awsEc2Detector : null,
+      processDetector,
+      envDetector,
+    ].filter((d) => !!d),
   });
 
   if (config.serviceName) {
@@ -299,7 +317,9 @@ export async function init(config: OpenTelemetryConfig) {
   if (spanProcessor) {
     nodeTracerProvider.addSpanProcessor(spanProcessor);
   }
-  nodeTracerProvider.register();
+  nodeTracerProvider.register({
+    contextManager: config.contextManager,
+  });
   instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
 
   // Save the provider so we can shut it down later.

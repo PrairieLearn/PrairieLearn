@@ -1,10 +1,13 @@
 columns
+    announcement_color: text
+    announcement_html: text
     branch: text default 'master'::text
     commit_hash: text
     course_instance_enrollment_limit: integer
     created_at: timestamp with time zone not null default now()
     deleted_at: timestamp with time zone
     display_timezone: text not null
+    draft_number: integer not null default 0
     example_course: boolean not null default false
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1
@@ -14,6 +17,7 @@ columns
     sharing_name: text
     sharing_token: text not null default gen_random_uuid()
     short_name: text
+    show_getting_started: boolean not null default false
     sync_errors: text
     sync_job_sequence_id: bigint
     sync_warnings: text
@@ -32,9 +36,11 @@ foreign-key constraints
     pl_courses_sync_job_sequence_id_fkey: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
+    ai_grading_jobs: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_modules: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_sets: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     chunks: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_instance_usages: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instances: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_permissions: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     courses: FOREIGN KEY (pl_course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE SET NULL

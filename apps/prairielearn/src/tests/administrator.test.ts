@@ -20,7 +20,7 @@ describe('Administrator pages', function () {
       const res = await fetch(baseUrl + '/administrator/admins');
       assert(res.ok);
       const $ = cheerio.load(await res.text());
-      const elemList = $('#administratorInsertButton span:contains("Add administrator")');
+      const elemList = $('button[data-testid="administrator-insert-button"]');
       assert.lengthOf(elemList, 1);
     });
   });

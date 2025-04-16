@@ -1,12 +1,13 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+
+import { HeadContents } from '../../components/HeadContents.html.js';
 
 export const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals })}
         <style>
           .continue-card-container {
             width: 100%;
@@ -23,11 +24,11 @@ export const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
               <div class="card continue-card m-3">
                 <div class="card-body d-flex flex-column align-items-center">
                   <div class="spinner-border mb-3" role="status">
-                    <span class="sr-only">Signing in...</span>
+                    <span class="visually-hidden">Signing in...</span>
                   </div>
                   <h1 class="h4">PrairieTest authentication</h1>
                   <p>Signing in to PrairieTest...</p>
-                  <button class="btn btn-success btn-block" type="submit" id="continue">
+                  <button class="btn btn-success d-block w-100" type="submit" id="continue">
                     Continue
                   </button>
                 </div>

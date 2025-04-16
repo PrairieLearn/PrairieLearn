@@ -70,8 +70,14 @@ function generate(server, coursePath, question, variant_seed) {
 
 function grade(server, coursePath, submission, variant, question) {
   const vid = variant.variant_seed;
+
+  // Note: v3 questions use `params` and `true_answer` from the submission instead
+  // of the variant. That change isn't necessary for v2 questions because the
+  // submission grading process isn't permitted to modify either the params or
+  // the correct answer.
   const params = variant.params;
   const trueAnswer = variant.true_answer;
+
   const submittedAnswer = submission.submitted_answer;
   const options = variant.options;
   const questionDir = path.join(coursePath, 'questions', question.directory);
@@ -99,6 +105,9 @@ function grade(server, coursePath, submission, variant, question) {
     submitted_answer: submission.submitted_answer ?? null,
     format_errors: {},
     gradable: true,
+
+    // Note: v3 questions can change `params` and `true_answer` during grading, but
+    // this was not implemented for v2 questions.
     params: variant.params ?? null,
     true_answer: variant.true_answer ?? null,
   };

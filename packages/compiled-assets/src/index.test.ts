@@ -8,13 +8,13 @@ import fetch from 'node-fetch';
 import tmp from 'tmp-promise';
 
 import {
-  init,
-  close,
-  handler,
+  type CompiledAssetsOptions,
   build,
+  close,
   compiledScriptPath,
   compiledStylesheetPath,
-  type CompiledAssetsOptions,
+  handler,
+  init,
 } from './index.js';
 
 async function testProject(options: CompiledAssetsOptions) {
@@ -65,6 +65,15 @@ async function testProject(options: CompiledAssetsOptions) {
         const cssText = await cssRes.text();
         assert.match(cssText, /body\s*\{/);
         assert.match(cssText, /color:\s*red/);
+
+        assert.throws(
+          () => compiledScriptPath('nonexistent.js'),
+          'Unknown scripts asset: nonexistent.js',
+        );
+        assert.throws(
+          () => compiledStylesheetPath('nonexistent.css'),
+          'Unknown stylesheets asset: nonexistent.css',
+        );
       } finally {
         server.close();
       }
