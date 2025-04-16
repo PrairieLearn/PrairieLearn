@@ -34,6 +34,7 @@ from typing import Any
 
 import prairielearn.internal.zygote_utils as zu
 from prairielearn.internal import question_phases
+from typing_extensions import Never
 
 saved_path = copy.copy(sys.path)
 
@@ -164,7 +165,7 @@ def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> 
         raise
 
 
-def worker_loop(s: socket.socket):
+def worker_loop(s: socket.socket) -> Never:
     # whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
 
@@ -174,9 +175,8 @@ def worker_loop(s: socket.socket):
     call_data = bytearray("", encoding="utf-8")
     length = None
 
-    def receive_json_from_socket():
-        nonlocal call_data
-        nonlocal length
+    def receive_json_from_socket() -> Any:
+        nonlocal call_data, length
 
         while True:
             call_data.extend(s.recv(256 * 1024))
@@ -188,14 +188,20 @@ def worker_loop(s: socket.socket):
                     json_inp = call_data[0:length]
                     del call_data[:length]
                     length = None
-                    return json.loads(json_inp, parse_int=zu.safe_parse_int)
+                    try:
+                        inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
+                    except json.JSONDecodeError as exc:
+                        raise ValueError(
+                            f"Error decoding JSON input: {json_inp}"
+                        ) from exc
+                    return inp
 
-    def write_str_to_socket(data: str):
+    def write_str_to_socket(data: str) -> None:
         encoded_data = bytes(data, "utf-8")
         s.sendall(len(encoded_data).to_bytes(4, byteorder="big"))
         s.sendall(encoded_data)
 
-    def write_json_to_socket(data: Any):
+    def write_json_to_socket(data: Any) -> None:
         write_str_to_socket(try_dumps(data, allow_nan=False))
 
     # Infinite loop where we wait for an input command, do it, and
@@ -260,6 +266,7 @@ def worker_loop(s: socket.socket):
                 # the call information.
                 input=json.dumps(args[0]),
                 encoding="utf-8",
+                check=False,
             )
 
             # Proxy any output from the subprocess back to the caller.
@@ -281,10 +288,11 @@ def worker_loop(s: socket.socket):
         # question happens to contain multiple occurrences of the same element, the
         # randomizations for each occurrence are independent of each other but still
         # dependent on the variant seed.
-        if type(args[-1]) is dict and not seeded:  # noqa: E721
+        if type(args[-1]) is dict and not seeded:
             variant_seed = args[-1].get("variant_seed", None)
             random.seed(variant_seed)
-            numpy.random.seed(variant_seed)
+            np.random.seed(variant_seed)
+            sys.meta_path.insert(0, FakerInitializeMetaPathFinder(variant_seed))
             seeded = True
 
         # reset and then set up the path
@@ -302,8 +310,8 @@ def worker_loop(s: socket.socket):
             # be much faster than the current implementation that does an IPC
             # call for each element.
 
-            data = args[0]
-            context = args[1]
+            context = args[0]
+            data = args[1]
 
             result, processed_elements = question_phases.process(fcn, data, context)
             val = {
@@ -339,12 +347,7 @@ def worker_loop(s: socket.socket):
             # check if the desired function is a legacy element function - if
             # so, we add an argument for element_index
             arg_names = list(signature(method).parameters.keys())
-            if (
-                len(arg_names) == 3
-                and arg_names[0] == "element_html"
-                and arg_names[1] == "element_index"
-                and arg_names[2] == "data"
-            ):
+            if arg_names == ["element_html", "element_index", "data"]:
                 args.insert(1, None)
 
             # call the desired function in the loaded module
@@ -367,7 +370,7 @@ def worker_loop(s: socket.socket):
 
             # Any function that is not 'file' or 'render' will modify 'data' and
             # should not be returning anything (because 'data' is mutable).
-            if (fcn != "file") and (fcn != "render"):
+            if fcn not in ("file", "render"):
                 if val is None or val is args[-1]:
                     json_outp = {"present": True, "val": args[-1]}
                 else:
@@ -382,7 +385,7 @@ def worker_loop(s: socket.socket):
                     # TODO: Once this has been running in production for a while,
                     # change this to raise an exception.
                     sys.stderr.write(
-                        f"Function {str(fcn)}() in {str(file + '.py')} returned a data object other than the one that was passed in.\n\n"
+                        f"Function {fcn}() in {file + '.py'} returned a data object other than the one that was passed in.\n\n"
                         + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
                         + "For now, the return value will be used instead of the data object that was passed in.\n\n"
                         + "In the future, returning a different object will trigger a fatal error."
@@ -471,7 +474,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                                 p.username() == "executor"
                                 for p in psutil.process_iter()
                             ):
-                                raise Exception(
+                                raise RuntimeError(
                                     "found remaining processes belonging to executor user"
                                 )
 
@@ -483,11 +486,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                         exitf.flush()
                     else:
                         # The worker did not exit gracefully
-                        raise Exception(
-                            "worker process exited unexpectedly with status %d" % status
+                        raise RuntimeError(
+                            f"worker process exited unexpectedly with status {status}"
                         )
                 else:
                     # Something else happened that is weird
-                    raise Exception(
-                        "worker process exited unexpectedly with status %d" % status
+                    raise RuntimeError(
+                        f"worker process exited unexpectedly with status {status}"
                     )
