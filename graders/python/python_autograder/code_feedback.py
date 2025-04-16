@@ -500,7 +500,7 @@ class Feedback:
     @classmethod
     def call_user(
         cls,
-        f: Callable[..., T] | Any,
+        f: Callable[..., T],
         *args: Any,
         stop_on_exception: bool = True,
         **kwargs: Any,
