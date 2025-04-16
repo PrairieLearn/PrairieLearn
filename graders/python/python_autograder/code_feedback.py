@@ -39,8 +39,8 @@ class GradingComplete(Exception):  # noqa: N818
 
 class GradingTestComplete(Exception):  # noqa: N818
     """
-    A general exception to mark that some failure of the current
-    test case has occurred. Future test cases will still be executed.
+    A general exception to mark that the current test case has finished early.
+    Future test cases will still be executed.
     """
 
 
