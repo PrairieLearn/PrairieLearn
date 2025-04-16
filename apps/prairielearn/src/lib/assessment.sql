@@ -8,6 +8,132 @@ WHERE
   ai.id = $assessment_instance_id
   AND a.id = $assessment_id;
 
+-- BLOCK insert_assessment_instance
+WITH
+  latest_assessment_instance AS (
+    SELECT
+      ai.*
+    FROM
+      assessment_instances AS ai
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND (
+        CASE
+          WHEN $group_id::BIGINT IS NOT NULL THEN ai.group_id = $group_id
+          ELSE ai.user_id = $user_id
+        END
+      )
+    ORDER BY
+      ai.number DESC
+    LIMIT
+      1
+  ),
+  inserted_assessment_instance AS (
+    INSERT INTO
+      assessment_instances (
+        auth_user_id,
+        assessment_id,
+        user_id,
+        group_id,
+        mode,
+        auto_close,
+        date_limit,
+        number,
+        include_in_statistics,
+        last_client_fingerprint_id
+      )
+    SELECT
+      $authn_user_id,
+      $assessment_id,
+      CASE
+        WHEN $group_id::BIGINT IS NULL THEN $user_id
+      END,
+      $group_id,
+      $mode,
+      a.auto_close
+      AND a.type = 'Exam',
+      CASE
+        WHEN $time_limit_min::INTEGER IS NOT NULL THEN $date::TIMESTAMPTZ + make_interval(mins => $time_limit_min)
+      END,
+      COALESCE(lai.number, 0) + 1,
+      NOT users_is_instructor_in_course_instance ($user_id, a.course_instance_id),
+      $client_fingerprint_id
+    FROM
+      assessments AS a
+      -- Only retrieve the latest assessment instance if the assessment allows
+      -- multiple instances, otherwise trigger a conflict on number.
+      LEFT JOIN latest_assessment_instance AS lai ON a.multiple_instance
+    WHERE
+      a.id = $assessment_id
+    ON CONFLICT DO NOTHING
+    RETURNING
+      *
+  ),
+  inserted_assessment_state_log AS (
+    INSERT INTO
+      assessment_state_logs (
+        open,
+        assessment_instance_id,
+        date_limit,
+        auth_user_id,
+        client_fingerprint_id
+      )
+    SELECT
+      ai.open,
+      ai.id,
+      ai.date_limit,
+      $authn_user_id,
+      $client_fingerprint_id
+    FROM
+      inserted_assessment_instance AS ai
+  ),
+  -- Use separate CTEs for last_access because Postgres does not support
+  -- multiple ON CONFLICT clauses in a single INSERT statement. Only one of
+  -- these CTEs will actually insert a row.
+  inserted_last_access_group AS (
+    INSERT INTO
+      last_accesses (group_id, last_access)
+    SELECT
+      $group_id,
+      current_timestamp
+    WHERE
+      $group_id::BIGINT IS NOT NULL
+    ON CONFLICT (group_id) DO UPDATE
+    SET
+      last_access = EXCLUDED.last_access
+  ),
+  inserted_last_access_non_group AS (
+    INSERT INTO
+      last_accesses (user_id, last_access)
+    SELECT
+      $user_id,
+      current_timestamp
+    WHERE
+      $group_id::BIGINT IS NULL
+    ON CONFLICT (user_id) DO UPDATE
+    SET
+      last_access = EXCLUDED.last_access
+  )
+SELECT
+  id AS assessment_instance_id,
+  TRUE AS created
+FROM
+  inserted_assessment_instance
+UNION ALL
+-- If the assessment instance was not inserted because of a conflict on number, return the existing assessment instance.
+SELECT
+  id AS assessment_instance_id,
+  FALSE AS created
+FROM
+  latest_assessment_instance
+WHERE
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      inserted_assessment_instance
+  );
+
 -- BLOCK select_assessment_info
 SELECT
   assessment_label (a, aset),
@@ -640,7 +766,10 @@ WITH
     (
       SELECT
         3.7 AS event_order,
-        'Manual grading results'::TEXT AS event_name,
+        CASE
+          WHEN gj.grading_method = 'Manual' THEN 'Manual grading results'::TEXT
+          ELSE 'AI grading results'::TEXT
+        END AS event_name,
         'blue2'::TEXT AS event_color,
         gj.graded_at AS date,
         u.user_id AS auth_user_id,
@@ -704,7 +833,7 @@ WITH
         LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
-        AND gj.grading_method = 'Manual'
+        AND gj.grading_method IN ('Manual', 'AI')
         AND gj.graded_at IS NOT NULL
     )
     UNION

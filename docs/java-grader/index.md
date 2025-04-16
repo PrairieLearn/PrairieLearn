@@ -165,7 +165,7 @@ The example above disables the `static` warning (use of static fields applied to
 
 - `-Xlint:none` or `-nowarn` to disable all warnings;
 - `-Xdoclint` to enable warnings for javadoc comments;
-- `-source 10` to compile using the Java 10 language version.
+- `--release 11` to compile using the Java 11 language version.
 
 Similarly, you may set specific options to the `java` command line using the `JDK_JAVA_OPTIONS`. A list of valid options can be found in the [`java' documentation page](https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html#standard-options-for-java). Some options of interest may include:
 
