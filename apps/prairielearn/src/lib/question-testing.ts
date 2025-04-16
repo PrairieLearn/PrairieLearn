@@ -1,4 +1,3 @@
-import * as async from 'async';
 import jsonStringifySafe from 'json-stringify-safe';
 import _ from 'lodash';
 import { z } from 'zod';
@@ -6,20 +5,21 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
+import { selectUserById } from '../models/user.js';
 import * as questionServers from '../question-servers/index.js';
 
 import {
-  SubmissionSchema,
-  type Variant,
-  type Submission,
-  type Question,
   type Course,
   type CourseInstance,
+  type Question,
+  type Submission,
+  SubmissionSchema,
+  type Variant,
 } from './db-types.js';
-import { saveSubmission, gradeVariant, insertSubmission } from './grading.js';
+import { gradeVariant, insertSubmission, saveSubmission } from './grading.js';
 import { writeCourseIssues } from './issues.js';
 import { getAndRenderVariant } from './question-render.js';
-import { getQuestionCourse, ensureVariant } from './question-variant.js';
+import { ensureVariant, getQuestionCourse } from './question-variant.js';
 import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -47,6 +47,7 @@ type TestType = 'correct' | 'incorrect' | 'invalid';
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
  * @param test_type - The type of test to run.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  * @returns The submission ID.
  */
@@ -55,6 +56,7 @@ async function createTestSubmission(
   question: Question,
   variant_course: Course,
   test_type: TestType,
+  user_id: string,
   authn_user_id: string,
 ): Promise<string> {
   const questionModule = questionServers.getModule(question.type);
@@ -69,11 +71,18 @@ async function createTestSubmission(
     question_course,
     test_type,
   );
-  const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+  const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
   const studentMessage = 'Error creating test submission';
   const courseData = { variant, question, course: variant_course };
-  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+  await writeCourseIssues(
+    courseIssues,
+    variant,
+    user_id,
+    authn_user_id,
+    studentMessage,
+    courseData,
+  );
 
   if (hasFatalIssue) data.gradable = false;
 
@@ -86,13 +95,16 @@ async function createTestSubmission(
     format_errors: data.format_errors,
     gradable: data.gradable,
     broken: hasFatalIssue,
-    // The `test` phase is not allowed to mutate `true_answers`, so we just pick
-    // the original `true_answer` so we can use our standard `insertSubmission`.
+    // The `test` phase is not allowed to mutate `params` and `true_answers`, so
+    // we just pick the original `params` and `true_answer` so we can use our
+    // standard `insertSubmission`.
+    params: variant.params,
     true_answer: variant.true_answer,
     feedback: null,
     credit: null,
     mode: null,
     variant_id: variant.id,
+    user_id,
     auth_user_id: authn_user_id,
     client_fingerprint_id: null,
   });
@@ -165,6 +177,7 @@ function compareSubmissions(expected_submission: Submission, test_submission: Su
  * @param question - The question for the variant.
  * @param course - The course for the variant.
  * @param test_type - The type of test to run.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  */
 async function testVariant(
@@ -172,6 +185,7 @@ async function testVariant(
   question: Question,
   course: Course,
   test_type: TestType,
+  user_id: string,
   authn_user_id: string,
 ): Promise<{ expected_submission: Submission; test_submission: Submission }> {
   const expected_submission_id = await createTestSubmission(
@@ -179,12 +193,14 @@ async function testVariant(
     question,
     course,
     test_type,
+    user_id,
     authn_user_id,
   );
   const expected_submission = await selectSubmission(expected_submission_id);
 
   const submission_data = {
     variant_id: variant.id,
+    user_id,
     auth_user_id: authn_user_id,
     submitted_answer: expected_submission.raw_submitted_answer || {},
   };
@@ -194,7 +210,15 @@ async function testVariant(
     question,
     course,
   );
-  await gradeVariant(updated_variant, test_submission_id, question, course, authn_user_id, true);
+  await gradeVariant(
+    updated_variant,
+    test_submission_id,
+    question,
+    course,
+    user_id,
+    authn_user_id,
+    true,
+  );
   const test_submission = await selectSubmission(test_submission_id);
 
   const courseIssues = compareSubmissions(expected_submission, test_submission);
@@ -206,7 +230,14 @@ async function testVariant(
     expected_submission,
     test_submission,
   };
-  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+  await writeCourseIssues(
+    courseIssues,
+    variant,
+    user_id,
+    authn_user_id,
+    studentMessage,
+    courseData,
+  );
   return { expected_submission, test_submission };
 }
 
@@ -224,6 +255,7 @@ async function testQuestion(
   variant_course: Course,
   test_type: TestType,
   authn_user_id: string,
+  user_id: string,
 ): Promise<TestQuestionResults> {
   let generateDuration;
   let renderDuration;
@@ -260,11 +292,15 @@ async function testQuestion(
 
   const renderStart = Date.now();
   try {
+    const user = await selectUserById(user_id);
+    const authn_user = await selectUserById(authn_user_id);
     await getAndRenderVariant(variant.id, null, {
       question,
       course: variant_course,
       urlPrefix: `/pl/course/${variant_course.id}`,
-      authz_data: {},
+      user,
+      authn_user,
+      is_administrator: false,
     });
   } finally {
     const renderEnd = Date.now();
@@ -279,6 +315,7 @@ async function testQuestion(
         question,
         variant_course,
         test_type,
+        user_id,
         authn_user_id,
       ));
     } finally {
@@ -301,6 +338,7 @@ async function testQuestion(
  * @param question - The question for the variant.
  * @param course - The course for the variant.
  * @param test_type - The type of test to run.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  */
 async function runTest(
@@ -310,6 +348,7 @@ async function runTest(
   course_instance: CourseInstance | null,
   course: Course,
   test_type: TestType,
+  user_id: string,
   authn_user_id: string,
 ): Promise<{ success: boolean; stats: TestResultStats }> {
   logger.verbose('Testing ' + question.qid);
@@ -319,6 +358,7 @@ async function runTest(
     course,
     test_type,
     authn_user_id,
+    user_id,
   );
 
   if (showDetails) {
@@ -337,13 +377,13 @@ async function runTest(
       'true_answer',
     ];
     logger.verbose('variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    '));
-    if (_.isObject(expected_submission)) {
+    if (expected_submission) {
       logger.verbose(
         'expected_submission:\n' +
           jsonStringifySafe(_.pick(expected_submission, submissionKeys), null, '    '),
       );
     }
-    if (_.isObject(test_submission)) {
+    if (test_submission) {
       logger.verbose(
         'test_submission:\n' +
           jsonStringifySafe(_.pick(test_submission, submissionKeys), null, '    '),
@@ -374,6 +414,7 @@ async function runTest(
  * @param question - The question for the variant.
  * @param course_instance - The course instance for the variant; may be null for instructor questions
  * @param course - The course for the variant.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  * @return The job sequence ID.
  */
@@ -383,6 +424,7 @@ export async function startTestQuestion(
   question: Question,
   course_instance: CourseInstance | null,
   course: Course,
+  user_id: string,
   authn_user_id: string,
 ): Promise<string> {
   let success = true;
@@ -390,8 +432,8 @@ export async function startTestQuestion(
 
   const serverJob = await createServerJob({
     courseId: course.id,
-    userId: String(authn_user_id),
-    authnUserId: String(authn_user_id),
+    userId: user_id,
+    authnUserId: authn_user_id,
     type: 'test_question',
     description: 'Test ' + question.qid,
   });
@@ -399,7 +441,7 @@ export async function startTestQuestion(
   const stats: TestResultStats[] = [];
 
   serverJob.executeInBackground(async (job) => {
-    await async.eachSeries(_.range(count * test_types.length), async (iter) => {
+    for (const iter of Array(count * test_types.length).keys()) {
       const type = test_types[iter % test_types.length];
       job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
       const result = await runTest(
@@ -409,13 +451,14 @@ export async function startTestQuestion(
         course_instance,
         course,
         type,
+        user_id,
         authn_user_id,
       );
       success = success && result.success;
       if (result.stats) {
         stats.push(result.stats);
       }
-    });
+    }
 
     function printStats(label: string, key: keyof TestResultStats) {
       let min = Number.MAX_SAFE_INTEGER;

@@ -6,12 +6,13 @@ import { IdSchema } from '../lib/db-types.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 
 import { type CourseData } from './course-db.js';
+import { isDraftQid } from './question.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface SharedQuestion {
   id: string;
   qid: string;
-  shared_publicly: boolean;
+  share_publicly: boolean;
 }
 
 export async function selectSharedQuestions(courseId: string): Promise<SharedQuestion[]> {
@@ -21,7 +22,7 @@ export async function selectSharedQuestions(courseId: string): Promise<SharedQue
     z.object({
       id: IdSchema,
       qid: z.string(),
-      shared_publicly: z.boolean(),
+      share_publicly: z.boolean(),
     }),
   );
 }
@@ -54,13 +55,13 @@ export function checkInvalidPublicSharingRemovals(
 ): boolean {
   const invalidUnshares: string[] = [];
   sharedQuestions.forEach((question) => {
-    if (!question.shared_publicly) {
+    if (!question.share_publicly) {
       return;
     }
 
     // TODO: allow if question is not used in anyone else's assessments
     const questionData = courseData.questions[question.qid].data;
-    if (!(questionData?.sharePublicly || questionData?.sharedPublicly)) {
+    if (!questionData?.sharePublicly) {
       invalidUnshares.push(question.qid);
     }
   });
@@ -132,6 +133,7 @@ export function checkInvalidSharingSetAdditions(
         .join(', ')}`,
     );
   }
+
   return existInvalidSharingSetAdditions;
 }
 
@@ -185,4 +187,77 @@ export async function checkInvalidSharingSetRemovals(
   }
 
   return existInvalidSharingSetRemovals;
+}
+
+export function checkInvalidSharedAssessments(
+  courseData: CourseData,
+  logger: ServerJobLogger,
+): boolean {
+  const invalidSharedAssessments = new Set<string>();
+  for (const courseInstanceKey in courseData.courseInstances) {
+    const courseInstance = courseData.courseInstances[courseInstanceKey];
+    for (const tid in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[tid];
+      if (!assessment?.data?.shareSourcePublicly) {
+        continue;
+      }
+      for (const zone of assessment?.data?.zones ?? []) {
+        for (const question of zone.questions ?? []) {
+          if (!question.id) {
+            continue;
+          }
+          const infoJson = courseData.questions[question.id];
+          if (!infoJson?.data?.sharePublicly) {
+            // Only `sharePublicly` and not `shareSourcePublicly` because we want to import the questions,
+            // not copy the questions into the destination course
+            invalidSharedAssessments.add(tid);
+          }
+        }
+      }
+    }
+  }
+
+  const existInvalidSharedAssessment = invalidSharedAssessments.size > 0;
+  if (existInvalidSharedAssessment) {
+    logger.error(
+      `✖ Course sync completely failed. The following assessments have their source publicly shared, but contain questions which are not publicly shared: ${Array.from(invalidSharedAssessments).join(', ')}`,
+    );
+  }
+  return existInvalidSharedAssessment;
+}
+
+export function checkInvalidDraftQuestionSharing(
+  courseData: CourseData,
+  logger: ServerJobLogger,
+): boolean {
+  const draftQuestionsWithSharingSets: string[] = [];
+  const draftQuestionsWithPublicSharing: string[] = [];
+  for (const qid in courseData.questions) {
+    const question = courseData.questions[qid];
+
+    const isDraft = isDraftQid(qid);
+    const questionSharingSets = question.data?.sharingSets || [];
+
+    if (isDraft && questionSharingSets.length > 0) {
+      draftQuestionsWithSharingSets.push(qid);
+    }
+
+    if (isDraft && (question.data?.sharePublicly || question.data?.shareSourcePublicly)) {
+      draftQuestionsWithPublicSharing.push(qid);
+    }
+  }
+
+  if (draftQuestionsWithSharingSets.length > 0) {
+    logger.error(
+      `✖ Course sync completely failed. The following draft questions cannot be added to sharing sets: ${draftQuestionsWithSharingSets.join(', ')}`,
+    );
+  }
+
+  if (draftQuestionsWithPublicSharing.length > 0) {
+    logger.error(
+      `✖ Course sync completely failed. The following draft questions cannot be publicly shared: ${draftQuestionsWithPublicSharing.join(', ')}`,
+    );
+  }
+
+  return draftQuestionsWithSharingSets.length > 0 || draftQuestionsWithPublicSharing.length > 0;
 }

@@ -259,10 +259,7 @@ WITH
       state = 'terminated',
       terminated_at = NOW()
     WHERE
-      wh.instance_id IN (
-        SELECT
-          UNNEST($instance_ids)
-      )
+      wh.instance_id = ANY ($instance_ids::text[])
       AND wh.state != 'launching'
     RETURNING
       wh.id,

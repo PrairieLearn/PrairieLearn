@@ -15,8 +15,8 @@ $(function() {
     <div class="d-flex flex-wrap pl-order-blocks-question-{{uuid}}">
         <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} ">
             <div class="card-header pl-order-blocks-header list-group-item-primary">
-                <span class="mr-2">{{source-header}}</span>
-                <button type="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}">
+                <span class="me-2">{{source-header}}</span>
+                <button type="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-bs-toggle="popover" data-bs-html="true" title="Order Blocks" data-bs-content="{{help_text}}">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </button>
             </div>
@@ -34,7 +34,7 @@ $(function() {
         </div>
         <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} ">
             <div class="card-header pl-order-blocks-header list-group-item-primary">
-                <span class="mr-2">{{solution-header}}</span>
+                <span class="me-2">{{solution-header}}</span>
             </div>
             <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone">
                 {{#submission_dict}}
@@ -60,13 +60,13 @@ $(function() {
         <div class="card-header">
             Your answer:
         {{#correct}}
-            <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+            <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
         {{#partially_correct}}
-            <span class="badge badge-warning"><i class="fa fa-times" aria-hidden="true"></i> {{partially_correct}}%</span>
+            <span class="badge text-bg-warning"><i class="fa fa-times" aria-hidden="true"></i> {{partially_correct}}%</span>
         {{/partially_correct}}
         {{#incorrect}}
-            <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+            <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
         {{/incorrect}}
         </div>
         <ul class="card-body list-group list-unstyled">
@@ -90,14 +90,34 @@ $(function() {
                 </li>
                 {{/distractor_feedback}}
                 {{^distractor_feedback}}
-                <li>
-                    <div class="pl-order-blocks-correctness-badge-container">
-                        {{#allow_feedback_badges}}
-                        <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
-                        {{/allow_feedback_badges}}
-                        <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
-                    </div>
-                </li>
+                    {{#ordering_feedback}}
+                    <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
+                        <ul class="list-unstyled">
+                            <li>
+                                <div class="pl-order-blocks-correctness-badge-container">
+                                    {{#allow_feedback_badges}}
+                                    <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                                    {{/allow_feedback_badges}}
+                                    <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
+                                </div>
+                            </li>
+                        </ul>
+                        <div>
+                            <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                            {{ordering_feedback}}
+                        </div>
+                    </li>
+                    {{/ordering_feedback}}
+                    {{^ordering_feedback}}
+                    <li>
+                        <div class="pl-order-blocks-correctness-badge-container">
+                            {{#allow_feedback_badges}}
+                            <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                            {{/allow_feedback_badges}}
+                            <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
+                        </div>
+                    </li>
+                    {{/ordering_feedback}}
                 {{/distractor_feedback}}
             {{/student_submission}}
         </ul>
@@ -109,7 +129,7 @@ $(function() {
         <strong>Your answer: </strong>
         <div id="pl-order-blocks" class="d-inline-block">
             <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <button type="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" data-content="{{parse-error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+            <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" style="margin-left: 5px" title="Format Error" data-bs-content="{{parse-error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
         </div>
     {{/parse-error}}
 {{/submission}}

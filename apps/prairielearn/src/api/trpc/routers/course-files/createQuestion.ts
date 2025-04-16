@@ -18,7 +18,9 @@ export const createQuestion = privateProcedure
       // Question data.
       qid: z.string().optional(),
       title: z.string().optional(),
+      template_qid: z.string().optional(),
       files: z.record(z.string()).optional(),
+      is_draft: z.boolean().optional(),
     }),
   )
   .output(
@@ -27,6 +29,7 @@ export const createQuestion = privateProcedure
         status: z.literal('success'),
         job_sequence_id: z.string(),
         question_id: z.string(),
+        question_qid: z.string(),
       }),
       z.object({
         status: z.literal('error'),
@@ -51,6 +54,10 @@ export const createQuestion = privateProcedure
         user,
       },
       files: opts.input.files,
+      qid: opts.input.qid,
+      title: opts.input.title,
+      template_qid: opts.input.template_qid,
+      isDraft: opts.input.is_draft,
     });
 
     const serverJob = await editor.prepareServerJob();
@@ -69,9 +76,17 @@ export const createQuestion = privateProcedure
       uuid: editor.uuid,
     });
 
-    return {
-      status: 'success',
-      job_sequence_id: serverJob.jobSequenceId,
-      question_id: question.id,
-    };
+    if (question.qid) {
+      return {
+        status: 'success',
+        job_sequence_id: serverJob.jobSequenceId,
+        question_id: question.id,
+        question_qid: question.qid,
+      };
+    } else {
+      return {
+        status: 'error',
+        job_sequence_id: serverJob.jobSequenceId,
+      };
+    }
   });

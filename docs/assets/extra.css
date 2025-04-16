@@ -1,0 +1,158 @@
+:root {
+  --md-primary-fg-color: #084298; /* PrairieLearn blue */
+  --md-accent-fg-color: #106eb0; /* arbitrary darker blue */
+}
+
+/* Custom CSS for the link color */
+[data-md-color-scheme='default'],
+[data-md-color-scheme='full-width'] {
+  --md-typeset-a-color: #127ac4; /* arbitrary blue */
+}
+/* Allow captioned code blocks to function */
+code {
+  text-align: left;
+}
+
+/* Prevent wrapping attributes inside tables, but not mkdocstrings */
+tr:not(.doc-section-item) > td:not(.code) > code {
+  white-space: nowrap;
+}
+
+.md-nav__item--section > .md-nav__link[for],
+.md-nav__title {
+  text-transform: uppercase;
+  color: var(--md-typeset-color);
+}
+
+.md-nav__item--section > div.md-nav__link {
+  text-transform: uppercase;
+  color: var(--md-primary-fg-color);
+}
+/* CSS for width selection */
+@media (max-width: 1220px) {
+  .width-icon {
+    display: none;
+  }
+}
+
+[data-md-color-media='full-width'] {
+  .md-main__inner {
+    max-width: 100%;
+  }
+}
+
+/* Center all diagrams */
+a svg {
+  width: 100%;
+  max-height: 80vh;
+}
+
+/* mkdocs styles interferes with d2 code styles */
+foreignObject .md pre {
+  position: static;
+  .md-clipboard {
+    display: none;
+  }
+}
+
+.palette-icon {
+  display: flex;
+  gap: 8px;
+  flex-direction: row;
+  align-items: center;
+  font-size: 1.5em;
+}
+
+.doc-class:not(:first-of-type) {
+  margin-top: 2em;
+  border-top: 1px solid gray;
+}
+.doc-function {
+  border-top: 0.5px solid lightgray;
+}
+
+.doc h3.doc-heading {
+  margin: 1em 0 0.5em;
+}
+
+/**
+ * Add a border to tabbed content. This also requires adding padding, which
+ * in turn requires conditionally adding/removing other padding/margins to
+ * ensure that tabbed code blocks look their nicest.
+ */
+
+.tabbed-set {
+  border: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-content__inner > .tabbed-set .tabbed-labels {
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.tabbed-set .tabbed-content > .tabbed-block {
+  padding-left: 1em;
+  padding-right: 1em;
+}
+
+.tabbed-set .tabbed-content > .tabbed-block:has(> .highlight:only-child),
+.tabbed-set .tabbed-content > .tabbed-block:has(> pre:only-child) {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.tabbed-set > .tabbed-content > .tabbed-block > .highlight:first-child > pre,
+.tabbed-set > .tabbed-content > .tabbed-block > pre:first-child {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.tabbed-set > .tabbed-content .tabbed-block > .highlight:first-child > pre,
+.tabbed-set > .tabbed-block > pre:first-child {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.tabbed-set > .tabbed-content > .tabbed-block > .highlight:only-child > pre,
+.tabbed-set > .tabbed-content > .tabbed-block > pre:only-child {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.doc-heading > .md-content__button {
+  margin: 0;
+}
+
+/* Override details blocks inside list elements for schema reference pages. We want a more condensed block in these scenarios. */
+[dir='ltr'] .md-typeset li > details {
+  margin: 0em 0;
+}
+
+[dir='ltr'] .md-typeset li > details > br {
+  display: none;
+}
+
+[dir='ltr'] .md-typeset li > details > summary {
+  padding-left: 0.6em;
+}
+
+[dir='ltr'] .md-typeset li > details > summary::before {
+  display: none;
+}
+
+/* Remove flow-root from ul elements that contain details elements to decrease spacing */
+.md-typeset ul:not([hidden]):has(li > details > summary) {
+  display: block;
+}
+
+/* This custom CSS is modeled after the mkdocstrings CSS for the same purpose */
+code.doc-symbol-json {
+  color: var(--doc-symbol-function-fg-color);
+  background-color: var(--doc-symbol-function-bg-color);
+}
+
+code.doc-symbol-json::after {
+  content: 'json';
+}

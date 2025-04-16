@@ -1,9 +1,10 @@
 import traceback
 import unittest
+from typing import Any
 
 from code_feedback import Feedback, GradingComplete
-from pl_execute import UserCodeFailed
-from pl_helpers import DoNotRun, GradingSkipped, print_student_code
+from pl_execute import UserCodeFailedError
+from pl_helpers import DoNotRunError, GradingSkipped, print_student_code
 
 
 class PLTestResult(unittest.TestResult):
@@ -22,7 +23,7 @@ class PLTestResult(unittest.TestResult):
         "The associated traceback is:\n"
     )
 
-    def __init__(self):
+    def __init__(self) -> None:
         unittest.TestResult.__init__(self)
         self.results = []
         self.format_errors = []
@@ -35,7 +36,7 @@ class PLTestResult(unittest.TestResult):
         # (but not execute them) so that we show the correct number of points on the grading panel
         self.skip_grading = False
 
-    def startTest(self, test):
+    def startTest(self, test: unittest.TestCase) -> None:  # noqa: N802
         unittest.TestResult.startTest(self, test)
 
         options = getattr(test, test._testMethodName).__func__.__dict__
@@ -48,20 +49,21 @@ class PLTestResult(unittest.TestResult):
             name = test._testMethodName
         self.results.append({"name": name, "max_points": points, "filename": filename})
 
-    def addSuccess(self, test):
+    def addSuccess(self, test: Any | unittest.TestCase) -> None:  # noqa: N802
         unittest.TestResult.addSuccess(self, test)
-        if test.points is None:
+        # We can't easily import PLTestCase to type these fields
+        if test.points is None:  # type: ignore
             self.results[-1]["points"] = self.results[-1]["max_points"]
         else:
-            self.results[-1]["points"] = test.points * self.results[-1]["max_points"]
+            self.results[-1]["points"] = test.points * self.results[-1]["max_points"]  # type: ignore
 
-    def addError(self, test, err):
+    def addError(self, test: unittest.TestCase, err: Any) -> None:  # noqa: N802
         if isinstance(err[1], GradingComplete):
             # If grading stopped early, we will flag that but still loop through
             # the remaining cases so that we have the correct point values
             self.results[-1]["points"] = 0
             self.skip_grading = True
-        elif isinstance(err[1], DoNotRun):
+        elif isinstance(err[1], DoNotRunError):
             self.results[-1]["points"] = 0
             self.results[-1]["max_points"] = 0
         elif isinstance(err[1], GradingSkipped):
@@ -70,21 +72,22 @@ class PLTestResult(unittest.TestResult):
             Feedback.add_feedback(
                 " - Grading was skipped because an earlier test failed - "
             )
-        elif isinstance(err[1], UserCodeFailed):
+        elif isinstance(err[1], UserCodeFailedError):
             # Student code raised Exception
             tr_list = traceback.format_exception(*err[1].err)
             name = "Your code raised an Exception"
             self.done_grading = True
-            if isinstance(err[1].err[1], SyntaxError) or isinstance(
-                err[1].err[1], NameError
-            ):
+            if isinstance(err[1].err[1], (SyntaxError, NameError)):
                 self.grading_succeeded = False
                 self.format_errors.append("Your code has a syntax error.")
                 Feedback.set_main_output()
             else:
-                self.results.append(
-                    {"name": name, "filename": "error", "max_points": 1, "points": 0}
-                )
+                self.results.append({
+                    "name": name,
+                    "filename": "error",
+                    "max_points": 1,
+                    "points": 0,
+                })
                 Feedback.set_name("error")
             Feedback.add_feedback("".join(tr_list))
             Feedback.add_feedback("\n\nYour code:\n\n")
@@ -95,7 +98,7 @@ class PLTestResult(unittest.TestResult):
         else:
             tr_message = "".join(traceback.format_exception(*err))
 
-            if isinstance(test, unittest.suite._ErrorHolder):
+            if isinstance(test, unittest.suite._ErrorHolder):  # type: ignore
                 # Error occurred outside of a test case, like in setup code for example
                 # We can't really recover from this
 
@@ -117,20 +120,21 @@ class PLTestResult(unittest.TestResult):
                 self.results[-1]["points"] = 0
                 Feedback.add_feedback(self.error_message + tr_message)
 
-    def addFailure(self, test, err):
+    def addFailure(self, test: unittest.TestCase, err: Any) -> None:  # noqa: N802
         unittest.TestResult.addFailure(self, test, err)
-        if test.points is None:
+        # # We can't easily import PLTestCase to type these fields
+        if test.points is None:  # type: ignore
             self.results[-1]["points"] = 0
         else:
-            self.results[-1]["points"] = test.points * self.results[-1]["max_points"]
+            self.results[-1]["points"] = test.points * self.results[-1]["max_points"]  # type: ignore
 
-    def stopTest(self, test):
+    def stopTest(self, test: unittest.TestCase) -> None:  # noqa: N802
         # Never write output back to the console
         self._mirrorOutput = False
         unittest.TestResult.stopTest(self, test)
 
-    def getResults(self):
+    def getResults(self) -> list[dict[str, Any]]:  # noqa: N802
         return self.results
 
-    def getGradable(self):
+    def getGradable(self) -> bool:  # noqa: N802
         return self.grading_succeeded

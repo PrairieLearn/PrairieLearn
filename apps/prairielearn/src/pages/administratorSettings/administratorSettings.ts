@@ -57,6 +57,26 @@ router.post(
       const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
       const jobSequenceId = await syncContextDocuments(client, res.locals.authn_user.user_id);
       res.redirect('/pl/administrator/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'benchmark_question_generation') {
+      // We intentionally only enable this in dev mode since it could pollute
+      // the production database.
+      if (!config.openAiApiKey || !config.openAiOrganization || !config.devMode) {
+        throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+      }
+
+      const client = new OpenAI({
+        apiKey: config.openAiApiKey,
+        organization: config.openAiOrganization,
+      });
+
+      const { benchmarkAiQuestionGeneration } = await import(
+        '../../ee/lib/ai-question-generation-benchmark.js'
+      );
+      const jobSequenceId = await benchmarkAiQuestionGeneration({
+        client,
+        authnUserId: res.locals.authn_user.user_id,
+      });
+      res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

@@ -56,7 +56,9 @@ WITH
       v.id
   )
 SELECT
-  v.*,
+  v.id,
+  v.instance_question_id,
+  v.open,
   COALESCE(vmss.max_submission_score, 0) AS max_submission_score
 FROM
   instance_questions AS iq
@@ -71,3 +73,26 @@ WHERE
   AND v.broken_at IS NULL
 ORDER BY
   v.date;
+
+-- BLOCK select_user_owns_variant
+SELECT
+  (
+    CASE
+      WHEN ai.group_id IS NOT NULL THEN EXISTS (
+        SELECT
+          1
+        FROM
+          group_users AS gu
+        WHERE
+          gu.group_id = ai.group_id
+          AND gu.user_id = $user_id
+      )
+      ELSE (v.user_id = $user_id)
+    END
+  ) AS user_owns_variant
+FROM
+  variants AS v
+  LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+  LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+WHERE
+  v.id = $variant_id;

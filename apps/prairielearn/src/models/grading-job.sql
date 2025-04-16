@@ -1,3 +1,11 @@
+-- BLOCK select_grading_job
+SELECT
+  *
+FROM
+  grading_jobs
+WHERE
+  id = $grading_job_id;
+
 -- BLOCK insert_grading_job
 WITH
   grading_job_data AS (
@@ -50,8 +58,7 @@ WITH
   updated_submission AS (
     UPDATE submissions AS s
     SET
-      grading_requested_at = now(),
-      grading_method = gjd.grading_method
+      grading_requested_at = now()
     FROM
       grading_job_data AS gjd
     WHERE

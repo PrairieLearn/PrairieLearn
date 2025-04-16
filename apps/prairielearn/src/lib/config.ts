@@ -167,7 +167,6 @@ const ConfigSchema = z.object({
   cronIntervalWorkspaceHostTransitionsSec: z.number().default(10),
   cronIntervalChunksHostAutoScalingSec: z.number().default(10),
   cronIntervalCleanTimeSeriesSec: z.number().default(10 * 60),
-  cronIntervalCleanUserSessionsSec: z.number().default(10 * 60),
   cronDailySec: z.number().default(8 * 60 * 60),
   /**
    * Controls how much history is retained when removing old rows
@@ -563,6 +562,11 @@ const ConfigSchema = z.object({
   courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
   /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
+  /**
+   * A list of Python venvs in which to search for Python executables.
+   * Will be resolved relative to the repository root.
+   */
+  pythonVenvSearchPaths: z.string().array().default(['.venv']),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

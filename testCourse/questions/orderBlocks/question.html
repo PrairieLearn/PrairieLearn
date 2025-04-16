@@ -116,3 +116,16 @@ has become increasingly complex, with many different possible combinations of op
   <pl-answer correct="true">second</pl-answer>
   <pl-answer correct="true">third</pl-answer>
 </pl-order-blocks>
+
+
+
+<pl-order-blocks answers-name="hw3_q1_c" source-blocks-order="random" grading-method="dag" feedback="first-wrong-verbose" partial-credit="lcs" solution-placement="bottom">
+  <pl-answer correct="true" tag="1" depends=""  >Let $a, b, c$ be arbitrary positive integers.</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" ordering-feedback="This step should come after introducing the variables and before applying the definition of divisibility.">Assume that $a|b$ and $b|c.$</pl-answer>
+  <pl-answer correct="true" tag="3" depends="2" >By definition, there exists $q_1$ such that $b=a\cdot q_1$ and there exists $q_2$ such that $c = b\cdot q_2.$</pl-answer>
+  <pl-answer correct="true" tag="4" depends="3" >We can see that $c = b\cdot q_2 = (a\cdot q_1)\cdot q_2 = a \cdot (q_1\cdot q_2).$</pl-answer>
+  <pl-answer correct="true" tag="5" depends="4" >By definition $a|c.$</pl-answer>
+</pl-order-blocks>
+
+
+
