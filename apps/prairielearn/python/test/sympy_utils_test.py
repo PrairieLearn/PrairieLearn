@@ -349,7 +349,7 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", INVALID_ESCAPE_CASES)
     def test_escape_error(self, a_sub: str) -> None:
-        with pytest.raises(psu.HasEscapeError):
+        with pytest.raises(psu.HasParseError):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_COMMENT_CASES)
@@ -367,7 +367,7 @@ class TestExceptions:
             (INVALID_FUNCTION_CASES, "invalid", ()),
             (INVALID_VARIABLE_CASES, "invalid symbol", ()),
             (INVALID_PARSE_CASES, "syntax error", ()),
-            (INVALID_ESCAPE_CASES, 'must not contain the character "\\"', ()),
+            (INVALID_ESCAPE_CASES, "syntax error", ()),
             (INVALID_COMMENT_CASES, 'must not contain the character "#"', ()),
             # TODO: not handled
             # (COMPLEX_CASES, "must be expressed as integers", ("i",)),
