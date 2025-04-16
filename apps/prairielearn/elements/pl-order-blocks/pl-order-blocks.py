@@ -881,10 +881,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             None if num_initial_correct == len(submission) else num_initial_correct
         )
 
-        # print(num_initial_correct)
-        # print(first_wrong)
-        # print(student_answer[:num_initial_correct])
-        # print(student_answer)
         if feedback_type in FIRST_WRONG_TYPES:
             for block in student_answer[:num_initial_correct]:
                 block["badge_type"] = "badge-success"
