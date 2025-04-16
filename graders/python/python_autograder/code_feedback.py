@@ -125,7 +125,7 @@ class Feedback:
             >>> Feedback.finish("Invalid format")
         """
         cls.add_feedback(fb_text)
-        raise GradingComplete("Your answer is correct.")
+        raise GradingComplete
 
     @classmethod
     def finish_test(cls, fb_text: str) -> NoReturn:
@@ -500,7 +500,7 @@ class Feedback:
     @classmethod
     def call_user(
         cls,
-        f: Callable[..., T],
+        f: Callable[..., T] | Any,
         *args: Any,
         stop_on_exception: bool = True,
         **kwargs: Any,
@@ -545,6 +545,8 @@ class Feedback:
                     "callable, but the variable you supplied was not "
                     "callable."
                 )
+
+            cls.set_score(0.0)
 
             if stop_on_exception:
                 raise GradingComplete from exc

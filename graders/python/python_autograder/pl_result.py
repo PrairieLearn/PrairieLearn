@@ -59,10 +59,13 @@ class PLTestResult(unittest.TestResult):
 
     def addError(self, test: unittest.TestCase, err: Any) -> None:  # noqa: N802
         if isinstance(err[1], GradingComplete):
-            # If grading stopped early, we will flag that but still loop through
-            # the remaining cases so that we have the correct point values
-            self.results[-1]["points"] = 0
+            # Grading was stopped early; don't run any more tests. We'll still
+            # loop through the remaining cases so that we have the correct point values.
             self.skip_grading = True
+        elif isinstance(err[1], TestComplete):
+            # This test case was stopped early. It's assumed that any points or
+            # feedback have already been given.
+            pass
         elif isinstance(err[1], DoNotRunError):
             self.results[-1]["points"] = 0
             self.results[-1]["max_points"] = 0
@@ -95,10 +98,6 @@ class PLTestResult(unittest.TestResult):
                 st_code=Feedback.test.student_code_abs_path,
                 ipynb_key=Feedback.test.ipynb_key,
             )
-        elif isinstance(err[1], TestComplete):
-            # A general test failure has occurred
-            # It's assumed that test case feedback has already been given
-            self.results[-1]["points"] = 0
         else:
             tr_message = "".join(traceback.format_exception(*err))
 
