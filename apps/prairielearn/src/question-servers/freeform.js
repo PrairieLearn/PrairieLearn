@@ -333,8 +333,7 @@ async function elementFunction(codeCaller, fcn, elementName, elementHtml, data, 
 
   return await instrumented('codeCaller.call', async () => {
     try {
-      const res = await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
-      return res;
+      return await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
     } catch (err) {
       if (err instanceof FunctionMissingError) {
         // function wasn't present in server
@@ -407,7 +406,7 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
           output: '',
         };
       }
-      throw error;
+      throw err;
     }
   });
 }
