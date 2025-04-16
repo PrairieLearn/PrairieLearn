@@ -3,7 +3,7 @@ import * as url from 'node:url';
 import { differenceInMilliseconds } from 'date-fns';
 import { z } from 'zod';
 
-import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, html, joinHtml, unsafeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
@@ -133,19 +133,14 @@ export function SubmissionPanel({
                 <div class="card-body">
                   ${submission.rubric_grading
                     ? html`
-                        ${(rubric_data?.rubric_items || [])
-                          .filter(
+                        ${RubricItemsWithIndent(
+                          rubric_data?.rubric_items.filter(
                             (item) =>
                               item.always_show_to_students ||
                               submission.rubric_grading?.rubric_items?.[item.id]?.score,
-                          )
-                          .map((item) =>
-                            RubricItem({
-                              item,
-                              item_grading:
-                                submission.rubric_grading?.rubric_items?.[item.id] ?? null,
-                            }),
-                          )}
+                          ),
+                          submission.rubric_grading?.rubric_items,
+                        )}
                         ${submission.rubric_grading?.adjust_points
                           ? html`
                               <div class="mb-2">
@@ -357,7 +352,7 @@ function SubmissionStatusBadge({
         `;
       }
     } else if (!submission.gradable) {
-      // If an error ocurred during grading, there will be a `graded_at` timestamp but the submission will be marked ungradable.
+      // If an error occurred during grading, there will be a `graded_at` timestamp but the submission will be marked ungradable.
       autoGradingBadge = html`
         <span class="badge text-bg-danger">${autoStatusPrefix} invalid, not gradable</span>
       `;
@@ -504,21 +499,68 @@ function SubmissionInfoModal({
   });
 }
 
+function RubricItemsWithIndent(
+  rubric_items: RubricData['rubric_items'][0][] | null | undefined,
+  rubric_items_grading: Record<string, RubricGradingItem> | null | undefined,
+) {
+  if (!rubric_items) return '';
+
+  // First group rubric items by parent
+  const itemsByParent = {};
+  rubric_items.forEach((item) => {
+    const parent = item.parent_id ?? '';
+    if (!itemsByParent[parent]) {
+      itemsByParent[parent] = [];
+    }
+    itemsByParent[parent].push(item);
+  });
+
+  // Then print item tree recursively, starting with root node
+  const itemTree = RubricItemsWithIndentRecursive('', itemsByParent, rubric_items_grading);
+  return html`<div role="tree">${joinHtml(itemTree)}</div>`;
+}
+
+function RubricItemsWithIndentRecursive(
+  current_parent: string,
+  rubric_items_by_parent: Record<string, RubricData['rubric_items'][0][]>,
+  rubric_items_grading: Record<string, RubricGradingItem> | null | undefined,
+) {
+  return rubric_items_by_parent[current_parent].map((item) => {
+    const isLeafNode = !(item.id in rubric_items_by_parent);
+    const itemRendered = RubricItem({
+      item,
+      item_grading: rubric_items_grading?.[item.id],
+      is_leaf_node: isLeafNode,
+    });
+    const childrenRendered = isLeafNode
+      ? ''
+      : RubricItemsWithIndentRecursive(item.id, rubric_items_by_parent, rubric_items_grading);
+    return html`<div role="treeitem">
+      ${itemRendered}
+      ${isLeafNode ? '' : html`<div role="group" class="ms-4">${childrenRendered}</div>`}
+    </div>`;
+  });
+}
+
 function RubricItem({
   item,
   item_grading,
+  is_leaf_node,
 }: {
   item: RubricData['rubric_items'][0];
   item_grading: RubricGradingItem | undefined | null;
+  is_leaf_node: boolean;
 }) {
   return html`
-    <div>
+    <div role="treeitem">
       <label class="w-100" data-testid="rubric-item-container-${item.id}">
         <input type="checkbox" disabled ${item_grading?.score ? 'checked' : ''} />
         <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
-          <strong data-testid="rubric-item-points">
-            [${(item.points >= 0 ? '+' : '') + item.points}]
-          </strong>
+          ${is_leaf_node
+            ? html`<strong data-testid="rubric-item-points">
+                [${(item.points >= 0 ? '+' : '') + item.points}]
+              </strong>`
+            : ''}
         </span>
         <span class="d-inline-block" data-testid="rubric-item-description">
           ${unsafeHtml(item.description_rendered ?? '')}
@@ -534,7 +576,7 @@ function RubricItem({
                 data-testid="rubric-item-explanation"
               >
                 <i class="fas fa-circle-info"></i>
-                <span class="visually-hidden">Details</span>
+                <span class="sr-only">Details</span>
               </button>
             `
           : ''}

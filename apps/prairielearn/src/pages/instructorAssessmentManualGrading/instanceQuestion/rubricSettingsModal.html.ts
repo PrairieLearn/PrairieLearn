@@ -1,9 +1,10 @@
-import { html } from '@prairielearn/html';
+import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 
 import { type RubricData } from '../../../lib/manualGrading.js';
 
 export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, any> }) {
   const rubric_data = resLocals.rubric_data as RubricData | null | undefined;
+
   return html`
     <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
       <div class="modal-dialog border-info" style="max-width: 98vw" role="document">
@@ -194,8 +195,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                         <th>In use</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      ${rubric_data?.rubric_items?.map((item, index) => RubricItemRow(item, index))}
+                    <tbody role="tree">
+                      ${RubricItemsWithIndent(rubric_data?.rubric_items)}
                       <tr
                         class="js-no-rubric-item-note ${rubric_data?.rubric_items?.length
                           ? 'd-none'
@@ -216,11 +217,18 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   </table>
                 </div>
                 <div class="js-settings-points-warning-placeholder"></div>
+                <div class="js-settings-always-show-warning-placeholder"></div>
                 <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
                   Add item
                 </button>
                 <template class="js-new-row-rubric-item">
-                  ${RubricItemRow(null, rubric_data?.rubric_items?.length ?? 0)}
+                  ${RubricItemRow({
+                    item: null,
+                    index: rubric_data?.rubric_items?.length ?? 0,
+                    parent_index: null,
+                    indent_level: 0,
+                    child_idxs: [],
+                  })}
                 </template>
                 ${MustachePatterns({ resLocals })}
               </div>
@@ -278,17 +286,73 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
   `;
 }
 
-function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number) {
+function RubricItemsWithIndent(rubric_items: RubricData['rubric_items'][0][] | null | undefined) {
+  if (!rubric_items) return unsafeHtml('');
+  const parentStack = [] as RubricData['rubric_items'][0][];
+  const itemRows = rubric_items.map((item) => {
+    // Find parent in stack and remove any items with deeper nesting than parent
+    const cutoffIdx = item.parent_id
+      ? parentStack.findIndex((i) => i.id === item.parent_id) + 1
+      : 0;
+    parentStack.splice(cutoffIdx, parentStack.length - cutoffIdx);
+
+    // Get child ids needed for ARIA mapping
+    const childIds = rubric_items
+      .filter((i) => i.parent_id === item.id)
+      .map((i) => 'rubric-item-' + i.number);
+
+    const parentId = parentStack.length > 0 ? parentStack[parentStack.length - 1].number : null;
+    // Generate HTML for current item
+    const result = RubricItemRow({
+      item,
+      index: item.number,
+      parent_index: parentId,
+      indent_level: parentStack.length,
+      child_idxs: childIds,
+    });
+
+    // Push this item as potential parent for next item
+    parentStack.push(item);
+    return result;
+  });
+  return joinHtml(itemRows);
+}
+
+function RubricItemRow({
+  item,
+  index,
+  parent_index,
+  indent_level,
+  child_idxs,
+}: {
+  item: RubricData['rubric_items'][0] | null;
+  index: number;
+  parent_index: number | null;
+  indent_level: number;
+  child_idxs: string[];
+}) {
   const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
   return html`
-    <tr>
-      <td class="text-nowrap align-middle">
+    <tr
+      class="js-rubric-item-row"
+      role="treeitem"
+      ${item ? html`id="rubric-item-${item.number}"` : ''}
+      aria-owns="${child_idxs.join(' ')}"
+      ${parent_index ? html`data-parent-item="rubric-item-${parent_index}"` : ''}
+    >
+      <td class="text-nowrap align-middle js-rubric-item-render-indent">
         ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
         <input
           type="hidden"
           class="js-rubric-item-row-order"
           name="${namePrefix}[order]"
           value="${index}"
+        />
+        <input
+          type="hidden"
+          class="js-rubric-item-indent"
+          name="${namePrefix}[indent]"
+          value="${indent_level}"
         />
         <button
           type="button"
@@ -297,16 +361,22 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
         >
           <i class="fas fa-arrows-up-down"></i>
         </button>
+        <button type="button" class="visually-hidden js-rubric-item-move-up-button">Move up</button>
         <button type="button" class="visually-hidden js-rubric-item-move-down-button">
           Move down
         </button>
-        <button type="button" class="visually-hidden js-rubric-item-move-up-button">Move up</button>
+        <button type="button" class="visually-hidden js-rubric-item-move-in-button">
+          Move inside category
+        </button>
+        <button type="button" class="visually-hidden js-rubric-item-move-out-button">
+          Move outside category
+        </button>
         <button
           type="button"
           class="btn btn-sm btn-ghost js-rubric-item-delete text-danger"
           aria-label="Delete"
         >
-          <i class="fas fa-trash text-danger"></i>
+          <i class="fas fa-trash"></i>
         </button>
       </td>
       <td class="align-middle">

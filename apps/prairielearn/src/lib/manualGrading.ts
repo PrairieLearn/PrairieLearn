@@ -89,7 +89,10 @@ const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
   rubric_items_changed: z.boolean(),
 });
 
-type RubricItemInput = Partial<RubricItem> & { order: number };
+type RubricItemInput = Partial<RubricItem> & {
+  order: number;
+  indent: number;
+};
 
 /** Builds the URL of an instance question tagged to be manually graded for a particular
  * assessment question. Only returns instance questions assigned to a particular grader.
@@ -210,7 +213,7 @@ export async function populateManualGradingData(submission: Record<string, any>)
  * @param starting_points - The points to assign to a question as a start, before rubric items are applied. Typically 0 for positive grading, or the total points for negative grading.
  * @param min_points - The minimum number of points to assign based on a rubric (floor). Computed points from rubric items are never assigned less than this, even if items bring the total to less than this value, unless an adjustment is used.
  * @param max_extra_points - The maximum number of points to assign based on a rubric beyond the question's assigned points (ceiling). Computed points from rubric items over the assigned points are never assigned more than this, even if items bring the total to more than this value, unless an adjustment is used.
- * @param rubric_items - An array of items available for grading. The `order` property is used to determine the order of the items. If an item has an `id` property that corresponds to an existing rubric item, it is updated, otherwise it is inserted.
+ * @param rubric_items - An array of items available for grading. The `order` property is used to determine the order of the items, and the `indent` property is used to assign parent elements to items. If an item has an `id` property that corresponds to an existing rubric item, it is updated, otherwise it is inserted.
  * @param tag_for_manual_grading - If true, tags all currently graded instance questions to be graded again using the new rubric values. If false, existing gradings are recomputed if necessary, but their grading status is retained.
  * @param authn_user_id - The user_id of the logged in user.
  */
@@ -308,6 +311,7 @@ export async function updateAssessmentQuestionRubric(
       });
 
       rubric_items.sort((a, b) => a.order - b.order);
+
       await async.eachOfSeries(
         rubric_items.map((item, number) => ({
           // Set default values to ensure fields exist, will be overridden by the spread
@@ -322,11 +326,67 @@ export async function updateAssessmentQuestionRubric(
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
           if (item.id == null) {
-            await sqldb.queryAsync(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
+            rubric_items[item.number].id = await sqldb.queryRow(
+              sql.insert_rubric_item,
+              _.omit(item, ['order', 'indent', 'id']),
+              IdSchema,
+            );
           } else {
-            await sqldb.queryRow(sql.update_rubric_item, _.omit(item, ['order']), IdSchema);
+            await sqldb.queryRow(
+              sql.update_rubric_item,
+              _.omit(item, ['order', 'indent']),
+              IdSchema,
+            );
           }
         },
+      );
+
+      // Assign parents to each rubric item based on indentation
+      // This has to be done after inserting items so that new items have a known ID to reference
+      // Key bindings, student visibility settings and points are also updated in the same pass
+      const rubric_parent_stack = [] as RubricItemInput[];
+      let key_binding = 1;
+      rubric_items.forEach((item) => {
+        // Remove all items that are further (or equally) indented than the current one
+        if (item.indent < rubric_parent_stack.length) {
+          rubric_parent_stack.splice(item.indent, rubric_parent_stack.length - item.indent);
+        }
+        // If there's any item left, the most recent one will be the parent
+        if (rubric_parent_stack.length > 0) {
+          const parent = rubric_parent_stack[rubric_parent_stack.length - 1];
+          item.parent_id = parent.id;
+          // Nodes with children are worth no points themselves
+          parent.points = 0;
+          // Nodes with children are skipped when assigning key bindings
+          if (parent.key_binding) {
+            parent.key_binding = null;
+            key_binding--;
+          }
+          // If an item is always shown to students, its parent is also always shown
+          // This should already be checked client-side, so this is unlikely to be triggered
+          if (item.always_show_to_students && !parent.always_show_to_students) {
+            rubric_parent_stack.forEach(
+              (current_parent) => (current_parent.always_show_to_students = true),
+            );
+          }
+        }
+        // Add the current item as a potential parent for future ones
+        rubric_parent_stack.push(item);
+        item.key_binding = key_binding.toString();
+        key_binding++;
+      });
+
+      await async.eachOfSeries(
+        rubric_items,
+        async (item) =>
+          await sqldb.queryAsync(sql.update_rubric_item_hierarchy, {
+            id: item.id,
+            rubric_id: new_rubric_id,
+            parent_id: item.parent_id,
+            points: item.points,
+            key_binding: item.key_binding,
+            always_show_to_students: item.always_show_to_students,
+          }),
       );
 
       await recomputeInstanceQuestions(assessment_question_id, authn_user_id);

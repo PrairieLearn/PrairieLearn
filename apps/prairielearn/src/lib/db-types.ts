@@ -892,6 +892,7 @@ export const RubricItemSchema = z.object({
   id: IdSchema,
   key_binding: z.string().nullable(),
   number: z.number(),
+  parent_id: IdSchema.nullable(),
   points: z.number(),
   rubric_id: IdSchema,
 });

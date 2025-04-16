@@ -202,10 +202,6 @@ SET
   description = COALESCE($description, description),
   explanation = COALESCE($explanation, explanation),
   grader_note = COALESCE($grader_note, grader_note),
-  key_binding = CASE
-    WHEN $number >= 10 THEN NULL
-    ELSE MOD($number + 1, 10)
-  END,
   always_show_to_students = COALESCE($always_show_to_students, always_show_to_students),
   deleted_at = NULL
 WHERE
@@ -223,7 +219,6 @@ INSERT INTO
     description,
     explanation,
     grader_note,
-    key_binding,
     always_show_to_students
   )
 VALUES
@@ -234,12 +229,21 @@ VALUES
     $description,
     $explanation,
     $grader_note,
-    CASE
-      WHEN $number >= 10 THEN NULL
-      ELSE MOD($number + 1, 10)
-    END,
     $always_show_to_students
-  );
+  )
+RETURNING
+  id;
+
+-- BLOCK update_rubric_item_hierarchy
+UPDATE rubric_items
+SET
+  parent_id = $parent_id,
+  points = $points,
+  key_binding = $key_binding,
+  always_show_to_students = $always_show_to_students
+WHERE
+  id = $id
+  AND rubric_id = $rubric_id;
 
 -- BLOCK select_instance_questions_to_update
 WITH

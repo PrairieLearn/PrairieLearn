@@ -39,6 +39,7 @@ type MockUser = User & {
 interface RubricItem {
   id?: string;
   points: number;
+  indent: number;
   description: string;
   explanation?: string;
   grader_note?: string;
@@ -711,9 +712,15 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings]');
           rubric_items = [
-            { points: 6, description: 'First rubric item', always_show_to_students: true },
+            {
+              points: 6,
+              indent: 0,
+              description: 'First rubric item',
+              always_show_to_students: true,
+            },
             {
               points: 3,
+              indent: 0,
               description: 'Second rubric item (partial, with `markdown`)',
               explanation: 'Explanation with **markdown**',
               grader_note: 'Instructions with *markdown*',
@@ -724,6 +731,7 @@ describe('Manual Grading', function () {
             },
             {
               points: 0.4,
+              indent: 0,
               description: 'Third rubric item (partial, with moustache: {{params.value1}})',
               explanation: 'Explanation with moustache: {{params.value2}}',
               grader_note:
@@ -736,11 +744,13 @@ describe('Manual Grading', function () {
             },
             {
               points: -1.6,
+              indent: 0,
               description: 'Penalty rubric item (negative points, floating point)',
               always_show_to_students: false,
             },
             {
               points: 0,
+              indent: 0,
               description: 'Rubric item with no value (zero points)',
               always_show_to_students: true,
             },
@@ -942,9 +952,15 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings]');
           rubric_items = [
-            { points: 0, description: 'First rubric item', always_show_to_students: true },
+            {
+              points: 0,
+              indent: 0,
+              description: 'First rubric item',
+              always_show_to_students: true,
+            },
             {
               points: -3,
+              indent: 0,
               description: 'Second rubric item (partial, with `markdown`)',
               explanation: 'Explanation with **markdown**',
               grader_note: 'Instructions with *markdown*',
@@ -955,6 +971,7 @@ describe('Manual Grading', function () {
             },
             {
               points: -4,
+              indent: 0,
               description: 'Third rubric item (partial, with moustache: {{params.value1}})',
               explanation: 'Explanation with moustache: {{params.value2}}',
               grader_note:
@@ -967,12 +984,14 @@ describe('Manual Grading', function () {
             },
             {
               points: 1.6,
+              indent: 0,
               description:
                 'Positive rubric item in negative grading (positive points, floating point)',
               always_show_to_students: false,
             },
             {
               points: 6,
+              indent: 0,
               description: 'Rubric item with positive reaching maximum',
               always_show_to_students: true,
             },

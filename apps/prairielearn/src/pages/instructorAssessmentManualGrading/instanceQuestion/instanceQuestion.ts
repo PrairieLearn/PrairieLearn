@@ -183,6 +183,7 @@ const PostBodySchema = z.union([
         z.object({
           id: z.string().optional(),
           order: z.coerce.number(),
+          indent: z.coerce.number(),
           points: z.coerce.number(),
           description: z.string(),
           explanation: z.string().optional(),
