@@ -5,11 +5,13 @@ from pathlib import Path
 
 from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.plugins import get_plugin_logger
+from mkdocs.structure.files import Files
 from mkdocs.structure.pages import Page
 from mkdocs.utils import write_file
 
 
 def on_config(config: MkDocsConfig) -> MkDocsConfig:
+    """Hooks into the config to override the d2_img renderer."""
     plugin = next(
         x["validator"]
         for x in config["mdx_configs"]["pymdownx.superfences"]["custom_fences"]
@@ -20,7 +22,7 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     original_render = plugin.renderer
     plugin.keys = set()
 
-    def new_render(source, opts, alt):  # noqa: ANN001, ANN202
+    def new_render(source, opts, alt):  # noqa: ANN001, ANN202 # pyright:ignore[reportUnknownParameterType,reportMissingParameterType]
         """
         Hook into the renderer to provide a link to the rendered SVG.
         This only hooks into the renderer for superfences, not for images.
@@ -48,7 +50,8 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     return config
 
 
-def on_page_content(html: str, page: Page, config, files) -> str:  # noqa: ANN001, ARG001
+def on_page_content(html: str, page: Page, config: MkDocsConfig, files: Files) -> str:  # noqa: ARG001
+    """Hook into the page content, replacing the svg with a clickable link."""
     relative_route = page.url.count("/") * "../" + "assets/svg/"
     # Replace data-svg-file with a href to the svg file.
     # This has to be done after we check for missing file references
@@ -60,6 +63,7 @@ def on_page_content(html: str, page: Page, config, files) -> str:  # noqa: ANN00
 
 
 def on_post_build(config: MkDocsConfig) -> None:
+    """Read the cache and write the svg files to the site directory."""
     with dbm.open(
         Path(config["plugins"]["d2"].config.cache_dir, "db").as_posix(), "c"
     ) as cache:

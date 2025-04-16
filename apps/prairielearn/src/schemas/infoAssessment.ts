@@ -394,6 +394,11 @@ export const AssessmentJsonSchema = z
       .string()
       .describe('Module that this assessment belongs to, as defined in infoCourse.json.')
       .optional(),
+    shareSourcePublicly: z
+      .boolean()
+      .describe("If true, the assessment's source code is shared publicly.")
+      .optional()
+      .default(false),
   })
   .strict()
   .describe('Configuration data for an assessment.');

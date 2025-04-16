@@ -80,6 +80,9 @@ def traverse_and_replace(
     The count_stack tracks how many children each unclosed tag (contained in the tail_stack) has.
     The top entry in count_stack is decremented every time something is moved onto result,
     and when an entry hits zero, the corresponding tag from tail_stack is moved onto result as well.
+
+    Raises:
+        TypeError: If the HTML contains an invalid tag.
     """
     # Initialize result and work data structures
     result: deque[str] = deque()

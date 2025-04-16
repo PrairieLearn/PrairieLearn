@@ -21,6 +21,7 @@ import * as syncTopics from './fromDisk/topics.js';
 import {
   checkInvalidDraftQuestionSharing,
   checkInvalidPublicSharingRemovals,
+  checkInvalidSharedAssessments,
   checkInvalidSharingSetAdditions,
   checkInvalidSharingSetDeletions,
   checkInvalidSharingSetRemovals,
@@ -72,12 +73,15 @@ export async function checkSharingConfigurationValid(
   );
   const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
+  const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
+
   const sharingConfigurationValid =
     !existInvalidRenames &&
     !existInvalidPublicSharingRemovals &&
     !existInvalidSharingSetDeletions &&
     !existInvalidSharingSetAdditions &&
     !existInvalidSharingSetRemovals &&
+    !existInvalidSharedAssessment &&
     !existInvalidDraftQuestionSharing;
   return sharingConfigurationValid;
 }
