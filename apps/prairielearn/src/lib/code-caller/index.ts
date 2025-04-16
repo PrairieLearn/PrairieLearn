@@ -162,10 +162,7 @@ export async function withCodeCaller<T>(
   const jobUuid = uuidv4();
   load.startJob('python_callback_waiting', jobUuid);
 
-  const codeCaller = await instrumented(
-    'codeCaller.getHealthyCodeCaller()',
-    async () => await getHealthyCodeCaller(),
-  );
+  const codeCaller = await pool?.acquire();
 
   try {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);

@@ -1,20 +1,30 @@
 import { type ChildProcess } from 'child_process';
 import * as child_process from 'node:child_process';
-import { createServer } from 'node:net';
+import { type SpawnOptions } from 'node:child_process';
+import { type Socket, createServer } from 'node:net';
 import path from 'node:path';
+import { type Readable, type Writable } from 'stream';
 
+import type { Span } from '@opentelemetry/api';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
-import { logger } from '@prairielearn/logger';
 // TODO: is this safe to use in the subprocess version?
 import { trace } from '@prairielearn/opentelemetry';
+import { run } from '@prairielearn/run';
 
 import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 
-import { FunctionMissingError, developmentSpanEvent } from './code-caller-shared.js';
+import {
+  type CallType,
+  type CodeCaller,
+  type CodeCallerResult,
+  FunctionMissingError,
+  type PrepareForCourseOptions,
+  developmentSpanEvent,
+} from './code-caller-shared.js';
 
 interface CodeCallerNativeChildProcess extends ChildProcess {
   stdio: [Writable, Readable, Readable, Readable, Readable];
@@ -64,6 +74,24 @@ export interface ErrorData {
 
 export type CodeCallerError = Error & { data?: ErrorData };
 
+async function writeDataToSocket(socket: Socket | null, data: string): Promise<void> {
+  if (!socket) throw new Error('Socket is null');
+
+  return new Promise((resolve, reject) => {
+    const message = Buffer.from(data, 'utf8');
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(message.length, 0);
+    socket.write(length);
+    socket.write(message, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
 /**
   Internal state machine
   ======================
@@ -93,6 +121,7 @@ export type CodeCallerError = Error & { data?: ErrorData };
 export class CodeCallerNative implements CodeCaller {
   state: CodeCallerState;
   uuid: string;
+  socket: Socket | null;
   child: CodeCallerNativeChildProcess | null;
   callback: ((err: CodeCallerError | null, data?: any, output?: string) => void) | null;
   timeoutID: NodeJS.Timeout | null;
@@ -102,6 +131,10 @@ export class CodeCallerNative implements CodeCaller {
   outputBoth: string[];
   outputData: string[];
   outputRestart: string;
+  socketDataBuffers: Buffer[];
+  socketDataLength: number;
+  span: Span | undefined;
+  last: number;
   lastCallData: any;
   coursePath: string | null;
   forbiddenModules: string[];
@@ -130,45 +163,18 @@ export class CodeCallerNative implements CodeCaller {
     return codeCaller;
   }
 
-/**
- * @param {import('net').Socket | null} socket
- * @param {string} data
- * @returns {Promise<void>}
- */
-async function writeDataToSocket(socket, data) {
-  if (!socket) throw new Error('Socket is null');
-
-  return new Promise((resolve, reject) => {
-    const message = Buffer.from(data, 'utf8');
-    const length = Buffer.alloc(4);
-    length.writeUInt32BE(message.length, 0);
-    socket.write(length);
-    socket.write(message, (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
-}
-
-/**
- * @implements {CodeCaller}
- */
-export class CodeCallerNative {
   /**
    * Creates a new {@link CodeCallerNative} with the specified options.
    */
   private constructor(options: CodeCallerNativeOptionsInternal) {
     this.state = CREATED;
     this.uuid = uuidv4();
+    this.last = 0;
 
     this.debug('enter constructor()');
 
-    this.child = null;
-    /** @type {import('net').Socket | null} */
     this.socket = null;
+    this.child = null;
     this.callback = null;
     this.timeoutID = null;
 
@@ -299,6 +305,9 @@ export class CodeCallerNative {
       fcn: fcn ?? undefined,
     });
 
+    this.child?.stdin?.write(callDataString);
+    this.child?.stdin?.write('\n');
+
     this.state = IN_CALL;
     this._checkState();
     this.debug('exit call()');
@@ -414,18 +423,20 @@ export class CodeCallerNative {
       server.listen(0, '127.0.0.1').once('listening', resolve).once('error', reject);
     });
 
-    const address = /** @type {import('net').AddressInfo} */ (server.address());
+    const address = server.address();
+    if (!address || typeof address === 'string') {
+      throw new Error('Failed to get address of server');
+    }
     const port = address.port;
-
-    const cmd = 'python3';
+    const cmd = this.options.pythonExecutable;
     const pythonZygote = path.join(APP_ROOT_PATH, 'python', 'zygote.py');
     const args = ['-B', pythonZygote];
     const env = structuredClone(process.env);
+    env.PORT = String(port);
     // PYTHONIOENCODING might not be needed once we switch to Python 3.7
     // https://www.python.org/dev/peps/pep-0538/
     // https://www.python.org/dev/peps/pep-0540/
     env.PYTHONIOENCODING = 'utf-8';
-    env.PORT = String(port);
     if (this.options.dropPrivileges) {
       // This instructs the Python process to switch to a deprivileged user before
       // executing any user code.
@@ -548,7 +559,7 @@ export class CodeCallerNative {
     this.debug('exit _handleSocketData()');
   }
 
-  _handleChildExit(code, signal) {
+  _handleChildExit(code: number, signal: number) {
     this.debug('enter _handleChildExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
     if (this.state === WAITING) {
@@ -659,11 +670,8 @@ export class CodeCallerNative {
     this.debug('enter _callIsFinished()');
     if (!this._checkState([IN_CALL])) return;
     this._clearTimeout();
-    let data: {
-      val: any;
-      present: boolean;
-    } | null = null;
-    let err: Error | null = null;
+    let data: any = null;
+    let err: CodeCallerError | null = null;
     try {
       if (this.outputData.length > 0) {
         data = JSON.parse(this.outputData.join(''));
@@ -680,17 +688,15 @@ export class CodeCallerNative {
       this._callCallback(err);
     } else {
       this.state = WAITING;
-      if (data?.present) {
+      if (data.present) {
         this._callCallback(null, data.val, this.outputBoth.join(''));
       } else {
         this._callCallback(new FunctionMissingError('Function not found in module'));
       }
     }
-
     // This is potentially quite a large object. Drop our reference to it to
     // allow this memory to be quickly garbage collected.
     this.lastCallData = null;
-
     this.debug('exit _callIsFinished()');
   }
 

@@ -1,4 +1,4 @@
-import type * as opentelemetry from '@prairielearn/opentelemetry';
+import type { Attributes, Span } from '@opentelemetry/api';
 
 export interface CodeCallerResult {
   result: any;
@@ -41,9 +41,9 @@ export class FunctionMissingError extends Error {
 }
 
 export function developmentSpanEvent(
-  span: opentelemetry.Span | null | undefined,
+  span: Span | null | undefined,
   name: string,
-  attributes?: opentelemetry.Attributes,
+  attributes?: Attributes,
 ) {
   if (process.env.NODE_ENV === 'production' || !span) return;
 
