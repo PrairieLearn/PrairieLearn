@@ -33,7 +33,6 @@ export async function init() {
       'check_assessment_access_rule.sql',
       'check_assessment_access.sql',
       'assessment_instances_lock.sql',
-      'assessment_instances_insert.sql',
       'assessments_format.sql',
       'assessments_format_for_question.sql',
       'tags_for_question.sql',
