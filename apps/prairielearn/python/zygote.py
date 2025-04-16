@@ -282,6 +282,7 @@ def worker_loop(s: socket.socket) -> None:
 
             write_str_to_socket(result.stdout)
             continue
+
         # Here, we re-seed the PRNGs if not already seeded in this worker_loop() call.
         # We only want to seed the PRNGs once per worker_loop() call, so that if a
         # question happens to contain multiple occurrences of the same element, the
