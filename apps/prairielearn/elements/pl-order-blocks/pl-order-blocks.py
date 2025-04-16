@@ -843,7 +843,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     elif grading_method in LCS_GRADABLE_TYPES:
         submission = [ans["tag"] for ans in student_answer]
-
         depends_graph = {}
         group_belonging = {}
 
