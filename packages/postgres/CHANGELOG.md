@@ -1,5 +1,66 @@
 # @prairielearn/postgres
 
+## 2.1.10
+
+### Patch Changes
+
+- c24120e: Minor changes to reduce dependency on lodash
+- 03f1008: Upgrade all JavaScript dependencies
+
+## 2.1.9
+
+### Patch Changes
+
+- 984dc62: Upgrade all JavaScript dependencies
+
+## 2.1.8
+
+### Patch Changes
+
+- 49bb3fa: Upgrade all JavaScript dependencies
+
+## 2.1.7
+
+### Patch Changes
+
+- 4a8b376: Upgrade all JavaScript dependencies
+
+## 2.1.6
+
+### Patch Changes
+
+- 9d7d790: Upgrade all JavaScript dependencies
+
+## 2.1.5
+
+### Patch Changes
+
+- 315d931: Upgrade all JavaScript dependencies
+
+## 2.1.4
+
+### Patch Changes
+
+- 4b79275: Upgrade all JavaScript dependencies
+
+## 2.1.3
+
+### Patch Changes
+
+- 852c2e2: Upgrade all JavaScript dependencies
+
+## 2.1.2
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+
+## 2.1.1
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+
 ## 2.1.0
 
 ### Minor Changes

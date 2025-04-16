@@ -4,15 +4,16 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { HtmlSafeString, html } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { User } from '../../lib/db-types.js';
+import { type User } from '../../lib/db-types.js';
+import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { parseUidsString } from '../../lib/user.js';
 import {
-  CourseInstanceAuthz,
+  type CourseInstanceAuthz,
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
 import {
@@ -28,8 +29,8 @@ import {
 } from '../../models/course-permissions.js';
 
 import {
-  InstructorCourseAdminStaff,
   CourseUsersRowSchema,
+  InstructorCourseAdminStaff,
 } from './instructorCourseAdminStaff.html.js';
 
 const debug = debugfn('prairielearn:instructorCourseAdminStaff');
@@ -65,12 +66,21 @@ router.get(
       CourseUsersRowSchema,
     );
 
+    let githubAccessLink: string | null = null;
+    if (!res.locals.course.example_course) {
+      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
+      if (githubPrefix) {
+        githubAccessLink = `${githubPrefix}/settings/access`;
+      }
+    }
+
     res.send(
       InstructorCourseAdminStaff({
         resLocals: res.locals,
         courseInstances,
         courseUsers,
         uidsLimit: MAX_UIDS,
+        githubAccessLink,
       }),
     );
   }),
@@ -89,9 +99,8 @@ router.post(
       // Verify there is at least one UID
       if (uids.length === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');
 
-      // Verify the requested course role is valid - we choose to disallow Owner
-      // because we want to discourage the assignment of this role to many users
-      if (!['None', 'Previewer', 'Viewer', 'Editor'].includes(req.body.course_role)) {
+      // Verify the requested course role is valid
+      if (!['None', 'Previewer', 'Viewer', 'Editor', 'Owner'].includes(req.body.course_role)) {
         throw new error.HttpStatusError(
           400,
           `Invalid requested course role: ${req.body.course_role}`,
@@ -113,7 +122,7 @@ router.post(
           idsEqual(ci.id, req.body.course_instance_id),
         );
         if (!course_instance) {
-          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       }
 
@@ -342,10 +351,10 @@ ${given_cp_and_cip.join(',\n')}
 
       if (req.body.course_instance_id) {
         if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
-          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       } else {
-        throw new error.HttpStatusError(400, `Undefined course instance id`);
+        throw new error.HttpStatusError(400, 'Undefined course instance id');
       }
 
       if (req.body.course_instance_role) {
@@ -383,10 +392,10 @@ ${given_cp_and_cip.join(',\n')}
 
       if (req.body.course_instance_id) {
         if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
-          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       } else {
-        throw new error.HttpStatusError(400, `Undefined course instance id`);
+        throw new error.HttpStatusError(400, 'Undefined course instance id');
       }
 
       await insertCourseInstancePermissions({

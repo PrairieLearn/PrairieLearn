@@ -7,6 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
 
@@ -70,12 +71,9 @@ describe('assessment instance group synchronization test', function () {
   });
   describe('3. user and group initialization', function () {
     it('create 3 users', async () => {
-      const result = await sqldb.queryAsync(sql.generate_and_enroll_3_users, []);
-
-      assert.lengthOf(result.rows, 3);
-      locals.studentUsers = result.rows.slice(0, 3);
-      locals.groupCreator = locals.studentUsers[0];
+      locals.studentUsers = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
       assert.lengthOf(locals.studentUsers, 3);
+      locals.groupCreator = locals.studentUsers[0];
     });
     it('put 3 users in a group', async () => {
       const res = await fetch(locals.instructorAssessmentsUrlGroupTab, {

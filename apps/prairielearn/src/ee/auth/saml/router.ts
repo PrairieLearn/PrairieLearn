@@ -4,7 +4,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import passport from 'passport';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 
 import * as authnLib from '../../../lib/authn.js';
 import { getInstitutionSamlProvider } from '../../lib/institution.js';
@@ -43,8 +43,6 @@ function authenticate(req, res): Promise<any> {
       (err, user) => {
         if (err) {
           reject(err);
-        } else if (!user) {
-          reject(new Error('Login failed'));
         } else {
           resolve(user);
         }
@@ -58,11 +56,18 @@ router.post(
   asyncHandler(async (req, res) => {
     const user = await authenticate(req, res);
 
+    if (!user) {
+      // We shouldn't hit this case very often in practice, but if we do, we have
+      // no control over it, so we'll report the error as a 200 to avoid it
+      // contributing to error metrics.
+      throw new HttpStatusError(200, 'Login failed. Please try again.');
+    }
+
     // Fetch this institution's attribute mappings.
     const institutionId = req.params.institution_id;
     const institutionSamlProvider = await getInstitutionSamlProvider(institutionId);
     if (!institutionSamlProvider) {
-      throw new error.HttpStatusError(404, 'Institution does not support SAML authentication');
+      throw new HttpStatusError(404, 'Institution does not support SAML authentication');
     }
 
     const uidAttribute = institutionSamlProvider.uid_attribute;
@@ -118,7 +123,6 @@ router.post(
     };
 
     await authnLib.loadUser(req, res, authnParams, {
-      pl_authn_cookie: true,
       redirect: true,
     });
   }),
@@ -129,10 +133,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
     if (!samlProvider) {
-      throw new error.HttpStatusError(404, 'Institution does not support SAML authentication');
+      throw new HttpStatusError(404, 'Institution does not support SAML authentication');
     }
 
-    const metadata = await util.promisify(strategy.generateServiceProviderMetadata)(
+    const metadata = await util.promisify(strategy.generateServiceProviderMetadata.bind(strategy))(
       req,
       samlProvider.public_key,
       samlProvider.public_key,

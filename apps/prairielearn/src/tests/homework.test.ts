@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
-import request from 'request';
+import fetch from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -45,167 +45,134 @@ const assessmentMaxPoints = 108;
 // each outer entry is a whole exam session
 // each inner entry is a list of question submissions
 //     score: value to submit, will be the percentage score for the submission
-//     action: 'save', 'grade', 'store', 'save-stored-fail', 'grade-stored-fail'
 //     sub_points: additional points awarded for this submission (NOT total points for the question)
 //     open: true or false
 const partialCreditTests = [
   [
     // answer every question correctly
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 3 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 4 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 6 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 3 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 2 },
+    { qid: 'partialCredit3', score: 100, sub_points: 3 },
+    { qid: 'partialCredit1', score: 100, sub_points: 2 },
+    { qid: 'partialCredit2', score: 100, sub_points: 4 },
+    { qid: 'partialCredit3', score: 100, sub_points: 6 },
+    { qid: 'partialCredit1', score: 100, sub_points: 3 },
+    { qid: 'partialCredit2', score: 100, sub_points: 1 },
+    { qid: 'partialCredit3', score: 100, sub_points: 2 },
+    { qid: 'partialCredit1', score: 100, sub_points: 0 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
+    { qid: 'partialCredit3', score: 100, sub_points: 0 },
   ],
   [
     // mix 100% and 0% submissions
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 3 },
-    { qid: 'partialCredit1', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 3 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 3 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 5 },
-    { qid: 'partialCredit1', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 2 },
+    { qid: 'partialCredit3', score: 100, sub_points: 3 },
+    { qid: 'partialCredit1', score: 0, sub_points: 0 },
+    { qid: 'partialCredit2', score: 0, sub_points: 0 },
+    { qid: 'partialCredit3', score: 0, sub_points: 0 },
+    { qid: 'partialCredit1', score: 0, sub_points: 0 },
+    { qid: 'partialCredit2', score: 0, sub_points: 0 },
+    { qid: 'partialCredit3', score: 0, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 2 },
+    { qid: 'partialCredit3', score: 100, sub_points: 3 },
+    { qid: 'partialCredit1', score: 100, sub_points: 2 },
+    { qid: 'partialCredit2', score: 100, sub_points: 3 },
+    { qid: 'partialCredit3', score: 100, sub_points: 5 },
+    { qid: 'partialCredit1', score: 0, sub_points: 0 },
+    { qid: 'partialCredit2', score: 0, sub_points: 0 },
+    { qid: 'partialCredit3', score: 0, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
+    { qid: 'partialCredit3', score: 100, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
+    { qid: 'partialCredit3', score: 100, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 0 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
+    { qid: 'partialCredit3', score: 100, sub_points: 0 },
   ],
   [
     // test partial credit on question without retries
-    { qid: 'partialCredit1', action: 'grade', score: 15, sub_points: 0.15 },
-    { qid: 'partialCredit1', action: 'grade', score: 11, sub_points: 0 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 34,
-      sub_points: 0.34 - 0.15,
-    },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 99,
-      sub_points: 0.99 - 0.34,
-    },
-    { qid: 'partialCredit1', action: 'grade', score: 87, sub_points: 0 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 1 - 0.99,
-    },
-    { qid: 'partialCredit1', action: 'grade', score: 85, sub_points: 0.85 },
-    { qid: 'partialCredit1', action: 'grade', score: 85, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 84, sub_points: 0 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 1 - 0.85,
-    },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 2 }, // doubled, previous was new variant
-    { qid: 'partialCredit1', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit1', action: 'grade', score: 53, sub_points: 0.53 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 1 - 0.53,
-    },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 0 },
+    { qid: 'partialCredit1', score: 15, sub_points: 0.15 },
+    { qid: 'partialCredit1', score: 11, sub_points: 0 },
+    { qid: 'partialCredit1', score: 34, sub_points: 0.34 - 0.15 },
+    { qid: 'partialCredit1', score: 99, sub_points: 0.99 - 0.34 },
+    { qid: 'partialCredit1', score: 87, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 - 0.99 },
+    { qid: 'partialCredit1', score: 85, sub_points: 0.85 },
+    { qid: 'partialCredit1', score: 85, sub_points: 0 },
+    { qid: 'partialCredit1', score: 84, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 - 0.85 },
+    { qid: 'partialCredit1', score: 100, sub_points: 2 }, // doubled, previous was new variant
+    { qid: 'partialCredit1', score: 0, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit1', score: 53, sub_points: 0.53 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 - 0.53 },
+    { qid: 'partialCredit1', score: 100, sub_points: 0 },
   ],
   /* FIXME: temporarily disabled, re-enable after current_value update change
     [
         // test partial credit on question with retries
-        {qid: 'partialCredit2', action: 'grade',             score: 71,  sub_points: 2*0.71},
-        {qid: 'partialCredit2', action: 'grade',             score: 56,  sub_points: 0},
-        {qid: 'partialCredit2', action: 'grade',             score: 78,  sub_points: 2*(0.78-0.71)},
-        {qid: 'partialCredit2', action: 'grade',             score: 94,  sub_points: 2*(0.94-0.78)},
-        {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 2*(1-0.94)},
-        {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 2},  // not doubled, previous was old variant
-        {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 3},  // doubled, previous was new variant
-        {qid: 'partialCredit2', action: 'grade',             score: 82,  sub_points: 0},
-        {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 0},
+        {qid: 'partialCredit2', score: 71, sub_points: 2*0.71},
+        {qid: 'partialCredit2', score: 56, sub_points: 0},
+        {qid: 'partialCredit2', score: 78, sub_points: 2*(0.78-0.71)},
+        {qid: 'partialCredit2', score: 94, sub_points: 2*(0.94-0.78)},
+        {qid: 'partialCredit2', score: 100, sub_points: 2*(1-0.94)},
+        {qid: 'partialCredit2', score: 100, sub_points: 2}, // not doubled, previous was old variant
+        {qid: 'partialCredit2', score: 100, sub_points: 3}, // doubled, previous was new variant
+        {qid: 'partialCredit2', score: 82, sub_points: 0},
+        {qid: 'partialCredit2', score: 100, sub_points: 0},
     ],
     */
   [
     // FIXME: temporarily enabled, remove after current_value update change
 
     // test partial credit on question with retries
-    { qid: 'partialCredit2', action: 'grade', score: 71, sub_points: 2 * 0.71 },
-    { qid: 'partialCredit2', action: 'grade', score: 56, sub_points: 0 },
+    { qid: 'partialCredit2', score: 71, sub_points: 2 * 0.71 },
+    { qid: 'partialCredit2', score: 56, sub_points: 0 },
     {
       qid: 'partialCredit2',
-      action: 'grade',
       score: 78,
       sub_points: 2 * (0.78 - 0.71),
     },
     {
       qid: 'partialCredit2',
-      action: 'grade',
       score: 94,
       sub_points: 2 * (0.94 - 0.78),
     },
     {
       qid: 'partialCredit2',
-      action: 'grade',
       score: 100,
       sub_points: 2 * (1 - 0.94),
     },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 4 }, // doubled, although previous was old variant
-    { qid: 'partialCredit2', action: 'grade', score: 82, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
+    { qid: 'partialCredit2', score: 100, sub_points: 4 }, // doubled, although previous was old variant
+    { qid: 'partialCredit2', score: 82, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
   ],
   [
     // test partial credit on v2 questions
     {
       qid: 'partialCredit4_v2',
-      action: 'grade',
       score: 34,
       submission_score: 0,
       sub_points: 0,
     },
     {
       qid: 'partialCredit4_v2',
-      action: 'grade',
       score: 68,
       submission_score: 100,
       sub_points: 4,
     },
     {
       qid: 'partialCredit5_v2_partial',
-      action: 'grade',
       score: 27,
       sub_points: 5 * 0.27,
     },
     {
       qid: 'partialCredit5_v2_partial',
-      action: 'grade',
       score: 56,
       sub_points: 5 * (0.56 - 0.27),
     },
@@ -218,7 +185,7 @@ describe('Homework assessment', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  let res, page, elemList;
+  let page, elemList;
 
   const startAssessment = function () {
     describe('the locals object', function () {
@@ -259,18 +226,10 @@ describe('Homework assessment', function () {
     });
 
     describe('GET ' + locals.assessmentsUrl, function () {
-      it('should load successfully', function (callback) {
-        request(locals.assessmentsUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
+      it('should load successfully', async () => {
+        const res = await fetch(locals.assessmentsUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should parse', function () {
         locals.$ = cheerio.load(page);
@@ -289,24 +248,16 @@ describe('Homework assessment', function () {
     });
 
     describe('GET to assessment URL', function () {
-      it('should load successfully', function (callback) {
+      it('should load successfully', async () => {
         locals.preStartTime = Date.now();
-        request(locals.assessmentUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          locals.postStartTime = Date.now();
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
-      });
-      it('should redirect to the correct path', function () {
-        locals.assessmentInstanceUrl = locals.siteUrl + res.req.path;
-        assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
+        const res = await fetch(locals.assessmentUrl);
+        locals.postStartTime = Date.now();
+        assert.equal(res.status, 200);
+        page = await res.text();
+
+        // Ensure we redirected to the correct path.
+        locals.assessmentInstanceUrl = res.url;
+        assert.equal(res.url, locals.siteUrl + '/pl/course_instance/1/assessment_instance/1');
       });
       it('should create one assessment_instance', async () => {
         const result = await sqldb.queryAsync(sql.select_assessment_instances, []);
@@ -336,18 +287,10 @@ describe('Homework assessment', function () {
     });
 
     describe('GET to assessment_instance URL', function () {
-      it('should load successfully', function (callback) {
-        request(locals.assessmentInstanceUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
+      it('should load successfully', async () => {
+        const res = await fetch(locals.assessmentInstanceUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should parse', function () {
         locals.$ = cheerio.load(page);
@@ -722,7 +665,7 @@ describe('Homework assessment', function () {
     helperQuestion.getInstanceQuestion(locals);
     describe('save data for later submission', function () {
       it('should succeed', function () {
-        locals.savedVariant = _.clone(locals.variant);
+        locals.savedVariant = structuredClone(locals.variant);
         locals.questionSavedCsrfToken = locals.__csrf_token;
       });
     });
@@ -772,11 +715,11 @@ describe('Homework assessment', function () {
     });
     describe('restore saved data for submission', function () {
       it('should succeed', function () {
-        locals.variant = _.clone(locals.savedVariant);
+        locals.variant = structuredClone(locals.savedVariant);
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 403);
   });
 
   describe('submit correct answer to question addNumbers', function () {
@@ -1157,18 +1100,11 @@ describe('Homework assessment', function () {
         elemList = locals.$('a[href*="clientFilesCourse"]');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the link to clientFilesCourse/data.txt', function (callback) {
+      it('should download something with the link to clientFilesCourse/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of clientFilesCourse/data.txt', function () {
         assert.equal(page, 'This data is specific to the course.');
@@ -1179,18 +1115,11 @@ describe('Homework assessment', function () {
         elemList = locals.$('a[href*="clientFilesQuestion"][download]');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the force-download link to clientFilesQuestion/data.txt', function (callback) {
+      it('should download something with the force-download link to clientFilesQuestion/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is specific to the question.');
@@ -1199,18 +1128,11 @@ describe('Homework assessment', function () {
         elemList = locals.$('a[href*="clientFilesQuestion"][target="_blank"]:not([download])');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the new tab link to clientFilesQuestion/data.txt', function (callback) {
+      it('should download something with the new tab link to clientFilesQuestion/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is specific to the question.');
@@ -1221,18 +1143,11 @@ describe('Homework assessment', function () {
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="data.txt"]');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the link to generatedFilesQuestion/data.txt', function (callback) {
+      it('should download something with the link to generatedFilesQuestion/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of generatedFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is generated by code.');
@@ -1243,22 +1158,14 @@ describe('Homework assessment', function () {
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="figure.png"]');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the link to generatedFilesQuestion/figure.png', function (callback) {
+      it('should download something with the link to generatedFilesQuestion/figure.png', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request({ url: fileUrl, encoding: null }, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.arrayBuffer();
       });
       it('should have downloaded a file with the contents of generatedFilesQuestion/figure.png', function () {
-        // assert.equal(page,'This data is generated by code.')
-        assert.equal(page.slice(0, 8).toString('hex'), '89504e470d0a1a0a');
+        assert.equal(Buffer.from(page.slice(0, 8)).toString('hex'), '89504e470d0a1a0a');
       });
     });
   });
@@ -1326,19 +1233,11 @@ describe('Homework assessment', function () {
   });
 
   describe('student gradebook page', function () {
-    it('should load successfully', function (callback) {
+    it('should load successfully', async () => {
       const gradebookUrl = locals.courseInstanceBaseUrl + '/gradebook';
-      request(gradebookUrl, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        res = response;
-        page = body;
-        callback(null);
-      });
+      const res = await fetch(gradebookUrl);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -1365,17 +1264,13 @@ describe('Homework assessment', function () {
       startAssessment();
 
       partialCreditTest.forEach(function (questionTest, iQuestionTest) {
-        describe(`${questionTest.action} answer number #${iQuestionTest + 1} for question ${
+        describe(`grade answer number #${iQuestionTest + 1} for question ${
           questionTest.qid
         } with score ${questionTest.score}`, function () {
           describe('setting up the submission data', function () {
             it('should succeed', function () {
-              if (questionTest.action === 'check-closed') {
-                locals.shouldHaveButtons = [];
-              } else {
-                locals.shouldHaveButtons = ['grade', 'save'];
-              }
-              locals.postAction = questionTest.action;
+              locals.shouldHaveButtons = ['grade', 'save'];
+              locals.postAction = 'grade';
               locals.question = questions[questionTest.qid];
               locals.question.points += questionTest.sub_points;
               locals.totalPoints += questionTest.sub_points;
@@ -1384,9 +1279,8 @@ describe('Homework assessment', function () {
                   ? questionTest.score
                   : questionTest.submission_score;
               locals.expectedResult = {
-                submission_score: questionTest.action === 'save' ? null : submission_score / 100,
-                submission_correct:
-                  questionTest.action === 'save' ? null : submission_score === 100,
+                submission_score: submission_score / 100,
+                submission_correct: submission_score === 100,
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
@@ -1402,42 +1296,10 @@ describe('Homework assessment', function () {
               };
             });
           });
-          if (questionTest.action === 'store') {
-            helperQuestion.getInstanceQuestion(locals);
-            describe('saving submission data', function () {
-              it('should succeed', function () {
-                locals.question.savedVariant = _.clone(locals.variant);
-                locals.question.questionSavedCsrfToken = locals.__csrf_token;
-              });
-            });
-          } else if (questionTest.action === 'save-stored-fail') {
-            describe('restoring submission data', function () {
-              it('should succeed', function () {
-                locals.postAction = 'save';
-                locals.variant = _.clone(locals.question.savedVariant);
-                locals.__csrf_token = locals.question.questionSavedCsrfToken;
-              });
-            });
-            helperQuestion.postInstanceQuestionAndFail(locals);
-          } else if (questionTest.action === 'grade-stored-fail') {
-            describe('restoring submission data', function () {
-              it('should succeed', function () {
-                locals.postAction = 'grade';
-                locals.variant = _.clone(locals.question.savedVariant);
-                locals.__csrf_token = locals.question.questionSavedCsrfToken;
-              });
-            });
-            helperQuestion.postInstanceQuestionAndFail(locals);
-          } else if (questionTest.action === 'check-closed') {
-            helperQuestion.getInstanceQuestion(locals);
-          } else if (questionTest.action === 'save' || questionTest.action === 'grade') {
-            helperQuestion.getInstanceQuestion(locals);
-            helperQuestion.postInstanceQuestion(locals);
-            helperQuestion.checkQuestionScore(locals);
-            helperQuestion.checkAssessmentScore(locals);
-          } else {
-            throw Error('unknown action: ' + questionTest.action);
-          }
+          helperQuestion.getInstanceQuestion(locals);
+          helperQuestion.postInstanceQuestion(locals);
+          helperQuestion.checkQuestionScore(locals);
+          helperQuestion.checkAssessmentScore(locals);
         });
       });
     });

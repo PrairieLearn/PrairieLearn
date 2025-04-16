@@ -1,5 +1,5 @@
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
-import { SQSClient, GetQueueUrlCommand } from '@aws-sdk/client-sqs';
+import { GetQueueUrlCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { z } from 'zod';
 
 import {
@@ -38,7 +38,6 @@ const ConfigSchema = z.object({
   jobsQueueUrl: z.string().nullable().default(null),
   resultsQueueName: z.string().default('grading_results_dev'),
   resultsQueueUrl: z.string().nullable().default(null),
-  defaultTimeout: z.number().default(30),
   timeoutOverhead: z.number().default(300),
   postgresqlHost: z.string().default('localhost'),
   postgresqlDatabase: z.string().default('postgres'),

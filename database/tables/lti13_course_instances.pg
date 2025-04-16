@@ -1,0 +1,23 @@
+columns
+    context_id: text not null
+    context_label: text
+    context_memberships_url: text
+    context_title: text
+    course_instance_id: bigint not null
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    deployment_id: text not null
+    id: bigint not null default nextval('lti13_course_instances_id_seq'::regclass)
+    lineitems_url: text
+    lti13_instance_id: bigint
+
+indexes
+    lti13_course_instances_pkey: PRIMARY KEY (id) USING btree (id)
+    lti13_course_instances_unique_idx: UNIQUE NULLS NOT DISTINCT (lti13_instance_id, deployment_id, context_id) USING btree (lti13_instance_id, deployment_id, context_id) NULLS NOT DISTINCT
+    lti13_course_instances_course_instance_id_idx: USING btree (course_instance_id)
+
+foreign-key constraints
+    lti13_course_instances_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    lti13_course_instances_lti13_instance_id_fkey: FOREIGN KEY (lti13_instance_id) REFERENCES lti13_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    lti13_assessments: FOREIGN KEY (lti13_course_instance_id) REFERENCES lti13_course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

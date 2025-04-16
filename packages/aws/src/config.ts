@@ -1,5 +1,5 @@
 import { memoize } from '@smithy/property-provider';
-import { AwsCredentialIdentityProvider } from '@smithy/types';
+import { type AwsCredentialIdentityProvider } from '@smithy/types';
 
 interface AwsClientConfig {
   region: string;

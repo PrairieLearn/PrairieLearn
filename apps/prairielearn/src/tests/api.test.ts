@@ -53,13 +53,13 @@ describe('API', function () {
       assert.isTrue(res.ok);
       const page$ = cheerio.load(await res.text());
 
-      const button = page$('#generateTokenButton').get(0);
+      const button = page$('[data-testid="generate-token-button"]').get(0);
       assert(button);
 
       // Load the popover content
-      assert.isString(button.attribs['data-content']);
+      assert.isString(button.attribs['data-bs-content']);
 
-      const data$ = cheerio.load(button.attribs['data-content']);
+      const data$ = cheerio.load(button.attribs['data-bs-content']);
 
       // Validate that the CSRF token is present
       const csrfInput = data$('form input[name="__csrf_token"]').get(0);
@@ -153,7 +153,7 @@ describe('API', function () {
       locals.assessment_id = assessment.assessment_id;
     });
 
-    step('GET to API for single assesment succeeds', async function () {
+    step('GET to API for single assessment succeeds', async function () {
       locals.apiAssessmentUrl =
         locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}`;
 
@@ -250,7 +250,7 @@ describe('API', function () {
     });
 
     step('GET to API for gradebook', async function () {
-      locals.apiGradebookUrl = locals.apiCourseInstanceUrl + `/gradebook`;
+      locals.apiGradebookUrl = locals.apiCourseInstanceUrl + '/gradebook';
       const res = await fetch(locals.apiGradebookUrl, {
         headers: {
           'Private-Token': locals.api_token,
@@ -300,7 +300,7 @@ describe('API', function () {
 
     step('GET to API for course instance access rules succeeds', async function () {
       locals.apiCourseInstanceAccessRulesUrl =
-        locals.apiCourseInstanceUrl + `/course_instance_access_rules`;
+        locals.apiCourseInstanceUrl + '/course_instance_access_rules';
       const res = await fetch(locals.apiCourseInstanceAccessRulesUrl, {
         headers: {
           'Private-Token': locals.api_token,
@@ -323,6 +323,16 @@ describe('API', function () {
       const json = (await res.json()) as any;
       assert.exists(json.course_instance_id);
       assert.exists(json.course_title);
+    });
+
+    step('GET to API for course instance info fails in exam mode', async () => {
+      const res = await fetch(locals.apiCourseInstanceUrl, {
+        headers: {
+          'Private-Token': locals.api_token,
+          Cookie: 'pl_test_mode=Exam',
+        },
+      });
+      assert.equal(res.status, 403);
     });
   });
 });

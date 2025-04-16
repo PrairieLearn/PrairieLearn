@@ -1040,6 +1040,9 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         if (new_text !== null) {
           this.label = new_text;
           this.gen_text(this.parse(new_text), options);
+
+          // Fire an event to ensure that the text is updated in the submission data.
+          this.fire('modified');
         }
       });
     }
@@ -1425,25 +1428,18 @@ mechanicsObjects.makeCoordinates = function (options) {
   let obj1 = new mechanicsObjects.Arrow(options);
   group.addWithUpdate(obj1);
 
-  var options2 = _.defaults(
-    {
-      angle: options.angle - 90,
-    },
-    options,
-  );
+  var options2 = { ...options, angle: options.angle - 90 };
 
   let obj2 = new mechanicsObjects.Arrow(options2);
   group.addWithUpdate(obj2);
 
-  var options3 = _.defaults(
-    {
-      radius: 4,
-      originX: 'center',
-      originY: 'center',
-      fill: options.stroke,
-    },
-    options,
-  );
+  var options3 = {
+    ...options,
+    radius: 4,
+    originX: 'center',
+    originY: 'center',
+    fill: options.stroke,
+  };
 
   let obj3 = new fabric.Circle(options3);
   group.addWithUpdate(obj3);
@@ -2517,33 +2513,29 @@ mechanicsObjects.byType['pl-axes'] = class extends PLDrawingBaseElement {
     obj.selectable = false;
 
     // Adding x-axis
-    var options_axis_1 = _.defaults(
-      {
-        left: options.left - options.xneg,
-        top: options.top,
-        width: options.xneg + options.xpos,
-        drawEndArrow: true,
-        arrowheadWidthRatio: 1.5,
-        arrowheadOffsetRatio: 1.5,
-      },
-      options,
-    );
+    var options_axis_1 = {
+      ...options,
+      left: options.left - options.xneg,
+      top: options.top,
+      width: options.xneg + options.xpos,
+      drawEndArrow: true,
+      arrowheadWidthRatio: 1.5,
+      arrowheadOffsetRatio: 1.5,
+    };
     let obj1 = new mechanicsObjects.Arrow(options_axis_1);
     obj.addWithUpdate(obj1);
 
     // Adding y-axis
-    var options_axis_2 = _.defaults(
-      {
-        left: options.left,
-        top: options.top + options.yneg,
-        width: options.yneg + options.ypos,
-        angle: -90,
-        drawEndArrow: true,
-        arrowheadWidthRatio: 1.5,
-        arrowheadOffsetRatio: 1.5,
-      },
-      options,
-    );
+    var options_axis_2 = {
+      ...options,
+      left: options.left,
+      top: options.top + options.yneg,
+      width: options.yneg + options.ypos,
+      angle: -90,
+      drawEndArrow: true,
+      arrowheadWidthRatio: 1.5,
+      arrowheadOffsetRatio: 1.5,
+    };
     let obj2 = new mechanicsObjects.Arrow(options_axis_2);
     obj.addWithUpdate(obj2);
 
@@ -2925,7 +2917,7 @@ mechanicsObjects.byType['pl-arc-vector'] = class extends PLDrawingBaseElement {
   }
 
   static get_button_icon(options) {
-    if (options['clockwise-direction']) {
+    if (options['clockwiseDirection']) {
       return 'pl-arc-vector-CW';
     } else {
       return 'pl-arc-vector-CCW';
@@ -2933,7 +2925,7 @@ mechanicsObjects.byType['pl-arc-vector'] = class extends PLDrawingBaseElement {
   }
 
   static get_button_tooltip(options) {
-    if (options['clockwise-direction']) {
+    if (options['clockwiseDirection']) {
       return 'Add clockwise arc vector';
     } else {
       return 'Add counterclockwise arc vector';
@@ -3261,9 +3253,9 @@ mechanicsObjects.byType['pl-distributed-load'] = class extends PLDrawingBaseElem
       var initObjTop = obj.top;
 
       var modify = function (subObj) {
-        (subObj.left = initSubObjLeft + obj.left - initObjLeft),
-          (subObj.top = initSubObjTop + obj.top - initObjTop),
-          (subObj.range = obj.range);
+        subObj.left = initSubObjLeft + obj.left - initObjLeft;
+        subObj.top = initSubObjTop + obj.top - initObjTop;
+        subObj.range = obj.range;
         subObj.angle = obj.angle;
         subObj.flipped = obj.flipped;
       };
@@ -3275,7 +3267,7 @@ mechanicsObjects.byType['pl-distributed-load'] = class extends PLDrawingBaseElem
 
   static get_button_icon(options) {
     let wdef = { w1: 60, w2: 60, anchor_is_tail: false };
-    let opts = _.defaults(_.clone(options), wdef);
+    let opts = { ...wdef, ...options };
     let w1 = opts['w1'];
     let w2 = opts['w2'];
     let anchor = opts['anchor_is_tail'];
@@ -3950,16 +3942,14 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
     // these parameters, supportingLine 1 does not connect with the start of the spring.
     // Hack solution: to increase the spring region by increasing the value of the "gap"
     // when defining the start and end positions
-    var springOptions = _.defaults(
-      {
-        x1: options.x1 + ((d - 1.06 * gap) / 2) * Math.cos(theta),
-        y1: options.y1 + ((d - 1.06 * gap) / 2) * Math.sin(theta),
-        x2: options.x1 + ((d + 1.06 * gap) / 2) * Math.cos(theta),
-        y2: options.y1 + ((d + 1.06 * gap) / 2) * Math.sin(theta),
-        dx: gap / 10,
-      },
-      options,
-    );
+    var springOptions = {
+      ...options,
+      x1: options.x1 + ((d - 1.06 * gap) / 2) * Math.cos(theta),
+      y1: options.y1 + ((d - 1.06 * gap) / 2) * Math.sin(theta),
+      x2: options.x1 + ((d + 1.06 * gap) / 2) * Math.cos(theta),
+      y2: options.y1 + ((d + 1.06 * gap) / 2) * Math.sin(theta),
+      dx: gap / 10,
+    };
     let resistorSpring = new mechanicsObjects.Spring(springOptions);
     if (!('id' in resistorSpring)) {
       resistorSpring.id = window.PLDrawingApi.generateID();
@@ -4028,15 +4018,13 @@ mechanicsObjects.byType['pl-inductor'] = class extends PLDrawingBaseElement {
     // these parameters, supportingLine 1 does not connect with the start of the coil.
     // Hack solution: to increase the coil region by increasing the value of the "gap"
     // when defining the start and end positions
-    var coilOptions = _.defaults(
-      {
-        x1: options.x1 + ((d - 1.06 * gap) / 2) * Math.cos(theta),
-        y1: options.y1 + ((d - 1.06 * gap) / 2) * Math.sin(theta),
-        x2: options.x1 + ((d + 1.06 * gap) / 2) * Math.cos(theta),
-        y2: options.y1 + ((d + 1.06 * gap) / 2) * Math.sin(theta),
-      },
-      options,
-    );
+    var coilOptions = {
+      ...options,
+      x1: options.x1 + ((d - 1.06 * gap) / 2) * Math.cos(theta),
+      y1: options.y1 + ((d - 1.06 * gap) / 2) * Math.sin(theta),
+      x2: options.x1 + ((d + 1.06 * gap) / 2) * Math.cos(theta),
+      y2: options.y1 + ((d + 1.06 * gap) / 2) * Math.sin(theta),
+    };
     let inductorCoil = new mechanicsObjects.Coil(coilOptions);
     if (!('id' in inductorCoil)) {
       inductorCoil.id = window.PLDrawingApi.generateID();
@@ -4099,28 +4087,20 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
 
     // Add pins (small filled circles) denoting the start and end of switch region
     if (options.drawPin) {
-      var circleOptions = _.defaults(
-        {
-          radius: 2,
-          originX: 'center',
-          originY: 'center',
-          fill: options.stroke,
-          left: xm1,
-          top: ym1,
-        },
-        options,
-      );
+      var circleOptions = {
+        ...options,
+        radius: 2,
+        originX: 'center',
+        originY: 'center',
+        fill: options.stroke,
+        left: xm1,
+        top: ym1,
+      };
       let objPin1 = new fabric.Circle(circleOptions);
       if (!('id' in objPin1)) {
         objPin1.id = window.PLDrawingApi.generateID();
       }
-      var circleOptions2 = _.defaults(
-        {
-          left: xm2,
-          top: ym2,
-        },
-        circleOptions,
-      );
+      var circleOptions2 = { ...options, left: xm2, top: ym2 };
       let objPin2 = new fabric.Circle(circleOptions2);
       if (!('id' in objPin2)) {
         objPin2.id = window.PLDrawingApi.generateID();
@@ -4193,7 +4173,7 @@ mechanicsObjects.attachHandlersNoClone = function (
 };
 
 mechanicsObjects.cloneMechanicsObject = function (type, options) {
-  var subObj = _.clone(options);
+  var subObj = { ...options };
   if (!('id' in subObj)) {
     subObj.id = window.PLDrawingApi.generateID();
   }

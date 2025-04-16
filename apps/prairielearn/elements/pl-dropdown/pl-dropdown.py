@@ -4,11 +4,13 @@ from enum import Enum
 import chevron
 import lxml.html
 import prairielearn as pl
+from typing_extensions import assert_never
 
 WEIGHT_DEFAULT = 1
 BLANK_ANSWER = " "
 BLANK_DEFAULT = True
 SORT_DEFAULT = "random"
+ALLOW_BLANK_DEFAULT = False
 
 
 class SortTypes(Enum):
@@ -18,24 +20,27 @@ class SortTypes(Enum):
     FIXED = "fixed"
 
 
-def get_options(element, data):
+def get_options(
+    element: lxml.html.HtmlElement, data: pl.QuestionData
+) -> list[dict[str, str | bool]]:
     answers_name = pl.get_string_attrib(element, "answers-name")
     submitted_answer = data.get("submitted_answers", {}).get(answers_name, None)
     options = []
     for child in element:
-        if child.tag in ["pl-answer"]:
+        if child.tag == "pl-answer":
             pl.check_attribs(child, required_attribs=[], optional_attribs=["correct"])
             child_html = pl.inner_html(child).strip()
-            options.append(
-                {"value": child_html, "selected": (child_html == submitted_answer)}
-            )
+            options.append({
+                "value": child_html,
+                "selected": (child_html == submitted_answer),
+            })
     return options
 
 
-def get_solution(element, data):
+def get_solution(element: lxml.html.HtmlElement, data: pl.QuestionData) -> str:
     solution = []
     for child in element:
-        if child.tag in ["pl-answer"]:
+        if child.tag == "pl-answer":
             pl.check_attribs(child, required_attribs=[], optional_attribs=["correct"])
             is_correct = pl.get_boolean_attrib(child, "correct", False)
             child_html = pl.inner_html(child).strip()
@@ -43,18 +48,26 @@ def get_solution(element, data):
                 solution.append(child_html)
 
     if len(solution) > 1:
-        raise Exception("Multiple correct answers were set")
+        raise RuntimeError("Multiple correct answers were set")
 
     return solution[0]
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(
         element,
         required_attribs=["answers-name"],
-        optional_attribs=["blank", "weight", "sort"],
+        optional_attribs=["blank", "allow-blank", "weight", "sort"],
     )
+
+    if pl.get_boolean_attrib(
+        element, "allow-blank", ALLOW_BLANK_DEFAULT
+    ) and not pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT):
+        raise ValueError(
+            'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
+        )
+
     answers_name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, answers_name)
 
@@ -62,17 +75,14 @@ def prepare(element_html, data):
     data["correct_answers"][answers_name] = get_solution(element, data)
 
     if data["correct_answers"][answers_name] is None:
-        raise Exception(
-            "Correct answer not defined for answers-name: %s" % answers_name
-        )
+        raise ValueError(f"Correct answer not defined for answers-name: {answers_name}")
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answers_name = pl.get_string_attrib(element, "answers-name")
     dropdown_options = get_options(element, data)
     submitted_answer = data["submitted_answers"].get(answers_name, None)
-    uuid = pl.get_uuid()
 
     sort_type = pl.get_string_attrib(element, "sort", SORT_DEFAULT).upper().strip()
     blank_start = pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT)
@@ -87,9 +97,10 @@ def render(element_html, data):
                 correct = True
             else:
                 correct = False
-        except Exception:
-            raise ValueError("invalid score" + score)
+        except Exception as exc:
+            raise ValueError("invalid score: " + str(score)) from exc
 
+    html_params = {}
     if data["panel"] == "question":
         if sort_type == SortTypes.FIXED.name:
             pass
@@ -101,12 +112,14 @@ def render(element_html, data):
             random.shuffle(dropdown_options)
 
         if blank_start:
-            dropdown_options.insert(0, BLANK_ANSWER)
+            dropdown_options.insert(
+                0,
+                {"value": BLANK_ANSWER, "selected": (submitted_answer == BLANK_ANSWER)},
+            )
 
         html_params = {
             "answers-name": answers_name,
             "question": True,
-            "uuid": uuid,
             "options": dropdown_options,
             "has_submission": correct is not None,
             "editable": data["editable"],
@@ -115,7 +128,6 @@ def render(element_html, data):
 
     elif data["panel"] == "submission":
         html_params = {
-            "uuid": uuid,
             "parse-error": data["format_errors"].get(answers_name, None),
             "submission": True,
             "submitted-answer": submitted_answer,
@@ -128,27 +140,30 @@ def render(element_html, data):
             "answer": True,
             "correct-answer": data["correct_answers"][answers_name],
         }
+    else:
+        assert_never(data["panel"])
 
-    with open("pl-dropdown.mustache", "r", encoding="utf-8") as f:
+    with open("pl-dropdown.mustache", encoding="utf-8") as f:
         html = chevron.render(f, html_params).strip()
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     answers_name = pl.get_string_attrib(element, "answers-name")
     answer = data["submitted_answers"].get(answers_name, None)
 
-    # Blank option should be available, but cause format error when submitted.
-    valid_options = [" "]
+    # Blank option should be available, but cause format error when submitted and blank is not allowed.
+    valid_options = [BLANK_ANSWER]
 
     for child in element:
-        if child.tag in ["pl-answer"]:
+        if child.tag == "pl-answer":
             pl.check_attribs(child, required_attribs=[], optional_attribs=["correct"])
             child_html = pl.inner_html(child).strip()
             valid_options.append(child_html)
 
-    if answer is BLANK_ANSWER:
+    if answer is BLANK_ANSWER and not allow_blank:
         data["format_errors"][answers_name] = "The submitted answer was left blank."
 
     if answer is None:
@@ -158,7 +173,7 @@ def parse(element_html, data):
         data["format_errors"][answers_name] = "Invalid option submitted."
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answers_name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -170,7 +185,7 @@ def grade(element_html, data):
         data["partial_scores"][answers_name] = {"score": 0, "weight": weight}
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answers_name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -197,4 +212,4 @@ def test(element_html, data):
         data["raw_submitted_answers"][answers_name] = "INVALID STRING"
         data["format_errors"][answers_name] = "format error message"
     else:
-        raise Exception("invalid result: %s" % data["test_type"])
+        raise RuntimeError("invalid result: {}".format(data["test_type"]))

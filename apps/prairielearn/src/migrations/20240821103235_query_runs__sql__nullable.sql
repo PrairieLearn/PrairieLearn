@@ -1,0 +1,3 @@
+ALTER TABLE query_runs
+ALTER COLUMN sql
+DROP NOT NULL;

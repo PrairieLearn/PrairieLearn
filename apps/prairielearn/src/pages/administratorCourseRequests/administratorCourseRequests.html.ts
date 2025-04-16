@@ -1,9 +1,9 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
-import { CourseRequestRow } from '../../lib/course-request.js';
-import { Institution } from '../../lib/db-types.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
+import { type CourseRequestRow } from '../../lib/course-request.js';
+import { type Institution } from '../../lib/db-types.js';
 
 export function AdministratorCourseRequests({
   rows,
@@ -16,34 +16,27 @@ export function AdministratorCourseRequests({
   coursesRoot: string;
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", { ...resLocals })}
-      </head>
-      <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'courses',
-        })}
-        <main id="content" class="container-fluid">
-          ${CourseRequestsTable({
-            rows,
-            institutions,
-            coursesRoot,
-            showAll: true,
-            csrfToken: resLocals.__csrf_token,
-            urlPrefix: resLocals.urlPrefix,
-          })}
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Course Requests',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'courses',
+    },
+    options: {
+      fullWidth: true,
+    },
+    content: html`
+      <h1 class="visually-hidden">All Course Requests</h1>
+      ${CourseRequestsTable({
+        rows,
+        institutions,
+        coursesRoot,
+        showAll: true,
+        csrfToken: resLocals.__csrf_token,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+    `,
+  });
 }

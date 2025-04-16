@@ -13,6 +13,7 @@ columns
     grading_method: enum_grading_method
     grading_requested_at: timestamp with time zone
     id: bigint not null default nextval('submissions_id_seq'::regclass)
+    is_ai_graded: boolean not null default false
     manual_rubric_grading_id: bigint
     mode: enum_mode
     override_score: double precision
@@ -39,3 +40,4 @@ foreign-key constraints
 
 referenced by
     grading_jobs: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    submission_grading_context_embeddings: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE

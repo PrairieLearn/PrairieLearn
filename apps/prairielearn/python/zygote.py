@@ -1,3 +1,5 @@
+# pyright: reportUnusedImport=false
+
 # This program is the glue between python-runner JavaScript code and Python code
 #
 # It will enter an infinite loop waiting for input. For each input, it
@@ -25,16 +27,17 @@ import subprocess
 import sys
 import time
 import types
+from collections.abc import Iterable, Sequence
 from importlib.abc import MetaPathFinder
 from inspect import signature
-from typing import Any, Iterable, Sequence
+from typing import Any
 
-import question_phases
-import zygote_utils as zu
+import prairielearn.internal.zygote_utils as zu
+from prairielearn.internal import question_phases
 
 saved_path = copy.copy(sys.path)
 
-drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
+drop_privileges = int(os.environ.get("DROP_PRIVILEGES", "0")) == 1
 
 # If we're configured to drop privileges (that is, if we're running in a
 # Docker container), various tools like matplotlib and fontconfig will be
@@ -44,21 +47,33 @@ drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
 #
 # To work around this, we'll set `$XDG_CONFIG_HOME` and `$XDG_CACHE_HOME` to
 # directories created in `/tmp` that are world-writable. matplotlib and
-# fontconfig should respect these environment variables; other tools should as
-# well. If they don't, special cases can be added below.
+# fontconfig should respect these environment variables; other tools should too.
+#
+# Note that `mktexfmt` does _not_ respect those environment variables, so we'll
+# also set `$TEXMFCONFIG`, `$TEXMFVAR`, and `$TEXMFHOME` to directories created
+# in `/tmp` that are world-writable. This allows LaTeX to run properly.
 if drop_privileges:
     config_home_path = "/tmp/xdg_config"
     cache_home_path = "/tmp/xdg_cache"
+    texmf_config_path = "/tmp/texmf-config"
+    texmf_var_path = "/tmp/texmf-var"
+    texmf_home_path = "/tmp/texmf-home"
 
     oldmask = os.umask(000)
 
     os.makedirs(config_home_path, mode=0o777, exist_ok=True)
     os.makedirs(cache_home_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_config_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_var_path, mode=0o777, exist_ok=True)
+    os.makedirs(texmf_home_path, mode=0o777, exist_ok=True)
 
     os.umask(oldmask)
 
     os.environ["XDG_CONFIG_HOME"] = config_home_path
     os.environ["XDG_CACHE_HOME"] = cache_home_path
+    os.environ["TEXMFCONFIG"] = texmf_config_path
+    os.environ["TEXMFVAR"] = texmf_var_path
+    os.environ["TEXMFHOME"] = texmf_home_path
 
 # Silence matplotlib's FontManager logs; these can cause trouble with our
 # expectation that code execution doesn't log anything to stdout/stderr.
@@ -67,22 +82,20 @@ import logging
 logging.getLogger("matplotlib.font_manager").disabled = True
 
 # Pre-load commonly used modules
-sys.path.insert(0, os.path.abspath("../question-servers/freeformPythonLib"))
 import html
 import math
 import random
 
 import chevron
 import lxml.html
-import matplotlib
-import matplotlib.font_manager
+import matplotlib as mpl
 import nltk
-import numpy
+import numpy as np
 import pint
 import prairielearn
 import sklearn
 
-matplotlib.use("PDF")
+mpl.use("PDF")
 
 # Construct initial unit registry to create initial cache file.
 prairielearn.get_unit_registry()
@@ -107,15 +120,34 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
     def find_spec(
         self,
         fullname: str,
-        path: Sequence[str] | None,
-        target: types.ModuleType | None = None,
-    ):
+        _path: Sequence[str] | None,
+        _target: types.ModuleType | None = None,
+    ) -> None:
         if any(
             fullname == module or fullname.startswith(module + ".")
             for module in self.forbidden_modules
         ):
             raise ImportError(f'module "{fullname}" is not allowed.')
-        return None
+        return None  # noqa: PLR1711, RET501
+
+
+# We want to initialize the Faker seed, but only if faker is loaded
+class FakerInitializeMetaPathFinder(MetaPathFinder):
+    def __init__(self, seed: int) -> None:
+        self.seed = seed
+
+    def find_spec(
+        self,
+        fullname: str,
+        _path: Sequence[str] | None,
+        _target: types.ModuleType | None = None,
+    ) -> None:
+        if fullname == "faker" or fullname.startswith("faker."):
+            # Once this initialization is done we no longer need this meta path finder
+            sys.meta_path.remove(self)
+            from faker import Faker
+
+            Faker.seed(self.seed)
 
 
 # This function tries to convert a python object to valid JSON. If an exception
@@ -123,28 +155,34 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
 # helpful because the object - which contains something that cannot be converted
 # to JSON - would otherwise never be displayed to the developer, making it hard to
 # debug the problem.
-def try_dumps(obj: Any, sort_keys=False, allow_nan=False):
+def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> str:
     try:
         zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
     except Exception:
-        print(f"Error converting this object to json:\n{obj}\n")
+        print(f"Error converting this object to json:\n{obj}\n", file=sys.stderr)
         raise
 
 
-def worker_loop(s: socket.socket):
+def worker_loop(s: socket.socket) -> None:
     # whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
 
     path_finder = ForbidModuleMetaPathFinder()
     sys.meta_path.insert(0, path_finder)
 
+    # We'll cache instantiated modules for two reasons:
+    # - This allows us to avoid re-reading/compiling/executing them if the same
+    #   element is used multiple times.
+    # - This allows element code to maintain state across multiple calls. This is useful
+    #   specifically for elements that want to maintain a cache of expensive-to-compute data.
+    mod_cache: dict[str, dict[str, Any]] = {}
+
     call_data = bytearray("", encoding="utf-8")
     length = None
 
-    def receive_json_from_socket():
-        nonlocal call_data
-        nonlocal length
+    def receive_json_from_socket() -> Any:
+        nonlocal call_data, length
 
         while True:
             call_data.extend(s.recv(256 * 1024))
@@ -158,12 +196,12 @@ def worker_loop(s: socket.socket):
                     length = None
                     return json.loads(json_inp, parse_int=zu.safe_parse_int)
 
-    def write_str_to_socket(data: str):
+    def write_str_to_socket(data: str) -> None:
         encoded_data = bytes(data, "utf-8")
         s.sendall(len(encoded_data).to_bytes(4, byteorder="big"))
         s.sendall(encoded_data)
 
-    def write_json_to_socket(data: Any):
+    def write_json_to_socket(data: Any) -> None:
         write_str_to_socket(try_dumps(data, allow_nan=False))
 
     # Infinite loop where we wait for an input command, do it, and
@@ -228,6 +266,7 @@ def worker_loop(s: socket.socket):
                 # the call information.
                 input=json.dumps(args[0]),
                 encoding="utf-8",
+                check=False,
             )
 
             # Proxy any output from the subprocess back to the caller.
@@ -243,16 +282,16 @@ def worker_loop(s: socket.socket):
 
             write_str_to_socket(result.stdout)
             continue
-
         # Here, we re-seed the PRNGs if not already seeded in this worker_loop() call.
         # We only want to seed the PRNGs once per worker_loop() call, so that if a
         # question happens to contain multiple occurrences of the same element, the
         # randomizations for each occurrence are independent of each other but still
         # dependent on the variant seed.
-        if type(args[-1]) is dict and not seeded:  # noqa: E721
+        if type(args[-1]) is dict and not seeded:
             variant_seed = args[-1].get("variant_seed", None)
             random.seed(variant_seed)
-            numpy.random.seed(variant_seed)
+            np.random.seed(variant_seed)
+            sys.meta_path.insert(0, FakerInitializeMetaPathFinder(variant_seed))
             seeded = True
 
         # reset and then set up the path
@@ -270,8 +309,8 @@ def worker_loop(s: socket.socket):
             # be much faster than the current implementation that does an IPC
             # call for each element.
 
-            data = args[0]
-            context = args[1]
+            context = args[0]
+            data = args[1]
 
             result, processed_elements = question_phases.process(fcn, data, context)
             val = {
@@ -285,19 +324,25 @@ def worker_loop(s: socket.socket):
             sys.stderr.flush()
             sys.stdout.flush()
 
-            # write the return value (JSON on a single line)
+            # write the return value
             write_json_to_socket({"present": True, "val": val})
 
             continue
 
-        mod = {}
         file_path = os.path.join(cwd, file + ".py")
-        with open(file_path, encoding="utf-8") as inf:
-            # use compile to associate filename with code object, so the
-            # filename appears in the traceback if there is an error
-            # (https://stackoverflow.com/a/437857)
-            code = compile(inf.read(), file_path, "exec")
+
+        mod = mod_cache.get(file_path)
+        if mod is None:
+            mod = {}
+
+            with open(file_path, encoding="utf-8") as inf:
+                # Use `compile` to associate filename with code object, so the
+                # filename appears in the traceback if there is an error:
+                # https://stackoverflow.com/a/437857
+                code = compile(inf.read(), file_path, "exec")
+
             exec(code, mod)
+            mod_cache[file_path] = mod
 
         # check whether we have the desired fcn in the module
         if fcn in mod:
@@ -335,7 +380,7 @@ def worker_loop(s: socket.socket):
 
             # Any function that is not 'file' or 'render' will modify 'data' and
             # should not be returning anything (because 'data' is mutable).
-            if (fcn != "file") and (fcn != "render"):
+            if fcn not in ("file", "render"):
                 if val is None or val is args[-1]:
                     json_outp = {"present": True, "val": args[-1]}
                 else:
@@ -350,7 +395,7 @@ def worker_loop(s: socket.socket):
                     # TODO: Once this has been running in production for a while,
                     # change this to raise an exception.
                     sys.stderr.write(
-                        f"Function {str(fcn)}() in {str(file + '.py')} returned a data object other than the one that was passed in.\n\n"
+                        f"Function {fcn}() in {file + '.py'} returned a data object other than the one that was passed in.\n\n"
                         + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
                         + "For now, the return value will be used instead of the data object that was passed in.\n\n"
                         + "In the future, returning a different object will trigger a fatal error."
@@ -372,7 +417,7 @@ def worker_loop(s: socket.socket):
 worker_pid = 0
 
 
-def terminate_worker(signum: int, stack: types.FrameType | None) -> None:
+def terminate_worker(_signum: int, _stack: types.FrameType | None) -> None:
     if worker_pid > 0:
         os.kill(worker_pid, signal.SIGKILL)
     os._exit(0)
@@ -439,7 +484,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                                 p.username() == "executor"
                                 for p in psutil.process_iter()
                             ):
-                                raise Exception(
+                                raise RuntimeError(
                                     "found remaining processes belonging to executor user"
                                 )
 
@@ -451,11 +496,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                         exitf.flush()
                     else:
                         # The worker did not exit gracefully
-                        raise Exception(
-                            "worker process exited unexpectedly with status %d" % status
+                        raise RuntimeError(
+                            f"worker process exited unexpectedly with status {status}"
                         )
                 else:
                     # Something else happened that is weird
-                    raise Exception(
-                        "worker process exited unexpectedly with status %d" % status
+                    raise RuntimeError(
+                        f"worker process exited unexpectedly with status {status}"
                     )

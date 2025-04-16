@@ -12,9 +12,9 @@ import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import {
   AssessmentScoreHistogramByDateSchema,
   DurationStatSchema,
+  type Filenames,
   InstructorAssessmentStatistics,
   UserScoreSchema,
-  Filenames,
 } from './instructorAssessmentStatistics.html.js';
 
 const router = express.Router();

@@ -27,6 +27,7 @@ export async function run() {
   for (const assessment_instance of assessment_instances) {
     logger.verbose('autoFinishExams: finishing ' + assessment_instance.id, assessment_instance);
     // Grading was performed by the system.
+    const user_id = null;
     const authn_user_id = null;
     // Don't require the assessment to be open. This is important to
     // ensure we correctly handle the case where the PrairieLearn process
@@ -42,6 +43,7 @@ export async function run() {
     try {
       await gradeAssessmentInstance(
         assessment_instance.id,
+        user_id,
         authn_user_id,
         requireOpen,
         close,

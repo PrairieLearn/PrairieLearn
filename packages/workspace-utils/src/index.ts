@@ -3,12 +3,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
-import fg, { Entry } from 'fast-glob';
+import fg, { type Entry } from 'fast-glob';
 import { filesize } from 'filesize';
 import type { Server as SocketIOServer } from 'socket.io';
 
 import { contains } from '@prairielearn/path-utils';
-import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOneRowAsync, queryRow } from '@prairielearn/postgres';
+import { IntervalSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -65,7 +66,14 @@ export async function updateWorkspaceState(
   message = '',
 ): Promise<void> {
   // TODO: add locking
-  await queryAsync(sql.update_workspace_state, { workspace_id, state, message });
+  const duration_milliseconds = await queryRow(
+    sql.update_workspace_state,
+    { workspace_id, state, message },
+    IntervalSchema,
+  );
+  if (duration_milliseconds > 0) {
+    await updateCourseInstanceUsagesForWorkspace({ workspace_id, duration_milliseconds });
+  }
   emitMessageForWorkspace(workspace_id, 'change:state', {
     workspace_id,
     state,
@@ -200,3 +208,22 @@ export const workspaceFastGlobDefaultOptions = {
   extglob: false,
   braceExpansion: false,
 };
+
+/**
+ * Update the course instance usages for workspace usage.
+ *
+ * @param param.workspace_id The ID of the workspace.
+ * @param param.duration The usage duration (in milliseconds).
+ */
+export async function updateCourseInstanceUsagesForWorkspace({
+  workspace_id,
+  duration_milliseconds,
+}: {
+  workspace_id: string | number;
+  duration_milliseconds: number;
+}) {
+  await queryAsync(sql.update_course_instance_usages_for_workspace, {
+    workspace_id,
+    duration_milliseconds,
+  });
+}

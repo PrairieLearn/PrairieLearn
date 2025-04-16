@@ -81,7 +81,6 @@ router.get(
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
       const cursor = await sqldb.queryCursor(sql.questions, {
         assessment_id: res.locals.assessment.id,
-        course_id: res.locals.course.id,
       });
 
       const stringifier = stringifyStream({
@@ -93,6 +92,8 @@ router.get(
           'Question number',
           'QID',
           'Question title',
+          'Question topic',
+          'Question tags',
           ...Object.values(STAT_DESCRIPTIONS).map((d) => d.non_html_title),
         ],
         transform(record) {
@@ -103,6 +104,8 @@ router.get(
             record.assessment_question_number,
             record.qid,
             record.question_title,
+            record.topic.name,
+            record.question_tags,
             record.mean_question_score,
             record.median_question_score,
             record.question_score_variance,

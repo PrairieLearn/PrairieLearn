@@ -8,6 +8,132 @@ WHERE
   ai.id = $assessment_instance_id
   AND a.id = $assessment_id;
 
+-- BLOCK insert_assessment_instance
+WITH
+  latest_assessment_instance AS (
+    SELECT
+      ai.*
+    FROM
+      assessment_instances AS ai
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND (
+        CASE
+          WHEN $group_id::BIGINT IS NOT NULL THEN ai.group_id = $group_id
+          ELSE ai.user_id = $user_id
+        END
+      )
+    ORDER BY
+      ai.number DESC
+    LIMIT
+      1
+  ),
+  inserted_assessment_instance AS (
+    INSERT INTO
+      assessment_instances (
+        auth_user_id,
+        assessment_id,
+        user_id,
+        group_id,
+        mode,
+        auto_close,
+        date_limit,
+        number,
+        include_in_statistics,
+        last_client_fingerprint_id
+      )
+    SELECT
+      $authn_user_id,
+      $assessment_id,
+      CASE
+        WHEN $group_id::BIGINT IS NULL THEN $user_id
+      END,
+      $group_id,
+      $mode,
+      a.auto_close
+      AND a.type = 'Exam',
+      CASE
+        WHEN $time_limit_min::INTEGER IS NOT NULL THEN $date::TIMESTAMPTZ + make_interval(mins => $time_limit_min)
+      END,
+      COALESCE(lai.number, 0) + 1,
+      NOT users_is_instructor_in_course_instance ($user_id, a.course_instance_id),
+      $client_fingerprint_id
+    FROM
+      assessments AS a
+      -- Only retrieve the latest assessment instance if the assessment allows
+      -- multiple instances, otherwise trigger a conflict on number.
+      LEFT JOIN latest_assessment_instance AS lai ON a.multiple_instance
+    WHERE
+      a.id = $assessment_id
+    ON CONFLICT DO NOTHING
+    RETURNING
+      *
+  ),
+  inserted_assessment_state_log AS (
+    INSERT INTO
+      assessment_state_logs (
+        open,
+        assessment_instance_id,
+        date_limit,
+        auth_user_id,
+        client_fingerprint_id
+      )
+    SELECT
+      ai.open,
+      ai.id,
+      ai.date_limit,
+      $authn_user_id,
+      $client_fingerprint_id
+    FROM
+      inserted_assessment_instance AS ai
+  ),
+  -- Use separate CTEs for last_access because Postgres does not support
+  -- multiple ON CONFLICT clauses in a single INSERT statement. Only one of
+  -- these CTEs will actually insert a row.
+  inserted_last_access_group AS (
+    INSERT INTO
+      last_accesses (group_id, last_access)
+    SELECT
+      $group_id,
+      current_timestamp
+    WHERE
+      $group_id::BIGINT IS NOT NULL
+    ON CONFLICT (group_id) DO UPDATE
+    SET
+      last_access = EXCLUDED.last_access
+  ),
+  inserted_last_access_non_group AS (
+    INSERT INTO
+      last_accesses (user_id, last_access)
+    SELECT
+      $user_id,
+      current_timestamp
+    WHERE
+      $group_id::BIGINT IS NULL
+    ON CONFLICT (user_id) DO UPDATE
+    SET
+      last_access = EXCLUDED.last_access
+  )
+SELECT
+  id AS assessment_instance_id,
+  TRUE AS created
+FROM
+  inserted_assessment_instance
+UNION ALL
+-- If the assessment instance was not inserted because of a conflict on number, return the existing assessment instance.
+SELECT
+  id AS assessment_instance_id,
+  FALSE AS created
+FROM
+  latest_assessment_instance
+WHERE
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      inserted_assessment_instance
+  );
+
 -- BLOCK select_assessment_info
 SELECT
   assessment_label (a, aset),
@@ -40,12 +166,61 @@ WHERE
 
 -- BLOCK close_assessment_instance
 WITH
+  all_dates AS (
+    (
+      SELECT
+        ai.date
+      FROM
+        assessment_instances AS ai
+      WHERE
+        ai.id = $assessment_instance_id
+    )
+    UNION ALL
+    (
+      SELECT
+        s.date
+      FROM
+        submissions AS s
+        JOIN variants AS v ON (v.id = s.variant_id)
+        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+      WHERE
+        iq.assessment_instance_id = $assessment_instance_id
+    )
+  ),
+  all_gaps AS (
+    SELECT
+      date - lag(date) OVER (
+        ORDER BY
+          date
+      ) AS gap
+    FROM
+      all_dates
+  ),
+  total_gap AS (
+    SELECT
+      sum(gap) AS duration
+    FROM
+      all_gaps
+      JOIN assessment_instances AS ai ON (ai.id = $assessment_instance_id)
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+    WHERE
+      a.type != 'Homework'
+      OR gap < '1 hour'::INTERVAL
+  ),
   updated_assessment_instance AS (
     UPDATE assessment_instances AS ai
     SET
       open = FALSE,
       closed_at = CURRENT_TIMESTAMP,
-      duration = assessment_instances_duration (ai.id),
+      duration = COALESCE(
+        (
+          SELECT
+            duration
+          FROM
+            total_gap
+        ),
+        '0 seconds'::INTERVAL
+      ),
       modified_at = now(),
       -- Mark the assessment instance as in need of grading. We'll start
       -- grading immediately, but in case the PrairieLearn process dies in
@@ -139,6 +314,174 @@ WHERE
   a.id = $assessment_id;
 
 -- BLOCK update_assessment_statisics
+WITH
+  student_assessment_scores AS (
+    SELECT
+      -- if a student has multiple assessment_instances for this assessment
+      -- then use their maximum score
+      max(ai.score_perc) AS score_perc
+    FROM
+      assessment_instances AS ai
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+      -- Only select groups that are not soft-deleted
+      LEFT JOIN groups AS g ON (
+        g.id = ai.group_id
+        AND g.deleted_at IS NULL
+      )
+      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      JOIN enrollments AS e ON (
+        e.user_id = u.user_id
+        AND e.course_instance_id = a.course_instance_id
+      )
+    WHERE
+      a.id = $assessment_id
+      AND ai.include_in_statistics
+    GROUP BY
+      u.user_id
+  ),
+  score_stats AS (
+    SELECT
+      count(score_perc) AS number,
+      coalesce(min(score_perc), 0) AS min,
+      coalesce(max(score_perc), 0) AS max,
+      coalesce(avg(score_perc), 0) AS mean,
+      coalesce(stddev_samp(score_perc), 0) AS std,
+      coalesce(
+        percentile_disc(0.5) WITHIN GROUP (
+          ORDER BY
+            score_perc
+        ),
+        0
+      ) AS median,
+      count(
+        score_perc <= 0
+        OR NULL
+      ) AS n_zero,
+      count(
+        score_perc >= 100
+        OR NULL
+      ) AS n_hundred,
+      CAST(
+        count(
+          score_perc <= 0
+          OR NULL
+        ) AS double precision
+      ) / greatest(1, count(score_perc)) * 100 AS n_zero_perc,
+      CAST(
+        count(
+          score_perc >= 100
+          OR NULL
+        ) AS double precision
+      ) / greatest(1, count(score_perc)) * 100 AS n_hundred_perc,
+      coalesce(
+        histogram (score_perc, 0, 100, 10),
+        array_fill(0, ARRAY[10])
+      ) AS score_hist
+    FROM
+      student_assessment_scores
+  ),
+  basic_duration_stats AS (
+    SELECT
+      coalesce(min(duration), interval '0') AS min,
+      coalesce(max(duration), interval '0') AS max,
+      coalesce(avg(duration), interval '0') AS mean,
+      coalesce(
+        percentile_disc(0.5) WITHIN GROUP (
+          ORDER BY
+            duration
+        ),
+        interval '0'
+      ) AS median,
+      coalesce(
+        percentile_disc(0.75) WITHIN GROUP (
+          ORDER BY
+            duration
+        ),
+        interval '0'
+      ) AS quartile3,
+      coalesce(
+        percentile_disc(0.9) WITHIN GROUP (
+          ORDER BY
+            duration
+        ),
+        interval '0'
+      ) AS perc90
+    FROM
+      assessment_instances AS ai
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+      -- Only select groups that are not soft-deleted
+      LEFT JOIN groups AS g ON (
+        g.id = ai.group_id
+        AND g.deleted_at IS NULL
+      )
+      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      JOIN enrollments AS e ON (
+        e.user_id = u.user_id
+        AND e.course_instance_id = a.course_instance_id
+      )
+    WHERE
+      a.id = $assessment_id
+      AND ai.include_in_statistics
+  ),
+  duration_stats AS (
+    SELECT
+      *,
+      interval_hist_thresholds (
+        coalesce(
+          greatest(quartile3 + 2 * (quartile3 - median), perc90),
+          interval '10 minutes'
+        )
+      ) AS thresholds
+    FROM
+      basic_duration_stats
+  ),
+  duration_hist_stats AS (
+    SELECT
+      coalesce(
+        array_histogram (
+          ai.duration,
+          (
+            SELECT
+              thresholds
+            FROM
+              duration_stats
+          )
+        ),
+        array_fill(
+          0,
+          ARRAY[
+            array_length(
+              (
+                SELECT
+                  thresholds
+                FROM
+                  duration_stats
+              ),
+              1
+            ) - 1
+          ]
+        )
+      ) AS hist
+    FROM
+      assessment_instances AS ai
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+      -- Only select groups that are not soft-deleted
+      LEFT JOIN groups AS g ON (
+        g.id = ai.group_id
+        AND g.deleted_at IS NULL
+      )
+      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      JOIN enrollments AS e ON (
+        e.user_id = u.user_id
+        AND e.course_instance_id = a.course_instance_id
+      )
+    WHERE
+      a.id = $assessment_id
+      AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id)
+  )
 UPDATE assessments AS a
 SET
   statistics_last_updated_at = now(),
@@ -158,12 +501,13 @@ SET
   duration_stat_mean = duration_stats.mean,
   duration_stat_median = duration_stats.median,
   duration_stat_thresholds = duration_stats.thresholds,
-  duration_stat_threshold_seconds = duration_stats.threshold_seconds,
-  duration_stat_threshold_labels = duration_stats.threshold_labels,
-  duration_stat_hist = duration_stats.hist
+  duration_stat_threshold_seconds = interval_array_to_seconds (duration_stats.thresholds),
+  duration_stat_threshold_labels = interval_array_to_strings (duration_stats.thresholds),
+  duration_stat_hist = duration_hist_stats.hist
 FROM
-  assessments_score_stats ($assessment_id) AS score_stats,
-  assessments_duration_stats ($assessment_id) AS duration_stats
+  score_stats,
+  duration_stats,
+  duration_hist_stats
 WHERE
   a.id = $assessment_id;
 
@@ -292,7 +636,10 @@ WITH
           'variant_seed',
           v.variant_seed,
           'params',
-          v.params,
+          CASE
+            WHEN $include_files THEN v.params
+            ELSE (v.params - '_workspace_files')
+          END,
           'true_answer',
           v.true_answer,
           'options',
@@ -419,7 +766,10 @@ WITH
     (
       SELECT
         3.7 AS event_order,
-        'Manual grading results'::TEXT AS event_name,
+        CASE
+          WHEN gj.grading_method = 'Manual' THEN 'Manual grading results'::TEXT
+          ELSE 'AI grading results'::TEXT
+        END AS event_name,
         'blue2'::TEXT AS event_color,
         gj.graded_at AS date,
         u.user_id AS auth_user_id,
@@ -483,7 +833,7 @@ WITH
         LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
-        AND gj.grading_method = 'Manual'
+        AND gj.grading_method IN ('Manual', 'AI')
         AND gj.graded_at IS NOT NULL
     )
     UNION
@@ -516,7 +866,7 @@ WITH
             ELSE (s.submitted_answer - '_files')
           END,
           'true_answer',
-          v.true_answer
+          s.true_answer
         ) AS data
       FROM
         grading_jobs AS gj

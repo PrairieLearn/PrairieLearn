@@ -1,4 +1,16 @@
-import * as opentelemetry from '@prairielearn/opentelemetry';
+import type * as opentelemetry from '@prairielearn/opentelemetry';
+
+export class FunctionMissingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'FunctionMissingError';
+  }
+}
+
+export interface CodeCallerResult {
+  result: any;
+  output: string;
+}
 
 export type CallType =
   | 'question'
@@ -15,7 +27,7 @@ export interface PrepareForCourseOptions {
 
 export interface CodeCaller {
   uuid: string;
-  ensureChild: () => Promise<void>;
+  getCoursePath: () => string | null;
   prepareForCourse: (options: PrepareForCourseOptions) => Promise<void>;
   call: (
     type: CallType,
@@ -26,13 +38,6 @@ export interface CodeCaller {
   ) => Promise<{ result: any; output: string }>;
   restart: () => Promise<boolean>;
   done: () => void;
-}
-
-export class FunctionMissingError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'FunctionMissingError';
-  }
 }
 
 export function developmentSpanEvent(

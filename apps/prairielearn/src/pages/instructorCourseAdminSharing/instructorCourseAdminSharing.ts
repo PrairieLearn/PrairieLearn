@@ -6,8 +6,12 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getCanonicalHost } from '../../lib/url.js';
+import { updateCourseSharingName } from '../../models/course.js';
 
-import { InstructorSharing } from './instructorCourseAdminSharing.html.js';
+import {
+  InstructorCourseAdminSharing,
+  SharingSetRowSchema,
+} from './instructorCourseAdminSharing.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -32,25 +36,10 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
 
-    const sharingInfo = await sqldb.queryRow(
-      sql.get_course_sharing_info,
-      {
-        course_id: res.locals.course.id,
-      },
-      z.object({
-        sharing_name: z.string().nullable(),
-        sharing_token: z.string(),
-      }),
-    );
-
     const sharingSets = await sqldb.queryRows(
       sql.select_sharing_sets,
       { course_id: res.locals.course.id },
-      z.object({
-        name: z.string(),
-        id: z.string(),
-        shared_with: z.string().array(),
-      }),
+      SharingSetRowSchema,
     );
 
     const host = getCanonicalHost(req);
@@ -62,9 +51,9 @@ router.get(
     const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
 
     res.send(
-      InstructorSharing({
-        sharingName: sharingInfo.sharing_name,
-        sharingToken: sharingInfo.sharing_token,
+      InstructorCourseAdminSharing({
+        sharingName: res.locals.course.sharing_name,
+        sharingToken: res.locals.course.sharing_token,
         sharingSets,
         publicSharingLink,
         canChooseSharingName,
@@ -88,11 +77,6 @@ router.post(
       await sqldb.queryZeroOrOneRowAsync(sql.update_sharing_token, {
         course_id: res.locals.course.id,
       });
-    } else if (req.body.__action === 'sharing_set_create') {
-      await sqldb.queryZeroOrOneRowAsync(sql.sharing_set_create, {
-        sharing_set_name: req.body.sharing_set_name.trim(),
-        course_id: res.locals.course.id,
-      });
     } else if (req.body.__action === 'course_sharing_set_add') {
       const consuming_course_id = await sqldb.queryOptionalRow(
         sql.course_sharing_set_add,
@@ -104,7 +88,7 @@ router.post(
         z.string().nullable(),
       );
       if (consuming_course_id === null) {
-        throw new error.HttpStatusError(400, 'Failed to Add Course to sharing set.');
+        throw new error.HttpStatusError(400, 'Failed to add course to sharing set.');
       }
     } else if (req.body.__action === 'choose_sharing_name') {
       if (
@@ -118,17 +102,17 @@ router.post(
         );
       } else {
         const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
-        if (canChooseSharingName) {
-          await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_name, {
-            sharing_name: req.body.course_sharing_name.trim(),
-            course_id: res.locals.course.id,
-          });
-        } else {
+        if (!canChooseSharingName) {
           throw new error.HttpStatusError(
             400,
             'Unable to change sharing name. At least one question has been shared.',
           );
         }
+
+        await updateCourseSharingName({
+          course_id: res.locals.course.id,
+          sharing_name: req.body.course_sharing_name.trim(),
+        });
       }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

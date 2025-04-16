@@ -15,7 +15,6 @@ import { config } from '../lib/config.js';
 import * as externalGrader from '../lib/externalGrader.js';
 import * as externalGradingSocket from '../lib/externalGradingSocket.js';
 import * as load from '../lib/load.js';
-import * as localCache from '../lib/local-cache.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as serverJobs from '../lib/server-jobs.js';
 import * as socketServer from '../lib/socket-server.js';
@@ -32,7 +31,7 @@ config.startServer = false;
 // Pick a unique port based on the Mocha worker ID.
 config.serverPort = (3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10)).toString();
 
-export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void> {
+export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => Promise<void> {
   return async () => {
     debug('before()');
     try {
@@ -54,7 +53,13 @@ export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void
       await server.insertDevUser();
 
       debug('before(): sync from disk');
-      await helperCourse.syncCourse(courseDir);
+      if (Array.isArray(courseDir)) {
+        for (const dir of courseDir) {
+          await helperCourse.syncCourse(dir);
+        }
+      } else {
+        await helperCourse.syncCourse(courseDir);
+      }
 
       debug('before(): set up load estimators');
       load.initEstimator('request', 1);
@@ -119,9 +124,6 @@ export async function after(): Promise<void> {
 
     debug('after(): close cache');
     await cache.close();
-
-    debug('after(): close local cache');
-    localCache.close();
 
     debug('after(): finish DB');
     await helperDb.after.call(this);

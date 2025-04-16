@@ -1,5 +1,7 @@
 # Using Docker Compose
 
+This page documents the basic steps to use Docker Compose to run PrairieLearn. It does not cover vital information for production usage such as database backups or high availability.
+
 ## Getting started
 
 Follow the steps to [install PrairieLearn with local source code](../installingLocal.md). Then run this command in the root folder:
@@ -21,15 +23,15 @@ PrairieLearn can be configured by a `config.json` in the root of the repository.
   - ./config.json:/PrairieLearn/config.json
   ```
 
-The `config.json` file should contain appropriate overrides for the keys in [`lib/config.ts`](`https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts`). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database.
+The `config.json` file should contain appropriate overrides for the keys in [`lib/config.ts`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts).
 
 ## Reverse Proxy
 
-For implementing a reverse proxy read more [here](./setup.md#reverse-proxy).
+Read more about implementing a reverse proxy in the [general setup documentation](./setup.md#reverse-proxy).
 
 ## Authentication
 
-PrairieLearn currently has 4 ways to do user authentication. Read more at [authentication](./authentication.md).
+Read more in the [authentication documentation](./authentication.md).
 
 ## Admin User
 
@@ -41,7 +43,7 @@ PrairieLearn currently has 4 ways to do user authentication. Read more at [authe
 
   which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
 
-  ```
+  ```output
   CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
   e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
   ```
@@ -52,7 +54,7 @@ PrairieLearn currently has 4 ways to do user authentication. Read more at [authe
   docker exec -it CONTAINER_NAME /bin/bash
   ```
 
-Then follow along at [Admin User](./admin-user.md) to setup PrairieLearn.
+Then follow along at [Admin User](./admin-user.md) to set up PrairieLearn.
 
 ## Adding SSH Keys
 
@@ -80,7 +82,7 @@ Next to add the SSH key on GitHub go to [SSH keys](https://github.com/settings/s
 
 ## Adding courses
 
-Adding courses is done through a GitHub repository. It is recommended to setup an organization under one user to which you can add all courses.
+Adding courses is done through a GitHub repository. It is recommended to set up an organization under one user to which you can add all courses.
 
 To make sure the courses remain if the Docker container goes down
 we must bind mount the folder in which courses are stored to the host machine, in `docker-compose-production.yml` under `volumes` add
@@ -98,7 +100,7 @@ For example:
 To clone the course into PrairieLearn:
 
 - Go to the course GitHub repository you wish to put on PrairieLearn, click `code` and then `SSH`.
-- Copy the SSH URL and paste it under the `Repository` section. Go back to the homepage and you should see the course there.
+- Copy the SSH URL and paste it under the `Repository` section. Go back to the homepage, and you should see the course there.
 - Click on the course, then `Sync`.
 - Click on `Pull from remote git repository` which will then clone all the files into the specified directory.
 

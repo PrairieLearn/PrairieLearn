@@ -39,7 +39,7 @@ describe('getEnrollmentCountsForInstitution', () => {
     // The test course only has a single course instance, so we'll create a
     // second one for more complete tests.
     const courseInstance = await queryRow(
-      `INSERT INTO course_instances (course_id, display_timezone) VALUES (1, 'UTC') RETURNING *`,
+      "INSERT INTO course_instances (course_id, display_timezone) VALUES (1, 'UTC') RETURNING *",
       {},
       CourseInstanceSchema,
     );

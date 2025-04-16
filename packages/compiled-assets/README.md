@@ -10,7 +10,7 @@ This tool is meant to produce many small, independent bundles that can then be i
 
 Create a directory of assets that you wish to bundle, e.g. `assets/`. Within that directory, create another directory `scripts/`. Any JavaScript or TypeScript files in the root of the `scripts/` directory will become a bundle that can be loaded on a page. For example, the following directory structure would produce bundles named `foo` and `bar`:
 
-```
+```text
 ├── assets/
 │   ├── scripts/
 │   │   ├── foo.ts
@@ -19,7 +19,7 @@ Create a directory of assets that you wish to bundle, e.g. `assets/`. Within tha
 
 You can locate shared code in directories inside this directory. As long as those files aren't in the root of the `scripts/` directory, they won't become separate bundles.
 
-```
+```text
 ├── assets/
 │   ├── scripts/
 |   │   ├── lib/
@@ -73,18 +73,10 @@ router.get(() => {
 });
 ```
 
-For legacy PrairieLearn code that uses EJS, you can use the `compiled_script_tag` function that's made available to EJS templates via `res.locals`:
-
-```ejs
-<head>
-  <%- compiled_script_tag('foo.ts') %>
-</head>
-```
-
 ### Building assets for production
 
 For production usage, assets must be precompiled with the `compiled-assets build` command. Note that the source directory and build directory should match the values provided to `assets.init`.
 
 ```sh
-$ compiled-assets build ./assets ./public/build
+compiled-assets build ./assets ./public/build
 ```

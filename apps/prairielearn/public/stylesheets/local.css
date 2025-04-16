@@ -122,6 +122,98 @@ mjx-container {
   text-rendering: geometricPrecision;
 }
 
+.popover-wide {
+  max-width: min(800px, 90vw);
+}
+
+.popover-narrow-fixed {
+  width: 400px;
+  max-width: 90vw;
+}
+
+/**
+ * Identical to the variables for `btn-light`, except with a transparent
+ * background and border in the default state. This style is useful for
+ * buttons that should carry little visual weight, while still ensuring
+ * that they have hover/focus/active styles.
+ */
+.btn.btn-ghost {
+  --bs-btn-color: #000;
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: #000;
+  --bs-btn-hover-bg: #d3d4d5;
+  --bs-btn-hover-border-color: #c6c7c8;
+  --bs-btn-focus-shadow-rgb: 211, 212, 213;
+  --bs-btn-active-color: #000;
+  --bs-btn-active-bg: #c6c7c8;
+  --bs-btn-active-border-color: #babbbc;
+  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  --bs-btn-disabled-color: #000;
+  --bs-btn-disabled-bg: #f8f9fa;
+  --bs-btn-disabled-border-color: #f8f9fa;
+}
+
+/**
+ * A darker variant of `btn-light`.
+ *
+ * These colors were determined by rebuilding the Bootstrap CSS with the `light`
+ * base color redefined from gray-100 to gray-300 here:
+ *
+ * https://github.com/twbs/bootstrap/blob/bafa9d25ed38b8742a3f52bc1401d46b71960153/scss/_variables.scss#L307
+ */
+.btn.btn-med-light {
+  --bs-btn-color: #000;
+  --bs-btn-bg: #dee2e6;
+  --bs-btn-border-color: #dee2e6;
+  --bs-btn-hover-color: #000;
+  --bs-btn-hover-bg: #bdc0c4;
+  --bs-btn-hover-border-color: #b2b5b8;
+  --bs-btn-focus-shadow-rgb: 189, 192, 196;
+  --bs-btn-active-color: #000;
+  --bs-btn-active-bg: #b2b5b8;
+  --bs-btn-active-border-color: #a7aaad;
+  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  --bs-btn-disabled-color: #000;
+  --bs-btn-disabled-bg: #dee2e6;
+  --bs-btn-disabled-border-color: #dee2e6;
+}
+
+/**
+ * Remove the bottom border from the final row of the last table in a card.
+ */
+.card > table.table:last-of-type tbody tr:last-child th,
+.card > table.table:last-of-type tbody tr:last-child td,
+.card > .table-responsive > table.table:last-of-type tbody tr:last-child th,
+.card > .table-responsive > table.table:last-of-type tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/**
+ * Subtle pulsing animation for warning pop-ups
+ */
+@keyframes pulse {
+  0%,
+  40%,
+  60%,
+  100% {
+    transform: scale(100%);
+  }
+
+  45%,
+  55% {
+    transform: scale(103%);
+  }
+
+  50% {
+    transform: scale(100%);
+  }
+}
+
+.pulse {
+  animation: pulse 3s infinite;
+}
+
 /**************
  * Submissions
  **************/
@@ -139,12 +231,7 @@ mjx-container {
   transform: rotateX(180deg);
 }
 
-/* Button in submission header context
-   prepends "hide" or "show" automatically */
-.submission-header {
-  cursor: pointer;
-}
-
+/* Button in submission header context prepends "hide" or "show" automatically */
 .submission-header .expand-icon {
   transition: transform 400ms;
 }
@@ -153,11 +240,11 @@ mjx-container {
   content: 'hide';
 }
 
-.submission-header.collapsed .expand-icon {
+.submission-header .expand-icon-container.collapsed .expand-icon {
   transform: rotateX(180deg);
 }
 
-.submission-header.collapsed .expand-icon-container::before {
+.submission-header .expand-icon-container.collapsed::before {
   content: 'show';
 }
 
@@ -177,11 +264,6 @@ mjx-container {
 
 a.badge {
   text-decoration: none;
-}
-
-.navbar,
-#course-nav {
-  align-items: baseline;
 }
 
 .no-select {
@@ -210,25 +292,20 @@ a.badge {
   transform: translate(0px, -3px);
 }
 
-.navbar-brand:hover .navbar-brand-label {
+.navbar-brand:is(:hover, :focus) .navbar-brand-label {
   transform: translate(0px, -7px);
 }
 
-.navbar-brand:hover .navbar-brand-hover-label {
+.navbar-brand:is(:hover, :focus) .navbar-brand-hover-label {
   opacity: 1;
   transform: translate(0px, 0px);
 }
 
 /* Supports a color accent at the tops of nav tabs, github-style */
 .nav-tabs.pl-nav-tabs-bar .nav-link.active {
-  border-top-color: var(--primary);
+  border-top-color: var(--bs-primary);
   border-top-width: 0.2rem;
   padding-top: 0.4rem;
-}
-
-/* Used to help vertically center badges in table cells */
-table td > .badge {
-  transform: translate(0, -12.5%);
 }
 
 /* Used to give table rows the same padding as Bootstrap card headers */
@@ -245,19 +322,12 @@ table td > .badge {
   padding-right: 1.25rem;
 }
 
-/* Custom button styles that look better in input groups */
-.btn.btn-med-light {
-  color: #212529;
-  background-color: #dbdcdc;
-}
-
-.btn.btn-med-light:hover {
-  background-color: #ced0d0;
-}
-
-.btn.btn-med-light:focus {
-  background-color: #c3c3c3;
-  box-shadow: 0 0 0 0.2rem rgba(195, 195, 195, 0.25);
+/** Ensure that headings in card headers are styled the same as standard card headers. */
+.card-header > :is(h1, h2, h3, h4, h5, h6) {
+  line-height: 1.5rem;
+  margin-bottom: 0;
+  font-size: 1rem;
+  font-weight: 400;
 }
 
 .user-output,
@@ -307,4 +377,49 @@ small .user-output-invalid {
   border-color: #6c757d;
   margin-left: 5px;
   background: #fff;
+}
+
+/**
+ * We use red text in light buttons to indicate errors on many elements.
+ * By default, this has insufficient contrast. We override the color in
+ * this specific case to improve the contrast.
+ */
+.btn.btn-light.text-danger {
+  color: hsl(from rgb(var(--bs-danger-rgb)) h s calc(l - 5)) !important;
+}
+
+/***********************************
+ * Button focus accessibility styles
+ ***********************************/
+.btn:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+/* The sticky-column class is used to make the first column of a bootstrap-table sticky. */
+.table > :not(caption) > * > .sticky-column {
+  position: sticky;
+  left: 0;
+  background-color: var(--bs-body-bg);
+  background-clip: padding-box;
+  box-shadow: inset -1px 0 #dee2e6;
+}
+
+.table.table-hover > tbody > tr:hover > td.sticky-column {
+  color: var(--bs-table-hover-color);
+  /* This must be opaque, to ensure the cell shows on top of others.
+     TODO: compute this value by combining --bs-body-bg (opaque) with --bs-table-hover-bg (semi-transparent). */
+  background-color: #efefef;
+}
+
+/* This class is used in pages with bootstrap-table. Since these pages include the navigation in the toolbar, some padding is necessary. */
+.fixed-table-toolbar {
+  padding: 0 1em 0 1em;
+}
+
+.fixed-table-toolbar div.pagination,
+.fixed-table-toolbar div.pagination-detail {
+  margin: 0 1em 0 0 !important;
 }

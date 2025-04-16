@@ -13,10 +13,6 @@ function getNumericalAttribute(element: HTMLElement, name: string, defaultValue:
 }
 
 $(function () {
-  $('[data-toggle="popover"]').popover({
-    trigger: 'focus',
-  });
-
   const socketToken = document.body.getAttribute('data-socket-token');
   const workspaceId = document.body.getAttribute('data-workspace-id');
   const heartbeatIntervalSec = getNumericalAttribute(
@@ -38,26 +34,38 @@ $(function () {
   });
   const loadingFrame = document.getElementById('loading') as HTMLDivElement;
   const stoppedFrame = document.getElementById('stopped') as HTMLDivElement;
+  const failedFrame = document.getElementById('failed') as HTMLDivElement;
   const workspaceFrame = document.getElementById('workspace') as HTMLIFrameElement;
   const stateBadge = document.getElementById('state') as HTMLSpanElement;
   const messageBadge = document.getElementById('message') as HTMLSpanElement;
+  const failedMessage = document.getElementById('failed-message') as HTMLElement;
   const reloadButton = document.getElementById('reload') as HTMLButtonElement;
 
   const showStoppedFrame = () => {
     loadingFrame.style.setProperty('display', 'none', 'important');
     stoppedFrame.style.setProperty('display', 'flex', 'important');
+    failedFrame.style.setProperty('display', 'none', 'important');
+    workspaceFrame.style.setProperty('display', 'none', 'important');
+  };
+
+  const showFailedFrame = () => {
+    loadingFrame.style.setProperty('display', 'none', 'important');
+    stoppedFrame.style.setProperty('display', 'none', 'important');
+    failedFrame.style.setProperty('display', 'flex', 'important');
     workspaceFrame.style.setProperty('display', 'none', 'important');
   };
 
   const showWorkspaceFrame = () => {
     loadingFrame.style.setProperty('display', 'none', 'important');
     stoppedFrame.style.setProperty('display', 'none', 'important');
+    failedFrame.style.setProperty('display', 'none', 'important');
     workspaceFrame.style.setProperty('display', 'flex', 'important');
   };
 
   function setMessage(message: string) {
     console.log('message', message);
-    messageBadge.innerHTML = message;
+    messageBadge.textContent = message;
+    failedMessage.textContent = message;
     if (message) {
       stateBadge.classList.add('badge-prepend');
     } else {
@@ -67,6 +75,9 @@ $(function () {
 
   let previousState: null | string = null;
   function setState(state: string) {
+    // Simplify the state machine by ignoring duplicate states.
+    if (state === previousState) return;
+
     if (state === 'running') {
       showWorkspaceFrame();
 
@@ -81,9 +92,20 @@ $(function () {
       workspaceFrame.src = 'about:blank';
       if (previousState === 'running') {
         showStoppedFrame();
+      } else if (previousState !== 'uninitialized') {
+        // When the workspace is first created, it will be in the `uninitialized`
+        // state. It then transitions to the `stopped` state, and then immediately
+        // to `launching`.
+        //
+        // We don't want to consider the initial transition to `stopped` as a
+        // failure, so we specifically ignore transitions from `uninitialized`.
+        //
+        // Put differently: we'll really only show the failure message if we
+        // transition directly from `launching` to `stopped`.
+        showFailedFrame();
       }
     }
-    stateBadge.innerHTML = state;
+    stateBadge.textContent = state;
 
     previousState = state;
   }

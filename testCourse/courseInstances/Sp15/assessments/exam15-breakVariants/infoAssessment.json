@@ -5,18 +5,13 @@
   "set": "Exam",
   "number": "15",
   "requireHonorCode": false,
-  "allowAccess": [
-    {
-      "mode": "Public",
-      "credit": 100
-    }
-  ],
+  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "title": "Questions",
       "questions": [
-        {"id": "partialCredit1", "points": [5, 4, 3, 2, 1]},
-        {"id": "partialCredit2", "points": [5, 4, 3, 2, 1]}
+        { "id": "partialCredit1", "points": [5, 4, 3, 2, 1] },
+        { "id": "partialCredit2", "points": [5, 4, 3, 2, 1] }
       ]
     }
   ]
