@@ -296,7 +296,9 @@ WHERE
 SELECT
   *
 FROM
-  assessment_instances -- or variants if there is no assessment instance
+  assessment_instances
+WHERE
+  id = $assessment_instance_id
 FOR NO KEY UPDATE;
 ```
 
