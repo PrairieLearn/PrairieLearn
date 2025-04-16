@@ -1,5 +1,4 @@
 // @ts-check
-import { error } from 'console';
 import * as path from 'path';
 
 import * as async from 'async';
