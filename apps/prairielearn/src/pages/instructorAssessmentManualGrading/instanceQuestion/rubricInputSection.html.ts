@@ -29,12 +29,12 @@ export function RubricInputSection({
         margin-bottom: 0;
       }
     </style>
-    ${RubricItemsWithIndent(
-      rubric_data.rubric_items,
-      rubric_grading?.rubric_items,
-      resLocals.assessment_question,
+    ${RubricItemsWithIndent({
+      rubric_items: rubric_data.rubric_items,
+      rubric_grading_items: rubric_grading?.rubric_items,
+      assessment_question: resLocals.assessment_question,
       disable,
-    )}
+    })}
     <div class="js-adjust-points d-flex justify-content-end">
       <button
         type="button"
@@ -95,12 +95,17 @@ export function RubricInputSection({
   `;
 }
 
-function RubricItemsWithIndent(
-  rubric_items: RubricData['rubric_items'][0][] | null | undefined,
-  rubric_items_grading: Record<string, RubricGradingItem> | null | undefined,
-  assessment_question: AssessmentQuestion,
-  disable: boolean,
-) {
+function RubricItemsWithIndent({
+  rubric_items,
+  rubric_grading_items,
+  assessment_question,
+  disable,
+}: {
+  rubric_items: RubricData['rubric_items'][0][] | null | undefined;
+  rubric_grading_items: Record<string, RubricGradingItem> | null | undefined;
+  assessment_question: AssessmentQuestion;
+  disable: boolean;
+}) {
   if (!rubric_items) return '';
 
   // First group rubric items by parent
@@ -114,41 +119,47 @@ function RubricItemsWithIndent(
   });
 
   // Then print item tree recursively, starting with root node
-  const itemTree = RubricItemsWithIndentRecursive(
-    '',
-    itemsByParent,
-    rubric_items_grading,
+  const itemTree = RubricItemsWithIndentRecursive({
+    current_parent: '',
+    rubric_items_by_parent: itemsByParent,
+    rubric_grading_items,
     assessment_question,
     disable,
-  );
+  });
   return html`<div role="tree">${joinHtml(itemTree)}</div>`;
 }
 
-function RubricItemsWithIndentRecursive(
-  current_parent: string,
-  rubric_items_by_parent: Record<string, RubricData['rubric_items'][0][]>,
-  rubric_items_grading: Record<string, RubricGradingItem> | null | undefined,
-  assessment_question: AssessmentQuestion,
-  disable: boolean,
-) {
+function RubricItemsWithIndentRecursive({
+  current_parent,
+  rubric_items_by_parent,
+  rubric_grading_items,
+  assessment_question,
+  disable,
+}: {
+  current_parent: string;
+  rubric_items_by_parent: Record<string, RubricData['rubric_items'][0][]>;
+  rubric_grading_items: Record<string, RubricGradingItem> | null | undefined;
+  assessment_question: AssessmentQuestion;
+  disable: boolean;
+}) {
   return rubric_items_by_parent[current_parent].map((item) => {
     const isLeafNode = !(item.id in rubric_items_by_parent);
-    const itemRendered = RubricItem(
+    const itemRendered = RubricItem({
       item,
-      isLeafNode,
-      rubric_items_grading?.[item.id],
+      item_grading: rubric_grading_items?.[item.id],
       assessment_question,
       disable,
-    );
+      is_leaf_node: isLeafNode,
+    });
     const childrenRendered = isLeafNode
       ? ''
-      : RubricItemsWithIndentRecursive(
-          item.id,
+      : RubricItemsWithIndentRecursive({
+          current_parent: item.id,
           rubric_items_by_parent,
-          rubric_items_grading,
+          rubric_grading_items,
           assessment_question,
           disable,
-        );
+        });
     return html`<div role="treeitem">
       ${itemRendered}
       ${isLeafNode ? '' : html`<div role="group" class="ms-4">${childrenRendered}</div>`}
@@ -156,13 +167,19 @@ function RubricItemsWithIndentRecursive(
   });
 }
 
-function RubricItem(
-  item: RubricData['rubric_items'][0],
-  is_leaf_node: boolean,
-  item_grading: RubricGradingItem | undefined | null,
-  assessment_question: AssessmentQuestion,
-  disable: boolean,
-) {
+function RubricItem({
+  item,
+  item_grading,
+  assessment_question,
+  disable,
+  is_leaf_node,
+}: {
+  item: RubricData['rubric_items'][0];
+  item_grading: RubricGradingItem | undefined | null;
+  assessment_question: AssessmentQuestion;
+  disable: boolean;
+  is_leaf_node: boolean;
+}) {
   return html`
     <label class="js-selectable-rubric-item-label w-100">
       <input

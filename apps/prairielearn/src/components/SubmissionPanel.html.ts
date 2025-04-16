@@ -352,7 +352,7 @@ function SubmissionStatusBadge({
         `;
       }
     } else if (!submission.gradable) {
-      // If an error ocurred during grading, there will be a `graded_at` timestamp but the submission will be marked ungradable.
+      // If an error occurred during grading, there will be a `graded_at` timestamp but the submission will be marked ungradable.
       autoGradingBadge = html`
         <span class="badge text-bg-danger">${autoStatusPrefix} invalid, not gradable</span>
       `;
@@ -527,7 +527,11 @@ function RubricItemsWithIndentRecursive(
 ) {
   return rubric_items_by_parent[current_parent].map((item) => {
     const isLeafNode = !(item.id in rubric_items_by_parent);
-    const itemRendered = RubricItem(item, isLeafNode, rubric_items_grading?.[item.id]);
+    const itemRendered = RubricItem({
+      item,
+      item_grading: rubric_items_grading?.[item.id],
+      is_leaf_node: isLeafNode,
+    });
     const childrenRendered = isLeafNode
       ? ''
       : RubricItemsWithIndentRecursive(item.id, rubric_items_by_parent, rubric_items_grading);
@@ -538,11 +542,15 @@ function RubricItemsWithIndentRecursive(
   });
 }
 
-function RubricItem(
-  item: RubricData['rubric_items'][0],
-  is_leaf_node: boolean,
-  item_grading: RubricGradingItem | undefined | null,
-) {
+function RubricItem({
+  item,
+  item_grading,
+  is_leaf_node,
+}: {
+  item: RubricData['rubric_items'][0];
+  item_grading: RubricGradingItem | undefined | null;
+  is_leaf_node: boolean;
+}) {
   return html`
     <div role="treeitem">
       <label class="w-100" data-testid="rubric-item-container-${item.id}">
@@ -561,7 +569,7 @@ function RubricItem(
           ? html`
               <button
                 type="button"
-                class="btn btn-xs text-info"
+                class="btn btn-xs btn-ghost"
                 data-bs-toggle="popover"
                 data-bs-content="${item.explanation_rendered}"
                 data-bs-html="true"
