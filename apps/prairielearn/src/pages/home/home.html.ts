@@ -207,7 +207,7 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
                   ${course.course_instances.some((ci) => ci.expired)
                     ? html`
                         <details>
-                          <summary class="text-muted">Older instances</summary>
+                          <summary class="text-muted small">Older instances</summary>
                           ${CourseInstanceList({
                             course_instances: course.course_instances.filter((ci) => ci.expired),
                           })}
