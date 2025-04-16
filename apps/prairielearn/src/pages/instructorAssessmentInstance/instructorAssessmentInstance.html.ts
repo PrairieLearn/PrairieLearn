@@ -701,6 +701,9 @@ function ClientFingerprintContent({ fingerprint }: { fingerprint: ClientFingerpr
     fingerprint.client_hints?.['sec-ch-ua-platform-version'];
 
   if (browserVersion) {
+    // The version list may include multiple "brands", only the first (most
+    // specific) is displayed. For example, show "Google Chrome
+    // v100.0.4896.127", but not "Chromium".
     const match = browserVersion.match(/^"([^"]+)";v="([^"]+)"/);
     if (match) {
       browserVersion = `${match[1]} v${match[2]}`;
