@@ -175,6 +175,18 @@ export async function initExpress(): Promise<Express> {
   // API routes don't utilize sessions; don't run the session/flash middleware for them.
   app.use(excludeRoutes(['/pl/api'], sessionRouter));
 
+  app.use((_req, res, next) => {
+    // Request browser send client hints for fingerprint extension in future
+    // requests. We are not using the Critical-CH header because it might
+    // trigger a refresh, and in most cases the client fingerprint is only
+    // needed in pages that are unlikely to be the first page loaded.
+    res.header(
+      'Accept-CH',
+      'Sec-CH-UA-Full-Version-List, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Form-Factors',
+    );
+    next();
+  });
+
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
   // Special handling of file-upload routes so that we can parse multipart/form-data
