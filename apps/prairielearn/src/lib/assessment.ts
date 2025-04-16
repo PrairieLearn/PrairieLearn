@@ -191,7 +191,7 @@ export async function updateAssessmentInstance(
       AssessmentInstanceSchema.pick({ max_points: true, max_bonus_points: true }),
     );
     // If assessment was not updated, grades do not need to be recomputed.
-    if (newInstanceQuestionIds.length === 0 || newMaxPoints == null) return false;
+    if (newInstanceQuestionIds.length === 0 && newMaxPoints == null) return false;
 
     // if updated, regrade to pick up max_points changes, etc.
     if (recomputeGrades) {
