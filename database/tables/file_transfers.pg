@@ -2,6 +2,7 @@ columns
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     deleted_at: timestamp with time zone
     from_course_id: bigint not null
+    from_course_instance_id: bigint
     from_filename: text not null
     id: bigint not null default nextval('file_transfers_id_seq'::regclass)
     storage_filename: text not null
