@@ -532,8 +532,8 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
         'codeCaller.call',
         async () =>
           await codeCaller.call('question', context.question.directory, 'question.html', phase, [
-            data,
             pythonContext,
+            data,
           ]),
       );
       return { result: res.result, output: res.output };
