@@ -164,13 +164,34 @@ export async function updateAssessmentInstance(
   authn_user_id: string,
   recomputeGrades = true,
 ): Promise<boolean> {
-  debug('update()');
   const updated = await sqldb.runInTransactionAsync(async () => {
-    const updateResult = await sqldb.callOneRowAsync('assessment_instances_update', [
-      assessment_instance_id,
-      authn_user_id,
-    ]);
-    if (!updateResult.rows[0].updated) return false; // skip if not updated
+    const assessmentInstance = await sqldb.queryOptionalRow(
+      sql.select_and_lock_assessment_instance,
+      { assessment_instance_id },
+      AssessmentInstanceSchema,
+    );
+    if (assessmentInstance == null) {
+      throw new error.HttpStatusError(404, 'Assessment instance not found');
+    }
+    if (!assessmentInstance.open) {
+      // Silently return without updating
+      return false;
+    }
+
+    // Insert any new questions not previously in the assessment instance
+    const newInstanceQuestionIds = await sqldb.queryRows(
+      sql.insert_instance_questions,
+      { assessment_instance_id, assessment_id: assessmentInstance.assessment_id, authn_user_id },
+      IdSchema,
+    );
+
+    const newMaxPoints = await sqldb.queryOptionalRow(
+      sql.update_assessment_instance_max_points,
+      { assessment_instance_id, authn_user_id },
+      AssessmentInstanceSchema.pick({ max_points: true, max_bonus_points: true }),
+    );
+    // If assessment was not updated, grades do not need to be recomputed.
+    if (newInstanceQuestionIds.length === 0 && newMaxPoints == null) return false;
 
     // if updated, regrade to pick up max_points changes, etc.
     if (recomputeGrades) {
