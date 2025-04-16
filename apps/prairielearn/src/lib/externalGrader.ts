@@ -224,7 +224,7 @@ export async function processGradingResult(content: any): Promise<void> {
 
     const grading_job = await selectOptionalGradingJobById(content.gradingId);
     // Only update course instance usages if the job hasn't been graded yet. We
-    // have to compute this before calling `updateGradingJobsAfterGrading` below
+    // have to compute this before calling `updateGradingJobAfterGrading` below
     // because that will update `graded_at`.
     const updateUsages = grading_job && grading_job.graded_at == null;
 
