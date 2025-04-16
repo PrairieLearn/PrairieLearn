@@ -559,7 +559,7 @@ PrairieLearn is instrumented with OpenTelemetry.
 
 ### Tracing in development mode
 
-Follow the instructions at https://www.jaegertracing.io/docs/latest/getting-started/ to run Jaeger locally with Docker.
+Follow the instructions at <https://www.jaegertracing.io/docs/latest/getting-started/> to run Jaeger locally with Docker.
 
 Update your PrairieLearn `config.json` file with the following:
 
@@ -570,4 +570,4 @@ Update your PrairieLearn `config.json` file with the following:
 }
 ```
 
-Start or restart PrairieLearn, make a request, then visit http://localhost:16686/search. You should see traces for your requests.
+Start or restart PrairieLearn, make a request, then visit <http://localhost:16686/search>. You should see traces for your requests.
