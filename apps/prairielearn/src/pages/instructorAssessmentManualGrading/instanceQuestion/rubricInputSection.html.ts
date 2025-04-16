@@ -160,10 +160,12 @@ function RubricItemsWithIndentRecursive({
           assessment_question,
           disable,
         });
-    return html`<div role="treeitem">
-      ${itemRendered}
-      ${isLeafNode ? '' : html`<div role="group" class="ms-4">${childrenRendered}</div>`}
-    </div>`;
+    return html`
+      <div role="treeitem">
+        ${itemRendered}
+        ${isLeafNode ? '' : html`<div role="group" class="ms-4">${childrenRendered}</div>`}
+      </div>
+    `;
   });
 }
 

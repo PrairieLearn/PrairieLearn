@@ -222,7 +222,13 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   Add item
                 </button>
                 <template class="js-new-row-rubric-item">
-                  ${RubricItemRow(null, rubric_data?.rubric_items?.length ?? 0, null, 0, [])}
+                  ${RubricItemRow({
+                    item: null,
+                    index: rubric_data?.rubric_items?.length ?? 0,
+                    parent_index: null,
+                    indent_level: 0,
+                    child_idxs: [],
+                  })}
                 </template>
                 ${MustachePatterns({ resLocals })}
               </div>
@@ -297,7 +303,13 @@ function RubricItemsWithIndent(rubric_items: RubricData['rubric_items'][0][] | n
 
     const parentId = parentStack.length > 0 ? parentStack[parentStack.length - 1].number : null;
     // Generate HTML for current item
-    const result = RubricItemRow(item, item.number, parentId, parentStack.length, childIds);
+    const result = RubricItemRow({
+      item,
+      index: item.number,
+      parent_index: parentId,
+      indent_level: parentStack.length,
+      child_idxs: childIds,
+    });
 
     // Push this item as potential parent for next item
     parentStack.push(item);
@@ -306,13 +318,19 @@ function RubricItemsWithIndent(rubric_items: RubricData['rubric_items'][0][] | n
   return joinHtml(itemRows);
 }
 
-function RubricItemRow(
-  item: RubricData['rubric_items'][0] | null,
-  index: number,
-  parent_index: number | null,
-  indent_level: number,
-  child_idxs: string[],
-) {
+function RubricItemRow({
+  item,
+  index,
+  parent_index,
+  indent_level,
+  child_idxs,
+}: {
+  item: RubricData['rubric_items'][0] | null;
+  index: number;
+  parent_index: number | null;
+  indent_level: number;
+  child_idxs: string[];
+}) {
   const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
   return html`
     <tr
@@ -359,7 +377,6 @@ function RubricItemRow(
           aria-label="Delete"
         >
           <i class="fas fa-trash"></i>
-          <span class="visually-hidden">Delete</span>
         </button>
       </td>
       <td class="align-middle">
@@ -371,6 +388,7 @@ function RubricItemRow(
           required
           name="${namePrefix}[points]"
           value="${item?.points}"
+          aria-label="Points"
         />
       </td>
       <td class="align-middle">
@@ -382,6 +400,7 @@ function RubricItemRow(
           style="min-width: 15rem"
           name="${namePrefix}[description]"
           value="${item?.description}"
+          aria-label="Description"
         />
       </td>
       <td class="align-middle">
@@ -420,7 +439,7 @@ function RubricItemRow(
           <i class="fas fa-pencil"></i>
         </button>
       </td>
-      <td>
+      <td class="align-middle">
         <div class="form-check form-check-inline">
           <label class="form-check-label text-nowrap">
             <input
