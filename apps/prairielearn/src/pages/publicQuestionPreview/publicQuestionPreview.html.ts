@@ -12,7 +12,7 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
     pageTitle: resLocals.question.qid,
     navContext: {
       type: 'public',
-      page: 'public_question',
+      page: 'public_questions',
       subPage: 'preview',
     },
     options: {
