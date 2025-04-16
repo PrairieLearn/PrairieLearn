@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import prairielearn as pl
@@ -27,11 +28,11 @@ class ComparisonType(Enum):
 
 def get_only_units_grading_fn(
     *, ureg: UnitRegistry, correct_ans: str
-) -> Callable[[str], Tuple[bool, Optional[str]]]:
-    """Returns the grading function used for units only grading mode."""
+) -> Callable[[str], tuple[bool, str | None]]:
+    """Return the grading function used for units only grading mode."""
     parsed_correct_ans = ureg.Quantity(correct_ans)
 
-    def grade_only_units(submitted_ans: str) -> Tuple[bool, Optional[str]]:
+    def grade_only_units(submitted_ans: str) -> tuple[bool, str | None]:
         parsed_submission = ureg.Quantity(submitted_ans)
         if parsed_correct_ans.units == parsed_submission.units:
             return True, None
@@ -46,11 +47,11 @@ def get_exact_units_grading_fn(
     ureg: UnitRegistry,
     correct_ans: str,
     comparison: ComparisonType,
-    magnitude_partial_credit: Optional[float],
+    magnitude_partial_credit: float | None,
     digits: int,
     rtol: float,
     atol: str,
-) -> Callable[[str], Tuple[float, Optional[str]]]:
+) -> Callable[[str], tuple[float, str | None]]:
     parsed_correct_ans = ureg.Quantity(correct_ans)
     parsed_atol = ureg.Quantity(atol)
 
@@ -94,7 +95,7 @@ def get_exact_units_grading_fn(
         else 0.0
     )
 
-    def grade_exact_units(submitted_ans: str) -> Tuple[float, Optional[str]]:
+    def grade_exact_units(submitted_ans: str) -> tuple[float, str | None]:
         # will return no error, assuming parse() catches all of them
         parsed_submission = ureg.Quantity(submitted_ans)
         magnitudes_match = magnitude_comparison_fn(
@@ -116,12 +117,12 @@ def get_exact_units_grading_fn(
 
 def get_with_units_grading_fn(
     *, ureg: UnitRegistry, correct_ans: str, rtol: float, atol: str
-) -> Callable[[str], Tuple[bool, Optional[str]]]:
+) -> Callable[[str], tuple[bool, str | None]]:
     # Assume atol and correct answer have same dimensionality, checked in prepare method
     correct_ans_base_unit = ureg.Quantity(correct_ans).to_base_units()
     parsed_atol = ureg.Quantity(atol).to_base_units()
 
-    def grade_with_units(submitted_ans: str) -> Tuple[bool, Optional[str]]:
+    def grade_with_units(submitted_ans: str) -> tuple[bool, str | None]:
         # will return no error, assuming parse() catches all of them
         parsed_sub_base_unit = ureg.Quantity(submitted_ans).to_base_units()
 

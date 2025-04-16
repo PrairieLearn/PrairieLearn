@@ -1,0 +1,5 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hadolint/hadolint/master/contrib/hadolint.json
+ignored:
+  - DL3007 # latest tag is not recommended
+  - DL3008 # pin versions in apt get install
+  - DL4006 # TODO: SHELL option -o pipefail before RUN with a pipe in it

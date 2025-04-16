@@ -44,7 +44,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         file_directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
 
         if file_directory not in DIRECTORY_PATH_DICT:
-            dict_keys = ", ".join(f'"{key}"' for key in DIRECTORY_PATH_DICT.keys())
+            dict_keys = ", ".join(f'"{key}"' for key in DIRECTORY_PATH_DICT)
             raise ValueError(
                 f'Invalid directory choice "{file_directory}", must be one of: {dict_keys}.'
             )
@@ -100,5 +100,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     # Create and return html
     html_params = {"src": file_url, "width": width, "inline": inline, "alt": alt_text}
-    with open("pl-figure.mustache", "r", encoding="utf-8") as f:
+    with open("pl-figure.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

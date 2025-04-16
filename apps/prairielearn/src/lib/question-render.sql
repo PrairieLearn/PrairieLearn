@@ -57,9 +57,9 @@ SELECT
   s.duration,
   s.gradable,
   s.graded_at,
-  s.grading_method,
   s.grading_requested_at,
   s.id,
+  s.is_ai_graded,
   s.mode,
   s.override_score,
   s.score,
@@ -114,10 +114,7 @@ SELECT
 FROM
   submissions AS s
 WHERE
-  s.id IN (
-    SELECT
-      UNNEST($submission_ids::bigint[])
-  )
+  s.id = ANY ($submission_ids::bigint[])
 ORDER BY
   s.date DESC;
 
@@ -143,7 +140,7 @@ WITH
           JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
           JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
         WHERE
-          s.id = $submission_id
+          s.id = $unsafe_submission_id
       )
     WINDOW
       w AS (
@@ -157,7 +154,7 @@ WITH
     FROM
       grading_jobs AS gj
     WHERE
-      gj.submission_id = $submission_id
+      gj.submission_id = $unsafe_submission_id
       AND grading_method != 'Manual'
     ORDER BY
       gj.date DESC,
@@ -168,8 +165,6 @@ WITH
 SELECT
   to_jsonb(lgj) AS grading_job,
   to_jsonb(s) AS submission,
-  to_jsonb(v) AS variant,
-  to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
   qo.question_number,
   jsonb_build_object(
     'id',
@@ -177,7 +172,6 @@ SELECT
     'sequence_locked',
     next_iq.sequence_locked
   ) AS next_instance_question,
-  to_jsonb(q) AS question,
   to_jsonb(aq) AS assessment_question,
   to_jsonb(ai) AS assessment_instance,
   to_jsonb(a) AS assessment,
@@ -206,7 +200,8 @@ SELECT
       submissions AS s2
     WHERE
       s2.variant_id = s.variant_id
-  ) AS submission_count
+  ) AS submission_count,
+  to_jsonb(gc) AS group_config
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -220,63 +215,21 @@ FROM
   LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
   JOIN pl_courses AS c ON (c.id = v.course_id)
   JOIN pl_courses AS qc ON (qc.id = q.course_id)
-  JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
   LEFT JOIN users AS u ON (s.auth_user_id = u.user_id)
   LEFT JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
+  LEFT JOIN group_configs AS gc ON (
+    gc.assessment_id = a.id
+    AND gc.deleted_at IS NULL
+  )
 WHERE
-  s.id = $submission_id
+  s.id = $unsafe_submission_id
   AND q.id = $question_id
   AND (
     $instance_question_id::BIGINT IS NULL
     OR iq.id = $instance_question_id::BIGINT
   )
   AND v.id = $variant_id;
-
--- BLOCK select_variant_for_render
-SELECT
-  v.*,
-  format_date_full_compact (
-    v.date,
-    COALESCE(ci.display_timezone, c.display_timezone)
-  ) AS formatted_date,
-  to_jsonb(a.*) AS assessment,
-  jsonb_set(
-    to_jsonb(ai.*),
-    '{formatted_date}',
-    to_jsonb(
-      format_date_full_compact (
-        ai.date,
-        COALESCE(ci.display_timezone, c.display_timezone)
-      )
-    )
-  ) AS assessment_instance,
-  jsonb_set(
-    jsonb_set(
-      to_jsonb(iq.*),
-      '{assigned_grader_name}',
-      to_jsonb(COALESCE(agu.name, agu.uid))
-    ),
-    '{last_grader_name}',
-    to_jsonb(COALESCE(lgu.name, lgu.uid))
-  ) AS instance_question
-FROM
-  variants as v
-  LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-  LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-  LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = v.course_id)
-  LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
-  LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
-WHERE
-  v.id = $variant_id
-  AND v.question_id = $question_id
-  -- instance_question_id is null for question preview, so allow any variant of the question
-  AND (
-    $instance_question_id::bigint IS NULL
-    OR v.instance_question_id = $instance_question_id
-  );
 
 -- BLOCK select_is_shared
 SELECT
@@ -295,5 +248,5 @@ SELECT
       questions
     WHERE
       id = $question_id
-      AND shared_publicly
+      AND share_publicly
   );

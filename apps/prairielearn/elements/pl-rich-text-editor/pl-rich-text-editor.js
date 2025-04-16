@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global Quill, he, MathJax, QuillMarkdown, showdown, DOMPurify */
+/* global Quill, he, MathJax, QuillMarkdown, showdown, DOMPurify, bootstrap */
 
 (() => {
   const rtePurify = DOMPurify();
@@ -43,8 +43,35 @@
     }
   }
 
+  const Clipboard = Quill.import('modules/clipboard');
+  class PotentiallyDisabledClipboard extends Clipboard {
+    onCaptureCopy(e, isCut = false) {
+      if (this.options.enabled ?? true) return super.onCaptureCopy(e, isCut);
+      if (!e.defaultPrevented) e.preventDefault();
+      this.showToast();
+    }
+
+    onCapturePaste(e) {
+      if (this.options.enabled ?? true) return super.onCapturePaste(e);
+      if (!e.defaultPrevented) e.preventDefault();
+      this.showToast();
+    }
+
+    showToast() {
+      if (!this.toast) {
+        const toastElement = document.getElementById(this.options.toast_id);
+        this.toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 2000 });
+      }
+      this.toast.show();
+    }
+  }
+
+  Quill.register('modules/clipboard', PotentiallyDisabledClipboard, true);
+
   window.PLRTE = function (uuid, options) {
     if (!options.modules) options.modules = {};
+    if (!options.modules.clipboard) options.modules.clipboard = {};
+    options.modules.clipboard.toast_id = 'rte-clipboard-toast-' + uuid;
     if (options.readOnly) {
       options.modules.toolbar = false;
     } else {
@@ -75,6 +102,11 @@
         },
       },
     };
+
+    // Set the bounds for UI elements (e.g., the tooltip for the formula editor)
+    // to the question container.
+    // https://quilljs.com/docs/configuration#bounds
+    options.bounds = document.getElementById(`rte-${uuid}`).closest('.question-container');
 
     let inputElement = $('#rte-input-' + uuid);
     let quill = new Quill('#rte-' + uuid, options);
@@ -120,7 +152,6 @@
       let contents = quill.editor?.isBlank?.()
         ? ''
         : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
-      if (contents && renderer) contents = renderer.makeMarkdown(contents);
       inputElement.val(
         btoa(
           he.encode(contents, {

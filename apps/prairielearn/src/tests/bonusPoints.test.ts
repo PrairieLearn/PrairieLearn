@@ -1,5 +1,6 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -50,15 +51,14 @@ describe('Exam assessment with bonus points', function () {
   });
 
   step('submit an answer to the first question', async () => {
-    const form = {
-      __action: 'grade',
-      __csrf_token: context.__csrf_token,
-      __variant_id: context.__variant_id,
-      s: '75', // To get 75% of the question
-    };
-    const response = await helperClient.fetchCheerio(context.question1Url, {
+    const response = await fetch(context.question1Url, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'grade',
+        __csrf_token: context.__csrf_token,
+        __variant_id: context.__variant_id,
+        s: '75', // To get 75% of the question
+      }),
     });
     assert.isTrue(response.ok);
   });
@@ -82,15 +82,14 @@ describe('Exam assessment with bonus points', function () {
   });
 
   step('submit an answer to the second question', async () => {
-    const form = {
-      __action: 'grade',
-      __csrf_token: context.__csrf_token,
-      __variant_id: context.__variant_id,
-      s: '100', // To get 100% of the question
-    };
-    const response = await helperClient.fetchCheerio(context.question2Url, {
+    const response = await fetch(context.question2Url, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'grade',
+        __csrf_token: context.__csrf_token,
+        __variant_id: context.__variant_id,
+        s: '100', // To get 100% of the question
+      }),
     });
 
     assert.isTrue(response.ok);

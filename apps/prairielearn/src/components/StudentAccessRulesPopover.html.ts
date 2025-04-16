@@ -19,12 +19,11 @@ export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzA
     <button
       type="button"
       class="btn btn-xs btn-ghost"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      title="Access details"
-      data-content="${escapeHtml(StudentAccessRulesPopoverContent({ accessRules }))}"
-      aria-label="Access details"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-title="Access details"
+      data-bs-content="${escapeHtml(StudentAccessRulesPopoverContent({ accessRules }))}"
     >
       <i class="fa fa-question-circle"></i>
     </button>
