@@ -18,9 +18,11 @@ import {
   CourseInstanceRenameEditor,
   FileModifyEditor,
   MultiEditor,
+  propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
@@ -41,6 +43,9 @@ router.get(
       `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`,
       host,
     ).href;
+    const availableTimezones = await getCanonicalTimezones([
+      res.locals.course_instance.display_timezone,
+    ]);
 
     const infoCourseInstancePath = path.join(
       'courseInstances',
@@ -55,6 +60,8 @@ router.get(
         b64EncodeUnicode(await fs.readFile(fullInfoCourseInstancePath, 'utf8')),
       ).toString();
     }
+    const canEdit =
+      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
     res.send(
       InstructorInstanceAdminSettings({
@@ -62,7 +69,9 @@ router.get(
         shortNames,
         studentLink,
         infoCourseInstancePath,
+        availableTimezones,
         origHash,
+        canEdit,
       }),
     );
   }),
@@ -139,6 +148,21 @@ router.post(
 
       const courseInstanceInfo = JSON.parse(await fs.readFile(infoCourseInstancePath, 'utf8'));
       courseInstanceInfo.longName = req.body.long_name;
+      courseInstanceInfo.timezone = propertyValueWithDefault(
+        courseInstanceInfo.timezone,
+        req.body.display_timezone,
+        res.locals.course.display_timezone,
+      );
+      courseInstanceInfo.groupAssessmentsBy = propertyValueWithDefault(
+        courseInstanceInfo.groupAssessmentsBy,
+        req.body.group_assessments_by,
+        'Set',
+      );
+      courseInstanceInfo.hideInEnrollPage = propertyValueWithDefault(
+        courseInstanceInfo.hideInEnrollPage,
+        req.body.hide_in_enroll_page === 'on',
+        false,
+      );
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
       let ciid_new;
