@@ -605,6 +605,7 @@ export function InstructorAssessmentInstance({
                               data-bs-html="true"
                               data-bs-placement="auto"
                               data-bs-title="Fingerprint ${row.client_fingerprint_number}"
+                              data-bs-custom-class="popover-wide"
                               data-bs-content="${escapeHtml(
                                 ClientFingerprintContent({ fingerprint: row.client_fingerprint }),
                               )}"
