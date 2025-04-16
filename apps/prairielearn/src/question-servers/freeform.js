@@ -396,12 +396,12 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
         pythonFunction,
         pythonArgs,
       );
-      debug(`execPythonServer(): completed`);
+      debug('execPythonServer(): completed');
       return { result, output };
     } catch (err) {
       if (err instanceof FunctionMissingError) {
         // function wasn't present in server
-        debug(`execPythonServer(): function not present`);
+        debug('execPythonServer(): function not present');
         return {
           result: defaultServerRet(phase, data, html, context),
           output: '',
@@ -481,24 +481,24 @@ function checkData(data, origData, phase) {
   /**************************************************************************************************************************************/
   //              property                 type       presentPhases                         changePhases
   /**************************************************************************************************************************************/
-  err = checkProp('params', 'object', allPhases, ['generate', 'prepare', 'parse', 'grade'])
-    || checkProp('correct_answers', 'object', allPhases, ['generate', 'prepare', 'parse', 'grade'])
-    || checkProp('variant_seed', 'integer', allPhases, [])
-    || checkProp('options', 'object', allPhases, [])
-    || checkProp('submitted_answers', 'object', ['render', 'parse', 'grade'], ['parse', 'grade'])
-    || checkProp('format_errors', 'object', ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
-    || checkProp('raw_submitted_answers', 'object', ['render', 'parse', 'grade', 'test'], ['test'])
-    || checkProp('partial_scores', 'object', ['render', 'grade', 'test'], ['grade', 'test'])
-    || checkProp('score', 'number', ['render', 'grade', 'test'], ['grade', 'test'])
-    || checkProp('feedback', 'object', ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
-    || checkProp('editable', 'boolean', ['render'], [])
-    || checkProp('manual_grading', 'boolean', ['render'], [])
-    || checkProp('panel', 'string', ['render'], [])
-    || checkProp('num_valid_submissions', 'integer', ['render'], [])
-    || checkProp('gradable', 'boolean', ['parse', 'grade', 'test'], [])
-    || checkProp('filename', 'string', ['file'], [])
-    || checkProp('test_type', 'string', ['test'], [])
-    || checkProp('answers_names', 'object', ['prepare'], ['prepare']);
+  err =   checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
+       || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
+       || checkProp('variant_seed',          'integer', allPhases,                            [])
+       || checkProp('options',               'object',  allPhases,                            [])
+       || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade'])
+       || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
+       || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test'])
+       || checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test'])
+       || checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test'])
+       || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
+       || checkProp('editable',              'boolean', ['render'],                           [])
+       || checkProp('manual_grading',        'boolean', ['render'],                           [])
+       || checkProp('panel',                 'string',  ['render'],                           [])
+       || checkProp('num_valid_submissions','integer',  ['render'],                           [])
+       || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
+       || checkProp('filename',              'string',  ['file'],                             [])
+       || checkProp('test_type',             'string',  ['test'],                             [])
+       || checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
   if (err) return err;
 
   const extraProps = _.difference(Object.keys(data), checked);
@@ -533,10 +533,7 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
       const res = await instrumented(
         'codeCaller.call',
         async () =>
-          await codeCaller.call('question', context.question.directory, 'question.html', phase, [
-            data,
-            pythonContext,
-          ]),
+          await codeCaller.call('question', context.question.directory, 'question.html', phase, [pythonContext, data]),
       );
       return { result: res.result, output: res.output };
     } catch (err) {
@@ -1885,16 +1882,16 @@ export async function test(variant, question, course, test_type) {
  */
 async function getContext(question, course) {
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-  await chunks.ensureChunksForCourseAsync(course.id, [
-    { type: 'question', questionId: question.id },
-    { type: 'clientFilesCourse' },
-    { type: 'serverFilesCourse' },
-    { type: 'elements' },
-    { type: 'elementExtensions' },
-  ];
+
   await instrumented(
     'chunks.ensureChunksForCourseAsync',
-    async () => await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad),
+    async () => await chunks.ensureChunksForCourseAsync(course.id, [
+      { type: 'question', questionId: question.id },
+      { type: 'clientFilesCourse' },
+      { type: 'serverFilesCourse' },
+      { type: 'elements' },
+      { type: 'elementExtensions' },
+    ]),
   );
 
   // Select which rendering strategy we'll use. This is computed here so that
