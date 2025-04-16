@@ -245,6 +245,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     "indent",
                     "distractor-feedback",
                     "distractor-for",
+                    "ordering-feedback",
                 ],
             )
         elif grading_method is GradingMethodType.DAG:
@@ -439,7 +440,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
     # isn't we need to change it into a solution before displaying it as such
     data_copy = deepcopy(data)
-    data_copy["submitted_answers"] = {answer_name: correct_answers}
+    data_copy["submitted_answers"] = {answer_name: deepcopy(correct_answers)}
     data_copy["partial_scores"] = {}
     grade(element_html, data_copy)
     if data_copy["partial_scores"][answer_name]["score"] != 1:
@@ -880,27 +881,29 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             None if num_initial_correct == len(submission) else num_initial_correct
         )
 
-        print(num_initial_correct)
-        print(first_wrong)
+        # print(num_initial_correct)
+        # print(first_wrong)
+        # print(student_answer[:num_initial_correct])
+        # print(student_answer)
         if feedback_type in FIRST_WRONG_TYPES:
             for block in student_answer[:num_initial_correct]:
                 block["badge_type"] = "badge-success"
                 block["icon"] = "fa-check"
                 block["distractor_feedback"] = ""
-                block["ordering_feedback"] = "1"
+                block["ordering_feedback"] = ""
 
             if first_wrong is not None:
                 student_answer[first_wrong]["badge_type"] = "badge-danger"
                 student_answer[first_wrong]["icon"] = "fa-xmark"
                 if feedback_type is not FeedbackType.FIRST_WRONG_VERBOSE:
                     student_answer[first_wrong]["distractor_feedback"] = ""
-                    student_answer[first_wrong]["ordering_feedback"] = "2"
+                    student_answer[first_wrong]["ordering_feedback"] = ""
 
                 for block in student_answer[first_wrong + 1 :]:
                     block["badge_type"] = ""
                     block["icon"] = ""
                     block["distractor_feedback"] = ""
-                    block["ordering_feedback"] = "3"
+                    block["ordering_feedback"] = ""
 
         num_initial_correct, true_answer_length = grade_dag(
             submission, depends_graph, group_belonging
