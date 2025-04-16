@@ -174,35 +174,6 @@ def grade_dag(
     return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes()
 
 
-def get_wrong_order_blocks(
-    submission: list[str],
-    depends_graph: Mapping[str, list[str]],
-    group_belonging: Mapping[str, str | None],
-    tags_to_check: set[str]
-) -> list[int]:
-    """
-    In order for a block in a student submission to be considered correctly ordered, all of its
-    dependencies (as defined in the DAG) must appear earlier in the submission. This function identifies
-    which blocks violate that rule, but only for blocks whose tags are included in tags_to_check.
-
-    :param submission: the ordered list of block tags submitted by the student
-    :param depends_graph: the dependency graph between blocks specified in the question
-    :param group_belonging: which pl-block-group each block belongs to, specified in the question
-    :param tags_to_check: a set of tags for which ordering should be checked; blocks not in this set are ignored
-    :return: a list of indices (in the submission) corresponding to blocks that are misordered
-    """
-    graph = dag_to_nx(depends_graph, group_belonging)
-    seen = set()
-    misordered = []
-
-    for i, tag in enumerate(submission):
-        if tag in tags_to_check and not all(u in seen for (u, _) in graph.in_edges(tag)):
-            misordered.append(i)
-        seen.add(tag)
-
-    return misordered
-
-
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """
     Taken from
