@@ -398,7 +398,7 @@ class Feedback:
         # Now check the values themselves
         for key in keys_to_check:
             # It's possible that the equality will pass even if the types are different
-            if type(ref[key]) != type(data[key]):
+            if type(ref[key]) is not type(data[key]):
                 return bad(
                     f"{name} has key `{key}` with type `{type(data[key]).__name__}`, which is not the right type"
                 )
