@@ -1,19 +1,28 @@
 # ruff: noqa: ARG001 ANN001
 # pyright: reportUnknownParameterType=none, reportMissingParameterType=none
 import re
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import mock_open, patch
 
 import pytest
 from code_feedback import Feedback
 
 """
-Testing Feedback.check_dict(name, ref, data) with all possible parameters
+Tests for the `Feedback.check_dict` method in `code_feedback.py`.
 
-Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`).
-It also verifies the length of keys in the student dictionary against the reference dictionary, and optionally,
-enforces homogeneous data types for keys (using `key_type`), values (using `value_type`), or both.
-Additionally, it can verify the presence of specific keys (using `only_keys`) in the student dictionary, and
-can focus the comparison solely on keys (using `check_keys`), values (using `check_values`), or both.
+This module uses pytest parameterized tests to cover various scenarios for comparing
+a student-provided dictionary (`data`) against a reference dictionary (`ref`).
+
+Test Categories:
+- `test_check_dict_correct_cases`: Verifies scenarios where `check_dict` should return `True`
+  (e.g., identical dictionaries, different order, mixed types, nested dictionaries, None values).
+- `test_check_dict_incorrect_cases`: Verifies scenarios where `check_dict` should return `False`
+  and generate specific feedback messages (e.g., mismatched keys/values, incorrect types,
+  extra/missing keys, empty dictionaries vs. non-empty, non-dict inputs).
+- `test_check_dict_only_keys`: Tests the functionality of the `only_keys` parameter, ensuring
+  it correctly checks only the specified subset of keys and handles missing or incorrect
+  keys/values within that subset.
+- `test_check_dict_with_partial_key_matching_raises_error`: Ensures a `ValueError` is raised
+  when `only_keys` contains keys not present in the reference dictionary.
 """
 
 
@@ -26,259 +35,230 @@ def setup_feedback() -> None:
     Feedback.buffer = ""
 
 
+@pytest.mark.parametrize(
+    ("test_id", "ref_dict", "student_dict"),
+    [
+        ("correct1", {"a": 1, "b": 2, "c": 3}, {"a": 1, "b": 2, "c": 3}),
+        (
+            "correct2",
+            {1: "a", 2: "2", "d": 3, "list": [1, 2, "apple"]},
+            {"list": [1, 2, "apple"], 1: "a", 2: "2", "d": 3},
+        ),
+        (
+            "mixed_types",
+            {"a": 1, "b": "string", "c": [1, 2, 3], "d": (4, 5), "e": None},
+            {"a": 1, "b": "string", "c": [1, 2, 3], "d": (4, 5), "e": None},
+        ),
+        ("empty_dicts", {}, {}),
+        ("none_values", {"a": None, "b": 2, "c": None}, {"a": None, "b": 2, "c": None}),
+        (
+            "nested_dicts_identical",
+            {"a": 1, "b": {"nested_key": 10}, "c": 3},
+            {"a": 1, "b": {"nested_key": 10}, "c": 3},
+        ),
+        (
+            "large_dicts",
+            {f"key_{i}": i for i in range(1000)},
+            {f"key_{i}": i for i in range(1000)},
+        ),
+    ],
+)
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
-def test_check_dict_correct1(mock_file, mock_add_feedback) -> None:
-    """Test when both dictionaries match exactly."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {"a": 1, "b": 2, "c": 3}
+def test_check_dict_correct_cases(
+    mock_file, mock_add_feedback, test_id, ref_dict, student_dict
+) -> None:
+    """Test cases where check_dict should return True and not add feedback."""
     assert Feedback.check_dict(NAME, ref_dict, student_dict)
     mock_add_feedback.assert_not_called()
 
 
+@pytest.mark.parametrize(
+    ("test_id", "ref_dict", "student_dict", "expected_feedback"),
+    [
+        (
+            "mismatched_keys1",
+            {"a": 1, "b": 2, "c": 3},
+            {"x": 4, "y": 5, "z": 6},
+            f"{NAME} has missing keys: `a, b, c`",
+        ),
+        (
+            "mismatched_keys2",
+            {"a": 1, 2: "a", 3: "c"},
+            {"x": 4, "y": 5, "z": 6},
+            f"{NAME} has missing keys: `2, 3, a`",
+        ),
+        (
+            "incorrect_keys",
+            {"a": 1, "b": 2, "c": 3},
+            {"d": 1, "b": 2, "f": 3},
+            f"{NAME} has missing keys: `a, c`",
+        ),
+        (
+            "incorrect_values1",
+            {"a": 1, "b": 2, "c": 3, "list": []},
+            {"a": 1, "b": 2, "c": 3, "list": ()},
+            f"{NAME} has key `list` with type `tuple`, which is not the right type",
+        ),
+        (
+            "incorrect_values2",
+            {"a": 1, "b": 2, "c": 3, 0: "c"},
+            {"a": 1, "b": 3, "c": 2, 0: ""},
+            f"{NAME} has key `b` with value `3`, which is not correct",
+        ),
+        (
+            "incorrect_values3",
+            {"a": 1, "b": 2, "c": 3},
+            {"a": 1, "b": 5, "c": 3},
+            f"{NAME} has key `b` with value `5`, which is not correct",
+        ),
+        (
+            "different_none_values",
+            {"a": None, "b": 2, "c": 3},
+            {"a": 1, "b": 2, "c": None},
+            f"{NAME} has key `a` with type `int`, which is not the right type",
+        ),
+        (
+            "nested_dicts_mismatch",
+            {"a": 1, "b": {"nested_key": 10}, "c": 3},
+            {"a": 1, "b": {"nested_key": 20}, "c": 3},
+            f"{NAME} has key `b` with value `{{'nested_key': 20}}`, which is not correct",
+        ),
+        (
+            "large_dicts_mismatch",
+            {f"key_{i}": i for i in range(1000)},
+            {f"key_{i}": i for i in range(1000)} | {"key_500": 999},
+            f"{NAME} has key `key_500` with value `999`, which is not correct",
+        ),
+        (
+            "extra_key",
+            {"a": 1, "b": 2, "c": 3},
+            {"a": 1, "b": 2, "c": 3, "d": 4},
+            f"{NAME} has extra keys: `d`",
+        ),
+        (
+            "missing_key",
+            {"a": 1, "b": 2, "c": 3},
+            {"a": 1, "b": 2},
+            f"{NAME} has missing keys: `c`",
+        ),
+        (
+            "student_empty_ref_not",
+            {"a": 1, "b": 2, "c": 3},
+            {},
+            f"{NAME} has missing keys: `a, b, c`",
+        ),
+        (
+            "ref_empty_student_not",
+            {},
+            {"a": 1, "b": 2, "c": 3},
+            f"{NAME} has extra keys: `a, b, c`",
+        ),
+        (
+            "wrong_value_type",
+            {"a": 1, "b": 2, "c": 3},
+            {"a": 1, "b": "2", "c": 3},
+            f"{NAME} has key `b` with type `str`, which is not the right type",
+        ),
+        (
+            "type_mismatch",
+            {"a": 1, "b": "string", "c": [1, 2, 3]},
+            {"a": 1, "b": 100, "c": ["1", "2", "3"]},
+            f"{NAME} has key `b` with type `int`, which is not the right type",
+        ),
+        (
+            "wrong_value_type1_only_values",
+            {"a": 1, "b": "string", "c": [1, 2, 3]},
+            {"a": 1, "b": 100, "c": 43},
+            f"{NAME} has key `b` with type `int`, which is not the right type",
+        ),
+        ("none_data", {"a": 1}, None, f"{NAME} is not a dict, got None"),
+        ("not_a_dict", {"a": 1}, [("a", 1)], f"{NAME} is not a dict, got list"),
+    ],
+)
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
-def test_check_dict_correct_check_only_1(mock_file, mock_add_feedback) -> None:
-    """Test when both dictionaries match exactly."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {"a": 1, "b": 2, "c": 3}
-    assert Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_not_called()
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_correct2(mock_file, mock_add_feedback) -> None:
-    """
-    Test when both dictionaries match exactly.
-    Checks only the key-value pair
-    Does not perform typechecks
-    """
-    ref_dict = {1: "a", 2: "2", "d": 3, "list": [1, 2, "apple"]}
-    student_dict = {"list": [1, 2, "apple"], 1: "a", 2: "2", "d": 3}
-    assert Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_not_called()
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_with_mixed_types(mock_file, mock_add_feedback) -> None:
-    """Test dictionaries with mixed value types."""
-    ref_dict = {"a": 1, "b": "string", "c": [1, 2, 3], "d": (4, 5), "e": None}
-    student_dict = {"a": 1, "b": "string", "c": [1, 2, 3], "d": (4, 5), "e": None}
-    assert Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_not_called()
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_empty_dicts(mock_file, mock_add_feedback) -> None:
-    """Test when both reference and student dictionaries are empty."""
-    ref_dict = {}
-    student_dict = {}
-    assert Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_not_called()
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_with_none_values(mock_file, mock_add_feedback) -> None:
-    """Test dictionaries where some keys have None as their value."""
-    ref_dict = {"a": None, "b": 2, "c": None}
-    student_dict = {"a": None, "b": 2, "c": None}
-    assert Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_not_called()
-
-
-# NESTED DICTS
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_nested_dicts_identical(mock_file, mock_add_feedback) -> None:
-    """Test when both dictionaries have identical nested dictionaries."""
-    ref_dict = {"a": 1, "b": {"nested_key": 10}, "c": 3}
-    student_dict = {"a": 1, "b": {"nested_key": 10}, "c": 3}
-    assert Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_not_called()
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_large_dicts(mock_file, mock_add_feedback) -> None:
-    """Test large dictionaries with many keys and values."""
-    ref_dict = {f"key_{i}": i for i in range(1000)}
-    student_dict = {f"key_{i}": i for i in range(1000)}
-    assert Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_not_called()
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_mismatched_keys1(mock_file, mock_add_feedback) -> None:
-    """Test when the keys in the student dictionary do not match the reference dictionary at all."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {"x": 4, "y": 5, "z": 6}
+def test_check_dict_incorrect_cases(
+    mock_file, mock_add_feedback, test_id, ref_dict, student_dict, expected_feedback
+) -> None:
+    """Test cases where check_dict should return False and add specific feedback."""
     assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(f"{NAME} has missing keys: `a, b, c`")
+    mock_add_feedback.assert_called_with(expected_feedback)
 
 
+@pytest.mark.parametrize(
+    (
+        "test_id",
+        "ref_dict",
+        "student_dict",
+        "only_keys",
+        "expected_result",
+        "expected_feedback",
+    ),
+    [
+        (
+            "only_keys_correct",
+            {"a": 1, "b": 2, "c": 3},
+            {"a": 1, "b": 2, "c": 3, "d": 4},
+            ["a", "b"],
+            True,
+            None,
+        ),
+        (
+            "only_keys_missing",
+            {"a": 1, "b": 2, "c": 3},
+            {"a": 1, "c": 3, "d": 4},
+            ["a", "b"],
+            False,
+            f"{NAME} has missing keys: `b`",
+        ),
+        (
+            "only_keys_partial_missing",
+            {"a": 1, "b": 2, "c": 3},
+            {"a": 1, "b": 20, "d": 4},
+            ["a", "b", "c"],
+            False,
+            f"{NAME} has missing keys: `c`",
+        ),
+        # Test case for incorrect value when using only_keys
+        (
+            "only_keys_incorrect_value",
+            {"a": 1, "b": 2, "c": 3},
+            {"a": 1, "b": 99, "c": 3, "d": 4},
+            ["a", "b"],
+            False,
+            f"{NAME} has key `b` with value `99`, which is not correct",
+        ),
+    ],
+)
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
-def test_check_dict_mismatched_keys2(mock_file, mock_add_feedback) -> None:
-    """Test when the keys in the student dictionary do not match the reference dictionary at all."""
-    ref_dict = {"a": 1, 2: "a", 3: "c"}
-    student_dict = {"x": 4, "y": 5, "z": 6}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(f"{NAME} has missing keys: `2, 3, a`")
+def test_check_dict_only_keys(
+    mock_file,
+    mock_add_feedback,
+    test_id,
+    ref_dict,
+    student_dict,
+    only_keys,
+    expected_result,
+    expected_feedback,
+) -> None:
+    """Test check_dict with the only_keys parameter."""
+    result = Feedback.check_dict(NAME, ref_dict, student_dict, only_keys=only_keys)
+    assert result == expected_result
+    if expected_feedback:
+        mock_add_feedback.assert_called_with(expected_feedback)
+    else:
+        mock_add_feedback.assert_not_called()
 
 
+# This test checks for a ValueError, so it remains separate
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
-def test_check_dict_incorrect_keys(mock_file, mock_add_feedback) -> None:
-    """Test for incorrect keys, but same values in ref_dict, and student_dict"""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {"d": 1, "b": 2, "f": 3}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(f"{NAME} has missing keys: `a, c`")
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_incorrect_values1(mock_file, mock_add_feedback) -> None:
-    """Test for incorrect values, but same keys in ref_dict, and student_dict."""
-    ref_dict = {"a": 1, "b": 2, "c": 3, "list": []}
-    student_dict = {"a": 1, "b": 2, "c": 3, "list": ()}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(
-        "test_check_dict has key `list` with type `tuple`, which is not the right type"
-    )
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_incorrect_values2(mock_file, mock_add_feedback) -> None:
-    """Test for incorrect values, but same keys in ref_dict, and student_dict."""
-    ref_dict = {"a": 1, "b": 2, "c": 3, 0: "c"}
-    student_dict = {"a": 1, "b": 3, "c": 2, 0: ""}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(
-        "test_check_dict has key `b` with value `3`, which is not correct"
-    )
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_incorrect_values3(mock_file, mock_add_feedback) -> None:
-    """Test when a value in the student dict does not match the reference dict."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {"a": 1, "b": 5, "c": 3}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(
-        "test_check_dict has key `b` with value `5`, which is not correct"
-    )
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_with_different_none_values(mock_file, mock_add_feedback) -> None:
-    """Test when one dictionary has None, and the other has a value for the same key."""
-    ref_dict = {"a": None, "b": 2, "c": 3}
-    student_dict = {"a": 1, "b": 2, "c": None}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(
-        "test_check_dict has key `a` with type `int`, which is not the right type"
-    )
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_nested_dicts_mismatch(mock_file, mock_add_feedback) -> None:
-    """Test when nested dictionaries have different values."""
-    ref_dict = {"a": 1, "b": {"nested_key": 10}, "c": 3}
-    student_dict = {"a": 1, "b": {"nested_key": 20}, "c": 3}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(
-        "test_check_dict has key `b` with value `{'nested_key': 20}`, which is not correct"
-    )
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_large_dicts_mismatch(mock_file, mock_add_feedback) -> None:
-    """Test large dictionaries with a slight mismatch in one value."""
-    ref_dict = {f"key_{i}": i for i in range(1000)}
-    student_dict = {f"key_{i}": i for i in range(1000)}
-    student_dict["key_500"] = 999  # mismatch
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(
-        "test_check_dict has key `key_500` with value `999`, which is not correct"
-    )
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_extra_key(mock_file, mock_add_feedback) -> None:
-    """Test when student dict has an extra key."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {"a": 1, "b": 2, "c": 3, "d": 4}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(f"{NAME} has extra keys: `d`")
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_missing_key(mock_file, mock_add_feedback) -> None:
-    """Test when student dict is missing a key."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {"a": 1, "b": 2}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(f"{NAME} has missing keys: `c`")
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_student_empty_ref_not(mock_file, mock_add_feedback) -> None:
-    """Test when the student dictionary is empty but the reference is not."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(f"{NAME} has missing keys: `a, b, c`")
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_ref_empty_student_not(mock_file, mock_add_feedback) -> None:
-    """Test when the reference dictionary is empty but the student dictionary is not."""
-    ref_dict = {}
-    student_dict = {"a": 1, "b": 2, "c": 3}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(f"{NAME} has extra keys: `a, b, c`")
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_only_keys_correct(mock_file, mock_add_feedback) -> None:
-    """Test when partial keys are correct."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {"a": 1, "b": 2, "c": 3, "d": 4}
-    assert Feedback.check_dict(NAME, ref_dict, student_dict, only_keys=["a", "b"])
-    mock_add_feedback.assert_not_called()
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_only_keys_missing(mock_file, mock_add_feedback) -> None:
-    """Test when a partial key is missing."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {"a": 1, "c": 3, "d": 4}
-    only_keys = ["a", "b"]
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict, only_keys=only_keys)
-    mock_add_feedback.assert_called_with(f"{NAME} has missing keys: `b`")
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_with_partial_key_matching(mock_file, mock_add_feedback) -> None:
-    """Test when only some keys match between reference and student dictionaries."""
+def test_check_dict_with_partial_key_matching_raises_error(
+    mock_file, mock_add_feedback
+) -> None:
+    """Test that check_dict raises ValueError when only_keys contains keys not in ref_dict."""
     ref_dict = {"a": 1, "b": 2, "c": 3}
     student_dict = {"a": 1, "d": 4}
     only_keys = ["d"]
@@ -289,80 +269,9 @@ def test_check_dict_with_partial_key_matching(mock_file, mock_add_feedback) -> N
         ),
     ):
         Feedback.check_dict(NAME, ref_dict, student_dict, only_keys=only_keys)
+    mock_add_feedback.assert_not_called()
 
 
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_with_partial_key_missing(mock_file, mock_add_feedback) -> None:
-    """Test when only some keys match between reference and student dictionaries."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {"a": 1, "b": 20, "d": 4}
-    only_keys = ["a", "b", "c"]
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict, only_keys=only_keys)
-    mock_add_feedback.assert_called_with(f"{NAME} has missing keys: `c`")
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_wrong_value_type(mock_file, mock_add_feedback) -> None:
-    """Test when values are of the wrong type."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = {"a": 1, "b": "2", "c": 3}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(
-        "test_check_dict has key `b` with type `str`, which is not the right type"
-    )
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_with_type_mismatch(mock_file, mock_add_feedback) -> None:
-    """Test dictionaries where values have different types."""
-    ref_dict = {"a": 1, "b": "string", "c": [1, 2, 3]}
-    student_dict = {
-        "a": 1,
-        "b": 100,
-        "c": ["1", "2", "3"],
-    }  # Key 'c' still has the value of type
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(
-        "test_check_dict has key `b` with type `int`, which is not the right type"
-    )
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_wrong_value_type1_only_values(
-    mock_file, mock_add_feedback: Mock
-) -> None:
-    """
-    This will pass the type check on the values.
-    but will fail at the check_values because values are different among both the dicts
-    Error Expected: extra_value
-    """
-    ref_dict = {"a": 1, "b": "string", "c": [1, 2, 3]}
-    student_dict = {"a": 1, "b": 100, "c": 43}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
-    mock_add_feedback.assert_called_with(
-        "test_check_dict has key `b` with type `int`, which is not the right type"
-    )
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_none_data(mock_file, mock_add_feedback) -> None:
-    """Test when student dict is None."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = None
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)  # type: ignore
-    mock_add_feedback.assert_called_with(f"{NAME} is not a dict, got None")
-
-
-@patch("code_feedback.Feedback.add_feedback")
-@patch("builtins.open", new_callable=mock_open)
-def test_check_dict_not_a_dict(mock_file, mock_add_feedback) -> None:
-    """Test when student input is not a dict."""
-    ref_dict = {"a": 1, "b": 2, "c": 3}
-    student_dict = [("a", 1), ("b", 2), ("c", 3)]
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)  # type: ignore
-    mock_add_feedback.assert_called_with(f"{NAME} is not a dict, got list")
+# Remove original individual test functions below (or comment them out)
+# ... (all original test functions from test_check_dict_correct1 to test_check_dict_not_a_dict) ...
+# Keep test_check_dict_with_partial_key_matching as test_check_dict_with_partial_key_matching_raises_error
