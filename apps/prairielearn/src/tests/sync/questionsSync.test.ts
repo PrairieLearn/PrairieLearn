@@ -5,6 +5,11 @@ import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
 import { idsEqual } from '../../lib/id.js';
+import {
+  type QuestionJsonInput,
+  type TagJsonInput,
+  type TopicJsonInput,
+} from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -12,7 +17,7 @@ import * as util from './util.js';
 /**
  * Makes an empty question.
  */
-function makeQuestion(courseData: util.CourseData): util.Question {
+function makeQuestion(courseData: util.CourseData): QuestionJsonInput {
   return {
     uuid: uuidv4(),
     title: 'Test question',
@@ -193,7 +198,7 @@ describe('Question syncing', () => {
 
   it('preserves question topic even if question topic is deleted', async () => {
     const courseData = util.getCourseData();
-    const newTopic = {
+    const newTopic: TopicJsonInput = {
       name: 'test topic',
       color: 'green1',
       description: 'test topic description',
@@ -219,7 +224,7 @@ describe('Question syncing', () => {
 
   it('preserves question tag even if question tag is deleted', async () => {
     const courseData = util.getCourseData();
-    const newTag = {
+    const newTag: TagJsonInput = {
       name: 'test tag',
       color: 'green1',
       description: 'test tag description',
