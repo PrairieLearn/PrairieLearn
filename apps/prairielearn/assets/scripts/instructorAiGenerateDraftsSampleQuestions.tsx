@@ -69,6 +69,19 @@ onDocumentReady(() => {
                                     Next
                                 </button>
                             </div>
+                            <p class="fw-bold mb-1 mt-3">Question features</p>
+                            <ul id="feature-list">
+                                <li>Test 1</li>
+                                <li>Test 2</li>
+                                <li>Test 3</li>
+                            </ul>
+
+                            <p class="fw-bold mb-1 mt-3">Prompt</p>
+                            <p id="sample-question-prompt">{examplePrompts[0].promptGeneral}</p>
+                            <button id="fill-prompts" type="button" class="btn btn-primary me-2">
+                                <i class="fa fa-clone mr-2" aria-hidden="true"></i>
+                                Fill prompt
+                            </button>
                         </div>
                     </div>
                 </div>
