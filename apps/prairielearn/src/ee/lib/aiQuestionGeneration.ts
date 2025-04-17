@@ -135,17 +135,10 @@ export async function makeContext(
     QuestionGenerationContextEmbeddingSchema,
   );
 
-  // Using the prompt, try to find documentation for similar elements and save as the last doc.
-  const embeddingUserInput = await createEmbedding(
-    client,
-    prompt,
-    openAiUserFromAuthn(authnUserId),
-  );
-
   const elementDoc = await queryRow(
     sql.select_nearby_documents_from_file,
     {
-      embedding: vectorToString(embeddingUserInput),
+      embedding: vectorToString(embedding),
       doc_path: 'docs/elements.md',
       limit: 1,
     },
