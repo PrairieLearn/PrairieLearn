@@ -247,6 +247,100 @@ describe('Question syncing', () => {
     assert.ok(syncedQuestionTag);
   });
 
+  it('Authors are put into database', async () => {
+    const courseData = util.getCourseData();
+    const newAuthor = 'example@example.com';
+
+    if (!courseData.questions[util.QUESTION_ID].authors) {
+      courseData.questions[util.QUESTION_ID].authors = [];
+    }
+    courseData.questions[util.QUESTION_ID].authors?.push(newAuthor);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+    assert.ok(originalSyncedQuestion);
+
+    // Check that the author was added to the authors table
+    const authors = await util.dumpTable('authors');
+    const author = authors.find((a) => a.author_string === newAuthor);
+    assert.ok(author);
+
+    // Check that the question-author relationship was created
+    const questionAuthors = await util.dumpTable('question_authors');
+    const questionAuthor = questionAuthors.find(
+      (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author.id,
+    );
+    assert.ok(questionAuthor);
+  });
+
+  it('Authors are removed when removed from question', async () => {
+    const courseData = util.getCourseData();
+    const newAuthor = 'example@example.com';
+
+    if (!courseData.questions[util.QUESTION_ID].authors) {
+      courseData.questions[util.QUESTION_ID].authors = [];
+    }
+    courseData.questions[util.QUESTION_ID].authors?.push(newAuthor);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    // Now remove the author
+    courseData.questions[util.QUESTION_ID].authors = [];
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+    assert.isOk(originalSyncedQuestion);
+
+    // Check that the question-author relationship was removed
+    const questionAuthors = await util.dumpTable('question_authors');
+    const questionAuthor = questionAuthors.find(
+      (qa) => qa.question_id === originalSyncedQuestion.id,
+    );
+    assert.isUndefined(questionAuthor);
+  });
+
+  it('Authors are shared between questions', async () => {
+    const courseData = util.getCourseData();
+    const newAuthor = 'example@example.com';
+
+    // Add author to first question
+    if (!courseData.questions[util.QUESTION_ID].authors) {
+      courseData.questions[util.QUESTION_ID].authors = [];
+    }
+    courseData.questions[util.QUESTION_ID].authors?.push(newAuthor);
+
+    // Add same author to second question
+    if (!courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors) {
+      courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors = [];
+    }
+    courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors?.push(newAuthor);
+
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    // Check that only one author record was created
+    const authors = await util.dumpTable('authors');
+    const author = authors.find((a) => a.author_string === newAuthor);
+    assert.isOk(author);
+    assert.equal(authors.filter((a) => a.author_string === newAuthor).length, 1);
+
+    // Check that both questions have the author relationship
+    const questionAuthors = await util.dumpTable('question_authors');
+    const question1 = await findSyncedQuestion(util.QUESTION_ID);
+    const question2 = await findSyncedQuestion(util.ALTERNATIVE_QUESTION_ID);
+    assert.isOk(question1);
+    assert.isOk(question2);
+    const question1Author = questionAuthors.find(
+      (qa) => qa.author_id === author.id && qa.question_id === question1.id,
+    );
+    const question2Author = questionAuthors.find(
+      (qa) => qa.author_id === author.id && qa.question_id === question2.id,
+    );
+    assert.isOk(question1Author);
+    assert.isOk(question2Author);
+  });
+
   it('records an error if "options" object is invalid', async () => {
     const courseData = util.getCourseData();
     const testQuestion = courseData.questions[util.QUESTION_ID];
