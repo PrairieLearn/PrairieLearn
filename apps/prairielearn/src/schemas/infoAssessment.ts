@@ -47,7 +47,9 @@ export const AssessmentAccessRuleJsonSchema = z
     role: z.enum(['Student', 'TA', 'Instructor']).describe('DEPRECATED -- do not use.').optional(),
     uids: z
       .array(z.string())
-      .describe("A list of UIDs (like 'username@example.com'), one of which is required for access")
+      .describe(
+        "A list of UIDs (like 'username@example.com'), one of which is required for access.",
+      )
       .optional(),
     credit: z
       .number()
@@ -148,18 +150,6 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canSubmit: uniqueArray(z.string())
-    .describe(
-      'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
-    )
-    .optional()
-    .default([]),
-  canView: uniqueArray(z.string())
-    .describe(
-      'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
-    )
-    .optional()
-    .default([]),
 });
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({

@@ -221,7 +221,7 @@
           "deprecated": true
         },
         "uids": {
-          "description": "A list of UIDs (like 'username@example.com'), one of which is required for access",
+          "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
           "type": "array",
           "items": {
             "type": "string"
@@ -461,24 +461,6 @@
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
           "minimum": 0
-        },
-        "canSubmit": {
-          "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
-        },
-        "canView": {
-          "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
         }
       }
     },

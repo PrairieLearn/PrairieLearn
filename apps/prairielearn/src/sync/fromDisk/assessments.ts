@@ -144,8 +144,8 @@ function getParamsForAssessment(
               0,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
-            canView: alternative?.canView ?? questionCanView,
-            canSubmit: alternative?.canSubmit ?? questionCanSubmit,
+            canView: questionCanView,
+            canSubmit: questionCanSubmit,
           };
         });
       } else if (question.id) {

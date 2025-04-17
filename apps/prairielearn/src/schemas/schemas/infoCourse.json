@@ -115,7 +115,7 @@
       "description": "Question topics (visible to students).",
       "type": "array",
       "items": {
-        "description": "A single topic, can represent a unit of learning (e.g. 'vectors')",
+        "description": "A single topic, can represent a unit of learning (e.g. 'vectors').",
         "type": "object",
         "required": ["name", "color"],
         "properties": {

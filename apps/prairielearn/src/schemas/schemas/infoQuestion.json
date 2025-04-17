@@ -133,8 +133,9 @@
         "environment": {
           "description": "Environment variables to set inside the grading container.",
           "type": "object",
-          "additionalProperties": {},
-          "properties": {}
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },
@@ -271,8 +272,9 @@
         "environment": {
           "description": "Environment variables to set inside the workspace container.",
           "type": "object",
-          "additionalProperties": {},
-          "properties": {}
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "syncIgnore": {
           "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.",

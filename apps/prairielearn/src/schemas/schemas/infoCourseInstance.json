@@ -65,7 +65,7 @@
             "deprecated": true
           },
           "uids": {
-            "description": "A list of UIDs, one of which is required for access",
+            "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
             "type": "array",
             "items": {
               "type": "string"

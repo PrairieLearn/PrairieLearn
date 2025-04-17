@@ -2,14 +2,15 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
+import type { CourseJson } from '../../schemas/infoCourse.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function isExampleCourse(courseInfo: CourseData['course']['data']): boolean {
+function isExampleCourse(courseInfo: CourseJson): boolean {
   return (
-    courseInfo?.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
-    courseInfo?.title === 'Example Course' &&
-    courseInfo?.name === 'XC 101'
+    courseInfo.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
+    courseInfo.title === 'Example Course' &&
+    courseInfo.name === 'XC 101'
   );
 }
 

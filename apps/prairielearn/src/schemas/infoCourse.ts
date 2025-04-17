@@ -45,7 +45,7 @@ export const TopicJsonSchema = z
     color: ColorJsonSchema,
     description: z.string().describe('Description of the topic.').optional(),
   })
-  .describe("A single topic, can represent a unit of learning (e.g. 'vectors')");
+  .describe("A single topic, can represent a unit of learning (e.g. 'vectors').");
 
 export type TopicJson = z.infer<typeof TopicJsonSchema>;
 export type TopicJsonInput = z.input<typeof TopicJsonSchema>;
