@@ -341,31 +341,19 @@ class Feedback:
         ref: dict[Any, Any],
         data: dict[Any, Any],
         *,
-        partial_keys: None | list[str] = None,
-        check_keys: bool = False,
-        check_values: bool = False,
-        key_type: Any = None,
-        value_type: Any = None,
+        only_keys: None | list[str] = None,
         accuracy_critical: bool = False,
         report_failure: bool = True,
     ) -> bool:
         """
         Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`).
-        It also verifies the length of keys in the student dictionary against the reference dictionary, and optionally,
-        enforces homogeneous data types for keys (using `entry_type_key`), values (using `entry_type_value`), or both.
-        Additionally, it can verify the presence of specific keys (using `partial_keys`) in the student dictionary,
-        and can focus the comparison solely on keys (using `check_only_keys`), values (using `check_only_values`), or both.
 
         Parameters:
 
         - name: Name of the dict that is being checked. This will be used to give feedback.
         - ref: Reference dict.
         - data: Student dict to be checked. Do not mix this up with the previous dict! This argument is subject to more strict type checking.
-        - partial_keys: If not None, it takes a List of keys to check if these particular keys are present in the student's dict or not.
-        - check_keys: If true, grading will be done only based on checking all keys in student's dict and reference's dict match or not.
-        - check_values: If true, grading will be done only based on checking all values in student's dict and reference's dict match or not.
-        - key_type: If not None, requires that each key in the student's dictionary in solution be of this type.
-        - value_type: If not None, requires that each value in the student's dictionary in solution be of this type.
+        - only_keys: If not None, it will only only compare the keys listed.
         - accuracy_critical: If true, grading will halt on failure.
         - report_failure: If true, feedback will be given on failure.
         """
@@ -379,70 +367,39 @@ class Feedback:
                 return False
 
         if data is None:
-            return bad(f"{name} is None or not defined")
+            return bad(f"{name} is None")
 
         if not isinstance(data, dict):
-            return bad(f"{name} is not a dict")
+            return bad(f"{name} is not a dict, got {type(data).__name__}")
 
-        # First, do all data type and partial keys checks.
-        if value_type is not None:
-            for value in data.values():
-                if not isinstance(value, value_type):
-                    return bad(
-                        f"{name} has the wrong type for value {value}, expected type {value_type}"
-                    )
-        if key_type is not None:
-            for key in data:
-                if not isinstance(key, key_type):
-                    return bad(
-                        f"{name} has the wrong type for key {key}, expected type {key_type}"
-                    )
+        check_all = only_keys is None
+        keys_to_check = ref.keys() if check_all else only_keys
+        if check_all and len(ref) != len(data):
+            return bad(
+                f"{name} has the wrong number of keys: expected {len(ref)}, got {len(data)}"
+            )
 
-        if partial_keys is None:
-            if check_values and len(ref.values()) != len(data.values()):
+        missing_keys = set(keys_to_check) - set(data.keys())
+        if missing_keys:
+            return bad(f"{name} is missing keys: '{', '.join(missing_keys)}'")
+
+        extra_keys = set(data.keys()) - set(keys_to_check)
+        if check_all and extra_keys:
+            return bad(f"{name} has extra keys: '{', '.join(extra_keys)}'")
+
+        # Now check the values themselves
+        for key in keys_to_check:
+            if ref[key] != data[key]:
                 return bad(
-                    f"{name} has the wrong number of values: expected {len(ref.values())}, got {len(data.values())}"
+                    f"{name} has key '{key}' with value '{data[key]}', which is not correct"
+                )
+            # It's possible that the equality will pass even if the types are different
+            if type(ref[key]) != type(data[key]):
+                return bad(
+                    f"{name} has key '{key}' with type '{type(data[key]).__name__}', which is not the right type"
                 )
 
-            if len(ref) != len(data):  # this is default length of keys check
-                return bad(
-                    f"{name} has the wrong number of entries: expected {len(ref)}, got {len(data)}"
-                )
-        check_partial_keys = partial_keys is not None and len(partial_keys) >= 1
-
-        # If any special checks enabled, do those
-        if check_keys or check_values or check_partial_keys:
-            # First, check for partial keys
-            if check_partial_keys and partial_keys:
-                for partial_key in partial_keys:
-                    if partial_key not in data:
-                        return bad(f"{name} does not contain key {partial_key}")
-
-            # Next, check that all keys are valid
-            if check_keys:
-                for key in data:
-                    if key not in ref:
-                        return bad(f"{name} contains an extra key: {key}")
-
-            # Finally, check all values are valid
-            if check_values:
-                if len(ref.values()) != len(data.values()):
-                    return bad(
-                        f"{name} has the wrong length for values: expected {len(ref.values())}, got {len(data.values())}"
-                    )
-                for value in data.values():
-                    if value not in ref.values():
-                        return bad(f"{name} contains an extra value: {value}")
-
-            # If all checks passed and we got to the end, return True
-            return True
-
-        # Otherwise, check equality of both keys and values between reference
-        # dict and student's dict
-        if ref == data:
-            return True
-
-        return bad(f"{name} has one or more key-value pairs that do not match")
+        return True
 
     @classmethod
     def check_tuple(
