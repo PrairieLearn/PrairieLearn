@@ -348,10 +348,6 @@ def test_check_dict_wrong_value_type1_only_values(
     )
 
 
-# TESTs: student_dict is NONE or UN-DEFINED  #####
-# Expecting ErrorCode: name_not_defined
-
-
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
 def test_check_dict_none_data(mock_file, mock_add_feedback) -> None:
@@ -360,10 +356,6 @@ def test_check_dict_none_data(mock_file, mock_add_feedback) -> None:
     student_dict = None
     assert not Feedback.check_dict(NAME, ref_dict, student_dict)  # type: ignore
     mock_add_feedback.assert_called_with(f"{NAME} is not a dict, got None")
-
-
-# TESTs: student_dict is NOT VALID DICT  #####
-# Expecting ErrorCode:
 
 
 @patch("code_feedback.Feedback.add_feedback")
