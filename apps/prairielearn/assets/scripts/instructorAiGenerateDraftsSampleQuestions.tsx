@@ -1,10 +1,10 @@
+import { render } from 'preact';
+import { useMemo, useState } from 'preact/hooks';
 import Accordion from 'react-bootstrap/Accordion';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import { render } from '@prairielearn/preact-cjs';
-import { useMemo, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { examplePrompts } from '../../src/lib/aiGeneratedQuestionSamples.js';
 
