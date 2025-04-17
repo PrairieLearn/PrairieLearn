@@ -40,6 +40,7 @@ export function InstructorAIGenerateDrafts({
     headContent: html`
       ${compiledScriptTag('instructorAiGenerateDraftsClient.ts')}
       ${compiledScriptTag('instructorAiGenerateDraftsSampleQuestionClient.ts')}
+      ${compiledScriptTag('instructorAiGenerateDraftsClientPreact.tsx')}
       ${compiledStylesheetTag('instructorAiGenerateDrafts.css')}
       <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
       <style>
@@ -87,6 +88,9 @@ export function InstructorAIGenerateDrafts({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="generate_question" />
 
+            <div id="preact-test-component"></div>
+
+            // TODO: Refactor the SampleQuestionSelector component to use React
             ${SampleQuestionSelector({
               initialPrompt: examplePrompts[0],
               startOpen: sampleQuestionOpen,
