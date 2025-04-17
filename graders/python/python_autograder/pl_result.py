@@ -51,17 +51,26 @@ class PLTestResult(unittest.TestResult):
 
     def addSuccess(self, test: Any | unittest.TestCase) -> None:  # noqa: N802
         unittest.TestResult.addSuccess(self, test)
-        # We can't easily import PLTestCase to type these fields
-        if test.points is None:  # type: ignore
+        points = getattr(test, "points", None)
+        if points is None:
             self.results[-1]["points"] = self.results[-1]["max_points"]
         else:
-            self.results[-1]["points"] = test.points * self.results[-1]["max_points"]  # type: ignore
+            self.results[-1]["points"] = points * self.results[-1]["max_points"]
 
     def addError(self, test: unittest.TestCase, err: Any) -> None:  # noqa: N802
-        if isinstance(err[1], GradingComplete):
-            # Grading was stopped early; don't run any more tests. We'll still
-            # loop through the remaining cases so that we have the correct point values.
-            self.skip_grading = True
+        if isinstance(err[1], (GradingComplete, TestComplete)):
+            # Either the test suite as a whole or this specific test case was stopped early.
+            # There may be points set; if not, set to 0.
+            points = getattr(test, "points", None)
+            if points is None:
+                self.results[-1]["points"] = 0
+            else:
+                self.results[-1]["points"] = points * self.results[-1]["max_points"]
+
+            if isinstance(err[1], GradingComplete):
+                # Grading was stopped early; don't run any more tests. We'll still
+                # loop through the remaining cases so that we have the correct point values.
+                self.skip_grading = True
         elif isinstance(err[1], TestComplete):
             # This test case was stopped early. It's assumed that any points or
             # feedback have already been given.
