@@ -475,7 +475,7 @@
       "default": false
     },
     "advanceScorePerc": {
-      "description": "Minimum score percentage to unlock access to subsequent questions",
+      "description": "Minimum score percentage to unlock access to subsequent questions.",
       "type": "number",
       "minimum": 0,
       "maximum": 100
