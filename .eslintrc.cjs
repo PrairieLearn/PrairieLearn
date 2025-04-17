@@ -163,11 +163,6 @@ module.exports = {
         browser: true,
         jquery: true,
       },
-      settings: {
-        react: {
-          pragma: 'h',
-        },
-      },
     },
   ],
 };
