@@ -40,6 +40,7 @@ updates:
       # https://github.com/novnc/noVNC/issues/1792
       - dependency-name: '@novnc/novnc'
       # ua-parser-js 2.x changes its license to a less permissive license:
+      # https://github.com/faisalman/ua-parser-js/issues/680
       - dependency-name: 'ua-parser-js'
         versions: ['>=2']
 
