@@ -367,7 +367,7 @@ This feature allows you to preview a course as yourself but with different roles
 - "Student view": Simulates the student view.
 - "Student view without access restrictions": Simulates the student view without taking into account any access control.
 
-You can also change to a different effective user to see the course as they would. After entering a UID and clicking "Change UID", you can switch between two additional views under:
+You can also change to a different effective user to see the course as they would. After entering a UID and clicking "Change UID", you can switch between two additional views:
 
 - "Student view": Simulates the view of a specific user.
 - "Student view without access restrictions": Simulates the view of a specific user without taking into account any access control.
