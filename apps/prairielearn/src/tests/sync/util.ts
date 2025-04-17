@@ -101,6 +101,7 @@ interface QuestionAlternative {
   id?: string;
   forceMaxPoints?: boolean;
   triesPerVariant?: number;
+  advanceScorePerc?: number;
   gradeRateMinutes?: number;
 }
 
@@ -115,9 +116,10 @@ interface ZoneQuestion {
   alternatives?: QuestionAlternative[];
   numberChoose?: number;
   triesPerVariant?: number;
-  canSubmit?: string[];
-  canView?: string[];
+  advanceScorePerc?: number;
   gradeRateMinutes?: number;
+  canView?: string[];
+  canSubmit?: string[];
 }
 
 interface Zone {
@@ -126,9 +128,10 @@ interface Zone {
   maxChoose?: number;
   bestQuestions?: number;
   questions?: ZoneQuestion[];
-  canSubmit?: string[];
-  canView?: string[];
+  advanceScorePerc?: number;
   gradeRateMinutes?: number;
+  canView?: string[];
+  canSubmit?: string[];
 }
 
 export interface Assessment {
@@ -138,7 +141,6 @@ export interface Assessment {
   set: string;
   module?: string;
   number: string;
-  groupRoles?: GroupRole[];
   allowIssueReporting?: boolean;
   allowRealTimeGrading?: boolean;
   requireHonorCode?: boolean;
@@ -156,9 +158,10 @@ export interface Assessment {
   studentGroupCreate?: boolean;
   studentGroupJoin?: boolean;
   studentGroupLeave?: boolean;
-  hasRoles?: boolean;
-  canSubmit?: string[];
+  groupRoles?: GroupRole[];
   canView?: string[];
+  canSubmit?: string[];
+  advanceScorePerc?: number;
   gradeRateMinutes?: number;
   shareSourcePublicly?: boolean;
 }
