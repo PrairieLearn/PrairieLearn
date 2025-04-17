@@ -15,7 +15,7 @@ import * as util from './util.js';
  */
 function checkAssessmentSet(
   syncedAssessmentSet: AssessmentSet | null | undefined,
-  assessmentSet: Partial<AssessmentSetJsonInput>,
+  assessmentSet: Partial<AssessmentSet>,
 ) {
   assert.isOk(syncedAssessmentSet);
   for (const key of Object.keys(assessmentSet)) {
@@ -227,7 +227,7 @@ describe('Assessment set syncing', () => {
       name: 'X',
       heading: 'X',
       color: 'gray1',
-      // number: 1,
+      number: 1,
     });
   });
 });
