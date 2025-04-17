@@ -228,6 +228,7 @@ function UserDropdownMenu({
           id="navbarDropdown"
           href="#"
           role="button"
+          data-bs-auto-close="outside"
           data-bs-toggle="dropdown"
           aria-haspopup="true"
           aria-expanded="false"
@@ -557,7 +558,7 @@ function AuthnOverrides({
       <label class="visually-hidden" for="effective-uid">UID</label>
       <input
         id="effective-uid"
-        type="text"
+        type="email"
         placeholder="student@example.com"
         class="form-control form-control-sm me-2 flex-grow-1 js-effective-uid-input"
       />
