@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "node-gyp": "^11.2.0",
+    "preact-compat": "^3.19.0",
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.9",
     "react-dom": "^19.1.0"
@@ -58,6 +59,9 @@
     "typescript": "^5.8.2"
   },
   "resolutions": {
-    "notebookjs/jsdom": "^25.0.0"
+    "notebookjs/jsdom": "^25.0.0",
+    "preact": "link:./packages/preact-cjs",
+    "react": "link:./packages/preact-cjs-compat",
+    "react-dom": "link:./packages/preact-cjs-compat"
   }
 }
