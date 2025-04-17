@@ -71,11 +71,11 @@ lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-
 
 lint: lint-js lint-python lint-html lint-links
 lint-js:
-	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
+	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check
 # This is a separate target since the caches don't respect updates to plugins.
 lint-js-cached:
-	@yarn eslint --ext js --report-unused-disable-directives --cache --cache-strategy content "**/*.{js,ts}"
+	@yarn eslint --ext js --report-unused-disable-directives --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check --cache --cache-strategy content
 lint-python:
 	@python3 -m ruff check ./
