@@ -270,8 +270,3 @@ def test_check_dict_with_partial_key_matching_raises_error(
     ):
         Feedback.check_dict(NAME, ref_dict, student_dict, only_keys=only_keys)
     mock_add_feedback.assert_not_called()
-
-
-# Remove original individual test functions below (or comment them out)
-# ... (all original test functions from test_check_dict_correct1 to test_check_dict_not_a_dict) ...
-# Keep test_check_dict_with_partial_key_matching as test_check_dict_with_partial_key_matching_raises_error
