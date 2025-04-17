@@ -57,7 +57,7 @@ export const WorkspaceOptionsJsonSchema = z
     home: z.string().describe('The home directory of the workspace container.'),
     args: z
       .union([z.string(), z.array(z.string())])
-      .describe('Command line arguments to pass to the Docker.')
+      .describe('Command line arguments to pass to the Docker container.')
       .optional(),
     rewriteUrl: z
       .boolean()

@@ -239,7 +239,7 @@
           "type": "string"
         },
         "args": {
-          "description": "Command line arguments to pass to the Docker.",
+          "description": "Command line arguments to pass to the Docker container.",
           "anyOf": [
             {
               "type": "string"

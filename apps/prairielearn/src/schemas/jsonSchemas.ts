@@ -200,7 +200,7 @@ export const questionOptionsCalculation = prairielearnZodToJsonSchema(
 export const questionOptionsCheckbox = prairielearnZodToJsonSchema(
   QuestionCheckboxOptionsJsonSchema,
   {
-    name: 'MultipleChoice question options',
+    name: 'Checkbox question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
     definitions: { CommentJsonSchema },
