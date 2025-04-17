@@ -349,13 +349,12 @@ class Feedback:
         Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`).
 
         Parameters:
-
-        - name: Name of the dict that is being checked. This will be used to give feedback.
-        - ref: Reference dict.
-        - data: Student dict to be checked. Do not mix this up with the previous dict! This argument is subject to more strict type checking.
-        - only_keys: If not None, it will only only compare the keys listed.
-        - accuracy_critical: If true, grading will halt on failure.
-        - report_failure: If true, feedback will be given on failure.
+            name: Name of the dict that is being checked. This will be used to give feedback.
+            ref: Reference dict.
+            data: Student dict to be checked. Do not mix this up with the previous dict! This argument is subject to more strict type checking.
+            only_keys: If not None, it will only only compare the keys listed.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
         """
 
         def bad(msg: str) -> Literal[False]:
