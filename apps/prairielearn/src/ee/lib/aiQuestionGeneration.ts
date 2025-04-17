@@ -127,11 +127,12 @@ export async function makeContext(
         )
       : [];
 
-  const numElements = Math.max(5 - mandatoryElements.length, 0);
+  // The number of additional elements to include after accounting for all mandatory elements.
+  const numAdditionalElements = Math.max(5 - mandatoryElements.length, 0);
 
   const docs = await queryRows(
     sql.select_nearby_documents,
-    { embedding: vectorToString(embedding), limit: numElements },
+    { embedding: vectorToString(embedding), limit: numAdditionalElements },
     QuestionGenerationContextEmbeddingSchema,
   );
 
@@ -145,9 +146,9 @@ export async function makeContext(
     },
     QuestionGenerationContextEmbeddingSchema,
   );
-  if (numElements > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
+  if (numAdditionalElements > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
     // Override the last (least relevant) doc.
-    docs[numElements - 1] = elementDoc;
+    docs[numAdditionalElements - 1] = elementDoc;
   }
 
   return docs
