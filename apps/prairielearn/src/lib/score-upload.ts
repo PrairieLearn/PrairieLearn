@@ -1,4 +1,5 @@
 import csvtojson from 'csvtojson';
+import isPlainObject from 'is-plain-obj';
 import _ from 'lodash';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
@@ -257,7 +258,7 @@ export async function uploadAssessmentInstanceScores(
 
 // missing values and empty strings get mapped to null
 function getJsonPropertyOrNull(json: Record<string, any>, key: string): any {
-  const value = _.get(json, key, null);
+  const value = json[key] ?? null;
   if (value === '') return null;
   return value;
 }
@@ -286,8 +287,8 @@ function getFeedbackOrNull(json: Record<string, any>): Record<string, any> | nul
     } catch (e) {
       throw new Error(`Unable to parse "feedback_json" field as JSON: ${e}`);
     }
-    if (feedback_obj == null || !_.isPlainObject(feedback_obj)) {
-      throw new Error(`Parsed "feedback_json" is not a JSON object: ${feedback_obj}`);
+    if (feedback_obj == null || !isPlainObject(feedback_obj)) {
+      throw new Error(`Parsed "feedback_json" is not a JSON object: ${feedback_json}`);
     }
     feedback = feedback_obj;
     if (feedback_string != null) {
@@ -306,8 +307,8 @@ function getPartialScoresOrNull(json: Record<string, any>): Record<string, any> 
     } catch (e) {
       throw new Error(`Unable to parse "partial_scores" field as JSON: ${e}`);
     }
-    if (!_.isPlainObject(partial_scores)) {
-      throw new Error(`Parsed "partial_scores" is not a JSON object: ${partial_scores}`);
+    if (partial_scores != null && !isPlainObject(partial_scores)) {
+      throw new Error(`Parsed "partial_scores" is not a JSON object: ${partial_scores_json}`);
     }
   }
   return partial_scores;
@@ -373,7 +374,7 @@ async function updateInstanceQuestionFromJson(
       feedback: getFeedbackOrNull(json),
       partial_scores: getPartialScoresOrNull(json),
     };
-    if (_.some(Object.values(new_score), (value) => value != null)) {
+    if (Object.values(new_score).some((value) => value != null)) {
       await manualGrading.updateInstanceQuestionScore(
         assessment_id,
         submission_data.instance_question_id,
@@ -426,7 +427,7 @@ async function updateAssessmentInstanceFromJson(
   assessment_id: string,
   authn_user_id: string,
 ) {
-  if (!_.has(json, 'instance')) throw new Error('"instance" not found');
+  if (!('instance' in json)) throw new Error('"instance" not found');
   await sqldb.runInTransactionAsync(async () => {
     const { id, assessment_instance_id } = await getAssessmentInstanceId(json, assessment_id);
 
@@ -434,9 +435,9 @@ async function updateAssessmentInstanceFromJson(
       throw new Error(`unable to locate instance ${json.instance} for ${id}`);
     }
 
-    if (_.has(json, 'score_perc')) {
+    if ('score_perc' in json) {
       await updateAssessmentInstanceScore(assessment_instance_id, json.score_perc, authn_user_id);
-    } else if (_.has(json, 'points')) {
+    } else if ('points' in json) {
       await updateAssessmentInstancePoints(assessment_instance_id, json.points, authn_user_id);
     } else {
       throw new Error('must specify either "score_perc" or "points"');

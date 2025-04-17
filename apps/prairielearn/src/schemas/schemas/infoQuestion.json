@@ -60,12 +60,14 @@
       "enum": ["Internal", "External", "Manual"]
     },
     "singleVariant": {
-      "description": "Whether the question is not randomized and only generates a single variant (defaults to \"false\").",
-      "type": "boolean"
+      "description": "Whether the question is not randomized and only generates a single variant.",
+      "type": "boolean",
+      "default": false
     },
     "showCorrectAnswer": {
-      "description": "Whether to show the correct answer panel (defaults to \"true\").",
-      "type": "boolean"
+      "description": "Whether to show the correct answer panel.",
+      "type": "boolean",
+      "default": true
     },
     "partialCredit": {
       "description": "Whether the question will give partial points for fractional scores (defaults to \"false\" for v2 questions and \"true\" for v3.).",
@@ -79,7 +81,7 @@
       "description": "Options for externally graded questions.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["image", "entrypoint"],
+      "required": ["image"],
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
@@ -94,7 +96,7 @@
           "type": "string"
         },
         "entrypoint": {
-          "description": "Program or command to run as the entrypoint to your grader.",
+          "description": "Program or command to run as the entrypoint to your grader. If not provided, the default entrypoint for the image will be used.",
           "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
         },
         "serverFilesCourse": {
@@ -115,7 +117,10 @@
         },
         "environment": {
           "description": "Environment variables to set inside the grading container.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },
@@ -219,7 +224,7 @@
           "type": "string"
         },
         "args": {
-          "description": "Command line arguments to pass to the Docker.",
+          "description": "Command line arguments to pass to the Docker container.",
           "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
         },
         "rewriteUrl": {
@@ -240,10 +245,14 @@
         },
         "environment": {
           "description": "Environment variables to set inside the workspace container.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "syncIgnore": {
           "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.",
+          "deprecated": true,
           "type": "array",
           "items": {
             "description": "A single file or directory that will be excluded from sync.",
@@ -262,10 +271,6 @@
     },
     "sharePublicly": {
       "description": "Whether this question is publicly shared.",
-      "type": "boolean"
-    },
-    "sharedPublicly": {
-      "description": "[DEPRECATED, DO NOT USE] Whether this question is publicly shared.",
       "type": "boolean"
     },
     "shareSourcePublicly": {

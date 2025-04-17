@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # The purpose of this script is to prevent subtle issues that might occur if
 # you are testing in the local PrairieLearn Docker container and it attempts
@@ -16,12 +16,12 @@ if [ "${PL_USER:-}" = "root" ]; then
     echo " ERROR: Must not specify \"root\" as PL_USER. Exiting." >&2
     exit 1
 fi
-if [ $(id -u) -eq 0 ] ; then
+if [[ $(id -u) -eq 0 ]]; then
     set -eu
     chown -R 1001:1001 "/home/$PL_USER"
     set +eu
     exec gosu 1001:1001 "$@"
-elif [ $(id -u) -eq 1001 ] ; then
+elif [[ $(id -u) -eq 1001 ]]; then
     exec "$@"
 else
     echo " ERROR:" >&2

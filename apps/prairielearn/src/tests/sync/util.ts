@@ -15,16 +15,16 @@ interface CourseOptions {
   devModeFeatures: Record<string, boolean> | string[];
 }
 
-interface Tag {
+export interface Tag {
   name: string;
   color: string;
-  description: string;
+  description?: string;
 }
 
-interface Topic {
+export interface Topic {
   name: string;
   color: string;
-  description: string;
+  description?: string;
 }
 
 interface SharingSet {
@@ -101,6 +101,8 @@ interface QuestionAlternative {
   id?: string;
   forceMaxPoints?: boolean;
   triesPerVariant?: number;
+  advanceScorePerc?: number;
+  gradeRateMinutes?: number;
 }
 
 interface ZoneQuestion {
@@ -114,8 +116,10 @@ interface ZoneQuestion {
   alternatives?: QuestionAlternative[];
   numberChoose?: number;
   triesPerVariant?: number;
-  canSubmit?: string[];
+  advanceScorePerc?: number;
+  gradeRateMinutes?: number;
   canView?: string[];
+  canSubmit?: string[];
 }
 
 interface Zone {
@@ -124,8 +128,10 @@ interface Zone {
   maxChoose?: number;
   bestQuestions?: number;
   questions?: ZoneQuestion[];
-  canSubmit?: string[];
+  advanceScorePerc?: number;
+  gradeRateMinutes?: number;
   canView?: string[];
+  canSubmit?: string[];
 }
 
 export interface Assessment {
@@ -135,7 +141,6 @@ export interface Assessment {
   set: string;
   module?: string;
   number: string;
-  groupRoles?: GroupRole[];
   allowIssueReporting?: boolean;
   allowRealTimeGrading?: boolean;
   requireHonorCode?: boolean;
@@ -153,15 +158,18 @@ export interface Assessment {
   studentGroupCreate?: boolean;
   studentGroupJoin?: boolean;
   studentGroupLeave?: boolean;
-  hasRoles?: boolean;
-  canSubmit?: string[];
+  groupRoles?: GroupRole[];
   canView?: string[];
+  canSubmit?: string[];
+  advanceScorePerc?: number;
+  gradeRateMinutes?: number;
+  shareSourcePublicly?: boolean;
 }
 
 interface QuestionExternalGradingOptions {
   enabled?: boolean;
   image: string;
-  entrypoint: string | string[];
+  entrypoint?: string | string[];
   serverFilesCourse?: string[];
   timeout?: number;
   enableNetworking?: boolean;
@@ -187,7 +195,6 @@ export interface Question {
   tags?: string[];
   sharingSets?: string[];
   sharePublicly?: boolean;
-  sharedPublicly?: boolean;
   shareSourcePublicly?: boolean;
   clientFiles?: string[];
   clientTemplates?: string[];
@@ -375,7 +382,7 @@ const questions: Record<string, Question> = {
     uuid: '894927f7-19b3-451d-8ad1-75974ad2ffb7',
     title: 'Workspace test question',
     topic: 'Workspace',
-    tags: ['workspace'],
+    tags: ['test'],
     type: 'v3',
     workspaceOptions: {
       image: 'prairielearn/workspace-vscode-python',

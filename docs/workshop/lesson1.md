@@ -4,7 +4,7 @@
 
 Choose one of the examples below, and convert the question from the "paper-pencil" format to PrairieLearn.
 
-## Example 1:
+## Example 1
 
 Find the area for a region bounded by
 
@@ -26,11 +26,11 @@ $A = \int_0^2 (4-x^2) dx = \frac{16}{3}$
 
 - [workshop/Lesson1_example1_v2](https://us.prairielearn.com/pl/course/108/question/8211620/preview)
 
-## Example 2:
+## Example 2
 
 For a given metal, $Q_v = 2 \rm \,ev$ is the energy required for vacancy formation. When the temperature is $T_1 = 800^o\rm C$, the vacancy concentration is 1 for every 10000 atoms.
 
-Detemine the temperature $T_2$ needed to achieve a concentration of 1 vacancy for every 1000 atoms.
+Determine the temperature $T_2$ needed to achieve a concentration of 1 vacancy for every 1000 atoms.
 
 **Solution:**
 
@@ -55,11 +55,11 @@ $$\frac{1}{T_2} = \frac{1}{T_1} - \frac{k}{Q_v} \ln\left(\frac{N_{v2}}{N_{v1}} \
 
 - [workshop/Lesson1_example2](https://us.prairielearn.com/pl/course/108/question/8211621/preview)
 
-## Example 3:
+## Example 3
 
 Determine the equivalent resistance of the circuit below:
 
-![](figs/circ1.png)
+![A circuit figure](figs/circ1.png)
 
 **Solution:**
 
@@ -76,7 +76,7 @@ $R_T = 12.5 \Omega$
   $I_T = V_T/R_T = 10 A$
 - select the figure from two options: the parallel circuit above, or the series circuit below.
 
-![](figs/circ2.png)
+![A second circuit figure](figs/circ2.png)
 
 $R_T = R_1 + R_2 + R_3 = 170 \Omega$
 

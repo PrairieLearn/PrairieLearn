@@ -1,9 +1,10 @@
 {
   "extends": "./tsconfig.package.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "Node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": false,
-    "allowSyntheticDefaultImports": false
+    "allowSyntheticDefaultImports": false,
+    "verbatimModuleSyntax": false
   }
 }

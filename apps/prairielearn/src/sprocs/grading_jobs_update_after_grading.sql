@@ -122,8 +122,7 @@ BEGIN
         v2_score = new_v2_score,
         correct = new_correct,
         feedback = new_feedback,
-        submitted_answer = COALESCE(new_submitted_answer, submitted_answer),
-        grading_method = main.grading_method
+        submitted_answer = COALESCE(new_submitted_answer, submitted_answer)
     WHERE id = grading_job.submission_id;
 
     UPDATE variants AS v
@@ -137,7 +136,7 @@ BEGIN
         graded_at = now(),
         -- For internally-graded questions, these three timestamps will be NULL
         -- in this sproc's params. For the first two, we'll reuse the existing
-        -- values that were set in `grading_jobs_insert`, and for the finish
+        -- values that were set in `insertGradingJob`, and for the finish
         -- timestamp, we'll use the current time.
         grading_received_at = COALESCE(received_time, grading_received_at),
         grading_started_at = COALESCE(start_time, grading_started_at),

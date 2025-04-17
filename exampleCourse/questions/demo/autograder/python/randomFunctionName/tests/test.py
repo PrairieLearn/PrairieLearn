@@ -14,19 +14,19 @@ class Test(PLTestCase):
         pairs_dicts = self.data["params"]["pairs"]
 
         for pair_dict in pairs_dicts:
-            input = pair_dict["input"]
+            func_input = pair_dict["input"]
             expected_output = pair_dict["output"]
-            student_output = Feedback.call_user(student_function, input)
+            student_output = Feedback.call_user(student_function, func_input)
 
             if student_output == expected_output:
                 Feedback.add_feedback(
-                    f'Function "{function_name}" returned "{student_output}" on input "{input}".'
+                    f'Function "{function_name}" returned "{student_output}" on input "{func_input}".'
                 )
                 num_correct += 1
 
             else:
                 Feedback.add_feedback(
-                    f'Function "{function_name}" returned "{student_output}" on input "{input}", not "{expected_output}".'
+                    f'Function "{function_name}" returned "{student_output}" on input "{func_input}", not "{expected_output}".'
                 )
 
         percentage_score = num_correct / len(pairs_dicts)

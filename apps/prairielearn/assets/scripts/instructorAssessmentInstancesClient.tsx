@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
-import { h, render, Fragment } from 'preact';
+import { Fragment, h, render } from 'preact';
 import React, { useState } from 'preact/hooks';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
@@ -53,24 +53,8 @@ onDocumentReady(() => {
           table.data('filter-student-only', filterOn);
 
           $('.columns button[name=studentsOnly]').toggleClass('active', filterOn);
-          if (assessmentGroupWork) {
-            table.bootstrapTable(
-              'filterBy',
-              { group_roles: 'Student' },
-              {
-                // the "filter" parameter has to be specified, hence we place a dummy placeholder here
-                filterAlgorithm: (row: { group_roles: string }, _: any) => {
-                  if (filterOn) {
-                    return row.group_roles.includes('Student');
-                  } else {
-                    return true;
-                  }
-                },
-              },
-            );
-          } else {
-            table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
-          }
+          // The filter object triggers the customSearch function, which performs the actual search.
+          table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
         },
       },
     },
@@ -103,17 +87,23 @@ onDocumentReady(() => {
           $(this).find('.select-time-limit').trigger('change');
         });
     },
-    customSearch: (data: AssessmentInstanceRow[], searchText: string) => {
+    customSearch: (
+      data: AssessmentInstanceRow[],
+      searchText: string,
+      filter?: Record<string, any>,
+    ) => {
       return data.filter((row) => {
         const search = searchText.toLowerCase();
         return assessmentGroupWork
-          ? row.group_name?.toLowerCase().includes(search) ||
-              row.uid_list?.some((uid) => uid.toLowerCase().includes(search)) ||
-              row.user_name_list?.some((name) => name?.toLowerCase().includes(search)) ||
-              row.group_roles?.some((role) => role.toLowerCase().includes(search))
-          : row.uid?.toLowerCase().includes(search) ||
-              row.name?.toLowerCase().includes(search) ||
-              row.role?.toLowerCase().includes(search);
+          ? (!filter?.role || row.group_roles?.includes(filter.role)) &&
+              (row.group_name?.toLowerCase().includes(search) ||
+                row.uid_list?.some((uid) => uid.toLowerCase().includes(search)) ||
+                row.user_name_list?.some((name) => name?.toLowerCase().includes(search)) ||
+                row.group_roles?.some((role) => role.toLowerCase().includes(search)))
+          : (!filter?.role || row.role === filter.role) &&
+              (row.uid?.toLowerCase().includes(search) ||
+                row.name?.toLowerCase().includes(search) ||
+                row.role?.toLowerCase().includes(search));
       });
     },
     columns: tableColumns(assessmentGroupWork),
@@ -159,18 +149,21 @@ onDocumentReady(() => {
   $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
     const modal = $(this);
 
-    modal.find('form').on('submit', (e) => {
-      e.preventDefault();
-      $.post(
-        $(e.target).attr('action') ?? '',
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      modal.modal('hide');
-    });
+    modal
+      .parents('form')
+      .off('submit')
+      .on('submit', (e) => {
+        e.preventDefault();
+        $.post(
+          $(e.target).attr('action') ?? '',
+          $(e.target).serialize(),
+          function () {
+            refreshTable();
+          },
+          'json',
+        );
+        modal.modal('hide');
+      });
 
     // @ts-expect-error -- The BS5 types don't include the `relatedTarget` property on jQuery events.
     const { relatedTarget } = event;
@@ -192,21 +185,24 @@ onDocumentReady(() => {
   $('#deleteAllAssessmentInstancesModal').on('show.bs.modal', function () {
     const modal = $(this);
 
-    modal.find('form').on('submit', (e) => {
-      e.preventDefault();
-      $.post(
-        $(e.target).attr('action') ?? '',
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      modal.modal('hide');
-    });
+    modal
+      .parents('form')
+      .off('submit')
+      .on('submit', (e) => {
+        e.preventDefault();
+        $.post(
+          $(e.target).attr('action') ?? '',
+          $(e.target).serialize(),
+          function () {
+            refreshTable();
+          },
+          'json',
+        );
+        modal.modal('hide');
+      });
   });
 
-  $('[data-toggle="modal"]').on('click', function (e) {
+  $('[data-bs-toggle="modal"]').on('click', function (e) {
     e.stopPropagation(); // Keep click from changing sort
     $($(e.currentTarget).data('target')).modal('show');
   });
@@ -215,7 +211,7 @@ onDocumentReady(() => {
     return [
       {
         field: 'assessment_instance_id',
-        title: '<span class="sr-only">Assessment Instance</span>',
+        title: '<span class="visually-hidden">Assessment Instance</span>',
         sortable: true,
         sorter: detailsLinkSorter,
         formatter: detailsLinkFormatter,
@@ -257,9 +253,9 @@ onDocumentReady(() => {
                 <button
                   class="btn btn-xs btn-ghost"
                   type="button"
-                  title="Show roles help"
-                  data-toggle="modal"
-                  data-target="#role-help"
+                  aria-label="Roles help"
+                  data-bs-toggle="modal"
+                  data-bs-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
                 </button>
@@ -295,9 +291,9 @@ onDocumentReady(() => {
                 <button
                   class="btn btn-xs btn-ghost"
                   type="button"
-                  title="Show roles help"
-                  data-toggle="modal"
-                  data-target="#role-help"
+                  aria-label="Roles help"
+                  data-bs-toggle="modal"
+                  data-bs-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
                 </button>
@@ -338,9 +334,9 @@ onDocumentReady(() => {
           <button
             class="btn btn-xs btn-ghost"
             type="button"
-            title="Show duration help"
-            data-toggle="modal"
-            data-target="#duration-help"
+            aria-label="Duration help"
+            data-bs-toggle="modal"
+            data-bs-target="#duration-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
           </button>
@@ -357,9 +353,9 @@ onDocumentReady(() => {
           <button
             class="btn btn-xs btn-ghost"
             type="button"
-            title="Show remaining time help"
-            data-toggle="modal"
-            data-target="#time-remaining-help"
+            aria-label="Remaining time help"
+            data-bs-toggle="modal"
+            data-bs-target="#time-remaining-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
           </button>
@@ -388,9 +384,9 @@ onDocumentReady(() => {
           <button
             class="btn btn-xs btn-ghost"
             type="button"
-            title="Show fingerprint changes help"
-            data-toggle="modal"
-            data-target="#fingerprint-changes-help"
+            aria-label="Fingerprint changes help"
+            data-bs-toggle="modal"
+            data-bs-target="#fingerprint-changes-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
           </button>
@@ -535,7 +531,7 @@ onDocumentReady(() => {
         {showTimeLimitOptions ? (
           <p>
             <select
-              class="custom-select select-time-limit"
+              class="form-select select-time-limit"
               name="action"
               aria-label="Time limit options"
               onChange={(e) => updateFormState('action', e.currentTarget.value as TimeLimitAction)}
@@ -621,7 +617,7 @@ onDocumentReady(() => {
           ) : null}
         </p>
         <div class="btn-toolbar justify-content-end">
-          <button type="button" class="btn btn-secondary mr-2" data-dismiss="popover">
+          <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="popover">
             Cancel
           </button>
           <button type="submit" class="btn btn-primary">
@@ -660,12 +656,11 @@ onDocumentReady(() => {
       ${value}
       <span>
         <button
-          class="btn btn-secondary btn-xs ml-1 time-limit-edit-button"
+          class="btn btn-secondary btn-xs ms-1 time-limit-edit-button"
           id="row${row.assessment_instance_id}PopoverTimeLimit"
           aria-label="Change time limit"
           data-row="${JSON.stringify(row)}"
-          data-placement="bottom"
-          data-boundary="window"
+          data-bs-placement="bottom"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
         </a>
@@ -732,10 +727,10 @@ onDocumentReady(() => {
           <button
             type="button"
             class="btn btn-secondary btn-xs dropdown-toggle"
-            data-toggle="dropdown"
+            data-bs-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false"
-            data-boundary="window"
+            data-bs-boundary="window"
           >
             Action
           </button>
@@ -744,8 +739,8 @@ onDocumentReady(() => {
               ? html`
                   <button
                     class="dropdown-item"
-                    data-toggle="modal"
-                    data-target="#deleteAssessmentInstanceModal"
+                    data-bs-toggle="modal"
+                    data-bs-target="#deleteAssessmentInstanceModal"
                     data-uid="${row.uid}"
                     data-name="${row.name}"
                     data-number="${row.number}"
@@ -755,38 +750,38 @@ onDocumentReady(() => {
                     data-score-perc="${Math.floor(row.score_perc ?? 0)}"
                     data-assessment-instance-id="${row.assessment_instance_id}"
                   >
-                    <i class="fas fa-times mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-times me-2" aria-hidden="true"></i>
                     Delete
                   </button>
                   <button
                     class="dropdown-item ${row.open ? '' : 'disabled'}"
-                    data-toggle="popover"
-                    data-container="body"
-                    data-title="Confirm close"
-                    data-html="true"
-                    data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
-                    data-placement="auto"
+                    data-bs-toggle="popover"
+                    data-bs-container="body"
+                    data-bs-html="true"
+                    data-bs-title="Confirm close"
+                    data-bs-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
+                    data-bs-placement="auto"
                   >
-                    <i class="fas fa-ban mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-ban me-2" aria-hidden="true"></i>
                     Grade &amp; Close
                   </button>
                   <button
                     class="dropdown-item ${!row.open ? '' : 'disabled'}"
                     onclick="$('#row${ai_id}PopoverTimeLimit').popover('show')"
                   >
-                    <i class="fas fa-clock mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-clock me-2" aria-hidden="true"></i>
                     Re-open
                   </button>
                   <button
                     class="dropdown-item"
-                    data-toggle="popover"
-                    data-container="body"
-                    data-title="Confirm regrade"
-                    data-html="true"
-                    data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
-                    data-placement="auto"
+                    data-bs-toggle="popover"
+                    data-bs-container="body"
+                    data-bs-html="true"
+                    data-bs-title="Confirm regrade"
+                    data-bs-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
+                    data-bs-placement="auto"
                   >
-                    <i class="fas fa-sync mr-2" aria-hidden="true"></i>
+                    <i class="fas fa-sync me-2" aria-hidden="true"></i>
                     Regrade
                   </button>
                 `
@@ -864,7 +859,7 @@ function CloseForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number }) {
       <input type="hidden" name="__action" value="close" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Grade and close</button>
     </form>
   `;
@@ -876,7 +871,7 @@ function RegradeForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number })
       <input type="hidden" name="__action" value="regrade" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-primary">Regrade</button>
     </form>
   `;
