@@ -239,7 +239,6 @@ export async function processGradingResult(content: any): Promise<void> {
       feedback: content.grading.feedback,
       partial_scores: {},
       score: content.grading.score,
-      // `v2_score`: gross legacy, this can safely be null
     });
 
     if (updateUsages) {
