@@ -76,7 +76,7 @@ export function InstructorAIGenerateDrafts({
       </div>
       <div
         id="add-question-card"
-        class="card mb-5 mx-auto overflow-hidden"
+        class="card mb-5 mx-auto"
         style="max-width: 700px"
       >
         <div class="card-body position-relative">
