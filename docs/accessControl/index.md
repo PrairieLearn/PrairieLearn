@@ -359,15 +359,15 @@ This `allowAccess` directive is suitable for a `Homework` assessment. Students c
 
 Click on your user in the top right corner to see the role picker dropdown. This will allow you to preview the access control for different roles and users.
 
-![Showing the role picker dropdown](role_picker.png){ width=50% }
+![The role picker dropdown](role_picker.png){ width=50% }
 
-This feature allows you to see how the access rules will behave for:
+This feature allows you to preview a course as yourself but with different roles and restrictions:
 
-- "Staff view" - Default view.
-- "Student view" - This simulates the view of your own UID if you had the student role.
-- "Student view without access restrictions" - What students see if they had access to the content.
+- "Staff view": Default view.
+- "Student view": Simulates the student view.
+- "Student view without access restrictions": Simulates the student view without taking into account any access control.
 
-"View as ... UID"
+You can also change to a different effective user to see the course as they would. After entering a UID and clicking "Change UID", you can switch between two additional views under:
 
-- "Student view" - This simulates the view of a specific UID.
-- "Student view without access restrictions" - What this UID sees if they had access to the content.
+- "Student view": Simulates the view of a specific user.
+- "Student view without access restrictions": Simulates the view of a specific user without taking into account any access control.
