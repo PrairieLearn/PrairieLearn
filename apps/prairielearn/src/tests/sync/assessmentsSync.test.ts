@@ -2510,4 +2510,61 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[0].json_has_alternatives, false);
     assert.equal(syncedData.alternative_groups[1].json_has_alternatives, true);
   });
+
+  it('syncs advanceScorePerc correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.advanceScorePerc = 50;
+    assessment.zones = [
+      {
+        title: 'zone 1',
+        questions: [
+          {
+            id: util.QUESTION_ID,
+            points: 1,
+          },
+        ],
+      },
+      {
+        title: 'zone 2',
+        advanceScorePerc: 60,
+        questions: [
+          {
+            id: util.ALTERNATIVE_QUESTION_ID,
+            points: 1,
+            advanceScorePerc: 70,
+          },
+          {
+            advanceScorePerc: 80,
+            alternatives: [
+              {
+                id: util.MANUAL_GRADING_QUESTION_ID,
+                points: 1,
+              },
+              {
+                id: util.WORKSPACE_QUESTION_ID,
+                points: 1,
+                advanceScorePerc: 90,
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.equal(syncedData.assessment.advance_score_perc, 50);
+    assert.equal(syncedData.zones[0].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[0].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[0].effective_advance_score_perc, 50);
+    assert.equal(syncedData.zones[1].advance_score_perc, 60);
+    assert.equal(syncedData.assessment_questions[1].advance_score_perc, 70);
+    assert.equal(syncedData.assessment_questions[1].effective_advance_score_perc, 70);
+    assert.equal(syncedData.alternative_groups[2].advance_score_perc, 80);
+    assert.equal(syncedData.assessment_questions[2].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[2].effective_advance_score_perc, 80);
+    assert.equal(syncedData.assessment_questions[3].advance_score_perc, 90);
+    assert.equal(syncedData.assessment_questions[3].effective_advance_score_perc, 90);
+  });
 });

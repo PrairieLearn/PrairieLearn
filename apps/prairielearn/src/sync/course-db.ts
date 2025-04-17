@@ -1192,25 +1192,21 @@ async function validateAssessment(
       canSubmit: string[] | null | undefined,
       area: string,
     ): void => {
-      if (canView) {
-        for (const roleName of canView) {
-          if (!validRoleNames.has(roleName)) {
-            errors.push(
-              `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
-            );
-          }
+      canView?.forEach((roleName) => {
+        if (!validRoleNames.has(roleName)) {
+          errors.push(
+            `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
+          );
         }
-      }
+      });
 
-      if (canSubmit) {
-        for (const roleName of canSubmit) {
-          if (!validRoleNames.has(roleName)) {
-            errors.push(
-              `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,
-            );
-          }
+      canSubmit?.forEach((roleName) => {
+        if (!validRoleNames.has(roleName)) {
+          errors.push(
+            `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,
+          );
         }
-      }
+      });
     };
 
     // Validate role names at the assessment level

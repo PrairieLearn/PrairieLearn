@@ -22,6 +22,6 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/bindings": "^1.5.5",
     "@types/node": "^20.17.30",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   }
 }

@@ -55,7 +55,6 @@ export async function init() {
       'instance_questions_next_allowed_grade.sql',
       'submissions_lock.sql',
       'grading_jobs_lock.sql',
-      'grading_jobs_insert.sql',
       'grading_jobs_update_after_grading.sql',
       'ip_to_mode.sql',
       'users_select_or_insert.sql',

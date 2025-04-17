@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "MultipleChoice question options",
+  "title": "Checkbox question options",
   "description": "Options for a Checkbox question.",
   "type": "object",
   "additionalProperties": false,
