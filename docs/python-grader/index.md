@@ -191,8 +191,8 @@ The code feedback library contains built-in functions for checking correctness o
   Checks that a numpy array has the same shape and datatype as the reference solution, also checks values to see if they are close using specified `rtol` and `atol`.
 - `check_list(name, ref, data, entry_type=None)`
   Checks that a list has the same length as the reference solution. If `entry_type` is not `None`, can optionally check if each element has that type. Does _not_ check values against the reference.
-- `check_dict(name, ref, data, partial_keys=None, check_only_keys=False, check_only_values=False, entry_type_key=None, entry_type_value=None, accuracy_critical=False, report_failure=True)`
-  Checks that a student dict has all correct key-value mappings with respect to a reference dict. Can also check that a student dict has correct length of keys with respect to a reference dict's length of keys. Can also check for a homogeneous data type for either the dict's key, dict's value, or both. If `key_type` is not `None`, can optionally check if each key in the student's dictionary has that type. Similarly, If `value_type` is not `None`, can optionally check if each value in the student's dictionary has that type. If `partial_keys` is not `None`, can also check if only some particular keys present in the student dict or not. If `check_keys` is not `False` or `check_values` is not `False`, can also check student dict with respect to a reference dict only based on either keys, values, or both.
+- `check_dict(name, ref, data, *, partial_keys=None, check_keys=False, check_values=False, key_type=None, value_type=None, accuracy_critical=False, report_failure=False)`
+  Checks that a student dict has all correct key-value mappings with respect to a reference dict.
 - `check_tuple(name, ref, data)`
   Checks that a tuple has the same length and values as the reference solution.
 - `check_scalar(name, ref, data, rtol=1e-5, atol=1e-8)`
