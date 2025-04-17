@@ -8,7 +8,6 @@ export const QuestionMultipleTrueFalseOptionsJsonSchema = z
     text: z.string().describe('Text to precede the set of statements being given.').optional(),
     trueStatements: z
       .array(z.string())
-      .min(1, 'At least one true statement is required')
       .describe('A list of true statements for the question. Each is an HTML string.'),
     falseStatements: z
       .array(z.string())
