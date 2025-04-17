@@ -89,6 +89,11 @@ const prairielearnZodToJsonSchema = (
   const jsonSchema = zodToJsonSchema(schema, {
     ...options,
     override: rewriteGroupRoleAnnotation,
+    // Many people have done insane things in their JSON files that don't pass
+    // strict validation. For now, we'll be lenient and avoid the use of `.strict()`
+    // in our Zod schemas in places where that could cause problems. In the
+    // long run, we'll work towards getting all JSON compliant with strict schemas.
+    removeAdditionalStrategy: 'strict',
   });
 
   // Traverse the schema: if `DEPRECATED` in the description, add a `deprecated`: true field.
