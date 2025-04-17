@@ -1,5 +1,5 @@
-import { type Marked } from 'marked';
-import { type MathJaxObject } from 'mathjax-full/js/components/startup.js';
+import type { Marked } from 'marked';
+import type { MathJaxObject } from 'mathjax-full/js/components/startup.js';
 
 const startMath = /(\$|\\\(|\\\[)/;
 
@@ -23,7 +23,7 @@ export function addMathjaxExtension(marked: Marked, MathJax: MathJaxObject) {
       // like `\\` and `\$`, which we don't want MathJax to double-escape.
       // The text input is already escaped by marked itself.
       text: (token) =>
-        'tokens' in token && token.tokens
+        token.type == 'text' && (token.tokens || token.escaped)
           ? false // If there are children, let default renderer handle it.
           : `<span class="mathjax_ignore">${token.text}</span>`,
     },
