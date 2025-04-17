@@ -2,6 +2,17 @@ import { type Marked } from 'marked';
 
 const startMath = /(\$|\\\(|\\\[)/;
 
+/**
+ * Adds an extension to marked to handle math in a manner compatible with our
+ * use of Mathjax in PrairieLearn.
+ *
+ * @param marked - The marked instance to extend.
+ * @param MathJax - The MathJax instance to use for rendering math. In
+ * client-side code, this will be `window.MathJax`. The current version does not
+ * yet support server-side rendering. A future extension of this package may
+ * support server-side rendering if an instance of MathJax is created (either
+ * here or in the caller).
+ */
 export function addMathjaxExtension(marked: Marked, MathJax: any) {
   const mathjaxInput = MathJax.startup.getInputJax() ?? [];
   marked.use({
