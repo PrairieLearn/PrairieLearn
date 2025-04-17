@@ -1,8 +1,8 @@
 import * as sqldb from '@prairielearn/postgres';
 
+import type { CourseJson } from '../../schemas/infoCourse.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
-import type { CourseJson } from '../../schemas/infoCourse.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
