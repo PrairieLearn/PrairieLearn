@@ -31,7 +31,17 @@ from pandas import DataFrame
 
 
 class GradingComplete(Exception):  # noqa: N818
-    pass
+    """
+    A general exception to mark that grading has completed early.
+    All future test cases are skipped.
+    """
+
+
+class TestComplete(Exception):  # noqa: N818
+    """
+    A general exception to mark that the current test case has finished early.
+    Future test cases will still be executed.
+    """
 
 
 T = TypeVar("T")
@@ -115,7 +125,25 @@ class Feedback:
             >>> Feedback.finish("Invalid format")
         """
         cls.add_feedback(fb_text)
-        raise GradingComplete("Your answer is correct.")
+        raise GradingComplete
+
+    @classmethod
+    def finish_test(cls, fb_text: str) -> NoReturn:
+        """
+        Complete grading the current test case immediately, additionally
+        outputting the message in fb_text.
+
+        Unlike Feedback.finish(), this method only halts the current test case
+        while allowing subsequent test cases to continue executing.
+
+        Parameters:
+            fb_text: Message to output before halting the test case.
+
+        Examples:
+            >>> Feedback.finish_test("Invalid format")
+        """
+        cls.add_feedback(fb_text)
+        raise TestComplete
 
     @staticmethod
     def not_allowed(*_args: Any, **_kwargs: Any) -> NoReturn:
@@ -470,11 +498,26 @@ class Feedback:
         return True
 
     @classmethod
-    def call_user(cls, f: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+    def call_user(
+        cls,
+        f: Callable[..., T],
+        *args: Any,
+        stop_on_exception: bool = True,
+        **kwargs: Any,
+    ) -> Any:
         """
-        Attempts to call a student defined function, with any arbitrary arguments specified in `*args` and `**kwargs`. If the student code raises an exception, this will be caught and user feedback will be given.
-
+        Attempts to call a student defined function, with any arbitrary arguments.
+        If the student code raises an exception, this will be caught and user feedback will be given.
         If the function call succeeds, the user return value will be returned from this function.
+
+        Note that the keyword argument stop_on_exception will *not* be passed to the
+        student defined function f, but all other keyword arguments will.
+
+        Parameters:
+            f: Student defined function to be called.
+            *args: Arbitrary positional arguments to be passed to the student function.
+            stop_on_exception: If true, grading will halt on failure.
+            **kwargs: Arbitrary keyword arguments to be passed to the student function.
 
         Examples:
             >>> user_val = Feedback.call_user(self.st.fib, 5)
@@ -503,7 +546,11 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete from exc
+            cls.set_score(0.0)
+
+            if stop_on_exception:
+                raise GradingComplete from exc
+            raise TestComplete from exc
 
     @classmethod
     def check_plot(
