@@ -400,7 +400,6 @@ describe('Assessment syncing', () => {
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['hwwithmanual1'] = assessment;
     await util.writeAndSyncCourseData(courseData);
-
     const syncedData = await getSyncedAssessmentData('hwwithmanual1');
     assert.lengthOf(syncedData.zones, 1);
     assert.lengthOf(syncedData.alternative_groups, 2);
@@ -2439,5 +2438,71 @@ describe('Assessment syncing', () => {
     );
     assert.equal(thirdAssessmentQuestion?.grade_rate_minutes, 4);
     assert.equal(thirdAssessmentQuestion?.json_grade_rate_minutes, null);
+  });
+
+  it('syncs JSON data for group role permissions correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.groupWork = true;
+    assessment.groupRoles = [
+      {
+        name: 'Manager',
+        minimum: 1,
+        maximum: 1,
+        canAssignRoles: true,
+      },
+      {
+        name: 'Recorder',
+        minimum: 1,
+        maximum: 1,
+      },
+      {
+        name: 'Reflector',
+        minimum: 1,
+        maximum: 1,
+      },
+      {
+        name: 'Contributor',
+      },
+    ];
+    assessment.canView = ['Manager'];
+    assessment.canSubmit = ['Recorder'];
+    assessment.zones?.push({
+      title: 'zone 1',
+      canView: ['Manager', 'Recorder', 'Contributor'],
+      canSubmit: ['Recorder', 'Contributor'],
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 1,
+          canView: ['Contributor'],
+          canSubmit: ['Contributor'],
+        },
+        {
+          points: 1,
+          canView: ['Manager'],
+          canSubmit: ['Recorder'],
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.deepEqual(syncedData.assessment.json_can_view, ['Manager']);
+    assert.deepEqual(syncedData.assessment.json_can_submit, ['Recorder']);
+    assert.deepEqual(syncedData.zones[0].json_can_view, ['Manager', 'Recorder', 'Contributor']);
+    assert.deepEqual(syncedData.zones[0].json_can_submit, ['Recorder', 'Contributor']);
+    assert.deepEqual(syncedData.alternative_groups[0].json_can_view, ['Contributor']);
+    assert.deepEqual(syncedData.alternative_groups[0].json_can_submit, ['Contributor']);
+    assert.equal(syncedData.alternative_groups[0].json_has_alternatives, false);
+    assert.equal(syncedData.alternative_groups[1].json_has_alternatives, true);
   });
 });

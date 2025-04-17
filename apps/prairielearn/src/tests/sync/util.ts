@@ -160,6 +160,7 @@ export interface Assessment {
   canSubmit?: string[];
   canView?: string[];
   gradeRateMinutes?: number;
+  shareSourcePublicly?: boolean;
 }
 
 interface QuestionExternalGradingOptions {

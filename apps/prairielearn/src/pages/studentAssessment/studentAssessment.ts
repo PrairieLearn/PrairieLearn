@@ -66,16 +66,15 @@ router.get(
     if (!res.locals.assessment.group_work && res.locals.assessment.type === 'Homework') {
       const time_limit_min = null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
-      const assessment_instance_id = await makeAssessmentInstance(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.assessment.group_work,
-        res.locals.authn_user.user_id,
-        res.locals.authz_data.mode,
+      const assessment_instance_id = await makeAssessmentInstance({
+        assessment: res.locals.assessment,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        mode: res.locals.authz_data.mode,
         time_limit_min,
-        res.locals.authz_data.date,
+        date: res.locals.authz_data.date,
         client_fingerprint_id,
-      );
+      });
       res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
       return;
     }
@@ -140,16 +139,15 @@ router.post(
       const time_limit_min =
         res.locals.assessment.type === 'Exam' ? res.locals.authz_result.time_limit_min : null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
-      const assessment_instance_id = await makeAssessmentInstance(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.assessment.group_work,
-        res.locals.authn_user.user_id,
-        res.locals.authz_data.mode,
+      const assessment_instance_id = await makeAssessmentInstance({
+        assessment: res.locals.assessment,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        mode: res.locals.authz_data.mode,
         time_limit_min,
-        res.locals.req_date,
+        date: res.locals.req_date,
         client_fingerprint_id,
-      );
+      });
       res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
     } else if (req.body.__action === 'join_group') {
       await joinGroup(

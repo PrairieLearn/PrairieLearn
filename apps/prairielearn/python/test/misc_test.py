@@ -107,8 +107,7 @@ def r_types_dataframe() -> pd.DataFrame:
     [city_dataframe(), breast_cancer_dataframe(), r_types_dataframe()],
 )
 def test_encoding_pandas(df: pd.DataFrame) -> None:
-    """Test that new json encoding works"""
-
+    """Test that new JSON encoding works"""
     # Test encoding as json doesn't throw exceptions
     json_df = pl.to_json(df, df_encoding_version=2)
     json_str = json.dumps(json_df)
@@ -150,7 +149,6 @@ def test_networkx_serialization(
     networkx_graph: nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph,
 ) -> None:
     """Test equality after conversion of various numpy objects."""
-
     networkx_graph.graph["rankdir"] = "TB"
 
     # Add some data to test that it's retained
@@ -246,7 +244,6 @@ def test_set_score_data(
 )
 def test_numpy_serialization(numpy_object: ArrayLike) -> None:
     """Test equality after conversion of various numpy objects."""
-
     json_object = json.dumps(
         pl.to_json(numpy_object, np_encoding_version=2), allow_nan=False
     )
@@ -266,7 +263,6 @@ def test_numpy_serialization(numpy_object: ArrayLike) -> None:
 )
 def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> None:
     """Test that nothing happens under the old encoding for numpy scalars."""
-
     json_object = json.dumps(pl.to_json(object_to_encode), allow_nan=False)
     decoded_json_object = pl.from_json(json.loads(json_object))
 
@@ -420,7 +416,6 @@ def test_grade_answer_parametrized_key_error_blank(
 @pytest.mark.repeat(100)
 def test_get_uuid() -> None:
     """Test basic properties of the pl.get_uuid() function."""
-
     pl_uuid = pl.get_uuid()
     clauses = pl_uuid.split("-")
 

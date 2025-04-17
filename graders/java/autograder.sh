@@ -23,7 +23,8 @@ cp -r /javagrader/*.class /javagrader/org /javagrader/libs/* /grade/classpath
 cp -r /grade/tests/libs/* /grade/classpath 2> /dev/null
 cp -r /grade/serverFilesCourse/java/libs/* /grade/classpath 2> /dev/null
 
-export CLASSPATH="/grade/classpath:$(ls /grade/classpath/*.jar -1 | tr '\n' ':')"
+CLASSPATH="/grade/classpath:$(ls /grade/classpath/*.jar -1 | tr '\n' ':')"
+export CLASSPATH
 
 STUDENT_COMPILE_OUT=$(javac $STUDENT_FILES 2>&1)
 if [ "$?" -ne 0 ]; then
