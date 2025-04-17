@@ -121,7 +121,7 @@ export const AdvanceScorePercJsonSchema = z
   .number()
   .gte(0)
   .lte(100)
-  .describe('Minimum score percentage to unlock access to subsequent questions');
+  .describe('Minimum score percentage to unlock access to subsequent questions.');
 
 const QuestionPointsJsonSchema = z.object({
   points: PointsJsonSchema.optional(),

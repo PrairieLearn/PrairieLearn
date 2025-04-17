@@ -151,7 +151,7 @@
       "default": false
     },
     "advanceScorePerc": {
-      "description": "Minimum score percentage to unlock access to subsequent questions",
+      "description": "Minimum score percentage to unlock access to subsequent questions.",
       "$ref": "#/definitions/AdvanceScorePercJsonSchema"
     },
     "gradeRateMinutes": {
@@ -306,7 +306,7 @@
           "minItems": 1
         },
         "advanceScorePerc": {
-          "description": "Minimum score percentage to unlock access to subsequent questions",
+          "description": "Minimum score percentage to unlock access to subsequent questions.",
           "$ref": "#/definitions/AdvanceScorePercJsonSchema"
         },
         "gradeRateMinutes": {
@@ -387,7 +387,7 @@
           "default": 1
         },
         "advanceScorePerc": {
-          "description": "Minimum score percentage to unlock access to subsequent questions",
+          "description": "Minimum score percentage to unlock access to subsequent questions.",
           "$ref": "#/definitions/AdvanceScorePercJsonSchema"
         },
         "gradeRateMinutes": {
@@ -454,7 +454,7 @@
           "default": 1
         },
         "advanceScorePerc": {
-          "description": "Minimum score percentage to unlock access to subsequent questions",
+          "description": "Minimum score percentage to unlock access to subsequent questions.",
           "$ref": "#/definitions/AdvanceScorePercJsonSchema"
         },
         "gradeRateMinutes": {

@@ -184,14 +184,12 @@ export const QuestionJsonSchema = z
       .optional(),
     singleVariant: z
       .boolean()
-      .describe(
-        'Whether the question is not randomized and only generates a single variant (defaults to "false").',
-      )
+      .describe('Whether the question is not randomized and only generates a single variant.')
       .optional()
       .default(false),
     showCorrectAnswer: z
       .boolean()
-      .describe('Whether to show the correct answer panel (defaults to "true").')
+      .describe('Whether to show the correct answer panel.')
       .optional()
       .default(true),
     partialCredit: z
