@@ -27,7 +27,7 @@ export function addMathjaxExtension(marked: Marked, MathJax: MathJaxObject) {
       //   the result (and escaped set to true). At that point the text is
       //   already rendered with escape characters as needed, so nothing to do.
       text: (token) =>
-        token.type == 'text' && (token.tokens || token.escaped)
+        token.type === 'text' && (token.tokens || token.escaped)
           ? false
           : `<span class="mathjax_ignore">${token.text}</span>`,
     },
