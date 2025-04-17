@@ -68,7 +68,6 @@
       "items": {
         "description": "A single assessment set description.",
         "type": "object",
-        "additionalProperties": true,
         "required": ["abbreviation", "name", "heading", "color"],
         "properties": {
           "comment": {
@@ -99,7 +98,6 @@
       "items": {
         "description": "A single course module description.",
         "type": "object",
-        "additionalProperties": true,
         "required": ["name", "heading"],
         "properties": {
           "name": {
@@ -119,7 +117,6 @@
       "items": {
         "description": "A single topic, can represent a unit of learning (e.g. 'vectors')",
         "type": "object",
-        "additionalProperties": true,
         "required": ["name", "color"],
         "properties": {
           "comment": {
@@ -146,7 +143,6 @@
       "items": {
         "description": "A single tag description.",
         "type": "object",
-        "additionalProperties": true,
         "required": ["name", "color"],
         "properties": {
           "comment": {
@@ -177,7 +173,6 @@
       "items": {
         "description": "A sharing set description.",
         "type": "object",
-        "additionalProperties": true,
         "required": ["name"],
         "properties": {
           "name": {

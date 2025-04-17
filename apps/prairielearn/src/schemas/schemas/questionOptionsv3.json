@@ -3,7 +3,6 @@
   "title": "v3 question options",
   "description": "Options for a v3 question.",
   "type": "object",
-  "additionalProperties": true,
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",

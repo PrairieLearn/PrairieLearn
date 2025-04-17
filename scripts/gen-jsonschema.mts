@@ -35,18 +35,22 @@ const orderedStringify = (schema) => {
   ];
 
   const tailKeys = ['definitions'];
-  // Thanks chatgpt!
+
   return JSON.stringify(
     schema,
     (key, value) => {
+      if (key === 'additionalProperties' && value === true) return undefined;
+
       let localHeadKeys = headKeys;
       if (key === 'properties') {
-        // remove from headKeys
         localHeadKeys = headKeys.filter((k) => !['title', 'type', 'description'].includes(k));
       }
 
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         return Object.keys(value)
+          .filter((k) => {
+            return !(k === 'additionalProperties' && value[k] === true);
+          })
           .sort((a, b) => {
             if (localHeadKeys.includes(a) && localHeadKeys.includes(b)) {
               return localHeadKeys.indexOf(a) - localHeadKeys.indexOf(b);

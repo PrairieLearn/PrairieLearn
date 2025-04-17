@@ -173,7 +173,6 @@
     "GroupRoleJsonSchema": {
       "description": "A custom role for use in group assessments that allows control over certain permissions.",
       "type": "object",
-      "additionalProperties": true,
       "required": ["name"],
       "properties": {
         "name": {
@@ -269,7 +268,6 @@
     },
     "ZoneAssessmentJsonSchema": {
       "type": "object",
-      "additionalProperties": true,
       "required": ["questions"],
       "properties": {
         "comment": {
@@ -338,7 +336,6 @@
     },
     "ZoneQuestionJsonSchema": {
       "type": "object",
-      "additionalProperties": true,
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
@@ -420,7 +417,6 @@
     },
     "QuestionAlternativeJsonSchema": {
       "type": "object",
-      "additionalProperties": true,
       "required": ["id"],
       "properties": {
         "comment": {

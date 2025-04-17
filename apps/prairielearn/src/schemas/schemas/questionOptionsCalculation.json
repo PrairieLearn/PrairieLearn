@@ -3,7 +3,6 @@
   "title": "Calculation question options",
   "description": "Options for a Calculation question.",
   "type": "object",
-  "additionalProperties": true,
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
