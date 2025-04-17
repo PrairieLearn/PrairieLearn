@@ -201,7 +201,7 @@ reportOperatorIssue = "information"
 reportUnknownParameterType = "information"
 
 [tool.pytest.ini_options]
-
+pythonpath = ["apps/prairielearn/python"]
 addopts = "--cov=apps"
 testpaths = [
   "apps/prairielearn/elements",
