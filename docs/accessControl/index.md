@@ -357,9 +357,9 @@ This `allowAccess` directive is suitable for a `Homework` assessment. Students c
 
 ## Preview access control
 
-Click on your user in the top right corner to see the role picker dropdown. This will allow you to preview the access control for different roles and users.
+Click on your user in the top right corner to see the role picker dropdown. This will allow you to preview the access control for different roles and users. The picker will have additional options depending on the page you are on.
 
-![The role picker dropdown](role_picker.png){ width=50% }
+![The role picker dropdown](role_picker.png){ width=100% style="max-width: 400px" }
 
 This feature allows you to preview a course as yourself but with different roles and restrictions:
 
