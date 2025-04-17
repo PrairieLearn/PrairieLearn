@@ -25,7 +25,10 @@
     "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
   },
   "dependencies": {
-    "node-gyp": "^11.2.0"
+    "node-gyp": "^11.2.0",
+    "react": "^19.1.0",
+    "react-bootstrap": "^2.10.9",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@changesets/cli": "^2.28.1",
