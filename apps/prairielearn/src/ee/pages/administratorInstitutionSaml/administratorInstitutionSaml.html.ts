@@ -251,10 +251,10 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
             aria-describedby="uidAttributeHelp"
           />
           <small id="uidAttributeHelp" class="form-text text-muted">
-            The UID is a user-facing identifier for the user. This should generally be an email-like
-            identifier, like "jwang@example.com". However, it doesn't have to be an email address;
-            PrairieLearn will never try to route email to it. This attribute may change, for
-            instance if a student changes their name with their university.
+            The UID is a user-facing identifier for the user. This must be an email-like identifier,
+            like "jwang@example.com". However, it doesn't have to be an email address; PrairieLearn
+            will never try to route email to it. This attribute may change, for instance if a
+            student changes their name with their university.
           </small>
         </div>
 

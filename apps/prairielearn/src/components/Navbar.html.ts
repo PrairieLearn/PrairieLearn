@@ -228,6 +228,7 @@ function UserDropdownMenu({
           id="navbarDropdown"
           href="#"
           role="button"
+          data-bs-auto-close="outside"
           data-bs-toggle="dropdown"
           aria-haspopup="true"
           aria-expanded="false"
