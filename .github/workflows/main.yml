@@ -110,14 +110,14 @@ jobs:
       - name: Copy coverage reports to the host
         run: ./scripts/copy_docker_coverage_reports.sh test_container
       - name: Upload JavaScript coverage report to Codecov
-        uses: codecov/codecov-action@v5.4.0
+        uses: codecov/codecov-action@v5.4.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           exclude: apps/prairielearn/python
           flags: javascript
 
       - name: Upload Python coverage report to Codecov
-        uses: codecov/codecov-action@v5.4.0
+        uses: codecov/codecov-action@v5.4.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
