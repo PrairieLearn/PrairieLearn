@@ -247,7 +247,6 @@ export interface CourseInstance {
   longName: string;
   /** @deprecated */
   shortName?: string | null;
-  number: number;
   timezone: string;
   hideInEnrollPage: boolean;
   allowAccess: CourseInstanceAllowAccess[];
@@ -281,8 +280,6 @@ interface QuestionAlternative {
   triesPerVariant: number;
   advanceScorePerc: number;
   gradeRateMinutes: number;
-  canView: string[];
-  canSubmit: string[];
 }
 
 interface ZoneQuestion {
@@ -350,6 +347,7 @@ export interface Assessment {
   canSubmit: string[];
   advanceScorePerc: number;
   gradeRateMinutes: number;
+  shareSourcePublicly: boolean;
   requireHonorCode: boolean;
   allowPersonalNotes: boolean;
 }
@@ -1384,14 +1382,15 @@ async function validateAssessment(
       canSubmit: string[] | null | undefined,
       area: string,
     ): void => {
-      (canView || []).forEach((roleName) => {
+      canView?.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
             `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
           );
         }
       });
-      (canSubmit || []).forEach((roleName) => {
+
+      canSubmit?.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
             `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,

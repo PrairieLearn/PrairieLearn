@@ -13,14 +13,14 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@sentry/core": "^9.10.1",
-    "@sentry/node": "^9.10.1",
+    "@sentry/core": "^9.13.0",
+    "@sentry/node": "^9.13.0",
     "execa": "^9.5.2"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^20.17.30",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   }
 }

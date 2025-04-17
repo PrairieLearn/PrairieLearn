@@ -10,12 +10,12 @@
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
-    "ioredis": "^5.6.0",
+    "ioredis": "^5.6.1",
     "lru-cache": "^11.1.0",
-    "zod": "^3.24.2"
+    "zod": "^3.24.3"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   }
 }

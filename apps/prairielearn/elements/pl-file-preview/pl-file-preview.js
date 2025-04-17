@@ -35,7 +35,13 @@
         const escapedFileName = escapePath(file);
         const path = `${submissionFilesUrl}/${escapedFileName}`;
 
-        const errorMessage = item.querySelector('.alert.error');
+        const infoMessage = item.querySelector('.js-info-alert');
+        const errorMessage = item.querySelector('.js-error-alert');
+
+        function showInfoMessage(message) {
+          infoMessage.textContent = message;
+          infoMessage.classList.remove('d-none');
+        }
 
         function showErrorMessage(message) {
           errorMessage.textContent = message;
@@ -114,6 +120,8 @@
               return result.blob();
             })
             .then(async (blob) => {
+              hideErrorMessage();
+
               const type = blob.type;
               if (type === 'text/plain') {
                 const text = await blob.text();
@@ -143,8 +151,6 @@
                   pre.classList.remove('d-none');
                 }
 
-                hideErrorMessage();
-
                 // Only show the expand/collapse button if the content is tall
                 // enough where scrolling is necessary. This must be done before
                 // auto-expansion happens below.
@@ -163,7 +169,6 @@
                   URL.revokeObjectURL(url);
                 };
                 img.classList.remove('d-none');
-                hideErrorMessage();
               } else if (type === 'application/pdf') {
                 const url = URL.createObjectURL(blob);
                 iframe.src = url;
@@ -171,10 +176,9 @@
                   URL.revokeObjectURL(url);
                 };
                 iframe.closest('.embed-responsive').classList.remove('d-none');
-                hideErrorMessage();
               } else {
                 // We can't preview this file.
-                showErrorMessage('Content preview is not available for this type of file.');
+                showInfoMessage('Content preview is not available for this type of file.');
               }
               wasOpened = true;
             })
