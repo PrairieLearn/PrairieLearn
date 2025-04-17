@@ -71,10 +71,6 @@ class PLTestResult(unittest.TestResult):
                 # Grading was stopped early; don't run any more tests. We'll still
                 # loop through the remaining cases so that we have the correct point values.
                 self.skip_grading = True
-        elif isinstance(err[1], TestComplete):
-            # This test case was stopped early. It's assumed that any points or
-            # feedback have already been given.
-            pass
         elif isinstance(err[1], DoNotRunError):
             self.results[-1]["points"] = 0
             self.results[-1]["max_points"] = 0
