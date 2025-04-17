@@ -325,8 +325,6 @@ export async function benchmarkAiQuestionGeneration({
         courseId: course.id,
         authnUserId,
         promptGeneral: benchmark.promptGeneral,
-        promptUserInput: benchmark.promptUserInput,
-        promptGrading: benchmark.promptGrading,
         userId: authnUserId,
         hasCoursePermissionEdit: true,
       });

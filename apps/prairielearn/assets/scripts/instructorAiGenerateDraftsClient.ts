@@ -40,8 +40,6 @@ onDocumentReady(() => {
     const selection = options[options.selectedIndex].dataset;
 
     setInputValue('#user-prompt-llm', selection.promptGeneral ?? '');
-    setInputValue('#user-prompt-llm-user-input', selection.promptUserInput ?? '');
-    setInputValue('#user-prompt-llm-grading', selection.promptGrading ?? '');
   });
 });
 
