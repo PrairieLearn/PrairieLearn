@@ -9,22 +9,26 @@ const startMath = /(\$|\\\(|\\\[)/;
  *
  * @param marked - The marked instance to extend.
  * @param MathJax - The MathJax instance to use for rendering math. In
- * client-side code, this will be `window.MathJax`. The current version does not
- * yet support server-side rendering. A future extension of this package may
- * support server-side rendering if an instance of MathJax is created (either
- * here or in the caller).
+ * client-side code, this is `window.MathJax`. In server-side code, this
+ * is the result of `require('mathjax-full').init()`.
  */
 export function addMathjaxExtension(marked: Marked, MathJax: MathJaxObject) {
   const mathjaxInput = MathJax.startup.getInputJax() ?? [];
   marked.use({
     renderer: {
-      // Any leaf text token (without child tokens) that is not math
-      // should be ignored by MathJax. This includes escaped characters
-      // like `\\` and `\$`, which we don't want MathJax to double-escape.
-      // The text input is already escaped by marked itself.
+      // Any leaf text token that is not math should be ignored by MathJax.
+      // Note:
+      // * Escaped characters like `\\` and `\$` (type == 'escaped') are ignored
+      //   since we don't want MathJax to double-escape.
+      // * Text inside some elements (e.g., list items) will call the renderer
+      //   with child tokens for preprocessing, we return false so the default
+      //   renderer renders the children individually.
+      // * After child tokens are rendered, this renderer is called again with
+      //   the result (and escaped set to true). At that point the text is
+      //   already rendered with escape characters as needed, so nothing to do.
       text: (token) =>
         token.type == 'text' && (token.tokens || token.escaped)
-          ? false // If there are children, let default renderer handle it.
+          ? false
           : `<span class="mathjax_ignore">${token.text}</span>`,
     },
     extensions: [
