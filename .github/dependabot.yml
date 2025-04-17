@@ -39,6 +39,10 @@ updates:
       # novnc 1.5.0+ no longer publishes ESM files:
       # https://github.com/novnc/noVNC/issues/1792
       - dependency-name: '@novnc/novnc'
+      # ua-parser-js 2.x changes its license to a less permissive license:
+      - dependency-name: 'ua-parser-js'
+        versions: ['>=2']
+
     groups:
       # Many OpenTelemetry packages are still pre-v1, so updates frequently won't
       # be considered patch/minor updates. We always want to bump these all
