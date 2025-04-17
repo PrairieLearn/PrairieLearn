@@ -1,14 +1,14 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "MultipleChoice question options",
-  "description": "Options for a MultipleChoice question.",
+  "title": "Checkbox question options",
+  "description": "Options for a Checkbox question.",
   "type": "object",
   "additionalProperties": false,
   "required": ["text", "correctAnswers", "incorrectAnswers"],
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "text": {
       "description": "The question HTML text that comes before the options.",
@@ -42,6 +42,24 @@
       "description": "The maximum number of correct answers in the list of possible answers.",
       "type": "integer",
       "minimum": 0
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     }
   }
 }

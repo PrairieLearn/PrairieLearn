@@ -48,8 +48,9 @@ module.exports = {
       typescript: true,
       node: true,
     },
-    react: {
-      pragma: 'h',
+    'react-x': {
+      // This is roughly the version that Preact's compat layer supports.
+      version: '18.0.0',
     },
   },
   reportUnusedDisableDirectives: true,
