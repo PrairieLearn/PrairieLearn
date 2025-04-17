@@ -236,12 +236,6 @@ Most of these prerequisites can be installed using the package manager of your O
   }
   ```
 
-- Ensure all pending database migrations are applied:
-
-  ```sh
-  make migrate-dev
-  ```
-
 - Run the server in development mode to automatically restart when changes are detected:
 
   ```sh
