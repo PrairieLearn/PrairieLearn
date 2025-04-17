@@ -15,7 +15,6 @@ import * as url from 'url';
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
 import bodyParser from 'body-parser';
-import Bowser from 'bowser';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
 import express, {
@@ -175,15 +174,6 @@ export async function initExpress(): Promise<Express> {
 
   // API routes don't utilize sessions; don't run the session/flash middleware for them.
   app.use(excludeRoutes(['/pl/api'], sessionRouter));
-
-  app.use(function (req, res, next) {
-    if (req.headers['user-agent']) {
-      res.locals.userAgent = Bowser.parse(req.headers['user-agent']);
-    } else {
-      res.locals.userAgent = null;
-    }
-    next();
-  });
 
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
