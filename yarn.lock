@@ -3861,7 +3861,7 @@ __metadata:
     ansi_up: "npm:^6.0.5"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
-    axe-core: "npm:^4.10.2"
+    axe-core: "npm:^4.10.3"
     backbone: "npm:^1.6.1"
     better-ajv-errors: "npm:^1.2.0"
     blocked: "npm:^1.3.0"
@@ -6900,10 +6900,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axe-core@npm:4.10.2, axe-core@npm:^4.10.2":
+"axe-core@npm:4.10.2":
   version: 4.10.2
   resolution: "axe-core@npm:4.10.2"
   checksum: 10c0/0e20169077de96946a547fce0df39d9aeebe0077f9d3eeff4896518b96fde857f80b98f0d4279274a7178791744dd5a54bb4f322de45b4f561ffa2586ff9a09d
+  languageName: node
+  linkType: hard
+
+"axe-core@npm:^4.10.3":
+  version: 4.10.3
+  resolution: "axe-core@npm:4.10.3"
+  checksum: 10c0/1b1c24f435b2ffe89d76eca0001cbfff42dbf012ad9bd37398b70b11f0d614281a38a28bc3069e8972e3c90ec929a8937994bd24b0ebcbaab87b8d1e241ab0c7
   languageName: node
   linkType: hard
 
