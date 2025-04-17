@@ -3600,7 +3600,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     marked: "npm:^15.0.7"
     tsx: "npm:^4.19.3"
-    typescript: "npm:^5.8.2"
+    typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
 
