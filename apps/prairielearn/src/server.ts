@@ -185,6 +185,11 @@ export async function initExpress(): Promise<Express> {
     next();
   });
 
+  app.use(function (req, res, next) {
+    res.locals.is_iframe = req.headers['sec-fetch-dest'] === 'iframe';
+    next();
+  });
+
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
   // Special handling of file-upload routes so that we can parse multipart/form-data
