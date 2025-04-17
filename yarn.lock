@@ -3817,6 +3817,7 @@ __metadata:
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/postgres-tools": "workspace:^"
+    "@prairielearn/preact-cjs": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/session": "workspace:^"
@@ -4027,6 +4028,26 @@ __metadata:
     xml2js: "npm:^0.6.2"
     yargs-parser: "npm:^21.1.1"
     zod: "npm:^3.24.2"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/preact-cjs-compat@workspace:packages/preact-cjs-compat":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/preact-cjs-compat@workspace:packages/preact-cjs-compat"
+  dependencies:
+    "@prairielearn/preact-cjs": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
+    typescript: "npm:^5.7.3"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/preact-cjs@workspace:^, @prairielearn/preact-cjs@workspace:packages/preact-cjs":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/preact-cjs@workspace:packages/preact-cjs"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    original-preact: "npm:preact@^10.25.4"
+    typescript: "npm:^5.7.3"
   languageName: unknown
   linkType: soft
 
@@ -13642,6 +13663,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"original-preact@npm:preact@^10.25.4":
+  version: 10.26.5
+  resolution: "preact@npm:10.26.5"
+  checksum: 10c0/542a924009489c21b24e9588a5580dac03239a60951d10e6ad1207db66c8e719e1d46a38af6577c8f324b238fbe2aa92e0ffc04d3a71dbe182f56426c8abe632
+  languageName: node
+  linkType: hard
+
 "os-tmpdir@npm:^1.0.2, os-tmpdir@npm:~1.0.2":
   version: 1.0.2
   resolution: "os-tmpdir@npm:1.0.2"
@@ -14319,12 +14347,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"preact@npm:^10.26.4":
-  version: 10.26.4
-  resolution: "preact@npm:10.26.4"
-  checksum: 10c0/8abf64ec6f9773f0c4fb3746b7caa3d83e2de4d464928e7f64fc779c96ef9e135d23c1ade8d0923c9191f6d203d9f22bb92d8a50dc0f4f310073dfaa51a56922
+"preact@link:./packages/preact-cjs::locator=prairielearn%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "preact@link:./packages/preact-cjs::locator=prairielearn%40workspace%3A."
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "prelude-ls@npm:^1.2.1":
   version: 1.2.1
@@ -14721,16 +14748,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^19.0.0, react-dom@npm:^19.1.0":
-  version: 19.1.0
-  resolution: "react-dom@npm:19.1.0"
-  dependencies:
-    scheduler: "npm:^0.26.0"
-  peerDependencies:
-    react: ^19.1.0
-  checksum: 10c0/3e26e89bb6c67c9a6aa86cb888c7a7f8258f2e347a6d2a15299c17eb16e04c19194e3452bc3255bd34000a61e45e2cb51e46292392340432f133e5a5d2dfb5fc
+"react-dom@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "react-dom@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A."
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "react-is@npm:^16.13.1, react-is@npm:^16.3.2":
   version: 16.13.1
@@ -14761,12 +14783,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^19.0.0, react@npm:^19.1.0":
-  version: 19.1.0
-  resolution: "react@npm:19.1.0"
-  checksum: 10c0/530fb9a62237d54137a13d2cfb67a7db6a2156faed43eecc423f4713d9b20c6f2728b026b45e28fcd72e8eadb9e9ed4b089e99f5e295d2f0ad3134251bdd3698
+"react@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "react@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A."
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "read-yaml-file@npm:^1.1.0":
   version: 1.1.0
@@ -15265,13 +15286,6 @@ __metadata:
   dependencies:
     xmlchars: "npm:^2.2.0"
   checksum: 10c0/3847b839f060ef3476eb8623d099aa502ad658f5c40fd60c105ebce86d244389b0d76fcae30f4d0c728d7705ceb2f7e9b34bb54717b6a7dbedaf5dad2d9a4b74
-  languageName: node
-  linkType: hard
-
-"scheduler@npm:^0.26.0":
-  version: 0.26.0
-  resolution: "scheduler@npm:0.26.0"
-  checksum: 10c0/5b8d5bfddaae3513410eda54f2268e98a376a429931921a81b5c3a2873aab7ca4d775a8caac5498f8cbc7d0daeab947cf923dbd8e215d61671f9f4e392d34356
   languageName: node
   linkType: hard
 
@@ -16535,6 +16549,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript@npm:^5.7.3":
+  version: 5.8.3
+  resolution: "typescript@npm:5.8.3"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/5f8bb01196e542e64d44db3d16ee0e4063ce4f3e3966df6005f2588e86d91c03e1fb131c2581baf0fb65ee79669eea6e161cd448178986587e9f6844446dbb48
+  languageName: node
+  linkType: hard
+
 "typescript@npm:^5.8.2":
   version: 5.8.2
   resolution: "typescript@npm:5.8.2"
@@ -16542,6 +16566,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/5c4f6fbf1c6389b6928fe7b8fcd5dc73bb2d58cd4e3883f1d774ed5bd83b151cbac6b7ecf11723de56d4676daeba8713894b1e9af56174f2f9780ae7848ec3c6
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A^5.7.3#optional!builtin<compat/typescript>":
+  version: 5.8.3
+  resolution: "typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=5786d5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/39117e346ff8ebd87ae1510b3a77d5d92dae5a89bde588c747d25da5c146603a99c8ee588c7ef80faaf123d89ed46f6dbd918d534d641083177d5fac38b8a1cb
   languageName: node
   linkType: hard
 

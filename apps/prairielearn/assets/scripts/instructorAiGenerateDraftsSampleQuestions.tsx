@@ -1,8 +1,10 @@
 
-import { h, render } from 'preact';
+import { h } from 'preact';
 import { Button } from 'react-bootstrap';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
+import { render } from '@prairielearn/preact-cjs';
+
 
 onDocumentReady(() => {
     const sampleQuestions = document.querySelector('#sample-questions') as HTMLElement;
