@@ -120,7 +120,7 @@ function getParamsForAssessment(
         jsonGradeRateMinutes: number | undefined;
         canView: string[] | null;
         canSubmit: string[] | null;
-        advanceScorePerc: number;
+        advanceScorePerc: number | undefined;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -136,12 +136,7 @@ function getParamsForAssessment(
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
             forceMaxPoints: alternative.forceMaxPoints ?? question.forceMaxPoints ?? false,
             triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant ?? 1,
-            advanceScorePerc:
-              alternative.advanceScorePerc ??
-              question.advanceScorePerc ??
-              zone.advanceScorePerc ??
-              assessment.advanceScorePerc ??
-              0,
+            advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
             canView: questionCanView,
@@ -159,11 +154,7 @@ function getParamsForAssessment(
             manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints ?? false,
             triesPerVariant: question.triesPerVariant ?? 1,
-            advanceScorePerc:
-              question.advanceScorePerc ??
-              zone.advanceScorePerc ??
-              assessment.advanceScorePerc ??
-              0,
+            advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
             jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
