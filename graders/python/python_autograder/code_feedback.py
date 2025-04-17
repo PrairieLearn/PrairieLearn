@@ -367,36 +367,45 @@ class Feedback:
                 return False
 
         if data is None:
-            return bad(f"{name} is None")
+            return bad(f"{name} is not a dict, got None")
 
         if not isinstance(data, dict):
             return bad(f"{name} is not a dict, got {type(data).__name__}")
 
+        if only_keys is not None and not all(key in ref for key in only_keys):
+            # If only_keys is not None, we should only check the keys in only_keys
+            # and not the keys in ref
+            raise ValueError(
+                f"only_keys must be a subset of the reference dict keys. "
+                f"Got {only_keys=} but ref.keys={list(ref.keys())}"
+            )
+
         check_all = only_keys is None
         keys_to_check = ref.keys() if check_all else only_keys
-        if check_all and len(ref) != len(data):
-            return bad(
-                f"{name} has the wrong number of keys: expected {len(ref)}, got {len(data)}"
-            )
 
         missing_keys = set(keys_to_check) - set(data.keys())
         if missing_keys:
-            return bad(f"{name} is missing keys: '{', '.join(missing_keys)}'")
+            return bad(
+                f"{name} has missing keys: `{', '.join(sorted(map(str, missing_keys)))}`"
+            )
 
         extra_keys = set(data.keys()) - set(keys_to_check)
         if check_all and extra_keys:
-            return bad(f"{name} has extra keys: '{', '.join(extra_keys)}'")
+            return bad(
+                f"{name} has extra keys: `{', '.join(sorted(map(str, extra_keys)))}`"
+            )
 
         # Now check the values themselves
         for key in keys_to_check:
-            if ref[key] != data[key]:
-                return bad(
-                    f"{name} has key '{key}' with value '{data[key]}', which is not correct"
-                )
             # It's possible that the equality will pass even if the types are different
             if type(ref[key]) != type(data[key]):
                 return bad(
-                    f"{name} has key '{key}' with type '{type(data[key]).__name__}', which is not the right type"
+                    f"{name} has key `{key}` with type `{type(data[key]).__name__}`, which is not the right type"
+                )
+
+            if ref[key] != data[key]:
+                return bad(
+                    f"{name} has key `{key}` with value `{data[key]}`, which is not correct"
                 )
 
         return True
