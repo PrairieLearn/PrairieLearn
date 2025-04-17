@@ -135,6 +135,7 @@ export async function makeContext(
     QuestionGenerationContextEmbeddingSchema,
   );
 
+  // Ensure that documentation for at least one element is always included.
   const elementDoc = await queryRow(
     sql.select_nearby_documents_from_file,
     {
