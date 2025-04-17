@@ -735,8 +735,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                     for block in blocks
                     if block["inner_html"] == answer["inner_html"]
                 )
-            answer["distractor_feedback"] = matching_block["distractor_feedback"]
-            answer["ordering_feedback"] = matching_block["ordering_feedback"]
+            answer["distractor_feedback"] = matching_block.get(
+                "distractor_feedback", ""
+            )
+            answer["ordering_feedback"] = matching_block.get("ordering_feedback", "")
 
     if grading_method is GradingMethodType.EXTERNAL:
         for html_tags in element:
