@@ -26,7 +26,7 @@ A full `info.json` file should look something like:
 }
 ```
 
-### Variables for and from the user
+### User variables
 
 The question must specify the variables that will be read from student code for grading (`names_from_user`). Optionally, the question may also specify variables that will be made available to student code from the question's setup code (`names_for_user`). Only variables or functions listed in `names_for_user` will be accessible by the user from the setup code; only names listed in `names_from_user` will be accessible by the test cases from the user code.
 
@@ -38,48 +38,48 @@ Each variable must have the following:
 
 There are two ways to do specify these variables.
 
-#### `question.html`
+=== "`question.html`"
 
-The `<pl-external-grader-variables>` element can be used to both specify and display a table of variables.
+    The `<pl-external-grader-variables>` element can be used to both specify and display a table of variables.
 
-```html title="question.html"
-<pl-external-grader-variables params-name="names_for_user">
-  <pl-variable name="n" type="integer">
-    Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.
-  </pl-variable>
-  <pl-variable name="A" type="numpy array (shape $n \times n$)"> Matrix $\mathbf{A}$. </pl-variable>
-  <pl-variable name="b" type="numpy array (length $n$)"> Vector $\mathbf{b}$. </pl-variable>
-</pl-external-grader-variables>
+    ```html title="question.html"
+    <pl-external-grader-variables params-name="names_for_user">
+      <pl-variable name="n" type="integer">
+        Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.
+      </pl-variable>
+      <pl-variable name="A" type="numpy array (shape $n \times n$)"> Matrix $\mathbf{A}$. </pl-variable>
+      <pl-variable name="b" type="numpy array (length $n$)"> Vector $\mathbf{b}$. </pl-variable>
+    </pl-external-grader-variables>
 
-<pl-external-grader-variables params-name="names_from_user">
-  <pl-variable name="x" type="numpy array (length $n$)">
-    Solution to $\mathbf{Ax}=\mathbf{b}$.
-  </pl-variable>
-</pl-external-grader-variables>
-```
+    <pl-external-grader-variables params-name="names_from_user">
+      <pl-variable name="x" type="numpy array (length $n$)">
+        Solution to $\mathbf{Ax}=\mathbf{b}$.
+      </pl-variable>
+    </pl-external-grader-variables>
+    ```
 
-#### `server.py`
+=== "`server.py`"
 
-If you need to dynamically generate the lists of variables, you can also do so directly in `server.py` by assigning to `data["params"]["names_for_user"]` and `data["params"]["names_from_user"]`. The below example is equivalent to the `question.html` example above:
+    Using `<pl-external-grader-variables>` in `question.html` is the recommended way to specify user variables. However, if you need to dynamically generate the lists of variables or have more advanced needs, you can also do so directly in `server.py` by assigning to `data["params"]["names_for_user"]` and `data["params"]["names_from_user"]`. The following example is equivalent to the previous `question.html` example:
 
-```python title="server.py"
-def generate(data):
-    data["params"]["names_for_user"] = [
-        {"name": "n", "description": r"Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.", "type": "integer"},
-        {"name": "A", "description": r"Matrix $\mathbf{A}$.", "type": "numpy array"},
-        {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"}
-    ]
-    data["params"]["names_from_user"] = [
-        {"name": "x", "description": r"Solution to $\mathbf{Ax}=\mathbf{b}$.", "type": "numpy array"}
-    ]
-```
+    ```python title="server.py"
+    def generate(data):
+        data["params"]["names_for_user"] = [
+            {"name": "n", "description": r"Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.", "type": "integer"},
+            {"name": "A", "description": r"Matrix $\mathbf{A}$.", "type": "numpy array"},
+            {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"}
+        ]
+        data["params"]["names_from_user"] = [
+            {"name": "x", "description": r"Solution to $\mathbf{Ax}=\mathbf{b}$.", "type": "numpy array"}
+        ]
+    ```
 
-You can still use `<pl-external-grader-variables>` to display the variables to students; just omit the nested `<pl-variable>` elements.
+    You can still use `<pl-external-grader-variables>` to display the variables to students; just omit the nested `<pl-variable>` elements.
 
-```html title="question.html"
-<pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
-<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
-```
+    ```html title="question.html"
+    <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+    ```
 
 ### `question.html`
 
