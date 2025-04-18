@@ -36,37 +36,39 @@ def setup_feedback() -> None:
 
 
 @pytest.mark.parametrize(
-    ("test_id", "ref_dict", "student_dict"),
+    ("ref_dict", "student_dict"),
     [
-        ("correct1", {"a": 1, "b": 2, "c": 3}, {"a": 1, "b": 2, "c": 3}),
         (
-            "correct2",
+            {"a": 1, "b": 2, "c": 3},
+            {"a": 1, "b": 2, "c": 3},
+        ),  # Test: Identical dictionaries
+        (
             {1: "a", 2: "2", "d": 3, "list": [1, 2, "apple"]},
             {"list": [1, 2, "apple"], 1: "a", 2: "2", "d": 3},
-        ),
+        ),  # Test: Identical dictionaries with different key order and types
         (
-            "mixed_types",
             {"a": 1, "b": "string", "c": [1, 2, 3], "d": (4, 5), "e": None},
             {"a": 1, "b": "string", "c": [1, 2, 3], "d": (4, 5), "e": None},
-        ),
-        ("empty_dicts", {}, {}),
-        ("none_values", {"a": None, "b": 2, "c": None}, {"a": None, "b": 2, "c": None}),
+        ),  # Test: Dictionaries with mixed value types
+        ({}, {}),  # Test: Empty dictionaries
         (
-            "nested_dicts_identical",
+            {"a": None, "b": 2, "c": None},
+            {"a": None, "b": 2, "c": None},
+        ),  # Test: Dictionaries with None values
+        (
             {"a": 1, "b": {"nested_key": 10}, "c": 3},
             {"a": 1, "b": {"nested_key": 10}, "c": 3},
-        ),
+        ),  # Test: Identical nested dictionaries
         (
-            "large_dicts",
             {f"key_{i}": i for i in range(1000)},
             {f"key_{i}": i for i in range(1000)},
-        ),
+        ),  # Test: Large identical dictionaries
     ],
 )
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
 def test_check_dict_correct_cases(
-    mock_file, mock_add_feedback, test_id, ref_dict, student_dict
+    mock_file, mock_add_feedback, ref_dict, student_dict
 ) -> None:
     """Test cases where check_dict should return True and not add feedback."""
     assert Feedback.check_dict(NAME, ref_dict, student_dict)
@@ -74,112 +76,104 @@ def test_check_dict_correct_cases(
 
 
 @pytest.mark.parametrize(
-    ("test_id", "ref_dict", "student_dict", "expected_feedback"),
+    ("ref_dict", "student_dict", "expected_feedback"),
     [
         (
-            "mismatched_keys1",
             {"a": 1, "b": 2, "c": 3},
             {"x": 4, "y": 5, "z": 6},
             f"{NAME} has missing keys: `a, b, c`",
-        ),
+        ),  # Test: Completely different keys
         (
-            "mismatched_keys2",
             {"a": 1, 2: "a", 3: "c"},
             {"x": 4, "y": 5, "z": 6},
             f"{NAME} has missing keys: `2, 3, a`",
-        ),
+        ),  # Test: Completely different keys with mixed types
         (
-            "incorrect_keys",
             {"a": 1, "b": 2, "c": 3},
             {"d": 1, "b": 2, "f": 3},
             f"{NAME} has missing keys: `a, c`",
-        ),
+        ),  # Test: Some incorrect keys, some correct
         (
-            "incorrect_values1",
             {"a": 1, "b": 2, "c": 3, "list": []},
             {"a": 1, "b": 2, "c": 3, "list": ()},
             f"{NAME} has key `list` with type `tuple`, which is not the right type",
-        ),
+        ),  # Test: Correct keys, incorrect value type (list vs tuple)
         (
-            "incorrect_values2",
             {"a": 1, "b": 2, "c": 3, 0: "c"},
             {"a": 1, "b": 3, "c": 2, 0: ""},
             f"{NAME} has key `b` with value `3`, which is not correct",
-        ),
+        ),  # Test: Correct keys, multiple incorrect values
         (
-            "incorrect_values3",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 5, "c": 3},
             f"{NAME} has key `b` with value `5`, which is not correct",
-        ),
+        ),  # Test: Correct keys, one incorrect value
         (
-            "different_none_values",
             {"a": None, "b": 2, "c": 3},
             {"a": 1, "b": 2, "c": None},
             f"{NAME} has key `a` with type `int`, which is not the right type",
-        ),
+        ),  # Test: Mismatched None/value types
         (
-            "nested_dicts_mismatch",
             {"a": 1, "b": {"nested_key": 10}, "c": 3},
             {"a": 1, "b": {"nested_key": 20}, "c": 3},
             f"{NAME} has key `b` with value `{{'nested_key': 20}}`, which is not correct",
-        ),
+        ),  # Test: Mismatched value in nested dictionary
         (
-            "large_dicts_mismatch",
             {f"key_{i}": i for i in range(1000)},
             {f"key_{i}": i for i in range(1000)} | {"key_500": 999},
             f"{NAME} has key `key_500` with value `999`, which is not correct",
-        ),
+        ),  # Test: Mismatched value in large dictionary
         (
-            "extra_key",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 2, "c": 3, "d": 4},
             f"{NAME} has extra keys: `d`",
-        ),
+        ),  # Test: Student dictionary has an extra key
         (
-            "missing_key",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 2},
             f"{NAME} has missing keys: `c`",
-        ),
+        ),  # Test: Student dictionary is missing a key
         (
-            "student_empty_ref_not",
             {"a": 1, "b": 2, "c": 3},
             {},
             f"{NAME} has missing keys: `a, b, c`",
-        ),
+        ),  # Test: Student dictionary is empty, reference is not
         (
-            "ref_empty_student_not",
             {},
             {"a": 1, "b": 2, "c": 3},
             f"{NAME} has extra keys: `a, b, c`",
-        ),
+        ),  # Test: Reference dictionary is empty, student is not
         (
-            "wrong_value_type",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": "2", "c": 3},
             f"{NAME} has key `b` with type `str`, which is not the right type",
-        ),
+        ),  # Test: Incorrect value type (int vs str)
         (
-            "type_mismatch",
             {"a": 1, "b": "string", "c": [1, 2, 3]},
             {"a": 1, "b": 100, "c": ["1", "2", "3"]},
             f"{NAME} has key `b` with type `int`, which is not the right type",
-        ),
+        ),  # Test: Mixed types with incorrect type for one value
         (
-            "wrong_value_type1_only_values",
             {"a": 1, "b": "string", "c": [1, 2, 3]},
             {"a": 1, "b": 100, "c": 43},
             f"{NAME} has key `b` with type `int`, which is not the right type",
-        ),
-        ("none_data", {"a": 1}, None, f"{NAME} is not a dict, got type NoneType"),
-        ("not_a_dict", {"a": 1}, [("a", 1)], f"{NAME} is not a dict, got type list"),
+        ),  # Test: Mixed types with incorrect type and value
+        (
+            {"a": 1},
+            None,
+            f"{NAME} is not a dict, got type NoneType",
+        ),  # Test: Student data is None
+        (
+            {"a": 1},
+            [("a", 1)],
+            f"{NAME} is not a dict, got type list",
+        ),  # Test: Student data is not a dictionary (list)
     ],
 )
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
 def test_check_dict_incorrect_cases(
-    mock_file, mock_add_feedback, test_id, ref_dict, student_dict, expected_feedback
+    mock_file, mock_add_feedback, ref_dict, student_dict, expected_feedback
 ) -> None:
     """Test cases where check_dict should return False and add specific feedback."""
     assert not Feedback.check_dict(NAME, ref_dict, student_dict)
@@ -188,7 +182,6 @@ def test_check_dict_incorrect_cases(
 
 @pytest.mark.parametrize(
     (
-        "test_id",
         "ref_dict",
         "student_dict",
         "target_keys",
@@ -197,38 +190,34 @@ def test_check_dict_incorrect_cases(
     ),
     [
         (
-            "target_keys_correct",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 2, "c": 3, "d": 4},
             ["a", "b"],
             True,
             None,
-        ),
+        ),  # Test: target_keys check passes, extra keys ignored
         (
-            "target_keys_missing",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "c": 3, "d": 4},
             ["a", "b"],
             False,
             f"{NAME} has missing keys: `b`",
-        ),
+        ),  # Test: target_keys check fails due to missing key
         (
-            "target_keys_partial_missing",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 20, "d": 4},
             ["a", "b", "c"],
             False,
             f"{NAME} has missing keys: `c`",
-        ),
+        ),  # Test: target_keys check fails due to missing key and incorrect value (checked later)
         # Test case for incorrect value when using target_keys
         (
-            "target_keys_incorrect_value",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 99, "c": 3, "d": 4},
             ["a", "b"],
             False,
             f"{NAME} has key `b` with value `99`, which is not correct",
-        ),
+        ),  # Test: target_keys check fails due to incorrect value
     ],
 )
 @patch("code_feedback.Feedback.add_feedback")
@@ -236,7 +225,6 @@ def test_check_dict_incorrect_cases(
 def test_check_dict_target_keys(
     mock_file,
     mock_add_feedback,
-    test_id,
     ref_dict,
     student_dict,
     target_keys,
