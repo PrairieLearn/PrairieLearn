@@ -11,6 +11,7 @@
 // changes to this file, you'll need to run `yarn build` in `apps/prairielearn`
 // in order to update the file in `dist`.
 
+import assert from 'node:assert';
 import * as path from 'node:path';
 import { type Interface, createInterface } from 'node:readline';
 
@@ -62,9 +63,7 @@ function generate(
   question: Question,
   variant_seed: string,
 ): GenerateResultData {
-  if (question.directory === null) {
-    throw new Error('Question directory is required');
-  }
+  assert(question.directory, 'Question directory is required');
 
   const questionDir = path.join(coursePath, 'questions', question.directory);
   const options = question.options || {};
@@ -84,9 +83,7 @@ function grade(
   variant: Variant,
   question: Question,
 ): GradeResultData {
-  if (question.directory === null) {
-    throw new Error('Question directory is required');
-  }
+  assert(question.directory, 'Question directory is required');
 
   const vid = variant.variant_seed;
 
@@ -121,15 +118,15 @@ function grade(
     v2_score: grading.score,
     feedback: grading.feedback ?? null,
     partial_scores: {},
-    submitted_answer: submission.submitted_answer ?? null,
-    raw_submitted_answer: submission.raw_submitted_answer ?? null,
+    submitted_answer: submission.submitted_answer ?? {},
+    raw_submitted_answer: submission.raw_submitted_answer ?? {},
     format_errors: {},
     gradable: true,
 
     // Note: v3 questions can change `params` and `true_answer` during grading, but
     // this was not implemented for v2 questions.
-    params: variant.params ?? null,
-    true_answer: variant.true_answer ?? null,
+    params: variant.params ?? {},
+    true_answer: variant.true_answer ?? {},
   };
 }
 

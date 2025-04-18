@@ -16,8 +16,8 @@ export type QuestionServerReturnValue<T> = Promise<{
 }>;
 
 export interface GenerateResultData {
-  params: Record<string, any> | null;
-  true_answer: Record<string, any> | null;
+  params: Record<string, any>;
+  true_answer: Record<string, any>;
   options?: Record<string, any> | null;
 }
 
@@ -31,36 +31,36 @@ export interface RenderResultData {
 }
 
 export interface ParseResultData {
-  params: Record<string, any> | null;
-  true_answer: Record<string, any> | null;
-  submitted_answer: Record<string, any> | null;
-  feedback: Record<string, any> | null;
-  raw_submitted_answer: Record<string, any> | null;
-  format_errors: Record<string, any> | null;
-  gradable: boolean | null;
+  params: Record<string, any>;
+  true_answer: Record<string, any>;
+  submitted_answer: Record<string, any>;
+  feedback: Record<string, any>;
+  raw_submitted_answer: Record<string, any>;
+  format_errors: Record<string, any>;
+  gradable: boolean;
 }
 
 export interface GradeResultData {
-  params: Record<string, any> | null;
-  true_answer: Record<string, any> | null;
-  submitted_answer: Record<string, any> | null;
-  format_errors: Record<string, any> | null;
-  raw_submitted_answer: Record<string, any> | null;
+  params: Record<string, any>;
+  true_answer: Record<string, any>;
+  submitted_answer: Record<string, any>;
+  format_errors: Record<string, any>;
+  raw_submitted_answer: Record<string, any>;
   partial_scores: Record<string, any>;
   score: number;
-  feedback: Record<string, any> | null;
-  gradable: boolean | null;
-  v2_score: number;
+  feedback: Record<string, any>;
+  gradable: boolean;
+  v2_score?: number;
 }
 
 export interface TestResultData {
-  params: Record<string, any> | null;
-  true_answer: Record<string, any> | null;
-  format_errors: Record<string, any> | null;
-  raw_submitted_answer: Record<string, any> | null;
+  params: Record<string, any>;
+  true_answer: Record<string, any>;
+  format_errors: Record<string, any>;
+  raw_submitted_answer: Record<string, any>;
   partial_scores: Record<string, any>;
-  score: number | null;
-  gradable: boolean | null;
+  score: number;
+  gradable: boolean;
 }
 
 export interface QuestionServer {

@@ -1889,17 +1889,17 @@ export async function grade(
     const data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
       // use the submission's values when grading.
-      params: submission.params,
-      correct_answers: submission.true_answer,
-      submitted_answers: submission.submitted_answer,
-      format_errors: submission.format_errors,
+      params: submission.params ?? {},
+      correct_answers: submission.true_answer ?? {},
+      submitted_answers: submission.submitted_answer ?? {},
+      format_errors: submission.format_errors ?? {},
       partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: parseInt(variant.variant_seed, 36),
       options: { ...(variant.options ?? {}), ...getContextOptions(context) },
-      raw_submitted_answers: submission.raw_submitted_answer,
-      gradable: submission.gradable,
+      raw_submitted_answers: submission.raw_submitted_answer ?? {},
+      gradable: submission.gradable ?? false,
     } satisfies ExecutionData;
     return withCodeCaller(question_course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
@@ -1941,8 +1941,8 @@ export async function test(
 
     const context = await getContext(question, course);
     const data = {
-      params: variant.params,
-      correct_answers: variant.true_answer,
+      params: variant.params ?? {},
+      correct_answers: variant.true_answer ?? {},
       format_errors: {},
       partial_scores: {},
       score: 0,
