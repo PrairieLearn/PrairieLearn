@@ -13,6 +13,7 @@ More high-level information about the Python grader can be found on the [Python 
             - check_numpy_array_sanity
             - check_numpy_array_features
             - check_numpy_array_allclose
+            - check_dict
             - check_list
             - check_tuple
             - check_scalar
