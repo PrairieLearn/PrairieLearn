@@ -18,6 +18,11 @@ onDocumentReady(() => {
     'form[name="edit-question-settings-form"]',
   );
   const saveButton = document.querySelector<HTMLButtonElement>('#save-button');
+  const showWorkspaceOptionsButton = document.querySelector<HTMLButtonElement>(
+    '#show-workspace-options-button',
+  );
+  const workspaceEnvironmentInput =
+    document.querySelector<HTMLInputElement>('#workspace_environment');
 
   if (document.getElementById('topic')) {
     new TomSelect('#topic', {
@@ -70,6 +75,26 @@ onDocumentReady(() => {
   qidField.addEventListener('input', () => validateId({ input: qidField, otherIds: otherQids }));
   qidField.addEventListener('change', () => validateId({ input: qidField, otherIds: otherQids }));
 
+  workspaceEnvironmentInput?.addEventListener('input', (e) => {
+    if ((e.target as HTMLInputElement).value === '') {
+      workspaceEnvironmentInput?.setCustomValidity('');
+      return;
+    }
+    try {
+      JSON.parse((e.target as HTMLInputElement).value);
+      workspaceEnvironmentInput?.setCustomValidity('');
+      return;
+    } catch {
+      workspaceEnvironmentInput?.setCustomValidity('Invalid JSON format');
+    }
+  });
+
   if (!questionSettingsForm || !saveButton) return;
   saveButtonEnabling(questionSettingsForm, saveButton);
+
+  showWorkspaceOptionsButton?.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.querySelector('#workspace-options')?.removeAttribute('hidden');
+    showWorkspaceOptionsButton.setAttribute('hidden', 'true');
+  });
 });

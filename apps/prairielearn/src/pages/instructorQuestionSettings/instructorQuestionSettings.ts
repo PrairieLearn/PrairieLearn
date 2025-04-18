@@ -4,6 +4,7 @@ import sha256 from 'crypto-js/sha256.js';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
+import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -27,6 +28,7 @@ import { features } from '../../lib/features/index.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { getCanonicalHost } from '../../lib/url.js';
@@ -123,6 +125,27 @@ router.post(
         );
       }
 
+      const parsedReqBody = z
+        .object({
+          __action: z.string(),
+          __csrf_token: z.string(),
+          orig_hash: z.string(),
+          qid: z.string(),
+          title: z.string(),
+          topic: z.string(),
+          tags: z.array(z.string()).optional(),
+          grading_method: z.string(),
+          workspace_image: z.string().optional(),
+          workspace_port: z.coerce.number().optional(),
+          workspace_home: z.string().optional(),
+          workspace_args: z.string().optional(),
+          workspace_rewrite_url: z.string().optional(),
+          workspace_graded_files: z.string().optional(),
+          workspace_enable_networking: z.string().optional(),
+          workspace_environment: z.string().optional(),
+        })
+        .parse(req.body);
+
       const paths = getPaths(undefined, res.locals);
 
       const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
@@ -156,6 +179,75 @@ router.post(
         req.body.show_correct_answer === 'on',
         true,
       );
+
+      if (
+        parsedReqBody.workspace_image ||
+        parsedReqBody.workspace_port ||
+        parsedReqBody.workspace_home ||
+        parsedReqBody.workspace_args ||
+        parsedReqBody.workspace_rewrite_url ||
+        parsedReqBody.workspace_graded_files ||
+        parsedReqBody.workspace_enable_networking ||
+        parsedReqBody.workspace_environment
+      ) {
+        const workspaceOptions = {
+          comment: questionInfo.workspaceOptions?.comment ?? undefined,
+          image: propertyValueWithDefault(
+            questionInfo.workspaceOptions?.image,
+            parsedReqBody.workspace_image,
+            '',
+          ),
+          port: propertyValueWithDefault(
+            questionInfo.workspaceOptions?.port,
+            parsedReqBody.workspace_port,
+            0,
+          ),
+          home: propertyValueWithDefault(
+            questionInfo.workspaceOptions?.home,
+            parsedReqBody.workspace_home,
+            '',
+          ),
+          args: propertyValueWithDefault(
+            questionInfo.workspaceOptions?.args,
+            shlex.split(parsedReqBody.workspace_args?.replace(/\r\n/g, ' ') || ''),
+            '',
+          ),
+          rewriteUrl: propertyValueWithDefault(
+            questionInfo.workspaceOptions?.rewriteUrl,
+            parsedReqBody.workspace_rewrite_url === 'on',
+            false,
+          ),
+          gradedFiles: propertyValueWithDefault(
+            questionInfo.workspaceOptions?.gradedFiles,
+            parsedReqBody.workspace_graded_files?.split(','),
+            '',
+          ),
+          enableNetworking: propertyValueWithDefault(
+            questionInfo.workspaceOptions?.enableNetworking,
+            parsedReqBody.workspace_enable_networking === 'on',
+            false,
+          ),
+          environment: propertyValueWithDefault(
+            questionInfo.workspaceOptions?.environment,
+            JSON.parse(parsedReqBody.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
+            (val) => !val || Object.keys(val).length === 0,
+          ),
+        };
+
+        const filteredOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.workspaceOptions,
+              workspaceOptions,
+              (val) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
+        questionInfo.workspaceOptions =
+          Object.keys(filteredOptions).length > 0
+            ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
+            : undefined;
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
