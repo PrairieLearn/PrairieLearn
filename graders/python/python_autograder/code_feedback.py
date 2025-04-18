@@ -210,6 +210,7 @@ class Feedback:
         data: None | ArrayLike,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
     ) -> bool | None:
         """
         Check that a student NumPy array has the same shape and datatype as a reference solution NumPy array.
@@ -220,6 +221,7 @@ class Feedback:
             data: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
             accuracy_critical: If true, grading will halt on failure.
             report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
 
         Examples:
             >>> Feedback.check_numpy_array_features("b", self.ref.a, self.st.b, accuracy_critical=True)
@@ -258,6 +260,9 @@ class Feedback:
                 f"'{name}' does not have correct data type--"
                 f"got: '{data.dtype}', expected: '{ref.dtype}'"
             )
+
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         return True
 
@@ -319,6 +324,7 @@ class Feedback:
         entry_type: Any | None = None,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
     ) -> bool:
         """
         Check that a student list has correct length with respect to a reference list. Can also check for a homogeneous data type for the list.
@@ -330,6 +336,7 @@ class Feedback:
             entry_type: If not None, requires that each element in the student solution be of this type.
             accuracy_critical: If true, grading will halt on failure.
             report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
 
         Examples:
             >>> Feedback.check_list(name, ref, data)
@@ -359,6 +366,86 @@ class Feedback:
             for i, entry in enumerate(data):
                 if not isinstance(entry, entry_type):
                     return bad(f"'{name}[{i}]' has the wrong type")
+
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
+
+        return True
+
+    @classmethod
+    def check_dict(
+        cls,
+        name: str,
+        ref: dict[Any, Any],
+        data: dict[Any, Any],
+        *,
+        target_keys: None | list[str] | set[str] = None,
+        accuracy_critical: bool = False,
+        report_failure: bool = True,
+        report_success: bool = True,
+    ) -> bool:
+        """
+        Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`).
+
+        Parameters:
+            name: Name of the dict that is being checked. This will be used to give feedback.
+            ref: Reference dict.
+            data: Student dict to be checked. Do not mix this up with the previous dict! This argument is subject to more strict type checking.
+            target_keys: If not None, it will only only compare the keys listed.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
+        """
+
+        def bad(msg: str) -> Literal[False]:
+            if report_failure:
+                cls.add_feedback(msg)
+            if accuracy_critical:
+                cls.finish("")
+            else:
+                return False
+
+        if not isinstance(data, dict):
+            return bad(f"{name} is not a dict, got type {type(data).__name__}")
+
+        if target_keys is not None and not all(key in ref for key in target_keys):
+            # If target_keys is not None, we should only check the keys in target_keys
+            # and not the keys in ref
+            raise ValueError(
+                f"target_keys must be a subset of the reference dict keys. "
+                f"Got {target_keys=} but ref.keys={list(ref.keys())}"
+            )
+
+        check_all = target_keys is None
+        keys_to_check = ref.keys() if check_all else target_keys
+
+        missing_keys = set(keys_to_check) - set(data.keys())
+        if missing_keys:
+            return bad(
+                f"{name} has missing keys: `{', '.join(sorted(map(str, missing_keys)))}`"
+            )
+
+        extra_keys = set(data.keys()) - set(keys_to_check)
+        if check_all and extra_keys:
+            return bad(
+                f"{name} has extra keys: `{', '.join(sorted(map(str, extra_keys)))}`"
+            )
+
+        # Now check the values themselves
+        for key in keys_to_check:
+            # It's possible that the equality will pass even if the types are different
+            if type(ref[key]) is not type(data[key]):
+                return bad(
+                    f"{name} has key `{key}` with type `{type(data[key]).__name__}`, which is not the right type"
+                )
+
+            if ref[key] != data[key]:
+                return bad(
+                    f"{name} has key `{key}` with value `{data[key]}`, which is not correct"
+                )
+
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         return True
 
@@ -660,6 +747,7 @@ class Feedback:
         check_values: bool = True,  # noqa: FBT001
         allow_order_variance: bool = True,  # noqa: FBT001
         display_input: bool = False,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
     ) -> bool:
         """
         Checks and adds feedback regarding the correctness of a pandas! `DataFrame`.
@@ -676,6 +764,7 @@ class Feedback:
             check_values: Check the values of each cell, in addition to the dimensions of the DataFrame
             allow_order_variance: Allow rows to appear in any order (so long as the dimensions and values are correct)
             display_input: Display the student's answer in the feedback area.
+            report_success: Report success if the DataFrame is correct
         """
 
         import pandas as pd
@@ -717,7 +806,9 @@ class Feedback:
             except Exception:
                 return bad(f"{name} is inaccurate")
 
-        cls.add_feedback(f"{name} looks good")
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
+
         if display_input:
             cls.add_feedback("----------")
             cls.add_feedback(data.to_string(max_rows=9))
