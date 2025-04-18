@@ -69,5 +69,3 @@ export const ElementCoreJsonSchema = z
   .describe('Info files for v3 elements.');
 
 export type ElementCoreJson = z.infer<typeof ElementCoreJsonSchema>;
-export type ElementCoreDependencyJson = z.infer<typeof DependencyJsonSchema>;
-export type ElementCoreDynamicDependencyJson = z.infer<typeof DynamicDependencyJsonSchema>;

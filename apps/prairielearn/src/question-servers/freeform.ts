@@ -32,14 +32,7 @@ import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import * as schemas from '../schemas/index.js';
-import type {
-  ElementCoreDependencyJson,
-  ElementCoreDynamicDependencyJson,
-  ElementCoreJson,
-  ElementCourseDependencyJson,
-  ElementCourseDynamicDependencyJson,
-  ElementCourseJson,
-} from '../schemas/index.js';
+import type { ElementCoreJson, ElementCourseJson } from '../schemas/index.js';
 
 import {
   type ElementExtensionJsonExtension,
@@ -72,16 +65,11 @@ interface QuestionProcessingContext {
 type ElementExtensionNameDirMap = Record<string, Record<string, ElementExtensionJsonExtension>>;
 type ElementNameMap = Record<
   string,
-  | (ElementCourseJson & {
-      name: string;
-      directory: string;
-      type: 'course';
-    })
-  | (ElementCoreJson & {
-      name: string;
-      directory: string;
-      type: 'core';
-    })
+  (ElementCourseJson | ElementCoreJson) & {
+    name: string;
+    directory: string;
+    type: 'course';
+  }
 >;
 // Maps core element names to element info
 let coreElementsCache: ElementNameMap = {};
@@ -1538,19 +1526,9 @@ export async function render(
       allRenderedElementNames.forEach((elementName) => {
         const resolvedElement = resolveElement(elementName, context);
 
-        const elementDependencies: (ElementCourseDependencyJson | ElementCoreDependencyJson) & {
-          courseElementStyles?: ElementCourseDependencyJson['elementStyles'];
-          coreElementStyles?: ElementCoreDependencyJson['elementStyles'];
-          courseElementScripts?: ElementCourseDependencyJson['elementScripts'];
-          coreElementScripts?: ElementCoreDependencyJson['elementScripts'];
-        } = structuredClone(resolvedElement.dependencies) ?? {};
-        const elementDynamicDependencies: (
-          | ElementCourseDynamicDependencyJson
-          | ElementCoreDynamicDependencyJson
-        ) & {
-          courseElementScripts?: ElementCourseDynamicDependencyJson['elementScripts'];
-          coreElementScripts?: ElementCoreDynamicDependencyJson['elementScripts'];
-        } = structuredClone(resolvedElement.dynamicDependencies) ?? {};
+        const elementDependencies = structuredClone(resolvedElement.dependencies) ?? {};
+        const elementDynamicDependencies =
+          structuredClone(resolvedElement.dynamicDependencies) ?? {};
 
         // Transform non-global dependencies to be prefixed by the element name,
         // since they'll be served from their element's directory
@@ -1571,53 +1549,45 @@ export async function render(
           );
         }
 
-        // Rename properties so we can track core and course
-        // element dependencies separately
-        if (resolvedElement.type === 'course') {
-          if ('elementStyles' in elementDependencies) {
-            elementDependencies.courseElementStyles = elementDependencies.elementStyles;
-            delete elementDependencies.elementStyles;
-          }
-          if ('elementScripts' in elementDependencies) {
-            elementDependencies.courseElementScripts = elementDependencies.elementScripts;
-            delete elementDependencies.elementScripts;
-          }
-          if ('elementScripts' in elementDynamicDependencies) {
-            elementDynamicDependencies.courseElementScripts =
-              elementDynamicDependencies.elementScripts;
-            delete elementDynamicDependencies.elementScripts;
-          }
-        } else {
-          if ('elementStyles' in elementDependencies) {
-            elementDependencies.coreElementStyles = elementDependencies.elementStyles;
-            delete elementDependencies.elementStyles;
-          }
-          if ('elementScripts' in elementDependencies) {
-            elementDependencies.coreElementScripts = elementDependencies.elementScripts;
-            delete elementDependencies.elementScripts;
-          }
-          if ('elementScripts' in elementDynamicDependencies) {
-            elementDynamicDependencies.coreElementScripts =
-              elementDynamicDependencies.elementScripts;
-            delete elementDynamicDependencies.elementScripts;
-          }
-        }
-
         for (const type in elementDependencies) {
           if (!(type in dependencies)) continue;
 
+          // Rename properties so we can track core and course element dependencies separately.
+          const resolvedType = run(() => {
+            if (resolvedElement.type === 'course') {
+              if (type === 'elementStyles') return 'courseElementStyles';
+              if (type === 'elementScripts') return 'courseElementScripts';
+            } else {
+              if (type === 'elementStyles') return 'coreElementStyles';
+              if (type === 'elementScripts') return 'coreElementScripts';
+            }
+            return type;
+          });
+
           for (const dep of elementDependencies[type]) {
-            if (!dependencies[type].includes(dep)) {
-              dependencies[type].push(dep);
+            if (!dependencies[resolvedType].includes(dep)) {
+              dependencies[resolvedType].push(dep);
             }
           }
         }
 
         for (const type in elementDynamicDependencies) {
+          // Rename properties so we can track core and course element dependencies separately.
+          const resolvedType = run(() => {
+            if (resolvedElement.type === 'course') {
+              if (type === 'elementScripts') return 'courseElementScripts';
+            } else {
+              if (type === 'elementScripts') return 'coreElementScripts';
+            }
+            return type;
+          });
+
           for (const key in elementDynamicDependencies[type]) {
             if (!Object.hasOwn(dynamicDependencies[type], key)) {
-              dynamicDependencies[type][key] = elementDynamicDependencies[type][key];
-            } else if (dynamicDependencies[type][key] !== elementDynamicDependencies[type][key]) {
+              dynamicDependencies[resolvedType][key] = elementDynamicDependencies[type][key];
+            } else if (
+              dynamicDependencies[resolvedType][key] !== elementDynamicDependencies[type][key]
+            ) {
               courseIssues.push(
                 new CourseIssueError(`Dynamic dependency ${key} assigned to conflicting files`, {
                   data: {
