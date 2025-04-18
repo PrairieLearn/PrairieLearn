@@ -71,7 +71,7 @@ def test_check_dict_correct_cases(
     mock_file, mock_add_feedback, ref_dict, student_dict
 ) -> None:
     """Test cases where check_dict should return True and not add feedback."""
-    assert Feedback.check_dict(NAME, ref_dict, student_dict)
+    assert Feedback.check_dict(NAME, ref_dict, student_dict, report_success=False)
     mock_add_feedback.assert_not_called()
 
 
@@ -176,7 +176,7 @@ def test_check_dict_incorrect_cases(
     mock_file, mock_add_feedback, ref_dict, student_dict, expected_feedback
 ) -> None:
     """Test cases where check_dict should return False and add specific feedback."""
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict)
+    assert not Feedback.check_dict(NAME, ref_dict, student_dict, report_success=False)
     mock_add_feedback.assert_called_with(expected_feedback)
 
 
@@ -232,7 +232,9 @@ def test_check_dict_target_keys(
     expected_feedback,
 ) -> None:
     """Test check_dict with the target_keys parameter."""
-    result = Feedback.check_dict(NAME, ref_dict, student_dict, target_keys=target_keys)
+    result = Feedback.check_dict(
+        NAME, ref_dict, student_dict, target_keys=target_keys, report_success=False
+    )
     assert result == expected_result
     if expected_feedback:
         mock_add_feedback.assert_called_with(expected_feedback)
@@ -256,5 +258,7 @@ def test_check_dict_with_partial_key_matching_raises_error(
             r"target_keys must be a subset of the reference dict keys. Got target_keys=['d'] but ref.keys=['a', 'b', 'c']"
         ),
     ):
-        Feedback.check_dict(NAME, ref_dict, student_dict, target_keys=target_keys)
+        Feedback.check_dict(
+            NAME, ref_dict, student_dict, target_keys=target_keys, report_success=False
+        )
     mock_add_feedback.assert_not_called()
