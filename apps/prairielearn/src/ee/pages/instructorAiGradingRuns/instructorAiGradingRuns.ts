@@ -5,7 +5,7 @@ import * as error from '@prairielearn/error';
 
 import { features } from '../../../lib/features/index.js';
 import { aiGradeTest } from '../../lib/ai-grading/ai-grading-test.js';
-import { aiGrade } from '../../lib/ai-grading.js';
+import { aiGrade } from '../../lib/ai-grading/ai-grading.js';
 
 import { InstructorAIGradingRuns } from './instructorAiGradingRuns.html.js';
 
