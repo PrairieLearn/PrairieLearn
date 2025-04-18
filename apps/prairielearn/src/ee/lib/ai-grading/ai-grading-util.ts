@@ -2,10 +2,17 @@ import { type OpenAI } from 'openai';
 import type { ParsedChatCompletion } from 'openai/resources/beta/chat/completions.mjs';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import {
   type Course,
+  IdSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
   type Question,
@@ -387,4 +394,37 @@ export async function selectClosestSubmissionInfo({
     GradedExampleSchema,
   );
   return example_submissions;
+}
+
+export async function selectRubricForGrading(
+  assessment_question_id: string,
+): Promise<RubricItem[]> {
+  const rubric_items = await queryRows(
+    sql.select_rubric_for_grading,
+    {
+      assessment_question_id,
+    },
+    RubricItemSchema,
+  );
+  return rubric_items;
+}
+
+export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
+  const submission_id = await queryRow(
+    sql.select_last_submission_id,
+    { instance_question_id },
+    IdSchema,
+  );
+  return submission_id;
+}
+
+export async function selectEmbeddingForSubmission(
+  submission_id: string,
+): Promise<SubmissionGradingContextEmbedding | null> {
+  const submission_embedding = await queryOptionalRow(
+    sql.select_embedding_for_submission,
+    { submission_id },
+    SubmissionGradingContextEmbeddingSchema,
+  );
+  return submission_embedding;
 }

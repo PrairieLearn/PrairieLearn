@@ -5,23 +5,10 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import {
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import {
-  type AssessmentQuestion,
-  type Course,
-  IdSchema,
-  type Question,
-  RubricItemSchema,
-  SubmissionGradingContextEmbeddingSchema,
-} from '../../../lib/db-types.js';
+import { type AssessmentQuestion, type Course, type Question } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
@@ -29,8 +16,6 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import * as aiGradingUtil from './ai-grading-util.js';
-
-const sql = loadSqlEquiv(import.meta.url);
 
 export async function aiGrade({
   course,
@@ -78,16 +63,8 @@ export async function aiGrade({
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
     for (const instance_question of instance_questions) {
-      const submission_id = await queryRow(
-        sql.select_last_submission_id,
-        { instance_question_id: instance_question.id },
-        IdSchema,
-      );
-      const submission_embedding = await queryOptionalRow(
-        sql.select_embedding_for_submission,
-        { submission_id },
-        SubmissionGradingContextEmbeddingSchema,
-      );
+      const submission_id = await aiGradingUtil.selectLastSubmissionId(instance_question.id);
+      const submission_embedding = await aiGradingUtil.selectEmbeddingForSubmission(submission_id);
       if (!submission_embedding) {
         await aiGradingUtil.generateSubmissionEmbedding({
           course,
@@ -142,11 +119,7 @@ export async function aiGrade({
       }
       const questionPrompt = render_question_results.data.questionHtml;
 
-      let submission_embedding = await queryOptionalRow(
-        sql.select_embedding_for_submission,
-        { submission_id: submission.id },
-        SubmissionGradingContextEmbeddingSchema,
-      );
+      let submission_embedding = await aiGradingUtil.selectEmbeddingForSubmission(submission.id);
       if (!submission_embedding) {
         submission_embedding = await aiGradingUtil.generateSubmissionEmbedding({
           course,
@@ -170,13 +143,7 @@ export async function aiGrade({
       }
       job.info(gradedExampleInfo);
 
-      const rubric_items = await queryRows(
-        sql.select_rubric_for_grading,
-        {
-          assessment_question_id: assessment_question.id,
-        },
-        RubricItemSchema,
-      );
+      const rubric_items = await aiGradingUtil.selectRubricForGrading(assessment_question.id);
 
       const { messages } = await aiGradingUtil.generatePrompt({
         questionPrompt,

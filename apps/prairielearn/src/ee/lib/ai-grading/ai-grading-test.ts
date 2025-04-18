@@ -9,7 +9,6 @@ import {
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
-  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
@@ -19,8 +18,6 @@ import {
   type Course,
   IdSchema,
   type Question,
-  RubricItemSchema,
-  SubmissionGradingContextEmbeddingSchema,
 } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
@@ -81,16 +78,8 @@ export async function aiGradeTest({
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
     for (const instance_question of instance_questions) {
-      const submission_id = await queryRow(
-        sql.select_last_submission_id,
-        { instance_question_id: instance_question.id },
-        IdSchema,
-      );
-      const submission_embedding = await queryOptionalRow(
-        sql.select_embedding_for_submission,
-        { submission_id },
-        SubmissionGradingContextEmbeddingSchema,
-      );
+      const submission_id = await aiGradingUtil.selectLastSubmissionId(instance_question.id);
+      const submission_embedding = await aiGradingUtil.selectEmbeddingForSubmission(submission_id);
       if (!submission_embedding) {
         await aiGradingUtil.generateSubmissionEmbedding({
           course,
@@ -116,13 +105,7 @@ export async function aiGradeTest({
     }
     job.info(`Found ${number_to_test} submissions to test!`);
 
-    const rubric_items = await queryRows(
-      sql.select_rubric_for_grading,
-      {
-        assessment_question_id: assessment_question.id,
-      },
-      RubricItemSchema,
-    );
+    const rubric_items = await aiGradingUtil.selectRubricForGrading(assessment_question.id);
     const rubric_id = rubric_items.length ? rubric_items[0].rubric_id : null;
 
     let error_count = 0;
@@ -187,11 +170,7 @@ export async function aiGradeTest({
       }
       const questionPrompt = render_question_results.data.questionHtml;
 
-      let submission_embedding = await queryOptionalRow(
-        sql.select_embedding_for_submission,
-        { submission_id: submission.id },
-        SubmissionGradingContextEmbeddingSchema,
-      );
+      let submission_embedding = await aiGradingUtil.selectEmbeddingForSubmission(submission.id);
       if (!submission_embedding) {
         submission_embedding = await aiGradingUtil.generateSubmissionEmbedding({
           course,
