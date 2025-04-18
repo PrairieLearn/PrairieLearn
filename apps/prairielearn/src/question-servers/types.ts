@@ -9,7 +9,7 @@ export interface RenderSelection {
   answer?: boolean;
 }
 
-type QuestionServerReturnValue<T> = Promise<{
+export type QuestionServerReturnValue<T> = Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   data: T;
 }>;
@@ -71,13 +71,7 @@ export interface QuestionServer {
   prepare: (
     question: Question,
     course: Course,
-    variant: {
-      variant_seed: string;
-      params: Record<string, any>;
-      true_answer: Record<string, any>;
-      options: Record<string, any>;
-      broken: boolean;
-    },
+    variant: Pick<Variant, 'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken'>,
   ) => QuestionServerReturnValue<PrepareResultData>;
   render: (
     renderSelection: RenderSelection,
