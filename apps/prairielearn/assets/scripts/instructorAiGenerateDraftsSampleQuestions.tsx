@@ -1,8 +1,9 @@
-import { render } from 'preact';
-import { useMemo, useState } from 'preact/hooks';
-import Accordion from 'react-bootstrap/Accordion';
-import Button from 'react-bootstrap/Button';
-import Dropdown from 'react-bootstrap/Dropdown';
+import Accordion from 'react-bootstrap/cjs/Accordion.js';
+import Button from 'react-bootstrap/cjs/Button.js';
+import Dropdown from 'react-bootstrap/cjs/Dropdown.js';
+
+import { render } from '@prairielearn/preact-cjs';
+import { useMemo, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
@@ -86,8 +87,8 @@ onDocumentReady(() => {
                     </div>
                     <p class="fw-bold mb-1 mt-3">Question features</p>
                     <ul id="feature-list">
-                        {selectedQuestion.features.map((feature) => (
-                            <li key={Math.random()}>{feature}</li>
+                        {selectedQuestion.features.map((feature, index) => (
+                            <li key={`selected-question-${selectedQuestion.id}-${index}`}>{feature}</li>
                         ))}
                     </ul>
 
