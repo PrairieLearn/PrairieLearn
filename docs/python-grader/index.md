@@ -98,7 +98,7 @@ The question should contain a way for students to submit files, such as `<pl-fil
 
 By default, the grader will look for a gradable file named `user_code.py`, but this can be changed in the test suite.
 
-Expected variables can also be displayed to the user with the `<pl-external-grader-variables>` element. By setting the `variables-name` attribute to either `names_for_user` or `names_from_user`, both sets of variables can be shown.
+Provided and/or expected variables can also be displayed to the user with the `<pl-external-grader-variables>` element. By setting the `params-name` attribute to either `names_for_user` or `names_from_user`, either set of variables can be shown.
 
 ### `tests/setup_code.py`
 
