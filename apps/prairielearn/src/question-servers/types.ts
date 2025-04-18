@@ -4,6 +4,12 @@ import type { ElementExtensionJson } from '../schemas/index.js';
 export type QuestionType = Question['type'];
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
+export interface RenderSelection {
+  question?: boolean;
+  submissions?: boolean;
+  answer?: boolean;
+}
+
 export type QuestionServerReturnValue<T> = Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   data: T;
@@ -27,34 +33,34 @@ export interface RenderResultData {
 export interface ParseResultData {
   params: Record<string, any> | null;
   true_answer: Record<string, any> | null;
-  submitted_answer?: Record<string, any> | null;
-  feedback?: Record<string, any> | null;
-  raw_submitted_answer?: Record<string, any> | null;
-  format_errors?: Record<string, any> | null;
-  gradable?: boolean | null;
+  submitted_answer: Record<string, any> | null;
+  feedback: Record<string, any> | null;
+  raw_submitted_answer: Record<string, any> | null;
+  format_errors: Record<string, any> | null;
+  gradable: boolean | null;
 }
 
 export interface GradeResultData {
   params: Record<string, any> | null;
   true_answer: Record<string, any> | null;
   submitted_answer: Record<string, any> | null;
-  format_errors?: Record<string, any> | null;
-  raw_submitted_answer?: Record<string, any> | null;
+  format_errors: Record<string, any> | null;
+  raw_submitted_answer: Record<string, any> | null;
   partial_scores: Record<string, any>;
   score: number;
   feedback: Record<string, any> | null;
-  gradable?: boolean | null;
-  v2_score?: number;
+  gradable: boolean | null;
+  v2_score: number;
 }
 
 export interface TestResultData {
   params: Record<string, any> | null;
   true_answer: Record<string, any> | null;
-  format_errors?: Record<string, any> | null;
-  raw_submitted_answer?: Record<string, any> | null;
-  partial_scores?: Record<string, any>;
-  score?: number | null;
-  gradable?: boolean | null;
+  format_errors: Record<string, any> | null;
+  raw_submitted_answer: Record<string, any> | null;
+  partial_scores: Record<string, any>;
+  score: number | null;
+  gradable: boolean | null;
 }
 
 export interface QuestionServer {
@@ -69,7 +75,7 @@ export interface QuestionServer {
     variant: Pick<Variant, 'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken'>,
   ) => QuestionServerReturnValue<PrepareResultData>;
   render: (
-    renderSelection: { question: boolean; answer: boolean; submissions: boolean },
+    renderSelection: RenderSelection,
     variant: Variant,
     question: Question,
     submission: Submission | null,

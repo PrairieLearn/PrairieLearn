@@ -1016,10 +1016,10 @@ async function processQuestionHtml(
   };
 }
 
-async function processQuestionServer(
+async function processQuestionServer<Data extends ExecutionData>(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: ExecutionData,
+  data: Data,
   html: string,
   fileData: any,
   context: QuestionProcessingContext,
@@ -1103,10 +1103,10 @@ async function processQuestionServer(
   return { courseIssues, data, html, fileData };
 }
 
-async function processQuestion(
+async function processQuestion<Data extends ExecutionData>(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: ExecutionData,
+  data: Data,
   context: QuestionProcessingContext,
 ) {
   const meter = metrics.getMeter('prairielearn');
@@ -1115,7 +1115,7 @@ async function processQuestion(
     `freeform.${phase}`,
     async () => {
       if (phase === 'generate') {
-        return processQuestionServer(phase, codeCaller, data, '', Buffer.from(''), context);
+        return processQuestionServer<Data>(phase, codeCaller, data, '', Buffer.from(''), context);
       } else {
         const {
           courseIssues,
@@ -1139,7 +1139,7 @@ async function processQuestion(
           data: serverData,
           html: serverHtml,
           fileData: serverFileData,
-        } = await processQuestionServer(phase, codeCaller, htmlData, html, fileData, context);
+        } = await processQuestionServer<Data>(phase, codeCaller, htmlData, html, fileData, context);
         courseIssues.push(...serverCourseIssues);
         return {
           courseIssues,
@@ -1179,12 +1179,12 @@ export async function generate(
 ): QuestionServerReturnValue<Partial<GenerateResultData>> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
-    const data: ExecutionData = {
+    const data = {
       params: {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
-    };
+    } satisfies ExecutionData;
 
     return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
@@ -1193,10 +1193,6 @@ export async function generate(
         data,
         context,
       );
-
-      // if (resultData.params == null || resultData.correct_answers == null) {
-      //   throw new Error('A portion of resultData in `generate` is null or undefined');
-      // }
 
       return {
         courseIssues,
@@ -1218,13 +1214,13 @@ export async function prepare(
     if (variant.broken_at) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
-    const data: ExecutionData = {
+    const data = {
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
       options: { ...(variant.options ?? {}), ...getContextOptions(context) },
       answers_names: {},
-    };
+    } satisfies ExecutionData;
 
     return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
@@ -1233,10 +1229,6 @@ export async function prepare(
         data,
         context,
       );
-
-      // if (resultData.params == null || resultData.correct_answers == null) {
-      //   throw new Error('A portion of resultData in `prepare` is null or undefined');
-      // }
 
       return {
         courseIssues,
@@ -1320,7 +1312,7 @@ async function renderPanel(
     workspace_url: locals.workspaceUrl || null,
   };
 
-  const data: ExecutionData = {
+  const data = {
     // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
     // so we'll use the submission's values if they exist.
     params: submission?.params ?? variant.params ?? {},
@@ -1351,7 +1343,7 @@ async function renderPanel(
     }),
     panel,
     num_valid_submissions: variant.num_tries ?? null,
-  };
+  } satisfies ExecutionData;
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
     course,
@@ -1874,7 +1866,7 @@ export async function parse(
     if (variant.broken_at) throw new Error('attempted to parse broken variant');
 
     const context = await getContext(question, course);
-    const data: ExecutionData = {
+    const data = {
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       submitted_answers: submission.submitted_answer ?? {},
@@ -1884,7 +1876,8 @@ export async function parse(
       options: { ...(variant.options ?? {}), ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
-    };
+    } satisfies ExecutionData;
+
     return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'parse',
@@ -1894,18 +1887,6 @@ export async function parse(
       );
 
       if (Object.keys(resultData.format_errors ?? {}).length > 0) resultData.gradable = false;
-
-      // if (
-      //   resultData.params == null ||
-      //   resultData.correct_answers == null ||
-      //   resultData.submitted_answers == null ||
-      //   resultData.feedback == null ||
-      //   resultData.raw_submitted_answers == null ||
-      //   resultData.format_errors == null ||
-      //   resultData.gradable == null
-      // ) {
-      //   throw new Error('A portion of resultData in `parse` is null or undefined');
-      // }
 
       return {
         courseIssues,
@@ -1935,7 +1916,7 @@ export async function grade(
     if (submission.broken) throw new Error('attempted to grade broken submission');
 
     const context = await getContext(question, question_course);
-    const data: ExecutionData = {
+    const data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
       // use the submission's values when grading.
       params: submission.params,
@@ -1949,7 +1930,7 @@ export async function grade(
       options: { ...(variant.options ?? {}), ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer,
       gradable: submission.gradable,
-    };
+    } satisfies ExecutionData;
     return withCodeCaller(question_course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'grade',
@@ -1959,17 +1940,6 @@ export async function grade(
       );
 
       if (Object.keys(resultData.format_errors ?? {}).length > 0) resultData.gradable = false;
-
-      // if (
-      //   resultData.params == null ||
-      //   resultData.correct_answers == null ||
-      //   resultData.format_errors == null ||
-      //   resultData.raw_submitted_answers == null ||
-      //   resultData.gradable == null ||
-      //   resultData.submitted_answers == null
-      // ) {
-      //   throw new Error('A portion of resultData in `grade` is null or undefined');
-      // }
 
       return {
         courseIssues,
@@ -2010,9 +1980,9 @@ export async function test(
       variant_seed: parseInt(variant.variant_seed, 36),
       options: { ...(variant.options ?? {}), ...getContextOptions(context) },
       raw_submitted_answers: {},
-      gradable: true,
+      gradable: true as boolean,
       test_type,
-    };
+    } satisfies ExecutionData & { test_type: 'correct' | 'incorrect' | 'invalid' };
     return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'test',
@@ -2021,18 +1991,6 @@ export async function test(
         context,
       );
       if (Object.keys(resultData.format_errors ?? {}).length > 0) resultData.gradable = false;
-
-      // if (
-      //   resultData.params == null ||
-      //   resultData.correct_answers == null ||
-      //   resultData.format_errors == null ||
-      //   resultData.raw_submitted_answers == null ||
-      //   resultData.partial_scores == null ||
-      //   resultData.score == null ||
-      //   resultData.gradable == null
-      // ) {
-      //   throw new Error('A portion of resultData in `test` is null or undefined');
-      // }
 
       return {
         courseIssues,

@@ -122,6 +122,7 @@ function grade(
     feedback: grading.feedback ?? null,
     partial_scores: {},
     submitted_answer: submission.submitted_answer ?? null,
+    raw_submitted_answer: submission.raw_submitted_answer ?? null,
     format_errors: {},
     gradable: true,
 
