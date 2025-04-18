@@ -91,9 +91,9 @@ async function createTestSubmission(
   // before grading the submission.
   const { submission_id } = await insertSubmission({
     submitted_answer: {},
-    raw_submitted_answer: data.raw_submitted_answer ?? {},
-    format_errors: data.format_errors ?? {},
-    gradable: data.gradable ?? false,
+    raw_submitted_answer: data.raw_submitted_answer,
+    format_errors: data.format_errors,
+    gradable: data.gradable,
     broken: hasFatalIssue,
     // The `test` phase is not allowed to mutate `params` and `true_answers`, so
     // we just pick the original `params` and `true_answer` so we can use our
@@ -115,7 +115,7 @@ async function createTestSubmission(
     grading_job_id: grading_job.id,
     submitted_answer: {},
     format_errors: data.format_errors,
-    gradable: data.gradable ?? false,
+    gradable: data.gradable,
     broken: hasFatalIssue,
     params: data.params,
     true_answer: data.true_answer,
