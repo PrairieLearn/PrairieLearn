@@ -341,7 +341,7 @@ class Feedback:
         ref: dict[Any, Any],
         data: dict[Any, Any],
         *,
-        target_keys: None | list[str] = None,
+        target_keys: None | list[str] | set[str] = None,
         accuracy_critical: bool = False,
         report_failure: bool = True,
     ) -> bool:
