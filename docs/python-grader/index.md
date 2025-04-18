@@ -191,7 +191,7 @@ The code feedback library contains built-in functions for checking correctness o
   Checks that a numpy array has the same shape and datatype as the reference solution, also checks values to see if they are close using specified `rtol` and `atol`.
 - `check_list(name, ref, data, entry_type=None)`
   Checks that a list has the same length as the reference solution. If `entry_type` is not `None`, can optionally check if each element has that type. Does _not_ check values against the reference.
-- `check_dict(name, ref, data, *, target_keys=None, accuracy_critical=False, report_failure=False)`
+- `check_dict(name, ref, data, target_keys=None)`
   Checks that a student dict has all correct key-value mappings with respect to a reference dict.
 - `check_tuple(name, ref, data)`
   Checks that a tuple has the same length and values as the reference solution.
