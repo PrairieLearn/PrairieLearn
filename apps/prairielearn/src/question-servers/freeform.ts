@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import type { JSONSchemaType } from 'ajv';
 import * as async from 'async';
 // Use slim export, which relies on htmlparser2 instead of parse5. This provides
 // support for questions with legacy renderer.
@@ -31,6 +32,14 @@ import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import * as schemas from '../schemas/index.js';
+import type {
+  ElementCoreDependencyJson,
+  ElementCoreDynamicDependencyJson,
+  ElementCoreJson,
+  ElementCourseDependencyJson,
+  ElementCourseDynamicDependencyJson,
+  ElementCourseJson,
+} from '../schemas/index.js';
 
 import {
   type ElementExtensionJsonExtension,
@@ -43,15 +52,6 @@ import {
   type RenderResultData,
   type TestResultData,
 } from './types.js';
-import type {
-  ElementCoreDependencyJson,
-  ElementCoreDynamicDependencyJson,
-  ElementCoreJson,
-  ElementCourseDependencyJson,
-  ElementCourseDynamicDependencyJson,
-  ElementCourseJson,
-} from '../schemas/index.js';
-import type { JSONSchemaType } from 'ajv';
 
 const debug = debugfn('prairielearn:freeform');
 

@@ -12,10 +12,11 @@
 // in order to update the file in `dist`.
 
 import * as path from 'node:path';
-import { createInterface, type Interface } from 'node:readline';
+import { type Interface, createInterface } from 'node:readline';
 
 import { type Question, type Submission, type Variant } from '../lib/db-types.js';
 import requireFrontend from '../lib/require-frontend.js';
+
 import type { GenerateResultData, GradeResultData } from './types.js';
 
 /**
