@@ -897,9 +897,21 @@ async function processQuestionHtml(
     };
   }
 
-  let processFunction;
-  /** @type {[string, import('../lib/code-caller/index.js').CodeCaller, any, any, any]} */
-  let args;
+  let processFunction: (
+    phase: Phase,
+    codeCaller: CodeCaller,
+    data: any,
+    context: QuestionProcessingContext,
+    html: string | cheerio.CheerioAPI,
+  ) => Promise<{
+    courseIssues: Error[];
+    data: any;
+    html: string;
+    fileData: Buffer<ArrayBuffer>;
+    renderedElementNames: string[];
+  }>;
+
+  let args: [Phase, CodeCaller, any, QuestionProcessingContext, string | cheerio.CheerioAPI];
   if (context.renderer === 'experimental') {
     processFunction = experimentalProcess;
     args = [phase, codeCaller, data, context, html];
