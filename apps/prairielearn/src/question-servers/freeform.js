@@ -696,7 +696,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
   try {
     await async.eachSeries(questionElements, async (elementName) => {
       await async.eachSeries($(elementName).toArray(), async (element) => {
-        if (phase === 'render' && !renderedElementNames.includes(element)) {
+        if (phase === 'render' && !renderedElementNames.includes(elementName)) {
           renderedElementNames.push(elementName);
         }
 
