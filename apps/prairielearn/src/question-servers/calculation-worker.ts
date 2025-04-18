@@ -1,5 +1,3 @@
-// @ts-check
-
 // This is meant to be invoked from a Python code caller via `lib/code-caller`.
 // This allows us to isolate code from the main process that's handling requests,
 // and to execute code inside Docker containers in environments where
@@ -15,19 +13,21 @@
 
 import assert from 'node:assert';
 import * as path from 'node:path';
-import { createInterface } from 'node:readline';
+import { type Interface, createInterface } from 'node:readline';
 
+import { type Question, type Submission, type Variant } from '../lib/db-types.js';
 import requireFrontend from '../lib/require-frontend.js';
+
+import type { GenerateResultData, GradeResultData } from './types.js';
 
 /**
  * Attempts to load the server module that should be used for a particular
  * question.
  *
- * @param {string} questionServerPath The path to the JavaScript question server
- * @param {string} coursePath The path to the course root directory
- * @returns {Promise<any>}
+ * @param questionServerPath The path to the JavaScript question server
+ * @param coursePath The path to the course root directory
  */
-async function loadServer(questionServerPath, coursePath) {
+async function loadServer(questionServerPath: string, coursePath: string): Promise<any> {
   const configRequire = requireFrontend.config({
     paths: {
       clientFilesCourse: path.join(coursePath, 'clientFilesCourse'),
@@ -47,7 +47,7 @@ async function loadServer(questionServerPath, coursePath) {
         // This was added as a workaround for requireJS error handling weirdness.
         setTimeout(() => resolve(server), 0);
       },
-      (err) => {
+      (err: Error) => {
         const e = new Error(`Error loading ${path.basename(questionServerPath)}`, {
           cause: err,
         });
@@ -57,14 +57,12 @@ async function loadServer(questionServerPath, coursePath) {
   });
 }
 
-/**
- * @param {any} server
- * @param {string} coursePath
- * @param {import('../lib/db-types.js').Question} question
- * @param {string} variant_seed
- * @returns {import('./types.ts').GenerateResultData}
- */
-function generate(server, coursePath, question, variant_seed) {
+function generate(
+  server: any,
+  coursePath: string,
+  question: Question,
+  variant_seed: string,
+): GenerateResultData {
   assert(question.directory, 'Question directory is required');
 
   const questionDir = path.join(coursePath, 'questions', question.directory);
@@ -78,15 +76,13 @@ function generate(server, coursePath, question, variant_seed) {
   };
 }
 
-/**
- * @param {any} server
- * @param {string} coursePath
- * @param {import('../lib/db-types.js').Submission} submission
- * @param {import('../lib/db-types.js').Variant} variant
- * @param {import('../lib/db-types.js').Question} question
- * @returns {import('./types.ts').GradeResultData}
- */
-function grade(server, coursePath, submission, variant, question) {
+function grade(
+  server: any,
+  coursePath: string,
+  submission: Submission,
+  variant: Variant,
+  question: Question,
+): GradeResultData {
   assert(question.directory, 'Question directory is required');
 
   const vid = variant.variant_seed;
@@ -134,11 +130,7 @@ function grade(server, coursePath, submission, variant, question) {
   };
 }
 
-/**
- * @param {import('readline').Interface} rl
- * @returns {Promise<string | null>}
- */
-function getLineOnce(rl) {
+function getLineOnce(rl: Interface): Promise<string | null> {
   return new Promise((resolve) => {
     let didResolve = false;
     rl.on('line', (line) => {
@@ -193,7 +185,7 @@ process.stdout.write = process.stderr.write.bind(process.stderr);
 
   const server = await loadServer(questionServerPath, coursePath);
 
-  let data;
+  let data: Record<string, any>;
   if (func === 'generate') {
     data = generate(server, coursePath, question, variant_seed);
   } else if (func === 'grade') {
