@@ -92,7 +92,7 @@ export function InstructorAIGenerateDrafts({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="generate_question" />
 
-            <div id="sample-questions" data-start-open="${sampleQuestionOpen ? true : false}"></div>
+            <div id="sample-questions" class="mb-3" data-start-open="${sampleQuestionOpen ? true : false}"></div>
 
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
@@ -275,7 +275,7 @@ function SampleQuestionSelector({
               </ul>
               ${SampleQuestionDemo(initialPrompt)}
               <p class="fw-bold mb-1 mt-3">Prompt</p>
-              <p id="sample-question-prompt">${initialPrompt.promptGeneral}</p>
+              <p id="sample-question-prompt">${initialPrompt.prompt}</p>
               <button id="fill-prompts" type="button" class="btn btn-primary me-2">
                 <i class="fa fa-clone" aria-hidden="true"></i>
                 Fill prompt
