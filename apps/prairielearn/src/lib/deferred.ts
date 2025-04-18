@@ -1,4 +1,4 @@
-interface DeferredPromise<T> {
+export interface DeferredPromise<T> {
   promise: Promise<T>;
   resolve: (value: T) => void;
   reject: (reason: any) => void;

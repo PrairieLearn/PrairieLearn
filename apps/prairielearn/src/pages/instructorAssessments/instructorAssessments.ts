@@ -29,10 +29,11 @@ import { AssessmentAddEditor } from '../../lib/editors.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {
-  AssessmentRowSchema,
   AssessmentStats,
   InstructorAssessments,
+  PreactInstructorAssessments,
 } from './instructorAssessments.html.js';
+import { AssessmentRowSchema } from './instructorAssessments.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -57,9 +58,11 @@ router.get(
       AssessmentRowSchema,
     );
 
+    // TODO: just for testing.
     const assessmentIdsNeedingStatsUpdate = rows
       .filter((row) => row.needs_statistics_update)
       .map((row) => row.id);
+    // const assessmentIdsNeedingStatsUpdate = rows.map((row) => row.id);
 
     const assessmentSets = await queryRows(
       sql.select_assessment_sets,
@@ -77,17 +80,49 @@ router.get(
       );
     }
 
-    res.send(
-      InstructorAssessments({
-        resLocals: res.locals,
-        rows,
-        assessmentIdsNeedingStatsUpdate,
-        csvFilename,
-        assessmentSets,
-        assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
-        assessmentModules,
-      }),
-    );
+    function renderWithTiming(name: string, fn: () => string) {
+      const start = performance.now();
+      const result = fn();
+      const end = performance.now();
+
+      console.log(`Rendered with ${name} in ${end - start}ms`);
+
+      let serverTimingHeader = res.get('Server-Timing') || '';
+      if (serverTimingHeader) {
+        serverTimingHeader += ', ';
+      }
+      serverTimingHeader += `render;dur=${end - start}`;
+
+      res.set('Server-Timing', serverTimingHeader);
+      res.send(result);
+    }
+
+    // To test with JSX, append `?jsx` to the URL.
+    if ('jsx' in req.query) {
+      renderWithTiming('Preact', () =>
+        PreactInstructorAssessments({
+          resLocals: res.locals,
+          rows,
+          assessmentIdsNeedingStatsUpdate,
+          csvFilename,
+          assessmentSets,
+          assessmentModules,
+          assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
+        }),
+      );
+    } else {
+      renderWithTiming('plain HTML', () =>
+        InstructorAssessments({
+          resLocals: res.locals,
+          rows,
+          assessmentIdsNeedingStatsUpdate,
+          csvFilename,
+          assessmentSets,
+          assessmentModules,
+          assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
+        }),
+      );
+    }
   }),
 );
 
@@ -116,7 +151,12 @@ router.get(
       throw new HttpStatusError(404, `Assessment not found: ${req.params.assessment_id}`);
     }
 
-    res.send(AssessmentStats({ row }).toString());
+    if (req.headers.accept === 'application/json') {
+      // TODO: is this sending too much data to the client? Consider overriding this.
+      res.json(row);
+    } else {
+      res.send(AssessmentStats({ row }).toString());
+    }
   }),
 );
 
