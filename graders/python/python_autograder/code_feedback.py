@@ -344,6 +344,7 @@ class Feedback:
         target_keys: None | list[str] | set[str] = None,
         accuracy_critical: bool = False,
         report_failure: bool = True,
+        report_success: bool = True,
     ) -> bool:
         """
         Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`).
@@ -355,6 +356,7 @@ class Feedback:
             target_keys: If not None, it will only only compare the keys listed.
             accuracy_critical: If true, grading will halt on failure.
             report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
         """
 
         def bad(msg: str) -> Literal[False]:
@@ -403,6 +405,9 @@ class Feedback:
                 return bad(
                     f"{name} has key `{key}` with value `{data[key]}`, which is not correct"
                 )
+
+        if report_success:
+            cls.add_feedback(f"{name} looks good")
 
         return True
 
