@@ -427,4 +427,5 @@ small .user-output-invalid {
 /** Provide a higher-contrast focus indicator for tom-select dropdowns */
 .ts-dropdown .active {
   outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
 }
