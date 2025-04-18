@@ -54,7 +54,7 @@ const DynamicDependencyJsonSchema = z
       .optional(),
     clientFilesCourseScripts: z
       .record(z.string())
-      .describe('The styles required by this element from clientFilesCourse as an importmap.')
+      .describe('The scripts required by this element from clientFilesCourse as an importmap.')
       .optional(),
     elementScripts: z
       .record(z.string())
