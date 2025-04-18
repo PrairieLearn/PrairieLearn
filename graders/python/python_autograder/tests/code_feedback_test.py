@@ -81,92 +81,92 @@ def test_check_dict_correct_cases(
         (
             {"a": 1, "b": 2, "c": 3},
             {"x": 4, "y": 5, "z": 6},
-            f"{NAME} has missing keys: `a, b, c`",
+            f"'{NAME}' has missing keys: `a, b, c`",
         ),  # Test: Completely different keys
         (
             {"a": 1, 2: "a", 3: "c"},
             {"x": 4, "y": 5, "z": 6},
-            f"{NAME} has missing keys: `2, 3, a`",
+            f"'{NAME}' has missing keys: `2, 3, a`",
         ),  # Test: Completely different keys with mixed types
         (
             {"a": 1, "b": 2, "c": 3},
             {"d": 1, "b": 2, "f": 3},
-            f"{NAME} has missing keys: `a, c`",
+            f"'{NAME}' has missing keys: `a, c`",
         ),  # Test: Some incorrect keys, some correct
         (
             {"a": 1, "b": 2, "c": 3, "list": []},
             {"a": 1, "b": 2, "c": 3, "list": ()},
-            f"{NAME} has key `list` with type `tuple`, which is not the right type",
+            f"'{NAME}' has key `list` with type `tuple`, which is not the right type",
         ),  # Test: Correct keys, incorrect value type (list vs tuple)
         (
             {"a": 1, "b": 2, "c": 3, 0: "c"},
             {"a": 1, "b": 3, "c": 2, 0: ""},
-            f"{NAME} has key `b` with value `3`, which is not correct",
+            f"'{NAME}' has key `b` with value `3`, which is not correct",
         ),  # Test: Correct keys, multiple incorrect values
         (
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 5, "c": 3},
-            f"{NAME} has key `b` with value `5`, which is not correct",
+            f"'{NAME}' has key `b` with value `5`, which is not correct",
         ),  # Test: Correct keys, one incorrect value
         (
             {"a": None, "b": 2, "c": 3},
             {"a": 1, "b": 2, "c": None},
-            f"{NAME} has key `a` with type `int`, which is not the right type",
+            f"'{NAME}' has key `a` with type `int`, which is not the right type",
         ),  # Test: Mismatched None/value types
         (
             {"a": 1, "b": {"nested_key": 10}, "c": 3},
             {"a": 1, "b": {"nested_key": 20}, "c": 3},
-            f"{NAME} has key `b` with value `{{'nested_key': 20}}`, which is not correct",
+            f"'{NAME}' has key `b` with value `{{'nested_key': 20}}`, which is not correct",
         ),  # Test: Mismatched value in nested dictionary
         (
             {f"key_{i}": i for i in range(1000)},
             {f"key_{i}": i for i in range(1000)} | {"key_500": 999},
-            f"{NAME} has key `key_500` with value `999`, which is not correct",
+            f"'{NAME}' has key `key_500` with value `999`, which is not correct",
         ),  # Test: Mismatched value in large dictionary
         (
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 2, "c": 3, "d": 4},
-            f"{NAME} has extra keys: `d`",
+            f"'{NAME}' has extra keys: `d`",
         ),  # Test: Student dictionary has an extra key
         (
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 2},
-            f"{NAME} has missing keys: `c`",
+            f"'{NAME}' has missing keys: `c`",
         ),  # Test: Student dictionary is missing a key
         (
             {"a": 1, "b": 2, "c": 3},
             {},
-            f"{NAME} has missing keys: `a, b, c`",
+            f"'{NAME}' has missing keys: `a, b, c`",
         ),  # Test: Student dictionary is empty, reference is not
         (
             {},
             {"a": 1, "b": 2, "c": 3},
-            f"{NAME} has extra keys: `a, b, c`",
+            f"'{NAME}' has extra keys: `a, b, c`",
         ),  # Test: Reference dictionary is empty, student is not
         (
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": "2", "c": 3},
-            f"{NAME} has key `b` with type `str`, which is not the right type",
+            f"'{NAME}' has key `b` with type `str`, which is not the right type",
         ),  # Test: Incorrect value type (int vs str)
         (
             {"a": 1, "b": "string", "c": [1, 2, 3]},
             {"a": 1, "b": 100, "c": ["1", "2", "3"]},
-            f"{NAME} has key `b` with type `int`, which is not the right type",
+            f"'{NAME}' has key `b` with type `int`, which is not the right type",
         ),  # Test: Mixed types with incorrect type for one value
         (
             {"a": 1, "b": "string", "c": [1, 2, 3]},
             {"a": 1, "b": 100, "c": 43},
-            f"{NAME} has key `b` with type `int`, which is not the right type",
+            f"'{NAME}' has key `b` with type `int`, which is not the right type",
         ),  # Test: Mixed types with incorrect type and value
         (
             {"a": 1},
             None,
-            f"{NAME} is not a dict, got type NoneType",
+            f"'{NAME}' is not a dict, got type NoneType",
         ),  # Test: Student data is None
         (
             {"a": 1},
             [("a", 1)],
-            f"{NAME} is not a dict, got type list",
+            f"'{NAME}' is not a dict, got type list",
         ),  # Test: Student data is not a dictionary (list)
     ],
 )
@@ -201,14 +201,14 @@ def test_check_dict_incorrect_cases(
             {"a": 1, "c": 3, "d": 4},
             ["a", "b"],
             False,
-            f"{NAME} has missing keys: `b`",
+            f"'{NAME}' has missing keys: `b`",
         ),  # Test: target_keys check fails due to missing key
         (
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 20, "d": 4},
             ["a", "b", "c"],
             False,
-            f"{NAME} has missing keys: `c`",
+            f"'{NAME}' has missing keys: `c`",
         ),  # Test: target_keys check fails due to missing key and incorrect value (checked later)
         # Test case for incorrect value when using target_keys
         (
@@ -216,7 +216,7 @@ def test_check_dict_incorrect_cases(
             {"a": 1, "b": 99, "c": 3, "d": 4},
             ["a", "b"],
             False,
-            f"{NAME} has key `b` with value `99`, which is not correct",
+            f"'{NAME}' has key `b` with value `99`, which is not correct",
         ),  # Test: target_keys check fails due to incorrect value
     ],
 )
