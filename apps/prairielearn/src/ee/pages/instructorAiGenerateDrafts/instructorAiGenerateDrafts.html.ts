@@ -122,34 +122,32 @@ export function InstructorAIGenerateDrafts({
               </div>
             </div>
 
-            <div class="${hasDrafts ? 'd-none' : ''}">
-              ${
-                // We think this will mostly be useful in local dev or for
-                // global admins who will want to iterate rapidly and don't
-                // want to retype a whole prompt each time. For actual users,
-                // we think this will mostly be confusing if we show it.
-                resLocals.is_administrator
-                  ? html`
-                      <hr />
+            ${
+              // We think this will mostly be useful in local dev or for
+              // global admins who will want to iterate rapidly and don't
+              // want to retype a whole prompt each time. For actual users,
+              // we think this will mostly be confusing if we show it.
+              resLocals.is_administrator
+                ? html`
+                    <hr />
 
-                      <div class="mb-3">
-                        <label for="user-prompt-example" class="form-label">
-                          Or choose an example prompt:
-                        </label>
-                        <select id="user-prompt-example" class="form-select">
-                          <option value=""></option>
-                          ${examplePrompts.map(
-                            (question) =>
-                              html`<option value="${question.id}" data-prompt="${question.prompt}">
-                                ${question.id}
-                              </option>`,
-                          )}
-                        </select>
-                      </div>
-                    `
-                  : ''
-              }
-            </div>
+                    <div class="mb-3">
+                      <label for="user-prompt-example" class="form-label">
+                        Or choose an example prompt:
+                      </label>
+                      <select id="user-prompt-example" class="form-select">
+                        <option value=""></option>
+                        ${examplePrompts.map(
+                          (question) =>
+                            html`<option value="${question.id}" data-prompt="${question.prompt}">
+                              ${question.id}
+                            </option>`,
+                        )}
+                      </select>
+                    </div>
+                  `
+                : ''
+            }
 
             <button type="submit" class="btn btn-primary w-100">
               <span
