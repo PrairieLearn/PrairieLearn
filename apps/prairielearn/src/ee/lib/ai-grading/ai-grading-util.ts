@@ -11,9 +11,11 @@ import {
   type Question,
   type RubricItem,
   RubricItemSchema,
+  type Submission,
   type SubmissionGradingContextEmbedding,
   SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
+  type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
@@ -350,4 +352,15 @@ export async function insertAiGradingJob({
     course_id,
     course_instance_id,
   });
+}
+
+export async function selectLastVariantAndSubmission(
+  instance_question_id: string,
+): Promise<{ variant: Variant; submission: Submission }> {
+  const { variant, submission } = await queryRow(
+    sql.select_last_variant_and_submission,
+    { instance_question_id },
+    SubmissionVariantSchema,
+  );
+  return { variant, submission };
 }

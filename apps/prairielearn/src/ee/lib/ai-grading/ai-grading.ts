@@ -116,10 +116,8 @@ export async function aiGrade({
       if (!instance_question.requires_manual_grading) {
         continue;
       }
-      const { variant, submission } = await queryRow(
-        sql.select_last_variant_and_submission,
-        { instance_question_id: instance_question.id },
-        aiGradingUtil.SubmissionVariantSchema,
+      const { variant, submission } = await aiGradingUtil.selectLastVariantAndSubmission(
+        instance_question.id,
       );
 
       const locals = {

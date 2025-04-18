@@ -76,3 +76,18 @@ VALUES
     $course_id,
     $course_instance_id
   );
+
+-- BLOCK select_last_variant_and_submission
+SELECT
+  to_jsonb(v.*) AS variant,
+  to_jsonb(s.*) AS submission
+FROM
+  variants AS v
+  JOIN submissions AS s ON (s.variant_id = v.id)
+WHERE
+  v.instance_question_id = $instance_question_id
+ORDER BY
+  v.date DESC,
+  s.date DESC
+LIMIT
+  1;

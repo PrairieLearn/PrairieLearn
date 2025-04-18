@@ -12,21 +12,6 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK select_last_variant_and_submission
-SELECT
-  to_jsonb(v.*) AS variant,
-  to_jsonb(s.*) AS submission
-FROM
-  variants AS v
-  JOIN submissions AS s ON (s.variant_id = v.id)
-WHERE
-  v.instance_question_id = $instance_question_id
-ORDER BY
-  v.date DESC,
-  s.date DESC
-LIMIT
-  1;
-
 -- BLOCK select_embedding_for_submission
 SELECT
   *
@@ -99,35 +84,3 @@ WHERE
   id = $manual_rubric_grading_id
 LIMIT
   1;
-
--- BLOCK insert_grading_job
-INSERT INTO
-  grading_jobs (
-    submission_id,
-    auth_user_id,
-    graded_by,
-    graded_at,
-    grading_method,
-    correct,
-    score,
-    auto_points,
-    manual_points,
-    feedback,
-    manual_rubric_grading_id
-  )
-VALUES
-  (
-    $submission_id,
-    $authn_user_id,
-    $authn_user_id,
-    now(),
-    $grading_method,
-    $correct,
-    $score,
-    $auto_points,
-    $manual_points,
-    $feedback,
-    $manual_rubric_grading_id
-  )
-RETURNING
-  id;
