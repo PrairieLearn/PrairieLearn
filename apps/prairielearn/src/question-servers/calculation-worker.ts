@@ -16,6 +16,7 @@ import { createInterface, type Interface } from 'node:readline';
 
 import { type Question, type Submission, type Variant } from '../lib/db-types.js';
 import requireFrontend from '../lib/require-frontend.js';
+import type { GenerateResultData, GradeResultData } from './types.js';
 
 /**
  * Attempts to load the server module that should be used for a particular
@@ -54,7 +55,12 @@ async function loadServer(questionServerPath: string, coursePath: string): Promi
   });
 }
 
-function generate(server: any, coursePath: string, question: Question, variant_seed: string) {
+function generate(
+  server: any,
+  coursePath: string,
+  question: Question,
+  variant_seed: string,
+): GenerateResultData {
   if (question.directory === null) {
     throw new Error('Question directory is required');
   }
@@ -76,7 +82,7 @@ function grade(
   submission: Submission,
   variant: Variant,
   question: Question,
-) {
+): GradeResultData {
   if (question.directory === null) {
     throw new Error('Question directory is required');
   }

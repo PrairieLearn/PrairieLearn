@@ -33,6 +33,8 @@ import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import * as schemas from '../schemas/index.js';
 
 import {
+  type ElementExtensionJsonExtension,
+  type ExecutionData,
   type GenerateResultData,
   type GradeResultData,
   type ParseResultData,
@@ -48,7 +50,6 @@ import type {
   ElementCourseDependencyJson,
   ElementCourseDynamicDependencyJson,
   ElementCourseJson,
-  ElementExtensionJson,
 } from '../schemas/index.js';
 import type { JSONSchemaType } from 'ajv';
 
@@ -67,11 +68,6 @@ interface QuestionProcessingContext {
   course_elements: ElementNameMap;
   course_element_extensions: ElementExtensionNameDirMap;
 }
-
-type ElementExtensionJsonExtension = ElementExtensionJson & {
-  name: string;
-  directory: string;
-};
 
 type ElementExtensionNameDirMap = Record<string, Record<string, ElementExtensionJsonExtension>>;
 type ElementNameMap = Record<
@@ -105,35 +101,6 @@ let courseExtensionsCache: Record<
     data: ElementExtensionNameDirMap;
   }
 > = {};
-
-// This data object changes over the lifetime of the question grading process.
-// That is why many fields are nullable / optional, as they are only set in later phases.
-interface Data {
-  params: Record<string, any> | null;
-  correct_answers: Record<string, any> | null;
-  variant_seed: number;
-  options: Record<string, any> & {
-    question_path: string;
-    client_files_question_path: string;
-    client_files_course_path: string;
-    server_files_course_path: string;
-    course_extensions_path: string;
-  };
-  answers_names?: Record<string, string>;
-  submitted_answers?: Record<string, any> | null;
-  format_errors?: Record<string, any> | null;
-  partial_scores?: Record<string, any>;
-  score?: number;
-  feedback?: Record<string, any>;
-  raw_submitted_answers?: Record<string, any> | null;
-  editable?: boolean;
-  manual_grading?: boolean;
-  panel?: 'question' | 'answer' | 'submission';
-  num_valid_submissions?: number | null;
-  filename?: string;
-  gradable?: boolean | null;
-  extensions?: Record<string, ElementExtensionJsonExtension> | [];
-}
 
 class CourseIssueError extends Error {
   data: any;
@@ -328,9 +295,11 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
   return elements;
 }
 
-async function loadExtensionsForCourse(
-  context: Pick<QuestionProcessingContext, 'course' | 'course_dir' | 'course_dir_host'>,
-) {
+async function loadExtensionsForCourse(context: {
+  course: QuestionProcessingContext['course'];
+  course_dir: QuestionProcessingContext['course_dir'];
+  course_dir_host: QuestionProcessingContext['course_dir_host'];
+}) {
   const { course, course_dir, course_dir_host } = context;
   if (
     courseExtensionsCache[course.id] !== undefined &&
@@ -380,7 +349,7 @@ function getElementController(elementName, context) {
  * Returns a copy of data with the new urls inserted.
  */
 function getElementClientFiles(
-  data: Data,
+  data: ExecutionData,
   elementName: string,
   context: QuestionProcessingContext,
 ) {
@@ -414,7 +383,7 @@ async function elementFunction(
   fcn: Phase,
   elementName: string,
   elementHtml: string | null,
-  data: Data,
+  data: ExecutionData,
   context: QuestionProcessingContext,
 ) {
   const resolvedElement = resolveElement(elementName, context);
@@ -440,7 +409,7 @@ async function elementFunction(
   }
 }
 
-function defaultElementFunctionRet(phase: Phase, data: Data) {
+function defaultElementFunctionRet(phase: Phase, data: ExecutionData) {
   if (phase === 'render') {
     return '';
   } else if (phase === 'file') {
@@ -452,7 +421,7 @@ function defaultElementFunctionRet(phase: Phase, data: Data) {
 
 function defaultServerRet(
   phase: Phase,
-  data: Data,
+  data: ExecutionData,
   html: string,
   _context: QuestionProcessingContext,
 ) {
@@ -468,7 +437,7 @@ function defaultServerRet(
 async function execPythonServer(
   codeCaller: CodeCaller,
   phase: Phase,
-  data: Data,
+  data: ExecutionData,
   html: string,
   context: QuestionProcessingContext,
 ) {
@@ -513,7 +482,7 @@ async function execPythonServer(
   }
 }
 
-async function execTemplate(htmlFilename: string, data: Data) {
+async function execTemplate(htmlFilename: string, data: ExecutionData) {
   const rawFile = await fs.readFile(htmlFilename, { encoding: 'utf8' });
   let html = mustache.render(rawFile, data);
   html = markdown.processQuestion(html);
@@ -615,7 +584,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
 async function experimentalProcess(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: Data,
+  data: ExecutionData,
   context: QuestionProcessingContext,
   html: string,
 ) {
@@ -668,7 +637,7 @@ async function experimentalProcess(
 async function traverseQuestionAndExecuteFunctions(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: Data,
+  data: ExecutionData,
   context: QuestionProcessingContext,
   html: string,
 ) {
@@ -813,7 +782,7 @@ async function traverseQuestionAndExecuteFunctions(
 async function legacyTraverseQuestionAndExecuteFunctions(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: Data,
+  data: ExecutionData,
   context: QuestionProcessingContext,
   $: cheerio.CheerioAPI,
 ) {
@@ -1050,7 +1019,7 @@ async function processQuestionHtml(
 async function processQuestionServer(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: Data,
+  data: ExecutionData,
   html: string,
   fileData: any,
   context: QuestionProcessingContext,
@@ -1137,7 +1106,7 @@ async function processQuestionServer(
 async function processQuestion(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: Data,
+  data: ExecutionData,
   context: QuestionProcessingContext,
 ) {
   const meter = metrics.getMeter('prairielearn');
@@ -1210,7 +1179,7 @@ export async function generate(
 ): QuestionServerReturnValue<Partial<GenerateResultData>> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
-    const data: Data = {
+    const data: ExecutionData = {
       params: {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
@@ -1225,9 +1194,9 @@ export async function generate(
         context,
       );
 
-      if (resultData.params == null || resultData.correct_answers == null) {
-        throw new Error('A portion of resultData in `generate` is null or undefined');
-      }
+      // if (resultData.params == null || resultData.correct_answers == null) {
+      //   throw new Error('A portion of resultData in `generate` is null or undefined');
+      // }
 
       return {
         courseIssues,
@@ -1249,7 +1218,7 @@ export async function prepare(
     if (variant.broken_at) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
-    const data: Data = {
+    const data: ExecutionData = {
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
@@ -1265,9 +1234,9 @@ export async function prepare(
         context,
       );
 
-      if (resultData.params == null || resultData.correct_answers == null) {
-        throw new Error('A portion of resultData in `prepare` is null or undefined');
-      }
+      // if (resultData.params == null || resultData.correct_answers == null) {
+      //   throw new Error('A portion of resultData in `prepare` is null or undefined');
+      // }
 
       return {
         courseIssues,
@@ -1351,7 +1320,7 @@ async function renderPanel(
     workspace_url: locals.workspaceUrl || null,
   };
 
-  const data: Data = {
+  const data: ExecutionData = {
     // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
     // so we'll use the submission's values if they exist.
     params: submission?.params ?? variant.params ?? {},
@@ -1859,7 +1828,7 @@ export async function file(
 
     const context = await getContext(question, course);
 
-    const data: Data = {
+    const data: ExecutionData = {
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
@@ -1895,10 +1864,7 @@ export async function file(
 }
 
 export async function parse(
-  submission: Pick<
-    Partial<Submission>,
-    'submitted_answer' | 'feedback' | 'format_errors' | 'raw_submitted_answer' | 'gradable'
-  >,
+  submission: Submission,
   variant: Variant,
   question: Question,
   course: Course,
@@ -1908,7 +1874,7 @@ export async function parse(
     if (variant.broken_at) throw new Error('attempted to parse broken variant');
 
     const context = await getContext(question, course);
-    const data: Data = {
+    const data: ExecutionData = {
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       submitted_answers: submission.submitted_answer ?? {},
@@ -1929,17 +1895,17 @@ export async function parse(
 
       if (Object.keys(resultData.format_errors ?? {}).length > 0) resultData.gradable = false;
 
-      if (
-        resultData.params == null ||
-        resultData.correct_answers == null ||
-        resultData.submitted_answers == null ||
-        resultData.feedback == null ||
-        resultData.raw_submitted_answers == null ||
-        resultData.format_errors == null ||
-        resultData.gradable == null
-      ) {
-        throw new Error('A portion of resultData in `parse` is null or undefined');
-      }
+      // if (
+      //   resultData.params == null ||
+      //   resultData.correct_answers == null ||
+      //   resultData.submitted_answers == null ||
+      //   resultData.feedback == null ||
+      //   resultData.raw_submitted_answers == null ||
+      //   resultData.format_errors == null ||
+      //   resultData.gradable == null
+      // ) {
+      //   throw new Error('A portion of resultData in `parse` is null or undefined');
+      // }
 
       return {
         courseIssues,
@@ -1969,7 +1935,7 @@ export async function grade(
     if (submission.broken) throw new Error('attempted to grade broken submission');
 
     const context = await getContext(question, question_course);
-    const data: Data = {
+    const data: ExecutionData = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
       // use the submission's values when grading.
       params: submission.params,
@@ -1994,16 +1960,16 @@ export async function grade(
 
       if (Object.keys(resultData.format_errors ?? {}).length > 0) resultData.gradable = false;
 
-      if (
-        resultData.params == null ||
-        resultData.correct_answers == null ||
-        resultData.format_errors == null ||
-        resultData.raw_submitted_answers == null ||
-        resultData.gradable == null ||
-        resultData.submitted_answers == null
-      ) {
-        throw new Error('A portion of resultData in `grade` is null or undefined');
-      }
+      // if (
+      //   resultData.params == null ||
+      //   resultData.correct_answers == null ||
+      //   resultData.format_errors == null ||
+      //   resultData.raw_submitted_answers == null ||
+      //   resultData.gradable == null ||
+      //   resultData.submitted_answers == null
+      // ) {
+      //   throw new Error('A portion of resultData in `grade` is null or undefined');
+      // }
 
       return {
         courseIssues,
@@ -2056,17 +2022,17 @@ export async function test(
       );
       if (Object.keys(resultData.format_errors ?? {}).length > 0) resultData.gradable = false;
 
-      if (
-        resultData.params == null ||
-        resultData.correct_answers == null ||
-        resultData.format_errors == null ||
-        resultData.raw_submitted_answers == null ||
-        resultData.partial_scores == null ||
-        resultData.score == null ||
-        resultData.gradable == null
-      ) {
-        throw new Error('A portion of resultData in `test` is null or undefined');
-      }
+      // if (
+      //   resultData.params == null ||
+      //   resultData.correct_answers == null ||
+      //   resultData.format_errors == null ||
+      //   resultData.raw_submitted_answers == null ||
+      //   resultData.partial_scores == null ||
+      //   resultData.score == null ||
+      //   resultData.gradable == null
+      // ) {
+      //   throw new Error('A portion of resultData in `test` is null or undefined');
+      // }
 
       return {
         courseIssues,
@@ -2142,7 +2108,11 @@ async function getContext(question: Question, course: Course): Promise<QuestionP
   };
 }
 
-async function getCacheKey(course: Course, data: Data, context: QuestionProcessingContext) {
+async function getCacheKey(
+  course: Course,
+  data: ExecutionData,
+  context: QuestionProcessingContext,
+) {
   try {
     const commitHash = await getOrUpdateCourseCommitHash(course);
     const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
@@ -2154,7 +2124,7 @@ async function getCacheKey(course: Course, data: Data, context: QuestionProcessi
 
 async function getCachedDataOrCompute(
   course: Course,
-  data: Data,
+  data: ExecutionData,
   context: QuestionProcessingContext,
   computeFcn: () => Promise<any>,
 ) {
