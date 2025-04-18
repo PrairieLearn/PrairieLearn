@@ -48,3 +48,31 @@ FROM
 WHERE
   iq.assessment_question_id = $assessment_question_id
   AND iq.status != 'unanswered';
+
+-- BLOCK insert_ai_grading_job
+INSERT INTO
+  ai_grading_jobs (
+    grading_job_id,
+    job_sequence_id,
+    prompt,
+    completion,
+    model,
+    prompt_tokens,
+    completion_tokens,
+    cost,
+    course_id,
+    course_instance_id
+  )
+VALUES
+  (
+    $grading_job_id,
+    $job_sequence_id,
+    to_jsonb($prompt::text[]),
+    $completion,
+    $model,
+    $prompt_tokens,
+    $completion_tokens,
+    $cost,
+    $course_id,
+    $course_instance_id
+  );

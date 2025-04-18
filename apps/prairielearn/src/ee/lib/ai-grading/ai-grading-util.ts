@@ -1,7 +1,8 @@
 import { type OpenAI } from 'openai';
+import type { ParsedChatCompletion } from 'openai/resources/beta/chat/completions.mjs';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
   type Course,
@@ -317,4 +318,36 @@ export async function selectRubricGradingItems(
     RubricItemSchema,
   );
   return rubric_grading_items;
+}
+
+export async function insertAiGradingJob({
+  grading_job_id,
+  job_sequence_id,
+  prompt,
+  completion,
+  course_id,
+  course_instance_id,
+}: {
+  grading_job_id: string;
+  job_sequence_id: string;
+  prompt: {
+    role: 'system' | 'user';
+    content: string;
+  }[];
+  completion: ParsedChatCompletion<any>;
+  course_id: string;
+  course_instance_id?: string;
+}): Promise<void> {
+  await queryAsync(sql.insert_ai_grading_job, {
+    grading_job_id,
+    job_sequence_id,
+    prompt,
+    completion,
+    model: OPEN_AI_MODEL,
+    prompt_tokens: completion.usage?.prompt_tokens ?? 0,
+    completion_tokens: completion.usage?.completion_tokens ?? 0,
+    cost: calculateApiCost(completion.usage),
+    course_id,
+    course_instance_id,
+  });
 }

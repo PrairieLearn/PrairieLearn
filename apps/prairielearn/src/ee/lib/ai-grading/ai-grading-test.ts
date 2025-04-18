@@ -7,7 +7,6 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -296,15 +295,11 @@ export async function aiGradeTest({
                 },
                 IdSchema,
               );
-              await queryAsync(sql.insert_ai_grading_job, {
+              await aiGradingUtil.insertAiGradingJob({
                 grading_job_id,
                 job_sequence_id: serverJob.jobSequenceId,
                 prompt: messages,
                 completion,
-                model: aiGradingUtil.OPEN_AI_MODEL,
-                prompt_tokens: completion.usage?.prompt_tokens ?? 0,
-                completion_tokens: completion.usage?.completion_tokens ?? 0,
-                cost: aiGradingUtil.calculateApiCost(completion.usage),
                 course_id: course.id,
                 course_instance_id,
               });
@@ -367,15 +362,11 @@ export async function aiGradeTest({
                 },
                 IdSchema,
               );
-              await queryAsync(sql.insert_ai_grading_job, {
+              await aiGradingUtil.insertAiGradingJob({
                 grading_job_id,
                 job_sequence_id: serverJob.jobSequenceId,
                 prompt: messages,
                 completion,
-                model: aiGradingUtil.OPEN_AI_MODEL,
-                prompt_tokens: completion.usage?.prompt_tokens ?? 0,
-                completion_tokens: completion.usage?.completion_tokens ?? 0,
-                cost: aiGradingUtil.calculateApiCost(completion.usage),
                 course_id: course.id,
                 course_instance_id,
               });
@@ -405,7 +396,7 @@ export async function aiGradeTest({
         job.info(`Test size: ${testRubricResults.length}`);
         rubric_items.forEach((item) => {
           const accuracy = aiGradingUtil.rubricItemAccuracy(testRubricResults, item);
-          job.info(`Rubric item: ${item.description}, accuracy: ${accuracy}%`);
+          job.info(`Rubric item: ${item.description}, accuracy: ${accuracy * 100}%`);
         });
       } else {
         job.info(`Test size: ${testScoreResults.length}`);

@@ -7,7 +7,6 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -251,15 +250,11 @@ export async function aiGrade({
               );
               assert(grading_job_id);
 
-              await queryAsync(sql.insert_ai_grading_job, {
+              await aiGradingUtil.insertAiGradingJob({
                 grading_job_id,
                 job_sequence_id: serverJob.jobSequenceId,
                 prompt: messages,
                 completion,
-                model: aiGradingUtil.OPEN_AI_MODEL,
-                prompt_tokens: completion.usage?.prompt_tokens ?? 0,
-                completion_tokens: completion.usage?.completion_tokens ?? 0,
-                cost: aiGradingUtil.calculateApiCost(completion.usage),
                 course_id: course.id,
                 course_instance_id,
               });
@@ -308,15 +303,11 @@ export async function aiGrade({
               );
               assert(grading_job_id);
 
-              await queryAsync(sql.insert_ai_grading_job, {
+              await aiGradingUtil.insertAiGradingJob({
                 grading_job_id,
                 job_sequence_id: serverJob.jobSequenceId,
                 prompt: messages,
                 completion,
-                model: aiGradingUtil.OPEN_AI_MODEL,
-                prompt_tokens: completion.usage?.prompt_tokens ?? 0,
-                completion_tokens: completion.usage?.completion_tokens ?? 0,
-                cost: aiGradingUtil.calculateApiCost(completion.usage),
                 course_id: course.id,
                 course_instance_id,
               });
