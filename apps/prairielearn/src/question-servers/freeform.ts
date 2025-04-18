@@ -1564,18 +1564,18 @@ export async function render(
         // since they'll be served from their element's directory
         if ('elementStyles' in elementDependencies) {
           elementDependencies.elementStyles = elementDependencies.elementStyles?.map(
-            (dep: string) => `${resolvedElement.name}/${dep}`,
+            (dep) => `${resolvedElement.name}/${dep}`,
           );
         }
         if ('elementScripts' in elementDependencies) {
           elementDependencies.elementScripts = elementDependencies.elementScripts?.map(
-            (dep: string) => `${resolvedElement.name}/${dep}`,
+            (dep) => `${resolvedElement.name}/${dep}`,
           );
         }
         if ('elementScripts' in elementDynamicDependencies) {
           elementDynamicDependencies.elementScripts = _.mapValues(
             elementDynamicDependencies.elementScripts,
-            (dep: string) => `${resolvedElement.name}/${dep}`,
+            (dep) => `${resolvedElement.name}/${dep}`,
           );
         }
 
@@ -1655,18 +1655,18 @@ export async function render(
               structuredClone(extensions[elementName][extensionName].dynamicDependencies) ?? {};
             if ('extensionStyles' in extension) {
               extension.extensionStyles = extension.extensionStyles?.map(
-                (dep: string) => `${elementName}/${extensionName}/${dep}`,
+                (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
             if ('extensionScripts' in extension) {
               extension.extensionScripts = extension.extensionScripts?.map(
-                (dep: string) => `${elementName}/${extensionName}/${dep}`,
+                (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
             if ('extensionScripts' in extensionDynamic) {
               extensionDynamic.extensionScripts = _.mapValues(
                 extensionDynamic.extensionScripts,
-                (dep: string) => `${elementName}/${extensionName}/${dep}`,
+                (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
 
