@@ -73,10 +73,6 @@ async function callFunction<Data>(
   const courseHostPath = chunks.getRuntimeDirectoryForCourse(question_course);
   const courseRuntimePath = config.workersExecutionMode === 'native' ? courseHostPath : '/course';
 
-  if (!question.directory) {
-    throw new Error('Question directory is missing');
-  }
-
   const { fullPath: questionServerPath } = await filePaths.questionFilePath(
     'server.js',
     question.directory,
