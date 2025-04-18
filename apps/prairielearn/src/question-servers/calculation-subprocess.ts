@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import * as path from 'node:path';
 
 import { contains } from '@prairielearn/path-utils';
@@ -9,6 +10,13 @@ import { config } from '../lib/config.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import * as filePaths from '../lib/file-paths.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
+
+import type {
+  ParseResultData,
+  PrepareResultData,
+  QuestionServerReturnValue,
+  RenderResultData,
+} from './types.js';
 
 async function prepareChunksIfNeeded(question: Question, course: Course) {
   const questionIds = await chunks.getTemplateQuestionIds(question);
@@ -57,6 +65,7 @@ async function callFunction(
   question: Question,
   inputData: any,
 ) {
+  assert(question.directory, 'Question directory is required');
   await prepareChunksIfNeeded(question, question_course);
 
   const courseHostPath = chunks.getRuntimeDirectoryForCourse(question_course);
@@ -132,7 +141,7 @@ export async function render(
   submissions: Submission[],
   _course: Course,
   _locals: any,
-) {
+): QuestionServerReturnValue<RenderResultData> {
   const data = {
     extraHeadersHtml: '',
     questionHtml: '',
@@ -142,7 +151,11 @@ export async function render(
   return { courseIssues: [], data };
 }
 
-export async function prepare(_question: Question, _course: Course, variant: Variant) {
+export async function prepare(
+  _question: Question,
+  _course: Course,
+  variant: Variant,
+): QuestionServerReturnValue<PrepareResultData> {
   const data = {
     params: variant.params ?? {},
     true_answer: variant.true_answer ?? {},
@@ -156,7 +169,7 @@ export async function parse(
   variant: Variant,
   _question: Question,
   _course: Course,
-) {
+): QuestionServerReturnValue<ParseResultData> {
   const data = {
     params: variant.params ?? {},
     true_answer: variant.true_answer ?? {},

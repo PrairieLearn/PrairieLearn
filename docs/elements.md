@@ -1288,17 +1288,10 @@ data["params"]["names_from_user"] = [
 
 <p>Your code snippet should define the following variables:</p>
 <pl-external-grader-variables params-name="names_from_user">
-  <pl-variable name="x" type="numpy array (length $n$)"
-    >Solution to $\mathbf{Ax}=\mathbf{b}$.</pl-variable
-  >
+  <pl-variable name="x" type="numpy array (length $n$)">
+    Solution to $\mathbf{Ax}=\mathbf{b}$.
+  </pl-variable>
 </pl-external-grader-variables>
-
-<!--
-  The following tag defines an empty list for the given params-name.
-  This is useful for some cases where a parameter must be set to empty to run the external grader.
-  Nothing will be displayed from this tag.
--->
-<pl-external-grader-variables params-name="names_empty" empty="true"></pl-external-grader-variables>
 ```
 
 ```python title="server.py"
