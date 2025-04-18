@@ -168,6 +168,9 @@ BEGIN
             group_work = (valid_assessment.data->>'group_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision,
+            json_can_view = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_view')),
+            json_can_submit = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_submit')),
+            share_source_publicly = (valid_assessment.data->>'share_source_publicly')::boolean,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
         FROM
@@ -324,7 +327,9 @@ BEGIN
                 number_choose,
                 best_questions,
                 advance_score_perc,
-                json_grade_rate_minutes
+                json_grade_rate_minutes,
+                json_can_view,
+                json_can_submit
             )
             VALUES (
                 new_assessment_id,
@@ -334,7 +339,9 @@ BEGIN
                 (zone->>'number_choose')::integer,
                 (zone->>'best_questions')::integer,
                 (zone->>'advance_score_perc')::double precision,
-                (zone->>'grade_rate_minutes')::double precision
+                (zone->>'grade_rate_minutes')::double precision,
+                ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_view')),
+                ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_submit'))
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
@@ -343,7 +350,9 @@ BEGIN
                 number_choose = EXCLUDED.number_choose,
                 best_questions = EXCLUDED.best_questions,
                 advance_score_perc = EXCLUDED.advance_score_perc,
-                json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes
+                json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
+                json_can_view = EXCLUDED.json_can_view,
+                json_can_submit = EXCLUDED.json_can_submit
             RETURNING id INTO new_zone_id;
 
             -- Insert each alternative group in this zone
@@ -354,20 +363,29 @@ BEGIN
                     advance_score_perc,
                     assessment_id,
                     zone_id,
-                    json_grade_rate_minutes
+                    json_grade_rate_minutes,
+                    json_can_view,
+                    json_can_submit,
+                    json_has_alternatives
                 ) VALUES (
                     (alternative_group->>'number')::integer,
                     (alternative_group->>'number_choose')::integer,
                     (alternative_group->>'advance_score_perc')::double precision,
                     new_assessment_id,
                     new_zone_id,
-                    (alternative_group->>'json_grade_rate_minutes')::double precision
+                    (alternative_group->>'json_grade_rate_minutes')::double precision,
+                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_view')),
+                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_submit')),
+                    (alternative_group->>'json_has_alternatives')::boolean
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
                     number_choose = EXCLUDED.number_choose,
                     zone_id = EXCLUDED.zone_id,
                     advance_score_perc = EXCLUDED.advance_score_perc,
-                    json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes
+                    json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
+                    json_can_view = EXCLUDED.json_can_view,
+                    json_can_submit = EXCLUDED.json_can_submit,
+                    json_has_alternatives = EXCLUDED.json_has_alternatives
                 RETURNING id INTO new_alternative_group_id;
 
                 -- Insert an assessment question for each question in this alternative group

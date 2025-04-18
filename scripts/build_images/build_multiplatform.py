@@ -19,6 +19,7 @@ BUILDER_NAME = "prairielearn-builder"
 
 
 def get_platforms() -> list[str]:
+    """Get the current platform or the platforms specified in the environment variable `PLATFORMS`."""
     platforms = os.environ.get("PLATFORMS")
     if platforms is None:
         return [get_current_platform()]

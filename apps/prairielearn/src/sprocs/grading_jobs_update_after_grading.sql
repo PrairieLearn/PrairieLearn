@@ -136,7 +136,7 @@ BEGIN
         graded_at = now(),
         -- For internally-graded questions, these three timestamps will be NULL
         -- in this sproc's params. For the first two, we'll reuse the existing
-        -- values that were set in `grading_jobs_insert`, and for the finish
+        -- values that were set in `insertGradingJob`, and for the finish
         -- timestamp, we'll use the current time.
         grading_received_at = COALESCE(received_time, grading_received_at),
         grading_started_at = COALESCE(start_time, grading_started_at),
