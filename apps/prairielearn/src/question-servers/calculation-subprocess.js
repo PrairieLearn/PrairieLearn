@@ -63,7 +63,6 @@ function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntim
  * @param {import('../lib/db-types.js').Course} question_course
  * @param {import('../lib/db-types.js').Question} question
  * @param {any} inputData
- * @returns
  */
 async function callFunction(func, question_course, question, inputData) {
   assert(question.directory, 'Question directory is required');
