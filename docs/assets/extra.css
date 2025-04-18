@@ -14,7 +14,7 @@ code {
 }
 
 /* Prevent wrapping attributes inside tables, but not mkdocstrings */
-td:not(.code) code {
+tr:not(.doc-section-item) > td:not(.code) > code {
   white-space: nowrap;
 }
 

@@ -6,13 +6,14 @@ import { run } from '@prairielearn/run';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { type Assessment, type CourseInstanceData } from '../course-db.js';
+import { type AssessmentJson } from '../../schemas/index.js';
+import { type CourseInstanceData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-type AssessmentInfoFile = infofile.InfoFile<Assessment>;
+type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
 
 /**
  * SYNCING PROCESS:
@@ -92,6 +93,8 @@ function getParamsForAssessment(
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
       grade_rate_minutes: zone.gradeRateMinutes,
+      json_can_view: zone.canView,
+      json_can_submit: zone.canSubmit,
       comment: zone.comment,
     };
   });
@@ -108,18 +111,18 @@ function getParamsForAssessment(
     return zone.questions.map((question) => {
       let alternatives: {
         qid: string;
-        maxPoints: number | number[];
-        points: number | number[];
-        maxAutoPoints: number | number[];
-        autoPoints: number | number[];
-        manualPoints: number;
+        maxPoints: number | null;
+        points: number | number[] | null;
+        maxAutoPoints: number | null;
+        autoPoints: number | number[] | null;
+        manualPoints: number | null;
         forceMaxPoints: boolean;
         triesPerVariant: number;
         gradeRateMinutes: number;
-        jsonGradeRateMinutes: number;
+        jsonGradeRateMinutes: number | undefined;
         canView: string[] | null;
         canSubmit: string[] | null;
-        advanceScorePerc: number;
+        advanceScorePerc: number | undefined;
         comment: string | null;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
@@ -139,8 +142,8 @@ function getParamsForAssessment(
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
-            canView: alternative?.canView ?? questionCanView,
-            canSubmit: alternative?.canSubmit ?? questionCanSubmit,
+            canView: questionCanView,
+            canSubmit: questionCanSubmit,
             comment: alternative.comment ?? null,
           };
         });
@@ -153,8 +156,8 @@ function getParamsForAssessment(
             maxAutoPoints: question.maxAutoPoints ?? null,
             autoPoints: question.autoPoints ?? null,
             manualPoints: question.manualPoints ?? null,
-            forceMaxPoints: question.forceMaxPoints || false,
-            triesPerVariant: question.triesPerVariant || 1,
+            forceMaxPoints: question.forceMaxPoints ?? false,
+            triesPerVariant: question.triesPerVariant ?? 1,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
             jsonGradeRateMinutes: question.gradeRateMinutes,
@@ -237,6 +240,9 @@ function getParamsForAssessment(
         number_choose: question.numberChoose,
         advance_score_perc: question.advanceScorePerc,
         json_grade_rate_minutes: question.gradeRateMinutes,
+        json_can_view: question.canView,
+        json_can_submit: question.canSubmit,
+        json_has_alternatives: !!question.alternatives,
         questions,
         comment: question.id ? null : question.comment,
       };
@@ -280,6 +286,8 @@ function getParamsForAssessment(
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
     has_roles: !!assessment.groupRoles,
+    json_can_view: assessment.canView,
+    json_can_submit: assessment.canSubmit,
     allowAccess,
     zones,
     alternativeGroups,
@@ -287,6 +295,7 @@ function getParamsForAssessment(
     grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
+    share_source_publicly: assessment.shareSourcePublicly ?? false,
   };
 }
 
@@ -420,7 +429,12 @@ export async function sync(
       course_instance_id: courseInstanceId,
       institution_id: institutionId,
     });
-    if (!questionSharingEnabled && config.checkSharingOnSync) {
+    const consumePublicQuestionsEnabled = await features.enabled('consume-public-questions', {
+      course_id: courseId,
+      course_instance_id: courseInstanceId,
+      institution_id: institutionId,
+    });
+    if (!(questionSharingEnabled || consumePublicQuestionsEnabled) && config.checkSharingOnSync) {
       for (const [tid, qids] of assessmentImportedQids.entries()) {
         if (qids.length > 0) {
           infofile.addError(

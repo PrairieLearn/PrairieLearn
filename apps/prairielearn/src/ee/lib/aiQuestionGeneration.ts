@@ -102,7 +102,6 @@ async function checkRender(
  *
  * @param client The OpenAI client to use.
  * @param prompt The user's question generation prompt.
- * @param promptUserInput The user's indication of how to create student input boxes.
  * @param mandatoryElementNames Elements that we must pull documentation for.
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
@@ -110,7 +109,6 @@ async function checkRender(
 export async function makeContext(
   client: OpenAI,
   prompt: string,
-  promptUserInput: string | undefined,
   mandatoryElementNames: string[],
   authnUserId: string,
 ): Promise<string> {
@@ -129,36 +127,28 @@ export async function makeContext(
         )
       : [];
 
-  const numElements = Math.max(5 - mandatoryElements.length, 0);
+  // The number of additional elements and documentation document chunks to include after accounting for all mandatory elements.
+  const numAdditionalDocs = Math.max(5 - mandatoryElements.length, 0);
 
   const docs = await queryRows(
     sql.select_nearby_documents,
-    { embedding: vectorToString(embedding), limit: numElements },
+    { embedding: vectorToString(embedding), limit: numAdditionalDocs },
     QuestionGenerationContextEmbeddingSchema,
   );
 
-  // If a prompt specifies how user input is handled, try to find documentation for those types of input
-  // and save as last doc. Regeneration prompts don't use this, so promptUserInput may be undefined.
-  if (promptUserInput !== undefined) {
-    const embeddingUserInput = await createEmbedding(
-      client,
-      promptUserInput,
-      openAiUserFromAuthn(authnUserId),
-    );
-
-    const elementDoc = await queryRow(
-      sql.select_nearby_documents_from_file,
-      {
-        embedding: vectorToString(embeddingUserInput),
-        doc_path: 'docs/elements.md',
-        limit: 1,
-      },
-      QuestionGenerationContextEmbeddingSchema,
-    );
-    if (numElements > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
-      // Override the last (least relevant) doc.
-      docs[numElements - 1] = elementDoc;
-    }
+  // Ensure that documentation for at least one element is always included.
+  const elementDoc = await queryRow(
+    sql.select_nearby_documents_from_file,
+    {
+      embedding: vectorToString(embedding),
+      doc_path: 'docs/elements.md',
+      limit: 1,
+    },
+    QuestionGenerationContextEmbeddingSchema,
+  );
+  if (numAdditionalDocs > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
+    // Override the last (least relevant) doc.
+    docs[numAdditionalDocs - 1] = elementDoc;
   }
 
   return docs
@@ -210,9 +200,7 @@ function extractFromCompletion(
  * @param client The OpenAI client to use.
  * @param courseId The ID of the current course.
  * @param authnUserId The authenticated user's ID.
- * @param promptGeneral The prompt for how to generate a question.
- * @param promptUserInput The prompt for how to take user input.
- * @param promptGrading The prompt for how to grade user input.
+ * @param prompt The prompt for how to generate a question.
  * @param userId The ID of the generating/saving user.
  * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
@@ -221,18 +209,14 @@ export async function generateQuestion({
   client,
   courseId,
   authnUserId,
-  promptGeneral,
-  promptUserInput,
-  promptGrading,
+  prompt,
   userId,
   hasCoursePermissionEdit,
 }: {
   client: OpenAI;
   courseId: string;
   authnUserId: string;
-  promptGeneral: string;
-  promptUserInput: string;
-  promptGrading: string;
+  prompt: string;
   userId: string;
   hasCoursePermissionEdit: boolean;
 }): Promise<{
@@ -254,15 +238,9 @@ export async function generateQuestion({
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    const userPrompt = `${promptGeneral}
-    
-    You should provide the following input methods for students to answer: ${promptUserInput}
-    
-    To calculate the right answer, you should: ${promptGrading}`;
+    job.info(`Prompt: "${prompt}"`);
 
-    job.info(`prompt is ${userPrompt}`);
-
-    const context = await makeContext(client, userPrompt, promptUserInput, [], authnUserId);
+    const context = await makeContext(client, prompt, [], authnUserId);
 
     const sysPrompt = `
 ${promptPreamble(context)}
@@ -279,7 +257,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       model: MODEL_NAME,
       messages: [
         { role: 'system', content: sysPrompt },
-        { role: 'user', content: userPrompt },
+        { role: 'user', content: prompt },
       ],
       user: openAiUserFromAuthn(authnUserId),
     });
@@ -329,7 +307,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       question_id: saveResults.question_id,
       prompting_user_id: authnUserId,
       prompt_type: 'initial',
-      user_prompt: userPrompt,
+      user_prompt: prompt,
       system_prompt: sysPrompt,
       response: completion.choices[0].message.content,
       html: results?.html,
@@ -358,7 +336,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         job,
         client,
         authnUserId,
-        originalPrompt: userPrompt,
+        originalPrompt: prompt,
         revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
         originalHTML: html || '',
         originalPython: typeof results?.python === 'string' ? results?.python : undefined,
@@ -455,7 +433,7 @@ async function regenInternal({
     tags = Array.from(traverseForTagNames(ast));
   }
 
-  const context = await makeContext(client, originalPrompt, undefined, tags, authnUserId);
+  const context = await makeContext(client, originalPrompt, tags, authnUserId);
 
   const sysPrompt = `
 ${promptPreamble(context)}

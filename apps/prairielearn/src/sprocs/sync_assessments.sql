@@ -168,7 +168,10 @@ BEGIN
             group_work = (valid_assessment.data->>'group_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision,
+            json_can_view = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_view')),
+            json_can_submit = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_submit')),
             json_comment = (valid_assessment.data->>'comment')::text,
+            share_source_publicly = (valid_assessment.data->>'share_source_publicly')::boolean,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
         FROM
@@ -329,6 +332,8 @@ BEGIN
                 best_questions,
                 advance_score_perc,
                 json_grade_rate_minutes,
+                json_can_view,
+                json_can_submit,
                 json_comment
             )
             VALUES (
@@ -340,6 +345,8 @@ BEGIN
                 (zone->>'best_questions')::integer,
                 (zone->>'advance_score_perc')::double precision,
                 (zone->>'grade_rate_minutes')::double precision,
+                ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_view')),
+                ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_submit')),
                 (zone->>'comment')::text
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
@@ -350,6 +357,8 @@ BEGIN
                 best_questions = EXCLUDED.best_questions,
                 advance_score_perc = EXCLUDED.advance_score_perc,
                 json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
+                json_can_view = EXCLUDED.json_can_view,
+                json_can_submit = EXCLUDED.json_can_submit,
                 json_comment = EXCLUDED.json_comment
             RETURNING id INTO new_zone_id;
 
@@ -362,6 +371,9 @@ BEGIN
                     assessment_id,
                     zone_id,
                     json_grade_rate_minutes,
+                    json_can_view,
+                    json_can_submit,
+                    json_has_alternatives,
                     json_comment
                 ) VALUES (
                     (alternative_group->>'number')::integer,
@@ -370,6 +382,9 @@ BEGIN
                     new_assessment_id,
                     new_zone_id,
                     (alternative_group->>'json_grade_rate_minutes')::double precision,
+                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_view')),
+                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_submit')),
+                    (alternative_group->>'json_has_alternatives')::boolean,
                     (alternative_group->>'comment')::text
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
@@ -377,6 +392,9 @@ BEGIN
                     zone_id = EXCLUDED.zone_id,
                     advance_score_perc = EXCLUDED.advance_score_perc,
                     json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
+                    json_can_view = EXCLUDED.json_can_view,
+                    json_can_submit = EXCLUDED.json_can_submit,
+                    json_has_alternatives = EXCLUDED.json_has_alternatives,
                     json_comment = EXCLUDED.json_comment
                 RETURNING id INTO new_alternative_group_id;
 

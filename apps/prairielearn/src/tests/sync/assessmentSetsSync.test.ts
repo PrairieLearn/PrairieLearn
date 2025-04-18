@@ -1,6 +1,7 @@
 import { assert } from 'chai';
 
 import { type AssessmentSet, AssessmentSetSchema, CourseSchema } from '../../lib/db-types.js';
+import { type AssessmentJsonInput, type AssessmentSetJsonInput } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -25,13 +26,13 @@ function checkAssessmentSet(
 /**
  * Makes a new assessment.
  */
-function makeAssessmentSet(): util.AssessmentSet {
+function makeAssessmentSet() {
   return {
     name: 'new assessment set',
     abbreviation: 'new',
     heading: 'a new assessment set to sync',
     color: 'red1',
-  };
+  } satisfies AssessmentSetJsonInput;
 }
 
 describe('Assessment set syncing', () => {
@@ -96,13 +97,13 @@ describe('Assessment set syncing', () => {
       abbreviation: 'new1',
       heading: 'a new assessment set 1 to sync',
       color: 'red1',
-    };
+    } satisfies AssessmentSetJsonInput;
     const newAssessmentSet2 = {
       name: 'new assessment set',
       abbreviation: 'new2',
       heading: 'a new assessment set 2 to sync',
       color: 'red2',
-    };
+    } satisfies AssessmentSetJsonInput;
     courseData.course.assessmentSets.push(newAssessmentSet1);
     courseData.course.assessmentSets.push(newAssessmentSet2);
     await util.writeAndSyncCourseData(courseData);
@@ -126,13 +127,13 @@ describe('Assessment set syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID]['set'] =
       'Machine Problem';
 
-    const newAssessment: util.Assessment = {
+    const newAssessment = {
       uuid: '03f3b4d2-0264-48b7-bf42-107732142c01',
       title: 'Test assessment 2',
       type: 'Exam',
       set: 'Worksheet', // The Worksheet set is in DEFAULT_ASSESSMENT_SETS but not in courseData
       number: '101',
-    };
+    } satisfies AssessmentJsonInput;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['test1'] = newAssessment;
 
     await util.writeAndSyncCourseData(courseData);
