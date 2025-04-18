@@ -18,11 +18,11 @@ Test Categories:
 - `test_check_dict_incorrect_cases`: Verifies scenarios where `check_dict` should return `False`
   and generate specific feedback messages (e.g., mismatched keys/values, incorrect types,
   extra/missing keys, empty dictionaries vs. non-empty, non-dict inputs).
-- `test_check_dict_only_keys`: Tests the functionality of the `only_keys` parameter, ensuring
+- `test_check_dict_target_keys`: Tests the functionality of the `target_keys` parameter, ensuring
   it correctly checks only the specified subset of keys and handles missing or incorrect
   keys/values within that subset.
 - `test_check_dict_with_partial_key_matching_raises_error`: Ensures a `ValueError` is raised
-  when `only_keys` contains keys not present in the reference dictionary.
+  when `target_keys` contains keys not present in the reference dictionary.
 """
 
 
@@ -172,8 +172,8 @@ def test_check_dict_correct_cases(
             {"a": 1, "b": 100, "c": 43},
             f"{NAME} has key `b` with type `int`, which is not the right type",
         ),
-        ("none_data", {"a": 1}, None, f"{NAME} is not a dict, got None"),
-        ("not_a_dict", {"a": 1}, [("a", 1)], f"{NAME} is not a dict, got list"),
+        ("none_data", {"a": 1}, None, f"{NAME} is not a dict, got type NoneType"),
+        ("not_a_dict", {"a": 1}, [("a", 1)], f"{NAME} is not a dict, got type list"),
     ],
 )
 @patch("code_feedback.Feedback.add_feedback")
@@ -191,13 +191,13 @@ def test_check_dict_incorrect_cases(
         "test_id",
         "ref_dict",
         "student_dict",
-        "only_keys",
+        "target_keys",
         "expected_result",
         "expected_feedback",
     ),
     [
         (
-            "only_keys_correct",
+            "target_keys_correct",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 2, "c": 3, "d": 4},
             ["a", "b"],
@@ -205,7 +205,7 @@ def test_check_dict_incorrect_cases(
             None,
         ),
         (
-            "only_keys_missing",
+            "target_keys_missing",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "c": 3, "d": 4},
             ["a", "b"],
@@ -213,16 +213,16 @@ def test_check_dict_incorrect_cases(
             f"{NAME} has missing keys: `b`",
         ),
         (
-            "only_keys_partial_missing",
+            "target_keys_partial_missing",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 20, "d": 4},
             ["a", "b", "c"],
             False,
             f"{NAME} has missing keys: `c`",
         ),
-        # Test case for incorrect value when using only_keys
+        # Test case for incorrect value when using target_keys
         (
-            "only_keys_incorrect_value",
+            "target_keys_incorrect_value",
             {"a": 1, "b": 2, "c": 3},
             {"a": 1, "b": 99, "c": 3, "d": 4},
             ["a", "b"],
@@ -233,18 +233,18 @@ def test_check_dict_incorrect_cases(
 )
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
-def test_check_dict_only_keys(
+def test_check_dict_target_keys(
     mock_file,
     mock_add_feedback,
     test_id,
     ref_dict,
     student_dict,
-    only_keys,
+    target_keys,
     expected_result,
     expected_feedback,
 ) -> None:
-    """Test check_dict with the only_keys parameter."""
-    result = Feedback.check_dict(NAME, ref_dict, student_dict, only_keys=only_keys)
+    """Test check_dict with the target_keys parameter."""
+    result = Feedback.check_dict(NAME, ref_dict, student_dict, target_keys=target_keys)
     assert result == expected_result
     if expected_feedback:
         mock_add_feedback.assert_called_with(expected_feedback)
@@ -258,15 +258,15 @@ def test_check_dict_only_keys(
 def test_check_dict_with_partial_key_matching_raises_error(
     mock_file, mock_add_feedback
 ) -> None:
-    """Test that check_dict raises ValueError when only_keys contains keys not in ref_dict."""
+    """Test that check_dict raises ValueError when target_keys contains keys not in ref_dict."""
     ref_dict = {"a": 1, "b": 2, "c": 3}
     student_dict = {"a": 1, "d": 4}
-    only_keys = ["d"]
+    target_keys = ["d"]
     with pytest.raises(
         ValueError,
         match=re.escape(
-            r"only_keys must be a subset of the reference dict keys. Got only_keys=['d'] but ref.keys=['a', 'b', 'c']"
+            r"target_keys must be a subset of the reference dict keys. Got target_keys=['d'] but ref.keys=['a', 'b', 'c']"
         ),
     ):
-        Feedback.check_dict(NAME, ref_dict, student_dict, only_keys=only_keys)
+        Feedback.check_dict(NAME, ref_dict, student_dict, target_keys=target_keys)
     mock_add_feedback.assert_not_called()

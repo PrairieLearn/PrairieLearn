@@ -341,7 +341,7 @@ class Feedback:
         ref: dict[Any, Any],
         data: dict[Any, Any],
         *,
-        only_keys: None | list[str] = None,
+        target_keys: None | list[str] = None,
         accuracy_critical: bool = False,
         report_failure: bool = True,
     ) -> bool:
@@ -352,7 +352,7 @@ class Feedback:
             name: Name of the dict that is being checked. This will be used to give feedback.
             ref: Reference dict.
             data: Student dict to be checked. Do not mix this up with the previous dict! This argument is subject to more strict type checking.
-            only_keys: If not None, it will only only compare the keys listed.
+            target_keys: If not None, it will only only compare the keys listed.
             accuracy_critical: If true, grading will halt on failure.
             report_failure: If true, feedback will be given on failure.
         """
@@ -365,22 +365,19 @@ class Feedback:
             else:
                 return False
 
-        if data is None:
-            return bad(f"{name} is not a dict, got None")
-
         if not isinstance(data, dict):
-            return bad(f"{name} is not a dict, got {type(data).__name__}")
+            return bad(f"{name} is not a dict, got type {type(data).__name__}")
 
-        if only_keys is not None and not all(key in ref for key in only_keys):
-            # If only_keys is not None, we should only check the keys in only_keys
+        if target_keys is not None and not all(key in ref for key in target_keys):
+            # If target_keys is not None, we should only check the keys in target_keys
             # and not the keys in ref
             raise ValueError(
-                f"only_keys must be a subset of the reference dict keys. "
-                f"Got {only_keys=} but ref.keys={list(ref.keys())}"
+                f"target_keys must be a subset of the reference dict keys. "
+                f"Got {target_keys=} but ref.keys={list(ref.keys())}"
             )
 
-        check_all = only_keys is None
-        keys_to_check = ref.keys() if check_all else only_keys
+        check_all = target_keys is None
+        keys_to_check = ref.keys() if check_all else target_keys
 
         missing_keys = set(keys_to_check) - set(data.keys())
         if missing_keys:
