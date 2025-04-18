@@ -406,7 +406,7 @@ class Feedback:
                 return False
 
         if not isinstance(data, dict):
-            return bad(f"{name} is not a dict, got type {type(data).__name__}")
+            return bad(f"'{name}' is not a dict, got type {type(data).__name__}")
 
         if target_keys is not None and not all(key in ref for key in target_keys):
             # If target_keys is not None, we should only check the keys in target_keys
@@ -422,13 +422,13 @@ class Feedback:
         missing_keys = set(keys_to_check) - set(data.keys())
         if missing_keys:
             return bad(
-                f"{name} has missing keys: `{', '.join(sorted(map(str, missing_keys)))}`"
+                f"'{name}' has missing keys: `{', '.join(sorted(map(str, missing_keys)))}`"
             )
 
         extra_keys = set(data.keys()) - set(keys_to_check)
         if check_all and extra_keys:
             return bad(
-                f"{name} has extra keys: `{', '.join(sorted(map(str, extra_keys)))}`"
+                f"'{name}' has extra keys: `{', '.join(sorted(map(str, extra_keys)))}`"
             )
 
         # Now check the values themselves
@@ -436,12 +436,12 @@ class Feedback:
             # It's possible that the equality will pass even if the types are different
             if type(ref[key]) is not type(data[key]):
                 return bad(
-                    f"{name} has key `{key}` with type `{type(data[key]).__name__}`, which is not the right type"
+                    f"'{name}' has key `{key}` with type `{type(data[key]).__name__}`, which is not the right type"
                 )
 
             if ref[key] != data[key]:
                 return bad(
-                    f"{name} has key `{key}` with value `{data[key]}`, which is not correct"
+                    f"'{name}' has key `{key}` with value `{data[key]}`, which is not correct"
                 )
 
         if report_success:
