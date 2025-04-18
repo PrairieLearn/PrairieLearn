@@ -316,11 +316,7 @@ export function InstructorQuestionSettings({
               </button>
             </div>
             <div>
-              <div
-                class="hidden"
-                id="workspace-options"
-                ${resLocals.question.workspace_image ? '' : 'hidden'}
-              >
+              <div id="workspace-options" ${resLocals.question.workspace_image ? '' : 'hidden'}>
                 <div class="mb-3">
                   <label class="form-label" for="workspace_image">Image</label>
                   <input
