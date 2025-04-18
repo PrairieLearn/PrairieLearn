@@ -1,6 +1,5 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
 import fetch from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -81,7 +80,7 @@ describe('Instructor questions', function () {
 
     for (const testQuestion of testQuestions) {
       it(`should contain the ${testQuestion.qid} question`, function () {
-        const foundQuestion = _.find(questions, { directory: testQuestion.qid });
+        const foundQuestion = questions.find((question) => question.directory === testQuestion.qid);
         assert.isDefined(foundQuestion);
         testQuestion.id = foundQuestion.id;
       });
@@ -146,5 +145,25 @@ describe('Instructor questions', function () {
     testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
     testFileDownloads(previewPageInfo, downloadFile, true);
     testElementClientFiles(previewPageInfo, customElement);
+  });
+
+  describe('QID redirect routes', () => {
+    it('redirects to the correct question from course route', async () => {
+      const res = await fetch(`${questionsUrlCourse}/qid/addNumbers?variant_seed=1234`);
+      assert.equal(res.status, 200);
+      assert.equal(
+        res.url,
+        `${baseUrl}/course/1/question/${addNumbers.id}/preview?variant_seed=1234`,
+      );
+    });
+
+    it('redirects to the correct question from instance route', async () => {
+      const res = await fetch(`${questionsUrl}/qid/addNumbers?variant_seed=1234`);
+      assert.equal(res.status, 200);
+      assert.equal(
+        res.url,
+        `${baseUrl}/course_instance/1/instructor/question/${addNumbers.id}/preview?variant_seed=1234`,
+      );
+    });
   });
 });

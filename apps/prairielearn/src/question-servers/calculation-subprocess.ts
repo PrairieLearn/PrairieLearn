@@ -1,7 +1,5 @@
 import * as path from 'node:path';
 
-import _ from 'lodash';
-
 import { contains } from '@prairielearn/path-utils';
 
 import * as chunks from '../lib/chunks.js';
@@ -138,7 +136,7 @@ export async function render(
   const data = {
     extraHeadersHtml: '',
     questionHtml: '',
-    submissionHtmls: _.map(submissions, () => ''),
+    submissionHtmls: submissions.map(() => ''),
     answerHtml: '',
   };
   return { courseIssues: [], data };

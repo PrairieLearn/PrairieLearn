@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile-upstream:master-labs
-
 FROM prairielearn/plbase:latest
+
+WORKDIR /PrairieLearn
 
 ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 
@@ -30,26 +31,26 @@ COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/
 #
 # If the following issue is ever addressed, we can use that instead:
 # https://github.com/yarnpkg/berry/issues/6339
-RUN cd /PrairieLearn && yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
+RUN yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
-COPY . /PrairieLearn/
+COPY . .
 
 # set up PrairieLearn and run migrations to initialize the DB
-RUN chmod +x /PrairieLearn/docker/init.sh \
+# hadolint ignore=SC3009
+RUN chmod +x /PrairieLearn/scripts/init.sh \
     && mkdir /course{,{2..9}} \
     && mkdir -p /workspace_{main,host}_zips \
     && mkdir -p /jobs \
-    && /PrairieLearn/docker/start_postgres.sh \
-    && cd /PrairieLearn \
+    && /PrairieLearn/scripts/start_postgres.sh \
     && make build \
     && node apps/prairielearn/dist/server.js --migrate-and-exit \
     && su postgres -c "createuser -s root" \
-    && /PrairieLearn/docker/start_postgres.sh stop \
-    && /PrairieLearn/docker/gen_ssl.sh \
+    && /PrairieLearn/scripts/start_postgres.sh stop \
+    && /PrairieLearn/scripts/gen_ssl.sh \
     && git config --global user.email "dev@example.com" \
     && git config --global user.name "Dev User" \
     && git config --global safe.directory '*'
 
 HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
-CMD /PrairieLearn/docker/init.sh
+CMD [ "/PrairieLearn/scripts/init.sh" ]

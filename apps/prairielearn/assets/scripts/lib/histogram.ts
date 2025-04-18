@@ -1,4 +1,4 @@
-import { scaleLinear, axisBottom, axisLeft, select } from 'd3';
+import { axisBottom, axisLeft, scaleLinear, select } from 'd3';
 
 export function histogram(
   selector: HTMLElement,
@@ -79,6 +79,8 @@ export function histogram(
     .attr('width', resolvedOptions.width)
     .attr('height', resolvedOptions.height)
     .attr('class', 'center-block statsPlot')
+    // We are deliberately setting role="none" here as we do not have any meaningful information to expose to screen readers.
+    .attr('role', 'none')
     .append('g')
     .attr('transform', `translate(${resolvedOptions.leftMargin},${resolvedOptions.topMargin})`);
 

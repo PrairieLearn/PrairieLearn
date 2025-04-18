@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": ["ES2020", "DOM"],
+    "lib": ["ES2021", "DOM"],
     "noEmit": true,
     "rootDir": "../../",
     "outDir": "../../public/build/scripts",
@@ -11,9 +11,8 @@
     "allowSyntheticDefaultImports": true,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "jsx": "react",
-    "jsxFactory": "h",
-    "jsxFragmentFactory": "Fragment"
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact"
   },
   "include": ["**/*"]
 }
