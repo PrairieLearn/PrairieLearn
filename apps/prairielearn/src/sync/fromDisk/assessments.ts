@@ -80,6 +80,7 @@ function getParamsForAssessment(
         show_closed_assessment: accessRule.showClosedAssessment ?? true,
         show_closed_assessment_score: accessRule.showClosedAssessmentScore ?? true,
         active: accessRule.active ?? true,
+        comment: accessRule.comment ?? null,
       };
     });
 
@@ -94,6 +95,7 @@ function getParamsForAssessment(
       grade_rate_minutes: zone.gradeRateMinutes,
       json_can_view: zone.canView,
       json_can_submit: zone.canSubmit,
+      comment: zone.comment,
     };
   });
 
@@ -121,6 +123,7 @@ function getParamsForAssessment(
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number | undefined;
+        comment: string | null;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -141,6 +144,7 @@ function getParamsForAssessment(
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
+            comment: alternative.comment ?? null,
           };
         });
       } else if (question.id) {
@@ -159,6 +163,7 @@ function getParamsForAssessment(
             jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
+            comment: question.comment ?? null,
           },
         ];
       }
@@ -226,6 +231,7 @@ function getParamsForAssessment(
             zone.advanceScorePerc ??
             assessment.advanceScorePerc ??
             0,
+          comment: alternative.comment,
         };
       });
 
@@ -238,6 +244,7 @@ function getParamsForAssessment(
         json_can_submit: question.canSubmit,
         json_has_alternatives: !!question.alternatives,
         questions,
+        comment: question.id ? null : question.comment,
       };
     });
   });
@@ -277,6 +284,7 @@ function getParamsForAssessment(
     student_group_join: !!assessment.studentGroupJoin,
     student_group_leave: !!assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
+    comment: assessment.comment,
     has_roles: !!assessment.groupRoles,
     json_can_view: assessment.canView,
     json_can_submit: assessment.canSubmit,

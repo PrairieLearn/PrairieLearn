@@ -107,4 +107,15 @@ describe('Course syncing', () => {
       config.devMode = originalDevMode;
     }
   });
+
+  it('syncs JSON comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.comment = 'Course comment';
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedCourses = await util.dumpTable('pl_courses');
+    const syncedCourse = syncedCourses[0];
+    assert.equal(syncedCourse?.json_comment, 'Course comment');
+  });
 });

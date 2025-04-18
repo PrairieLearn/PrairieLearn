@@ -645,6 +645,7 @@ export async function loadCourseInfo({
       useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
+    comment: info.comment,
   };
 
   loadedData.data = course;
