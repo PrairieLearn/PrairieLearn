@@ -1,12 +1,3 @@
--- BLOCK select_instance_questions_for_assessment_question
-SELECT
-  *
-FROM
-  instance_questions AS iq
-WHERE
-  iq.assessment_question_id = $assessment_question_id
-  AND iq.status != 'unanswered';
-
 -- BLOCK select_last_submission_id
 SELECT
   s.id

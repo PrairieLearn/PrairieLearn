@@ -39,3 +39,12 @@ VALUES
   )
 RETURNING
   *;
+
+-- BLOCK select_instance_questions_for_assessment_question
+SELECT
+  *
+FROM
+  instance_questions AS iq
+WHERE
+  iq.assessment_question_id = $assessment_question_id
+  AND iq.status != 'unanswered';

@@ -19,7 +19,6 @@ import {
   type AssessmentQuestion,
   type Course,
   IdSchema,
-  InstanceQuestionSchema,
   type Question,
   RubricItemSchema,
   SubmissionGradingContextEmbeddingSchema,
@@ -76,13 +75,8 @@ export async function aiGradeTest({
     if (!assessment_question.max_manual_points) {
       job.fail('The tested question has no manual grading');
     }
-
-    const instance_questions = await queryRows(
-      sql.select_instance_questions_for_assessment_question,
-      {
-        assessment_question_id: assessment_question.id,
-      },
-      InstanceQuestionSchema,
+    const instance_questions = await aiGradingUtil.selectInstanceQuestionsForAssessmentQuestion(
+      assessment_question.id,
     );
 
     job.info('Checking for embeddings for all submissions.');
@@ -231,10 +225,8 @@ export async function aiGradeTest({
       });
 
       if (rubric_id) {
-        const rubric_grading_items = await queryRows(
-          sql.select_rubric_grading_items,
-          { manual_rubric_grading_id: submission.manual_rubric_grading_id },
-          RubricItemSchema,
+        const rubric_grading_items = await aiGradingUtil.selectRubricGradingItems(
+          submission.manual_rubric_grading_id,
         );
         const referenceRubricDescriptions = new Set<string>();
         rubric_grading_items.forEach((item) => {

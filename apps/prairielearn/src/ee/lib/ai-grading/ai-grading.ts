@@ -19,7 +19,6 @@ import {
   type AssessmentQuestion,
   type Course,
   IdSchema,
-  InstanceQuestionSchema,
   type Question,
   RubricItemSchema,
   SubmissionGradingContextEmbeddingSchema,
@@ -73,12 +72,8 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
-    const instance_questions = await queryRows(
-      sql.select_instance_questions_for_assessment_question,
-      {
-        assessment_question_id: assessment_question.id,
-      },
-      InstanceQuestionSchema,
+    const instance_questions = await aiGradingUtil.selectInstanceQuestionsForAssessmentQuestion(
+      assessment_question.id,
     );
 
     job.info('Checking for embeddings for all submissions.');

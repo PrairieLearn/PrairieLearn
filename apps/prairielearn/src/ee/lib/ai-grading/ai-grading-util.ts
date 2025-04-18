@@ -6,6 +6,7 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import {
   type Course,
   type InstanceQuestion,
+  InstanceQuestionSchema,
   type Question,
   type RubricItem,
   RubricItemSchema,
@@ -127,13 +128,7 @@ export async function generatePrompt({
       // or the rubric may have changed significantly since the example was graded.
       // We'll show whatever items were selected anyways, since it'll likely
       // still be useful context to the LLM.
-      const rubric_grading_items = await queryRows(
-        sql.select_rubric_grading_items,
-        {
-          manual_rubric_grading_id: example.manual_rubric_grading_id,
-        },
-        RubricItemSchema,
-      );
+      const rubric_grading_items = await selectRubricGradingItems(example.manual_rubric_grading_id);
       let rubric_grading_info = '';
       for (const item of rubric_grading_items) {
         rubric_grading_info += `description: ${item.description}\n`;
@@ -296,4 +291,30 @@ export function rubricItemAccuracy(
   });
   const accuracy = Math.round((match / testRubricResults.length) * 100) / 100;
   return accuracy;
+}
+
+export async function selectInstanceQuestionsForAssessmentQuestion(
+  assessment_question_id: string,
+): Promise<InstanceQuestion[]> {
+  const instance_questions = await queryRows(
+    sql.select_instance_questions_for_assessment_question,
+    {
+      assessment_question_id,
+    },
+    InstanceQuestionSchema,
+  );
+  return instance_questions;
+}
+
+export async function selectRubricGradingItems(
+  manual_rubric_grading_id: string | null,
+): Promise<RubricItem[]> {
+  const rubric_grading_items = await queryRows(
+    sql.select_rubric_grading_items,
+    {
+      manual_rubric_grading_id,
+    },
+    RubricItemSchema,
+  );
+  return rubric_grading_items;
 }

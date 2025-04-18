@@ -1,12 +1,3 @@
--- BLOCK select_instance_questions_for_assessment_question
-SELECT
-  *
-FROM
-  instance_questions AS iq
-WHERE
-  iq.assessment_question_id = $assessment_question_id
-  AND iq.status != 'unanswered';
-
 -- BLOCK select_last_submission_id
 SELECT
   s.id
@@ -98,15 +89,6 @@ WHERE
   AND ri.deleted_at IS NULL
 ORDER BY
   ri.number;
-
--- BLOCK select_rubric_grading_items
-SELECT
-  ri.*
-FROM
-  rubric_grading_items AS rgi
-  JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
-WHERE
-  rgi.rubric_grading_id = $manual_rubric_grading_id;
 
 -- BLOCK select_rubric_id_from_grading
 SELECT
