@@ -65,10 +65,9 @@ interface QuestionProcessingContext {
 type ElementExtensionNameDirMap = Record<string, Record<string, ElementExtensionJsonExtension>>;
 type ElementNameMap = Record<
   string,
-  (ElementCourseJson | ElementCoreJson) & {
+  ((ElementCoreJson & { type: 'core' }) | (ElementCourseJson & { type: 'course' })) & {
     name: string;
     directory: string;
-    type: 'course';
   }
 >;
 // Maps core element names to element info
