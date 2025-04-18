@@ -11,11 +11,13 @@ import { type Course, type Question, type Submission, type Variant } from '../li
 import * as filePaths from '../lib/file-paths.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 
-import type {
-  ParseResultData,
-  PrepareResultData,
-  QuestionServerReturnValue,
-  RenderResultData,
+import {
+  type GenerateResultData,
+  type GradeResultData,
+  type ParseResultData,
+  type PrepareResultData,
+  type QuestionServerReturnValue,
+  type RenderResultData,
 } from './types.js';
 
 async function prepareChunksIfNeeded(question: Question, course: Course) {
@@ -59,12 +61,12 @@ function getQuestionRuntimePath(
   }
 }
 
-async function callFunction(
+async function callFunction<Data>(
   func: string,
   question_course: Course,
   question: Question,
   inputData: any,
-) {
+): Promise<QuestionServerReturnValue<Data>> {
   assert(question.directory, 'Question directory is required');
   await prepareChunksIfNeeded(question, question_course);
 
@@ -113,12 +115,20 @@ async function callFunction(
     });
   } catch (err) {
     err.fatal = true;
-    return { data: {}, courseIssues: [err] };
+    return {
+      // We don't have any useful data to return. We'll just lie to the type checker.
+      data: {} as Data,
+      courseIssues: [err],
+    };
   }
 }
 
-export async function generate(question: Question, course: Course, variant_seed: string) {
-  return await callFunction('generate', course, question, { variant_seed });
+export async function generate(
+  question: Question,
+  course: Course,
+  variant_seed: string,
+): QuestionServerReturnValue<GenerateResultData> {
+  return await callFunction<GenerateResultData>('generate', course, question, { variant_seed });
 }
 
 export async function grade(
@@ -126,8 +136,11 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
-) {
-  return await callFunction('grade', question_course, question, { submission, variant });
+): QuestionServerReturnValue<ParseResultData> {
+  return await callFunction<GradeResultData>('grade', question_course, question, {
+    submission,
+    variant,
+  });
 }
 
 // The following functions don't do anything for v2 questions; they're just
