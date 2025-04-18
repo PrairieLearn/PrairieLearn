@@ -77,5 +77,3 @@ export const ElementCourseJsonSchema = z
   .describe('Info files for v3 elements.');
 
 export type ElementCourseJson = z.infer<typeof ElementCourseJsonSchema>;
-export type ElementCourseDependencyJson = z.infer<typeof DependencyJsonSchema>;
-export type ElementCourseDynamicDependencyJson = z.infer<typeof DynamicDependencyJsonSchema>;
