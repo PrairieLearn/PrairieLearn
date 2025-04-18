@@ -158,16 +158,12 @@ export async function aiGrade({
       }
       const submission_text = submission_embedding.submission_text;
 
-      const example_submissions = await queryRows(
-        sql.select_closest_submission_info,
-        {
-          submission_id: submission.id,
-          assessment_question_id: assessment_question.id,
-          embedding: submission_embedding.embedding,
-          limit: 5,
-        },
-        aiGradingUtil.GradedExampleSchema,
-      );
+      const example_submissions = await aiGradingUtil.selectClosestSubmissionInfo({
+        submission_id: submission.id,
+        assessment_question_id: assessment_question.id,
+        embedding: submission_embedding.embedding,
+        limit: 5,
+      });
       let gradedExampleInfo = `\nInstance question ${instance_question.id}\nGraded examples:`;
       for (const example of example_submissions) {
         gradedExampleInfo += ` ${example.instance_question_id}`;

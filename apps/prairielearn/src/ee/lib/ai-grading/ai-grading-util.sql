@@ -91,3 +91,46 @@ ORDER BY
   s.date DESC
 LIMIT
   1;
+
+-- BLOCK select_closest_submission_info
+WITH
+  latest_submissions AS (
+    SELECT
+      s.id AS s_id,
+      iq.id AS iq_id,
+      iq.score_perc AS iq_score_perc,
+      s.feedback,
+      s.is_ai_graded AS is_ai_graded,
+      s.manual_rubric_grading_id AS s_manual_rubric_grading_id,
+      ROW_NUMBER() OVER (
+        PARTITION BY
+          s.variant_id
+        ORDER BY
+          s.date DESC
+      ) AS rn
+    FROM
+      instance_questions iq
+      JOIN variants v ON iq.id = v.instance_question_id
+      JOIN submissions s ON v.id = s.variant_id
+    WHERE
+      iq.assessment_question_id = $assessment_question_id
+      AND NOT iq.requires_manual_grading
+      AND iq.status != 'unanswered'
+      AND s.id != $submission_id
+  )
+SELECT
+  emb.submission_text,
+  ls.s_manual_rubric_grading_id AS manual_rubric_grading_id,
+  ls.iq_score_perc AS score_perc,
+  ls.feedback,
+  ls.iq_id AS instance_question_id
+FROM
+  latest_submissions ls
+  JOIN submission_grading_context_embeddings AS emb ON (emb.submission_id = ls.s_id)
+WHERE
+  ls.rn = 1
+  AND NOT ls.is_ai_graded
+ORDER BY
+  embedding <=> $embedding
+LIMIT
+  $limit;

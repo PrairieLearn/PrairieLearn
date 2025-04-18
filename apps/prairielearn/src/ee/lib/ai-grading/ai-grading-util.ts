@@ -364,3 +364,27 @@ export async function selectLastVariantAndSubmission(
   );
   return { variant, submission };
 }
+
+export async function selectClosestSubmissionInfo({
+  submission_id,
+  assessment_question_id,
+  embedding,
+  limit,
+}: {
+  submission_id: string;
+  assessment_question_id: string;
+  embedding: string;
+  limit: number;
+}): Promise<GradedExample[]> {
+  const example_submissions = await queryRows(
+    sql.select_closest_submission_info,
+    {
+      submission_id,
+      assessment_question_id,
+      embedding,
+      limit,
+    },
+    GradedExampleSchema,
+  );
+  return example_submissions;
+}
