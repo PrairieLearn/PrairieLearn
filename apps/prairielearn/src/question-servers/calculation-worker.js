@@ -84,6 +84,7 @@ function generate(server, coursePath, question, variant_seed) {
  * @param {import('../lib/db-types.js').Submission} submission
  * @param {import('../lib/db-types.js').Variant} variant
  * @param {import('../lib/db-types.js').Question} question
+ * @returns {import('./types.ts').GradeResultData}
  */
 function grade(server, coursePath, submission, variant, question) {
   assert(question.directory, 'Question directory is required');
@@ -121,14 +122,15 @@ function grade(server, coursePath, submission, variant, question) {
     v2_score: grading.score,
     feedback: grading.feedback ?? null,
     partial_scores: {},
-    submitted_answer: submission.submitted_answer ?? null,
+    submitted_answer: submission.submitted_answer ?? {},
+    raw_submitted_answer: submission.raw_submitted_answer ?? {},
     format_errors: {},
     gradable: true,
 
     // Note: v3 questions can change `params` and `true_answer` during grading, but
     // this was not implemented for v2 questions.
-    params: variant.params ?? null,
-    true_answer: variant.true_answer ?? null,
+    params: variant.params ?? {},
+    true_answer: variant.true_answer ?? {},
   };
 }
 

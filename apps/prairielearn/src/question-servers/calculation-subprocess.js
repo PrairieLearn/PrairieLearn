@@ -1,4 +1,5 @@
 // @ts-check
+import assert from 'node:assert';
 import * as path from 'node:path';
 
 import { contains } from '@prairielearn/path-utils';
@@ -10,6 +11,10 @@ import * as filePaths from '../lib/file-paths.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 
 /** @typedef {import('../lib/chunks.js').Chunk} Chunk */
+/**
+ * @template T
+ * @typedef {import('./types.ts').QuestionServerReturnValue<T>} QuestionServerReturnValue<T>
+ */
 
 async function prepareChunksIfNeeded(question, course) {
   const questionIds = await chunks.getTemplateQuestionIds(question);
@@ -28,6 +33,12 @@ async function prepareChunksIfNeeded(question, course) {
   await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 }
 
+/**
+ * @param {string} questionServerPath
+ * @param {string} courseHostPath
+ * @param {string} courseRuntimePath
+ * @returns {string}
+ */
 function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntimePath) {
   const questionServerType = contains(courseHostPath, questionServerPath) ? 'course' : 'core';
 
@@ -47,7 +58,16 @@ function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntim
   }
 }
 
+/**
+ * @param {string} func
+ * @param {import('../lib/db-types.js').Course} question_course
+ * @param {import('../lib/db-types.js').Question} question
+ * @param {any} inputData
+ * @returns
+ */
 async function callFunction(func, question_course, question, inputData) {
+  assert(question.directory, 'Question directory is required');
+
   await prepareChunksIfNeeded(question, question_course);
 
   const courseHostPath = chunks.getRuntimeDirectoryForCourse(question_course);
@@ -95,10 +115,22 @@ async function callFunction(func, question_course, question, inputData) {
   }
 }
 
+/**
+ * @param {import('../lib/db-types.js').Question} question
+ * @param {import('../lib/db-types.js').Course} course
+ * @param {string} variant_seed
+ */
 export async function generate(question, course, variant_seed) {
   return await callFunction('generate', course, question, { variant_seed });
 }
 
+/**
+ *
+ * @param {import('../lib/db-types.js').Submission} submission
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @param {import('../lib/db-types.js').Question} question
+ * @param {import('../lib/db-types.js').Course} question_course
+ */
 export async function grade(submission, variant, question, question_course) {
   return await callFunction('grade', question_course, question, { submission, variant });
 }
@@ -106,6 +138,16 @@ export async function grade(submission, variant, question, question_course) {
 // The following functions don't do anything for v2 questions; they're just
 // here to satisfy the question server interface.
 
+/**
+ * @param {import('./types.ts').RenderSelection} _renderSelection
+ * @param {import('../lib/db-types.js').Variant} _variant
+ * @param {import('../lib/db-types.js').Question} _question
+ * @param {import('../lib/db-types.js').Submission} _submission
+ * @param {import('../lib/db-types.js').Submission[]} submissions
+ * @param {import('../lib/db-types.js').Course} _course
+ * @param {Record<string, any>} _locals
+ * @returns {QuestionServerReturnValue<import('./types.ts').RenderResultData>}
+ */
 export async function render(
   _renderSelection,
   _variant,
@@ -124,15 +166,28 @@ export async function render(
   return { courseIssues: [], data };
 }
 
+/**
+ * @param {import('../lib/db-types.js').Question} _question
+ * @param {import('../lib/db-types.js').Course} _course
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @returns {QuestionServerReturnValue<import('./types.ts').PrepareResultData>}
+ */
 export async function prepare(_question, _course, variant) {
   const data = {
-    params: variant.params,
-    true_answer: variant.true_answer,
+    params: variant.params ?? {},
+    true_answer: variant.true_answer ?? {},
     options: variant.options,
   };
   return { courseIssues: [], data };
 }
 
+/**
+ * @param {import('../lib/db-types.js').Submission} submission
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @param {import('../lib/db-types.js').Question} _question
+ * @param {import('../lib/db-types.js').Course} _course
+ * @returns {QuestionServerReturnValue<import('./types.ts').ParseResultData>}
+ */
 export async function parse(submission, variant, _question, _course) {
   const data = {
     params: variant.params ?? {},
