@@ -1,0 +1,31 @@
+<pl-question-panel>
+<p>
+Suppose ${\bf A}$ is the following matrix:
+</p>
+
+<p>
+${\bf A} = <pl-matrix-latex params-name="A" digits={{params.nDigits}}></pl-matrix-latex>$
+</p>
+
+<p>In code this is:</p>
+
+<pl-variable-output >
+    <pl-variable params-name="A" digits={{params.nDigits}}>A</pl-variable>
+</pl-variable-output>
+
+<p>
+What is the matrix ${\bf B} = {\bf A}{\bf A}^T$?
+</p>
+</pl-question-panel>
+
+<pl-matrix-input answers-name="B" comparison="sigfig" digits={{params.sigfigs}} label="${\bf B} =$"></pl-matrix-input>
+
+<pl-question-panel>
+  <!-- This is not part of the question, and is included for documentation purposes -->
+  <div class="alert alert-info p-2" role="alert">
+    <small>Note: this is an example of a question generator with randomized parameters, which is used to
+       generate a <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/exam/instantFeedback/__docs/docs.md" target="_blank">fixed question variant for an exam</a>. Students receive instant feedback and have <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md" target="_blank">retry attempts for partial credit.</a>
+      </small>
+      <pl-github-link></pl-github-link>
+  </div>
+</pl-question-panel>

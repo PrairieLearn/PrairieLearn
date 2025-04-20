@@ -1,8 +1,22 @@
-/doc/
+/docs/
 /node_modules/
-/public/
 /exampleCourse/
-/sync/
-/question-servers/default-calculation/
+/testCourse/
 /coverage/
 /out/
+/workspaces/
+/site/
+
+# Coverage reports
+/coverage/
+/apps/*/coverage/
+/packages/*/coverage/
+
+# We don't want to lint these files.
+/apps/prairielearn/v2-question-servers/
+/apps/prairielearn/public/
+
+# Transpiled code
+/apps/*/dist/
+/apps/prairielearn/public/build/
+/packages/*/dist/

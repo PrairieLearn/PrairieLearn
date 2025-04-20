@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    // Allow spreading Maps/Sets into arrays
+    "downlevelIteration": true,
+    "strictNullChecks": true,
+    // Support native ESM
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "description": "Finds all courses that do NOT have chunks yet generated.",
+  "params": []
+}

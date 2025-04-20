@@ -1,0 +1,2 @@
+ALTER TABLE assessment_instances
+ADD COLUMN IF NOT EXISTS date_limit TIMESTAMP WITH TIME ZONE;

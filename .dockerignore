@@ -1,31 +1,40 @@
-# blacklist all
+# Forbid everything by default.
 *
 
-# whitelist things to copy
+# Allow specific patterns.
+!.editorconfig
 !.eslintignore
-!.eslintrc.json
-!api/
-!cron/
+!.eslintrc.js
+!.htmlhintrc
+!.mocharc.js
+!.prettierignore
+!.prettierrc.json
+!.yarnrc.yml
+!tsconfig.json
+!turbo.json
+!.yarn/
+!pyproject.toml
+!apps/
+!contrib/
 !database/
-!doc/
-!docker/
-!elements/
+!docs/
 !exampleCourse/
-!lib/
-!middlewares/
-!migrations/
-!models/
+!Makefile
 !package.json
-!package-lock.json
-!pages/
-!public/
-!question-servers/
-!requirements.txt
-!server.js
-!setup.cfg
-!schemas/
-!sprocs/
-!sync/
-!tests/
-!tools/
-!webhooks/
+!yarn.lock
+!packages/
+!scripts/
+!testCourse/
+
+# Forbid specific patterns.
+.DS_Store
+.yarn/cache
+.yarn/install-state.gz
+/config.json
+apps/*/dist/
+apps/*/config.json
+apps/*/coverage/
+apps/prairielearn/public/build
+apps/prairielearn/server.log
+packages/*/coverage/
+packages/*/dist/

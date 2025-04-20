@@ -1,0 +1,25 @@
+columns
+    approved_by: bigint
+    approved_status: enum_course_request_status not null default 'pending'::enum_course_request_status
+    created_at: timestamp with time zone not null default now()
+    first_name: text
+    github_user: text
+    id: bigint not null default nextval('course_requests_id_seq'::regclass)
+    institution: text
+    last_name: text
+    referral_source: text
+    short_name: text not null
+    title: text not null
+    user_id: bigint not null
+    work_email: text
+
+indexes
+    course_requests_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    course_requests_approved_by_fkey: FOREIGN KEY (approved_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_requests_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    job_sequences: FOREIGN KEY (course_request_id) REFERENCES course_requests(id) ON UPDATE CASCADE ON DELETE CASCADE
+    jobs: FOREIGN KEY (course_request_id) REFERENCES course_requests(id) ON UPDATE CASCADE ON DELETE CASCADE

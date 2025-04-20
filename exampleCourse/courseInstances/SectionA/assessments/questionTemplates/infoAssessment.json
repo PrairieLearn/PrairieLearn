@@ -1,0 +1,53 @@
+{
+  "uuid": "69DE0FEC-92AB-4361-B654-5C56F795D1FD",
+  "type": "Homework",
+  "title": "Question templates",
+  "set": "Collection",
+  "number": "6",
+  "zones": [
+    {
+      "title": "Template: copy, paste and edit to start creating questions",
+      "questions": [
+        { "id": "demo/multipleChoiceSingleCorrect", "points": 1 },
+        { "id": "template/multiple-choice/random", "points": 1, "maxPoints": 2 },
+        { "id": "template/multiple-choice/random-prompt", "points": 1, "maxPoints": 4 },
+        { "id": "template/multiple-choice/numeric", "points": 1, "maxPoints": 4 },
+        { "id": "template/multiple-choice/random-prompt-true-false", "points": 1, "maxPoints": 2 },
+        { "id": "template/multiple-choice/images", "points": 1, "maxPoints": 4 },
+        { "id": "demo/multiAnswerMC", "points": 2, "maxPoints": 10 },
+        { "id": "template/integer-input/random", "points": 1, "maxPoints": 2 },
+        { "id": "template/number-input/random", "points": 1, "maxPoints": 2 },
+        { "id": "demo/matrixAlgebra", "points": 2, "maxPoints": 10 },
+        { "id": "template/symbolic-input/random", "points": 2, "maxPoints": 10 },
+        { "id": "template/figure/dynamic", "points": 1, "maxPoints": 4 }
+      ]
+    },
+    {
+      "title": "More question examples and tips",
+      "questions": [
+        { "id": "demo/numberInputGradingMethod", "points": 1, "maxPoints": 2 },
+        { "id": "demo/numberInputTips", "points": 1, "maxPoints": 2 },
+        { "id": "demo/randomDataFrame", "points": 2, "maxPoints": 6 },
+        { "id": "demo/overlayTriangle", "points": 2, "maxPoints": 4 },
+        { "id": "demo/overlayDropdown", "points": 1, "maxPoints": 5 },
+        { "id": "demo/proofBlocks", "points": 1, "maxPoints": 5 },
+        { "id": "demo/markdownEditorLivePreview", "points": 2 },
+        { "id": "demo/graphvizEditorPreview", "points": 2 },
+        { "id": "demo/addHTMLtable", "points": 2, "maxPoints": 4 },
+        { "id": "demo/insertEmbeddedVideo", "points": 2, "maxPoints": 4 },
+        { "id": "element/markdown", "points": 2, "maxPoints": 10 },
+        { "id": "demo/survey", "points": 1, "maxPoints": 1 }
+      ]
+    },
+    {
+      "title": "Questions using additional customization (elements or grading function)",
+      "questions": [
+        { "id": "demo/custom/element", "points": 1, "maxPoints": 1 },
+        { "id": "demo/custom/gradeFunction", "points": 1, "maxPoints": 1 },
+        { "id": "demo/custom/extension", "points": 1, "maxPoints": 1 },
+        { "id": "demo/custom/elementHiddenTag", "points": 1, "maxPoints": 1 },
+        { "id": "demo/custom/stylingScripts", "points": 1, "maxPoints": 1 }
+      ]
+    }
+  ]
+}

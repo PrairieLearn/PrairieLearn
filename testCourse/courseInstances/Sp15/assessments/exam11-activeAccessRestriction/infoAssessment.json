@@ -1,0 +1,48 @@
+{
+  "uuid": "db241fb7-8ca4-4316-a92d-85c7753c6d9c",
+  "type": "Exam",
+  "title": "Test Active Access Rule",
+  "set": "Exam",
+  "number": "11",
+  "allowAccess": [
+    {
+      "timeLimitMin": 50,
+      "startDate": "2010-01-01T00:00:01",
+      "endDate": "2010-01-01T23:59:59",
+      "credit": 100
+    },
+    {
+      "startDate": "2020-01-01T00:00:01",
+      "endDate": "2021-01-01T00:00:01",
+      "active": false,
+      "showClosedAssessment": false
+    },
+    {
+      "startDate": "2030-01-01T00:00:01",
+      "endDate": "2031-01-01T00:00:01",
+      "active": false,
+      "showClosedAssessment": false,
+      "showClosedAssessmentScore": false
+    },
+    {
+      "startDate": "1900-01-01T00:00:01",
+      "endDate": "2100-01-01T00:00:01",
+      "active": false
+    }
+  ],
+  "shuffleQuestions": false,
+  "zones": [
+    {
+      "title": "Hard questions",
+      "questions": [
+        { "id": "addNumbers", "points": [5, 3, 1] },
+        { "id": "addVectors", "points": [11, 9] },
+        { "id": "fossilFuelsRadio", "points": [17, 13, 7, 2] },
+        { "id": "partialCredit1", "points": [19] },
+        { "id": "partialCredit2", "points": [9, 7, 5, 3] },
+        { "id": "partialCredit3", "points": [13, 13, 8, 0.5, 0.1] },
+        { "id": "workspace", "points": [10] }
+      ]
+    }
+  ]
+}

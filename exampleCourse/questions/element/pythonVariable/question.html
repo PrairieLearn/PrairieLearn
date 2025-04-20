@@ -1,0 +1,72 @@
+<pl-question-panel>
+  <p>
+    The following examples below were created to show the capabilities of the <a
+      href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable"><code>pl-python-variable</code></a>
+    element, which allows formatting and rendering various Python variables defined in the <code>server.py</code> on a
+    question page. The semantics of this element are very similar to those of the Python <a
+      href="https://docs.python.org/3/library/pprint.html"><code>pprint</code></a> library, and we encourage reviewing
+    documentation for that library for more detailed examples.</p>
+  <p>
+    These examples are drawn from the <a href="https://docs.python.org/3/library/pprint.html"><code>pprint</code></a>
+    library documentation and a
+    <a href="https://realpython.com/python-pretty-print/">tutorial for using this library</a>.
+  </p>
+</pl-question-panel>
+
+<pl-card>
+  <p>
+    Here is a randomly generated matrix created by calling <code>np.random.random((3, 3))</code>. Any variables will
+    be converted using <code>repr()</code> if they are being shown as <code>text</code>.
+  </p>
+  <pl-python-variable params-name="matrix"></pl-python-variable>
+</pl-card>
+
+<pl-card>
+  <p>Here is an example displaying a dictionary. You can add additional text to the output by using the
+    <code>prefix</code> and <code>suffix</code> attributes. We also set <code>copy-code-button="True"</code>
+    to enable the copy code button.
+  </p>
+  <pl-python-variable params-name="my_dictionary" prefix="my_dictionary = "
+    copy-code-button="True"></pl-python-variable>
+</pl-card>
+
+<pl-card>
+  <p>Here is an example displaying a string.</p>
+  <pl-python-variable params-name="my_string" prefix="my_string = "></pl-python-variable>
+</pl-card>
+
+<pl-card>
+  <p>Here is an example displaying a dictionary with line breaks. We've set <code>width="1"</code> to
+    force printing each element on a new line and set <code>prefix-newline="true"</code> to insert a line
+    break between the prefix and the printed dictionary.</p>
+  <pl-python-variable params-name="my_dictionary" prefix="my_dictionary = \" prefix-newline="true" width="1"
+    copy-code-button="True"></pl-python-variable>
+</pl-card>
+
+<pl-card>
+  <p>Here is an example displaying a list with line breaks and a comment on the next line using the
+    <code>suffix</code> and <code>suffix-newline</code> attributes.
+  </p>
+  <pl-python-variable params-name="my_list" prefix="my_list = \" prefix-newline="true" width="1"
+    suffix="# This is a cool list" suffix-newline="true" copy-code-button="True"></pl-python-variable>
+</pl-card>
+
+<pl-card>
+  <p>Here is an example displaying a more complex list. We've also enabled line numbers by setting
+    <code>show-line-numbers="True"</code>, and compact sequences by setting <code>compact-sequences="True"</code>.
+  </p>
+  <pl-python-variable params-name="another_list" show-line-numbers="True" compact-sequences="True"
+    width="40"></pl-python-variable>
+</pl-card>
+
+<pl-card>
+  <p>Here is an example displaying a list with <code>indent="4"</code>.</p>
+  <pl-python-variable params-name="monty_python_stuff" indent="4"></pl-python-variable>
+</pl-card>
+
+<pl-card>
+  <p>Here is an example displaying a complex dictionary with <code>depth="3"</code>, to limit the depth of the data
+    structures that are displayed,
+    and <code>indent="4"</code>, to provide some space between levels .</p>
+  <pl-python-variable params-name="users" indent="4" depth="3"></pl-python-variable>
+</pl-card>

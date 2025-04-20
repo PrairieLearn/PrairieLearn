@@ -1,0 +1,19 @@
+Here is some text at the top of the template.
+<pl-template
+  file-name="templates/collapsible_section.mustache"
+  directory="serverFilesCourse"
+  log-variable-warnings="False"
+>
+  <pl-variable name="section_header"
+    >{{section_header}}{{^section_header}}Click To Show The Prompt{{/section_header}}</pl-variable
+  >
+  <pl-variable name="show">{{show}}</pl-variable>
+  <pl-variable name="section_body">
+    <pl-template
+      file-name="{{prompt_path}}"
+      directory="{{parent_directory}}{{^parent_directory}}serverFilesCourse{{/parent_directory}}"
+      log-variable-warnings="False"
+    >
+    </pl-template>
+  </pl-variable>
+</pl-template>

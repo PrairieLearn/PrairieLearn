@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@2.3.0/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "access": "public",
+  "baseBranch": "master",
+  "updateInternalDependencies": "minor",
+  "ignore": [
+    "@prairielearn/grader-host",
+    "@prairielearn/prairielearn",
+    "@prairielearn/workspace-host"
+  ],
+  "privatePackages": false
+}

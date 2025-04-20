@@ -1,0 +1,9 @@
+{
+  // This must be a CJS package because ESLint doesn't support ESM plugins.
+  "extends": "@prairielearn/tsconfig/tsconfig.package-cjs.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "types": ["mocha", "node"]
+  }
+}

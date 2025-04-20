@@ -1,0 +1,26 @@
+{
+  "name": "@prairielearn/sentry",
+  "version": "3.0.1",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/sentry"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "dependencies": {
+    "@sentry/core": "^9.10.1",
+    "@sentry/node": "^9.10.1",
+    "execa": "^9.5.2"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^20.17.30",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

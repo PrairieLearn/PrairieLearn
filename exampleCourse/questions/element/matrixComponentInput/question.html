@@ -1,0 +1,107 @@
+<pl-question-panel>
+    <p>
+        Suppose ${\bf x}$ is the following array:
+    </p>
+    <pl-variable-output digits="0">
+        <pl-variable params_name="x">x</pl-variable>
+    </pl-variable-output>
+</pl-question-panel>
+
+<div class="mb-2">
+    <h5>
+    1.
+    </h5>
+    <pl-question-panel>
+        <p>
+            Enter the components of ${\bf x}$.
+            The attribute <code>allow-partial-credit="true"</code> is used, so each correct entry receives a partial score.
+            By default, when <code>allow-partial-credit="true"</code>, the attribute <code>allow-feedback</code> is also set to <code>true</code>,
+            and hence the submission panel indicates which entries are incorrect.
+        </p>
+    </pl-question-panel>
+
+    <pl-matrix-component-input answers-name="out3" label="${\bf x} = $" comparison="relabs" atol="0" rtol="1e-6" allow-partial-credit="true">
+    </pl-matrix-component-input>
+</div>
+
+<pl-question-panel>
+    <hr>
+    <p>
+        Suppose ${\bf A}$ is the following array:
+    </p>
+    <pl-variable-output digits="{{params.sf}}">
+        <pl-variable params_name="in">A</pl-variable>
+    </pl-variable-output>
+</pl-question-panel>
+
+<div class="mb-2">
+    <h5>
+    2.
+    </h5>
+    <pl-question-panel>
+        <p>
+            Enter the components of ${\bf A}$. To get the answer correct, all entries need to be correct.
+        </p>
+    </pl-question-panel>
+
+    <pl-matrix-component-input answers-name="out1" label="${\bf A} = $" comparison="sigfig" digits="{{params.sf}}">
+    </pl-matrix-component-input>
+</div>
+
+<div class="mb-2">
+    <h5>
+    3.
+    </h5>
+    <pl-question-panel>
+        <p>
+            Enter the components of ${\bf A}$. Here we use <code>allow-partial-credit="true"</code>
+            and <code>allow-feedback="false"</code>. Hence, each correct entry receives a partial score, but the submission panel
+            does not indicate which entries are incorrect.
+        </p>
+    </pl-question-panel>
+
+    <pl-matrix-component-input answers-name="out2" label="${\bf A} = $" comparison="sigfig" digits="{{params.sf}}" allow-partial-credit="true" allow-feedback="false">
+    </pl-matrix-component-input>
+</div>
+
+<div class="mb-2">
+    <h5>
+        4.
+    </h5>
+    <pl-question-panel>
+        <p>
+            This is a very long vector, it should be able to scroll.  Enter the vector whose values are increasing integers in the range $1$ to $20$ (inclusive).
+        </p>
+    </pl-question-panel>
+     <pl-matrix-component-input answers-name="out4" label="${\bf x} = $" comparison="relabs" atol="0" rtol="1e-6" allow-partial-credit="true">
+    </pl-matrix-component-input>
+</div>
+
+<div class="mb-2" >
+    <h5>
+        5.
+    </h5>
+    <pl-question-panel>
+        <p>
+            Enter the vector
+            $${\bf y} = \begin{bmatrix} \frac{1}{2} & \frac{1}{4} & \frac{1}{8} & \frac{1}{16} \end{bmatrix}$$
+            With the attribute <code>allow-fractions="true"</code> (which is true by default), entries can be submitted as the quotient of two decimal numbers.
+        </p>
+    </pl-question-panel>
+    <pl-matrix-component-input answers-name="out5" label="${\bf y} = $" allow-partial-credit="true">
+    </pl-matrix-component-input>
+</div>
+
+<div class="mb-2" >
+    <h5>
+        6.
+    </h5>
+    <pl-question-panel>
+        <p>
+            Enter the identity matrix.
+            With the attribute <code>allow-blank="true"</code> (which is false by default), entries can be left blank to represent a zero, so you may leave the elements with a zero blank.
+        </p>
+    </pl-question-panel>
+    <pl-matrix-component-input answers-name="out6" label="${\bf I} = $" allow-blank="true">
+    </pl-matrix-component-input>
+</div>

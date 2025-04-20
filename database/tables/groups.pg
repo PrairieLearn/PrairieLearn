@@ -1,0 +1,25 @@
+columns
+    course_instance_id: bigint not null
+    date: timestamp with time zone default CURRENT_TIMESTAMP
+    deleted_at: timestamp with time zone
+    group_config_id: bigint not null
+    id: bigint not null default nextval('groups_id_seq'::regclass)
+    join_code: text not null default random_string(4)
+    name: text not null
+
+indexes
+    groups_pkey: PRIMARY KEY (id) USING btree (id)
+    unique_group_name: UNIQUE USING btree (group_config_id, lower(name)) WHERE deleted_at IS NULL
+    groups_course_instance_id_key: USING btree (course_instance_id)
+    groups_group_config_id_key: USING btree (group_config_id)
+
+foreign-key constraints
+    groups_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    groups_group_config_id_fkey: FOREIGN KEY (group_config_id) REFERENCES group_configs(id) ON UPDATE CASCADE ON DELETE SET NULL
+
+referenced by
+    assessment_instances: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
+    group_user_roles: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
+    group_users: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
+    last_accesses: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE

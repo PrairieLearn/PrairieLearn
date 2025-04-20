@@ -1,1 +1,0 @@
-ALTER TABLE assessments ADD COLUMN IF NOT EXISTS stats_last_updated TIMESTAMP WITH TIME ZONE;

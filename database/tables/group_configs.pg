@@ -1,0 +1,26 @@
+columns
+    assessment_id: bigint
+    course_instance_id: bigint not null
+    date: timestamp with time zone default CURRENT_TIMESTAMP
+    deleted_at: timestamp with time zone
+    has_roles: boolean not null default false
+    id: bigint not null default nextval('group_configs_id_seq'::regclass)
+    maximum: integer
+    minimum: integer
+    name: text
+    student_authz_create: boolean default false
+    student_authz_join: boolean default false
+    student_authz_leave: boolean default false
+
+indexes
+    group_configs_pkey: PRIMARY KEY (id) USING btree (id)
+    group_configs_assessment_id_key: UNIQUE USING btree (assessment_id)
+    group_configs_course_instance_id_key: USING btree (course_instance_id)
+
+foreign-key constraints
+    group_configs_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    group_configs_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    group_users: FOREIGN KEY (group_config_id) REFERENCES group_configs(id) ON UPDATE CASCADE ON DELETE CASCADE
+    groups: FOREIGN KEY (group_config_id) REFERENCES group_configs(id) ON UPDATE CASCADE ON DELETE SET NULL

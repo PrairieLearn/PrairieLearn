@@ -1,0 +1,15 @@
+.pl-external-grader-results .card-title {
+  font-weight: 700;
+}
+
+.pl-external-grader-results .card-header .fa-angle-down {
+  transition: all 400ms;
+}
+
+.pl-external-grader-results .card-header:not(.collapsed) .fa-angle-down {
+  transform: rotateX(180deg);
+}
+
+.pl-external-grader-results pre {
+  max-height: 40vh;
+}

@@ -1,0 +1,1 @@
+This question randomly selects a statement from a list of four options and asks students to select if the statement is true or false. It uses the `fixed-order="true"` option of `<pl-multiple-choice>` to ensure that the "True" option always appears first.

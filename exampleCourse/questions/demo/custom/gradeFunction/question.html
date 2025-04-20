@@ -1,0 +1,16 @@
+<pl-question-panel>
+  <p>Consider two binary numbers <tt>a = {{params.a}}</tt> and <tt>b = {{params.b}}</tt>.</p>
+  <p>What is the sum <tt>c = a + b</tt> in binary?</p>
+
+  <tt>c =</tt> <input name="c" type="text" width="50" value="{{submitted_answers.c}}">
+  <p class="text-danger">{{format_errors.c}}</p>
+</pl-question-panel>
+
+<pl-answer-panel>
+  <tt>c = </tt> {{correct_answers.c}}
+</pl-answer-panel>
+
+<pl-submission-panel>
+  <p><tt>c = </tt> {{submitted_answers.c}}</p>
+  <p>{{feedback.c}}</p>
+</pl-submission-panel>

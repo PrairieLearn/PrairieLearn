@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS assessment_question_role_permissions_assessment_question_id_key;

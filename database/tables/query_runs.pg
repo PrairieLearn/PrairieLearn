@@ -1,0 +1,15 @@
+columns
+    authn_user_id: bigint not null
+    date: timestamp with time zone not null default now()
+    error: text
+    id: bigint not null default nextval('query_runs_id_seq'::regclass)
+    name: text not null
+    params: jsonb
+    result: jsonb
+    sql: text
+
+indexes
+    query_runs_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    query_runs_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL

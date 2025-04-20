@@ -1,0 +1,1 @@
+This question displays a randomly generated graph with nodes and edges. Students are asked to provide the corresponding adjacency matrix. Matrix entries that are left blank are considered as zero. Students can get partial credit for each correct matrix entry.

@@ -1,0 +1,59 @@
+{
+  // If the following is ever addressed, we can update our config to use whatever
+  // the official shared config is:
+  // https://github.com/microsoft/vscode/issues/40233
+
+  // This is required to load extensions, which in turn is required to be able
+  // to format SQL files.
+  // https://github.com/prettier/prettier-vscode/issues/3235
+  "prettier.configPath": "./.prettierrc.json",
+
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "[javascript][typescript][javascriptreact][typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][markdown][toml][shellscript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "{exampleCourse,testCourse,templateCourse}/courseInstances/**/assessments/**/infoAssessment.json"
+      ],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoAssessment.json"
+    },
+    {
+      "fileMatch": [
+        "{exampleCourse,testCourse,templateCourse}/courseInstances/**/infoCourseInstance.json"
+      ],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
+    },
+    {
+      "fileMatch": ["{exampleCourse,testCourse,templateCourse}/infoCourse.json"],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoCourse.json"
+    },
+    {
+      "fileMatch": ["{exampleCourse,testCourse,templateCourse}/questions/**/info.json"],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoQuestion.json"
+    }
+  ],
+  "python.testing.pytestArgs": ["apps/prairielearn/elements", "apps/prairielearn/python/test"],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "[json]": {
+    "files.insertFinalNewline": true
+  }
+}

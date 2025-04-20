@@ -1,0 +1,29 @@
+<pl-question-panel>
+  <p>
+    This is a demo of using the Python autograder with an file upload interface.  Note that if the student's uploaded filename is different than <code>user_code.py</code> then the correct filename should be set in <code>student_code_file</code> in the <code>PLTestCase</code> class.  Here we set it to <code>fib.py</code> to match the file upload.
+  </p>
+  <p>
+    The Fibonacci numbers are 1, 1, 2, 3, 5, 8, ..., where each
+    number is the sum of the two before it. These are numbered $F_1, F_2, \ldots$, and
+    \[
+    F_n = F_{n-1} + F_{n-2}.
+    \]
+  </p>
+  <p>
+    Write a Python function <tt>fib</tt> that takes a number <tt>n</tt>
+    and returns the n<sup>th</sup> Fibonacci number, $F_n$.
+  </p>
+
+  <p>Your code snippet should define the following variables:</p>
+  <pl-external-grader-variables params-name="names_from_user">
+    <pl-variable name="fib" type="python function">Function to compute the $n^\text{th}$ Fibonacci number</pl-variable>
+  </pl-external-grader-variables>
+  <pl-external-grader-variables params-name="names_for_user" empty="true"></pl-external-grader-variables>
+
+  <pl-file-upload file-names="fib.py"></pl-file-upload>
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

@@ -1,0 +1,11 @@
+.pl-graph {
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.pl-graph > svg {
+  margin: auto;
+}

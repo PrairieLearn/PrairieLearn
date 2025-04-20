@@ -1,0 +1,69 @@
+<pl-question-panel>
+
+<p>Sketch the function $y(x)$ given below. Consider each unit square with size equal to 1.</p>
+$
+y(x) = \left\{
+\begin{array}{@{}ll@{}}
+  2x - x^2/4, & 0 \le x \lt 4 \\
+  12 - 6x + x^2/2, &  4 \lt x \lt 8\\
+  -8 + x/2, & 8 \le x \le 16
+\end{array}
+\right.
+$
+
+</pl-question-panel>
+<p>
+<pl-drawing answers-name="graph" gradable="true" hide-answer-panel="false" width="500" height="400" >
+
+    <pl-drawing-answer draw-error-box="true" >
+        <pl-graph-line origin='{"x": 80, "y": 200}'
+                       end-points='[{"x": 0, "y": 0}, {"x": 80, "y": 80}, {"x": 40, "y": 80}]'
+                       offset-control-tol-x="20">
+        </pl-graph-line>
+
+        <pl-graph-line origin='{"x": 80, "y": 200}'
+                       end-points='[{"x": 80, "y": -80}, {"x": 160, "y": -80}]'
+                       offset-control-tol-y="30"
+                       end-gradients='[-2,2]' >
+        </pl-graph-line>
+
+        <pl-graph-line origin='{"x": 80, "y": 200}'
+                       end-points='[{"x": 160, "y": -80}, {"x": 320, "y": 0}]' >
+        </pl-graph-line>
+
+    </pl-drawing-answer>
+
+    <pl-drawing-initial>
+
+            <pl-axes origin='{"x": 80, "y": 200}'
+                     supporting-lines='[{"x":80},{"x":160},{"x":320}]'
+                     grid-label='[ {"axis": "x", "pos": 80,  "lab": "4" },
+                               {"axis": "x", "pos": 160, "lab": "8" },
+                               {"axis": "x", "pos": 320, "lab": "16" },
+                               {"axis": "y", "pos": 40,  "lab": "2" },
+                               {"axis": "y", "pos": -40, "lab": "-2" },
+                               {"axis": "y", "pos": 80,  "lab": "4" },
+                               {"axis": "y", "pos": -80, "lab": "-4" },
+                               {"axis": "y", "pos": 120,"lab": "6" },
+                               {"axis": "y", "pos": -120,"lab": "-6"}]'>
+            </pl-axes>
+
+
+
+    </pl-drawing-initial>
+
+
+
+    <pl-controls>
+      <pl-controls-group label="Graded objects:" >
+          <pl-drawing-button type="pl-controlled-line"></pl-drawing-button>
+          <pl-drawing-button type="pl-controlled-curved-line"></pl-drawing-button>
+      </pl-controls-group>
+      <pl-controls-group label="Help buttons (not graded):">
+          <pl-drawing-button type="delete"></pl-drawing-button>
+          <pl-drawing-button type="help-line"></pl-drawing-button>
+      </pl-controls-group>
+  </pl-controls>
+
+</pl-drawing>
+</p>

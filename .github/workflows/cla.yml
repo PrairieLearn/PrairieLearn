@@ -1,0 +1,36 @@
+name: 'CLA Assistant'
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, closed, synchronize]
+  merge_group:
+
+jobs:
+  cla-assistant:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'CLA Assistant'
+        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have reviewed and hereby sign the CLA') || github.event_name == 'pull_request_target'
+        # Pin to a specific version - this third-party action uses a personal access token
+        uses: cla-assistant/github-action@ca4a40a7d1004f18d9960b404b97e5f30a505a08
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.CLA_PERSONAL_ACCESS_TOKEN }}
+        with:
+          # Signatures are stored in https://github.com/PrairieLearn/cla
+          remote-organization-name: PrairieLearn
+          remote-repository-name: cla
+          path-to-signatures: signatures.json
+          path-to-document: https://github.com/PrairieLearn/cla/blob/main/CLA.md
+          branch: main
+          allowlist: dependabot[bot],nwalters512,mwest1066,mfsilva22
+          custom-pr-sign-comment: I have reviewed and hereby sign the CLA
+          create-file-commit-message: Create signatures.json
+          signed-commit-message: '$contributorName signed the CLA in https://github.com/PrairieLearn/PrairieLearn/pull/$pullRequestNo'
+          custom-notsigned-prcomment: 'Thanks for your contribution! Like many open source projects, we ask that you sign our [Contributor License Agreement](https://github.com/PrairieLearn/cla/blob/main/CLA.md) before we can accept your contribution. You can sign the CLA by posting a comment with the below format:<br/>'
+          # We're willing to accept the risk of someone editing or deleting
+          # their comment after merging a PR. With locking enabled, it becomes
+          # impossible to link to the PR or add any additional comments that
+          # might be helpful to leave as breadcrumbs.
+          lock-pullrequest-aftermerge: false

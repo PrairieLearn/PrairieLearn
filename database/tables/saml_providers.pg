@@ -1,0 +1,22 @@
+columns
+    certificate: text not null
+    email_attribute: text
+    id: bigint not null default nextval('saml_providers_id_seq'::regclass)
+    institution_id: bigint not null
+    issuer: text not null
+    name_attribute: text
+    private_key: text not null
+    public_key: text not null
+    sso_login_url: text not null
+    uid_attribute: text
+    uin_attribute: text
+    validate_audience: boolean not null default true
+    want_assertions_signed: boolean not null default true
+    want_authn_response_signed: boolean not null default true
+
+indexes
+    saml_providers_pkey: PRIMARY KEY (id) USING btree (id)
+    saml_providers_institution_id_key: UNIQUE (institution_id) USING btree (institution_id)
+
+foreign-key constraints
+    saml_providers_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE

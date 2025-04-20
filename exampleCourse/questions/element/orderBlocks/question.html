@@ -1,0 +1,165 @@
+<pl-question-panel>
+<p>
+This question illustrates different use cases for the
+<a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element"><code>pl-order-blocks</code></a>.
+</p>
+<hr>
+<p>
+<strong>Example 1:</strong> Drag all the prime numbers below to the answer zone. Remember 1 is not a prime number.
+</p>
+
+<p> This example uses the attribute <code>source-blocks-order="ordered"</code> so that
+  the displayed blocks appear in the same order provided by the HTML answers. It also
+  uses the attribute <code>grading-method="unordered"</code>, so that any ordering of the solution is accepted as correct.</p>
+
+</pl-question-panel>
+
+<pl-order-blocks answers-name="prime-numbers-unordered" source-blocks-order="ordered" grading-method="unordered">
+  <pl-answer correct="false">1</pl-answer>
+  <pl-answer correct="true">2</pl-answer>
+  <pl-answer correct="true">3</pl-answer>
+  <pl-answer correct="false">4</pl-answer>
+  <pl-answer correct="true">5</pl-answer>
+  <pl-answer correct="false">6</pl-answer>
+  <pl-answer correct="true">7</pl-answer>
+  <pl-answer correct="false">This is an example very long tile to test CSS overflow</pl-answer>
+</pl-order-blocks>
+
+<hr>
+
+<pl-question-panel>
+<p>
+  <strong>Example 2:</strong> Drag all the prime numbers below to the answer zone <strong> in ascending order</strong>.
+</p>
+
+<p> This example uses the attributes <code>min-incorrect="2"</code> and
+  <code>max-incorrect="4"</code> to display a minimum of 2 incorrect distractors and maximum of 4.
+  Since this example uses the default values for <code>source-blocks-order="random"</code> and <code>grading-method="ordered"</code>,
+  the blocks in the source area appear shuffled, and the correct answer from the solution area follows
+  the order defined by the <code>pl-answers</code>.</p>
+
+</pl-question-panel>
+<pl-order-blocks answers-name="prime-numbers-ordered" min-incorrect="2" max-incorrect="4">
+  <pl-answer correct="false">1</pl-answer>
+  <pl-answer correct="true">2</pl-answer>
+  <pl-answer correct="true">3</pl-answer>
+  <pl-answer correct="false">4</pl-answer>
+  <pl-answer correct="true">5</pl-answer>
+  <pl-answer correct="false">6</pl-answer>
+  <pl-answer correct="true">7</pl-answer>
+  <pl-answer correct="false">8</pl-answer>
+  <pl-answer correct="false">9</pl-answer>
+  <pl-answer correct="false">10</pl-answer>
+</pl-order-blocks>
+
+<hr>
+
+<pl-question-panel>
+<p>
+  <strong>Example 3:</strong>  Implement the Python function <code>my_sum</code>, which takes 2 numbers, <code>first</code> and <code>second</code>,
+  and return their sum. Note that the ordering of instantiation, computation, and returning of the value must be correct.
+  Remember to indent your code! </p>
+<p>
+ This examples uses <code>grading-method="ranking"</code> to control how the correct solution is ordered
+  and <code>indent</code> attribute in <code>pl-answer</code> to define expected code indentation. This example
+  also demonstrates the use of the attribute <code>distractor-for</code> to visual pair together blocks with
+  their distractor blocks.
+</p>
+</pl-question-panel>
+
+<pl-order-blocks
+  answers-name="python-ordered"
+  grading-method="ranking"
+  indentation="true"
+  max-indent="2"
+  format="code"
+  code-language="python"
+  feedback="first-wrong-verbose"
+>
+  <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="true" ranking="2" indent="1">sum = 0</pl-answer>
+  <pl-answer correct="true" ranking="3" indent="1" tag="addfirst">sum += first</pl-answer>
+  <pl-answer correct="true" ranking="3" indent="1" tag="addsecond">sum += second</pl-answer>
+  <pl-answer correct="true" ranking="4" indent="1">return sum</pl-answer>
+  <pl-answer correct="false" distractor-for="addfirst" distractor-feedback="You need to store the result of the sum in a variable!">sum + first</pl-answer>
+  <pl-answer correct="false" distractor-for="addfirst">sum &= first</pl-answer>
+  <pl-answer correct="false" distractor-for="addsecond" distractor-feedback="You need to store the result of the sum in a variable!">sum + second</pl-answer>
+</pl-order-blocks>
+
+<hr>
+
+<pl-question-panel>
+<p>
+  <strong>Example 4:</strong> Prove that $A \land B \land C \rightarrow A \land C$
+</p>
+
+<p>This example uses the attribute <code>grading-method="dag"</code> to control how the correct solution is ordered.
+This is especially useful when you want students to construct a mathematical proof, where the dependency of lines of the
+proof on one another is given by a directed acyclic graph (DAG) structure. The <code>depends</code> attribute on each
+line is used to denote which lines of the proof must appear before a particular line.
+Then a correct answer is a topological sort of the lines of the proof.
+The attribute <code>solution-placement="bottom"</code> is used
+to display the input area above the output area.</p>
+</pl-question-panel>
+
+<pl-order-blocks
+  answers-name="conjunction-implies-conjunction"
+  grading-method="dag"
+  solution-placement="bottom"
+  feedback="first-wrong"
+>
+  <pl-answer correct="true" tag="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
+  <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
+  <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
+</pl-order-blocks>
+
+<hr>
+
+<pl-question-panel>
+  <p>
+    <strong>Example 5:</strong> Drag all fruits to the answer zone.
+  </p>
+
+  <p>
+    This example uses the attribute <code>source-blocks-order="alphabetized"</code>
+    to order the source blocks alphabetically, even though they appear in a random
+    order in <code>question.html</code>.
+  </p>
+</pl-question-panel>
+
+<pl-order-blocks answers-name="alphabetized" source-blocks-order="alphabetized" grading-method="unordered">
+  <pl-answer correct="true">eggplant</pl-answer>
+  <pl-answer correct="true">banana</pl-answer>
+  <pl-answer correct="true">date</pl-answer>
+  <pl-answer correct="false">carrot</pl-answer>
+  <pl-answer correct="true">apple</pl-answer>
+</pl-order-blocks>
+
+<pl-question-panel>
+  <p>
+    <strong>Example 6:</strong> Create a SQL command that selects all students who are enrolled in computer science.
+  </p>
+
+  <p>
+    This example uses the attributes <code>solution-placement="bottom"</code>
+    and <code>block_orientation="horizontal"</code> to create horizontal arrangement 
+    of the source blocks.
+  </p>
+  <br>
+  <b>Note:</b> This model of block arrangement, particularly for the context of computer science, is attributed to
+  <a href="https://doi.org/10.1145/3488042.3489968">"Regex Parsons: Using Horizontal Parsons Problems to Scaffold Learning Regex"</a>
+
+</pl-question-panel>
+
+<pl-order-blocks answers-name="sql-query" format="code" code-language="sql" solution-placement="bottom" inline="true">
+  <pl-answer correct="true">SELECT</pl-answer>
+  <pl-answer correct="true">students</pl-answer>
+  <pl-answer correct="true">FROM</pl-answer>
+  <pl-answer correct="true">enrollments</pl-answer>
+  <pl-answer correct="true">WHERE</pl-answer>
+  <pl-answer correct="true">major</pl-answer>
+  <pl-answer correct="true">=</pl-answer>
+  <pl-answer correct="true">"computer science"</pl-answer>
+</pl-order-blocks>
+

@@ -1,0 +1,41 @@
+<style>
+  img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+</style>
+
+<p>
+  <a href="https://github.com/trombonekenny">Dave Mussulman</a> has implemented a new caching system
+  for Docker images. These images are used by
+  <a href="https://prairielearn.readthedocs.io/en/latest/externalGrading/"
+    >externally-graded code questions</a
+  >
+  and <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/">workspaces</a>. The new
+  cache speeds up all image operations and also means that PrairieLearn can rapidly scale to handle
+  bursts of load from external grading or workspaces.
+</p>
+
+<p>
+  However, there is now a <span class="text-danger">required manual sync for Docker images</span>,
+  just like syncing course code from GitHub. The new image sync is also on the "Sync" page and works
+  like the GitHub sync:
+</p>
+
+<img src="images_sync.png" width="100%" />
+
+<p>
+  If you make your own image and push it to Docker Hub, you will now need to sync it to PrairieLearn
+  before it can be used. The Docker image cache is global (not per-course) and the latest cached
+  image version will be used at all times. If you want to use a specific image version then you can
+  tag images and reference the specific tag.
+</p>
+
+<p>
+  On the backend, the new image cache stores the images in the
+  <a href="https://aws.amazon.com/ecr/">Amazon Elastic Container Registry (ECR)</a>, which provides
+  a private Docker registry with a highly available and scalable architecture.
+</p>

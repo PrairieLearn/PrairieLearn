@@ -1,0 +1,121 @@
+{{#graded}}
+<div class="pl-external-grader-results">
+  {{^grading_succeeded}}
+    <h3>Grading failed!</h3>
+    {{#message}}
+      <pre class="bg-dark text-white rounded p-3 my-3"><code>{{{message}}}</code></pre>
+    {{/message}}
+    {{^message}}
+      <pre class="bg-dark text-white rounded p-3 my-3"><code>Unknown error; please contact course staff.</code></pre>
+    {{/message}}
+  {{/grading_succeeded}}
+  {{#grading_succeeded}}
+    <h3>
+      {{^gradable}}
+          Invalid, not gradable
+      {{/gradable}}
+      {{#gradable}}
+          Score:
+          <span style="color: {{results_color}}">
+              {{#points}}
+                  <strong>{{points}}/{{max_points}} ({{score}}%)</strong>
+              {{/points}}
+              {{^points}}
+                  <strong>{{score}}%</strong>
+              {{/points}}
+          </span>
+      {{/gradable}}
+    </h3>
+    {{#has_format_errors}}
+        <div class="my-3">
+        {{#format_errors}}
+            <div class="alert alert-danger"><strong>Error:</strong> {{.}}</div>
+        {{/format_errors}}
+        </div>
+    {{/has_format_errors}}
+    {{#has_message_or_output_or_image}}
+      {{#has_message}}
+        <div class="card my-3">
+          <div class="card-header">Message</div>
+          <pre class="bg-dark text-white p-3 mb-0"><code>{{{message}}}</code></pre>
+        </div>
+      {{/has_message}}
+      {{#has_output}}
+        <div class="card my-3">
+          <div class="card-header">Output</div>
+          <pre class="bg-dark text-white p-3 mb-0"><code>{{{output}}}</code></pre>
+        </div>
+      {{/has_output}}
+      {{#has_images}}
+          <ul class="list-group list-group-flush">
+              <li class="list-group-item">
+                {{#images}}
+                  <figure class="figure">
+                    <figcaption><strong>{{label}}{{^label}}Figure{{/label}}</strong></figcaption>
+                    <img class="figure-img img-fluid" src="{{url}}{{^url}}{{.}}{{/url}}"/>
+                  </figure>
+                {{/images}}
+              </li>
+          </ul>
+      {{/has_images}}
+    {{/has_message_or_output_or_image}}
+    {{#has_tests}}
+      <h3>Test Results</h3>
+      <div class="my-3">
+      {{#tests_missing_points}}
+        <div class="alert alert-warning mb-3">One or more tests were missing <code>points</code> or <code>max_points</code> values, so some detailed feedback and score information has been omitted.</div>
+      {{/tests_missing_points}}
+      {{#tests}}
+        <div class="card mb-1 mt-1">
+          <button class="card-header d-flex collapsed border-top-0 border-start-0 border-end-0 text-start" data-bs-toggle="collapse" data-bs-target="#card-{{uuid}}-{{index}}" aria-expanded="false" aria-controls="card-{{uuid}}-{{index}}">
+            <div class="card-title mb-0 me-auto d-flex align-items-center">
+              {{#show_points}}
+                <i class="fa {{results_icon}} me-2" aria-hidden="true" style="color: {{results_color}}"></i>
+                <span class="me-2" style="color: {{results_color}};"><strong>[{{points}}/{{max_points}}]</strong></span>
+              {{/show_points}}
+              <span>{{name}}</span>
+            </div>
+            <div class="ms-2">
+              <span class="fa fa-angle-down"></span>
+            </div>
+          </button>
+          <div id="card-{{uuid}}-{{index}}" class="collapse">
+            <ul class="list-group list-group-flush">
+              {{#has_description}}
+                <li class="list-group-item"><strong>Description:</strong> {{description}}</li>
+              {{/has_description}}
+              {{#show_points}}
+                <li class="list-group-item"><strong>Max points:</strong> {{max_points}}</li>
+                <li class="list-group-item"><strong>Earned points:</strong> {{points}}</li>
+              {{/show_points}}
+              {{#has_message}}
+                  <li class="list-group-item">
+                      <div class="mb-2"><strong>Message</strong></div>
+                      <pre class="bg-dark text-white rounded p-3 mb-2">{{{message}}}</pre>
+                  </li>
+              {{/has_message}}
+              {{#has_output}}
+                  <li class="list-group-item">
+                      <div class="mb-2"><strong>Output</strong></div>
+                      <pre class="bg-dark text-white rounded p-3 mb-2">{{{output}}}</pre>
+                  </li>
+              {{/has_output}}
+              {{#has_images}}
+                  <li class="list-group-item">
+                      {{#images}}
+                      <figure class="figure">
+                        <figcaption><strong>{{label}}{{^label}}Figure{{/label}}</strong></figcaption>
+                        <img class="figure-img img-fluid" src="{{url}}{{^url}}{{.}}{{/url}}"/>
+                      </figure>
+                      {{/images}}
+                  </li>
+              {{/has_images}}
+            </ul>
+          </div>
+        </div>
+      {{/tests}}
+      </div>
+    {{/has_tests}}
+  {{/grading_succeeded}}
+</div>
+{{/graded}}

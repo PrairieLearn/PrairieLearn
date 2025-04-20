@@ -1,0 +1,13 @@
+columns
+    assessment_question_id: bigint not null
+    can_submit: boolean
+    can_view: boolean
+    group_role_id: bigint not null
+
+indexes
+    assessment_question_role_permissions_pkey: PRIMARY KEY (assessment_question_id, group_role_id) USING btree (assessment_question_id, group_role_id)
+    assessment_question_role_permissions_group_role_id_key: USING btree (group_role_id)
+
+foreign-key constraints
+    assessment_question_role_permission_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_question_role_permissions_group_role_id_fkey: FOREIGN KEY (group_role_id) REFERENCES group_roles(id) ON UPDATE CASCADE ON DELETE CASCADE

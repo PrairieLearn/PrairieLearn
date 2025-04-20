@@ -1,0 +1,17 @@
+columns
+    assessment_question_id: bigint not null
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    embedding: vector(1536) not null
+    id: bigint not null default nextval('submission_grading_context_embeddings_id_seq'::regclass)
+    submission_id: bigint not null
+    submission_text: text not null
+    updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+
+indexes
+    submission_grading_context_embeddings_pkey: PRIMARY KEY (id) USING btree (id)
+    submission_grading_context_embeddings_submission_id_idx: UNIQUE USING btree (submission_id)
+    submission_grading_context_embeddings_assessment_question_id_id: USING btree (assessment_question_id)
+
+foreign-key constraints
+    submission_grading_context_embeddin_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    submission_grading_context_embeddings_submission_id_fkey: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE

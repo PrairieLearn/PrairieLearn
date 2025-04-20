@@ -1,0 +1,54 @@
+<pl-question-panel>
+    <p>
+        <i>
+            The element <code class="user-output">pl-overlay</code> allows the positioning of pre-existing elements in arbitrary positions on top of other elements.  This question combines the <code class="user-output">pl-drawing</code> element to serve as a static background (no drag and drop functionality enabled here), along with the number input element.
+        </i>
+    </p>
+    <p>
+        <i>
+            Each overlayed element is wrapped with a <code class="user-output">&lt;pl-location x=... y=...&gt;</code> tag, which specifies the location of the child relative to the parent overlay element.  The <code class="user-output">halign</code> and <code class="user-output">valign</code> attributes can be used to center contents about the specified location.
+        </i>
+    </p>
+    <p>
+        <i>
+            The optional <code class="user-output">&lt;pl-background&gt;</code> tag can be used to wrap some contents as the "background", which will automatically resize the overlay to fit the background.
+        </i>
+    </p>
+    <p>
+        Find the missing side of the right triangle.
+    </p>
+</pl-question-panel>
+
+<pl-overlay clip="false">
+    <pl-background>
+        <pl-drawing width="{{params.canvas_width}}" height="{{params.canvas_height}}" gradable="false" hide-answer-panel="false">
+            <pl-drawing-initial>
+                <pl-triangle x1="{{params.tri_x1}}" y1="{{params.tri_y1}}" x2="{{params.tri_x2}}" y2="{{params.tri_y2}}" x3="{{params.tri_x3}}" y3="{{params.tri_y3}}" color="lightblue"></pl-triangle>
+            </pl-drawing-initial>
+        </pl-drawing>
+    </pl-background>
+    <pl-location left="{{params.a_x}}" top="{{params.a_y}}">
+        {{#params.display_a}}
+        $${{params.a}}$$
+        {{/params.display_a}}
+        {{^params.display_a}}
+        <pl-number-input answers-name="a" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
+        {{/params.display_a}}
+    </pl-location>
+    <pl-location left="{{params.b_x}}" top="{{params.b_y}}">
+        {{#params.display_b}}
+        $${{params.b}}$$
+        {{/params.display_b}}
+        {{^params.display_b}}
+        <pl-number-input answers-name="b" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
+        {{/params.display_b}}
+    </pl-location>
+    <pl-location left="{{params.c_x}}" top="{{params.c_y}}">
+        {{#params.display_c}}
+        $${{params.c}}$$
+        {{/params.display_c}}
+        {{^params.display_c}}
+        <pl-number-input answers-name="c" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
+        {{/params.display_c}}
+    </pl-location>
+</pl-overlay>

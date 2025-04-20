@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://json.schemastore.org/codecov.json
+# This config file can be validated with the following command:
+# curl --data-binary @.codecov.yml https://codecov.io/validate
+
+comment:
+  # Only post a comment if code/coverage changed.
+  require_changes: true
+  # Only post a comment if a base and head commit are both present.
+  require_base: true
+  require_head: true
+
+# Ignore coverage for test files
+ignore:
+  - 'apps/prairielearn/python/test'
+
+flag_management:
+  default_rules:
+    carryforward: false
+  individual_flags:
+    - name: python
+    - name: javascript
+
+coverage:
+  status:
+    project:
+      default:
+        # Don't fail the status check if coverage decreases.
+        informational: true
+    patch:
+      default:
+        # Don't fail the status check if coverage decreases.
+        informational: true
+github_checks:
+  annotations: false

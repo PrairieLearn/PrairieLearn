@@ -1,0 +1,19 @@
+columns
+    assessment_id: bigint
+    course_id: bigint not null
+    course_instance_id: bigint
+    id: bigint not null default nextval('chunks_id_seq'::regclass)
+    question_id: bigint
+    type: enum_chunk_type not null
+    uuid: uuid not null
+
+indexes
+    chunks_pkey: PRIMARY KEY (id) USING btree (id)
+    chunks_unique_values_key: UNIQUE USING btree (course_id, type, COALESCE(question_id, '-1'::integer::bigint), COALESCE(course_instance_id, '-1'::integer::bigint), COALESCE(assessment_id, '-1'::integer::bigint))
+    chunks_uuid_key: UNIQUE (uuid) USING btree (uuid)
+
+foreign-key constraints
+    chunks_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    chunks_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    chunks_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    chunks_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE

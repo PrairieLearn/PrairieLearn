@@ -1,0 +1,2 @@
+ALTER TABLE errors
+ADD PRIMARY KEY (id);

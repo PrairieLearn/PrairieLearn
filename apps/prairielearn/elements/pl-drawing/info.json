@@ -1,0 +1,9 @@
+{
+  "controller": "pl-drawing.py",
+  "dependencies": {
+    "nodeModulesScripts": ["fabric/dist/fabric.js", "lodash/lodash.js"],
+    "coreScripts": ["sylvester.js"],
+    "elementScripts": ["pl-drawing.js", "mechanicsObjects.js"],
+    "elementStyles": ["pl-drawing.css"]
+  }
+}

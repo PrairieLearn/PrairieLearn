@@ -1,0 +1,20 @@
+{
+  "name": "xterm-web",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "command-line-args": "^6.0.1",
+    "command-line-usage": "^7.0.3",
+    "express": "^4.21.2",
+    "express-ws": "^5.0.2",
+    "node-pty": "^1.0.0",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0"
+  }
+}

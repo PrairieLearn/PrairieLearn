@@ -1,0 +1,2 @@
+ALTER TABLE questions
+ADD COLUMN shared_publicly BOOLEAN NOT NULL DEFAULT FALSE;

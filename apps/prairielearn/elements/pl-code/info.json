@@ -1,0 +1,8 @@
+{
+  "controller": "pl-code.py",
+  "dependencies": {
+    "elementStyles": ["pl-code.css"],
+    "nodeModulesScripts": ["clipboard/dist/clipboard.min.js"],
+    "coreScripts": ["PrairieUtil.js"]
+  }
+}

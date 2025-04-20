@@ -1,0 +1,13 @@
+columns
+    date: timestamp with time zone not null
+    id: bigint not null default nextval('pt_sessions_id_seq'::regclass)
+    location_id: bigint
+
+indexes
+    pt_sessions_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    pt_sessions_location_id_fkey: FOREIGN KEY (location_id) REFERENCES pt_locations(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    pt_reservations: FOREIGN KEY (session_id) REFERENCES pt_sessions(id) ON UPDATE CASCADE ON DELETE CASCADE

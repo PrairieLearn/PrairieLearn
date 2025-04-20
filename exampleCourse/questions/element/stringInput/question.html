@@ -1,0 +1,114 @@
+<pl-question-panel>
+  <p> 1) For the following python code snippet, enter below the resulting string:</p>
+
+<pl-code language="python">
+a = "{{params.stringname}}"*{{params.a}}
+</pl-code>
+
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans1" label="a = ">
+</pl-string-input>
+</p>
+
+<pl-question-panel>
+<p> 2) For the following python code snippet, what is d = b + c?</p>
+<pl-code language="python">
+  b = "{{params.b}}"
+  c = "{{params.c}}"
+</pl-code>
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans2" label="b + c = ">
+</pl-string-input>
+</p>
+
+<pl-question-panel>
+<p>3) Enter the string below, however include trailing and leading blanks.
+ When using the attribute <code>remove-leading-trailing="true"</code>, the answer will
+ still be evaluated as correct. We also set <code>show-score="false"</code> to hide the
+score badge. </p>
+<pl-code language="python">
+"{{params.d}}"
+</pl-code>
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans3" remove-leading-trailing="true" show-score="false">
+</pl-string-input>
+</p>
+
+<pl-question-panel>
+<p> 4) Enter the string below, however include blank spaces between some of the numbers.
+When using the attribute <code>remove-spaces="true"</code>, the answer will
+still be evaluated as correct. This example also uses the attribute
+<code>placeholder="string"</code>,
+to add a placeholder indicating the expected input is of type "string".</p>
+<pl-code language="python">
+"{{params.d}}"
+</pl-code>
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans4" remove-spaces="true" placeholder="string">
+</pl-string-input>
+</p>
+
+
+<pl-question-panel>
+<p> 5) The attribute <code>allow-blank="true"</code> allows users to submit blank answers, without
+  receiving the <code>Invalid</code> error. Leave the box below empty, and notice
+that you will not receive the <code>Invalid</code> feedback (and hence the question is graded). </p>
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans5" label="blank input box = " allow-blank="true">
+</pl-string-input>
+</p>
+
+<pl-question-panel>
+<p> 6) To allow for case insensitivity, use <code>ignore-case="true"</code>.
+This will autoconvert both the student answer and the correct answer to lower case.  Entering the string below with any choice of uppercase and lowercase letters will yield the correct answer as a result. </p>
+
+<pl-code language="python">
+"{{params.e}}"
+</pl-code>
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans6" label="Input box is case insensitive = " ignore-case="true">
+</pl-string-input>
+</p>
+
+<pl-question-panel>
+    <p>
+        7) The size of the input box can be set with the attribute <code>size</code>, and the attribute <code>show-help-text="false"</code> removes the button for the help popup.  This box below has <code>size=5</code> instead of the default <code>size=35</code>.
+    </p>
+
+<pl-code language="python">
+"{{params.f}}"
+</pl-code>
+</pl-question-panel>
+
+<p>
+    <pl-string-input answers-name="ans7" label="Small box = " show-help-text="false" size="5"></pl-string-input>
+</p>
+
+<pl-question-panel>
+    <p>
+      8) For students using non-latin keyboards, it is possible that non-English characters may be introduced into the box. This can cause confusion if these characters resemble a latin character (e.g., the cyrillic character <strong>&#x0430;</strong> looks a lot like the latin character <strong>a</strong>). Similarly, students may copy from text editors and paste into the answer box, causing characters like fancy quotes to be introduced. The attribute <code>normalize-to-ascii="true"</code> converts many Unicode characters to the ASCII character that mostly resembles it.
+    </p>
+    <p>
+      The box below contains an input using a Greek Epsilon, a Cyrillic ie, and fancy quotes. Copying this text into the answer box below should result in the appropriate text (<code>"Ee"</code>) being accepted.
+    </p>
+
+<div>
+{{{params.g}}}
+</div>
+</pl-question-panel>
+
+<p>
+    <pl-string-input answers-name="ans8" label="Weird text = " suffix="?" normalize-to-ascii="true"></pl-string-input>
+</p>

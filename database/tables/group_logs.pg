@@ -1,0 +1,13 @@
+columns
+    action: text
+    authn_user_id: bigint
+    date: timestamp with time zone default CURRENT_TIMESTAMP
+    group_id: bigint
+    id: bigint not null default nextval('group_logs_id_seq'::regclass)
+    roles: text[]
+    user_id: bigint
+
+indexes
+    group_logs_pkey: PRIMARY KEY (id) USING btree (id)
+    group_logs_group_id_idx: USING btree (group_id)
+    group_logs_user_id_idx: USING btree (user_id)

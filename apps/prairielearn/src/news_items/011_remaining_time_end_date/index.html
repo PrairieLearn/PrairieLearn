@@ -1,0 +1,30 @@
+<p>
+  <a href="https://github.com/tdy">Tim Yang</a> has fixed the timer countdown for students who start
+  exams late. Previously, even if a student started an exam so late that they would run into the
+  <tt>endDate</tt>, PrairieLearn would still show the full <tt>timeLimitMin</tt> countdown timer for
+  them, but would then cut them off at <tt>endDate</tt>. With Tim's fix, the countdown timer
+  correctly only shows the time remaining until <tt>endDate</tt>.
+</p>
+
+<figure class="card w-75 mx-auto my-5">
+  <img
+    src="exam_timer.svg"
+    class="card-img-top p-4"
+    alt="90-minute exam timer bar truncated at the 60-minute mark by the exam deadline."
+  />
+  <figcaption class="card-footer">
+    The exam's countdown timer now correctly reflects that Student 2 has only 60 minutes for this
+    90-minute exam because they started the exam too late.
+  </figcaption>
+</figure>
+
+<p>
+  When using synchronous exams (all students take the exam at the same time), it is recommended that
+  <tt>endDate</tt> is set to give the students a 5 minute buffer. For example, a 1-hour exam
+  starting at 2pm should have <tt>timeLimitMin</tt> set to <tt>60</tt>, a <tt>startDate</tt> of 2pm,
+  and an <tt>endDate</tt> of 3:05pm to let students start a minute or two late and still get the
+  full time. See the
+  <a href="https://prairielearn.readthedocs.io/en/latest/remoteExams/">remote exams</a> and
+  <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/#time-limits">time limits</a>
+  documentation for more information.
+</p>

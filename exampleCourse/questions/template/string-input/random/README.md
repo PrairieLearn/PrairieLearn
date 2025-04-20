@@ -1,0 +1,1 @@
+This question asks students to pluralize an English word with an irregular plural. The word and its plural are randomly selected from a list, and the student's answer is submitted as a string. `remove-spaces="true"` is used to remove any whitespace from the submitted answer.

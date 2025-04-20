@@ -1,0 +1,12 @@
+columns
+    authn_provider_id: bigint not null
+    id: bigint not null default nextval('institution_authn_providers_id_seq'::regclass)
+    institution_id: bigint not null
+
+indexes
+    institution_authn_providers_pkey: PRIMARY KEY (id) USING btree (id)
+    institution_authn_providers_institution_id_authn_provider_i_key: UNIQUE (institution_id, authn_provider_id) USING btree (institution_id, authn_provider_id)
+
+foreign-key constraints
+    institution_authn_providers_authn_provider_id_fkey: FOREIGN KEY (authn_provider_id) REFERENCES authn_providers(id) ON UPDATE CASCADE ON DELETE CASCADE
+    institution_authn_providers_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE

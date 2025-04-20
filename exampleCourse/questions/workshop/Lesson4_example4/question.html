@@ -1,0 +1,37 @@
+<pl-question-panel>
+
+  <p> You are given 2d numpy array <code>a</code>. Write a code snippet that defines: </p>
+
+  <ul>
+    <li> <code>b</code>: a 2d numpy array with the same shape of <code>a</code>, such
+      that the sum of all entries of <code>b</code> is ${{params.beta}}$ times as much as the sum of
+      all entries of <code>a</code> </li>
+    <li> <code>array_to_scalar</code>: a function which takes two
+        2d numpy arrays of same shape, performs element-wise multiplication of both arrays, and returns a tuple
+        where the first entry of the array is the result of the multiplication, and the
+        second entry is the sum of all entries in the resulting array. </li>
+  </ul>
+
+  <!-- Avoid changing below unless something is unneeded (e.g. no variables are defined) -->
+  <p>The setup code gives the following variables:</p>
+  <p>
+    <pl-external-grader-variables params-name="names_for_user">
+      <pl-variable name="a" type="2d numpy array">Any array</pl-variable>
+    </pl-external-grader-variables>
+  </p>
+
+  <p>Your code snippet should define the following variables:</p>
+  <pl-external-grader-variables params-name="names_from_user">
+    <pl-variable name="b" type="2d numpy array">An array with the same shape as described above</pl-variable>
+    <pl-variable name="array_to_scalar" type="function">Function described in the text above</pl-variable>
+  </pl-external-grader-variables>
+  <pl-file-editor
+    file_name="user_code.py"
+    ace_mode="ace/mode/python"
+    source-file-name="tests/initial_code.py"></pl-file-editor>
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

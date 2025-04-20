@@ -1,0 +1,37 @@
+<script>
+$(function() {
+    var rte = window.PLRTE('{{editor_uuid}}', {
+        readOnly: {{read_only}},
+        placeholder: '{{placeholder}}',
+        format: '{{format}}',
+        markdownShortcuts: {{markdown_shortcuts}},
+        counter: '{{counter}}',
+        modules: { clipboard: { {{^clipboard_enabled}}enabled: false{{/clipboard_enabled}} } },
+        {{#quill_theme}}
+        theme: '{{.}}',
+        {{/quill_theme}}
+    });
+});
+</script>
+<input type="hidden" id="rte-input-{{editor_uuid}}"
+       name="{{name}}" value="{{current_file_contents}}"/>
+<div class="pl-rich-text-editor-container position-relative">
+    {{^clipboard_enabled}}
+    <div class="position-absolute end-0 p-3" style="z-index: 11">
+      <div id="rte-clipboard-toast-{{editor_uuid}}" class="toast hide bg-warning" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">
+            Clipboard operations (cut, copy, paste) are not available for this question.
+          </div>
+          <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    </div>
+    {{/clipboard_enabled}}
+    <div id="rte-{{editor_uuid}}" class="border mathjax_ignore"></div>
+    {{#counter_enabled}}
+        <div class="pl-rich-text-editor-counter-container">
+            <div id="rte-counter-{{editor_uuid}}" class="text-secondary"></div>
+        </div>
+    {{/counter_enabled}}
+</div>

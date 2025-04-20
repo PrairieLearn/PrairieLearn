@@ -1,0 +1,21 @@
+<pl-question-panel>
+
+<p>Determine the {{params.ask}} of the circuit below:</p>
+
+<p> <pl-figure file-name={{params.figname}} directory="clientFilesQuestion"></pl-figure> </p>
+
+<p> The input variables are provided below: </p>
+<p>
+<pl-variable-output digits="0" show-matlab="false" show-mathematica="false" show-r="false">
+    <pl-variable params-name="R1">R1</pl-variable>
+    <pl-variable params-name="R2">R2</pl-variable>
+    <pl-variable params-name="R3">R3</pl-variable>
+    <pl-variable params-name="Vt">VT</pl-variable>
+</pl-variable-output>
+</p>
+
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name=ans  label={{params.lab}} suffix={{params.unit}}></pl-number-input>
+</p>

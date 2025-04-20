@@ -1,0 +1,34 @@
+<pl-question-panel>
+<p> Mark the centroid of the figure. You can use the guide line for sketching.  </p>
+
+</pl-question-panel>
+
+<p>
+<pl-drawing grid-size="20" gradable="true" answers-name="box" hide-answer-panel="true" width="340" height={{params.height_canvas}} tolerance-hint="The expected tolerance is 1/2 square grid.">
+    <!-- Answer -->
+    <pl-drawing-answer draw-error-box="true">
+      <pl-point x1={{params.xO}} y1={{params.yO}}  ></pl-point>
+    </pl-drawing-answer>
+
+    <!-- Initial drawing state -->
+    <pl-drawing-initial >
+      <pl-triangle x1={{params.xA}} y1={{params.yA}} x2={{params.xB}} y2={{params.yB}} x3={{params.xC}} y3={{params.yC}} color="green1"></pl-triangle>
+    </pl-drawing-initial>
+
+    <pl-controls>
+        <pl-controls-group label="Centroid point:">
+            <pl-drawing-button type="pl-point"></pl-drawing-button>
+        </pl-controls-group>
+        <pl-controls-group label="Guide line (not graded):">
+            <pl-drawing-button type="help-line"></pl-drawing-button>
+        </pl-controls-group>
+        <pl-controls-group label="Delete button:">
+            <pl-drawing-button type="delete"></pl-drawing-button>
+        </pl-controls-group>
+    </pl-controls>
+</pl-drawing>
+</p>
+
+<pl-question-panel>
+<pl-github-link></pl-github-link>
+</pl-question-panel>

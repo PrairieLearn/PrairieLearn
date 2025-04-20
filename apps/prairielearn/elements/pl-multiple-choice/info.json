@@ -1,0 +1,9 @@
+{
+  "controller": "pl-multiple-choice.py",
+  "dependencies": {
+    "elementStyles": ["pl-multiple-choice.css"],
+    "elementScripts": ["pl-multiple-choice.js"],
+    "nodeModulesStyles": ["tom-select/dist/css/tom-select.bootstrap4.min.css"],
+    "nodeModulesScripts": ["tom-select/dist/js/tom-select.popular.min.js"]
+  }
+}

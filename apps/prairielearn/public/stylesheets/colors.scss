@@ -1,0 +1,82 @@
+@import '../../../../node_modules/bootstrap/scss/functions';
+@import '../../../../node_modules/bootstrap/scss/variables';
+@import '../../../../node_modules/bootstrap/scss/mixins';
+
+// We reuse Bootstrap's `button-variant` mixin to generate appropriate hover
+// styles. Crucially, this will ensure that appropriate color contrast is
+// maintained.
+//
+// As with normal buttons (see `local.css`), we also include an outline with
+// `:focus-visible` to ensure that the focus state has sufficient contrast,
+// no matter the background color on which the button is situated.
+//
+// Install `sass` with `npm install -g sass`.
+// Run `sass --sourcemap=none colors.scss colors.css` to compile this file.
+
+$custom-colors: (
+  'red1': #ffccbc,
+  'red2': #ff6c5c,
+  'red3': #c72c1c,
+  'pink1': #ffbcd8,
+  'pink2': #fa5c98,
+  'pink3': #ba1c58,
+  'purple1': #dcc6e0,
+  'purple2': #9b59b6,
+  'purple3': #5e147d,
+  'blue1': #39d5ff,
+  'blue2': #1297e0,
+  'blue3': #0057a0,
+  'turquoise1': #5efaf7,
+  'turquoise2': #27cbc0,
+  'turquoise3': #008b80,
+  'green1': #8effc1,
+  'green2': #2ecc71,
+  'green3': #008c31,
+  'yellow1': #fde3a7,
+  'yellow2': #f5ab35,
+  'yellow3': #d87400,
+  'orange1': #ffdcb5,
+  'orange2': #ff926b,
+  'orange3': #c3522b,
+  'brown1': #f6c4a3,
+  'brown2': #ce9c7b,
+  'brown3': #8e5c3b,
+  'gray1': #e0e0e0,
+  'gray2': #909090,
+  'gray3': #505050,
+);
+
+.btn.btn-badge {
+  --bs-badge-padding-x: #{$badge-padding-x};
+  --bs-badge-padding-y: #{$badge-padding-y};
+  @include rfs($badge-font-size, --#{$prefix}badge-font-size);
+  --bs-badge-font-weight: #{$badge-font-weight};
+  --bs-badge-color: #{$badge-color};
+  --bs-badge-border-radius: #{$badge-border-radius};
+  padding: var(--bs-badge-padding-y) var(--bs-badge-padding-x);
+  font-size: var(--bs-badge-font-size);
+  font-weight: var(--bs-badge-font-weight);
+  line-height: 1;
+  border-radius: var(--bs-badge-border-radius);
+
+  // Ensures consistent sizing with badges, which don't have a border.
+  border: none;
+}
+
+@each $color, $value in $custom-colors {
+  .color-#{$color} {
+    color: color-contrast($value);
+    background-color: $value;
+  }
+
+  .btn.color-#{$color} {
+    @include button-variant($value, $value);
+  }
+
+  .btn.color-#{$color}:focus:focus-visible {
+    outline-style: solid !important;
+    outline-color: var(--bs-btn-hover-color);
+    outline-width: 2px !important;
+    outline-offset: -2px !important;
+  }
+}

@@ -1,0 +1,11 @@
+SELECT
+  setval(
+    'authn_providers_id_seq',
+    (
+      SELECT
+        MAX(id)
+      FROM
+        authn_providers
+    ),
+    true
+  );
