@@ -379,7 +379,7 @@ async function elementFunction(
 
   const pythonArgs = [elementHtml, dataCopy];
   const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-  const type = `${resolvedElementType}-element` as CallType;
+  const type = `${resolvedElementType}-element` satisfies CallType;
   const directory = resolvedElementName;
 
   try {
