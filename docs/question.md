@@ -391,8 +391,6 @@ It can also be used inside `<markdown>` elements:
 </markdown>
 ```
 
-![](images/latex.png)
-
 ## Rendering panels from `question.html`
 
 When a question is displayed to a student, there are three "panels" that will be shown at different stages: the "question" panel, the "submission" panel, and the "answer" panel. These display the question prompt, the solution provided by the student, and the correct answer.
