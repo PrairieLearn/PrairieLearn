@@ -94,6 +94,8 @@ SELECT
   users_get_displayed_role (u.user_id, ci.id) AS role,
   (aset.name || ' ' || a.number) AS assessment_label,
   ai.number AS assessment_instance_number,
+  z.number AS zone_number,
+  z.title AS zone_title,
   q.qid,
   iq.number AS instance_question_number,
   iq.points,
@@ -128,6 +130,8 @@ FROM
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
   LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
   LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
+  JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+  JOIN zones AS z ON (z.id = ag.zone_id)
 WHERE
   a.id = $assessment_id
 ORDER BY
@@ -164,6 +168,8 @@ WITH
     SELECT DISTINCT
       ON (ai.id, q.qid) u.uid,
       u.uin,
+      z.number AS zone_number,
+      z.title AS zone_title,
       q.qid,
       iq.score_perc AS old_score_perc,
       iq.auto_points AS old_auto_points,
@@ -190,6 +196,8 @@ WITH
       LEFT JOIN users AS u ON (u.user_id = ai.user_id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN questions AS q ON (q.id = aq.question_id)
+      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+      JOIN zones AS z ON (z.id = ag.zone_id)
     ORDER BY
       ai.id,
       q.qid,
@@ -215,6 +223,8 @@ WITH
       users_get_displayed_role (u.user_id, ci.id) AS role,
       (aset.name || ' ' || a.number) AS assessment_label,
       ai.number AS assessment_instance_number,
+      z.number AS zone_number,
+      z.title AS zone_title,
       q.qid,
       iq.number AS instance_question_number,
       iq.points,
@@ -246,6 +256,33 @@ WITH
         ELSE NULL
       END AS correct,
       s.feedback,
+      CASE
+        WHEN rg.id IS NOT NULL THEN (
+          SELECT
+            JSONB_BUILD_OBJECT(
+              'computed_points',
+              rg.computed_points,
+              'adjust_points',
+              rg.adjust_points,
+              'items',
+              COALESCE(
+                JSONB_AGG(
+                  JSONB_BUILD_OBJECT(
+                    'description',
+                    rgi.description,
+                    'points',
+                    rgi.points
+                  )
+                ),
+                '[]'::JSONB
+              )
+            )
+          FROM
+            rubric_grading_items rgi
+          WHERE
+            rgi.rubric_grading_id = rg.id
+        )
+      END AS rubric_grading,
       row_number() OVER (
         PARTITION BY
           v.id
@@ -295,6 +332,9 @@ WITH
       LEFT JOIN users AS su ON (su.user_id = s.auth_user_id)
       LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
       LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
+      LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)
+      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+      JOIN zones AS z ON (z.id = ag.zone_id)
     WHERE
       a.id = $assessment_id
   )

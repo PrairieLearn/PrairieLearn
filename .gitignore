@@ -71,6 +71,7 @@ yarn-error.log
 ## Programming languages
 
 ### Python
+.venv/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -100,6 +101,7 @@ packages/*/dist
 coverage/
 apps/*/coverage
 packages/*/coverage
+coverage.xml
 
 ## TypeScript cache
 *.tsbuildinfo
@@ -110,3 +112,9 @@ packages/*/coverage
 
 ## d2 cache
 .cache
+
+## v8 crash reports
+isolate-*-v8.log
+
+## ESLint cache
+.eslintcache

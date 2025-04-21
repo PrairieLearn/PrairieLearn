@@ -24,7 +24,7 @@ def _render_graph(graph, layout="dot"):
 
 
 def _draw_adj_matrix(
-    mat, mat_label, show_weights, round_digits, directed, layout="dot"
+    mat, mat_label, *, show_weights: bool, round_digits, directed, layout="dot"
 ):
     G = pygraphviz.AGraph(directed=directed)
 
@@ -43,13 +43,13 @@ def _draw_adj_matrix(
     return _render_graph(G, layout)
 
 
-def _draw_edge_inc_matrix(mat, mat_label, round_digits, layout="dot"):
+def _draw_edge_inc_matrix(mat, mat_label, layout="dot"):
     G = pygraphviz.AGraph(directed=True)
 
     for node in mat_label:
         G.add_node(node)
 
-    edges, nodes = mat.shape
+    edges, _ = mat.shape
     for e in range(edges):
         out_node = np.where(mat[e] == -1)[0][0]
         in_node = np.where(mat[e] == 1)[0][0]
@@ -59,18 +59,22 @@ def _draw_edge_inc_matrix(mat, mat_label, round_digits, layout="dot"):
 
 
 def draw_matrix(
-    mat, mat_label=None, show_weights=True, round_digits=3, directed=None, layout="dot"
+    mat,
+    *,
+    mat_label=None,
+    show_weights=True,
+    round_digits=3,
+    directed=None,
+    layout="dot",
 ):
-    """
-    Attempts to automatically determine the type of matrix by the type.
+    """Attempts to automatically determine the type of matrix by the type.
     A square matrix is interpreted to be an adjacency/stochastic matrix, while a non-square
     matrix is a edge-incidence matrix.
     """
-
     mat = mat.T
 
     if len(mat.shape) != 2:
-        raise Exception(
+        raise TypeError(
             f"Input matrix has wrong dimensionality (gotten {len(mat.shape)}, expected 2)."
         )
     if directed is None:
@@ -83,7 +87,12 @@ def draw_matrix(
 
     if mat.shape[0] == mat.shape[1] and not np.any(mat < 0):
         return _draw_adj_matrix(
-            mat, mat_label, show_weights, round_digits, directed, layout
+            mat,
+            mat_label=mat_label,
+            show_weights=show_weights,
+            round_digits=round_digits,
+            directed=directed,
+            layout=layout,
         )
     else:
-        return _draw_edge_inc_matrix(mat, mat_label, round_digits, layout)
+        return _draw_edge_inc_matrix(mat, mat_label, layout)

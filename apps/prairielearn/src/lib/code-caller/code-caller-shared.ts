@@ -26,7 +26,6 @@ export interface PrepareForCourseOptions {
 export interface CodeCaller {
   uuid: string;
   getCoursePath: () => string | null;
-  ensureChild: () => Promise<void>;
   prepareForCourse: (options: PrepareForCourseOptions) => Promise<void>;
   call: (
     type: CallType,

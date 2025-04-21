@@ -1,4 +1,4 @@
-import { escapeHtml, html, type HtmlValue, joinHtml } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html, joinHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import type {
@@ -211,8 +211,8 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
     <button
       class="btn btn-xs btn-secondary"
       type="button"
-      data-toggle="collapse"
-      data-target="#issueCollapse"
+      data-bs-toggle="collapse"
+      data-bs-target="#issueCollapse"
       aria-expanded="false"
       aria-controls="issueCollapse"
     >
@@ -224,7 +224,7 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
           This form is only for reporting errors in the question itself. Do not use this form if you
           just don't know how to answer the question.
         </p>
-        <div class="form-group">
+        <div class="mb-3">
           <textarea
             class="form-control"
             rows="5"
@@ -235,8 +235,8 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
         </div>
         <input type="hidden" name="__variant_id" value="${variant.id}" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <div class="form-group text-right">
-          <button class="btn btn-small btn-warning" name="__action" value="report_issue">
+        <div class="mb-3 text-right">
+          <button type="submit" class="btn btn-sm btn-warning" name="__action" value="report_issue">
             Report error
           </button>
         </div>
@@ -273,7 +273,7 @@ export function ExamQuestionStatus({
   if (instance_question.status === 'saved' && manualPercentage >= 100) {
     return html`
       <span class="align-middle">
-        <span class="badge badge-success">saved for manual grading</span>
+        <span class="badge text-bg-success">saved for manual grading</span>
       </span>
     `;
   }
@@ -299,11 +299,11 @@ export function ExamQuestionStatus({
             <button
               type="button"
               class="grade-rate-limit-popover btn btn-xs"
-              data-toggle="popover"
-              data-container="body"
-              data-html="true"
-              data-content="This question limits the rate of submissions. Further grade allowed ${instance_question.allow_grade_interval} (as of the loading of this page)."
-              data-placement="auto"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-content="This question limits the rate of submissions. Further grade allowed ${instance_question.allow_grade_interval} (as of the loading of this page)."
+              data-bs-placement="auto"
             >
               <i class="fa fa-hourglass-half" aria-hidden="true"></i>
             </button>
@@ -358,7 +358,7 @@ export function QuestionVariantHistory({
         >
           ${variant.open ? 'Open' : `${Math.floor(variant.max_submission_score * 100)}%`}
           ${currentVariantId != null && idsEqual(variant.id, currentVariantId)
-            ? html`<span class="sr-only">(current)</span>`
+            ? html`<span class="visually-hidden">(current)</span>`
             : ''}
         </a>
       `,
@@ -412,7 +412,7 @@ export function InstanceQuestionPoints({
       ${instance_question.status === 'unanswered'
         ? html`&mdash;`
         : pointsPending
-          ? html`<span class="badge badge-info">pending</span>`
+          ? html`<span class="badge text-bg-info">pending</span>`
           : !points && !maxPoints
             ? html`&mdash;`
             : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`}
@@ -475,11 +475,12 @@ export function ExamQuestionAvailablePoints({
     <button
       type="button"
       class="btn btn-xs btn-ghost js-available-points-popover"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-content="${escapeHtml(popoverContent)}"
-      data-placement="auto"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-title="Explanation of available points"
+      data-bs-content="${escapeHtml(popoverContent)}"
+      data-bs-placement="auto"
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
@@ -580,11 +581,12 @@ function QuestionValue({
     <button
       type="button"
       class="btn btn-xs js-value-popover"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-content="${escapeHtml(popoverContent)}"
-      data-placement="auto"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-title="Explanation of question value"
+      data-bs-content="${escapeHtml(popoverContent)}"
+      data-bs-placement="auto"
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>

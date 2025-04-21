@@ -38,15 +38,25 @@ const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
 
+const newQuestionUrl = `${courseInstanceUrl}/question/2/settings`;
+const newQuestionFromTemplateUrl = `${courseInstanceUrl}/question/3/settings`;
 const newCourseInstanceUrl = baseUrl + '/course_instance/2/instructor';
 const newCourseInstanceSettingsUrl = `${newCourseInstanceUrl}/instance_admin/settings`;
+
+const newAssessmentUrl = `${courseInstanceUrl}/assessment/2`;
+const newAssessmentSettingsUrl = `${newAssessmentUrl}/settings`;
 
 const testEditData = [
   {
     url: questionsUrl,
-    formSelector: 'form[name="add-question-form"]',
+    formSelector: '#createQuestionModal',
     action: 'add_question',
     info: 'questions/New_1/info.json',
+    data: {
+      qid: 'New',
+      title: 'New',
+      start_from: 'Empty question',
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -61,6 +71,53 @@ const testEditData = [
     ]),
   },
   {
+    // Create a question with a template question as the starting point
+    url: questionsUrl,
+    formSelector: '#createQuestionModal',
+    action: 'add_question',
+    info: 'questions/custom_id/info.json',
+    data: {
+      qid: 'custom_id',
+      title: 'Custom Question',
+      start_from: 'Empty question',
+      template_qid: 'template/string-input/random',
+    },
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'questions/New_1/info.json',
+      'questions/New_1/question.html',
+      'questions/New_1/server.py',
+      'questions/custom_id/info.json',
+      'questions/custom_id/question.html',
+      'questions/custom_id/server.py',
+    ]),
+  },
+  {
+    url: newQuestionUrl,
+    formSelector: '#deleteQuestionModal',
+    action: 'delete_question',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'questions/custom_id/info.json',
+      'questions/custom_id/question.html',
+      'questions/custom_id/server.py',
+    ]),
+  },
+  {
+    // Delete the question created from a template question
+    url: newQuestionFromTemplateUrl,
     formSelector: '#deleteQuestionModal',
     action: 'delete_question',
     files: new Set([
@@ -110,9 +167,15 @@ const testEditData = [
   },
   {
     url: assessmentsUrl,
-    formSelector: 'form[name="add-assessment-form"]',
+    formSelector: '#createAssessmentModal',
     action: 'add_assessment',
     info: 'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
+    data: {
+      title: 'New',
+      aid: 'New',
+      type: 'Homework',
+      set: 'Homework',
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -125,6 +188,7 @@ const testEditData = [
     ]),
   },
   {
+    url: newAssessmentSettingsUrl,
     formSelector: '#deleteAssessmentModal',
     action: 'delete_assessment',
     files: new Set([
@@ -188,25 +252,6 @@ const testEditData = [
   },
   {
     url: newCourseInstanceSettingsUrl,
-    button: '.js-change-id-button',
-    formSelector: 'form[name="change-id-form"]',
-    data: {
-      id: 'newCourseInstance',
-    },
-    action: 'change_id',
-    info: 'courseInstances/newCourseInstance/infoCourseInstance.json',
-    files: new Set([
-      'README.md',
-      'infoCourse.json',
-      'courseInstances/Fa18/infoCourseInstance.json',
-      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
-      'questions/test/question/info.json',
-      'questions/test/question/question.html',
-      'questions/test/question/server.py',
-      'courseInstances/newCourseInstance/infoCourseInstance.json',
-    ]),
-  },
-  {
     formSelector: '#deleteCourseInstanceModal',
     action: 'delete_course_instance',
     files: new Set([
@@ -334,6 +379,7 @@ function testEdit(params) {
     if (params.url) {
       it('should load successfully', async () => {
         const res = await fetch(params.url);
+
         assert.isOk(res.ok);
         locals.$ = cheerio.load(await res.text());
       });
@@ -343,7 +389,7 @@ function testEdit(params) {
         let elemList = locals.$(params.button);
         assert.lengthOf(elemList, 1);
 
-        const $ = cheerio.load(elemList[0].attribs['data-content']);
+        const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
         elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');

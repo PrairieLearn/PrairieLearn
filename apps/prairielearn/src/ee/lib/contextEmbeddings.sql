@@ -3,8 +3,7 @@ INSERT INTO
   question_generation_context_embeddings (doc_path, doc_text, embedding, chunk_id)
 VALUES
   ($doc_path, $doc_text, $embedding, $chunk_id)
-ON CONFLICT (doc_path, chunk_id) DO
-UPDATE
+ON CONFLICT (doc_path, chunk_id) DO UPDATE
 SET
   doc_text = EXCLUDED.doc_text,
   embedding = EXCLUDED.embedding;

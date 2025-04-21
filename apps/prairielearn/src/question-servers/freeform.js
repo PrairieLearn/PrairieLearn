@@ -1,5 +1,4 @@
 // @ts-check
-
 import * as path from 'path';
 
 import * as async from 'async';
@@ -15,12 +14,14 @@ import * as parse5 from 'parse5';
 
 import { cache } from '@prairielearn/cache';
 import { logger } from '@prairielearn/logger';
-import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
+import { instrumented, instrumentedWithMetrics, metrics } from '@prairielearn/opentelemetry';
+import { run } from '@prairielearn/run';
 
+import { stripHtmlForAiGrading } from '../lib/ai-grading.js';
 import * as assets from '../lib/assets.js';
 import { canonicalLogger } from '../lib/canonical-logger.js';
 import * as chunks from '../lib/chunks.js';
-import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.js';
+import { FunctionMissingError, withCodeCaller } from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
@@ -275,9 +276,9 @@ export function flushElementCache() {
 }
 
 function resolveElement(elementName, context) {
-  if (_.has(context.course_elements, elementName)) {
+  if (Object.prototype.hasOwnProperty.call(context.course_elements, elementName)) {
     return context.course_elements[elementName];
-  } else if (_.has(coreElementsCache, elementName)) {
+  } else if (Object.prototype.hasOwnProperty.call(coreElementsCache, elementName)) {
     return coreElementsCache[elementName];
   } else {
     throw new Error(`No such element: ${elementName}`);
@@ -294,7 +295,7 @@ function getElementController(elementName, context) {
  * Returns a copy of data with the new urls inserted.
  */
 function getElementClientFiles(data, elementName, context) {
-  let dataCopy = _.cloneDeep(data);
+  let dataCopy = structuredClone(data);
   // The options field wont contain URLs unless in the 'render' stage, so
   // check if it is populated before adding the element url
   if ('base_url' in data.options) {
@@ -305,7 +306,7 @@ function getElementClientFiles(data, elementName, context) {
     );
     dataCopy.options.client_files_extensions_url = {};
 
-    if (_.has(context.course_element_extensions, elementName)) {
+    if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
       Object.keys(context.course_element_extensions[elementName]).forEach((extension) => {
         const url = assets.courseElementExtensionAssetPath(
           context.course.commit_hash,
@@ -423,32 +424,36 @@ function checkData(data, origData, phase) {
   const checked = [];
   const checkProp = (prop, type, presentPhases, editPhases) => {
     if (!presentPhases.includes(phase)) return null;
-    if (!_.has(data, prop)) return '"' + prop + '" is missing from "data"';
+    if (!Object.prototype.hasOwnProperty.call(data, prop)) {
+      return `"${prop}" is missing from "data"`;
+    }
     if (type === 'integer') {
-      if (!_.isInteger(data[prop])) {
-        return 'data.' + prop + ' is not an integer: ' + String(data[prop]);
+      if (!Number.isInteger(data[prop])) {
+        return `data.${prop} is not an integer: ${String(data[prop])}`;
       }
     } else if (type === 'number') {
-      if (!_.isFinite(data[prop])) {
-        return 'data.' + prop + ' is not a number: ' + String(data[prop]);
+      if (!Number.isFinite(data[prop])) {
+        return `data.${prop} is not a number: ${String(data[prop])}`;
       }
     } else if (type === 'string') {
-      if (!_.isString(data[prop])) {
-        return 'data.' + prop + ' is not a string: ' + String(data[prop]);
+      if (typeof data[prop] !== 'string') {
+        return `data.${prop} is not a string: ${String(data[prop])}`;
       }
     } else if (type === 'boolean') {
-      if (!_.isBoolean(data[prop])) {
-        return 'data.' + prop + ' is not a boolean: ' + String(data[prop]);
+      if (data[prop] !== true && data[prop] !== false) {
+        return `data.${prop} is not a boolean: ${String(data[prop])}`;
       }
     } else if (type === 'object') {
-      if (!_.isObject(data[prop])) {
-        return 'data.' + prop + ' is not an object: ' + String(data[prop]);
+      if (data[prop] == null || typeof data[prop] !== 'object') {
+        return `data.${prop} is not an object: ${String(data[prop])}`;
       }
     } else {
-      return 'invalid type: ' + String(type);
+      return `invalid type: ${String(type)}`;
     }
     if (!editPhases.includes(phase)) {
-      if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
+      if (!Object.prototype.hasOwnProperty.call(origData, prop)) {
+        return `"${prop}" is missing from "origData"`;
+      }
       if (!_.isEqual(data[prop], origData[prop])) {
         return `data.${prop} has been illegally modified, new value: "${JSON.stringify(
           data[prop],
@@ -490,8 +495,8 @@ function checkData(data, origData, phase) {
        || checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
   if (err) return err;
 
-  const extraProps = _.difference(_.keys(data), checked);
-  if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
+  const extraProps = _.difference(Object.keys(data), checked);
+  if (extraProps.length > 0) return `"data" has invalid extra keys: ${extraProps.join(', ')}`;
 
   return null;
 }
@@ -525,7 +530,7 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
       context.question.directory,
       'question.html',
       phase,
-      [data, pythonContext],
+      [pythonContext, data],
     );
     result = res.result;
     output = res.output;
@@ -557,20 +562,20 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
   const courseIssues = [];
   let fileData = Buffer.from('');
   const questionElements = new Set([
-    ..._.keys(coreElementsCache),
-    ..._.keys(context.course_elements),
+    ...Object.keys(coreElementsCache),
+    ...Object.keys(context.course_elements),
   ]);
 
   const visitNode = async (node) => {
     if (node.tagName && questionElements.has(node.tagName)) {
       const elementName = node.tagName;
       const elementFile = getElementController(elementName, context);
-      if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
+      if (phase === 'render' && !renderedElementNames.includes(elementName)) {
         renderedElementNames.push(elementName);
       }
       // Populate the extensions used by this element.
       data.extensions = [];
-      if (_.has(context.course_element_extensions, elementName)) {
+      if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
         data.extensions = context.course_element_extensions[elementName];
       }
       // We need to wrap it in another node, since only child nodes
@@ -601,7 +606,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
       // We'll be sneaky and remove the extensions, since they're not used elsewhere.
       delete data.extensions;
       delete ret_val.extensions;
-      if (_.isString(consoleLog) && consoleLog.length > 0) {
+      if (typeof consoleLog === 'string' && consoleLog.length > 0) {
         courseIssues.push(
           new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
             data: { outputBoth: consoleLog },
@@ -610,7 +615,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
         );
       }
       if (phase === 'render') {
-        if (!_.isString(ret_val)) {
+        if (typeof ret_val !== 'string') {
           throw new CourseIssueError(
             `${elementFile}: Error calling ${phase}(): return value is not a string`,
             { data: ret_val, fatal: true },
@@ -684,21 +689,21 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
   const courseIssues = [];
   let fileData = Buffer.from('');
   const questionElements = new Set([
-    ..._.keys(coreElementsCache),
-    ..._.keys(context.course_elements),
+    ...Object.keys(coreElementsCache),
+    ...Object.keys(context.course_elements),
   ]).values();
 
   try {
     await async.eachSeries(questionElements, async (elementName) => {
       await async.eachSeries($(elementName).toArray(), async (element) => {
-        if (phase === 'render' && !_.includes(renderedElementNames, element)) {
+        if (phase === 'render' && !renderedElementNames.includes(elementName)) {
           renderedElementNames.push(elementName);
         }
 
         const elementFile = getElementController(elementName, context);
         // Populate the extensions used by this element
         data.extensions = [];
-        if (_.has(context.course_element_extensions, elementName)) {
+        if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
           data.extensions = context.course_element_extensions[elementName];
         }
 
@@ -728,19 +733,19 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
 
         delete data.extensions;
         delete result.extensions;
-        if (_.isString(output) && output.length > 0) {
+        if (typeof output === 'string' && output.length > 0) {
           courseIssues.push(
-            new CourseIssueError(
-              elementFile + ': output logged on console during ' + phase + '()',
-              { data: { outputBoth: output }, fatal: false },
-            ),
+            new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
+              data: { outputBoth: output },
+              fatal: false,
+            }),
           );
         }
 
         if (phase === 'render') {
-          if (!_.isString(output)) {
+          if (typeof result !== 'string') {
             const courseIssue = new CourseIssueError(
-              elementFile + ': Error calling ' + phase + '(): return value is not a string',
+              `${elementFile}: Error calling ${phase}(): return value is not a string`,
               { data: { result }, fatal: true },
             );
             courseIssues.push(courseIssue);
@@ -829,7 +834,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     ({ html, $ } = await execTemplate(htmlFilename, data));
   } catch (err) {
     return {
-      courseIssues: [new CourseIssueError(htmlFilename + ': ' + err.toString(), { fatal: true })],
+      courseIssues: [new CourseIssueError(`${htmlFilename}: ${err.toString()}`, { fatal: true })],
       data,
       html: '',
       fileData: Buffer.from(''),
@@ -863,18 +868,18 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     if (context.question.partial_credit) {
       let total_weight = 0,
         total_weight_score = 0;
-      _.each(resultData.partial_scores, (value) => {
-        const score = _.get(value, 'score', 0);
-        const weight = _.get(value, 'weight', 1);
+      for (const value of Object.values(resultData.partial_scores ?? {})) {
+        const score = value.score ?? 0;
+        const weight = value.weight ?? 1;
         total_weight += weight;
         total_weight_score += weight * score;
-      });
+      }
       resultData.score = total_weight_score / (total_weight === 0 ? 1 : total_weight);
     } else {
       let score = 0;
       if (
-        _.size(resultData.partial_scores) > 0 &&
-        _.every(resultData.partial_scores, (value) => _.get(value, 'score', 0) >= 1)
+        Object.keys(resultData.partial_scores ?? {}).length > 0 &&
+        Object.values(resultData.partial_scores ?? {}).every((value) => (value?.score ?? 0) >= 1)
       ) {
         score = 1;
       }
@@ -920,7 +925,7 @@ async function processQuestionServer(phase, codeCaller, data, html, fileData, co
     return { courseIssues, data };
   }
 
-  if (_.isString(output) && output.length > 0) {
+  if (typeof output === 'string' && output.length > 0) {
     const serverFile = path.join(context.question_dir, 'server.py');
     courseIssues.push(
       new CourseIssueError(`${serverFile}: output logged on console`, {
@@ -994,7 +999,7 @@ async function processQuestion(phase, codeCaller, data, context) {
           fileData,
           renderedElementNames,
         } = await processQuestionHtml(phase, codeCaller, data, context);
-        const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
+        const hasFatalError = courseIssues.some((issue) => issue.fatal);
         if (hasFatalError) {
           return {
             courseIssues,
@@ -1049,9 +1054,9 @@ export async function generate(question, course, variant_seed) {
       params: {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
-      options: _.defaults({}, course.options, question.options),
+      options: { ...course.options, ...question.options },
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
 
     return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
@@ -1077,13 +1082,13 @@ export async function prepare(question, course, variant) {
 
     const context = await getContext(question, course);
     const data = {
-      params: _.get(variant, 'params', {}),
-      correct_answers: _.get(variant, 'true_answer', {}),
+      params: variant.params ?? {},
+      correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: _.get(variant, 'options', {}),
+      options: variant.options ?? {},
       answers_names: {},
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
 
     return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
@@ -1146,6 +1151,13 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     }
   }
 
+  if (panel === 'question' && locals.questionRenderContext === 'ai_grading') {
+    // For AI grading, the question panel is always rendered without a specific
+    // submission. The question panel is meant to provide context to the LLM;
+    // all student submissions will be provided by rendering the submission panel.
+    submission = null;
+  }
+
   const data = {
     // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
     // so we'll use the submission's values if they exist.
@@ -1159,8 +1171,22 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     variant_seed: parseInt(variant.variant_seed ?? '0', 36),
     options: variant.options ?? {},
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
-    editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
-    manual_grading: !!locals.manualGradingInterface,
+    editable: !!(
+      locals.allowAnswerEditing &&
+      !['manual_grading', 'ai_grading'].includes(locals.questionRenderContext)
+    ),
+    manual_grading: run(() => {
+      if (locals.questionRenderContext === 'manual_grading') return true;
+      if (locals.questionRenderContext === 'ai_grading') {
+        // We deliberately do not set `manualGradingInterface: true` when rendering
+        // the submission for AI grading. The expectation is that instructors will
+        // use elements like `<pl-manual-grading-only>` to provide extra instructions
+        // to the LLM. We don't want to mix in instructions like that with the
+        // student's response.
+        return panel !== 'submission';
+      }
+      return false;
+    }),
     panel,
     num_valid_submissions: variant.num_tries ?? null,
   };
@@ -1189,7 +1215,7 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
   data.options.workspace_url = locals.workspaceUrl || null;
 
   // Put key paths in data.options
-  _.extend(data.options, getContextOptions(context));
+  Object.assign(data.options, getContextOptions(context));
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
     course,
@@ -1208,6 +1234,12 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
 
   return {
     ...cachedData,
+    // We need to transform the resulting HTML to strip out any data that
+    // isn't relevant during AI grading.
+    html:
+      locals.questionRenderContext === 'ai_grading'
+        ? await stripHtmlForAiGrading(cachedData.html)
+        : cachedData.html,
     cacheHit,
   };
 }
@@ -1258,7 +1290,7 @@ export async function render(
     const htmls = {
       extraHeadersHtml: '',
       questionHtml: '',
-      submissionHtmls: _.map(submissions, () => ''),
+      submissionHtmls: submissions.map(() => ''),
       answerHtml: '',
     };
     let allRenderedElementNames = [];
@@ -1369,7 +1401,7 @@ export async function render(
         if (!(type in dependencies)) continue;
 
         for (let dep of question.dependencies[type]) {
-          if (!_.includes(dependencies[type], dep)) {
+          if (!dependencies[type].includes(dep)) {
             dependencies[type].push(dep);
           }
         }
@@ -1378,22 +1410,23 @@ export async function render(
       // Gather dependencies for all rendered elements
       allRenderedElementNames.forEach((elementName) => {
         let resolvedElement = resolveElement(elementName, context);
-        const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
-        const elementDynamicDependencies = _.cloneDeep(resolvedElement.dynamicDependencies || {});
+        const elementDependencies = structuredClone(resolvedElement.dependencies) ?? {};
+        const elementDynamicDependencies =
+          structuredClone(resolvedElement.dynamicDependencies) ?? {};
 
         // Transform non-global dependencies to be prefixed by the element name,
         // since they'll be served from their element's directory
-        if (_.has(elementDependencies, 'elementStyles')) {
+        if ('elementStyles' in elementDependencies) {
           elementDependencies.elementStyles = elementDependencies.elementStyles.map(
             (dep) => `${resolvedElement.name}/${dep}`,
           );
         }
-        if (_.has(elementDependencies, 'elementScripts')) {
+        if ('elementScripts' in elementDependencies) {
           elementDependencies.elementScripts = elementDependencies.elementScripts.map(
             (dep) => `${resolvedElement.name}/${dep}`,
           );
         }
-        if (_.has(elementDynamicDependencies, 'elementScripts')) {
+        if ('elementScripts' in elementDynamicDependencies) {
           elementDynamicDependencies.elementScripts = _.mapValues(
             elementDynamicDependencies.elementScripts,
             (dep) => `${resolvedElement.name}/${dep}`,
@@ -1403,29 +1436,29 @@ export async function render(
         // Rename properties so we can track core and course
         // element dependencies separately
         if (resolvedElement.type === 'course') {
-          if (_.has(elementDependencies, 'elementStyles')) {
+          if ('elementStyles' in elementDependencies) {
             elementDependencies.courseElementStyles = elementDependencies.elementStyles;
             delete elementDependencies.elementStyles;
           }
-          if (_.has(elementDependencies, 'elementScripts')) {
+          if ('elementScripts' in elementDependencies) {
             elementDependencies.courseElementScripts = elementDependencies.elementScripts;
             delete elementDependencies.elementScripts;
           }
-          if (_.has(elementDynamicDependencies, 'elementScripts')) {
+          if ('elementScripts' in elementDynamicDependencies) {
             elementDynamicDependencies.courseElementScripts =
               elementDynamicDependencies.elementScripts;
             delete elementDynamicDependencies.elementScripts;
           }
         } else {
-          if (_.has(elementDependencies, 'elementStyles')) {
+          if ('elementStyles' in elementDependencies) {
             elementDependencies.coreElementStyles = elementDependencies.elementStyles;
             delete elementDependencies.elementStyles;
           }
-          if (_.has(elementDependencies, 'elementScripts')) {
+          if ('elementScripts' in elementDependencies) {
             elementDependencies.coreElementScripts = elementDependencies.elementScripts;
             delete elementDependencies.elementScripts;
           }
-          if (_.has(elementDynamicDependencies, 'elementScripts')) {
+          if ('elementScripts' in elementDynamicDependencies) {
             elementDynamicDependencies.coreElementScripts =
               elementDynamicDependencies.elementScripts;
             delete elementDynamicDependencies.elementScripts;
@@ -1436,7 +1469,7 @@ export async function render(
           if (!(type in dependencies)) continue;
 
           for (const dep of elementDependencies[type]) {
-            if (!_.includes(dependencies[type], dep)) {
+            if (!dependencies[type].includes(dep)) {
               dependencies[type].push(dep);
             }
           }
@@ -1461,30 +1494,30 @@ export async function render(
         }
 
         // Load any extensions if they exist
-        if (_.has(extensions, elementName)) {
+        if (Object.prototype.hasOwnProperty.call(extensions, elementName)) {
           for (const extensionName of Object.keys(extensions[elementName])) {
             if (
-              !_.has(extensions[elementName][extensionName], 'dependencies') &&
-              !_.has(extensions[elementName][extensionName], 'dynamicDependencies')
+              !('dependencies' in extensions[elementName][extensionName]) &&
+              !('dynamicDependencies' in extensions[elementName][extensionName])
             ) {
               continue;
             }
 
-            const extension = _.cloneDeep(extensions[elementName][extensionName]).dependencies;
-            const extensionDynamic = _.cloneDeep(
-              extensions[elementName][extensionName],
-            ).dynamicDependencies;
-            if (_.has(extension, 'extensionStyles')) {
+            const extension =
+              structuredClone(extensions[elementName][extensionName].dependencies) ?? {};
+            const extensionDynamic =
+              structuredClone(extensions[elementName][extensionName].dynamicDependencies) ?? {};
+            if ('extensionStyles' in extension) {
               extension.extensionStyles = extension.extensionStyles.map(
                 (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
-            if (_.has(extension, 'extensionScripts')) {
+            if ('extensionScripts' in extension) {
               extension.extensionScripts = extension.extensionScripts.map(
                 (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
-            if (_.has(extensionDynamic, 'extensionScripts')) {
+            if ('extensionScripts' in extensionDynamic) {
               extensionDynamic.extensionScripts = _.mapValues(
                 extensionDynamic.extensionScripts,
                 (dep) => `${elementName}/${extensionName}/${dep}`,
@@ -1495,7 +1528,7 @@ export async function render(
               if (!(type in dependencies)) continue;
 
               for (const dep of extension[type]) {
-                if (!_.includes(dependencies[type], dep)) {
+                if (!dependencies[type].includes(dep)) {
                   dependencies[type].push(dep);
                 }
               }
@@ -1608,7 +1641,7 @@ export async function render(
       // Check if any of the keys was found in more than one dependency type
       Object.keys(importMap.imports).forEach((key) => {
         const types = Object.entries(dynamicDependencies)
-          .filter(([, value]) => _.has(value, key))
+          .filter(([, value]) => Object.prototype.hasOwnProperty.call(value, key))
           .map(([type]) => type);
         if (types.length > 1) {
           courseIssues.push(
@@ -1645,13 +1678,13 @@ export async function file(filename, variant, question, course) {
     const context = await getContext(question, course);
 
     const data = {
-      params: _.get(variant, 'params', {}),
-      correct_answers: _.get(variant, 'true_answer', {}),
+      params: variant.params ?? {},
+      correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: _.get(variant, 'options', {}),
+      options: variant.options ?? {},
       filename,
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
 
     const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
       course,
@@ -1687,17 +1720,17 @@ export async function parse(submission, variant, question, course) {
 
     const context = await getContext(question, course);
     const data = {
-      params: _.get(variant, 'params', {}),
-      correct_answers: _.get(variant, 'true_answer', {}),
-      submitted_answers: _.get(submission, 'submitted_answer', {}),
-      feedback: _.get(submission, 'feedback', {}),
-      format_errors: _.get(submission, 'format_errors', {}),
+      params: variant.params ?? {},
+      correct_answers: variant.true_answer ?? {},
+      submitted_answers: submission.submitted_answer ?? {},
+      feedback: submission.feedback ?? {},
+      format_errors: submission.format_errors ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: _.get(variant, 'options', {}),
-      raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
-      gradable: _.get(submission, 'gradable', true),
+      options: variant.options ?? {},
+      raw_submitted_answers: submission.raw_submitted_answer ?? {},
+      gradable: submission.gradable ?? true,
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
     return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'parse',
@@ -1705,7 +1738,8 @@ export async function parse(submission, variant, question, course) {
         data,
         context,
       );
-      if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
+
+      if (Object.keys(resultData.format_errors).length > 0) resultData.gradable = false;
       return {
         courseIssues,
         data: {
@@ -1740,11 +1774,11 @@ export async function grade(submission, variant, question, question_course) {
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: _.get(variant, 'options', {}),
+      options: variant.options ?? {},
       raw_submitted_answers: submission.raw_submitted_answer,
       gradable: submission.gradable,
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
     return withCodeCaller(question_course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'grade',
@@ -1752,7 +1786,8 @@ export async function grade(submission, variant, question, question_course) {
         data,
         context,
       );
-      if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
+
+      if (Object.keys(resultData.format_errors).length > 0) resultData.gradable = false;
       return {
         courseIssues,
         data: {
@@ -1785,12 +1820,12 @@ export async function test(variant, question, course, test_type) {
       score: 0,
       feedback: {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: _.get(variant, 'options', {}),
+      options: variant.options ?? {},
       raw_submitted_answers: {},
       gradable: true,
       test_type,
     };
-    _.extend(data.options, getContextOptions(context));
+    Object.assign(data.options, getContextOptions(context));
     return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'test',
@@ -1798,7 +1833,7 @@ export async function test(variant, question, course, test_type) {
         data,
         context,
       );
-      if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
+      if (Object.keys(resultData.format_errors).length > 0) resultData.gradable = false;
       return {
         courseIssues,
         data: {
@@ -1822,23 +1857,21 @@ export async function test(variant, question, course, test_type) {
  */
 async function getContext(question, course) {
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-  /** @type {chunks.Chunk[]} */
-  const chunksToLoad = [
+  await chunks.ensureChunksForCourseAsync(course.id, [
     { type: 'question', questionId: question.id },
     { type: 'clientFilesCourse' },
     { type: 'serverFilesCourse' },
     { type: 'elements' },
     { type: 'elementExtensions' },
-  ];
-  await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
+  ]);
 
   // Select which rendering strategy we'll use. This is computed here so that
   // in can factor into the cache key.
   const useNewQuestionRenderer = course?.options?.useNewQuestionRenderer ?? false;
-  const useExperimentalRenderer = await features.enabled('process-questions-in-worker', {
+  const useExperimentalRenderer = !(await features.enabled('process-questions-in-server', {
     institution_id: course.institution_id,
     course_id: course.id,
-  });
+  }));
 
   const renderer = useExperimentalRenderer
     ? 'experimental'
