@@ -69,7 +69,6 @@ jobs:
         if: ${{ env.images_plbase_modified }}
         run: docker tag prairielearn/plbase:${{ env.COMMIT_SHA }} prairielearn/plbase:latest
 
-        s
       - name: Build the prairielearn docker image
         run: |
           docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} --cache-from prairielearn/prairielearn:buildcache-linux-amd64 .
