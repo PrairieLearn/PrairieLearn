@@ -1433,53 +1433,45 @@ export async function render(
           );
         }
 
-        // Rename properties so we can track core and course
-        // element dependencies separately
-        if (resolvedElement.type === 'course') {
-          if ('elementStyles' in elementDependencies) {
-            elementDependencies.courseElementStyles = elementDependencies.elementStyles;
-            delete elementDependencies.elementStyles;
-          }
-          if ('elementScripts' in elementDependencies) {
-            elementDependencies.courseElementScripts = elementDependencies.elementScripts;
-            delete elementDependencies.elementScripts;
-          }
-          if ('elementScripts' in elementDynamicDependencies) {
-            elementDynamicDependencies.courseElementScripts =
-              elementDynamicDependencies.elementScripts;
-            delete elementDynamicDependencies.elementScripts;
-          }
-        } else {
-          if ('elementStyles' in elementDependencies) {
-            elementDependencies.coreElementStyles = elementDependencies.elementStyles;
-            delete elementDependencies.elementStyles;
-          }
-          if ('elementScripts' in elementDependencies) {
-            elementDependencies.coreElementScripts = elementDependencies.elementScripts;
-            delete elementDependencies.elementScripts;
-          }
-          if ('elementScripts' in elementDynamicDependencies) {
-            elementDynamicDependencies.coreElementScripts =
-              elementDynamicDependencies.elementScripts;
-            delete elementDynamicDependencies.elementScripts;
-          }
-        }
-
         for (const type in elementDependencies) {
-          if (!(type in dependencies)) continue;
+          // Rename properties so we can track core and course element dependencies separately.
+          const resolvedType = run(() => {
+            if (resolvedElement.type === 'course') {
+              if (type === 'elementStyles') return 'courseElementStyles';
+              if (type === 'elementScripts') return 'courseElementScripts';
+            } else {
+              if (type === 'elementStyles') return 'coreElementStyles';
+              if (type === 'elementScripts') return 'coreElementScripts';
+            }
+            return type;
+          });
+
+          if (!(resolvedType in dependencies)) continue;
 
           for (const dep of elementDependencies[type]) {
-            if (!dependencies[type].includes(dep)) {
-              dependencies[type].push(dep);
+            if (!dependencies[resolvedType].includes(dep)) {
+              dependencies[resolvedType].push(dep);
             }
           }
         }
 
         for (const type in elementDynamicDependencies) {
+          // Rename properties so we can track core and course element dependencies separately.
+          const resolvedType = run(() => {
+            if (resolvedElement.type === 'course') {
+              if (type === 'elementScripts') return 'courseElementScripts';
+            } else {
+              if (type === 'elementScripts') return 'coreElementScripts';
+            }
+            return type;
+          });
+
           for (const key in elementDynamicDependencies[type]) {
-            if (!Object.hasOwn(dynamicDependencies[type], key)) {
-              dynamicDependencies[type][key] = elementDynamicDependencies[type][key];
-            } else if (dynamicDependencies[type][key] !== elementDynamicDependencies[type][key]) {
+            if (!Object.hasOwn(dynamicDependencies[resolvedType], key)) {
+              dynamicDependencies[resolvedType][key] = elementDynamicDependencies[type][key];
+            } else if (
+              dynamicDependencies[resolvedType][key] !== elementDynamicDependencies[type][key]
+            ) {
               courseIssues.push(
                 new CourseIssueError(`Dynamic dependency ${key} assigned to conflicting files`, {
                   data: {
