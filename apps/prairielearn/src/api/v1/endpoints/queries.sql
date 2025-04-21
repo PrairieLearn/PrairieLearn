@@ -242,7 +242,7 @@ WITH
         aq.manual_perc,
         q.manual_perc,
         -- This is a fallback for questions where manual percentage is not populated
-        100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_points, 0), 1)
+        100 * COALESCE(aq.max_manual_points, 0) / COALESCE(NULLIF(aq.max_points, 0), 1)
       ) AS assessment_question_manual_perc,
       iq.points AS instance_question_points,
       iq.auto_points AS instance_question_auto_points,
