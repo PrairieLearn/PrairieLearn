@@ -1,8 +1,8 @@
-# Question sharing
+# Content sharing
 
 !!! info
-
-    **Question sharing is currently in beta.** If your course is hosted on the official PrairieLearn server, you may request that question sharing be turned on for your course. If you administer your own PrairieLearn server, you should _not_ use question sharing at this time. In the future, question sharing may be supported across PrairieLearn servers, so turning on question sharing on unofficial servers at this point in time may lead to naming conflicts in the future.
+    Viewing and consuming publicly shared questions and assessments is now general access.  
+    Sharing your own questions and assessments is still a Beta feature. If your course is hosted on the official PrairieLearn server, you may request that question sharing be turned on for your course. If you administer your own PrairieLearn server, you should _not_ use question sharing at this time. In the future, question sharing may be supported across PrairieLearn servers, so turning on question sharing on unofficial servers at this point in time may lead to naming conflicts in the future.
 
 In order to avoid instructors needing to copy question files in between courses, PrairieLearn provides a way for questions from one course to be used in assessments in other courses.
 
@@ -76,3 +76,8 @@ Just as anyone with access to a question in your course can access any file in `
 3. Add `"sharePublicly": true` to the `info.json` file of questions you would like to share publicly.
 4. Optionally, add `"shareSourcePublicly": true` to the `info.json` file if you would like people to also be able to view and copy the source code of your question.
 5. Anyone with a PrairieLearn account may preview your question, and any PrairieLearn course may now use it by referencing it in their assessments.
+
+## Steps to share an assessment
+
+1. Ensure that all questions on the assessment have `"sharePublicly": true`. This is to enable others to copy your assessment into their course and maintain access to all of its questions (we may support copying questions and assessments together in the future, but for now only the assessment will be copied).
+2. Add `"shareSourcePublicly": true` to the `infoAssessment.json` file of the assessment that you would like to be publicly shared.
