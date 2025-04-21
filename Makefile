@@ -61,16 +61,21 @@ test-prairielearn: start-support
 check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
+check-jsonschema:
+	@yarn dlx tsx scripts/gen-jsonschema.mts check
+update-jsonschema:
+	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json"
+
 # Runs additional third-party linters
 lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell
 
 lint: lint-js lint-python lint-html lint-links
 lint-js:
-	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
+	@yarn eslint --report-unused-disable-directives "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check
 # This is a separate target since the caches don't respect updates to plugins.
 lint-js-cached:
-	@yarn eslint --ext js --report-unused-disable-directives --cache --cache-strategy content "**/*.{js,ts}"
+	@yarn eslint --report-unused-disable-directives --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check --cache --cache-strategy content
 lint-python:
 	@python3 -m ruff check ./
@@ -79,13 +84,13 @@ lint-python:
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
 lint-markdown:
-	@yarn markdownlint "docs/**/*.md"
+	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md"
 lint-links:
 	@node scripts/validate-links.mjs
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 lint-shell:
-	@shellcheck -S error $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
+	@shellcheck -S warning $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
 lint-actions:
 	@actionlint
 

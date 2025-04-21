@@ -11,7 +11,7 @@ const app = express();
 express_ws(app);
 const server = http.createServer(app);
 const ws_proxy = http_proxy.createProxyServer({
-  target: 'http://localhost:5901',
+  target: 'http://127.0.0.1:5901',
   ws: true,
 });
 

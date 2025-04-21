@@ -857,6 +857,7 @@ Within the `pl-order-blocks` element, each element must either be a `pl-answer` 
 | `tag`                 | string             | —       | Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.                                                                                                                                                                                                                                              |
 | `distractor-for`      | string             | —       | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                        |
 | `distractor-feedback` | string             | —       | Optional attribute, used when `correct=false` that indicates why a given block is incorrect or should not be included in the solution. Shown to the student after all attempts at a problem are exhausted, or if `feedback="first-wrong"` and the first incorrect line in their submission has `distractor-feedback`.                                                  |
+| `ordering-feedback`   | string             | —       | Optional attribute used when `grading-method="dag"` or `grading-method="ranking"` and `correct=true`. Used to provide specific feedback when the block is placed in the wrong position relative to other blocks. This feedback is shown to the student after submission to help clarify ordering errors.                                                               |
 
 #### Details
 
@@ -951,15 +952,22 @@ def generate(data):
 | `correct-answer`          | string                  | See description | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                          |
 | `label`                   | text                    | —               | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                         |
 | `suffix`                  | text                    | —               | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                         |
-| `display`                 | `"block"` or `"inline"` | `"inline"`      | How to display the input field.                                                                                                                                           |
+| `display`                 | `"block"` or `"inline"` | `"inline"`      | How to display the input field. Default is `"block"` if `multiline` is enabled.                                                                                           |
 | `remove-leading-trailing` | boolean                 | false           | Whether to remove leading and trailing blank spaces from the input string.                                                                                                |
 | `remove-spaces`           | boolean                 | false           | Whether to remove blank spaces from the input string.                                                                                                                     |
 | `allow-blank`             | boolean                 | false           | Whether an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                 |
 | `ignore-case`             | boolean                 | false           | Whether to enforce case sensitivity (e.g. "hello" != "HELLO").                                                                                                            |
 | `normalize-to-ascii`      | boolean                 | false           | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading. |
 | `placeholder`             | text                    | —               | Hint displayed inside the input box describing the expected type of input.                                                                                                |
-| `size`                    | integer                 | 35              | Size of the input box.                                                                                                                                                    |
+| `size`                    | integer                 | 35              | Width of the input box.                                                                                                                                                   |
 | `show-help-text`          | boolean                 | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                      |
+| `multiline`               | boolean                 | false           | Whether or not not to allow for multiline input using a `textarea` display.                                                                                               |
+
+#### Using multiline inputs
+
+Note that, in multiline inputs, it can be hard to distinguish between inputs with or without a terminating line break (i.e., an additional "Enter" at the end of the input). Because of that, you are strongly encouraged to leave the default setting of `remove-leading-trailing="true"` unchanged when using multiline inputs.
+
+Additionally, multiline inputs will have any CR LF (`"\r\n"` in Python) line breaks normalized to a single LF (a single `"\n"` in Python). Note that this is different from the behavior of a standard `textarea` HTML element.
 
 #### Example implementations
 
@@ -1280,17 +1288,10 @@ data["params"]["names_from_user"] = [
 
 <p>Your code snippet should define the following variables:</p>
 <pl-external-grader-variables params-name="names_from_user">
-  <pl-variable name="x" type="numpy array (length $n$)"
-    >Solution to $\mathbf{Ax}=\mathbf{b}$.</pl-variable
-  >
+  <pl-variable name="x" type="numpy array (length $n$)">
+    Solution to $\mathbf{Ax}=\mathbf{b}$.
+  </pl-variable>
 </pl-external-grader-variables>
-
-<!--
-  The following tag defines an empty list for the given params-name.
-  This is useful for some cases where a parameter must be set to empty to run the external grader.
-  Nothing will be displayed from this tag.
--->
-<pl-external-grader-variables params-name="names_empty" empty="true"></pl-external-grader-variables>
 ```
 
 ```python title="server.py"

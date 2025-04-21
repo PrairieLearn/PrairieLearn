@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/express-list-endpoints",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "type": "module",
   "repository": {
     "type": "git",
@@ -22,7 +22,7 @@
     "express": "^4.21.2",
     "mocha": "^11.1.0",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   },
   "c8": {
     "reporter": [

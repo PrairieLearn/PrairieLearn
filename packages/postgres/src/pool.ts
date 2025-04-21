@@ -47,7 +47,7 @@ export class PostgresError extends Error {
  * Formats a string for debugging.
  */
 function debugString(s: string): string {
-  if (!_.isString(s)) return 'NOT A STRING';
+  if (typeof s !== 'string') return 'NOT A STRING';
   s = s.replace(/\n/g, '\\n');
   if (s.length > 78) s = s.substring(0, 75) + '...';
   s = '"' + s + '"';
@@ -83,7 +83,9 @@ function paramsToArray(
       paramsArray: params,
     };
   }
-  if (!_.isObjectLike(params)) throw new Error('params must be array or object');
+  if (params == null || typeof params !== 'object') {
+    throw new Error('params must be array or object');
+  }
 
   const re = /\$([-_a-zA-Z0-9]+)/;
   let result;
@@ -97,12 +99,7 @@ function paramsToArray(
     if (!(v in map)) {
       if (!(v in params)) throw new Error(`Missing parameter: ${v}`);
       if (Array.isArray(params[v])) {
-        map[v] =
-          'ARRAY[' +
-          _.map(_.range(nParams + 1, nParams + params[v].length + 1), function (n) {
-            return '$' + n;
-          }).join(',') +
-          ']';
+        map[v] = 'ARRAY[' + params[v].map((_, n) => '$' + (n + nParams + 1)).join(',') + ']';
         nParams += params[v].length;
         paramsArray = paramsArray.concat(params[v]);
       } else {
@@ -599,7 +596,7 @@ export class PostgresPool {
   async callAsync(functionName: string, params: any[]): Promise<pg.QueryResult> {
     debug('call()', 'function:', functionName);
     debug('call()', 'params:', debugParams(params));
-    const placeholders = _.map(_.range(1, params.length + 1), (v) => '$' + v).join();
+    const placeholders = params.map((_, v) => '$' + (v + 1)).join();
     const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders});`;
     const result = await this.queryAsync(sql, params);
     debug('call() success', 'rowCount:', result.rowCount);
@@ -669,7 +666,7 @@ export class PostgresPool {
   ): Promise<pg.QueryResult> {
     debug('callWithClient()', 'function:', functionName);
     debug('callWithClient()', 'params:', debugParams(params));
-    const placeholders = _.map(_.range(1, params.length + 1), (v) => '$' + v).join();
+    const placeholders = params.map((_, v) => '$' + (v + 1)).join();
     const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders})`;
     const result = await this.queryWithClientAsync(client, sql, params);
     debug('callWithClient() success', 'rowCount:', result.rowCount);
@@ -1178,9 +1175,9 @@ export class PostgresPool {
     const timestamp = new Date().toISOString();
     // random 6-character suffix to avoid clashes (approx 2 billion possible values)
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const suffix = _.times(6, function () {
-      return _.sample(chars);
-    }).join('');
+    const suffix = Array.from({ length: 6 })
+      .map(() => chars[Math.floor(Math.random() * chars.length)])
+      .join('');
 
     // Schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6),
     // which is the default PostgreSQL identifier limit.

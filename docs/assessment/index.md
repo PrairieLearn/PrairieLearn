@@ -57,11 +57,7 @@ Property | Type | Description
 `studentGroupJoin` | boolean | Whether students can join groups. (Optional; default: `false`)
 `studentGroupLeave` | boolean | Whether students can leave groups. (Optional; default: `false`)
 
-??? note "Detailed format specification for `infoAssessment.json`"
-
-    ```json
-    --8<-- "apps/prairielearn/src/schemas/schemas/infoAssessment.json"
-    ```
+See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 
 ## Assessment types
 

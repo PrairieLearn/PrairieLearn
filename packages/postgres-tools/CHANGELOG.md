@@ -1,5 +1,23 @@
 # @prairielearn/postgres-tools
 
+## 2.0.15
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+- Updated dependencies [82f9c2f]
+  - @prairielearn/postgres@2.1.11
+
+## 2.0.14
+
+### Patch Changes
+
+- c24120e: Minor changes to reduce dependency on lodash
+- 03f1008: Upgrade all JavaScript dependencies
+- Updated dependencies [c24120e]
+- Updated dependencies [03f1008]
+  - @prairielearn/postgres@2.1.10
+
 ## 2.0.13
 
 ### Patch Changes
