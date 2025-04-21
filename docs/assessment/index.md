@@ -24,38 +24,38 @@ The assessment ID is the full path relative to `assessments`.
 
 ## Format specification
 
-Property | Type | Description
---- | --- | ---
-`uuid` | string | Unique identifier (UUID v4). E.g., `"8b4891d6-64d1-4e89-b72d-ad2133f25b2f"`. These can be obtained from https://www.uuidgenerator.net (Required; no default)
-`type` | string | Either `"Homework"` or `"Exam"`.  (Required; no default)
-`title` | string | The title of the assessment (e.g., `"Derivatives and integrals"`). (Required; no default)
-`set` | string | Which assessment set this belongs to (e.g., `"Quiz"`, `"Practice Quiz"`). (Required; no default)
-`number` | string | The number of the assessment within the set (e.g., `"1"`, `"2B"`). (Required; no default)
-`module` | string | The module that this assessment belongs to (e.g., `Chapter 3`). (Optional; default: none)
-`allowAccess` | array | List of access rules. (Optional; default: no student access)
-`zones` | array | Specification of zones and questions. (Optional; default: none)
-`text` | string | HTML text shown on the assessment overview page. (Optional; default: none)
-`multipleInstance` | boolean | Whether to allow students to create whole new attempts at the entire assessment.(Optional; default: `false`)
-`maxPoints` | number | The maximum points that can be earned. (Optional; default: sum of zone max points)
-`maxBonusPoints` | number | The maximum number of additional points that can be earned beyond `maxPoints` (Optional; default: 0)
-`shuffleQuestions` | boolean | Whether to randomize the question order (Homework only). (Optional; default: `false`)
-`autoClose` | boolean | Whether to automatically close the assessment after 6 hours of inactivity (Exams only).  (Optional; default: `true`)
-`allowIssueReporting` | boolean | Whether to allow students to report question issues. (Optional; default: `true`)
-`allowPersonalNotes` | boolean | Whether to allow students to add personal notes. (Optional; default: `true`)
-`constantQuestionValue` | boolean | Whether to disable the question value boost on correct solutions (Homework only). (Optional; default: `false`)
-`allowRealTimeGrading` | boolean | Whether to grade questions in real time (Exams only). (Optional; default: `true`)
-`requireHonorCode` | boolean | Whether to require students to agree to the honor code (Exams only). (Optional; default: `true`)
-`advanceScorePerc` | number | Minimum score percentage require to advance to the next question (Exams only). (Optional; default: 0)
-`gradeRateMinutes` | number | Minimum amount of time (in minutes) between graded submissions to the same question. (Optional; default: 0)
-`groupWork` | boolean | Whether the assessment will support group work. (Optional; default: `false`)
-`groupMaxSize` | number | Maximum number of students in a group. (Optional; default: none)
-`groupMinSize` | number | Minimum number of students in a group. (Optional; default: none)
-`groupRoles` | array | Array of custom user roles in a group. (Optional; default: none)
-`canSubmit` | array | A list of group role names that can submit questions in this assessment. Only applicable for group assessments. (Optional; default: none)
-`canView` | array | A list of group role names that can view questions in this assessment. Only applicable for group assessments. (Optional; default: none)
-`studentGroupCreate` | boolean | Whether students can create groups. (Optional; default: `false`)
-`studentGroupJoin` | boolean | Whether students can join groups. (Optional; default: `false`)
-`studentGroupLeave` | boolean | Whether students can leave groups. (Optional; default: `false`)
+| Property                | Type    | Description                                                                                                                                                  |
+| ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `uuid`                  | string  | Unique identifier (UUID v4). E.g., `"8b4891d6-64d1-4e89-b72d-ad2133f25b2f"`. These can be obtained from https://www.uuidgenerator.net (Required; no default) |
+| `type`                  | string  | Either `"Homework"` or `"Exam"`. (Required; no default)                                                                                                      |
+| `title`                 | string  | The title of the assessment (e.g., `"Derivatives and integrals"`). (Required; no default)                                                                    |
+| `set`                   | string  | Which assessment set this belongs to (e.g., `"Quiz"`, `"Practice Quiz"`). (Required; no default)                                                             |
+| `number`                | string  | The number of the assessment within the set (e.g., `"1"`, `"2B"`). (Required; no default)                                                                    |
+| `module`                | string  | The module that this assessment belongs to (e.g., `Chapter 3`). (Optional; default: none)                                                                    |
+| `allowAccess`           | array   | List of access rules. (Optional; default: no student access)                                                                                                 |
+| `zones`                 | array   | Specification of zones and questions. (Optional; default: none)                                                                                              |
+| `text`                  | string  | HTML text shown on the assessment overview page. (Optional; default: none)                                                                                   |
+| `multipleInstance`      | boolean | Whether to allow students to create whole new attempts at the entire assessment.(Optional; default: `false`)                                                 |
+| `maxPoints`             | number  | The maximum points that can be earned. (Optional; default: sum of zone max points)                                                                           |
+| `maxBonusPoints`        | number  | The maximum number of additional points that can be earned beyond `maxPoints` (Optional; default: 0)                                                         |
+| `shuffleQuestions`      | boolean | Whether to randomize the question order (Homework only). (Optional; default: `false`)                                                                        |
+| `autoClose`             | boolean | Whether to automatically close the assessment after 6 hours of inactivity (Exams only). (Optional; default: `true`)                                          |
+| `allowIssueReporting`   | boolean | Whether to allow students to report question issues. (Optional; default: `true`)                                                                             |
+| `allowPersonalNotes`    | boolean | Whether to allow students to add personal notes. (Optional; default: `true`)                                                                                 |
+| `constantQuestionValue` | boolean | Whether to disable the question value boost on correct solutions (Homework only). (Optional; default: `false`)                                               |
+| `allowRealTimeGrading`  | boolean | Whether to grade questions in real time (Exams only). (Optional; default: `true`)                                                                            |
+| `requireHonorCode`      | boolean | Whether to require students to agree to the honor code (Exams only). (Optional; default: `true`)                                                             |
+| `advanceScorePerc`      | number  | Minimum score percentage require to advance to the next question (Exams only). (Optional; default: 0)                                                        |
+| `gradeRateMinutes`      | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (Optional; default: 0)                                                  |
+| `groupWork`             | boolean | Whether the assessment will support group work. (Optional; default: `false`)                                                                                 |
+| `groupMaxSize`          | number  | Maximum number of students in a group. (Optional; default: none)                                                                                             |
+| `groupMinSize`          | number  | Minimum number of students in a group. (Optional; default: none)                                                                                             |
+| `groupRoles`            | array   | Array of custom user roles in a group. (Optional; default: none)                                                                                             |
+| `canSubmit`             | array   | A list of group role names that can submit questions in this assessment. Only applicable for group assessments. (Optional; default: none)                    |
+| `canView`               | array   | A list of group role names that can view questions in this assessment. Only applicable for group assessments. (Optional; default: none)                      |
+| `studentGroupCreate`    | boolean | Whether students can create groups. (Optional; default: `false`)                                                                                             |
+| `studentGroupJoin`      | boolean | Whether students can join groups. (Optional; default: `false`)                                                                                               |
+| `studentGroupLeave`     | boolean | Whether students can leave groups. (Optional; default: `false`)                                                                                              |
 
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 
@@ -88,9 +88,9 @@ A detailed comparison is shown below.
 
 Each assessment has a `title` describing its topic. Additionally, assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and within each set the assessment has a `number`. Depending on the context, assessments are referred to by either an _abbreviation_, a _short name_ or a _long name_. The format of these is:
 
-* Abbreviation = `[Set abbreviation][Number]` (e.g., `Q2` to mean the second quiz).
-* Short name = `[Set] [Number]` (e.g., `Quiz 2`).
-* Long name = `[Set] [Number]: [Title]` (e.g., `Quiz 2: Coordinates and Vectors`).
+- Abbreviation = `[Set abbreviation][Number]` (e.g., `Q2` to mean the second quiz).
+- Short name = `[Set] [Number]` (e.g., `Quiz 2`).
+- Long name = `[Set] [Number]: [Title]` (e.g., `Quiz 2: Coordinates and Vectors`).
 
 You can select a set name from the list of [standardized assessment sets](../course/index.md#standardized-assessment-sets) or create your [own](../course/index.md#adding-your-own-assessment-sets).
 
@@ -106,10 +106,10 @@ For more information about how to create your own assessment modules, see [Cours
 
 The `shuffleQuestions` parameter controls whether questions on an assessment appear in the same order for all students, or whether they this order is randomized for each student. The default value depends on the `type` of the assessment:
 
-Assessment type | `shuffleQuestions` default | Meaning
---- | --- | ---
-`Homework` | `false` | Homeworks default to using the same question order as in `infoAssessment.json` for all students.
-`Exam` | `true` | Exams default to randomizing the question order individually for each student. This randomization happens within each zone, but the zones themselves always appear in the same order and there is no cross-zone randomization.
+| Assessment type | `shuffleQuestions` default | Meaning                                                                                                                                                                                                                        |
+| --------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Homework`      | `false`                    | Homeworks default to using the same question order as in `infoAssessment.json` for all students.                                                                                                                               |
+| `Exam`          | `true`                     | Exams default to randomizing the question order individually for each student. This randomization happens within each zone, but the zones themselves always appear in the same order and there is no cross-zone randomization. |
 
 - If a `Homework` is set to shuffle the question order, it will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say “I don't know how to do #427” and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
 
@@ -153,13 +153,13 @@ An assessment is broken down in to a list of zones, like this:
 }
 ```
 
-Zone Property | Type | Description
---- | --- | ---
-`title` | string | The title of the zone. (Optional; default: none)
-`questions` | array | The list of slots for questions and question alternatives within the zone. (Optional; default: none)
-`numberChoose` | integer | Number of questions to select for each student from this zone. (Optional; default: select all)
-`maxPoints` | number | Limit on the number of points that can be earned from this zone. (Optional; default: sum of question max points)
-`bestQuestions` | integer | Only this many questions in the zone will count towards the total points (highest-point questions will count). (Optional; default: use all questions)
+| Zone Property   | Type    | Description                                                                                                                                           |
+| --------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`         | string  | The title of the zone. (Optional; default: none)                                                                                                      |
+| `questions`     | array   | The list of slots for questions and question alternatives within the zone. (Optional; default: none)                                                  |
+| `numberChoose`  | integer | Number of questions to select for each student from this zone. (Optional; default: select all)                                                        |
+| `maxPoints`     | number  | Limit on the number of points that can be earned from this zone. (Optional; default: sum of question max points)                                      |
+| `bestQuestions` | integer | Only this many questions in the zone will count towards the total points (highest-point questions will count). (Optional; default: use all questions) |
 
 Zone specification details are in the [format specification for `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
 
@@ -173,36 +173,33 @@ Zone specification details are in the [format specification for `infoAssessment.
 
 ## Slots for questions and question alternatives
 
-Each zone has a list of *slots* given by the `questions` array. Each slot contains either a single question `id`:
+Each zone has a list of _slots_ given by the `questions` array. Each slot contains either a single question `id`:
 
 ```json
-{"id": "hardQV1", "points": 10}
+{ "id": "hardQV1", "points": 10 }
 ```
 
-Or a slot can contain a *question alternative list*:
+Or a slot can contain a _question alternative list_:
 
 ```json
 {
-    "numberChoose": 1,
-    "points": 5,
-    "alternatives": [
-        {"id": "FirstAltQ"},
-        {"id": "SecondAltQ"}
-    ]
+  "numberChoose": 1,
+  "points": 5,
+  "alternatives": [{ "id": "FirstAltQ" }, { "id": "SecondAltQ" }]
 }
 ```
 
 - An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
 
-Slot property | Type | Description
---- | --- | ---
-`points` | number or array | The number of points for this question. Can be a number (e.g., `10`) or a declining list of points (e.g., `[10, 8, 4]`) for partial credit on Exams. (Required; no default)
-`maxPoints` | number | The maximum points available for this question on a Homework that allows multiple attempts for more points. (Optional: default: same as `points`)
-`id` | string | The question ID if this slot contains just one question (can’t be specified with `alternatives`). (Optional; default: none)
-`alternatives` | array | The list of question alternatives if this slot contains multiple alternative questions (can’t be specified with `id`). (Optional; default: none)
-`numberChoose` | integer | If `alternatives` are specified, the number of them to select. (Optional; default `1`).
-`triesPerVariant` | integer | The maximum number of attempts allowed for each question variant (on Homeworks). (Optional; default `1`)
-`forceMaxPoints` | boolean | Whether to force all students to receive maximum points. See [Regrading](regrading.md). (Optional; default `false`)
+| Slot property     | Type            | Description                                                                                                                                                                 |
+| ----------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `points`          | number or array | The number of points for this question. Can be a number (e.g., `10`) or a declining list of points (e.g., `[10, 8, 4]`) for partial credit on Exams. (Required; no default) |
+| `maxPoints`       | number          | The maximum points available for this question on a Homework that allows multiple attempts for more points. (Optional: default: same as `points`)                           |
+| `id`              | string          | The question ID if this slot contains just one question (can’t be specified with `alternatives`). (Optional; default: none)                                                 |
+| `alternatives`    | array           | The list of question alternatives if this slot contains multiple alternative questions (can’t be specified with `id`). (Optional; default: none)                            |
+| `numberChoose`    | integer         | If `alternatives` are specified, the number of them to select. (Optional; default `1`).                                                                                     |
+| `triesPerVariant` | integer         | The maximum number of attempts allowed for each question variant (on Homeworks). (Optional; default `1`)                                                                    |
+| `forceMaxPoints`  | boolean         | Whether to force all students to receive maximum points. See [Regrading](regrading.md). (Optional; default `false`)                                                         |
 
 Slot specification details are in the [format specification for `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
 
@@ -343,15 +340,15 @@ After the four submissions above the student has achieved 6.5 points for the que
 
 ## Assessment instances, question selection, and question order
 
-PrairieLearn distinguishes between *assessments* and *assessment instances*. An *assessment* is determined by the code in an `assessments/` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to select the random list of questions for each student, and it is this selection that is the *assessment instance* for the student. There is only one copy of each assessment, but every student has their own assessment instance.
+PrairieLearn distinguishes between _assessments_ and _assessment instances_. An _assessment_ is determined by the code in an `assessments/` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to select the random list of questions for each student, and it is this selection that is the _assessment instance_ for the student. There is only one copy of each assessment, but every student has their own assessment instance.
 
 Choosing the selection of questions for each student proceeds in three steps:
 
-1. For each question slot, either take the single question in that slot or randomly select some of the questions from the list of question alternatives to give the *slot questions*. If `numberChoose` is specified for the slot, randomly select that many questions from the list of alternatives (defaults to 1).
+1. For each question slot, either take the single question in that slot or randomly select some of the questions from the list of question alternatives to give the _slot questions_. If `numberChoose` is specified for the slot, randomly select that many questions from the list of alternatives (defaults to 1).
 
-2. For each zone, concatenate the *slot questions* from each slot to form the total list of *available zone questions*. If `numberChoose` is specified for the zone, randomly select that many questions from the available zone questions to give the *zone questions* (defaults to selecting all of the available zone questions). For Exams, randomly shuffle the order of the *zone questions*.
+2. For each zone, concatenate the _slot questions_ from each slot to form the total list of _available zone questions_. If `numberChoose` is specified for the zone, randomly select that many questions from the available zone questions to give the _zone questions_ (defaults to selecting all of the available zone questions). For Exams, randomly shuffle the order of the _zone questions_.
 
-3. Concatenate the *zone questions* from each zone to form the total set of *assessment questions* for the student. This set of questions forms the *assessment instance* for this student.
+3. Concatenate the _zone questions_ from each zone to form the total set of _assessment questions_ for the student. This set of questions forms the _assessment instance_ for this student.
 
 Each zone appears in the given order in the assessment (this is not randomized for each student). Within each zone the question order is randomized per-student for Exams, but not randomized for Homeworks (but see the [`shuffleQuestions` option](#shufflequestions-question-order-randomization)).
 
