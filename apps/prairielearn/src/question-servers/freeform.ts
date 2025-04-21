@@ -1,4 +1,5 @@
-import * as path from 'path';
+import assert from 'node:assert';
+import * as path from 'node:path';
 
 import type { JSONSchemaType } from 'ajv';
 import * as async from 'async';
@@ -283,9 +284,9 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
 }
 
 async function loadExtensionsForCourse(context: {
-  course: QuestionProcessingContext['course'];
-  course_dir: QuestionProcessingContext['course_dir'];
-  course_dir_host: QuestionProcessingContext['course_dir_host'];
+  course: Course;
+  course_dir: string;
+  course_dir_host: string;
 }) {
   const { course, course_dir, course_dir_host } = context;
   if (
@@ -406,12 +407,7 @@ function defaultElementFunctionRet(phase: Phase, data: ExecutionData) {
   }
 }
 
-function defaultServerRet(
-  phase: Phase,
-  data: ExecutionData,
-  html: string,
-  _context: QuestionProcessingContext,
-) {
+function defaultServerRet(phase: Phase, data: ExecutionData, html: string) {
   if (phase === 'render') {
     return html;
   } else if (phase === 'file') {
@@ -440,7 +436,7 @@ async function execPythonServer(
     await fs.access(fullFilename, fs.constants.R_OK);
   } catch {
     // server.py does not exist
-    return { result: defaultServerRet(phase, data, html, context), output: '' };
+    return { result: defaultServerRet(phase, data, html), output: '' };
   }
 
   debug(
@@ -461,7 +457,7 @@ async function execPythonServer(
       // function wasn't present in server
       debug('execPythonServer(): function not present');
       return {
-        result: defaultServerRet(phase, data, html, context),
+        result: defaultServerRet(phase, data, html),
         output: '',
       };
     }
@@ -647,8 +643,7 @@ async function traverseQuestionAndExecuteFunctions(
       // Populate the extensions used by this element.
       data.extensions = [];
       if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
-        const extensions = context.course_element_extensions[elementName];
-        data.extensions = extensions;
+        data.extensions = context.course_element_extensions[elementName];
       }
       // We need to wrap it in another node, since only child nodes
       // are serialized
@@ -742,9 +737,10 @@ async function traverseQuestionAndExecuteFunctions(
         }
       }
     }
-    node.childNodes = newChildren;
 
     // the following line is safe because we can't be in multiple copies of this function simultaneously
+    node.childNodes = newChildren;
+
     return node;
   };
   let questionHtml = '';
@@ -1978,9 +1974,7 @@ export async function test(
 }
 
 async function getContext(question: Question, course: Course): Promise<QuestionProcessingContext> {
-  if (question.directory === null) {
-    throw new Error('Question directory is missing');
-  }
+  assert(question.directory, 'Question directory is missing');
 
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
   await chunks.ensureChunksForCourseAsync(course.id, [
