@@ -1546,8 +1546,6 @@ export async function render(
         }
 
         for (const type in elementDependencies) {
-          if (!(type in dependencies)) continue;
-
           // Rename properties so we can track core and course element dependencies separately.
           const resolvedType = run(() => {
             if (resolvedElement.type === 'course') {
@@ -1559,6 +1557,8 @@ export async function render(
             }
             return type;
           });
+
+          if (!(resolvedType in dependencies)) continue;
 
           for (const dep of elementDependencies[type]) {
             if (!dependencies[resolvedType].includes(dep)) {
