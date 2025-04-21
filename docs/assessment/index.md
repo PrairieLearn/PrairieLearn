@@ -2,7 +2,7 @@
 
 **NOTE:** Any time you edit or add an `infoAssessment.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the header so that the local PrairieLearn server reloads the changes.
 
-## `infoAssessment.json` file: Overview
+## Overview
 
 Each assessment is a single directory in the `assessments` folder or any subfolder. Assessments may be nested in subdirectories of the `assessments` folder. The assessment directory must contain a single file called `infoAssessment.json` that describes the assessment and looks like:
 
@@ -37,10 +37,25 @@ Property | Type | Description
 `text` | string | HTML text shown on the assessment overview page. (Optional; default: none)
 `multipleInstance` | boolean | Whether to allow students to create whole new attempts at the entire assessment.(Optional; default: `false`)
 `maxPoints` | number | The maximum points that can be earned. (Optional; default: sum of zone max points)
+`maxBonusPoints` | number | The maximum number of additional points that can be earned beyond `maxPoints` (Optional; default: 0)
 `shuffleQuestions` | boolean | Whether to randomize the question order (Homework only). (Optional; default: `false`)
 `autoClose` | boolean | Whether to automatically close the assessment after 6 hours of inactivity (Exams only).  (Optional; default: `true`)
 `allowIssueReporting` | boolean | Whether to allow students to report question issues. (Optional; default: `true`)
+`allowPersonalNotes` | boolean | Whether to allow students to add personal notes. (Optional; default: `true`)
 `constantQuestionValue` | boolean | Whether to disable the question value boost on correct solutions (Homework only). (Optional; default: `false`)
+`allowRealTimeGrading` | boolean | Whether to grade questions in real time (Exams only). (Optional; default: `true`)
+`requireHonorCode` | boolean | Whether to require students to agree to the honor code (Exams only). (Optional; default: `true`)
+`advanceScorePerc` | number | Minimum score percentage require to advance to the next question (Exams only). (Optional; default: 0)
+`gradeRateMinutes` | number | Minimum amount of time (in minutes) between graded submissions to the same question. (Optional; default: 0)
+`groupWork` | boolean | Whether the assessment will support group work. (Optional; default: `false`)
+`groupMaxSize` | number | Maximum number of students in a group. (Optional; default: none)
+`groupMinSize` | number | Minimum number of students in a group. (Optional; default: none)
+`groupRoles` | array | Array of custom user roles in a group. (Optional; default: none)
+`canSubmit` | array | A list of group role names that can submit questions in this assessment. Only applicable for group assessments. (Optional; default: none)
+`canView` | array | A list of group role names that can view questions in this assessment. Only applicable for group assessments. (Optional; default: none)
+`studentGroupCreate` | boolean | Whether students can create groups. (Optional; default: `false`)
+`studentGroupJoin` | boolean | Whether students can join groups. (Optional; default: `false`)
+`studentGroupLeave` | boolean | Whether students can leave groups. (Optional; default: `false`)
 
 ??? note "Detailed format specification for `infoAssessment.json`"
 
@@ -48,7 +63,7 @@ Property | Type | Description
     --8<-- "apps/prairielearn/src/schemas/schemas/infoAssessment.json"
     ```
 
-## `type`: Assessment types
+## Assessment types
 
 Each assessment has a `type`, which must be either `"Homework"` or `"Exam"`.
 
@@ -73,7 +88,7 @@ A detailed comparison is shown below.
 | **Honor pledge**         | Not supported                                                                                       | [Enabled by default](#honor-code)                                                          |
 | **Real-time grading**    | Always enabled                                                                                      | [Can be disabled](#disabling-real-time-grading)                                            |
 
-## `title`, `set`, and `number`: Assessment naming
+## Assessment naming
 
 Each assessment has a `title` describing its topic. Additionally, assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and within each set the assessment has a `number`. Depending on the context, assessments are referred to by either an _abbreviation_, a _short name_ or a _long name_. The format of these is:
 
@@ -85,13 +100,13 @@ You can select a set name from the list of [standardized assessment sets](../cou
 
 The `type` of an assessment does not have to correspond to the `set` it is in, but these are generally compatible. For example, `"type": "Homework"` assessments normally have `"set": "Homework"` or `"set": "Machine Problem"`. On the other hand, `"type": "Exam"` assessments normally have `"set": "Quiz"`, `"set": "Exam"`, or similar.
 
-## `module`: Grouping assessments by topics
+## Grouping assessments by modules
 
 Instructors may want to group their assessments by course modules (topics, sections or chapters in a course). When using `"groupAssessmentsBy" : "Module"` in `infoCourseInstance.json`, instructors can assign an assessment to a specific module by setting the `module` property in `infoAssessment.json`, as illustrated in the example above. If the property `module` is omitted, by default the assessment will have `"module" : "Default"`.
 
 For more information about how to create your own assessment modules, see [Course configuration](../course/index.md#assessment-modules).
 
-## `shuffleQuestions`: Question order randomization
+## Question order randomization
 
 The `shuffleQuestions` parameter controls whether questions on an assessment appear in the same order for all students, or whether they this order is randomized for each student. The default value depends on the `type` of the assessment:
 
@@ -102,7 +117,7 @@ Assessment type | `shuffleQuestions` default | Meaning
 
 - If a `Homework` is set to shuffle the question order, it will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say “I don't know how to do #427” and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
 
-## `zones`: The list of questions on the assessment
+## Question specification
 
 An assessment is broken down in to a list of zones, like this:
 
@@ -160,7 +175,7 @@ Zone specification details are in the [format specification for `infoAssessment.
 
 - If a zone has `bestQuestions`, then, of the questions in this zone, only `bestQuestions` with the highest number of awarded points will count toward the total points.
 
-## `questions`: Slots for questions and question alternatives
+## Slots for questions and question alternatives
 
 Each zone has a list of *slots* given by the `questions` array. Each slot contains either a single question `id`:
 
