@@ -13,6 +13,7 @@
 // changes to this file, you'll need to run `yarn build` in `apps/prairielearn`
 // in order to update the file in `dist`.
 
+import assert from 'node:assert';
 import * as path from 'node:path';
 import { createInterface } from 'node:readline';
 
@@ -56,7 +57,16 @@ async function loadServer(questionServerPath, coursePath) {
   });
 }
 
+/**
+ * @param {any} server
+ * @param {string} coursePath
+ * @param {import('../lib/db-types.js').Question} question
+ * @param {string} variant_seed
+ * @returns {import('./types.ts').GenerateResultData}
+ */
 function generate(server, coursePath, question, variant_seed) {
+  assert(question.directory, 'Question directory is required');
+
   const questionDir = path.join(coursePath, 'questions', question.directory);
   const options = question.options || {};
 
@@ -68,7 +78,17 @@ function generate(server, coursePath, question, variant_seed) {
   };
 }
 
+/**
+ * @param {any} server
+ * @param {string} coursePath
+ * @param {import('../lib/db-types.js').Submission} submission
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @param {import('../lib/db-types.js').Question} question
+ * @returns {import('./types.ts').GradeResultData}
+ */
 function grade(server, coursePath, submission, variant, question) {
+  assert(question.directory, 'Question directory is required');
+
   const vid = variant.variant_seed;
 
   // Note: v3 questions use `params` and `true_answer` from the submission instead
@@ -102,19 +122,19 @@ function grade(server, coursePath, submission, variant, question) {
     v2_score: grading.score,
     feedback: grading.feedback ?? null,
     partial_scores: {},
-    submitted_answer: submission.submitted_answer ?? null,
+    submitted_answer: submission.submitted_answer ?? {},
+    raw_submitted_answer: submission.raw_submitted_answer ?? {},
     format_errors: {},
     gradable: true,
 
     // Note: v3 questions can change `params` and `true_answer` during grading, but
     // this was not implemented for v2 questions.
-    params: variant.params ?? null,
-    true_answer: variant.true_answer ?? null,
+    params: variant.params ?? {},
+    true_answer: variant.true_answer ?? {},
   };
 }
 
 /**
- *
  * @param {import('readline').Interface} rl
  * @returns {Promise<string | null>}
  */

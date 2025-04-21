@@ -22,7 +22,6 @@ def generate(data):
     data["params"]["initial_culture"] = 100 - data["params"]["initial_sw"]
     data["params"]["percent_composition"] = random.randint(10, 25)
 
-    data["params"]["names_for_user"] = []
     data["params"]["names_from_user"] = [
         {
             "name": "hours",

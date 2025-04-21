@@ -4012,6 +4012,7 @@ __metadata:
     xml2js: "npm:^0.6.2"
     yargs-parser: "npm:^21.1.1"
     zod: "npm:^3.24.3"
+    zod-to-json-schema: "npm:^3.24.4"
   languageName: unknown
   linkType: soft
 
@@ -6158,6 +6159,15 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10c0/475f787ae2b992a22f3b794ad0920d2b43e0541d126020c1edb25ebd60b736122d1c4db6813aa8fa9ad5cfed49b700a1e6ee5154acabac2ebc2bed7b40c0d667
+  languageName: node
+  linkType: hard
+
+"@types/tar-stream@npm:^3.1.3":
+  version: 3.1.3
+  resolution: "@types/tar-stream@npm:3.1.3"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/64f87d209bd2edf1a7d029a922a246ef0dcfb19e623b95714e2c074195a61ed4fe4d67d0c3c6dc33239ef7d18902fcb70df7f7e85cfbd92a6bf25d087ce531fd
   languageName: node
   linkType: hard
 
@@ -10253,7 +10263,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-stream@npm:^9.0.0":
+"get-stream@npm:^9.0.0, get-stream@npm:^9.0.1":
   version: 9.0.1
   resolution: "get-stream@npm:9.0.1"
   dependencies:
@@ -14147,6 +14157,7 @@ __metadata:
     "@changesets/cli": "npm:^2.29.2"
     "@eslint-react/eslint-plugin": "npm:^1.48.3"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
+    "@types/tar-stream": "npm:^3.1.3"
     "@typescript-eslint/eslint-plugin": "npm:^8.30.1"
     "@typescript-eslint/parser": "npm:^8.30.1"
     dependency-cruiser: "npm:^16.10.1"
@@ -14158,6 +14169,7 @@ __metadata:
     eslint-plugin-no-floating-promise: "npm:^2.0.0"
     eslint-plugin-no-only-tests: "npm:^3.3.0"
     eslint-plugin-you-dont-need-lodash-underscore: "npm:^6.14.0"
+    get-stream: "npm:^9.0.1"
     globby: "npm:^14.1.0"
     htmlhint: "npm:^1.1.4"
     markdownlint-cli: "npm:^0.44.0"
@@ -14168,6 +14180,7 @@ __metadata:
     prettier-plugin-toml: "npm:^2.0.4"
     pyright: "npm:^1.1.399"
     s3rver: "npm:^3.7.1"
+    tar-stream: "npm:^3.1.7"
     turbo: "npm:^2.5.0"
     typescript: "npm:^5.8.3"
   languageName: unknown
@@ -15799,14 +15812,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar-stream@npm:^3.0.0":
-  version: 3.1.6
-  resolution: "tar-stream@npm:3.1.6"
+"tar-stream@npm:^3.0.0, tar-stream@npm:^3.1.7":
+  version: 3.1.7
+  resolution: "tar-stream@npm:3.1.7"
   dependencies:
     b4a: "npm:^1.6.4"
     fast-fifo: "npm:^1.2.0"
     streamx: "npm:^2.15.0"
-  checksum: 10c0/7d52d1a56eb25b8434c9544becb737eb6c4f0ed19d205e739fdd2537ad8d1d623a6c93f7f8e58d9028cb0cdf86c0d8b67164e070cd1702cc78b8ab7cba0f3702
+  checksum: 10c0/a09199d21f8714bd729993ac49b6c8efcb808b544b89f23378ad6ffff6d1cb540878614ba9d4cfec11a64ef39e1a6f009a5398371491eb1fda606ffc7f70f718
   languageName: node
   linkType: hard
 
@@ -17148,6 +17161,15 @@ __metadata:
     compress-commons: "npm:^6.0.2"
     readable-stream: "npm:^4.0.0"
   checksum: 10c0/50f2fb30327fb9d09879abf7ae2493705313adf403e794b030151aaae00009162419d60d0519e807673ec04d442e140c8879ca14314df0a0192de3b233e8f28b
+  languageName: node
+  linkType: hard
+
+"zod-to-json-schema@npm:^3.24.4":
+  version: 3.24.5
+  resolution: "zod-to-json-schema@npm:3.24.5"
+  peerDependencies:
+    zod: ^3.24.1
+  checksum: 10c0/0745b94ba53e652d39f262641cdeb2f75d24339fb6076a38ce55bcf53d82dfaea63adf524ebc5f658681005401687f8e9551c4feca7c4c882e123e66091dfb90
   languageName: node
   linkType: hard
 

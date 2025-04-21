@@ -19,6 +19,11 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import type {
+  AssessmentJsonInput,
+  AssessmentSetJsonInput,
+  GroupRoleJsonInput,
+} from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -31,8 +36,8 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function makeAssessment(
   courseData: util.CourseData,
   type: 'Homework' | 'Exam' = 'Exam',
-): util.Assessment {
-  const assessmentSet = courseData.course.assessmentSets[0].name;
+): AssessmentJsonInput {
+  const assessmentSet = courseData.course.assessmentSets?.[0].name ?? '';
   return {
     uuid: uuidv4(),
     type,
@@ -47,20 +52,20 @@ function makeAssessment(
 /**
  * Makes a new assessment.
  */
-function makeAssessmentSet(): util.AssessmentSet {
+function makeAssessmentSet() {
   return {
     name: 'new assessment set',
     abbreviation: 'new',
     heading: 'a new assessment set to sync',
     color: 'red1',
-  };
+  } satisfies AssessmentSetJsonInput;
 }
 
-function getGroupRoles(): util.GroupRole[] {
+function getGroupRoles() {
   return [
     { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
     { name: 'Contributor' },
-  ];
+  ] satisfies GroupRoleJsonInput[];
 }
 
 function getPermission(permissions, groupRole, assessmentQuestion) {
@@ -2063,7 +2068,7 @@ describe('Assessment syncing', () => {
   it('creates entry in database in the case of a missing UUID', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing UUID.
     delete assessment.uuid;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -2079,7 +2084,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     const oldUuid = assessment.uuid;
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing UUID.
     delete assessment.uuid;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
@@ -2159,7 +2164,7 @@ describe('Assessment syncing', () => {
     // now change the UUID of the assessment, add an error and re-sync
     const newAssessment = { ...originalAssessment };
     newAssessment.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing title.
     delete newAssessment.title;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['repeatedAssessment'] =
       newAssessment;
