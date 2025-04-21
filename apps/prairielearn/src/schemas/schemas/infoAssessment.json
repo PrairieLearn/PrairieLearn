@@ -382,7 +382,7 @@
           "default": 1
         },
         "triesPerVariant": {
-          "description": "The maximum number of graded submissions allowed for each question variant.",
+          "description": "The maximum number of graded submissions allowed for each question instance.",
           "type": "number",
           "default": 1
         },
@@ -449,7 +449,7 @@
           "$ref": "#/definitions/ForceMaxPointsJsonSchema"
         },
         "triesPerVariant": {
-          "description": "The maximum number of graded submissions allowed for each question variant.",
+          "description": "The maximum number of graded submissions allowed for each question instance.",
           "type": "number",
           "default": 1
         },
