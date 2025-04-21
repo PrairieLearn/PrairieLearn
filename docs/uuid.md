@@ -20,11 +20,11 @@ As your course is constructed, you may run into scenarios that require you to ch
 
 - **Renaming a directory: no new UUID needed.** For example if you rename a question or assessment directory, then you should leave the UUID the same, so that PrairieLearn will know that this is the same object but just with a new name.
 
-* **Moving a directory: no new UUID needed.** For example, if you move an assessment between course instances or if you move a question between courses, you can leave the UUID as is. You can also rename it in this case, but it isn't necessary.
+- **Moving a directory: no new UUID needed.** For example, if you move an assessment between course instances or if you move a question between courses, you can leave the UUID as is. You can also rename it in this case, but it isn't necessary.
 
-* **Copying a directory within the same course or course instance: needs a new UUID.** For example, if you copy an existing question or course instance to make a new one within the same course, then you will need a new UUID for the new object, so that PrairieLearn can distinguish it from the original. Similarly, copying an assessment within the same course instance will require a new UUID.
+- **Copying a directory within the same course or course instance: needs a new UUID.** For example, if you copy an existing question or course instance to make a new one within the same course, then you will need a new UUID for the new object, so that PrairieLearn can distinguish it from the original. Similarly, copying an assessment within the same course instance will require a new UUID.
 
-* **Copying a directory to a different course or course instance: no new UUID needed.** For example, if you copy a question or course instance to a different course, the UUID can remain unchanged. Similarly, copying an assessment between course instances does not require a new UUID. In all of these cases, changing the UUID won't hurt, but also isn't needed.
+- **Copying a directory to a different course or course instance: no new UUID needed.** For example, if you copy a question or course instance to a different course, the UUID can remain unchanged. Similarly, copying an assessment between course instances does not require a new UUID. In all of these cases, changing the UUID won't hurt, but also isn't needed.
 
 ## Bulk addition of UUIDs
 
