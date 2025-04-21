@@ -370,7 +370,7 @@ async function elementFunction(
   codeCaller: CodeCaller,
   fcn: Phase,
   elementName: string,
-  elementHtml: string | null,
+  elementHtml: string,
   data: ExecutionData,
   context: QuestionProcessingContext,
 ) {
@@ -793,6 +793,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(
         }
 
         const elementHtml = $(element).clone().wrap('<container/>').parent().html();
+        assert(elementHtml != null, 'Element did not have any HTML');
 
         let result: any, output: string;
         try {
