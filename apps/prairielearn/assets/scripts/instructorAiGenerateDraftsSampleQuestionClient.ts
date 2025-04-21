@@ -640,7 +640,7 @@ function identifyRainbowColor(): SampleQuestionVariantInfo {
       </p>
     `,
     options: [correctAnswer, ...incorrectAnswers],
-    correctAnswer,
+    correctAnswer
   };
 }
 

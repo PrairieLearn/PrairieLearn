@@ -1,12 +1,16 @@
 import AccordionOriginal from 'react-bootstrap/Accordion';
-import AccordionItemOriginal from 'react-bootstrap/AccordionItem';
-import AccordionHeaderOriginal from 'react-bootstrap/AccordionHeader';
 import AccordionBodyOriginal from 'react-bootstrap/AccordionBody';
+import AccordionHeaderOriginal from 'react-bootstrap/AccordionHeader';
+import AccordionItemOriginal from 'react-bootstrap/AccordionItem';
 import ButtonOriginal from 'react-bootstrap/Button';
 import DropdownOriginal from 'react-bootstrap/Dropdown';
-import DropdownToggleOriginal from 'react-bootstrap/DropdownToggle';
-import DropdownMenuOriginal from 'react-bootstrap/DropdownMenu';
 import DropdownItemOriginal from 'react-bootstrap/DropdownItem';
+import DropdownMenuOriginal from 'react-bootstrap/DropdownMenu';
+import DropdownToggleOriginal from 'react-bootstrap/DropdownToggle';
+import FormCheckOriginal from 'react-bootstrap/FormCheck';
+import FormControlOriginal from 'react-bootstrap/FormControl';
+import InputGroupOriginal from 'react-bootstrap/InputGroup';
+import InputGroupTextOriginal from 'react-bootstrap/InputGroupText';
 
 const Accordion = AccordionOriginal as unknown as typeof AccordionOriginal.default;
 const AccordionItem = AccordionItemOriginal as unknown as typeof AccordionItemOriginal.default;
@@ -17,77 +21,203 @@ const Dropdown = DropdownOriginal as unknown as typeof DropdownOriginal.default;
 const DropdownToggle = DropdownToggleOriginal as unknown as typeof DropdownToggleOriginal.default;
 const DropdownMenu = DropdownMenuOriginal as unknown as typeof DropdownMenuOriginal.default;
 const DropdownItem = DropdownItemOriginal as unknown as typeof DropdownItemOriginal.default;
-
-import { render, VNode } from '@prairielearn/preact-cjs';
-import { useEffect, useMemo, useRef, useState } from '@prairielearn/preact-cjs/hooks';
+const FormCheck = FormCheckOriginal as unknown as typeof FormCheckOriginal.default;
+const FormControl = FormControlOriginal as unknown as typeof FormControlOriginal.default;
+const InputGroup = InputGroupOriginal as unknown as typeof InputGroupOriginal.default;
+const InputGroupText = InputGroupTextOriginal as unknown as typeof InputGroupTextOriginal.default;
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
+import { type VNode, render } from '@prairielearn/preact-cjs';
+import { useEffect, useMemo, useRef, useState } from '@prairielearn/preact-cjs/hooks';
+import {run} from '@prairielearn/run'
 
-import { ExamplePrompt, examplePrompts } from '../../src/lib/aiGeneratedQuestionSamples.js';
+import { type ExamplePrompt, examplePrompts } from '../../src/lib/aiGeneratedQuestionSamples.js';
 
 import { mathjaxTypeset } from './lib/mathjax.js';
 
-interface SampleQuestionVariantInfo {
-    question: string;
-    options?: string[];
-    correctAnswer: string;
+interface VariantOption {
+  letter?: string;
+  value: string;
 }
+
+interface CheckboxOrRadioVariant {
+  answerType: 'checkbox' | 'radio';
+  question: string;
+  options: VariantOption[];
+  correctAnswer: VariantOption[];
+}
+
+interface StringVariant {
+  answerType: 'string';
+  question: string;
+  correctAnswer: string;
+}
+
+interface NumberVariant {
+  answerType: 'number';
+  question: string;
+  correctAnswer: number;
+}
+
+type SampleQuestionVariantInfo =
+  | CheckboxOrRadioVariant
+  | StringVariant
+  | NumberVariant;
 
 onDocumentReady(() => {
     const sampleQuestions = document.querySelector('#sample-questions') as HTMLElement;
     const startOpen = sampleQuestions.dataset.startOpen === 'true';
 
-    function SampleQuestionDemo(prompt: ExamplePrompt) {
+    function FeedbackBadge({
+      grade
+    }: {
+      grade: number;
+    }) {
+      const badgeType = run(() => {
+        console.log('Grade', grade);
+        if (grade === 100) {
+          return 'bg-success';
+        } else if (grade > 0) {
+          return 'bg-warning';
+        } else {
+          return 'bg-danger';
+        }
+      })
+      return  <span class={`badge ${badgeType}`}>{grade}{'%'}</span>
+    }
+
+    function SampleQuestionDemo({
+      prompt
+    }: {
+      prompt: ExamplePrompt;
+    }) {
         const [variant, setVariant] = useState<SampleQuestionVariantInfo | null>(null); 
         const [questionContent, setQuestionContent] = useState<VNode | null>(null);
-        const [userInputResponse, setUserInputResponse] = useState<undefined>();
+        const [userInputResponse, setUserInputResponse] = useState('');
         const [grade, setGrade] = useState<number | null>(null);
+        const [placeholder, setPlaceholder] = useState('');
+        const [selectedOptions, setSelectedOptions] = useState<Set<string>>(
+          new Set<string>()
+        );
 
-         const handleGenerateNewVariant = async () => {
-            setGrade(null);
-            setUserInputResponse(undefined);
-            const questionVariant = generateSampleQuestionVariant(prompt.id);
-            setVariant(questionVariant);
-            const parts = questionVariant.question.split('**') ?? [];
+        const handleSelectOption = (option: string) => {
+          if (prompt.answerType === 'radio') {
+            setSelectedOptions(new Set([option]));
+            return;
+          } 
+          setSelectedOptions((prevSelectedOptions) => {
+            const newSelectedOptions = new Set(prevSelectedOptions);
+            if (newSelectedOptions.has(option)) {
+              newSelectedOptions.delete(option);
+            } else {
+              newSelectedOptions.add(option);
+            }
+            return newSelectedOptions;
+          });
+        }
 
-            setQuestionContent(
-                <span>
-                    {parts.map((part, index) => {
-                        if (index % 2 === 0) {
-                            return part;
-                        } else {
-                            return <strong key={index}>{part}</strong>;
-                        }
-                    })}
-                </span>
-            );
+        const handleClearSelectedOptions = () => {
+          setSelectedOptions(new Set<string>());
+        }
 
-            // mathjaxTypeset();
+        const questionContentRef = useRef<HTMLDivElement | null>(null);
+
+        const handleGenerateNewVariant = async () => {
+          setQuestionContent(null);
+          await new Promise((resolve) => setTimeout(() => resolve(true), 10));
+          setGrade(null);
+          setUserInputResponse('');
+          setPlaceholder('');
+          handleClearSelectedOptions();
+          const questionVariant = generateSampleQuestionVariant(prompt.id);
+          setVariant(questionVariant);
+          console.log('questionVariant.question', questionVariant.question);
+
+
+          // split out **…**, $$…$$, or $…$ blocks (preserves them in the array)
+          const parts = questionVariant.question
+            .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
+            .filter(Boolean);
+
+          setQuestionContent(
+            <span>
+              {parts.map((part, i) => {
+                // bold?
+                if (part.startsWith('**') && part.endsWith('**')) {
+                  return (
+                    <strong key={i}>
+                      {part.slice(2, -2)}
+                    </strong>
+                  );
+                }
+                // mathjax?
+                if (
+                  (part.startsWith('$$') && part.endsWith('$$')) ||
+                  (part.startsWith('$') && part.endsWith('$'))
+                ) {
+                  return <span key={i}>{part}</span>;
+                }
+                // plain text
+                return <span key={i}>{part}</span>;
+              })}
+            </span>
+          )
+
+          let placeholderText: string = questionVariant.answerType;
+
+          if (prompt.answerType === 'number') {
+            // Add relative and absolute tolerance if available
+            if (prompt.rtol && prompt.atol) {
+              placeholderText = `${placeholderText} (rtol=${prompt.rtol}, atol=${prompt.atol})`;
+            } else if (prompt.rtol) {
+              placeholderText = `${placeholderText} (rtol=${prompt.rtol})`;
+            } else if (prompt.atol) {
+              placeholderText = `${placeholderText} (atol=${prompt.atol})`;
+            }
+            setPlaceholder(placeholderText);
+          }
+        }
+
+        const handleTypesetMathjax = async () => {
+          await new Promise((resolve) => {
+            setTimeout(() => {
+              resolve(true);
+            }
+            , 10);
+          });
+          await mathjaxTypeset();
+        }
+
+        useEffect(() => {
+          handleTypesetMathjax();
+        }, [questionContent])
+
+        const handleConvertToOptionText = (option: VariantOption) => {
+          return `${option.letter ? `(${option.letter}) ` : ''}${option.value}`;
         }
 
         const handleGrade = () => {
-
-            if (!userInputResponse) {
+            if (!variant) {
                 return;
             }
             
-            if (prompt.answerType === 'number') {
+            if (variant.answerType === 'number') {
                 const responseNum = parseFloat(userInputResponse);
-                const answerNum = parseFloat(variant?.correctAnswer ?? '0');
 
                 const rtol = prompt.rtol;
                 const atol = prompt.atol;
 
                 // Do not use relative error if the answer is 0 to avoid division by zero
-                const relativeError = answerNum !== 0 ? Math.abs((responseNum - answerNum) / answerNum) : 0;
+                const relativeError = 
+                variant.correctAnswer !== 0 ? Math.abs((responseNum - variant.correctAnswer) / variant.correctAnswer) : 0;
 
-                const absoluteError = Math.abs(responseNum - answerNum);
+                const absoluteError = Math.abs(responseNum - variant.correctAnswer);
 
-                const relativeErrorValid = rtol && answerNum !== 0 ? relativeError <= rtol : false;
+                const relativeErrorValid = rtol && variant.correctAnswer !== 0 ? relativeError <= rtol : false;
                 const absoluteErrorValid = atol ? absoluteError <= atol : false;
 
                 // If rtol and atol are both not set, we only check for an exact match
-                let isValid = userInputResponse === variant?.correctAnswer;
+                let isValid = responseNum === variant.correctAnswer;
 
                 if (rtol) {
                     isValid = isValid || relativeErrorValid;
@@ -96,14 +226,34 @@ onDocumentReady(() => {
                     isValid = isValid || absoluteErrorValid;
                 }
 
+                console.log('Is Valid', isValid);
+                
+
                 if (isValid) {
                     setGrade(100);
                 } else {
                     setGrade(0);
                 }
-            } else if (prompt.answerType === 'string') {
+            } else if (variant.answerType === 'string') {
                 const isValid = userInputResponse === variant?.correctAnswer;
                 setGrade(isValid ? 100 : 0);
+            } else if (variant.answerType === 'checkbox' || variant.answerType === 'radio') {
+                const correctAnswers = new Set(
+                  variant.correctAnswer.map((option) => option.value)
+                );
+
+                // Every selected correct answer is one point
+                // Every unselected correct answer is one point
+
+                const numCorrectSelectedAnswers = [...correctAnswers].filter((value) =>
+                    selectedOptions.has(value)
+                ).length;
+
+                const numCorrectUnselectedAnswers = variant.options.filter((option) =>
+                  !correctAnswers.has(option.value) && !selectedOptions.has(option.value)
+                ).length;
+
+                setGrade(100 * ((numCorrectSelectedAnswers + numCorrectUnselectedAnswers) / variant.options.length));
             }
         }
 
@@ -111,6 +261,17 @@ onDocumentReady(() => {
         useEffect(() => {
             handleGenerateNewVariant();
         }, [prompt.id]);
+
+        const answerText = useMemo(() => {
+          if (!variant) {
+            return '';
+          }
+          if (variant?.answerType === 'checkbox' || variant?.answerType === 'radio') {
+            return variant.correctAnswer.map((option) => handleConvertToOptionText(option)).join(', ');
+          } 
+          return variant.correctAnswer;
+        }, [variant])
+
         return (
             <div id="question-demo-container" class="card shadow mt-3">
                 <div class="card-header d-flex align-items-center p-3 gap-3">
@@ -118,45 +279,60 @@ onDocumentReady(() => {
                     <span class="badge rounded-pill bg-success me-3">Try me!</span>
                 </div>
                 <div class="card-body">         
-                    <p>
+                    <p ref={questionContentRef}>
                         {questionContent}
                     </p>
-                    {(prompt.answerType === 'number' || prompt.answerType === "string") && (
-                        <span class="input-group">
-                            {prompt.answerLabel && (
-                                <span class="input-group-text">
-                                    {prompt.answerLabel}
-                                </span>
-                            )}
-                            <input
-                                value={userInputResponse}
-                                type="text"
-                                class="form-control"
-                                aria-label="Sample question response"
-                                onChange={(e) => setUserInputResponse(e.target?.value)}
-                            />
-                            <span
-                                class="input-group-text"
-                            >
-                                <span>{prompt.answerUnits}</span>
-                                <span class="badge bg-success feedback-badge-correct">100%</span>
-                                {/* <span class="badge bg-danger feedback-badge-incorrect">0%</span> */}
-                            </span>
-                        </span>
+                    {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
+                      <InputGroup>
+                        {prompt.answerLabel && (
+                          <InputGroupText id="answer-label">
+                            {prompt.answerLabel}                        
+                          </InputGroupText>
+                        )}
+                        <FormControl 
+                          value={userInputResponse}
+                          type="text" 
+                          aria-label="Sample question response"
+                          placeholder={placeholder}
+                          onChange={(e) => setUserInputResponse(e.target?.value)}
+                        />
+                        {(prompt.answerUnits || (grade !== null)) && (
+                          <InputGroupText>
+                            <span>{prompt.answerUnits}</span>
+                            {(grade !== null) ? (
+                              <FeedbackBadge grade={grade} />
+                            ) : <></>}
+                          </InputGroupText>
+                        )}
+                      </InputGroup>
                     )}
-                    {prompt.answerType === 'checkbox' || prompt.answerType === "radio" && (
+                    {(variant && (variant.answerType === 'checkbox' || variant.answerType === 'radio')) && (
                         <div>
-                            
+                          {variant.options.map((option, index) => (
+                            <FormCheck
+                              key={`option-${option.letter ?? index}`}
+                              type={prompt.answerType as 'checkbox' | 'radio'}
+                              name={`option-${option.letter ?? index}`}
+                              id={`option-${option.letter ?? index}`}
+                              label={handleConvertToOptionText(option)}
+                              value={option.value}
+                              checked={selectedOptions.has(option.value)}
+                              onChange={() => handleSelectOption(option.value)}
+                            />
+                          ))}
+                          {(grade !== null) ? (
+                            <FeedbackBadge grade={grade} />
+                          ) : <></>}
                         </div>
                     )}
                 </div>
                 <div class="card-footer d-flex justify-content-end align-items-center gap-2">
-                    <p class="my-0"><i>Answer: {variant?.correctAnswer}</i></p>
+                    <p class="my-0"><i>Answer: {answerText}</i></p>
                     <div class="flex-grow-1"></div>
                     <button onClick={handleGenerateNewVariant} type="button" class="btn btn-primary text-nowrap">
                         New variant
                     </button>
-                    <button id="grade-button" type="button" class="btn btn-primary">Grade</button>
+                    <button onClick={handleGrade} id="grade-button" type="button" class="btn btn-primary">Grade</button>
                 </div>
             </div>
         )
@@ -187,7 +363,7 @@ onDocumentReady(() => {
 
         return (
             <Accordion class="mb-3">
-              <AccordionItem eventKey={"0"}> 
+              <AccordionItem eventKey={'0'}> 
                 <AccordionHeader>Example questions and prompts</AccordionHeader>
                 <AccordionBody>
                     <div class="d-flex align-items-center gap-2">
@@ -235,7 +411,7 @@ onDocumentReady(() => {
                         </Button>
                     </div>
 
-                    {SampleQuestionDemo(selectedQuestion)}
+                    {<SampleQuestionDemo prompt={selectedQuestion} />}
 
                     <p class="fw-bold mb-1 mt-3">Question features</p>
                     <ul>
@@ -263,6 +439,23 @@ onDocumentReady(() => {
 })
 
 // TODO: Consider moving this to a separate file
+
+const convertToVariantOptions = (options: string[], includeLetter = true) => {
+  const optionsArray = options.map((option) => option.trim());
+  return optionsArray.map((option, index) => ({
+      letter: includeLetter ? String.fromCharCode(index + 'a'.charCodeAt(0)) : undefined, // a, b, c, ...
+      value: option,
+  }));
+}
+
+const findCorrectVariantOptions = (
+  options: VariantOption[],
+  correctAnswers: string[]
+) => {
+  return options.filter((option) =>
+    correctAnswers.map((answer) => answer.trim()).includes(option.value)
+  );
+}
 
 function generateSampleQuestionVariant(id: string) {
     let variant: SampleQuestionVariantInfo;
@@ -299,6 +492,7 @@ function generateSampleQuestionVariant(id: string) {
         break;
       default:
         variant = {
+          answerType: 'string',
           question: '',
           correctAnswer: '',
         };
@@ -341,14 +535,14 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
     const selectedIncorrectCities = shuffledIncorrect.slice(0, numIncorrectCities);
   
     // Combine and shuffle options
-    const allOptions = [...correctCities, ...selectedIncorrectCities].sort(() => Math.random() - 0.5);
-  
-    const correctAnswer = correctCities.join(', ');
-  
+    const allOptions = convertToVariantOptions([...correctCities, ...selectedIncorrectCities].sort(() => Math.random() - 0.5));
+    const correctOptions = findCorrectVariantOptions(allOptions, correctCities);
+
     return {
+      answerType: 'checkbox',
       question: `Identify the cities that are in **${randomCountry}**.`,
       options: allOptions,
-      correctAnswer,
+      correctAnswer: correctOptions,
     };
   }
   
@@ -367,13 +561,16 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
     // Randomly select between even and odd
     const isEven = Math.random() < 0.5;
     const correctAnswer = shuffledNumbers
-      .filter((num) => (isEven ? num % 2 === 0 : num % 2 !== 0))
-      .join(', ');
-  
+      .filter((num) => (isEven ? num % 2 === 0 : num % 2 !== 0));
+
+    const shuffleNumbersOptions = convertToVariantOptions(shuffledNumbers.map((number) => number.toString()));
+    const correctAnswerOptions = findCorrectVariantOptions(shuffleNumbersOptions, correctAnswer.map((number) => number.toString()));
+
     return {
+      answerType: 'checkbox',
       question: `Select all of the following numbers that are **${isEven ? 'even' : 'odd'}**:`,
-      options: shuffledNumbers.map((number) => number.toString()),
-      correctAnswer,
+      options: shuffleNumbersOptions,
+      correctAnswer: correctAnswerOptions,
     };
   }
   
@@ -389,8 +586,9 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
     const angleInDegrees = (angleInRadians * 180) / Math.PI;
   
     return {
+      answerType: 'number',
       question: `Convert the angle $ \\theta = \\frac{${numerator}\\pi}{${denominator}} $ (in radians) to degrees.`,
-      correctAnswer: angleInDegrees.toFixed(2).replace(/\.0+$/, ''),
+      correctAnswer: angleInDegrees,
     };
   }
   
@@ -405,13 +603,14 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
         options.push(randomOption);
       }
     }
-    const shuffledOptions = options.sort(() => Math.random() - 0.5);
-    const correctAnswer = product.toString();
+    const shuffledOptions = convertToVariantOptions(options.sort(() => Math.random() - 0.5).map((option) => option.toString()));
+    const correctOptions = findCorrectVariantOptions(shuffledOptions, [product.toString()]);
   
     return {
+      answerType: 'radio',
       question: `If $ a = ${a} $ and $ b = ${b} $, what is their product, $ a \\cdot b $?`,
-      options: shuffledOptions.map((option) => option.toString()),
-      correctAnswer,
+      options: shuffledOptions,
+      correctAnswer: correctOptions,
     };
   }
   
@@ -424,11 +623,15 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
   
     // Select 3 random incorrect answers
     const incorrectAnswers = nonRainbowColors.sort(() => Math.random() - 0.5).slice(0, 3);
+
+    const options = convertToVariantOptions([correctAnswer, ...incorrectAnswers].sort(() => Math.random() - 0.5));
+    const correctOptions = findCorrectVariantOptions(options, [correctAnswer]);
   
     return {
-      question: `Which of the following colors can be found in a rainbow?`,
-      options: [correctAnswer, ...incorrectAnswers],
-      correctAnswer,
+      answerType: 'radio',
+      question: 'Which of the following colors can be found in a rainbow?',
+      options,
+      correctAnswer: correctOptions,
     };
   }
   
@@ -450,11 +653,15 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
     } else if (displayedRandomIndex === 3) {
       indexPostfix = 'rd';
     }
+
+    const options = convertToVariantOptions(shuffledOptions.map((option) => option.toString()));
+    const correctOptions = findCorrectVariantOptions(options, [nthPlanet]);
   
     return {
+      answerType: 'radio',
       question: `Which planet is the ${displayedRandomIndex}${indexPostfix} planet from the sun?`,
-      options: shuffledOptions,
-      correctAnswer: nthPlanet,
+      options,
+      correctAnswer: correctOptions,
     };
   }
   
@@ -485,11 +692,15 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
     const incorrectDirections = ['North', 'South', 'East', 'West'].filter((d) => d !== direction);
     const randomIncorrectDirection =
       incorrectDirections[Math.floor(Math.random() * incorrectDirections.length)];
+
+    const options = convertToVariantOptions(['True', 'False'], false);
+    const correctAnswer = findCorrectVariantOptions(options, [displayCorrectStatement ? 'True' : 'False']);
   
     return {
+      answerType: 'radio',
       question: `Is the direction from ${country1} to ${country2} ${displayCorrectStatement ? direction : randomIncorrectDirection}?`,
-      options: ['True', 'False'],
-      correctAnswer: displayCorrectStatement ? 'True' : 'False',
+      options,
+      correctAnswer,
     };
   }
   
@@ -523,12 +734,13 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
     const root2 = Math.round(((-b + sqrtD) / (2 * a)) * 100) / 100;
   
     return {
+      answerType: 'number',
       question: `
         Compute the smallest root of the following polynomial:
 
         $$ ${a}x^2 + ${b}x + ${c} = 0 $$
       `,
-      correctAnswer: Math.min(root1, root2).toString(),
+      correctAnswer: Math.min(root1, root2)
     };
   }
   
@@ -539,9 +751,9 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
   
     // Compute the hypotenuse using the Pythagorean theorem
     const hypotenuse = Math.sqrt(leg_a ** 2 + leg_b ** 2);
-    const hypotenuseRounded = Math.round(hypotenuse * 100) / 100;
-  
+
     return {
+      answerType: 'number',
       question: `
         You are given the lengths of two legs of a right triangle: $ ${leg_a} $ and $ ${leg_b} $. Use the Pythagorean theorem to find the length of the hypotenuse $ c $. The formula for the hypotenuse is:
 
@@ -549,7 +761,7 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
 
         What is the length of the hypotenuse $ c $?
       `,
-      correctAnswer: hypotenuseRounded.toString(),
+      correctAnswer: hypotenuse,
     };
   }
   
@@ -596,6 +808,7 @@ function citiesInRandomCountryVariant(): SampleQuestionVariantInfo {
     const randomIndex = Math.floor(Math.random() * irregularPluralWords.length);
   
     return {
+      answerType: 'string',
       question: `
         What is the plural form of "${irregularPluralWords[randomIndex].singular}"?
       `,
