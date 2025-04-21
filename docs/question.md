@@ -336,7 +336,7 @@ That question would be rendered like this:
 
 !!! warning
 
-    It is reccommended to not indent the text inside markdown blocks, as markdown recognizes indentation as a code block.
+    Note that markdown recognizes indentation as a code block, so text inside these tags should not be indented with the corresponding HTML content.
 
     === "Good"
 
