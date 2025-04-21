@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import * as path from 'node:path';
 
-import type { JSONSchemaType } from 'ajv';
 import * as async from 'async';
 // Use slim export, which relies on htmlparser2 instead of parse5. This provides
 // support for questions with legacy renderer.
@@ -28,12 +27,16 @@ import { config } from '../lib/config.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
-import * as jsonLoad from '../lib/json-load.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
-import * as schemas from '../schemas/index.js';
-import type { ElementCoreJson, ElementCourseJson } from '../schemas/index.js';
+import {
+  type ElementCoreJson,
+  ElementCoreJsonSchema,
+  type ElementCourseJson,
+  ElementCourseJsonSchema,
+  ElementExtensionJsonSchema,
+} from '../schemas/index.js';
 
 import {
   type ElementExtensionJsonExtension,
@@ -122,19 +125,11 @@ export async function init() {
  * @param elementType The type of element to be loaded
  */
 async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
-  let elementSchema:
-    | JSONSchemaType<ElementCoreJson>
-    | JSONSchemaType<ElementCourseJson>; /* TODO type schemas */
-  switch (elementType) {
-    case 'core':
-      elementSchema = schemas.infoElementCore;
-      break;
-    case 'course':
-      elementSchema = schemas.infoElementCourse;
-      break;
-    default:
-      throw new Error(`Unknown element type ${elementType}`);
-  }
+  const elementSchema = run(() => {
+    if (elementType === 'core') return ElementCoreJsonSchema;
+    if (elementType === 'course') return ElementCourseJsonSchema;
+    throw new Error(`Unknown element type ${elementType}`);
+  });
 
   let files: string[];
   try {
@@ -172,21 +167,22 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
       throw err;
     }
 
-    jsonLoad.validateJSON(info, elementSchema);
-    info.name = elementName;
-    info.directory = path.join(sourceDir, elementName);
-    info.type = elementType;
-    elements[elementName] = info;
+    elements[elementName] = {
+      name: elementName,
+      directory: path.join(sourceDir, elementName),
+      type: elementType,
+      ...elementSchema.parse(info),
+    };
 
     // For backwards compatibility.
     // TODO remove once everyone is using the new version.
     if (elementType === 'core') {
-      elements[elementName.replace(/-/g, '_')] = info;
+      elements[elementName.replace(/-/g, '_')] = elements[elementName];
 
-      if ('additionalNames' in info) {
-        info.additionalNames.forEach((name) => {
-          elements[name] = info;
-          elements[name.replace(/-/g, '_')] = info;
+      if ('additionalNames' in elements[elementName]) {
+        elements[elementName].additionalNames?.forEach((name) => {
+          elements[name] = elements[elementName];
+          elements[name.replace(/-/g, '_')] = elements[elementName];
         });
       }
     }
@@ -257,27 +253,26 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
     const [element, extensionDir] = extension;
     const infoPath = path.join(sourceDir, element, extensionDir, 'info.json');
 
-    let info: any;
+    let rawInfo: any;
     try {
-      info = await fs.readJson(infoPath);
+      rawInfo = await fs.readJson(infoPath);
     } catch (err) {
       if (err.code === 'ENOENT') {
         // Not an extension directory, skip it.
-        logger.verbose(`${infoPath} not found, skipping...`);
         return;
       } else if (err.code === 'ENOTDIR') {
         // Random file, skip it as well.
-        logger.verbose(`Found stray file ${infoPath}, skipping...`);
         return;
       } else {
         throw err;
       }
     }
 
-    jsonLoad.validateJSON(info, schemas.infoElementExtension);
-    info.name = extensionDir;
-    info.directory = path.join(runtimeDir, element, extensionDir);
-    elements[element][extensionDir] = info;
+    elements[element][extensionDir] = {
+      name: extensionDir,
+      directory: path.join(runtimeDir, element, extensionDir),
+      ...ElementExtensionJsonSchema.parse(rawInfo),
+    };
   });
 
   return elements;
