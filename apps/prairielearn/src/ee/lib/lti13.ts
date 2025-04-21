@@ -797,7 +797,7 @@ export async function updateLti13Scores(
         userId,
         submission: {
           startedAt: assessment_instance.date,
-          ...(submittedAt != null && { submittedAt }),
+          submittedAt: submittedAt ?? undefined,
         },
       };
 
