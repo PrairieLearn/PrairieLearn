@@ -395,7 +395,7 @@ Under the hood, PrairieLearn is doing some very simple parsing to determine what
 
 Dollar signs by default denote either **inline** (`$ x $`) or **display mode** (`$$ x $$`) environments.
 
-To escape either math environment, consider using PrairieLearn's `markdown` tag and inline code syntax.
+To escape either math environment, consider using PrairieLearn's `<markdown>` tag and inline code syntax.
 
 <!-- prettier-ignore -->
 ```html
