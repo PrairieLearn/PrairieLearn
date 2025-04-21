@@ -3,6 +3,10 @@ import AccordionBodyOriginal from 'react-bootstrap/AccordionBody';
 import AccordionHeaderOriginal from 'react-bootstrap/AccordionHeader';
 import AccordionItemOriginal from 'react-bootstrap/AccordionItem';
 import ButtonOriginal from 'react-bootstrap/Button';
+import CardOriginal from 'react-bootstrap/Card';
+import CardBodyOriginal from 'react-bootstrap/CardBody';
+import CardFooterOriginal from 'react-bootstrap/CardFooter';
+import CardHeaderOriginal from 'react-bootstrap/CardHeader';
 import DropdownOriginal from 'react-bootstrap/Dropdown';
 import DropdownItemOriginal from 'react-bootstrap/DropdownItem';
 import DropdownMenuOriginal from 'react-bootstrap/DropdownMenu';
@@ -17,6 +21,10 @@ const AccordionItem = AccordionItemOriginal as unknown as typeof AccordionItemOr
 const AccordionHeader = AccordionHeaderOriginal as unknown as typeof AccordionHeaderOriginal.default;
 const AccordionBody = AccordionBodyOriginal as unknown as typeof AccordionBodyOriginal.default;
 const Button = ButtonOriginal as unknown as typeof ButtonOriginal.default;
+const Card = CardOriginal as unknown as typeof CardOriginal.default;
+const CardBody = CardBodyOriginal as unknown as typeof CardBodyOriginal.default;
+const CardHeader = CardHeaderOriginal as unknown as typeof CardHeaderOriginal.default;
+const CardFooter = CardFooterOriginal as unknown as typeof CardFooterOriginal.default;
 const Dropdown = DropdownOriginal as unknown as typeof DropdownOriginal.default;
 const DropdownToggle = DropdownToggleOriginal as unknown as typeof DropdownToggleOriginal.default;
 const DropdownMenu = DropdownMenuOriginal as unknown as typeof DropdownMenuOriginal.default;
@@ -28,7 +36,7 @@ const InputGroupText = InputGroupTextOriginal as unknown as typeof InputGroupTex
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { type VNode, render } from '@prairielearn/preact-cjs';
-import { useEffect, useMemo, useRef, useState } from '@prairielearn/preact-cjs/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from '@prairielearn/preact-cjs/hooks';
 import {run} from '@prairielearn/run'
 
 import { type ExamplePrompt, examplePrompts } from '../../src/lib/aiGeneratedQuestionSamples.js';
@@ -74,7 +82,6 @@ onDocumentReady(() => {
       grade: number;
     }) {
       const badgeType = run(() => {
-        console.log('Grade', grade);
         if (grade === 100) {
           return 'bg-success';
         } else if (grade > 0) {
@@ -83,7 +90,7 @@ onDocumentReady(() => {
           return 'bg-danger';
         }
       })
-      return  <span class={`badge ${badgeType}`}>{grade}{'%'}</span>
+      return <span className={`badge ${badgeType}`}>{Math.floor(grade)}{'%'}</span>
     }
 
     function SampleQuestionDemo({
@@ -96,6 +103,7 @@ onDocumentReady(() => {
         const [userInputResponse, setUserInputResponse] = useState('');
         const [grade, setGrade] = useState<number | null>(null);
         const [placeholder, setPlaceholder] = useState('');
+        const [answerLabel, setAnswerLabel] = useState<string | null>(null);
         const [selectedOptions, setSelectedOptions] = useState<Set<string>>(
           new Set<string>()
         );
@@ -179,6 +187,7 @@ onDocumentReady(() => {
         }
 
         const handleTypesetMathjax = async () => {
+          // TODO: Find a better way to do this
           await new Promise((resolve) => {
             setTimeout(() => {
               resolve(true);
@@ -188,9 +197,9 @@ onDocumentReady(() => {
           await mathjaxTypeset();
         }
 
-        useEffect(() => {
+        useLayoutEffect(() => {
           handleTypesetMathjax();
-        }, [questionContent])
+        }, [variant])
 
         const handleConvertToOptionText = (option: VariantOption) => {
           return `${option.letter ? `(${option.letter}) ` : ''}${option.value}`;
@@ -237,7 +246,11 @@ onDocumentReady(() => {
             } else if (variant.answerType === 'string') {
                 const isValid = userInputResponse === variant?.correctAnswer;
                 setGrade(isValid ? 100 : 0);
-            } else if (variant.answerType === 'checkbox' || variant.answerType === 'radio') {
+            } else if (variant.answerType === 'radio') {
+              const correctAnswer = variant.correctAnswer[0].value;
+                const isValid = selectedOptions.has(correctAnswer); 
+                setGrade(isValid ? 100 : 0);
+            } else if (variant.answerType === 'checkbox') {
                 const correctAnswers = new Set(
                   variant.correctAnswer.map((option) => option.value)
                 );
@@ -262,79 +275,120 @@ onDocumentReady(() => {
             handleGenerateNewVariant();
         }, [prompt.id]);
 
+        const handleUpdateAnswerLabel = async () => {
+          setAnswerLabel(null);
+          await new Promise((resolve) => setTimeout(() => resolve(true), 10));
+          if (prompt.answerLabel) {
+            setAnswerLabel(prompt.answerLabel);
+          }
+
+        }
+
         const answerText = useMemo(() => {
           if (!variant) {
             return '';
           }
-          if (variant?.answerType === 'checkbox' || variant?.answerType === 'radio') {
+          if (variant.answerType === 'checkbox' || variant.answerType === 'radio') {
             return variant.correctAnswer.map((option) => handleConvertToOptionText(option)).join(', ');
           } 
-          return variant.correctAnswer;
+          if (variant.answerType === 'number') {
+            // Round the answer to 4 decimal places
+            return Math.round(variant.correctAnswer * 1e4) / 1e4;
+          }
+          {return variant.correctAnswer;}
         }, [variant])
 
+        useEffect(() => {
+          handleUpdateAnswerLabel();
+        }, [prompt.answerLabel])
+
+        useEffect(() => {
+          if (answerLabel) {
+            mathjaxTypeset();
+          }
+
+        }, [answerLabel])
+
         return (
-            <div id="question-demo-container" class="card shadow mt-3">
-                <div class="card-header d-flex align-items-center p-3 gap-3">
-                    <p id="question-demo-name" class="mb-0">{prompt.name}</p>
-                    <span class="badge rounded-pill bg-success me-3">Try me!</span>
-                </div>
-                <div class="card-body">         
-                    <p ref={questionContentRef}>
-                        {questionContent}
-                    </p>
-                    {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
-                      <InputGroup>
-                        {prompt.answerLabel && (
-                          <InputGroupText id="answer-label">
-                            {prompt.answerLabel}                        
-                          </InputGroupText>
-                        )}
-                        <FormControl 
-                          value={userInputResponse}
-                          type="text" 
-                          aria-label="Sample question response"
-                          placeholder={placeholder}
-                          onChange={(e) => setUserInputResponse(e.target?.value)}
-                        />
-                        {(prompt.answerUnits || (grade !== null)) && (
-                          <InputGroupText>
-                            <span>{prompt.answerUnits}</span>
-                            {(grade !== null) ? (
-                              <FeedbackBadge grade={grade} />
-                            ) : <></>}
-                          </InputGroupText>
-                        )}
-                      </InputGroup>
+          <Card id="question-demo-card">
+            <CardHeader>
+              <div className="d-flex align-items-center gap-2">
+                <p id="question-demo-name" className="mb-0">{prompt.name}</p>
+                <span className="badge rounded-pill bg-success me-3">Try me!</span>
+              </div>
+            </CardHeader>
+            <CardBody>
+              <p ref={questionContentRef}>
+                  {questionContent}
+              </p>
+                {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
+                  <InputGroup>
+                    {answerLabel && (
+                      <InputGroupText id="answer-label">
+                        {answerLabel}                        
+                      </InputGroupText>
                     )}
-                    {(variant && (variant.answerType === 'checkbox' || variant.answerType === 'radio')) && (
-                        <div>
-                          {variant.options.map((option, index) => (
-                            <FormCheck
-                              key={`option-${option.letter ?? index}`}
-                              type={prompt.answerType as 'checkbox' | 'radio'}
-                              name={`option-${option.letter ?? index}`}
-                              id={`option-${option.letter ?? index}`}
-                              label={handleConvertToOptionText(option)}
-                              value={option.value}
-                              checked={selectedOptions.has(option.value)}
-                              onChange={() => handleSelectOption(option.value)}
-                            />
-                          ))}
-                          {(grade !== null) ? (
-                            <FeedbackBadge grade={grade} />
-                          ) : <></>}
-                        </div>
+                    <FormControl 
+                      value={userInputResponse}
+                      type="text" 
+                      aria-label="Sample question response"
+                      placeholder={placeholder}
+                      onChange={(e) => setUserInputResponse(e.target?.value)}
+                    />
+                    {(prompt.answerUnits || (grade !== null)) && (
+                      <InputGroupText>
+                        <span>{prompt.answerUnits}</span>
+                        {(grade !== null) ? (
+                          <FeedbackBadge grade={grade} />
+                        ) : <></>}
+                      </InputGroupText>
                     )}
-                </div>
-                <div class="card-footer d-flex justify-content-end align-items-center gap-2">
-                    <p class="my-0"><i>Answer: {answerText}</i></p>
-                    <div class="flex-grow-1"></div>
-                    <button onClick={handleGenerateNewVariant} type="button" class="btn btn-primary text-nowrap">
+                  </InputGroup>
+                )}
+                {(variant && (variant.answerType === 'checkbox' || variant.answerType === 'radio')) && (
+                  <div>
+                    {variant.options.map((option, index) => (
+                      <FormCheck
+                        key={`option-${option.letter ?? index}`}
+                        type={prompt.answerType as 'checkbox' | 'radio'}
+                        name={`option-${option.letter ?? index}`}
+                        id={`option-${option.letter ?? index}`}
+                        label={handleConvertToOptionText(option)}
+                        value={option.value}
+                        checked={selectedOptions.has(option.value)}
+                        onChange={() => handleSelectOption(option.value)}
+                      />
+                    ))}
+                    {(grade !== null) ? (
+                      <div className="mt-2"> 
+                        <FeedbackBadge grade={grade} />
+                      </div>
+                    ) : <></>}
+                  </div>
+                )}
+              </CardBody>
+              <CardFooter>
+                <div className="d-flex flex-wrap justify-content-end align-items-center gap-2">
+                  <p className="my-0"><i>Answer: {answerText}</i></p>
+                  <div className="flex-grow-1"></div>
+                  <div className="d-flex align-items-center gap-2">
+                    <Button
+                      onClick={handleGenerateNewVariant}
+                    >
+                      <span className="text-nowrap">
                         New variant
-                    </button>
-                    <button onClick={handleGrade} id="grade-button" type="button" class="btn btn-primary">Grade</button>
+                      </span>
+                    </Button>
+
+                    <Button
+                      onClick={handleGrade}
+                    >
+                      Grade
+                    </Button>
+                  </div>
                 </div>
-            </div>
+              </CardFooter>
+            </Card>
         )
 
     }
@@ -361,71 +415,79 @@ onDocumentReady(() => {
             }
         }
 
+        const handleFillPrompt = () => {
+          const promptTextarea = document.querySelector('#user-prompt-llm') as HTMLTextAreaElement;
+          promptTextarea.value = selectedQuestion.prompt;
+        }
+
         return (
-            <Accordion class="mb-3">
+            <Accordion className="mb-3">
               <AccordionItem eventKey={'0'}> 
                 <AccordionHeader>Example questions and prompts</AccordionHeader>
                 <AccordionBody>
-                    <div class="d-flex align-items-center gap-2">
-                        <Dropdown
-                            style={{ width: '100%' }}
-                            onSelect={(eventKey) =>
-                                setSelectedQuestionIndex(Number(eventKey))
-                            }
-                        >
-                            <DropdownToggle
-                                as="button"
-                                type="button"
-                                style={{'width': '100%'}}
-                                className="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
-                            >
-                                {selectedQuestion.name}
-                            </DropdownToggle>
-                            <DropdownMenu>
-                                <div>
-                                    {examplePrompts.map((prompt, index) => (
-                                        <DropdownItem 
-                                            key={prompt.id} 
-                                            active={index === selectedQuestionIndex} 
-                                            eventKey={index.toString()}
-                                        >
-                                            {prompt.name}
-                                        </DropdownItem>
-                                    ))}
-                                </div>
-                            </DropdownMenu>
-                        </Dropdown>
+                    <div style={{width: '100%'}} className="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                      <Dropdown
+                        style={{flex: 1}}
+                        onSelect={(eventKey) =>
+                            setSelectedQuestionIndex(Number(eventKey))
+                        }
+                      >
+                          <DropdownToggle
+                            as="button"
+                            type="button"
+                            style={{width: '100%'}}
+                            className="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
+                          >
+                              {selectedQuestion.name}
+                          </DropdownToggle>
+                          <DropdownMenu>
+                              <div>
+                                  {examplePrompts.map((prompt, index) => (
+                                      <DropdownItem 
+                                          key={prompt.id} 
+                                          active={index === selectedQuestionIndex} 
+                                          eventKey={index.toString()}
+                                      >
+                                          {prompt.name}
+                                      </DropdownItem>
+                                  ))}
+                              </div>
+                          </DropdownMenu>
+                      </Dropdown>
+                      <div class="d-flex align-items-center gap-2">
                         <Button
                             onClick={handleClickPrevious}
-                            variant="primary"
                             disabled={selectedQuestionIndex === 0}
                         >
                             Previous
                         </Button>
                         <Button
                             onClick={handleClickNext}
-                            variant="primary"
                             disabled={selectedQuestionIndex === examplePrompts.length - 1}
                         >
                             Next
                         </Button>
+                      </div>
                     </div>
 
                     {<SampleQuestionDemo prompt={selectedQuestion} />}
 
-                    <p class="fw-bold mb-1 mt-3">Question features</p>
+                    <p className="fw-bold mb-1 mt-3">Question features</p>
                     <ul>
                         {selectedQuestion.features.map((feature, index) => (
                             <li key={`selected-question-${selectedQuestion.id}-${index}`}>{feature}</li>
                         ))}
                     </ul>
 
-                    <p class="fw-bold mb-1 mt-3">Prompt</p>
+                    <p className="fw-bold mb-1 mt-3">Prompt</p>
                     <p>{selectedQuestion.prompt}</p>
-                    <button type="button" class="btn btn-primary me-2">
-                        <i class="fa fa-clone mr-2" aria-hidden="true"></i>
-                        Fill prompt
-                    </button>
+
+                    <Button
+                        onClick={handleFillPrompt}
+                    >
+                      <i className="fa fa-clone mr-2" aria-hidden="true"></i>
+                      Fill prompt
+                    </Button>
                 </AccordionBody>
               </AccordionItem>
             </Accordion>
