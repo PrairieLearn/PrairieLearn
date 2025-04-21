@@ -120,7 +120,7 @@ describe('Editing question settings', () => {
 
   step('verify changing qid did not leave any empty directories', async () => {
     const questionDir = path.join(courseLiveDir, 'question');
-    assert.equal(await fs.pathExists(questionDir), false);
+    assert.notOk(await fs.pathExists(questionDir));
   });
 
   step('pull and verify changes', async () => {
@@ -228,4 +228,66 @@ describe('Editing question settings', () => {
     assert.equal(response.status, 200);
     assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
   });
+
+  step('change question id', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+
+    // Change the question id to a new, valid id. Leave the title, qid, and topic unchanged.
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'Test title - changed',
+        qid: 'question2',
+        topic: 'Test',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
+  });
+
+  step('verify question id changed', async () => {
+    questionLiveInfoPath = path.join(
+      questionLiveDir,
+      'question2', // The new question id
+      'info.json',
+    );
+
+    // If the file at path questionLiveInfoPath exists, then the question id was successfully changed
+    assert.ok(await fs.pathExists(questionLiveInfoPath));
+  });
+
+  step(
+    'should not be able to submit if changed question id is not in the root directory',
+    async () => {
+      const settingsPageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+      );
+      assert.equal(settingsPageResponse.status, 200);
+
+      // Change the question id to one that is not contained within the root directory. Leave the title, qid, and topic unchanged.
+      const response = await fetch(
+        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'update_question',
+            __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+            title: 'Test title - changed',
+            qid: '../question3',
+            topic: 'Test',
+          }),
+        },
+      );
+
+      assert.equal(response.status, 400);
+    },
+  );
 });

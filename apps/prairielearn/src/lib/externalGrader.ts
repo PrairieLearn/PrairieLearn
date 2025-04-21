@@ -1,7 +1,6 @@
 import assert from 'node:assert';
-import type { EventEmitter } from 'node:events';
 
-import _ from 'lodash';
+import isPlainObject from 'is-plain-obj';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -9,20 +8,22 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
+import { updateCourseInstanceUsagesForGradingJob } from '../models/course-instance-usages.js';
+import {
+  selectOptionalGradingJobById,
+  updateGradingJobAfterGrading,
+} from '../models/grading-job.js';
+
 import { config } from './config.js';
 import {
-  IdSchema,
   CourseSchema,
-  QuestionSchema,
   GradingJobSchema,
+  IdSchema,
+  QuestionSchema,
   SubmissionSchema,
   VariantSchema,
-  type GradingJob,
-  type Submission,
-  type Variant,
-  type Question,
-  type Course,
 } from './db-types.js';
+import { type Grader } from './externalGraderCommon.js';
 import { ExternalGraderLocal } from './externalGraderLocal.js';
 import { ExternalGraderSqs } from './externalGraderSqs.js';
 import * as externalGradingSocket from './externalGradingSocket.js';
@@ -37,16 +38,6 @@ const GradingJobInfoSchema = z.object({
   question: QuestionSchema,
   course: CourseSchema,
 });
-
-interface Grader {
-  handleGradingRequest(
-    grading_job: GradingJob,
-    submission: Submission,
-    variant: Variant,
-    question: Question,
-    course: Course,
-  ): EventEmitter;
-}
 
 let grader: Grader | null = null;
 
@@ -172,11 +163,11 @@ async function updateJobReceivedTime(grading_job_id: string, receivedTime: strin
  */
 export async function processGradingResult(content: any): Promise<void> {
   try {
-    if (!_.isObject(content.grading)) {
+    if (content.grading == null || !isPlainObject(content.grading)) {
       throw new error.AugmentedError('invalid grading', { data: { content } });
     }
 
-    if (_.has(content.grading, 'feedback') && !_.isObject(content.grading.feedback)) {
+    if (content.grading.feedback != null && !isPlainObject(content.grading.feedback)) {
       throw new error.AugmentedError('invalid grading.feedback', { data: { content } });
     }
 
@@ -211,7 +202,7 @@ export async function processGradingResult(content: any): Promise<void> {
         content.grading.score = 0;
         gradable = false;
       }
-      if (!_.isFinite(content.grading.score)) {
+      if (!Number.isFinite(content.grading.score)) {
         content.grading.feedback = {
           results: { succeeded: false, gradable: false },
           message: 'Error parsing external grading results: score is not a number.',
@@ -231,22 +222,31 @@ export async function processGradingResult(content: any): Promise<void> {
       }
     }
 
-    await sqldb.callAsync('grading_jobs_update_after_grading', [
-      content.gradingId,
-      content.grading.receivedTime,
-      content.grading.startTime,
-      content.grading.endTime,
-      null, // `submitted_answer`
-      content.grading.format_errors,
+    const grading_job = await selectOptionalGradingJobById(content.gradingId);
+    // Only update course instance usages if the job hasn't been graded yet. We
+    // have to compute this before calling `updateGradingJobAfterGrading` below
+    // because that will update `graded_at`.
+    const updateUsages = grading_job && grading_job.graded_at == null;
+
+    await updateGradingJobAfterGrading({
+      grading_job_id: content.gradingId,
+      received_time: content.grading.receivedTime,
+      start_time: content.grading.startTime,
+      finish_time: content.grading.endTime,
+      format_errors: content.grading.format_errors,
       gradable,
-      false, // `broken`
-      null, // `params`
-      null, // `true_answer`
-      content.grading.feedback,
-      {}, // `partial_scores`
-      content.grading.score,
-      null, // `v2_score`: gross legacy, this can safely be null
-    ]);
+      broken: false,
+      feedback: content.grading.feedback,
+      partial_scores: {},
+      score: content.grading.score,
+    });
+
+    if (updateUsages) {
+      // This has to come after `updateGradingJobAfterGrading` above
+      // because it uses the `grading_finished_at` value updated there.
+      await updateCourseInstanceUsagesForGradingJob({ grading_job_id: content.gradingId });
+    }
+
     const assessment_instance_id = await sqldb.queryOptionalRow(
       sql.select_assessment_for_grading_job,
       { grading_job_id: content.gradingId },

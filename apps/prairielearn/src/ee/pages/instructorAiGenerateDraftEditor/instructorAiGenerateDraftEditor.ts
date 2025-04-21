@@ -3,12 +3,20 @@ import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
+import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { AiGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
+import {
+  AiQuestionGenerationPromptSchema,
+  type Course,
+  IdSchema,
+  type Question,
+  type User,
+} from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant, setRendererHeader } from '../../../lib/question-render.js';
@@ -17,14 +25,14 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
 import { regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
-import { GenerationFailure } from '../instructorAiGenerateQuestion/instructorAiGenerateQuestion.html.js';
+import { GenerationFailure } from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
 const router = express.Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
-export async function saveGeneratedQuestion(
+async function saveGeneratedQuestion(
   res: express.Response,
   htmlFileContents: string | undefined,
   pythonFileContents: string | undefined,
@@ -58,6 +66,73 @@ export async function saveGeneratedQuestion(
   }
 
   return result.question_id;
+}
+
+async function saveRevisedQuestion({
+  course,
+  question,
+  user,
+  authn_user,
+  authz_data,
+  urlPrefix,
+  html,
+  python,
+  prompt,
+  promptType,
+}: {
+  course: Course;
+  question: Question;
+  user: User;
+  authn_user: User;
+  authz_data: {
+    has_course_permission_edit: boolean;
+  };
+  urlPrefix: string;
+  html: string;
+  python?: string;
+  prompt: string;
+  promptType: 'manual_change' | 'manual_revert';
+}) {
+  const client = getCourseFilesClient();
+
+  const files: Record<string, string | null> = {
+    'question.html': b64Util.b64EncodeUnicode(html),
+  };
+
+  // We'll delete the `server.py` file if the Python code is empty. Setting
+  // it to `null` instructs the editor to delete the file.
+  const trimmedPython = python?.trim() ?? '';
+  if (trimmedPython !== '') {
+    files['server.py'] = b64Util.b64EncodeUnicode(trimmedPython);
+  } else {
+    files['server.py'] = null;
+  }
+
+  const result = await client.updateQuestionFiles.mutate({
+    course_id: course.id,
+    user_id: user.user_id,
+    authn_user_id: authn_user.user_id,
+    question_id: question.id,
+    has_course_permission_edit: authz_data.has_course_permission_edit,
+    files,
+  });
+
+  if (result.status === 'error') {
+    throw new HttpRedirect(urlPrefix + '/edit_error/' + result.job_sequence_id);
+  }
+
+  const response = `\`\`\`html\n${html}\`\`\`\n\`\`\`python\n${python}\`\`\``;
+
+  await queryAsync(sql.insert_ai_question_generation_prompt, {
+    question_id: question.id,
+    prompting_user_id: authn_user.user_id,
+    prompt_type: promptType,
+    user_prompt: prompt,
+    system_prompt: prompt,
+    response,
+    html,
+    python,
+  });
 }
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
@@ -102,7 +177,7 @@ router.get(
         question_id: req.params.question_id,
         course_id: res.locals.course.id,
       },
-      AiGenerationPromptSchema,
+      AiQuestionGenerationPromptSchema,
     );
 
     if (prompts.length === 0) {
@@ -119,7 +194,7 @@ router.get(
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
     // Render the preview.
-    await getAndRenderVariant(variant_id, null, res.locals, {
+    await getAndRenderVariant(variant_id, null, res.locals as any, {
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.
@@ -144,6 +219,10 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    if (!config.openAiApiKey || !config.openAiOrganization) {
+      throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+    }
+
     const question = await selectQuestionById(req.params.question_id);
 
     // Ensure the question belongs to this course and that it's a draft question.
@@ -152,10 +231,6 @@ router.post(
     }
 
     assertCanCreateQuestion(res.locals);
-
-    if (!config.openAiApiKey || !config.openAiOrganization) {
-      throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
-    }
 
     const client = new OpenAI({
       apiKey: config.openAiApiKey,
@@ -169,7 +244,7 @@ router.post(
           question_id: req.params.question_id,
           course_id: res.locals.course.id,
         },
-        AiGenerationPromptSchema,
+        AiQuestionGenerationPromptSchema,
       );
 
       if (prompts.length < 1) {
@@ -209,7 +284,7 @@ router.post(
           question_id: question.id,
           course_id: res.locals.course.id,
         },
-        AiGenerationPromptSchema,
+        AiQuestionGenerationPromptSchema,
       );
 
       if (prompts.length === 0) {
@@ -225,7 +300,62 @@ router.post(
         req.body.qid,
       );
 
-      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/settings');
+      const client = getCourseFilesClient();
+
+      const result = await client.batchDeleteQuestions.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        question_ids: [question.id],
+      });
+
+      if (result.status === 'error') {
+        throw new error.HttpStatusError(
+          500,
+          'Draft deletion failed, but question creation succeeded.',
+        );
+      }
+
+      flash('success', `Your question is ready for use as ${qid}.`);
+
+      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/preview');
+    } else if (req.body.__action === 'submit_manual_revision') {
+      await saveRevisedQuestion({
+        course: res.locals.course,
+        question,
+        user: res.locals.user,
+        authn_user: res.locals.authn_user,
+        authz_data: res.locals.authz_data,
+        urlPrefix: res.locals.urlPrefix,
+        html: b64Util.b64DecodeUnicode(req.body.html),
+        python: b64Util.b64DecodeUnicode(req.body.python),
+        prompt: 'Manually update question.',
+        promptType: 'manual_change',
+      });
+
+      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
+    } else if (req.body.__action === 'revert_edit_version') {
+      const prompt = await queryRow(
+        sql.select_ai_question_generation_prompt_by_id_and_question,
+        { prompt_id: req.body.unsafe_prompt_id, question_id: req.params.question_id },
+        AiQuestionGenerationPromptSchema,
+      );
+
+      await saveRevisedQuestion({
+        course: res.locals.course,
+        question,
+        user: res.locals.user,
+        authn_user: res.locals.authn_user,
+        authz_data: res.locals.authz_data,
+        urlPrefix: res.locals.urlPrefix,
+        html: prompt.html ?? '',
+        python: prompt.python ?? undefined,
+        prompt: 'Manually revert question to earlier revision.',
+        promptType: 'manual_revert',
+      });
+
+      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       res.locals.question = question;
       const variantId = await processSubmission(req, res);

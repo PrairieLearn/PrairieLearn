@@ -2,7 +2,6 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { ECRClient } from '@aws-sdk/client-ecr';
-import { Mutex } from 'async-mutex';
 import debugfn from 'debug';
 import Docker, { type Container } from 'dockerode';
 import { execa } from 'execa';
@@ -21,11 +20,11 @@ import { config } from '../config.js';
 import { deferredPromise } from '../deferred.js';
 
 import {
-  type CodeCaller,
-  FunctionMissingError,
   type CallType,
-  type PrepareForCourseOptions,
+  type CodeCaller,
   type CodeCallerResult,
+  FunctionMissingError,
+  type PrepareForCourseOptions,
 } from './code-caller-shared.js';
 
 const CREATED = Symbol('CREATED');
@@ -40,6 +39,11 @@ type CallerState =
   | typeof IN_CALL
   | typeof EXITING
   | typeof EXITED;
+
+interface CodeCallerContainerOptions {
+  questionTimeoutMilliseconds: number;
+  pingTimeoutMilliseconds: number;
+}
 
 const MOUNT_DIRECTORY_PREFIX = 'prairielearn-worker-';
 
@@ -129,7 +133,6 @@ export class CodeCallerContainer implements CodeCaller {
   callback: ((err: Error | null, data?: any, output?: string) => void) | null;
   timeoutID: NodeJS.Timeout | null;
   callCount: number;
-  ensureChildMutex: Mutex;
   hasBindMount: boolean;
   options: { questionTimeoutMilliseconds: number; pingTimeoutMilliseconds: number };
   stdinStream: MemoryStream | null;
@@ -142,31 +145,34 @@ export class CodeCallerContainer implements CodeCaller {
   coursePath: string | null;
   forbiddenModules: string[];
   hostDirectory: tmp.DirectoryResult | null;
-  constructor(
-    options: {
-      questionTimeoutMilliseconds: number;
-      pingTimeoutMilliseconds: number;
-    } = { questionTimeoutMilliseconds: 5_000, pingTimeoutMilliseconds: 60_000 },
-  ) {
+
+  /**
+   * Creating a new {@link CodeCallerContainer} instance requires some async work,
+   * so we use this static method to create a new instance since a constructor
+   * cannot be async.
+   */
+  static async create(options: CodeCallerContainerOptions): Promise<CodeCallerContainer> {
+    const codeCaller = new CodeCallerContainer(options);
+    await codeCaller.ensureChild();
+    return codeCaller;
+  }
+
+  private constructor(options: CodeCallerContainerOptions) {
     this.state = CREATED;
     this.uuid = uuidv4();
 
     this.debug('enter constructor()');
 
-    /** @type {import('dockerode').Container | null} */
     this.container = null;
     this.callback = null;
     this.timeoutID = null;
     this.callCount = 0;
-    this.ensureChildMutex = new Mutex();
     this.hasBindMount = false;
 
     this.options = options;
 
     // These will accumulate output from the container.
-    /** @type {string[]} */
     this.outputStdout = [];
-    /** @type {string[]} */
     this.outputStderr = [];
     this.outputBoth = '';
 
@@ -350,34 +356,24 @@ export class CodeCallerContainer implements CodeCaller {
     this.debug('exit done()');
   }
 
-  async ensureChild() {
+  private async ensureChild() {
     this.debug('enter ensureChild()');
     this._checkState();
 
-    // Since container creation is async, it's possible that ensureChild()
-    // could be called again while it's already executing. For instance, we
-    // could be inside a call that was made to warm up this worker, but then
-    // we might have call() invoked, which will also call ensureChild(). We
-    // need to ensure that we're only ever inside this function once at a time,
-    // so we'll use a "mutex" (even though we're in a single-threaded environment).
-    await this.ensureChildMutex.runExclusive(async () => {
-      if (this.container) {
-        this.debug('exit ensureChild() - existing container');
-        return;
-      }
-      this.hostDirectory = await tmp.dir({ unsafeCleanup: true, prefix: MOUNT_DIRECTORY_PREFIX });
-      await ensureImage();
-      await this._createAndAttachContainer(this.hostDirectory.path);
+    if (this.container) {
+      this.debug('exit ensureChild() - existing container');
+      return;
+    }
 
-      // Transition to the WAITING state before pinging the container, as we
-      // need to be in that state in order to make a call.
-      this.state = WAITING;
+    this.hostDirectory = await tmp.dir({ unsafeCleanup: true, prefix: MOUNT_DIRECTORY_PREFIX });
+    await ensureImage();
+    await this._createAndAttachContainer(this.hostDirectory.path);
 
-      await this.call('ping', null, null, 'ping', []);
+    // Transition to the WAITING state before pinging the container, as we
+    // need to be in that state in order to make a call.
+    this.state = WAITING;
 
-      this._checkState();
-      this.debug('exit _ensureChild()');
-    });
+    await this.call('ping', null, null, 'ping', []);
 
     this._checkState();
     this.debug('exit ensureChild()');
@@ -526,11 +522,6 @@ export class CodeCallerContainer implements CodeCaller {
     this.debug('exit _handleContainerExit()');
   }
 
-  /**
-   * @param {(Error & { data?: any }) | null} err
-   * @param {any} [data]
-   * @param {string} [output]
-   */
   _callCallback(err: (Error & { data?: any }) | null, data?: any, output?: string) {
     this.debug('enter _callCallback()');
     if (err) err.data = this._errorData();

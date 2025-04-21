@@ -19,9 +19,9 @@ import * as courseDB from '../sync/course-db.js';
 import { type CourseData } from '../sync/course-db.js';
 
 import { downloadFromS3, makeS3ClientConfig } from './aws.js';
-import { chalk, chalkDim } from './chalk.js';
+import { chalk } from './chalk.js';
 import { config } from './config.js';
-import { createServerJob, type ServerJob } from './server-jobs.js';
+import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -819,19 +819,19 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
   job.info(chalk.bold('Looking up course directory'));
   const result = await sqldb.queryOneRowAsync(sql.select_course_dir, { course_id });
   let courseDir = result.rows[0].path;
-  job.info(chalkDim(`Found course directory: ${courseDir}`));
+  job.verbose(`Found course directory: ${courseDir}`);
   courseDir = path.resolve(process.cwd(), courseDir);
-  job.info(chalkDim(`Resolved course directory: ${courseDir}`));
+  job.verbose(`Resolved course directory: ${courseDir}`);
 
   const lockName = getLockNameForCoursePath(courseDir);
   job.info(chalk.bold(`Acquiring lock ${lockName}`));
 
   await namedLocks.doWithLock(lockName, {}, async () => {
-    job.info(chalkDim('Acquired lock'));
+    job.verbose('Acquired lock');
 
     job.info(chalk.bold(`Loading course data from ${courseDir}`));
     const courseData = await courseDB.loadFullCourse(course_id, courseDir);
-    job.info(chalkDim('Loaded course data'));
+    job.verbose('Loaded course data');
 
     job.info(chalk.bold('Generating all chunks'));
     const chunkOptions = {
@@ -841,10 +841,10 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
     };
     const chunkChanges = await updateChunksForCourse(chunkOptions);
     logChunkChangesToJob(chunkChanges, job);
-    job.info(chalkDim('Generated all chunks'));
+    job.verbose('Generated all chunks');
   });
 
-  job.info(chalkDim('Released lock'));
+  job.verbose('Released lock');
 
   job.info(chalk.green(`Successfully generated chunks for course ID = ${course_id}`));
 }
