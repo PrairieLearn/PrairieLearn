@@ -119,7 +119,7 @@ The different types of dependency properties available are summarized in this ta
 
 The `question.html` is a template used to render the question to the student. A complete `question.html` example looks like:
 
-```html
+```html title="question.html"
 <pl-question-panel>
   <p>
     A particle of mass $m = {{params.m}}\rm\ kg$ is observed to have acceleration $a =
@@ -164,9 +164,7 @@ The `server.py` file for each question creates randomized question variants by g
 
 A complete `question.html` and `server.py` example looks like:
 
-```html
-<!-- question.html -->
-
+```html title="question.html"
 <pl-question-panel>
   <!-- params.x is defined by data["params"]["x"] in server.py's `generate()`. -->
   <!-- params.operation defined by in data["params"]["operation"] in server.py's `generate()`. -->
@@ -178,9 +176,7 @@ A complete `question.html` and `server.py` example looks like:
 <pl-submission-panel> {{feedback.y}} </pl-submission-panel>
 ```
 
-```python
-# server.py
-
+```python title="server.py"
 import random
 import math
 
@@ -240,9 +236,7 @@ All persistent data related to a question variant is stored under different entr
 
 To account for this, the `prairielearn` Python library (usually aliased and used as `pl`), provides the functions [`to_json`][prairielearn.conversion_utils.to_json] and [`from_json`][prairielearn.conversion_utils.from_json] (part of [`conversion_utils.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/conversion_utils.py)), which can respectively serialize and deserialize various objects for storage as part of question data. Please refer to the docstrings on those functions for more information. Here is a simple example:
 
-```python
-# server.py
-
+```python title="server.py"
 import numpy as np
 import prairielearn as pl
 
@@ -277,16 +271,12 @@ data["options"]["server_files_course_path"]           # on-disk location of serv
 
 You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
 
-```html
-<!-- question.html -->
-
+```html title="question.html"
 <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
 <img src="{{options.client_files_question_dynamic_url}}/fig.png" />
 ```
 
-```python
-# server.py
-
+```python title="server.py"
 import random
 import io
 import matplotlib.pyplot as plt
@@ -329,7 +319,7 @@ In general, it is _strongly_ recommended to leave partial credit enabled for all
 HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text. To enable this, PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html` that utilizes this element:
 
 <!-- prettier-ignore -->
-```html
+```html title="question.html"
 <markdown>
 # Hello, world!
 
@@ -351,7 +341,7 @@ A few special behaviors have been added to enable Markdown to work better within
 Fenced code blocks (those using triple-backticks ` ``` `) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following Markdown:
 
 <!-- prettier-ignore -->
-````html
+````html title="question.html"
 <markdown>
 ```cpp{1-2,4}
 int i = 1;
@@ -374,22 +364,34 @@ int m = 4;
 </pl-code>
 ```
 
+### Escaping `<markdown>` tags
+
+Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be rendered as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
+
 ## Using LaTeX in questions
 
 PrairieLearn supports LaTeX equations in questions. You can view a full list of supported MathJax commands [here](https://docs.mathjax.org/en/latest/input/tex/macros/index.html).
 
 Inline equations can be written using `$x^2$`, and display equations can be written using `$$x^2$$` or `\[x^2\]`. For example:
 
-```html
+```html title="question.html"
 <p>Here is some inline math: $x^2$. Here is some display math: $$x^2$$</p>
 <p>What is the total force $F$ currently acting on the particle?</p>
 ```
 
+It can also be used inside `<markdown>` elements:
+
+<!-- prettier-ignore -->
+```html title="question.html"
+<markdown>
+  $$\phi = \frac{1+\sqrt{5}}{2}$$
+
+  Need to use `$` outside of math-mode? Place inside inline code.
+  So, excel formulas would look like: `$A$1`, `B$5`, `$C9`, `D2`.
+</markdown>
+```
+
 ![](images/latex.png)
-
-### Escaping `<markdown>` tags
-
-Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be rendered as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
 
 ## Rendering panels from `question.html`
 
