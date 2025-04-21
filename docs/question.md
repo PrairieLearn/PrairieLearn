@@ -334,9 +334,28 @@ That question would be rendered like this:
 <p>This is some <strong>Markdown</strong> text.</p>
 ```
 
-??? warning
+!!! warning
 
     It is reccommended to not indent the text inside markdown blocks, as markdown recognizes indentation as a code block.
+
+    === "Good"
+
+        ```html
+        <div>
+          <markdown>
+        # Hello, world!
+          </markdown>
+        </div>
+        ```
+    === "Bad"
+
+        ```html
+        <div>
+          <markdown>
+            # Hello, world!
+          </markdown>
+        </div>
+        ```
 
 A few special behaviors have been added to enable Markdown to work better within the PrairieLearn ecosystem, as described below.
 
