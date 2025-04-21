@@ -334,6 +334,10 @@ That question would be rendered like this:
 <p>This is some <strong>Markdown</strong> text.</p>
 ```
 
+??? warning
+
+    It is reccommended to not indent the text inside markdown blocks, as markdown recognizes indentation as a code block.
+
 A few special behaviors have been added to enable Markdown to work better within the PrairieLearn ecosystem, as described below.
 
 ### Markdown code blocks
