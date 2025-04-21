@@ -161,7 +161,7 @@ An assessment is broken down in to a list of zones, like this:
 | `maxPoints`     | number  | Limit on the number of points that can be earned from this zone. (Optional; default: sum of question max points)                                      |
 | `bestQuestions` | integer | Only this many questions in the zone will count towards the total points (highest-point questions will count). (Optional; default: use all questions) |
 
-Zone specification details are in the [format specification for `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
+Zone specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
 
 - Each zone appears in the given order in the assessment. Zone titles are optional and are displayed to the student if present.
 
@@ -201,7 +201,7 @@ Or a slot can contain a _question alternative list_:
 | `triesPerVariant` | integer         | The maximum number of attempts allowed for each question variant (on Homeworks). (Optional; default `1`)                                                                    |
 | `forceMaxPoints`  | boolean         | Whether to force all students to receive maximum points. See [Regrading](regrading.md). (Optional; default `false`)                                                         |
 
-Slot specification details are in the [format specification for `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
+Slot specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
 
 ## Question points for `Homework` assessments
 
