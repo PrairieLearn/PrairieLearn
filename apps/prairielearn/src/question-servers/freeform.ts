@@ -1226,7 +1226,7 @@ export async function prepare(
 }
 
 interface RenderPanelResult {
-  courseIssues: any[];
+  courseIssues: CourseIssueError[];
   html: string;
   renderer?: string;
   renderedElementNames?: string[];
