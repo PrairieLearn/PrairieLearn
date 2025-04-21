@@ -2,9 +2,9 @@
 
 See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/elements) for example elements.
 
-Element code uses the libraries in [the `python/` module](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/python).
+Element code uses the [`prairielearn` module](https://prairielearn.readthedocs.io/en/latest/python-reference/) for common functionality like parsing attributes and computing scores.
 
-### Anatomy of an element
+## Anatomy of an element
 
 The system-wide elements available in the current build of the PrairieLearn server
 live in `[PrairieLearn directory]/elements` inside a folder corresponding to the element name.
@@ -25,7 +25,7 @@ parsing the student's submission, and optionally grading the submission.
 As a simple example, element `pl-my-element` would have the following file
 structure:
 
-```
+```text
 pl-my-element
 +-- info.json
 |-- pl-my-element.py
@@ -36,7 +36,7 @@ pl-my-element
 
 And an `info.json` with the following contents:
 
-```json
+```json title="info.json"
 {
   "controller": "pl-my-element.py",
   "dependencies": {
@@ -46,7 +46,7 @@ And an `info.json` with the following contents:
 }
 ```
 
-### Element functions
+## Element functions
 
 All element functions are of the following form:
 
@@ -99,19 +99,19 @@ The element functions are:
 | `generate()` | `None`        | `correct_answers`, `params`                                                                              | `extensions`, `options`, `variant_seed`                                                                                                                                                                                                     | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed.                                                                                                                                                                                                           |
 | `prepare()`  | `None`        | `correct_answers`, `params`                                                                              | `extensions`, `options`, `variant_seed`                                                                                                                                                                                                     | Final question preparation after element code has run. Can modify data as necessary.                                                                                                                                                                                                                                                                                             |
 | `render()`   | `str` (html)  |                                                                                                          | `correct_answers`, `editable`, `extensions`, `feedback`, `format_errors`, `manual_grading`, `num_valid_submissions`, `options`, `panel`, `params`, `partial_scores`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed`, | Render the HTML for one panel and return it as a string.                                                                                                                                                                                                                                                                                                                         |
-| `parse()`    | `None`        | `correct_answers`, `feedback`, `format_errors`, `submitted_answers`                                      | `extensions`, `options`, `params`, `raw_submitted_answers`, `variant_seed`                                                                                                                                                                  | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable.                                                                                                                                                                                                                                                                                 |
+| `parse()`    | `None`        | `correct_answers`, `feedback`, `format_errors`, `params`, `submitted_answers`                            | `extensions`, `options`, `raw_submitted_answers`, `variant_seed`                                                                                                                                                                            | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable.                                                                                                                                                                                                                                                                                 |
 | `grade()`    | `None`        | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `extensions`, `options`, `raw_submitted_answers`, `variant_seed`                                                                                                                                                                            | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]` respectively. **Note:** Avoid modifying the `data["feedback"]` dictionary, as this is meant to be used by custom questions.                                                                |
 | `test()`     | `None`        | `format_errors`, `partial_scores`, `raw_submitted_answers`, `score`                                      | `extensions`, `gradable`, `test_type`                                                                                                                                                                                                       | Creates a test submission for this element, used when running tests from the "Settings" panel. Should set a value in `data["raw_submitted_answers"][var]` and expected score in `data["partial_scores"][var]` (or `data["format_errors"][var]` if `invalid`). The type of input to test is given in `data["test_type"]`, and can be one of `correct`, `incorrect`, or `invalid`. |
 
 The above table describes the purpose of each function and the values in `data` that are allowed to be modified. Any permitted changes to the values in `data` will be persisted to the database. No function is allowed to add or delete keys in `data`.
 
-### Element dependencies
+## Element dependencies
 
 It's likely that your element will depend on certain client-side assets, such as scripts or stylesheets. To keep clean separation of HTML, CSS, and JS, you can place those dependencies in other files. If you depend on libraries like `lodash` or `d3`, you can also link to node modules containing these libraries. PrairieLearn will compile a list of all dependencies needed by all elements on a page, deduplicate the dependencies, and ensure they are loaded on the page.
 
 Dependencies are listed in your element's `info.json`. You can configure them for your element as follows:
 
-```json
+```json title="info.json"
 {
   "controller": "pl-my-element.py",
   "dependencies": {
@@ -134,13 +134,13 @@ The different types of dependency properties currently available are summarized 
 | `clientFilesCourseStyles`  | The styles required by this element relative to `[course directory]/clientFilesCourse`. _(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)_  |
 | `clientFilesCourseScripts` | The scripts required by this element relative to `[course directory]/clientFilesCourse`. _(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)_ |
 
-The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated and should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](dev-guide.md#html-style).
+The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated and should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](dev-guide/index.md#html-style).
 
 While the use of node module dependencies in course elements is supported, it is recommended that caution be used when doing so. In particular, note that node modules may be updated without warning, which in some cases may break your element. If your code relies on a particular version of a node module, it is recommended that you copy the module into your element directory or `courseFilesCourse` and link to that module from there instead.
 
 In addition to static dependencies, elements can also declare dynamic dependencies, corresponding to scripts that are loaded only if they are deemed necessary. For example, if an element may use the `d3` library, but only in certain cases, it can declare a dependency on `d3`:
 
-```json
+```json title="info.json"
 {
   "controller": "pl-my-element.py",
   "dependencies": {
@@ -176,7 +176,7 @@ Note that the key used in the dynamic dependencies will be shared among all elem
 - For element scripts: use the name of the element, followed by a slash, followed by the name of the script. For example, if the element is named `pl-my-element` and the script is named `my-element.js`, then the key should be `pl-my-element/my-element.js`.
 - For `clientFilesCourse` scripts: use any course-specific convention that does not clash with the naming above.
 
-You can also find the types of dependencies defined in these schema files:
+You can also find more detail about the types of dependencies in the schema references:
 
-- [Schema for system-wide elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoElementCore.json)
-- [Schema for course-specific elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoElementCourse.json)
+- [System-wide elements](./schemas/infoElementCore.md)
+- [Course-specific elements](./schemas/infoElementCourse.md)

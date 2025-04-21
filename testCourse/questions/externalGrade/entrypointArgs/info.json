@@ -1,0 +1,15 @@
+{
+  "uuid": "4b34f30a-4ce8-4798-8ba8-26ed5ac69336",
+  "title": "External Grading: Alpine Linux with arguments",
+  "topic": "Autograder",
+  "tags": ["code", "v3"],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "alpine:latest",
+    "entrypoint": ["/grade/tests/grade.sh", "answer with space"],
+    "timeout": 10
+  }
+}

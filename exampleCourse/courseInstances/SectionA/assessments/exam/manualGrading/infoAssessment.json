@@ -63,7 +63,11 @@
     {
       "title": "Manually graded questions",
       "questions": [
-        { "id": "demo/manualGrade/codeUpload", "points": [15, 12, 9], "manualPerc": 40 },
+        {
+          "id": "demo/manualGrade/codeUpload",
+          "points": [15, 12, 9],
+          "comment": "This question has 40% manual percentage. This is not overridden here for testing purposes."
+        },
         { "id": "demo/fileDownloadUpload", "points": [10] },
         { "id": "demo/markdownEditorLivePreview", "points": [5] }
       ]

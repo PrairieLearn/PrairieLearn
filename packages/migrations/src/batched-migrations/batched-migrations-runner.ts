@@ -12,13 +12,13 @@ import {
 
 import { BatchedMigrationRunner } from './batched-migration-runner.js';
 import {
-  BatchedMigrationRowSchema,
+  type BatchedMigrationImplementation,
   type BatchedMigrationRow,
-  insertBatchedMigration,
+  BatchedMigrationRowSchema,
   type BatchedMigrationStatus,
+  insertBatchedMigration,
   selectBatchedMigrationForTimestamp,
   updateBatchedMigrationStatus,
-  type BatchedMigrationImplementation,
   validateBatchedMigrationImplementation,
 } from './batched-migration.js';
 

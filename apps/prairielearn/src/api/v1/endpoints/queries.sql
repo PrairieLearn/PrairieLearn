@@ -54,6 +54,7 @@ WITH
       a.number AS assessment_number,
       u.user_id,
       u.uid AS user_uid,
+      u.uin AS user_uin,
       u.name AS user_name,
       users_get_displayed_role (u.user_id, ci.id) AS user_role,
       ai.max_points,
@@ -228,6 +229,8 @@ FROM
 WITH
   object_data AS (
     SELECT
+      z.number as zone_number,
+      z.title as zone_title,
       q.id AS question_id,
       q.qid AS question_name,
       iq.id AS instance_question_id,
@@ -239,7 +242,7 @@ WITH
         aq.manual_perc,
         q.manual_perc,
         -- This is a fallback for questions where manual percentage is not populated
-        100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_points, 0), 1)
+        100 * COALESCE(aq.max_manual_points, 0) / COALESCE(NULLIF(aq.max_points, 0), 1)
       ) AS assessment_question_manual_perc,
       iq.points AS instance_question_points,
       iq.auto_points AS instance_question_auto_points,
@@ -256,6 +259,8 @@ WITH
       JOIN questions AS q ON (q.id = aq.question_id)
       JOIN assessments AS a ON (a.id = aq.assessment_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+      JOIN zones AS z ON (z.id = ag.zone_id)
     WHERE
       ai.id = $unsafe_assessment_instance_id
       AND ci.id = $course_instance_id
@@ -279,6 +284,7 @@ WITH
       s.id AS submission_id,
       u.user_id,
       u.uid AS user_uid,
+      u.uin AS user_uin,
       u.name AS user_name,
       users_get_displayed_role (u.user_id, ci.id) AS user_role,
       gi.id AS group_id,
@@ -291,6 +297,16 @@ WITH
       ai.number AS assessment_instance_number,
       q.id AS question_id,
       q.qid AS question_name,
+      top.name AS question_topic,
+      (
+        SELECT
+          COALESCE(JSONB_AGG(tg.name), '[]'::jsonb) AS tags
+        FROM
+          question_tags AS qt
+          JOIN tags AS tg ON (tg.id = qt.tag_id)
+        WHERE
+          q.id = qt.question_id
+      ) AS question_tags,
       iq.id AS instance_question_id,
       iq.number AS instance_question_number,
       aq.max_points AS assessment_question_max_points,
@@ -300,7 +316,7 @@ WITH
         aq.manual_perc,
         q.manual_perc,
         -- This is a fallback for questions where manual percentage is not populated
-        100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_points, 0), 1)
+        100 * COALESCE(aq.max_manual_points, 0) / COALESCE(NULLIF(aq.max_points, 0), 1)
       ) AS assessment_question_manual_perc,
       iq.points AS instance_question_points,
       iq.auto_points AS instance_question_auto_points,
@@ -370,6 +386,7 @@ WITH
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN questions AS q ON (q.id = aq.question_id)
+      JOIN topics AS top ON (top.id = q.topic_id)
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
       LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)

@@ -17,6 +17,7 @@ export function NavbarCourseSwitcher({
       return html`
         <a
           class="dropdown-item ${idsEqual(c.id, current_course_id) ? 'active' : ''}"
+          aria-current="${idsEqual(c.id, current_course_id) ? 'page' : ''}"
           href="${plainUrlPrefix}/course/${c.id}/course_admin"
         >
           ${c.short_name}

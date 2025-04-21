@@ -1,5 +1,4 @@
 import fg from 'fast-glob';
-import _ from 'lodash';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -57,7 +56,7 @@ async function makeVariant(
   variant: VariantCreationData;
 }> {
   let variant_seed: string;
-  if (_.has(options, 'variant_seed') && options.variant_seed != null) {
+  if (options.variant_seed != null) {
     variant_seed = options.variant_seed;
   } else {
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
@@ -65,7 +64,7 @@ async function makeVariant(
 
   const questionModule = questionServers.getModule(question.type);
   const { courseIssues, data } = await questionModule.generate(question, course, variant_seed);
-  const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+  const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
   let variant: VariantCreationData = {
     variant_seed,
     params: data.params || {},
@@ -94,7 +93,7 @@ async function makeVariant(
       variant,
     );
     courseIssues.push(...prepareCourseIssues);
-    const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+    const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
     variant = {
       variant_seed,
       params: data.params || {},
@@ -114,6 +113,7 @@ async function makeVariant(
  * @param variant - The variant.
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The current authenticated user.
  */
 export async function getDynamicFile(
@@ -121,6 +121,7 @@ export async function getDynamicFile(
   variant: Variant,
   question: Question,
   variant_course: Course,
+  user_id: string,
   authn_user_id: string,
 ): Promise<Buffer> {
   const question_course = await getQuestionCourse(question, variant_course);
@@ -137,7 +138,14 @@ export async function getDynamicFile(
 
   const studentMessage = 'Error creating file: ' + filename;
   const courseData = { variant, question, course: variant_course };
-  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+  await writeCourseIssues(
+    courseIssues,
+    variant,
+    user_id,
+    authn_user_id,
+    studentMessage,
+    courseData,
+  );
   return fileData;
 }
 
@@ -309,7 +317,14 @@ async function makeAndInsertVariant(
 
   const studentMessage = 'Error creating question variant';
   const courseData = { variant, question, course: variant_course };
-  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+  await writeCourseIssues(
+    courseIssues,
+    variant,
+    user_id,
+    authn_user_id,
+    studentMessage,
+    courseData,
+  );
   return variant;
 }
 

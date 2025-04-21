@@ -24,7 +24,7 @@ SELECT
     aq.manual_perc,
     -- This is a fallback for assessment questions where manual percentage is not populated
     CASE
-      WHEN aq.id IS NOT NULL THEN 100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_points, 0), 1)
+      WHEN aq.id IS NOT NULL THEN 100 * COALESCE(aq.max_manual_points, 0) / COALESCE(NULLIF(aq.max_points, 0), 1)
     END,
     q.manual_perc,
     -- This is a fallback for questions where manual percentage is not populated
@@ -59,6 +59,7 @@ WITH
   updated_variant AS (
     UPDATE variants
     SET
+      params = $params,
       true_answer = $true_answer
     WHERE
       id = $variant_id
@@ -74,7 +75,7 @@ SELECT
     aq.manual_perc,
     -- This is a fallback for assessment questions where manual percentage is not populated
     CASE
-      WHEN aq.id IS NOT NULL THEN 100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_points, 0), 1)
+      WHEN aq.id IS NOT NULL THEN 100 * COALESCE(aq.max_manual_points, 0) / COALESCE(NULLIF(aq.max_points, 0), 1)
     END,
     q.manual_perc,
     -- This is a fallback for questions where manual percentage is not populated
@@ -186,7 +187,8 @@ WITH
       requires_manual_grading = (
         requires_manual_grading
         OR $requires_manual_grading
-      )
+      ),
+      is_ai_graded = FALSE
     WHERE
       id = $instance_question_id
   )

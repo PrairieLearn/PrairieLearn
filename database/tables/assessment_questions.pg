@@ -22,6 +22,7 @@ columns
     incremental_submission_score_array_averages: double precision[]
     incremental_submission_score_array_variances: double precision[]
     init_points: double precision
+    json_grade_rate_minutes: double precision
     last_submission_score_hist: double precision[]
     last_submission_score_variance: double precision
     manual_perc: double precision

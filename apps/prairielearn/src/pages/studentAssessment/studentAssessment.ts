@@ -3,57 +3,58 @@ import asyncHandler from 'express-async-handler';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
-import { IdSchema } from '../../lib/db-types.js';
 import {
-  joinGroup,
+  GroupOperationError,
+  canUserAssignGroupRoles,
   createGroup,
   getGroupConfig,
   getGroupId,
   getGroupInfo,
-  updateGroupRoles,
+  joinGroup,
   leaveGroup,
-  GroupOperationError,
-  canUserAssignGroupRoles,
+  updateGroupRoles,
 } from '../../lib/groups.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
-import { checkPasswordOrRedirect } from '../../middlewares/studentAssessmentAccess.js';
+import logPageView from '../../middlewares/logPageView.js';
+import selectAndAuthzAssessment from '../../middlewares/selectAndAuthzAssessment.js';
+import { StudentAssessmentAccess } from '../../middlewares/studentAssessmentAccess.html.js';
+import studentAssessmentAccess, {
+  checkPasswordOrRedirect,
+} from '../../middlewares/studentAssessmentAccess.js';
+import studentAssessmentRedirect from '../../middlewares/studentAssessmentRedirect.js';
 
 import { StudentAssessment } from './studentAssessment.html.js';
 
-const router = Router();
-const sql = loadSqlEquiv(import.meta.url);
+const router = Router({ mergeParams: true });
+
+router.use(selectAndAuthzAssessment);
+router.use(studentAssessmentRedirect);
+router.use(studentAssessmentAccess);
+router.use(logPageView('studentAssessment'));
 
 router.get(
   '/',
   asyncHandler(async function (req, res) {
-    if (res.locals.assessment.multiple_instance) {
-      if (res.locals.assessment.type === 'Homework') {
-        throw new AugmentedError('"Homework" assessments do not support multiple instances', {
-          data: { assessment: res.locals.assessment },
-        });
-      }
-      // The user has landed on this page to create a new assessment instance.
-      // Proceed even if there are existing instances.
-    } else {
-      // If the assessment is single-instance, check if the user already has an
-      // instance. If so, redirect to it.
-      const assessment_instance_id = await queryOptionalRow(
-        sql.select_single_assessment_instance,
-        {
-          assessment_id: res.locals.assessment.id,
-          user_id: res.locals.user.user_id,
-        },
-        IdSchema,
-      );
-      if (assessment_instance_id != null) {
-        res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
-        return;
-      }
+    if (!(res.locals.authz_result?.active ?? true)) {
+      // If the student had started the assessment already, they would have been
+      // redirected to the assessment instance by the `studentAssessmentRedirect`
+      // middleware. So, if we're here, it means that the student did not start
+      // the assessment (or that they're trying to start a new instance of a
+      // multi-instance assessment), and the assessment is not active.
+      //
+      // This check means that students will be unable to join a group if an
+      // assessment is inactive, which we're deeming to be sensible behavior.
+      res.status(403).send(StudentAssessmentAccess({ resLocals: res.locals }));
+      return;
     }
 
+    if (res.locals.assessment.multiple_instance && res.locals.assessment.type === 'Homework') {
+      throw new AugmentedError('"Homework" assessments do not support multiple instances', {
+        data: { assessment: res.locals.assessment },
+      });
+    }
     // Before allowing the user to create a new assessment instance, we need
     // to check if the current access rules require a password. If they do,
     // we'll ensure that the password has already been entered before allowing
@@ -65,16 +66,15 @@ router.get(
     if (!res.locals.assessment.group_work && res.locals.assessment.type === 'Homework') {
       const time_limit_min = null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
-      const assessment_instance_id = await makeAssessmentInstance(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.assessment.group_work,
-        res.locals.authn_user.user_id,
-        res.locals.authz_data.mode,
+      const assessment_instance_id = await makeAssessmentInstance({
+        assessment: res.locals.assessment,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        mode: res.locals.authz_data.mode,
         time_limit_min,
-        res.locals.authz_data.date,
+        date: res.locals.authz_data.date,
         client_fingerprint_id,
-      );
+      });
       res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
       return;
     }
@@ -139,16 +139,15 @@ router.post(
       const time_limit_min =
         res.locals.assessment.type === 'Exam' ? res.locals.authz_result.time_limit_min : null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
-      const assessment_instance_id = await makeAssessmentInstance(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.assessment.group_work,
-        res.locals.authn_user.user_id,
-        res.locals.authz_data.mode,
+      const assessment_instance_id = await makeAssessmentInstance({
+        assessment: res.locals.assessment,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        mode: res.locals.authz_data.mode,
         time_limit_min,
-        res.locals.req_date,
+        date: res.locals.req_date,
         client_fingerprint_id,
-      );
+      });
       res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
     } else if (req.body.__action === 'join_group') {
       await joinGroup(

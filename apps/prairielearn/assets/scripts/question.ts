@@ -1,6 +1,6 @@
 import { type Socket, io } from 'socket.io-client';
 
-import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 
 import type {
   StatusMessage,
@@ -27,12 +27,14 @@ onDocumentReady(() => {
   setupDynamicObjects();
   disableOnSubmit();
 
-  $('.js-submission-body.render-pending').on('show.bs.collapse', loadPendingSubmissionPanel);
+  $<HTMLDivElement>('.js-submission-body.render-pending').on('show.bs.collapse', (e) => {
+    loadPendingSubmissionPanel(e.currentTarget, false);
+  });
 
-  const copyQuestionForm = document.querySelector<HTMLFormElement>('#copyQuestionModal form');
+  const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
   if (copyQuestionForm) {
     const courseSelect = copyQuestionForm.querySelector<HTMLSelectElement>(
-      '#copyQuestionModal select[name="to_course_id"]',
+      'select[name="to_course_id"]',
     );
     courseSelect?.addEventListener('change', () => {
       const option = courseSelect.selectedOptions[0];
@@ -106,65 +108,25 @@ function handleStatusChange(socket: Socket, msg: StatusMessage) {
       // from more recent grading jobs to replace the existing ones.
       if (status !== 'graded' || gradingJobId !== submission.grading_job_id) {
         // Let's get results for this job!
-        fetchResults(socket, submission.id);
+        fetchResults(submission.id);
+
+        // We don't need the socket anymore.
+        socket.close();
       }
     }
   });
 }
 
-function fetchResults(socket: Socket, submissionId: string) {
-  const questionContainer = document.querySelector<HTMLElement>('.question-container');
+function fetchResults(submissionId: string) {
+  $('#submissionInfoModal-' + submissionId).modal('hide');
 
-  if (!questionContainer) return;
+  const submissionPanel = document.getElementById('submission-' + submissionId);
+  if (!submissionPanel) return;
 
-  const {
-    variantId,
-    questionId,
-    instanceQuestionId,
-    userId,
-    variantToken,
-    urlPrefix,
-    questionContext,
-    csrfToken,
-    authorizedEdit,
-  } = questionContainer.dataset;
+  const submissionBody = submissionPanel.querySelector<HTMLDivElement>('.js-submission-body');
+  if (!submissionBody) return;
 
-  const modal = $('#submissionInfoModal-' + submissionId);
-  const wasModalOpen = (modal.data('bs.modal') || {})._isShown;
-  modal.modal('hide');
-
-  socket.emit(
-    'getResults',
-    {
-      question_id: questionId,
-      instance_question_id: instanceQuestionId === '' ? null : instanceQuestionId,
-      variant_id: variantId,
-      user_id: userId,
-      variant_token: variantToken,
-      submission_id: submissionId,
-      url_prefix: urlPrefix,
-      question_context: questionContext,
-      csrf_token: csrfToken,
-      // Indicates whether submissions are allowed, either because
-      // the instance question is part of the current user's
-      // assessment instance (authorized_edit==true) or because the
-      // question is open in preview mode (authz_result==undefined)
-      authorized_edit: authorizedEdit === 'true',
-    },
-    function (msg: SubmissionPanels | null) {
-      // We're done with the socket for this incarnation of the page
-      socket.close();
-      if (msg) {
-        updateDynamicPanels(msg, submissionId);
-      } else {
-        console.error(`Error retrieving results for submission ${submissionId}`);
-      }
-      // Restore modal state if need be
-      if (wasModalOpen) {
-        $('#submissionInfoModal-' + submissionId).modal('show');
-      }
-    },
-  );
+  loadPendingSubmissionPanel(submissionBody, true);
 }
 
 function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
@@ -240,10 +202,15 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     mathjaxTypeset();
   }
   if (msg.questionScorePanel) {
-    const questionScorePanel = document.getElementById('question-score-panel');
-    if (questionScorePanel) {
-      questionScorePanel.outerHTML = msg.questionScorePanel;
-    }
+    const parsedHTML = parseHTMLElement(document, msg.questionScorePanel);
+
+    // We might be getting new markup for just the content, or legacy markup
+    // for the whole panel.
+    //
+    // TODO: switch back to using a specific ID once we drop the legacy markup.
+    // Using a specific ID ensures we can find things easily via grep.
+    const targetElement = document.getElementById(parsedHTML.id);
+    targetElement?.replaceWith(parsedHTML);
   }
   if (msg.assessmentScorePanel) {
     const assessmentScorePanel = document.getElementById('assessment-score-panel');
@@ -252,10 +219,15 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     }
   }
   if (msg.questionPanelFooter) {
-    const questionPanelFooter = document.getElementById('question-panel-footer');
-    if (questionPanelFooter) {
-      questionPanelFooter.outerHTML = msg.questionPanelFooter;
-    }
+    const parsedHTML = parseHTMLElement(document, msg.questionPanelFooter);
+
+    // We might be getting new markup for just the content, or legacy markup
+    // for the whole panel.
+    //
+    // TODO: switch back to using a specific ID once we drop the legacy markup.
+    // Using a specific ID ensures we can find things easily via grep.
+    const targetElement = document.getElementById(parsedHTML.id);
+    targetElement?.replaceWith(parsedHTML);
   }
   if (msg.questionNavNextButton) {
     const questionNavNextButton = document.getElementById('question-nav-next');
@@ -323,11 +295,17 @@ function setupDynamicObjects() {
   }
 }
 
-function loadPendingSubmissionPanel(this: HTMLDivElement) {
-  const { submissionId, dynamicRenderUrl } = this.dataset;
+function loadPendingSubmissionPanel(panel: HTMLDivElement, includeScorePanels: boolean) {
+  const { submissionId, dynamicRenderUrl } = panel.dataset;
   if (submissionId == null || dynamicRenderUrl == null) return;
 
-  fetch(dynamicRenderUrl)
+  const url = new URL(dynamicRenderUrl, window.location.origin);
+
+  if (includeScorePanels) {
+    url.searchParams.set('render_score_panels', 'true');
+  }
+
+  fetch(url)
     .then(async (response) => {
       // If the response is not a 200, delegate to the error handler (catch block)
       if (!response.ok) throw new Error('Failed to fetch submission');
@@ -335,11 +313,7 @@ function loadPendingSubmissionPanel(this: HTMLDivElement) {
       updateDynamicPanels(msg, submissionId);
     })
     .catch(() => {
-      const container = document.querySelector(`#submission-${submissionId}-body`);
-      if (container != null) {
-        container.innerHTML =
-          '<div class="card-body submission-body">Error retrieving submission</div>';
-      }
+      panel.innerHTML = '<div class="card-body submission-body">Error retrieving submission</div>';
     });
 }
 

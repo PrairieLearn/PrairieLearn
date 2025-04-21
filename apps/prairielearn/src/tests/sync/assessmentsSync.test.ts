@@ -19,6 +19,11 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import type {
+  AssessmentJsonInput,
+  AssessmentSetJsonInput,
+  GroupRoleJsonInput,
+} from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -31,8 +36,8 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function makeAssessment(
   courseData: util.CourseData,
   type: 'Homework' | 'Exam' = 'Exam',
-): util.Assessment {
-  const assessmentSet = courseData.course.assessmentSets[0].name;
+): AssessmentJsonInput {
+  const assessmentSet = courseData.course.assessmentSets?.[0].name ?? '';
   return {
     uuid: uuidv4(),
     type,
@@ -47,20 +52,20 @@ function makeAssessment(
 /**
  * Makes a new assessment.
  */
-function makeAssessmentSet(): util.AssessmentSet {
+function makeAssessmentSet() {
   return {
     name: 'new assessment set',
     abbreviation: 'new',
     heading: 'a new assessment set to sync',
     color: 'red1',
-  };
+  } satisfies AssessmentSetJsonInput;
 }
 
-function getGroupRoles(): util.GroupRole[] {
+function getGroupRoles() {
   return [
     { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
     { name: 'Contributor' },
-  ];
+  ] satisfies GroupRoleJsonInput[];
 }
 
 function getPermission(permissions, groupRole, assessmentQuestion) {
@@ -226,6 +231,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10]);
     assert.equal(firstAssessmentQuestion.max_manual_points, 0);
+    assert.equal(firstAssessmentQuestion.manual_perc, 0);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -235,6 +241,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
     assert.equal(secondAssessmentQuestion.max_manual_points, 0);
+    assert.equal(secondAssessmentQuestion.manual_perc, 0);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
@@ -244,6 +251,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [7]);
     assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
+    assert.equal(thirdAssessmentQuestion.manual_perc, 100);
   });
 
   it('syncs alternatives in a Homework zone', async () => {
@@ -288,6 +296,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.max_points, 20);
     assert.equal(firstAssessmentQuestion.max_auto_points, 20);
     assert.equal(firstAssessmentQuestion.max_manual_points, 0);
+    assert.equal(firstAssessmentQuestion.manual_perc, 0);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -297,6 +306,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.max_points, 15);
     assert.equal(secondAssessmentQuestion.max_auto_points, 15);
     assert.equal(secondAssessmentQuestion.max_manual_points, 0);
+    assert.equal(secondAssessmentQuestion.manual_perc, 0);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
@@ -306,6 +316,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.max_points, 7);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
     assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
+    assert.equal(thirdAssessmentQuestion.manual_perc, 100);
   });
 
   it('syncs auto and manual points in an Exam zone', async () => {
@@ -350,6 +361,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [13]);
     assert.equal(firstAssessmentQuestion.max_manual_points, 3);
+    assert.closeTo(firstAssessmentQuestion.manual_perc ?? 0, 300 / 13, 1e-6);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -359,6 +371,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [8]);
     assert.equal(secondAssessmentQuestion.max_manual_points, 3);
+    assert.closeTo(secondAssessmentQuestion.manual_perc ?? 0, 300 / 8, 1e-6);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
@@ -368,6 +381,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.max_auto_points, 1);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [8]);
     assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
+    assert.closeTo(thirdAssessmentQuestion.manual_perc ?? 0, 700 / 8, 1e-6);
   });
 
   it('syncs auto and manual points in a Homework zone', async () => {
@@ -400,7 +414,6 @@ describe('Assessment syncing', () => {
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['hwwithmanual1'] = assessment;
     await util.writeAndSyncCourseData(courseData);
-
     const syncedData = await getSyncedAssessmentData('hwwithmanual1');
     assert.lengthOf(syncedData.zones, 1);
     assert.lengthOf(syncedData.alternative_groups, 2);
@@ -414,6 +427,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.max_points, 23);
     assert.equal(firstAssessmentQuestion.max_auto_points, 20);
     assert.equal(firstAssessmentQuestion.max_manual_points, 3);
+    assert.closeTo(firstAssessmentQuestion.manual_perc ?? 0, 300 / 23, 1e-6);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -423,6 +437,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.max_points, 18);
     assert.equal(secondAssessmentQuestion.max_auto_points, 15);
     assert.equal(secondAssessmentQuestion.max_manual_points, 3);
+    assert.closeTo(secondAssessmentQuestion.manual_perc ?? 0, 300 / 18, 1e-6);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
@@ -432,6 +447,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.max_points, 8);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 1);
     assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
+    assert.closeTo(thirdAssessmentQuestion.manual_perc ?? 0, 700 / 8, 1e-6);
   });
 
   it('syncs point arrays in an Exam zone', async () => {
@@ -474,6 +490,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10, 7, 5, 2, 1]);
     assert.equal(firstAssessmentQuestion.max_manual_points, 0);
+    assert.equal(firstAssessmentQuestion.manual_perc, 0);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -483,6 +500,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5, 3]);
     assert.equal(secondAssessmentQuestion.max_manual_points, 0);
+    assert.equal(secondAssessmentQuestion.manual_perc, 0);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
@@ -492,6 +510,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [7, 6, 5]);
     assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
+    assert.equal(thirdAssessmentQuestion.manual_perc, 100);
   });
 
   it('syncs autoPoint arrays in an Exam zone', async () => {
@@ -536,6 +555,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [18, 15, 13, 10, 9]);
     assert.equal(firstAssessmentQuestion.max_manual_points, 8);
+    assert.closeTo(firstAssessmentQuestion.manual_perc ?? 0, 800 / 18, 1e-6);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -545,6 +565,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [13, 11]);
     assert.equal(secondAssessmentQuestion.max_manual_points, 8);
+    assert.closeTo(secondAssessmentQuestion.manual_perc ?? 0, 800 / 13, 1e-6);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
@@ -554,6 +575,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.max_auto_points, 7);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [10, 9, 8]);
     assert.equal(thirdAssessmentQuestion.max_manual_points, 3);
+    assert.closeTo(thirdAssessmentQuestion.manual_perc ?? 0, 300 / 10, 1e-6);
   });
 
   it('reuses assessment questions when questions are removed and added again', async () => {
@@ -1783,7 +1805,7 @@ describe('Assessment syncing', () => {
       title: 'test zone',
       questions: [
         {
-          id: 'i do not exist',
+          id: 'i do not exist ',
           points: [1, 2, 3],
         },
       ],
@@ -1793,7 +1815,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment?.sync_errors,
-      /The following questions do not exist in this course: i do not exist/,
+      /The following questions do not exist in this course: "i do not exist "/,
     );
   });
 
@@ -1849,7 +1871,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment?.sync_errors,
-      /The following questions are used more than once: test/,
+      /The following questions are used more than once: "test"/,
     );
   });
 
@@ -2064,7 +2086,7 @@ describe('Assessment syncing', () => {
   it('creates entry in database in the case of a missing UUID', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing UUID.
     delete assessment.uuid;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -2080,7 +2102,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     const oldUuid = assessment.uuid;
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing UUID.
     delete assessment.uuid;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
@@ -2160,7 +2182,7 @@ describe('Assessment syncing', () => {
     // now change the UUID of the assessment, add an error and re-sync
     const newAssessment = { ...originalAssessment };
     newAssessment.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing title.
     delete newAssessment.title;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['repeatedAssessment'] =
       newAssessment;
@@ -2280,6 +2302,31 @@ describe('Assessment syncing', () => {
     assert.equal(newAssessmentRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 
+  it('forbids draft questions on assessments', async () => {
+    const courseData = util.getCourseData();
+
+    // "Rename" the default question such that it is a draft.
+    courseData.questions['__drafts__/draft_1'] = courseData.questions[util.QUESTION_ID];
+    delete courseData.questions[util.QUESTION_ID];
+
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [{ id: '__drafts__/draft_1', points: 5 }],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('fail');
+    assert.isOk(syncedData.assessment.sync_errors);
+    console.log(syncedData.assessment.sync_errors);
+    assert.match(
+      syncedData.assessment?.sync_errors,
+      /The following questions are marked as draft and therefore cannot be used in assessments: "__drafts__\/draft_1"/,
+    );
+  });
+
   describe('exam UUID validation', () => {
     let originalCheckAccessRulesExamUuid: boolean;
     before(() => {
@@ -2359,5 +2406,183 @@ describe('Assessment syncing', () => {
       const syncedAssessment = await findSyncedAssessment('fail');
       assert.isNotOk(syncedAssessment?.sync_warnings);
     });
+  });
+  it('syncs JSON data for grade rate minutes correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.gradeRateMinutes = 1;
+    assessment.zones?.push({
+      title: 'zone 1',
+      gradeRateMinutes: 2,
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 1,
+          gradeRateMinutes: 3,
+        },
+        {
+          points: 1,
+          gradeRateMinutes: 4,
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              gradeRateMinutes: 5,
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.equal(syncedData.assessment.json_grade_rate_minutes, 1);
+    assert.equal(syncedData.zones[0].json_grade_rate_minutes, 2);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID,
+    );
+    assert.equal(firstAssessmentQuestion?.grade_rate_minutes, 3);
+    assert.equal(firstAssessmentQuestion?.json_grade_rate_minutes, 3);
+
+    const alternativeGroup = syncedData.alternative_groups.find((ag) => ag.number === 2);
+    assert.equal(alternativeGroup?.json_grade_rate_minutes, 4);
+
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+    );
+    assert.equal(secondAssessmentQuestion?.grade_rate_minutes, 5);
+    assert.equal(secondAssessmentQuestion?.json_grade_rate_minutes, 5);
+
+    const thirdAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
+    );
+    assert.equal(thirdAssessmentQuestion?.grade_rate_minutes, 4);
+    assert.equal(thirdAssessmentQuestion?.json_grade_rate_minutes, null);
+  });
+
+  it('syncs JSON data for group role permissions correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.groupWork = true;
+    assessment.groupRoles = [
+      {
+        name: 'Manager',
+        minimum: 1,
+        maximum: 1,
+        canAssignRoles: true,
+      },
+      {
+        name: 'Recorder',
+        minimum: 1,
+        maximum: 1,
+      },
+      {
+        name: 'Reflector',
+        minimum: 1,
+        maximum: 1,
+      },
+      {
+        name: 'Contributor',
+      },
+    ];
+    assessment.canView = ['Manager'];
+    assessment.canSubmit = ['Recorder'];
+    assessment.zones?.push({
+      title: 'zone 1',
+      canView: ['Manager', 'Recorder', 'Contributor'],
+      canSubmit: ['Recorder', 'Contributor'],
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 1,
+          canView: ['Contributor'],
+          canSubmit: ['Contributor'],
+        },
+        {
+          points: 1,
+          canView: ['Manager'],
+          canSubmit: ['Recorder'],
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.deepEqual(syncedData.assessment.json_can_view, ['Manager']);
+    assert.deepEqual(syncedData.assessment.json_can_submit, ['Recorder']);
+    assert.deepEqual(syncedData.zones[0].json_can_view, ['Manager', 'Recorder', 'Contributor']);
+    assert.deepEqual(syncedData.zones[0].json_can_submit, ['Recorder', 'Contributor']);
+    assert.deepEqual(syncedData.alternative_groups[0].json_can_view, ['Contributor']);
+    assert.deepEqual(syncedData.alternative_groups[0].json_can_submit, ['Contributor']);
+    assert.equal(syncedData.alternative_groups[0].json_has_alternatives, false);
+    assert.equal(syncedData.alternative_groups[1].json_has_alternatives, true);
+  });
+
+  it('syncs advanceScorePerc correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.advanceScorePerc = 50;
+    assessment.zones = [
+      {
+        title: 'zone 1',
+        questions: [
+          {
+            id: util.QUESTION_ID,
+            points: 1,
+          },
+        ],
+      },
+      {
+        title: 'zone 2',
+        advanceScorePerc: 60,
+        questions: [
+          {
+            id: util.ALTERNATIVE_QUESTION_ID,
+            points: 1,
+            advanceScorePerc: 70,
+          },
+          {
+            advanceScorePerc: 80,
+            alternatives: [
+              {
+                id: util.MANUAL_GRADING_QUESTION_ID,
+                points: 1,
+              },
+              {
+                id: util.WORKSPACE_QUESTION_ID,
+                points: 1,
+                advanceScorePerc: 90,
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.equal(syncedData.assessment.advance_score_perc, 50);
+    assert.equal(syncedData.zones[0].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[0].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[0].effective_advance_score_perc, 50);
+    assert.equal(syncedData.zones[1].advance_score_perc, 60);
+    assert.equal(syncedData.assessment_questions[1].advance_score_perc, 70);
+    assert.equal(syncedData.assessment_questions[1].effective_advance_score_perc, 70);
+    assert.equal(syncedData.alternative_groups[2].advance_score_perc, 80);
+    assert.equal(syncedData.assessment_questions[2].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[2].effective_advance_score_perc, 80);
+    assert.equal(syncedData.assessment_questions[3].advance_score_perc, 90);
+    assert.equal(syncedData.assessment_questions[3].effective_advance_score_perc, 90);
   });
 });
