@@ -892,6 +892,11 @@ async function legacyTraverseQuestionAndExecuteFunctions(
   };
 }
 
+function maybeNumberWithDefault(value: unknown, defaultValue: number) {
+  if (typeof value === 'number') return value;
+  return defaultValue;
+}
+
 async function processQuestionHtml(
   phase: Phase,
   codeCaller: CodeCaller,
@@ -962,19 +967,15 @@ async function processQuestionHtml(
   } = await processFunction(...args);
 
   if (phase === 'grade' || phase === 'test') {
-    // This aligns with `PartialScore` from question_utils.py
-    // feedback: NotRequired[str | dict[str, str] | Any]
-    const partial_scores: Record<
-      string,
-      { score?: number; weight?: number; feedback?: string | object }
-    > = resultData.partial_scores ?? {};
+    const partial_scores: Record<string, unknown> = resultData.partial_scores ?? {};
 
     if (context.question.partial_credit) {
       let total_weight = 0;
       let total_weight_score = 0;
-      for (const value of Object.values(partial_scores)) {
-        const score = value.score ?? 0;
-        const weight = value.weight ?? 1;
+      for (const val of Object.values(partial_scores)) {
+        const value = !val || typeof val !== 'object' ? {} : (val as Record<string, unknown>);
+        const score = maybeNumberWithDefault(value.score, 0);
+        const weight = maybeNumberWithDefault(value.weight, 1);
         total_weight += weight;
         total_weight_score += weight * score;
       }
@@ -983,7 +984,10 @@ async function processQuestionHtml(
       let score = 0;
       if (
         Object.keys(partial_scores).length > 0 &&
-        Object.values(partial_scores).every((value) => (value?.score ?? 0) >= 1)
+        Object.values(partial_scores).every((val) => {
+          const value = !val || typeof val !== 'object' ? {} : (val as Record<string, unknown>);
+          return maybeNumberWithDefault(value.score, 0) >= 1;
+        })
       ) {
         score = 1;
       }
