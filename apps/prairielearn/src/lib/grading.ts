@@ -265,7 +265,7 @@ async function selectSubmissionForGrading(
   return sqldb.runInTransactionAsync(async () => {
     await sqldb.callAsync('variants_lock', [variant_id]);
 
-    const manualPercentage = await sqldb.queryOptionalRow(
+    const manualPercentage = await sqldb.queryRow(
       sql.select_variant_manual_percentage,
       { variant_id },
       z.number(),
@@ -275,7 +275,7 @@ async function selectSubmissionForGrading(
     // if this is manual grading only. Typically we would not reach this point
     // for these cases, since the grade button is not shown to students, so this
     // is an extra precaution.
-    if (manualPercentage == null || manualPercentage >= 100) return null;
+    if (manualPercentage >= 100) return null;
 
     // Select the most recent submission
     const submission = await sqldb.queryOptionalRow(

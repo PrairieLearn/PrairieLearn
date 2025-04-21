@@ -24,7 +24,7 @@ SELECT
     aq.manual_perc,
     -- This is a fallback for assessment questions where manual percentage is not populated
     CASE
-      WHEN aq.id IS NOT NULL THEN 100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_points, 0), 1)
+      WHEN aq.id IS NOT NULL THEN 100 * COALESCE(aq.max_manual_points, 0) / COALESCE(NULLIF(aq.max_points, 0), 1)
     END,
     q.manual_perc,
     -- This is a fallback for questions where manual percentage is not populated
