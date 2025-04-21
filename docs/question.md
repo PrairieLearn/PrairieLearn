@@ -422,7 +422,7 @@ What happens if we use a `$` to reference the spreadsheet cell location `$A$1`?
 </markdown>
 ```
 
-In scenarios that do not make sense for using the code environment, consider disabling math entirely by
+In scenarios where it does not make sense to use the code environment, consider disabling math entirely by
 adding the `mathjax_ignore` class to an HTML element.
 
 ```html
