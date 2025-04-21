@@ -28,7 +28,7 @@ exampleCourse
     `-- secret1.js
 ```
 
-1. See the [questions documentation](../question.md) for more information.
+1. See the [questions documentation](../question/index.md) for more information.
 2. See the [course instance documentation](../courseInstance.md) for more information.
 3. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
 4. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
@@ -136,9 +136,9 @@ See the [reference for `infoCourse.json`](../schemas/infoCourse.md) for more inf
 
 These options, which apply to all instances of your course, can be set in the `infoCourse.json` file. The properties should be set within an object named `options` as shown in the example above.
 
-| Property                 | Default | Description                                                                                                                                                                                                                                                                                                                                                   |
-| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useNewQuestionRenderer` | `false` | This controls whether to use the legacy renderer or the "new" renderer, as described in the [question configuration documentation](../question.md#the-new-renderer). Although the default is `false` currently to avoid issues with longstanding courses on the platform, most courses will want to set this to `true`, especially if they are newly created. |
+| Property                 | Default | Description                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `useNewQuestionRenderer` | `false` | This controls whether to use the legacy renderer or the "new" renderer, as described in the [question configuration documentation](../question/html.md#the-new-renderer). Although the default is `false` currently to avoid issues with longstanding courses on the platform, most courses will want to set this to `true`, especially if they are newly created. |
 
 ## Assessment sets
 
@@ -381,7 +381,7 @@ The tag order in `infoCourse.json` is the order in which the tags will be listed
 
 ## Sharing Sets
 
-Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to uses, you should make them publicly shared as explained in the [question documentation](../question.md), or the [sharing documentation](../questionSharing.md).
+Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to uses, you should make them publicly shared as explained in the [question documentation](../question/index.md), or the [sharing documentation](../questionSharing.md).
 
 | Property      | Description                                                                                                                                                                                          |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
