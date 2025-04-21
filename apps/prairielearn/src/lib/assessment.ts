@@ -12,6 +12,7 @@ import {
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
   CourseSchema,
+  DateFromISOString,
   IdSchema,
   QuestionSchema,
   VariantSchema,
@@ -594,5 +595,13 @@ export function canDeleteAssessmentInstance(resLocals): boolean {
     // Check that the assessment instance was created by an instructor; bypass
     // this check if the course is an example course.
     (!resLocals.assessment_instance.include_in_statistics || resLocals.course.example_course)
+  );
+}
+
+export async function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
+  return await sqldb.queryRow(
+    sql.select_assessment_instance_last_submission_date,
+    { assessment_instance_id },
+    DateFromISOString.nullable(),
   );
 }
