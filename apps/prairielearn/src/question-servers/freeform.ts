@@ -1579,7 +1579,7 @@ export async function render(
           });
 
           for (const key in elementDynamicDependencies[type]) {
-            if (!Object.hasOwn(dynamicDependencies[type], key)) {
+            if (!Object.hasOwn(dynamicDependencies[resolvedType], key)) {
               dynamicDependencies[resolvedType][key] = elementDynamicDependencies[type][key];
             } else if (
               dynamicDependencies[resolvedType][key] !== elementDynamicDependencies[type][key]
