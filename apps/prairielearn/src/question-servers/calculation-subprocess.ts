@@ -132,7 +132,7 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
-): QuestionServerReturnValue<ParseResultData> {
+): QuestionServerReturnValue<GradeResultData> {
   return await callFunction<GradeResultData>('grade', question_course, question, {
     submission,
     variant,
