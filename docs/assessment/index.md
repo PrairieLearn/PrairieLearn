@@ -199,7 +199,7 @@ Or a slot can contain a _question alternative list_:
 | `alternatives`    | array           | The list of question alternatives if this slot contains multiple alternative questions (can’t be specified with `id`). (Optional; default: none)                            |
 | `numberChoose`    | integer         | If `alternatives` are specified, the number of them to select. (Optional; default `1`).                                                                                     |
 | `triesPerVariant` | integer         | The maximum number of attempts allowed for each question variant (on Homeworks). (Optional; default `1`)                                                                    |
-| `forceMaxPoints`  | boolean         | Whether to force all students to receive maximum points. See [Regrading](../regrading.md). (Optional; default `false`)                                                         |
+| `forceMaxPoints`  | boolean         | Whether to force all students to receive maximum points. See [Regrading](../regrading.md). (Optional; default `false`)                                                      |
 
 Slot specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
 
