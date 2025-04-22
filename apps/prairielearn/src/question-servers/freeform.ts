@@ -896,9 +896,12 @@ async function legacyTraverseQuestionAndExecuteFunctions<T extends ExecutionData
   };
 }
 
-function maybeNumberWithDefault(value: unknown, defaultValue: number) {
-  if (typeof value === 'number') return value;
-  return defaultValue;
+function getPartialScoreValues(val: unknown) {
+  const obj = (typeof val === 'object' && val != null ? val : {}) as Record<string, unknown>;
+  return {
+    score: typeof obj.score === 'number' ? obj.score : 0,
+    weight: typeof obj.weight === 'number' ? obj.weight : 1,
+  };
 }
 
 async function processQuestionHtml<T extends ExecutionData>(
@@ -958,10 +961,8 @@ async function processQuestionHtml<T extends ExecutionData>(
     if (context.question.partial_credit) {
       let total_weight = 0;
       let total_weight_score = 0;
-      for (const val of Object.values(partial_scores)) {
-        const value = !val || typeof val !== 'object' ? {} : (val as Record<string, unknown>);
-        const score = maybeNumberWithDefault(value.score, 0);
-        const weight = maybeNumberWithDefault(value.weight, 1);
+      for (const value of Object.values(resultData.partial_scores ?? {})) {
+        const { score, weight } = getPartialScoreValues(value);
         total_weight += weight;
         total_weight_score += weight * score;
       }
@@ -969,11 +970,10 @@ async function processQuestionHtml<T extends ExecutionData>(
     } else {
       let score = 0;
       if (
-        Object.keys(partial_scores).length > 0 &&
-        Object.values(partial_scores).every((val) => {
-          const value = !val || typeof val !== 'object' ? {} : (val as Record<string, unknown>);
-          return maybeNumberWithDefault(value.score, 0) >= 1;
-        })
+        Object.keys(resultData.partial_scores ?? {}).length > 0 &&
+        Object.values(resultData.partial_scores ?? {}).every(
+          (value) => getPartialScoreValues(value).score >= 1,
+        )
       ) {
         score = 1;
       }
