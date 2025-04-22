@@ -25,11 +25,14 @@ import { FunctionMissingError, withCodeCaller } from '../lib/code-caller/index.j
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
-import * as jsonLoad from '../lib/json-load.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
-import * as schemas from '../schemas/index.js';
+import {
+  ElementCoreJsonSchema,
+  ElementCourseJsonSchema,
+  ElementExtensionJsonSchema,
+} from '../schemas/index.js';
 
 const debug = debugfn('prairielearn:freeform');
 
@@ -46,11 +49,20 @@ const debug = debugfn('prairielearn:freeform');
  * @property {any} course_element_extensions
  */
 
+/** @typedef {import('../schemas/index.js').ElementCoreJson} ElementCoreJson */
+/** @typedef {import('../schemas/index.js').ElementCourseJson} ElementCourseJson */
+/** @typedef {import('./types.js').ElementExtensionJsonExtension} ElementExtensionJsonExtension */
+/** @typedef {Record<string, Record<string, ElementExtensionJsonExtension>>} ElementExtensionNameDirMap */
+/** @typedef {Record<string, ((ElementCoreJson & { type: 'core' }) | (ElementCourseJson & { type: 'course' })) & { name: string, directory: string }>} ElementNameMap */
+
 // Maps core element names to element info
+/** @type {ElementNameMap} */
 let coreElementsCache = {};
 // Maps course IDs to course element info
+/** @type {Record<string, { commit_hash: string | null, data: ElementNameMap }>} */
 let courseElementsCache = {};
 // Maps course IDs to course element extension info
+/** @type {Record<string, { commit_hash: string | null, data: ElementExtensionNameDirMap }>} */
 let courseExtensionsCache = {};
 
 /**
@@ -82,21 +94,15 @@ export async function init() {
  * Takes a directory containing element directories and returns an object
  * mapping element names to that element's controller, dependencies, etc.
  *
- * @param {string}   sourceDir Absolute path to the directory of elements
+ * @param {string} sourceDir Absolute path to the directory of elements
  * @param {'core' | 'course'} elementType The type of element to be loaded
  */
 async function loadElements(sourceDir, elementType) {
-  let elementSchema;
-  switch (elementType) {
-    case 'core':
-      elementSchema = schemas.infoElementCore;
-      break;
-    case 'course':
-      elementSchema = schemas.infoElementCourse;
-      break;
-    default:
-      throw new Error(`Unknown element type ${elementType}`);
-  }
+  const elementSchema = run(() => {
+    if (elementType === 'core') return ElementCoreJsonSchema;
+    if (elementType === 'course') return ElementCourseJsonSchema;
+    throw new Error(`Unknown element type ${elementType}`);
+  });
 
   let files;
   try {
@@ -118,37 +124,38 @@ async function loadElements(sourceDir, elementType) {
   });
 
   // Construct a dictionary mapping element names to their info.
+  /** @type {ElementNameMap} */
   const elements = {};
   await async.each(elementNames, async (elementName) => {
     const elementInfoPath = path.join(sourceDir, elementName, 'info.json');
-    let info;
+    let rawInfo;
     try {
-      info = await fs.readJSON(elementInfoPath);
+      rawInfo = await fs.readJSON(elementInfoPath);
     } catch (err) {
       if (err && err.code === 'ENOENT') {
         // This must not be an element directory, skip it
-        logger.verbose(`${elementInfoPath} not found, skipping...`);
         return;
       }
 
       throw err;
     }
 
-    jsonLoad.validateJSON(info, elementSchema);
-    info.name = elementName;
-    info.directory = path.join(sourceDir, elementName);
-    info.type = elementType;
-    elements[elementName] = info;
+    elements[elementName] = {
+      name: elementName,
+      directory: path.join(sourceDir, elementName),
+      type: elementType,
+      ...elementSchema.parse(rawInfo),
+    };
 
     // For backwards compatibility.
     // TODO remove once everyone is using the new version.
     if (elementType === 'core') {
-      elements[elementName.replace(/-/g, '_')] = info;
+      elements[elementName.replace(/-/g, '_')] = elements[elementName];
 
-      if ('additionalNames' in info) {
-        info.additionalNames.forEach((name) => {
-          elements[name] = info;
-          elements[name.replace(/-/g, '_')] = info;
+      if ('additionalNames' in elements[elementName]) {
+        elements[elementName].additionalNames?.forEach((name) => {
+          elements[name] = elements[elementName];
+          elements[name.replace(/-/g, '_')] = elements[elementName];
         });
       }
     }
@@ -157,6 +164,9 @@ async function loadElements(sourceDir, elementType) {
   return elements;
 }
 
+/**
+ * @param {import('../lib/db-types.js').Course} course
+ */
 export async function loadElementsForCourse(course) {
   if (
     courseElementsCache[course.id] !== undefined &&
@@ -185,6 +195,7 @@ export async function loadElementsForCourse(course) {
  */
 export async function loadExtensions(sourceDir, runtimeDir) {
   // Load each root element extension folder
+  /** @type {string[]} */
   let elementFolders;
   try {
     elementFolders = await fs.readdir(sourceDir);
@@ -219,27 +230,26 @@ export async function loadExtensions(sourceDir, runtimeDir) {
     const [element, extensionDir] = extension;
     const infoPath = path.join(sourceDir, element, extensionDir, 'info.json');
 
-    let info;
+    let rawInfo;
     try {
-      info = await fs.readJson(infoPath);
+      rawInfo = await fs.readJson(infoPath);
     } catch (err) {
       if (err.code === 'ENOENT') {
         // Not an extension directory, skip it.
-        logger.verbose(`${infoPath} not found, skipping...`);
         return;
       } else if (err.code === 'ENOTDIR') {
         // Random file, skip it as well.
-        logger.verbose(`Found stray file ${infoPath}, skipping...`);
         return;
       } else {
         throw err;
       }
     }
 
-    jsonLoad.validateJSON(info, schemas.infoElementExtension);
-    info.name = extensionDir;
-    info.directory = path.join(runtimeDir, element, extensionDir);
-    elements[element][extensionDir] = info;
+    elements[element][extensionDir] = {
+      name: extensionDir,
+      directory: path.join(runtimeDir, element, extensionDir),
+      ...ElementExtensionJsonSchema.parse(rawInfo),
+    };
   });
 
   return elements;
