@@ -154,15 +154,13 @@ Text in `question.html` can be set to only display in the "question" panel by wr
 
 ## Hiding staff comments in `question.html`
 
-HTML or JavaScript comments in your `question.html` source are visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you should use a Mustache comment `{{! ... }}` that won't be rendered in the final HTML.
-
-To prevent students from seeing staff comments, you can use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) that will be removed during the rendering process. Never put sensitive information, such as solutions, in a HTML/JS comment.
+HTML or JavaScript comments in your `question.html` source are visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you should use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) (`{{! ... }}`) that will be removed during the rendering process. Never put sensitive information, such as solutions, in a HTML/JS comment.
 
 Example:
 
 ```html
-<!-- This is an HTML comment. It will not be visible to students in the web page, 
+<!-- This HTML comment will not be visible to students in the web page, 
  but *will be included* in the rendered page source, so students may be able to
  see it by reading the HTML source. -->
-{{! This is a Mustache comment. It will NOT be shown in the rendered page source. }}
+{{! This Mustache comment will NOT be included in the rendered page source. }}
 ```
