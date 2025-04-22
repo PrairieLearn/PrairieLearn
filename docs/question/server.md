@@ -168,6 +168,12 @@ As shown in the table, most functions accept a single argument, `data` (a dictio
 
 The key `data` fields and their types are described above. You can view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
 
+### Question lifecycle
+
+The diagram below shows the lifecycle of a question, including the server functions called, the different panels that are rendered, and points of interaction with the student.
+
+![Diagram showing the lifecycle of a question](./lifecycle.d2){layout="dagre" scale="0.5" pad="0" }
+
 ## Question data storage
 
 All persistent data related to a question variant is stored under different entries in the `data` dictionary. This dictionary is stored in JSON format by PrairieLearn, and as a result, **everything in `data` must be JSON serializable**. Some types in Python are natively JSON serializable, such as strings, lists, and dicts, while others are not, such as complex numbers, numpy ndarrays, and pandas DataFrames.

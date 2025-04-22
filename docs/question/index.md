@@ -6,7 +6,7 @@ Questions are the basic building blocks of PrairieLearn. They are the individual
 
 A question is made up of three main components:
 
-1. **`info.json`**: Metadata about the question, including the question title, topic, and tags. Reference the [`infoQuestion.json` schema](../schemas/infoQuestion.md) for more details.
+1. **`info.json`**: Metadata about the question, including the question title, topic, and tags.
 2. **`question.html`**: The HTML template that defines the question. This is where you write the question text and define the input elements. Reference the [HTML documentation](html.md) for more details.
 3. **`server.py`**: This is where you write the logic for generating random values, grading student responses, and any other server-side code. This file is optional, but it is necessary for any question that has non-trivial randomization or custom grading behavior. Reference the [server documentation](server.md) for more details.
 
@@ -221,9 +221,3 @@ For most elements, there are four different ways of auto-grading the student ans
 4. Write an [external grader](../externalGrading.md), though this is typically applied to more complex questions like coding.
 
 If a question uses more than one method for grading, higher-numbered grading methods override results of lower-numbered grading methods. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](../elements.md#pl-answer-panel-element) that any correct answer would be accepted, and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
-
-## Question lifecycle
-
-The diagram below shows the lifecycle of a question, including the server functions called, the different panels that are rendered, and points of interaction with the student.
-
-![Diagram showing the lifecycle of a question](./lifecycle.d2){layout="dagre" scale="0.5" pad="0" }
