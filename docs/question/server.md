@@ -54,7 +54,7 @@ When a student submits their answer, the `parse` function is called to parse the
 - `data["submitted_answers"][NAME]` is the answer parsed by elements (e.g. strings converted to numbers).
 - `data["format_errors"][NAME]` is the format error message for a named answer.
 
-If there are format errors then the submission is "invalid" and is not graded. To provide feedback but keep the submission "valid", `data["feedback"][NAME]` can be used instead.
+If there are format errors, then the submission is "invalid" and is not graded. To provide feedback but keep the submission "valid", `data["feedback"][NAME]` can be used instead.
 
 ```python title="server.py"
 def parse(data):
