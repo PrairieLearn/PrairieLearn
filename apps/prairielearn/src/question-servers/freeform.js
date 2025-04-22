@@ -597,11 +597,15 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
       if (phase === 'render' && !renderedElementNames.includes(elementName)) {
         renderedElementNames.push(elementName);
       }
-      // Populate the extensions used by this element.
-      /** @type {any} */ (data).extensions = [];
-      if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
-        /** @type {any} */ (data).extensions = context.course_element_extensions[elementName];
-      }
+
+      // Populate any extensions used by this element.
+      const extensions = run(() => {
+        if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
+          return context.course_element_extensions[elementName];
+        }
+        return {};
+      });
+
       // We need to wrap it in another node, since only child nodes
       // are serialized
       const serializedNode = parse5.serialize({
@@ -615,7 +619,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
           phase,
           elementName,
           serializedNode,
-          data,
+          { ...data, extensions },
           context,
         ));
       } catch (e) {
@@ -627,9 +631,9 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
         });
       }
 
-      // We'll be sneaky and remove the extensions, since they're not used elsewhere.
-      delete (/** @type {any} */ (data).extensions);
+      // Remove any element extensions since they're not used elsewhere.
       delete ret_val.extensions;
+
       if (typeof consoleLog === 'string' && consoleLog.length > 0) {
         courseIssues.push(
           new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
@@ -733,11 +737,16 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
         }
 
         const elementFile = getElementController(elementName, context);
-        // Populate the extensions used by this element
-        /** @type {any} */ (data).extensions = [];
-        if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
-          /** @type {any} */ (data).extensions = context.course_element_extensions[elementName];
-        }
+
+        // Populate any extensions used by this element.
+        const extensions = run(() => {
+          if (
+            Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)
+          ) {
+            return context.course_element_extensions[elementName];
+          }
+          return {};
+        });
 
         const elementHtml = $(element).clone().wrap('<container/>').parent().html();
 
@@ -748,7 +757,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
             phase,
             elementName,
             elementHtml,
-            data,
+            { ...data, extensions },
             context,
           ));
         } catch (err) {
@@ -763,8 +772,9 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
           throw courseIssue;
         }
 
-        delete (/** @type {any} */ (data).extensions);
+        // Remove any element extensions since they're not used elsewhere.
         delete result.extensions;
+
         if (typeof output === 'string' && output.length > 0) {
           courseIssues.push(
             new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
