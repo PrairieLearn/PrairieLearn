@@ -47,9 +47,13 @@ questions
         `-- question.html
 ```
 
+!!! tip
+
+    Organize your questions by kind. A recommended folder structure is `topic/subtopic/question`. Folder layouts like `exam3/question12` or `Spring20/questionName` can make it harder to find and reuse questions.
+
 PrairieLearn assumes independent questions; nothing ties them together. However, each question could have multiple parts (inputs that are validated together).
 
-!!! tip
+!!! info
 
     An extensive library of example questions can be found under the [`exampleCourse/questions`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions) directory of PrairieLearn. You can also view these questions by [running PrairieLearn locally](../installing.md/#running-instructions).
 

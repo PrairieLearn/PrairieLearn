@@ -33,6 +33,10 @@ def generate(data):
     data["correct_answers"]["y"] = 2 * data["params"]["x"]
 ```
 
+!!! info
+
+    In general, each function of the question generation process runs *after* all elements in the question. For example, the `generate()` function in `server.py` runs after all elements have run their `generate()` functions. This is important to remember when using the `data` dictionary, as it will contain the results *after* the elements have finished processing.
+
 ### Step 2: `prepare`
 
 Next, the `prepare` function is called after all elements (e.g. `<pl-number-input>`) have run `generate()`. This is typically done to do any sort of final post-processing, but is not commonly used.
