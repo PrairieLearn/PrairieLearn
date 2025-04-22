@@ -1921,7 +1921,6 @@ export async function test(variant, question, course, test_type) {
       test_type,
     };
 
-    Object.assign(data.options, getContextOptions(context));
     return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'test',
