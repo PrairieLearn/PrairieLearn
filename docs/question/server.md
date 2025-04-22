@@ -230,7 +230,7 @@ You can dynamically generate file objects in `server.py`. These files never appe
 
 ```html title="question.html"
 <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
-<img src="{{options.client_files_question_dynamic_url}}/fig.png" />
+<pl-figure file-name="fig.png" type="dynamic"></pl-figure>
 ```
 
 ```python title="server.py"
@@ -253,9 +253,18 @@ def file(data):
         return buf
 ```
 
-Note the use of `client_files_question_dynamic_url` in the `question.html` file. Requests for files to this URL will be routed to the `file()` function in `server.py`. The filename requested is stored in `data["filename"]`, and the file contents should be returned from the `file()` function. The URL for the dynamically generated files is set to `{{options.client_files_question_dynamic_url}}` in the HTML, which is a special URL that PrairieLearn uses to route requests to the `file()` function.
+Requests for files to this URL will be routed to the `file()` function in `server.py` since the `type="dynamic"`. The filename requested is stored in `data["filename"]`, and the file contents should be returned from the `file()` function. The URL for the dynamically generated files is set to `{{options.client_files_question_dynamic_url}}` in the HTML, which is a special URL that PrairieLearn uses to route requests to the `file()` function.
 
-You can also use this functionality in file-based elements (`pl-figure`, `pl-file-download`) by setting `type="dynamic"`.
+We recommend using the [`pl-figure`](../elements.md#pl-figure) and [`pl-file-download`](../elements.md#pl-file-download) elements to display or download files. Specifically, you should use `pl-file-download` for PDFs and other content that should be downloaded, and `pl-figure` for images and other content that should be displayed.
+
+??? info "Advanced usage"
+
+    The file will be served from the URL `{{options.client_files_question_dynamic_url}}/{{filename}}`, where `{{filename}}` is the name of the file requested. You could instead write `question.html` like so:
+
+    ```html title="question.html"
+    <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
+    <img src="{{options.client_files_question_dynamic_url}}/fig.png" />
+    ```
 
 ## Custom grading best practices
 
