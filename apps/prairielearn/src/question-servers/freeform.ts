@@ -154,13 +154,12 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   const elements: ElementNameMap = {};
   await async.each(elementNames, async (elementName) => {
     const elementInfoPath = path.join(sourceDir, elementName, 'info.json');
-    let info: any;
+    let rawInfo: any;
     try {
-      info = await fs.readJSON(elementInfoPath);
+      rawInfo = await fs.readJSON(elementInfoPath);
     } catch (err) {
       if (err && err.code === 'ENOENT') {
         // This must not be an element directory, skip it
-        logger.verbose(`${elementInfoPath} not found, skipping...`);
         return;
       }
 
@@ -171,7 +170,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
       name: elementName,
       directory: path.join(sourceDir, elementName),
       type: elementType,
-      ...elementSchema.parse(info),
+      ...elementSchema.parse(rawInfo),
     };
 
     // For backwards compatibility.
@@ -361,12 +360,12 @@ function getElementClientFiles(
   return dataCopy;
 }
 
-async function elementFunction(
+async function elementFunction<T extends ExecutionData>(
   codeCaller: CodeCaller,
   fcn: Phase,
   elementName: string,
   elementHtml: string,
-  data: ExecutionData,
+  data: T,
   context: QuestionProcessingContext,
 ) {
   const resolvedElement = resolveElement(elementName, context);
@@ -559,10 +558,10 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
   return null;
 }
 
-async function experimentalProcess(
+async function experimentalProcess<T>(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: ExecutionData,
+  data: T,
   context: QuestionProcessingContext,
   html: string,
 ) {
@@ -605,17 +604,19 @@ async function experimentalProcess(
 
   return {
     courseIssues,
-    data: result?.data ?? data,
+    // Casting to the type of the argument is safe; a given phase is never allowed
+    // to change the top-level shape of the data.
+    data: /** @type T */ result?.data ?? data,
     html: result?.html ?? '',
     fileData: Buffer.from(result?.file ?? '', 'base64'),
     renderedElementNames: result?.processed_elements ?? [],
   };
 }
 
-async function traverseQuestionAndExecuteFunctions(
+async function traverseQuestionAndExecuteFunctions<T extends ExecutionData>(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: ExecutionData,
+  data: T,
   context: QuestionProcessingContext,
   html: string,
 ) {
@@ -635,11 +636,15 @@ async function traverseQuestionAndExecuteFunctions(
       if (phase === 'render' && !renderedElementNames.includes(elementName)) {
         renderedElementNames.push(elementName);
       }
-      // Populate the extensions used by this element.
-      data.extensions = [];
-      if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
-        data.extensions = context.course_element_extensions[elementName];
-      }
+
+      // Populate any extensions used by this element.
+      const extensions = run(() => {
+        if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
+          return context.course_element_extensions[elementName];
+        }
+        return {};
+      });
+
       // We need to wrap it in another node, since only child nodes
       // are serialized
       const serializedNode = parse5.serialize({
@@ -653,7 +658,7 @@ async function traverseQuestionAndExecuteFunctions(
           phase,
           elementName,
           serializedNode,
-          data,
+          { ...data, extensions },
           context,
         ));
       } catch (e) {
@@ -665,9 +670,9 @@ async function traverseQuestionAndExecuteFunctions(
         });
       }
 
-      // We'll be sneaky and remove the extensions, since they're not used elsewhere.
-      delete data.extensions;
+      // Remove any element extensions since they're not used elsewhere.
       delete ret_val.extensions;
+
       if (typeof consoleLog === 'string' && consoleLog.length > 0) {
         courseIssues.push(
           new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
@@ -757,10 +762,10 @@ async function traverseQuestionAndExecuteFunctions(
   };
 }
 
-async function legacyTraverseQuestionAndExecuteFunctions(
+async function legacyTraverseQuestionAndExecuteFunctions<T extends ExecutionData>(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: ExecutionData,
+  data: T,
   context: QuestionProcessingContext,
   $: cheerio.CheerioAPI,
 ) {
@@ -781,11 +786,16 @@ async function legacyTraverseQuestionAndExecuteFunctions(
         }
 
         const elementFile = getElementController(elementName, context);
-        // Populate the extensions used by this element
-        data.extensions = [];
-        if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
-          data.extensions = context.course_element_extensions[elementName];
-        }
+
+        // Populate any extensions used by this element.
+        const extensions = run(() => {
+          if (
+            Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)
+          ) {
+            return context.course_element_extensions[elementName];
+          }
+          return {};
+        });
 
         const elementHtml = $(element).clone().wrap('<container/>').parent().html();
         assert(elementHtml != null, 'Element did not have any HTML');
@@ -797,7 +807,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(
             phase,
             elementName,
             elementHtml,
-            data,
+            { ...data, extensions },
             context,
           ));
         } catch (err) {
@@ -812,8 +822,9 @@ async function legacyTraverseQuestionAndExecuteFunctions(
           throw courseIssue;
         }
 
-        delete data.extensions;
+        // Remove any element extensions since they're not used elsewhere.
         delete result.extensions;
+
         if (typeof output === 'string' && output.length > 0) {
           courseIssues.push(
             new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
@@ -892,10 +903,10 @@ function maybeNumberWithDefault(value: unknown, defaultValue: number) {
   return defaultValue;
 }
 
-async function processQuestionHtml(
+async function processQuestionHtml<T extends ExecutionData>(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: any,
+  data: T,
   context: QuestionProcessingContext,
 ) {
   // We deliberately reuse the same `data` object for both the "new" and "original"
@@ -927,39 +938,21 @@ async function processQuestionHtml(
     };
   }
 
-  let processFunction: (
-    phase: Phase,
-    codeCaller: CodeCaller,
-    data: any,
-    context: QuestionProcessingContext,
-    html: string | cheerio.CheerioAPI,
-  ) => Promise<{
-    courseIssues: CourseIssueError[];
-    data: any;
-    html: string;
-    fileData: Buffer<ArrayBuffer>;
-    renderedElementNames: string[];
-  }>;
-
-  let args: [Phase, CodeCaller, any, QuestionProcessingContext, string | cheerio.CheerioAPI];
-  if (context.renderer === 'experimental') {
-    processFunction = experimentalProcess;
-    args = [phase, codeCaller, data, context, html];
-  } else if (context.renderer === 'default') {
-    processFunction = traverseQuestionAndExecuteFunctions;
-    args = [phase, codeCaller, data, context, html];
-  } else {
-    processFunction = legacyTraverseQuestionAndExecuteFunctions;
-    args = [phase, codeCaller, data, context, $];
-  }
-
   const {
     courseIssues,
     data: resultData,
     html: processedHtml,
     fileData,
     renderedElementNames,
-  } = await processFunction(...args);
+  } = await run(async () => {
+    if (context.renderer === 'experimental') {
+      return await experimentalProcess(phase, codeCaller, data, context, html);
+    } else if (context.renderer === 'default') {
+      return await traverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, html);
+    } else {
+      return await legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, $);
+    }
+  });
 
   if (phase === 'grade' || phase === 'test') {
     const partial_scores: Record<string, unknown> = resultData.partial_scores ?? {};
@@ -999,10 +992,10 @@ async function processQuestionHtml(
   };
 }
 
-async function processQuestionServer<Data extends ExecutionData>(
+async function processQuestionServer<T extends ExecutionData>(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: Data,
+  data: T,
   html: string,
   fileData: any,
   context: QuestionProcessingContext,
@@ -1086,10 +1079,10 @@ async function processQuestionServer<Data extends ExecutionData>(
   return { courseIssues, data, html, fileData };
 }
 
-async function processQuestion<Data extends ExecutionData>(
+async function processQuestion<T extends ExecutionData>(
   phase: Phase,
   codeCaller: CodeCaller,
-  data: Data,
+  data: T,
   context: QuestionProcessingContext,
 ) {
   const meter = metrics.getMeter('prairielearn');
@@ -1098,7 +1091,7 @@ async function processQuestion<Data extends ExecutionData>(
     `freeform.${phase}`,
     async () => {
       if (phase === 'generate') {
-        return processQuestionServer<Data>(phase, codeCaller, data, '', Buffer.from(''), context);
+        return processQuestionServer(phase, codeCaller, data, '', Buffer.from(''), context);
       } else {
         const {
           courseIssues,
@@ -1122,7 +1115,7 @@ async function processQuestion<Data extends ExecutionData>(
           data: serverData,
           html: serverHtml,
           fileData: serverFileData,
-        } = await processQuestionServer<Data>(phase, codeCaller, htmlData, html, fileData, context);
+        } = await processQuestionServer(phase, codeCaller, htmlData, html, fileData, context);
         courseIssues.push(...serverCourseIssues);
         return {
           courseIssues,
@@ -1159,9 +1152,10 @@ export async function generate(
   question: Question,
   course: Course,
   variant_seed: string,
-): QuestionServerReturnValue<Partial<GenerateResultData>> {
+): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
+
     const data = {
       params: {},
       correct_answers: {},
@@ -1197,7 +1191,9 @@ export async function prepare(
     if (variant.broken_at) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
+
     const data = {
+      // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
@@ -1278,7 +1274,8 @@ async function renderPanel(
     ? locals.questionUrl + `submission/${submission?.id}/file`
     : null;
 
-  const baseOptions = {
+  const options = {
+    ...(variant.options ?? {}),
     client_files_question_url: locals.clientFilesQuestionUrl,
     client_files_course_url: locals.clientFilesCourseUrl,
     client_files_question_dynamic_url: locals.clientFilesQuestionGeneratedFileUrl,
@@ -1293,11 +1290,14 @@ async function renderPanel(
     submission_files_url: submission ? submissionFilesUrl : null,
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,
+    ...getContextOptions(context),
   };
 
   const data = {
     // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
     // so we'll use the submission's values if they exist.
+    //
+    // These should never be null, but that can't be encoded in the schema.
     params: submission?.params ?? variant.params ?? {},
     correct_answers: submission?.true_answer ?? variant.true_answer ?? {},
     submitted_answers: submission?.submitted_answer ?? {},
@@ -1306,7 +1306,7 @@ async function renderPanel(
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
     variant_seed: parseInt(variant.variant_seed ?? '0', 36),
-    options: { ...(variant.options ?? {}), ...baseOptions, ...getContextOptions(context) },
+    options,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
       locals.allowAnswerEditing &&
@@ -1785,13 +1785,14 @@ export async function file(
 
     const context = await getContext(question, course);
 
-    const data: ExecutionData = {
+    const data = {
+      // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
       options: { ...(variant.options ?? {}), ...getContextOptions(context) },
       filename,
-    };
+    } satisfies ExecutionData;
 
     const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
       course,
@@ -1831,7 +1832,10 @@ export async function parse(
     if (variant.broken_at) throw new Error('attempted to parse broken variant');
 
     const context = await getContext(question, course);
+
+    /** @satisfies {import('./types.js').ExecutionData} */
     const data = {
+      // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       submitted_answers: submission.submitted_answer ?? {},
@@ -1874,16 +1878,18 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
-): QuestionServerReturnValue<Partial<GradeResultData>> {
+): QuestionServerReturnValue<GradeResultData> {
   return instrumented('freeform.grade', async () => {
     debug('grade()');
     if (variant.broken_at) throw new Error('attempted to grade broken variant');
     if (submission.broken) throw new Error('attempted to grade broken submission');
 
     const context = await getContext(question, question_course);
-    const data = {
+    let data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
       // use the submission's values when grading.
+      //
+      // These should never be null, but that can't be encoded in the schema.
       params: submission.params ?? {},
       correct_answers: submission.true_answer ?? {},
       submitted_answers: submission.submitted_answer ?? {},
@@ -1894,8 +1900,9 @@ export async function grade(
       variant_seed: parseInt(variant.variant_seed, 36),
       options: { ...(variant.options ?? {}), ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
-      gradable: submission.gradable ?? false,
+      gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
+
     return withCodeCaller(question_course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'grade',
@@ -1936,6 +1943,7 @@ export async function test(
 
     const context = await getContext(question, course);
     const data = {
+      // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       format_errors: {},
@@ -1948,6 +1956,7 @@ export async function test(
       gradable: true as boolean,
       test_type,
     } satisfies ExecutionData & { test_type: 'correct' | 'incorrect' | 'invalid' };
+
     return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'test',

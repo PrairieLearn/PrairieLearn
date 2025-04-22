@@ -118,10 +118,10 @@ export type ElementExtensionJsonExtension = ElementExtensionJson & {
 };
 
 // This data object changes over the lifetime of the question grading process.
-// That is why many fields are nullable / optional, as they are only set in later phases.
+// That is why many fields are optional, as they are only present in later phases.
 export interface ExecutionData {
-  params: Record<string, any> | null;
-  correct_answers: Record<string, any> | null;
+  params: Record<string, any>;
+  correct_answers: Record<string, any>;
   variant_seed: number;
   options: Record<string, any> & {
     question_path: string;
@@ -131,17 +131,17 @@ export interface ExecutionData {
     course_extensions_path: string;
   };
   answers_names?: Record<string, string>;
-  submitted_answers?: Record<string, any> | null;
-  format_errors?: Record<string, any> | null;
+  submitted_answers?: Record<string, any>;
+  format_errors?: Record<string, any>;
   partial_scores?: Record<string, any>;
   score?: number;
   feedback?: Record<string, any>;
-  raw_submitted_answers?: Record<string, any> | null;
+  raw_submitted_answers?: Record<string, any>;
   editable?: boolean;
   manual_grading?: boolean;
   panel?: 'question' | 'answer' | 'submission';
-  num_valid_submissions?: number | null;
+  num_valid_submissions?: number;
   filename?: string;
-  gradable?: boolean | null;
+  gradable?: boolean;
   extensions?: Record<string, ElementExtensionJsonExtension> | [];
 }
