@@ -169,16 +169,16 @@ As shown in the table, most functions accept a single argument, `data` (a dictio
 
 ### `data` dictionary
 
-| Attribute               | Type    | Description                                                                                                                                                         |
-| ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params`                | `dict`  | Parameters for the question variant. These are set in the `generate()` function and can be used in the `question.html` file.                                        |
-| `correct_answers`       | `dict`  | Correct answers for the question variant. Each item maps from a named answer to a value.                                                                            |
-| `submitted_answers`     | `dict`  | Student answers submitted for the question after parsing.                                                                                                           |
-| `raw_submitted_answers` | `dict`  | Raw student answers submitted for the question.                                                                                                                     |
-| `format_errors`         | `dict`  | Dictionary of format errors for each answer. Each item maps from a named answer to a error message.                                                                 |
-| `partial_scores`        | `dict`  | Dictionary of partial scores for each answer. Each entry is a dictionary with the keys `score` (float), `feedback` (string, optional) and `weight` (int, optional). |
-| `score`                 | `float` | The total score for the question variant.                                                                                                                           |
-| `feedback`              | `dict`  | Dictionary of feedback for each answer. Each item maps from a named answer to a feedback message.                                                                   |
+| Attribute               | Type    | Description                                                                                                                          |
+| ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `params`                | `dict`  | Parameters for the question variant. These are set in the `generate()` function and can be used in the `question.html` file.         |
+| `correct_answers`       | `dict`  | Correct answers for the question variant. Each item maps from a named answer to a value.                                             |
+| `submitted_answers`     | `dict`  | Student answers submitted for the question after parsing.                                                                            |
+| `raw_submitted_answers` | `dict`  | Raw student answers submitted for the question.                                                                                      |
+| `format_errors`         | `dict`  | Dictionary of format errors for each answer. Each item maps from a named answer to a error message.                                  |
+| `partial_scores`        | `dict`  | Dictionary of partial scores for each answer. Each entry is a dictionary with the keys `score` (float) and `weight` (int, optional). |
+| `score`                 | `float` | The total score for the question variant.                                                                                            |
+| `feedback`              | `dict`  | Dictionary of feedback for each answer. Each item maps from a named answer to a feedback message.                                    |
 
 The key `data` fields and their types are described above. You can view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
 

@@ -19,7 +19,7 @@ class PartialScore(TypedDict):
     Attributes:
         score: The score for the partial score.
         weight: The weight of the partial score.
-        feedback: Feedback for the partial score.
+        feedback: Feedback for the partial score. Typically used by elements.
     """
 
     score: float | None
@@ -69,7 +69,7 @@ class QuestionData(TypedDict):
     """The total final score for the question."""
 
     feedback: dict[str, Any]
-    """Any feedback to the student on their submitted answer."""
+    """Any feedback to the student on their submitted answer. Elements will never read or write to this dictionary, with the exception of the `<pl-external-grader-results>` element."""
 
     variant_seed: str
     """The random seed for this question variant."""
