@@ -549,7 +549,13 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
     result = res.result;
     output = res.output;
   } catch (err) {
-    courseIssues.push(err);
+    courseIssues.push(
+      new CourseIssueError(err.message, {
+        cause: err,
+        data: err.data,
+        fatal: true,
+      }),
+    );
   }
 
   if ((output?.length ?? 0) > 0) {
@@ -1983,11 +1989,10 @@ async function getContext(question, course) {
     course_id: course.id,
   }));
 
-  const renderer = useExperimentalRenderer
-    ? 'experimental'
-    : useNewQuestionRenderer
-      ? 'default'
-      : 'legacy';
+  const renderer =
+    'experimental' ??
+    course.options?.rendererOverride ??
+    (useExperimentalRenderer ? 'experimental' : useNewQuestionRenderer ? 'default' : 'legacy');
 
   // The `*Host` values here refer to the paths relative to PrairieLearn;
   // the other values refer to the paths as they will be seen by the worker

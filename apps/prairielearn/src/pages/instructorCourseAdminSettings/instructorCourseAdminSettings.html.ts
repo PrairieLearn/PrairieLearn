@@ -34,7 +34,13 @@ export function InstructorCourseAdminSettings({
         urlPrefix: resLocals.urlPrefix,
       })}
 
-      <div class="card  mb-4">
+      <form method="POST" class="mb-3">
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <input type="hidden" name="__action" value="test_all_questions" />
+        <button class="btn btn-primary" type="submit">Test all questions</button>
+      </form>
+
+      <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>
             ${resLocals.has_enhanced_navigation ? 'General course settings' : 'Course Settings'}

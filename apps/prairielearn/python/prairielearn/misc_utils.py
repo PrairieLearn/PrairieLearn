@@ -98,7 +98,7 @@ def get_uuid() -> str:
     Returns:
         A UUID starting with an alpha char
     """
-    uuid_string = str(uuid.uuid4())
+    uuid_string = str(uuid.UUID(int=random.getrandbits(128), version=4))
     random_char = random.choice("abcdef")
 
     return random_char + uuid_string[1:]

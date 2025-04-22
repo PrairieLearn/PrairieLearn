@@ -405,6 +405,7 @@ export async function getAndRenderVariant(
   options?: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
+    rendererOverride?: string;
   },
 ) {
   // We write a fair amount of unstructured data back into locals,
@@ -417,6 +418,11 @@ export async function getAndRenderVariant(
     { question_id: locals.question.id },
     z.boolean(),
   );
+
+  if (options?.rendererOverride) {
+    question_course.options ??= {};
+    question_course.options.rendererOverride = options.rendererOverride;
+  }
 
   const variant = await run(async () => {
     if (variant_id != null) {

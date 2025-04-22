@@ -65,6 +65,8 @@ async function makeVariant(
   const questionModule = questionServers.getModule(question.type);
   const { courseIssues, data } = await questionModule.generate(question, course, variant_seed);
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
+  console.log('hasFatalIssue?', hasFatalIssue);
+  console.log('courseIssues', courseIssues);
   let variant: VariantCreationData = {
     variant_seed,
     params: data.params || {},
@@ -94,6 +96,8 @@ async function makeVariant(
     );
     courseIssues.push(...prepareCourseIssues);
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
+    console.log('after prepare, hasFatalIssue?', hasFatalIssue);
+    console.log('after prepare, courseIssues', courseIssues);
     variant = {
       variant_seed,
       params: data.params || {},

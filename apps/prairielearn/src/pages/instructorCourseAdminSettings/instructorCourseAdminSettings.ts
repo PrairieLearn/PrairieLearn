@@ -16,6 +16,12 @@ import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { updateCourseShowGettingStarted } from '../../models/course.js';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
+import { createServerJob } from '../../lib/server-jobs.js';
+import { selectQuestionsForCourse } from '../../models/questions.js';
+import { ensureVariant } from '../../lib/question-variant.js';
+import _ from 'lodash';
+import { getAndRenderVariant } from '../../lib/question-render.js';
+import { selectQuestionById } from '../../models/question.js';
 
 const router = express.Router();
 
@@ -129,6 +135,143 @@ router.post(
       } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
+    } else if (req.body.__action === 'test_all_questions') {
+      const serverJob = await createServerJob({
+        courseId: res.locals.course.id,
+        userId: res.locals.user.user_id,
+        authnUserId: res.locals.authn_user.user_id,
+        type: 'test_all_questions',
+        description: 'Test all questions with legacy and experimental renderer',
+      });
+
+      serverJob.executeInBackground(async (job) => {
+        const questions = await selectQuestionsForCourse(res.locals.course.id, []);
+
+        for (const { id: question_id } of questions) {
+          const question = await selectQuestionById(question_id);
+
+          if (question.type !== 'Freeform') {
+            job.verbose(`Skipping question ${question.id} (${question.type})`);
+            continue;
+          }
+
+          res.locals.course.options ??= {};
+
+          res.locals.course.options.rendererOverride = 'legacy';
+          const legacyVariant = await ensureVariant(
+            question.id,
+            null,
+            res.locals.user.user_id,
+            res.locals.authn_user.user_id,
+            null,
+            res.locals.course,
+            res.locals.course,
+            { variant_seed: '16k1uyu' },
+            false,
+            null,
+          );
+
+          res.locals.course.options.rendererOverride = 'experimental';
+          const newVariant = await ensureVariant(
+            question.id,
+            null,
+            res.locals.user.user_id,
+            res.locals.authn_user.user_id,
+            null,
+            res.locals.course,
+            res.locals.course,
+            { variant_seed: '16k1uyu' },
+            false,
+            null,
+          );
+
+          const sameParams = _.isEqual(legacyVariant.params, newVariant.params);
+          const sameTrueAnswer = _.isEqual(legacyVariant.true_answer, newVariant.true_answer);
+          const sameBroken = _.isEqual(legacyVariant.broken, newVariant.broken);
+
+          if (!sameParams) {
+            job.error(
+              `Question ${question.qid} has different variant params for legacy and experimental renderers`,
+            );
+            job.error('Legacy params:       ' + JSON.stringify(legacyVariant.params));
+            job.error('Experimental params: ' + JSON.stringify(newVariant.params));
+          }
+
+          if (!sameTrueAnswer) {
+            job.error(
+              `Question ${question.qid} has different true_answer for legacy and experimental renderers`,
+            );
+            job.error('Legacy true_answer:       ' + JSON.stringify(legacyVariant.true_answer));
+            job.error('Experimental true_answer: ' + JSON.stringify(newVariant.true_answer));
+          }
+
+          if (!sameBroken) {
+            job.error(
+              `Question ${question.qid} has different broken status for legacy and experimental renderers`,
+            );
+            job.error('Legacy broken:       ' + JSON.stringify(legacyVariant.broken));
+            job.error('Experimental broken: ' + JSON.stringify(newVariant.broken));
+          }
+
+          if (sameParams && sameTrueAnswer && sameBroken) {
+            job.info(`Question ${question.qid} matches across legacy and experimental renderers`);
+          } else {
+            job.info(
+              `Mismatch between legacy variant (${legacyVariant.id}) and experimental variant (${newVariant.id})`,
+            );
+          }
+
+          res.locals.course.options.rendererOverride = 'experimental';
+          await getAndRenderVariant(
+            newVariant.id,
+            null,
+            {
+              course: res.locals.course,
+              urlPrefix: res.locals.urlPrefix,
+              user: res.locals.user,
+              authn_user: res.locals.authn_user,
+              question,
+              // This doesn't matter.
+              is_administrator: false,
+            },
+            {
+              rendererOverride: 'experimental',
+            },
+          );
+          const newQuestionHtml = res.locals.questionHtml;
+
+          res.locals.course.options.rendererOverride = 'legacy';
+          await getAndRenderVariant(
+            legacyVariant.id,
+            null,
+            {
+              course: res.locals.course,
+              urlPrefix: res.locals.urlPrefix,
+              user: res.locals.user,
+              authn_user: res.locals.authn_user,
+              question,
+              // This doesn't matter.
+              is_administrator: false,
+            },
+            {
+              rendererOverride: 'legacy',
+            },
+          );
+          const legacyQuestionHtml = res.locals.questionHtml;
+
+          if (newQuestionHtml !== legacyQuestionHtml) {
+            job.error(
+              `Question ${question.id} has different HTML for legacy and experimental renderers`,
+            );
+            job.error('Legacy HTML:');
+            job.error(newQuestionHtml);
+            job.error('Experimental HTML:');
+            job.error(legacyQuestionHtml);
+          }
+        }
+      });
+
+      return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
