@@ -561,7 +561,7 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
     courseIssues,
     // Casting to the type of the argument is safe; a given phase is never allowed
     // to change the top-level shape of the data.
-    data: /** @type T */ (result?.data ?? data),
+    data: /** @type T */ (result?.data) ?? data,
     html: result?.html ?? '',
     fileData: Buffer.from(result?.file ?? '', 'base64'),
     renderedElementNames: result?.processed_elements ?? [],
