@@ -1,12 +1,8 @@
 # Questions
 
-!!! note
+!!! note "Legacy questions"
 
-    Any time you edit a question `info.json` file on a local copy of PrairieLearn, you need to click “Load from disk” to reload the changes. Edits to HTML or Python files can be picked up by reloading the page. You might need to generate a new variant of a question to run new Python code.
-
-!!! note
-
-    New-style PrairieLearn questions are marked with `"type": "v3"`. This documentation only describes new-style questions, although old-style v2 questions are still supported in the code.
+    Modern PrairieLearn questions are marked with `"type": "v3"`. This documentation describes modern v3 questions, although [legacy v2 questions](../oldQuestion.md#question-types-for-v1v2-format) are still supported by PrairieLearn, though will eventually be phased out.
 
 ## Question components
 
@@ -55,7 +51,7 @@ PrairieLearn assumes independent questions; nothing ties them together. However,
 
 !!! tip
 
-    Example questions are in the [`exampleCourse/questions`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions) directory inside PrairieLearn.
+    An extensive library of example questions can be found under the [`exampleCourse/questions`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions) directory of PrairieLearn. You can also view these questions by [running PrairieLearn locally](../installing.md/#running-instructions).
 
 ## Metadata (`info.json`)
 
@@ -88,6 +84,10 @@ The `info.json` file for each question defines properties of the question. For e
 | `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                  |
 | `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                            |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                             |
+
+!!! note "Local development note"
+
+    Any time you edit a question `info.json` file on a local copy of PrairieLearn, you need to click “Load from disk” to reload the changes. Edits to HTML or Python files can be picked up by reloading the page. You might also need to generate a new variant of a question to run new Python code.
 
 ### Question Sharing
 
@@ -127,6 +127,8 @@ The different types of dependency properties available are summarized in this ta
 | `clientFilesCourseStyles`    | The styles required by this question relative to `[course directory]/clientFilesCourse`.          |
 | `clientFilesCourseScripts`   | The scripts required by this question relative to `[course directory]/clientFilesCourse`.         |
 
+Additional details about how to access these fields from `server.py` can be found in the [`server.py` documentation](server.md#accessing-files-on-disk).
+
 ### Non-randomized questions
 
 While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:
@@ -144,7 +146,7 @@ In general, it is _strongly_ recommended to leave partial credit enabled for all
 
 !!! info
 
-    See the [reference for `infoQuestion.json`](../schemas/infoQuestion.md) for more information.
+    See the [reference for `infoQuestion.json`](../schemas/infoQuestion.md) for an exhaustive list of all the properties available, and their schemas.
 
 ## HTML (`question.html`)
 
@@ -204,7 +206,7 @@ def generate(data):
 
 !!! info
 
-    More information about `server.py` in the [server.py documentation](server.md). For example, custom grading functions.
+    More information about `server.py`, custom grading, and more can be found in the [server.py documentation](server.md).
 
 ## Grading student answers
 
@@ -220,7 +222,7 @@ For most elements, there are four different ways of auto-grading the student ans
 
 If a question uses more than one method for grading, higher-numbered grading methods override results of lower-numbered grading methods. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](../elements.md#pl-answer-panel-element) that any correct answer would be accepted, and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
 
-### Lifecycle
+## Lifecycle
 
 The diagram below shows the lifecycle of a question, including the server functions called, the different panels that are rendered, and points of interaction with the student.
 

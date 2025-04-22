@@ -156,3 +156,8 @@ code.doc-symbol-json {
 code.doc-symbol-json::after {
   content: 'json';
 }
+
+/* Don't render view source button in tooltips */
+.md-tooltip2__inner.md-typeset > .md-content__button.md-icon {
+  display: none;
+}

@@ -313,17 +313,6 @@ The HTML specification disallows inserting special characters onto the page (i.e
 
 Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](https://prairielearn.readthedocs.io/en/latest/installing/).
 
-## How can I add comments in my `question.html` source that won't be visible to students?
-
-Course staff members may want to write small maintenance comments in the `question.html` source, but HTML or JavaScript comments will remain visible in the rendered page's source (as can be seen in the browser dev tools). To prevent students from seeing staff comments, you can use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) that will be removed during the rendering process. To be safe, never put sensitive information such as solutions in a comment.
-
-Example:
-
-```html
-<!-- This is an HTML comment. It will not be visible to students in the web page, but *will be included* in the rendered page source, so students may be able to see it by reading the HTML source. -->
-{{! This is a Mustache comment. It will NOT be shown in the rendered page source. }}
-```
-
 ## How can I make a block that can be re-used in many questions?
 
 If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can use the [`<pl-template>` element](./elements.md#pl-template-element). This element allows you to define a template in one place and then use it in many questions.

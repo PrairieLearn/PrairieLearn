@@ -2,7 +2,7 @@
 
 ## Template file
 
-All `question.html` files are rendered with the [Mustache](https://mustache.github.io/mustache.5.html) template engine. Outside direct variable substitution, you can use Mustache to do things like conditionally render elements, iterate over lists, and so on. For example, you can use the following syntax to conditionally render a piece of HTML:
+All `question.html` files are rendered with the [Mustache](https://mustache.github.io/mustache.5.html) template engine. Outside direct variable substitution, you can use Mustache to do things like conditionally render elements. For example, you can use the following syntax to conditionally render a piece of HTML:
 
 ```html title="question.html"
 {{#params.show}}
@@ -12,16 +12,16 @@ All `question.html` files are rendered with the [Mustache](https://mustache.gith
 
 !!! tip
 
-    If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it).
+    If you use triple-braces (e.g. `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it).
 
 ## Markdown in questions
 
 HTML and custom elements are great for flexibility and expressiveness. However, they're
 not great for working with large amounts of text, formatting text, and so on.
 [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight
-plaintext markup syntax that's ideal for authoring simple but rich text. To enable this,
-PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html`
-that utilizes this element:
+plaintext markup syntax that's ideal for authoring simple but rich text. PrairieLearn recommends you author all the text of your questions in Markdown.
+
+You can use the special `<markdown>` tag to automatically convert its contents to HTML. Here's an example `question.html` that utilizes this element:
 
 <!-- prettier-ignore -->
 ```html title="question.html"
@@ -39,7 +39,7 @@ That question would be rendered like this:
 
 !!! warning
 
-    Note that markdown recognizes indentation as a code block, so text inside these tags should not be indented with the corresponding HTML content.
+    Markdown recognizes indentation as a code block, so text inside these tags should not be indented with the corresponding HTML content.
 
     === "Good"
 
@@ -62,7 +62,7 @@ That question would be rendered like this:
 
 A few special behaviors have been added to enable Markdown to work better within the PrairieLearn ecosystem, as described below.
 
-## Markdown code blocks
+### Markdown code blocks
 
 Fenced code blocks (those using triple-backticks ` ``` `) are rendered as [`<pl-code>` elements](../elements.md#pl-code-element), which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following Markdown:
 
@@ -92,7 +92,7 @@ int m = 4;
 
 ### Escaping `<markdown>` tags
 
-Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be rendered as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
+PrairieLearn defines a special escape syntax to allow a literal `<markdown>` or `</markdown>` tag in your question. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be rendered as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown).
 
 ## Using LaTeX in questions (math mode)
 
@@ -141,7 +141,7 @@ adding the `mathjax_ignore` class to an HTML element.
 
 When a question is displayed to a student, there are three "panels" that will be shown at different stages: the `"question"` panel, the `"submission"` panel, and the `"answer"` panel. These display the question prompt, the solution provided by the student, and the correct answer.
 
-The `"question"` panel is displayed when the question is first shown to the student. The `"submission"` panel is displayed after the student submits an answer (but before they finish attempting the question), and the `"answer"` panel is displayed when the student either submits the correct answer or runs out of attempts.
+The `"question"` panel is displayed when the question is first shown to the student. The `"submission"` panel is displayed after the student submits an answer (but before they finish attempting the question), and the `"answer"` panel is displayed when the student either submits the correct answer or runs out of attempts. You can see the [lifecycle diagram](index.md#lifecycle) for more details on how these panels are displayed.
 
 All three panels display the same `question.html` template, but elements will render differently in each panel. For example, the `<pl-number-input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the correct answer in the "answer" panel.
 
@@ -149,4 +149,15 @@ Text in `question.html` can be set to only display in the "question" panel by wr
 
 ## Hiding staff comments in `question.html`
 
-Please note that HTML or JavaScript comments in your `question.html` source may be visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you may prefer to use a Mustache comment that will stay hidden. Please refer to [this FAQ item](../faq.md#how-can-i-add-comments-in-my-questionhtml-source-that-wont-be-visible-to-students).
+HTML or JavaScript comments in your `question.html` source are visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you should use a Mustache comment `{{! ... }}` that won't be rendered in the final HTML.
+
+To prevent students from seeing staff comments, you can use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) that will be removed during the rendering process. Never put sensitive information, such as solutions, in a HTML/JS comment.
+
+Example:
+
+```html
+<!-- This is an HTML comment. It will not be visible to students in the web page, 
+ but *will be included* in the rendered page source, so students may be able to
+ see it by reading the HTML source. -->
+{{! This is a Mustache comment. It will NOT be shown in the rendered page source. }}
+```
