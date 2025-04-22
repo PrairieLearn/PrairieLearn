@@ -44,7 +44,7 @@ Next, the `prepare` function is called after all elements (e.g. `<pl-number-inpu
 
 ### Step 3: `render`
 
-Next, the `render(data)` function is called to render the question. You can use this function to override how the question is rendered. This is typically only used for more advanced questions.
+Next, the `render(data, html)` function is called to render the question. You can use this function to override how the question is rendered. The render function expects two parameters, `data` and `html`, and should return a string of HTML. The HTML after the mustache template has been rendered is available through the `html` parameter. This is typically only used for more advanced questions, and we won't need it for this example.
 
 ### Step 4: `parse`
 
