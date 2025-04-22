@@ -174,15 +174,13 @@ The `question.html` is a template used to render the question to the student. A 
 
 The `question.html` is regular HTML, with four special features:
 
-1.  Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. These values typically are defined by a [question's `server.py`](#custom-generation-and-grading-serverpy).
+1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. These values typically are defined by a [question's `server.py`](#custom-generation-and-grading-serverpy).
+2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](../elements.md).
 
-2.  Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](../elements.md).
+   :warning: **All submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
 
-    :warning: **All submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
-
-3.  A special `<markdown>` tag allows you to write Markdown inline in questions.
-
-4.  LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
+3. A special `<markdown>` tag allows you to write Markdown inline in questions.
+4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
 
 !!! info
 
@@ -222,8 +220,8 @@ For most elements, there are four different ways of auto-grading the student ans
 
 If a question uses more than one method for grading, higher-numbered grading methods override results of lower-numbered grading methods. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](../elements.md#pl-answer-panel-element) that any correct answer would be accepted, and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
 
-## Lifecycle
+## Question Lifecycle
 
 The diagram below shows the lifecycle of a question, including the server functions called, the different panels that are rendered, and points of interaction with the student.
 
-![](./lifecycle.d2){layout="dagre" scale="0.5" pad="0" }
+![Diagram showing the lifecycle of a question](./lifecycle.d2){layout="dagre" scale="0.5" pad="0" }

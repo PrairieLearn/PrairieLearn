@@ -245,7 +245,6 @@ def generate(data):
     data["params"]["a"] = random.choice([0.25, 0.5, 1, 2, 4])
 
 def file(data):
-
     # We should look at data["filename"], generate the corresponding file,
     # and return the contents of the file as a string, bytes-like, or file-like object.
     # We can access data["params"].
