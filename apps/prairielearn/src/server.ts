@@ -175,11 +175,6 @@ export async function initExpress(): Promise<Express> {
   // API routes don't utilize sessions; don't run the session/flash middleware for them.
   app.use(excludeRoutes(['/pl/api'], sessionRouter));
 
-  app.use(function (req, res, next) {
-    res.locals.is_iframe = req.headers['sec-fetch-dest'] === 'iframe';
-    next();
-  });
-
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
   // Special handling of file-upload routes so that we can parse multipart/form-data

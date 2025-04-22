@@ -1,11 +1,10 @@
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
-import { Navbar } from '../../../components/Navbar.html.js';
 import { type LoadUserAuth } from '../../../lib/authn.js';
 import { type Lti13Instance } from '../../../lib/db-types.js';
 
-export const Lti13Test = function ({
+export function Lti13Test({
   resLocals,
   lti13_claims,
   userInfo,
@@ -46,29 +45,25 @@ export const Lti13Test = function ({
       </body>
     </html>
   `.toString();
-};
+}
 
-export const Lti13Iframe = function ({
-  resLocals,
-  targetUrl,
-}: {
-  resLocals: Record<string, any>;
-  targetUrl: string;
-}) {
+export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any> }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 redirect' })}
+        ${HeadContents({ resLocals: {}, pageTitle: 'LTI 1.3 redirect' })}
       </head>
       <body>
-        ${Navbar({ resLocals })}
         <main id="content">
-          <a class="btn btn-primary btn-lg m-3" href="${targetUrl}" target="_blank"
-            >Open PrairieLearn in a new window</a
-          >
+          <form method="POST" target="_blank">
+            ${Object.entries(parameters).map(
+              ([key, value]) => html` <input type="hidden" name="${key}" value="${value}" />`,
+            )}
+            <button class="btn btn-primary btn-lg m-3">Open PrairieLearn in a new window</button>
+          </form>
         </main>
       </body>
     </html>
   `.toString();
-};
+}

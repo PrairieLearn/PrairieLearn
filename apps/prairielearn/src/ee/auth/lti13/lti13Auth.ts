@@ -17,7 +17,7 @@ import { getCanonicalHost } from '../../../lib/url.js';
 import { Lti13Claim, Lti13ClaimSchema } from '../../lib/lti13.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
-import { Lti13Iframe, Lti13Test } from './lti13Auth.html.js';
+import { Lti13AuthIframe, Lti13Test } from './lti13Auth.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -34,10 +34,6 @@ router.post('/login', asyncHandler(launchFlow));
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
-    // Allow in an iframe
-    res.removeHeader('content-security-policy');
-    res.removeHeader('x-frame-options');
-
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
     const lti13_claims = await authenticate(req, res);
@@ -144,18 +140,6 @@ router.post(
       sub: ltiClaim.get('sub'),
     });
 
-    // If we're running in an iframe, don't redirect but display a page
-    // with links that open in a new window
-    if (res.locals.is_iframe) {
-      res.end(
-        Lti13Iframe({
-          resLocals: res.locals,
-          targetUrl: ltiClaim.target_link_uri ?? '/pl',
-        }),
-      );
-      return;
-    }
-
     // Get the target_link out of the LTI request and redirect
     res.redirect(ltiClaim.target_link_uri ?? '/pl');
   }),
@@ -222,6 +206,15 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
 
   const parameters = OIDCLaunchFlowSchema.passthrough().parse({ ...req.body, ...req.query });
+
+  // If the authentication request is coming from an iframe, intercept the parameters
+  // and offer a small form to open in a new window
+  if (req.headers['sec-fetch-dest'] === 'iframe') {
+    res.removeHeader('content-security-policy');
+    res.removeHeader('x-frame-options');
+    res.end(Lti13AuthIframe({ parameters }));
+    return;
+  }
 
   // Generate our own OIDC state, use it to toggle if testing is happening
   let state = crypto.randomBytes(28).toString('hex');
