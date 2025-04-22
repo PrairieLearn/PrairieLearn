@@ -288,7 +288,6 @@ export function flushElementCache() {
 /**
  * @param {string} elementName
  * @param {QuestionProcessingContext} context
- * @returns
  */
 function resolveElement(elementName, context) {
   if (Object.prototype.hasOwnProperty.call(context.course_elements, elementName)) {
