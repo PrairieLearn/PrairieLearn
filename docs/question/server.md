@@ -1,4 +1,4 @@
-## Question `server.py`
+# Question `server.py`
 
 The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answer. The `server.py` functions are:
 
