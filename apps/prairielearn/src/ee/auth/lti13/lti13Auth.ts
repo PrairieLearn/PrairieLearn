@@ -49,11 +49,6 @@ router.post(
 
     const inStateTest = req.body.state.endsWith(STATE_TEST);
 
-    let uid: string;
-    if (lti13_instance.uid_attribute) {
-      uid = ltiClaim.get(lti13_instance.uid_attribute);
-    }
-
     // UIN checking, if attribute defined value must be present
     let uin: string | null = null;
     if (lti13_instance.uin_attribute) {
@@ -63,6 +58,7 @@ router.post(
     }
 
     // UID checking
+    let uid: string;
     if (lti13_instance.uid_attribute) {
       // Reasonable default is "email"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
