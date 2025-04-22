@@ -123,7 +123,7 @@ function getParamsForAssessment(
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number | undefined;
-        comment: string | Array<string> | Record<string, any> | null;
+        comment: string | string[] | Record<string, any> | null;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;

@@ -498,10 +498,10 @@ describe('Question syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    let syncedQuestions = await util.dumpTable('questions');
-    let syncedStringQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
-    let syncedArrayQuestion = syncedQuestions.find((q) => q.qid === util.ALTERNATIVE_QUESTION_ID);
-    let syncedObjectQuestion = syncedQuestions.find(
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedStringQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    const syncedArrayQuestion = syncedQuestions.find((q) => q.qid === util.ALTERNATIVE_QUESTION_ID);
+    const syncedObjectQuestion = syncedQuestions.find(
       (q) => q.qid === util.MANUAL_GRADING_QUESTION_ID,
     );
     assert.equal(syncedStringQuestion?.json_comment, 'Question comment');

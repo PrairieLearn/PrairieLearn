@@ -12,7 +12,7 @@ interface DesiredTopic {
   name: string;
   color: string;
   description?: string | null;
-  comment?: string | Array<string> | Record<string, any> | null;
+  comment?: string | string[] | Record<string, any> | null;
 }
 
 export async function sync(courseId: string, courseData: CourseData) {

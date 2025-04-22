@@ -6,9 +6,6 @@ import { selectOrInsertCourseByPath } from '../../models/course.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
-import type { Course } from '../../lib/db-types.js';
-import type { CourseJson, CourseJsonInput } from '../../schemas/infoCourse.js';
-import { array } from 'zod';
 
 const [sampleFeature1, sampleFeature2] = features.allFeatures();
 const invalidFeature = 'unknown-feature';
