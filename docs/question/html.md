@@ -44,7 +44,7 @@ That question would be rendered like this:
 
 !!! warning
 
-    Markdown recognizes indentation as a code block, so text inside these tags should not be indented with the corresponding HTML content.
+    Markdown recognizes indentation as a code block, so text inside these tags should **not** be indented with the corresponding HTML content.
 
     === "Good"
 
