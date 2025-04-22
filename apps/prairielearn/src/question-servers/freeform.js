@@ -849,6 +849,20 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
 }
 
 /**
+ * @param {unknown} val
+ * @return {{ score: number, weight: number }}
+ */
+function getPartialScoreValues(val) {
+  const obj = /** @type {Record<string, unknown>} */ (
+    typeof val === 'object' && val != null ? val : {}
+  );
+  return {
+    score: typeof obj.score === 'number' ? obj.score : 0,
+    weight: typeof obj.weight === 'number' ? obj.weight : 1,
+  };
+}
+
+/**
  * @template {import('./types.js').ExecutionData} T
  * @param {string} phase
  * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
@@ -902,12 +916,13 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
   });
 
   if (phase === 'grade' || phase === 'test') {
+    const partial_scores = /** @type {Record<string, unknown>} */ (resultData.partial_scores ?? {});
+
     if (context.question.partial_credit) {
-      let total_weight = 0,
-        total_weight_score = 0;
-      for (const value of Object.values(resultData.partial_scores ?? {})) {
-        const score = value.score ?? 0;
-        const weight = value.weight ?? 1;
+      let total_weight = 0;
+      let total_weight_score = 0;
+      for (const value of Object.values(partial_scores)) {
+        const { score, weight } = getPartialScoreValues(value);
         total_weight += weight;
         total_weight_score += weight * score;
       }
@@ -915,8 +930,8 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     } else {
       let score = 0;
       if (
-        Object.keys(resultData.partial_scores ?? {}).length > 0 &&
-        Object.values(resultData.partial_scores ?? {}).every((value) => (value?.score ?? 0) >= 1)
+        Object.keys(partial_scores).length > 0 &&
+        Object.values(partial_scores).every((value) => getPartialScoreValues(value).score >= 1)
       ) {
         score = 1;
       }
