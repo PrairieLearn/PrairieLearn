@@ -502,11 +502,11 @@ function checkData(data, origData, phase) {
 }
 
 /**
- *
+ * @template T
  * @param {string} phase
  * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
- * @param {any} data
- * @param {any} context
+ * @param {T} data
+ * @param {QuestionProcessingContext} context
  * @param {string} html
  */
 async function experimentalProcess(phase, codeCaller, data, context, html) {
@@ -549,13 +549,23 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
 
   return {
     courseIssues,
-    data: result?.data ?? data,
+    // Casting to the type of the argument is safe; a given phase is never allowed
+    // to change the top-level shape of the data.
+    data: /** @type T */ (result?.data ?? data),
     html: result?.html ?? '',
     fileData: Buffer.from(result?.file ?? '', 'base64'),
     renderedElementNames: result?.processed_elements ?? [],
   };
 }
 
+/**
+ * @template T
+ * @param {string} phase
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
+ * @param {T} data
+ * @param {QuestionProcessingContext} context
+ * @param {string} html
+ */
 async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, html) {
   const origData = structuredClone(data);
   const renderedElementNames = [];
@@ -574,9 +584,9 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
         renderedElementNames.push(elementName);
       }
       // Populate the extensions used by this element.
-      data.extensions = [];
+      /** @type {any} */ (data).extensions = [];
       if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
-        data.extensions = context.course_element_extensions[elementName];
+        /** @type {any} */ (data).extensions = context.course_element_extensions[elementName];
       }
       // We need to wrap it in another node, since only child nodes
       // are serialized
@@ -604,7 +614,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
       }
 
       // We'll be sneaky and remove the extensions, since they're not used elsewhere.
-      delete data.extensions;
+      delete (/** @type {any} */ (data).extensions);
       delete ret_val.extensions;
       if (typeof consoleLog === 'string' && consoleLog.length > 0) {
         courseIssues.push(
@@ -683,6 +693,14 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
   };
 }
 
+/**
+ * @template T
+ * @param {string} phase
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
+ * @param {T} data
+ * @param {QuestionProcessingContext} context
+ * @param {cheerio.CheerioAPI} $
+ */
 async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, $) {
   const origData = structuredClone(data);
   const renderedElementNames = [];
@@ -702,9 +720,9 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
 
         const elementFile = getElementController(elementName, context);
         // Populate the extensions used by this element
-        data.extensions = [];
+        /** @type {any} */ (data).extensions = [];
         if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
-          data.extensions = context.course_element_extensions[elementName];
+          /** @type {any} */ (data).extensions = context.course_element_extensions[elementName];
         }
 
         const elementHtml = $(element).clone().wrap('<container/>').parent().html();
@@ -731,7 +749,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
           throw courseIssue;
         }
 
-        delete data.extensions;
+        delete (/** @type {any} */ (data).extensions);
         delete result.extensions;
         if (typeof output === 'string' && output.length > 0) {
           courseIssues.push(
@@ -807,9 +825,10 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
 }
 
 /**
+ * @template {import('./types.js').ExecutionData} T
  * @param {string} phase
  * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
- * @param {any} data
+ * @param {T} data
  * @param {QuestionProcessingContext} context
  */
 async function processQuestionHtml(phase, codeCaller, data, context) {
@@ -842,27 +861,21 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     };
   }
 
-  let processFunction;
-  /** @type {[string, import('../lib/code-caller/index.js').CodeCaller, any, any, any]} */
-  let args;
-  if (context.renderer === 'experimental') {
-    processFunction = experimentalProcess;
-    args = [phase, codeCaller, data, context, html];
-  } else if (context.renderer === 'default') {
-    processFunction = traverseQuestionAndExecuteFunctions;
-    args = [phase, codeCaller, data, context, html];
-  } else {
-    processFunction = legacyTraverseQuestionAndExecuteFunctions;
-    args = [phase, codeCaller, data, context, $];
-  }
-
   const {
     courseIssues,
     data: resultData,
     html: processedHtml,
     fileData,
     renderedElementNames,
-  } = await processFunction(...args);
+  } = await run(async () => {
+    if (context.renderer === 'experimental') {
+      return await experimentalProcess(phase, codeCaller, data, context, html);
+    } else if (context.renderer === 'default') {
+      return await traverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, html);
+    } else {
+      return await legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, $);
+    }
+  });
 
   if (phase === 'grade' || phase === 'test') {
     if (context.question.partial_credit) {
@@ -896,6 +909,15 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
   };
 }
 
+/**
+ * @template T
+ * @param {string} phase
+ * @param {import('../lib/code-caller/code-caller-shared.js').CodeCaller} codeCaller
+ * @param {T} data
+ * @param {string} html
+ * @param {any} fileData
+ * @param {QuestionProcessingContext} context
+ */
 async function processQuestionServer(phase, codeCaller, data, html, fileData, context) {
   const courseIssues = [];
   const origData = structuredClone(data);
@@ -977,10 +999,10 @@ async function processQuestionServer(phase, codeCaller, data, html, fileData, co
 }
 
 /**
- *
+ * @template {import('./types.js').ExecutionData} T
  * @param {string} phase
  * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
- * @param {any} data
+ * @param {T} data
  * @param {QuestionProcessingContext} context
  */
 async function processQuestion(phase, codeCaller, data, context) {
@@ -1158,6 +1180,33 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     submission = null;
   }
 
+  // This URL is submission-specific, so we have to compute it here (that is,
+  // it won't be present in `locals`). This URL will only have meaning if
+  // there's a submission, so it will be `null` otherwise.
+  const submissionFilesUrl = submission
+    ? locals.questionUrl + `submission/${submission?.id}/file`
+    : null;
+
+  const options = {
+    ...(variant.options ?? {}),
+    client_files_question_url: locals.clientFilesQuestionUrl,
+    client_files_course_url: locals.clientFilesCourseUrl,
+    client_files_question_dynamic_url: locals.clientFilesQuestionGeneratedFileUrl,
+    course_element_files_url: assets.courseElementAssetBasePath(
+      course.commit_hash,
+      locals.urlPrefix,
+    ),
+    course_element_extension_files_url: assets.courseElementExtensionAssetBasePath(
+      course.commit_hash,
+      locals.urlPrefix,
+    ),
+    submission_files_url: submission ? submissionFilesUrl : null,
+    base_url: locals.baseUrl,
+    workspace_url: locals.workspaceUrl || null,
+    ...getContextOptions(context),
+  };
+
+  /** @satisfies {import('./types.js').ExecutionData} */
   const data = {
     // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
     // so we'll use the submission's values if they exist.
@@ -1169,7 +1218,7 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
     variant_seed: parseInt(variant.variant_seed ?? '0', 36),
-    options: variant.options ?? {},
+    options,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
       locals.allowAnswerEditing &&
@@ -1190,32 +1239,6 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     panel,
     num_valid_submissions: variant.num_tries ?? null,
   };
-
-  // This URL is submission-specific, so we have to compute it here (that is,
-  // it won't be present in `locals`). This URL will only have meaning if
-  // there's a submission, so it will be `null` otherwise.
-  const submissionFilesUrl = submission
-    ? locals.questionUrl + `submission/${submission?.id}/file`
-    : null;
-
-  // Put base URLs in data.options for access by question code
-  data.options.client_files_question_url = locals.clientFilesQuestionUrl;
-  data.options.client_files_course_url = locals.clientFilesCourseUrl;
-  data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
-  data.options.course_element_files_url = assets.courseElementAssetBasePath(
-    course.commit_hash,
-    locals.urlPrefix,
-  );
-  data.options.course_element_extension_files_url = assets.courseElementExtensionAssetBasePath(
-    course.commit_hash,
-    locals.urlPrefix,
-  );
-  data.options.submission_files_url = submission ? submissionFilesUrl : null;
-  data.options.base_url = locals.baseUrl;
-  data.options.workspace_url = locals.workspaceUrl || null;
-
-  // Put key paths in data.options
-  Object.assign(data.options, getContextOptions(context));
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
     course,
@@ -1670,6 +1693,13 @@ export async function render(
   });
 }
 
+/**
+ * @param {string} filename
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @param {import('../lib/db-types.js').Question} question
+ * @param {import('../lib/db-types.js').Course} course
+ * @returns {import('./types.js').QuestionServerReturnValue<Buffer>}
+ */
 export async function file(filename, variant, question, course) {
   return instrumented('freeform.file', async (span) => {
     debug('file()');
@@ -1677,14 +1707,14 @@ export async function file(filename, variant, question, course) {
 
     const context = await getContext(question, course);
 
+    /** @satisfies {import('./types.js').ExecutionData} */
     const data = {
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: variant.options ?? {},
+      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
       filename,
     };
-    Object.assign(data.options, getContextOptions(context));
 
     const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
       course,
@@ -1713,12 +1743,21 @@ export async function file(filename, variant, question, course) {
   });
 }
 
+/**
+ * @param {import('../lib/db-types.js').Submission} submission
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @param {import('../lib/db-types.js').Question} question
+ * @param {import('../lib/db-types.js').Course} course
+ * @returns {import('./types.js').QuestionServerReturnValue<import('./types.js').ParseResultData>}
+ */
 export async function parse(submission, variant, question, course) {
   return instrumented('freeform.parse', async () => {
     debug('parse()');
     if (variant.broken_at) throw new Error('attempted to parse broken variant');
 
     const context = await getContext(question, course);
+
+    /** @satisfies {import('./types.js').ExecutionData} */
     const data = {
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
@@ -1726,11 +1765,11 @@ export async function parse(submission, variant, question, course) {
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: variant.options ?? {},
+      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     };
-    Object.assign(data.options, getContextOptions(context));
+
     return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'parse',
@@ -1756,6 +1795,13 @@ export async function parse(submission, variant, question, course) {
   });
 }
 
+/**
+ * @param {import('../lib/db-types.js').Submission} submission
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @param {import('../lib/db-types.js').Question} question
+ * @param {import('../lib/db-types.js').Course} question_course
+ * @returns {import('./types.js').QuestionServerReturnValue<import('./types.js').GradeResultData>}
+ */
 export async function grade(submission, variant, question, question_course) {
   return instrumented('freeform.grade', async () => {
     debug('grade()');
@@ -1763,22 +1809,24 @@ export async function grade(submission, variant, question, question_course) {
     if (submission.broken) throw new Error('attempted to grade broken submission');
 
     const context = await getContext(question, question_course);
+
+    /** @satisfies {import('./types.js').ExecutionData} */
     let data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
       // use the submission's values when grading.
-      params: submission.params,
-      correct_answers: submission.true_answer,
-      submitted_answers: submission.submitted_answer,
-      format_errors: submission.format_errors,
+      params: submission.params ?? {},
+      correct_answers: submission.true_answer ?? {},
+      submitted_answers: submission.submitted_answer ?? {},
+      format_errors: submission.format_errors ?? {},
       partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: variant.options ?? {},
-      raw_submitted_answers: submission.raw_submitted_answer,
-      gradable: submission.gradable,
+      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      raw_submitted_answers: submission.raw_submitted_answer ?? {},
+      gradable: submission.gradable ?? true,
     };
-    Object.assign(data.options, getContextOptions(context));
+
     return withCodeCaller(question_course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'grade',
@@ -1806,25 +1854,35 @@ export async function grade(submission, variant, question, question_course) {
   });
 }
 
+/**
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @param {import('../lib/db-types.js').Question} question
+ * @param {import('../lib/db-types.js').Course} course
+ * @param {'correct' | 'incorrect' | 'invalid'} test_type
+ * @returns {import('./types.js').QuestionServerReturnValue<import('./types.js').TestResultData>}
+ */
 export async function test(variant, question, course, test_type) {
   return instrumented('freeform.test', async () => {
     debug('test()');
     if (variant.broken_at) throw new Error('attempted to test broken variant');
 
     const context = await getContext(question, course);
+
+    /** @satisfies {import('./types.js').ExecutionData & { test_type: 'correct' | 'incorrect' | 'invalid' }} */
     let data = {
-      params: variant.params,
-      correct_answers: variant.true_answer,
+      params: variant.params ?? {},
+      correct_answers: variant.true_answer ?? {},
       format_errors: {},
       partial_scores: {},
       score: 0,
       feedback: {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: variant.options ?? {},
+      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
       raw_submitted_answers: {},
-      gradable: true,
+      gradable: /** @type {boolean} */ (true),
       test_type,
     };
+
     Object.assign(data.options, getContextOptions(context));
     return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
