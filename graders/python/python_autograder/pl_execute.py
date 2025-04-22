@@ -108,7 +108,7 @@ def execute_code(
     exec(str_setup, setup_code)
     exec(repeated_setup_name, setup_code)
 
-    names_for_user = [variable["name"] for variable in data["params"]["names_for_user"]]
+    names_for_user = [v["name"] for v in data["params"].get("names_for_user", [])]
 
     # Make copies of variables that go to the user so we do not clobber them
     ref_code = {}

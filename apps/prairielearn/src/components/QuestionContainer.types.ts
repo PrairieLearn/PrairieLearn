@@ -4,3 +4,5 @@ export type QuestionContext =
   | 'instructor'
   | 'public'
   | 'manual_grading';
+
+export type QuestionRenderContext = 'manual_grading' | 'ai_grading';

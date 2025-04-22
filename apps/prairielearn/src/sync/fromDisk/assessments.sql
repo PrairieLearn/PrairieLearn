@@ -52,7 +52,7 @@ FROM
     AND iqi.qid = q.qid
   )
 WHERE
-  q.shared_publicly
+  q.share_publicly
   AND c.example_course IS FALSE;
 
 -- BLOCK get_institution_id

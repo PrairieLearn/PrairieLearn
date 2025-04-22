@@ -40,6 +40,16 @@ export async function selectCourseById(course_id: string): Promise<Course> {
   );
 }
 
+export async function selectCourseByCourseInstanceId(course_instance_id: string): Promise<Course> {
+  return await queryRow(
+    sql.select_course_by_instance_id,
+    {
+      course_instance_id,
+    },
+    CourseSchema,
+  );
+}
+
 export function getLockNameForCoursePath(coursePath: string): string {
   return `coursedir:${coursePath}`;
 }

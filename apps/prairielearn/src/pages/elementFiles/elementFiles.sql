@@ -6,7 +6,7 @@ SELECT
     FROM
       questions AS q
     WHERE
-      q.shared_publicly
+      q.share_publicly
       AND course_id = $producing_course_id
       AND q.deleted_at IS NULL
     UNION
@@ -32,7 +32,7 @@ SELECT
       questions AS q
     WHERE
       (
-        q.shared_publicly
+        q.share_publicly
         OR q.share_source_publicly
       )
       AND course_id = $course_id
