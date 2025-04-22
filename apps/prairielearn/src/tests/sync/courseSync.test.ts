@@ -6,6 +6,9 @@ import { selectOrInsertCourseByPath } from '../../models/course.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
+import type { Course } from '../../lib/db-types.js';
+import type { CourseJson, CourseJsonInput } from '../../schemas/infoCourse.js';
+import { array } from 'zod';
 
 const [sampleFeature1, sampleFeature2] = features.allFeatures();
 const invalidFeature = 'unknown-feature';
@@ -113,9 +116,28 @@ describe('Course syncing', () => {
     courseData.course.comment = 'Course comment';
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-
+    const arrayCommentCourseData = courseData;
+    arrayCommentCourseData.course.uuid = '03fbaa19-69c5-41a9-922c-712136777781';
+    arrayCommentCourseData.course.title = 'Course with array comment';
+    arrayCommentCourseData.course.comment = ['comment 1', 'comment 2'];
+    const arrayCommentCourseDir = await util.writeCourseToTempDirectory(arrayCommentCourseData);
+    await util.syncCourseData(arrayCommentCourseDir);
+    const objectCommentCourseData = courseData;
+    arrayCommentCourseData.course.uuid = '96e305e2-a149-4342-8d4c-172c010b45f9';
+    arrayCommentCourseData.course.title = 'Course with object comment';
+    objectCommentCourseData.course.comment = {
+      comment1: 'comment 1',
+      comment2: 'comment 2',
+    };
+    const objectCommentCourseDir = await util.writeCourseToTempDirectory(objectCommentCourseData);
+    await util.syncCourseData(objectCommentCourseDir);
     const syncedCourses = await util.dumpTable('pl_courses');
-    const syncedCourse = syncedCourses[0];
-    assert.equal(syncedCourse?.json_comment, 'Course comment');
+    assert.lengthOf(syncedCourses, 3);
+    assert.equal(syncedCourses[0].json_comment, 'Course comment');
+    assert.deepEqual(syncedCourses[1].json_comment, ['comment 1', 'comment 2']);
+    assert.deepEqual(syncedCourses[2].json_comment, {
+      comment1: 'comment 1',
+      comment2: 'comment 2',
+    });
   });
 });

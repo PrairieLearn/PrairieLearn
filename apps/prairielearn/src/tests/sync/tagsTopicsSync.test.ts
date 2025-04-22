@@ -307,16 +307,51 @@ describe('Tag/topic syncing', () => {
 
   it('syncs JSON comments correctly', async () => {
     const courseData = util.getCourseData();
-    const newEntity = makeEntity();
-    newEntity.comment = 'test comment';
-    courseData.course.tags.push(newEntity);
-    courseData.course.topics.push(newEntity);
+    const newEntityStringComment = {
+      name: 'String comment',
+      color: 'green1',
+      description: 'description for a new entity',
+      comment: 'string comment',
+    } as TagJsonInput | TopicJsonInput;
+    const newEntityArrayComment = {
+      name: 'Array comment',
+      color: 'green1',
+      description: 'description for a new entity',
+      comment: ['comment1', 'comment2'],
+    } as TagJsonInput | TopicJsonInput;
+    const newEntityObjectComment = {
+      name: 'Object comment',
+      color: 'green1',
+      description: 'description for a new entity',
+      comment: { comment1: 'comment1', comment2: 'comment2' },
+    } as TagJsonInput | TopicJsonInput;
+    courseData.course.tags.push(
+      newEntityStringComment,
+      newEntityArrayComment,
+      newEntityObjectComment,
+    );
+    courseData.course.topics.push(
+      newEntityStringComment,
+      newEntityArrayComment,
+      newEntityObjectComment,
+    );
     await util.writeAndSyncCourseData(courseData);
     const syncedTags = await util.dumpTable('tags');
-    const syncedTag = syncedTags.find((t) => t.name === newEntity.name);
-    assert.equal(syncedTag?.json_comment, 'test comment');
+    const syncedStringTag = syncedTags.find((t) => t.name === 'String comment');
+    const syncedArrayTag = syncedTags.find((t) => t.name === 'Array comment');
+    const syncedObjectTag = syncedTags.find((t) => t.name === 'Object comment');
+    assert.equal(syncedStringTag?.json_comment, 'string comment');
+    assert.deepEqual(syncedArrayTag?.json_comment, ['comment1', 'comment2']);
+    assert.deepEqual(syncedObjectTag?.json_comment, { comment1: 'comment1', comment2: 'comment2' });
     const syncedTopics = await util.dumpTable('topics');
-    const syncedTopic = syncedTopics.find((t) => t.name === newEntity.name);
-    assert.equal(syncedTopic?.json_comment, 'test comment');
+    const syncedStringTopic = syncedTopics.find((t) => t.name === 'String comment');
+    const syncedArrayTopic = syncedTopics.find((t) => t.name === 'Array comment');
+    const syncedObjectTopic = syncedTopics.find((t) => t.name === 'Object comment');
+    assert.equal(syncedStringTopic?.json_comment, 'string comment');
+    assert.deepEqual(syncedArrayTopic?.json_comment, ['comment1', 'comment2']);
+    assert.deepEqual(syncedObjectTopic?.json_comment, {
+      comment1: 'comment1',
+      comment2: 'comment2',
+    });
   });
 });

@@ -170,7 +170,7 @@ BEGIN
             json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision,
             json_can_view = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_view')),
             json_can_submit = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_submit')),
-            json_comment = (valid_assessment.data->>'comment')::text,
+            json_comment = (valid_assessment.data->>'comment')::jsonb,
             share_source_publicly = (valid_assessment.data->>'share_source_publicly')::boolean,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
@@ -291,7 +291,7 @@ BEGIN
                     (access_rule->>'show_closed_assessment')::boolean,
                     (access_rule->>'show_closed_assessment_score')::boolean,
                     (access_rule->>'active')::boolean,
-                    (access_rule->>'comment')::text
+                    (access_rule->'comment')
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -347,7 +347,7 @@ BEGIN
                 (zone->>'grade_rate_minutes')::double precision,
                 ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_view')),
                 ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(zone->'json_can_submit')),
-                (zone->>'comment')::text
+                (zone->'comment')
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
@@ -385,7 +385,7 @@ BEGIN
                     ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_view')),
                     ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_submit')),
                     (alternative_group->>'json_has_alternatives')::boolean,
-                    (alternative_group->>'comment')::text
+                    (alternative_group->'comment')
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
                     number_choose = EXCLUDED.number_choose,
@@ -468,7 +468,7 @@ BEGIN
                         (assessment_question->>'number_in_alternative_group')::integer,
                         (assessment_question->>'advance_score_perc')::double precision,
                         (assessment_question->>'effective_advance_score_perc')::double precision,
-                        (assessment_question->>'comment')::text
+                        (assessment_question->'comment')
                     ) ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,

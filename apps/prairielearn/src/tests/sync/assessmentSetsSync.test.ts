@@ -233,21 +233,52 @@ describe('Assessment set syncing', () => {
 
   it('syncs JSON comments correctly', async () => {
     const courseData = util.getCourseData();
-    const assessmentSet = {
+    const assessmentSetStringComment = {
       name: 'assessment set with comment',
       abbreviation: 'com',
       heading: 'assessment set with comment',
-      color: 'red1',
+      color: 'red2',
       comment: 'assessment set comment',
-    };
-    courseData.course.assessmentSets.push(assessmentSet);
+    } satisfies AssessmentSetJsonInput;
+    const assessmentSetArrayComment = {
+      name: 'assessment set with an array comment',
+      abbreviation: 'com',
+      heading: 'assessment set with comment',
+      color: 'red2',
+      comment: ['comment 1', 'comment 2'],
+    } satisfies AssessmentSetJsonInput;
+    const assessmentSetObjectComment = {
+      name: 'assessment set with an object comment',
+      abbreviation: 'com',
+      heading: 'assessment set with comment',
+      color: 'red2',
+      comment: { comment1: 'value1', comment2: 'value2' },
+    } satisfies AssessmentSetJsonInput;
+    courseData.course.assessmentSets.push(
+      assessmentSetStringComment,
+      assessmentSetArrayComment,
+      assessmentSetObjectComment,
+    );
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     const syncedAssessmentSets = await util.dumpTableWithSchema(
       'assessment_sets',
       AssessmentSetSchema,
     );
-    const syncedAssessmentSet = syncedAssessmentSets.find((as) => as.name === assessmentSet.name);
-    assert.equal(syncedAssessmentSet?.json_comment, 'assessment set comment');
+    const syncedAssessmentSetStringComment = syncedAssessmentSets.find(
+      (as) => as.name === assessmentSetStringComment.name,
+    );
+    assert.equal(syncedAssessmentSetStringComment?.json_comment, 'assessment set comment');
+    const syncedAssessmentSetArrayComment = syncedAssessmentSets.find(
+      (as) => as.name === assessmentSetArrayComment.name,
+    );
+    assert.deepEqual(syncedAssessmentSetArrayComment?.json_comment, ['comment 1', 'comment 2']);
+    const syncedAssessmentSetObjectComment = syncedAssessmentSets.find(
+      (as) => as.name === assessmentSetObjectComment.name,
+    );
+    assert.deepEqual(syncedAssessmentSetObjectComment?.json_comment, {
+      comment1: 'value1',
+      comment2: 'value2',
+    });
   });
 });

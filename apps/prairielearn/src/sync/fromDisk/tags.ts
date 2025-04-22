@@ -19,7 +19,7 @@ interface DesiredTag {
   name: string;
   color: string;
   description?: string | null;
-  comment?: string;
+  comment?: string | Array<string> | Record<string, any> | null;
 }
 
 export async function sync(

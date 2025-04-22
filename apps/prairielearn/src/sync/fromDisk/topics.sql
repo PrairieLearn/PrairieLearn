@@ -26,7 +26,7 @@ SELECT
   (t ->> 2)::text,
   (t ->> 3)::integer,
   (t ->> 4)::boolean,
-  (t ->> 5)::text
+  (t -> 5)
 FROM
   UNNEST($topics::jsonb[]) AS t;
 
@@ -39,7 +39,7 @@ WITH
       (t ->> 2)::text AS color,
       (t ->> 3)::integer AS number,
       (t ->> 4)::boolean AS implicit,
-      (t ->> 5)::text AS json_comment
+      (t -> 5) AS json_comment
     FROM
       UNNEST($topics::jsonb[]) AS t
   )

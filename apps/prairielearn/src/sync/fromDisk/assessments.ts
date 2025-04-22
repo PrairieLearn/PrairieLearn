@@ -80,7 +80,7 @@ function getParamsForAssessment(
         show_closed_assessment: accessRule.showClosedAssessment ?? true,
         show_closed_assessment_score: accessRule.showClosedAssessmentScore ?? true,
         active: accessRule.active ?? true,
-        comment: accessRule.comment ?? null,
+        comment: accessRule.comment,
       };
     });
 
@@ -123,7 +123,7 @@ function getParamsForAssessment(
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number | undefined;
-        comment: string | null;
+        comment: string | Array<string> | Record<string, any> | null;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -284,7 +284,7 @@ function getParamsForAssessment(
     student_group_join: !!assessment.studentGroupJoin,
     student_group_leave: !!assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
-    comment: assessment.comment,
+    comment: JSON.stringify(assessment.comment),
     has_roles: !!assessment.groupRoles,
     json_can_view: assessment.canView,
     json_can_submit: assessment.canSubmit,

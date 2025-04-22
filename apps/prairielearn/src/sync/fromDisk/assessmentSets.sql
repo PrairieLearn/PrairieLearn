@@ -28,7 +28,7 @@ SELECT
   (aset ->> 3)::text,
   (aset ->> 4)::integer,
   (aset ->> 5)::boolean,
-  (aset ->> 6)::text
+  (aset -> 6)
 FROM
   UNNEST($sets::jsonb[]) AS aset;
 
@@ -42,7 +42,7 @@ WITH
       (aset ->> 3)::text AS color,
       (aset ->> 4)::integer AS number,
       (aset ->> 5)::boolean AS implicit,
-      (aset ->> 6)::text AS json_comment
+      (aset -> 6) AS json_comment
     FROM
       UNNEST($sets::jsonb[]) AS aset
   )

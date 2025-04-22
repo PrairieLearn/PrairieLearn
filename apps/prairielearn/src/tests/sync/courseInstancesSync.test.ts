@@ -417,9 +417,46 @@ describe('Course instance syncing', () => {
     ];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
+    let syncedCourseInstances = await util.dumpTable('course_instances');
     assert.equal(syncedCourseInstances[0].json_comment, 'course instance comment');
-    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    let syncedAccessRules = await util.dumpTable('course_instance_access_rules');
     assert.equal(syncedAccessRules[0].json_comment, 'course instance access rule comment');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.comment = [
+      'comment1',
+      'comment2',
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
+      {
+        comment: ['comment1', 'comment2'],
+      },
+    ];
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    syncedCourseInstances = await util.dumpTable('course_instances');
+    assert.deepEqual(syncedCourseInstances[0].json_comment, ['comment1', 'comment2']);
+    syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    assert.deepEqual(syncedAccessRules[0].json_comment, ['comment1', 'comment2']);
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.comment = {
+      comment1: 'comment1',
+      comment2: 'comment2',
+    };
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
+      {
+        comment: {
+          comment1: 'comment1',
+          comment2: 'comment2',
+        },
+      },
+    ];
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    syncedCourseInstances = await util.dumpTable('course_instances');
+    assert.deepEqual(syncedCourseInstances[0].json_comment, {
+      comment1: 'comment1',
+      comment2: 'comment2',
+    });
+    syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    assert.deepEqual(syncedAccessRules[0].json_comment, {
+      comment1: 'comment1',
+      comment2: 'comment2',
+    });
   });
 });

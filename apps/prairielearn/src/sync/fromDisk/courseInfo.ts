@@ -37,7 +37,7 @@ export async function sync(courseData: CourseData, courseId: string) {
     display_timezone: courseInfo.timezone || null,
     example_course: isExampleCourse(courseInfo),
     options: courseInfo.options || {},
-    comment: courseInfo.comment,
+    comment: JSON.stringify(courseInfo.comment),
     sync_warnings: infofile.stringifyWarnings(courseData.course),
   });
   if (res.rowCount !== 1) throw new Error(`Unable to find course with ID ${courseId}`);

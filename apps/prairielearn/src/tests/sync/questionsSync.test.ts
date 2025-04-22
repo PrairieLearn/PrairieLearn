@@ -464,13 +464,66 @@ describe('Question syncing', () => {
       image: 'docker-image',
       comment: 'External grading comment',
     };
+    courseData.questions[util.ALTERNATIVE_QUESTION_ID].comment = ['comment 1', 'comment 2'];
+    courseData.questions[util.ALTERNATIVE_QUESTION_ID].workspaceOptions = {
+      image: 'docker-image',
+      port: 8080,
+      home: '/home/user',
+      comment: ['comment 1', 'comment 2'],
+    };
+    courseData.questions[util.ALTERNATIVE_QUESTION_ID].externalGradingOptions = {
+      image: 'docker-image',
+      comment: ['comment 1', 'comment 2'],
+    };
+    courseData.questions[util.MANUAL_GRADING_QUESTION_ID].comment = {
+      comment1: 'comment 1',
+      comment2: 'comment 2',
+    };
+    courseData.questions[util.MANUAL_GRADING_QUESTION_ID].workspaceOptions = {
+      image: 'docker-image',
+      port: 8080,
+      home: '/home/user',
+      comment: {
+        comment1: 'comment 1',
+        comment2: 'comment 2',
+      },
+    };
+    courseData.questions[util.MANUAL_GRADING_QUESTION_ID].externalGradingOptions = {
+      image: 'docker-image',
+      comment: {
+        comment1: 'comment 1',
+        comment2: 'comment 2',
+      },
+    };
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedQuestions = await util.dumpTable('questions');
-    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
-    assert.equal(syncedQuestion?.json_comment, 'Question comment');
-    assert.equal(syncedQuestion?.json_workspace_comment, 'Workspace comment');
-    assert.equal(syncedQuestion?.json_external_grading_comment, 'External grading comment');
+    let syncedQuestions = await util.dumpTable('questions');
+    let syncedStringQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    let syncedArrayQuestion = syncedQuestions.find((q) => q.qid === util.ALTERNATIVE_QUESTION_ID);
+    let syncedObjectQuestion = syncedQuestions.find(
+      (q) => q.qid === util.MANUAL_GRADING_QUESTION_ID,
+    );
+    assert.equal(syncedStringQuestion?.json_comment, 'Question comment');
+    assert.equal(syncedStringQuestion?.json_workspace_comment, 'Workspace comment');
+    assert.equal(syncedStringQuestion?.json_external_grading_comment, 'External grading comment');
+    assert.deepEqual(syncedArrayQuestion?.json_comment, ['comment 1', 'comment 2']);
+    assert.deepEqual(syncedArrayQuestion?.json_workspace_comment, ['comment 1', 'comment 2']);
+    assert.deepEqual(syncedArrayQuestion?.json_external_grading_comment, [
+      'comment 1',
+      'comment 2',
+    ]);
+    assert.deepEqual(syncedObjectQuestion?.json_comment, {
+      comment1: 'comment 1',
+      comment2: 'comment 2',
+    });
+    assert.deepEqual(syncedObjectQuestion?.json_workspace_comment, {
+      comment1: 'comment 1',
+      comment2: 'comment 2',
+    });
+    assert.deepEqual(syncedObjectQuestion?.json_external_grading_comment, {
+      comment1: 'comment 1',
+      comment2: 'comment 2',
+    });
   });
 });

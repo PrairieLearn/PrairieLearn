@@ -13,7 +13,7 @@ interface DesiredAssessmentSet {
   abbreviation: string;
   heading: string;
   color: string;
-  comment?: string;
+  comment?: string | Array<any> | Record<string, any> | null;
 }
 
 export async function sync(courseId: string, courseData: CourseData) {
