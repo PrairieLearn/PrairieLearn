@@ -45,8 +45,8 @@ const debug = debugfn('prairielearn:freeform');
  * @property {string} question_dir
  * @property {string} question_dir_host
  * @property {'experimental' | 'default' | 'legacy'} renderer
- * @property {any} course_elements
- * @property {any} course_element_extensions
+ * @property {ElementNameMap} course_elements
+ * @property {ElementExtensionNameDirMap} course_element_extensions
  */
 
 /** @typedef {import('../schemas/index.js').ElementCoreJson} ElementCoreJson */
@@ -285,6 +285,10 @@ export function flushElementCache() {
   courseExtensionsCache = {};
 }
 
+/**
+ * @param {string} elementName
+ * @param {QuestionProcessingContext} context
+ */
 function resolveElement(elementName, context) {
   if (Object.prototype.hasOwnProperty.call(context.course_elements, elementName)) {
     return context.course_elements[elementName];
@@ -1427,12 +1431,12 @@ export async function render(
         // Transform non-global dependencies to be prefixed by the element name,
         // since they'll be served from their element's directory
         if ('elementStyles' in elementDependencies) {
-          elementDependencies.elementStyles = elementDependencies.elementStyles.map(
+          elementDependencies.elementStyles = elementDependencies.elementStyles?.map(
             (dep) => `${resolvedElement.name}/${dep}`,
           );
         }
         if ('elementScripts' in elementDependencies) {
-          elementDependencies.elementScripts = elementDependencies.elementScripts.map(
+          elementDependencies.elementScripts = elementDependencies.elementScripts?.map(
             (dep) => `${resolvedElement.name}/${dep}`,
           );
         }
@@ -1443,53 +1447,45 @@ export async function render(
           );
         }
 
-        // Rename properties so we can track core and course
-        // element dependencies separately
-        if (resolvedElement.type === 'course') {
-          if ('elementStyles' in elementDependencies) {
-            elementDependencies.courseElementStyles = elementDependencies.elementStyles;
-            delete elementDependencies.elementStyles;
-          }
-          if ('elementScripts' in elementDependencies) {
-            elementDependencies.courseElementScripts = elementDependencies.elementScripts;
-            delete elementDependencies.elementScripts;
-          }
-          if ('elementScripts' in elementDynamicDependencies) {
-            elementDynamicDependencies.courseElementScripts =
-              elementDynamicDependencies.elementScripts;
-            delete elementDynamicDependencies.elementScripts;
-          }
-        } else {
-          if ('elementStyles' in elementDependencies) {
-            elementDependencies.coreElementStyles = elementDependencies.elementStyles;
-            delete elementDependencies.elementStyles;
-          }
-          if ('elementScripts' in elementDependencies) {
-            elementDependencies.coreElementScripts = elementDependencies.elementScripts;
-            delete elementDependencies.elementScripts;
-          }
-          if ('elementScripts' in elementDynamicDependencies) {
-            elementDynamicDependencies.coreElementScripts =
-              elementDynamicDependencies.elementScripts;
-            delete elementDynamicDependencies.elementScripts;
-          }
-        }
-
         for (const type in elementDependencies) {
-          if (!(type in dependencies)) continue;
+          // Rename properties so we can track core and course element dependencies separately.
+          const resolvedType = run(() => {
+            if (resolvedElement.type === 'course') {
+              if (type === 'elementStyles') return 'courseElementStyles';
+              if (type === 'elementScripts') return 'courseElementScripts';
+            } else {
+              if (type === 'elementStyles') return 'coreElementStyles';
+              if (type === 'elementScripts') return 'coreElementScripts';
+            }
+            return type;
+          });
+
+          if (!(resolvedType in dependencies)) continue;
 
           for (const dep of elementDependencies[type]) {
-            if (!dependencies[type].includes(dep)) {
-              dependencies[type].push(dep);
+            if (!dependencies[resolvedType].includes(dep)) {
+              dependencies[resolvedType].push(dep);
             }
           }
         }
 
         for (const type in elementDynamicDependencies) {
+          // Rename properties so we can track core and course element dependencies separately.
+          const resolvedType = run(() => {
+            if (resolvedElement.type === 'course') {
+              if (type === 'elementScripts') return 'courseElementScripts';
+            } else {
+              if (type === 'elementScripts') return 'coreElementScripts';
+            }
+            return type;
+          });
+
           for (const key in elementDynamicDependencies[type]) {
-            if (!Object.hasOwn(dynamicDependencies[type], key)) {
-              dynamicDependencies[type][key] = elementDynamicDependencies[type][key];
-            } else if (dynamicDependencies[type][key] !== elementDynamicDependencies[type][key]) {
+            if (!Object.hasOwn(dynamicDependencies[resolvedType], key)) {
+              dynamicDependencies[resolvedType][key] = elementDynamicDependencies[type][key];
+            } else if (
+              dynamicDependencies[resolvedType][key] !== elementDynamicDependencies[type][key]
+            ) {
               courseIssues.push(
                 new CourseIssueError(`Dynamic dependency ${key} assigned to conflicting files`, {
                   data: {
@@ -1518,12 +1514,12 @@ export async function render(
             const extensionDynamic =
               structuredClone(extensions[elementName][extensionName].dynamicDependencies) ?? {};
             if ('extensionStyles' in extension) {
-              extension.extensionStyles = extension.extensionStyles.map(
+              extension.extensionStyles = extension.extensionStyles?.map(
                 (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
             if ('extensionScripts' in extension) {
-              extension.extensionScripts = extension.extensionScripts.map(
+              extension.extensionScripts = extension.extensionScripts?.map(
                 (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
