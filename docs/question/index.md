@@ -10,7 +10,7 @@ A question is made up of three main components:
 
 1. **`info.json`**: Metadata about the question, including the question title, topic, and tags. Reference the [`infoQuestion.json` schema](../schemas/infoQuestion.md) for more details.
 2. **`question.html`**: The HTML template that defines the question. This is where you write the question text and define the input elements. Reference the [HTML documentation](html.md) for more details.
-3. **`server.py`**: The server-side code that generates random parameters and grades the question. This is where you write the logic for generating random values, grading, and any other server-side code. This file is optional, but it is highly recommended to use it for any question that has randomization or grading logic. Reference the [server documentation](server.md) for more details.
+3. **`server.py`**: This is where you write the logic for generating random values, grading student responses, and any other server-side code. This file is optional, but it is necessary for any question that has non-trivial randomization or custom grading behavior. Reference the [server documentation](server.md) for more details.
 
 ## Directory structure
 
