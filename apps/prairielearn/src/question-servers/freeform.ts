@@ -606,7 +606,7 @@ async function experimentalProcess<T>(
     courseIssues,
     // Casting to the type of the argument is safe; a given phase is never allowed
     // to change the top-level shape of the data.
-    data: /** @type T */ result?.data ?? data,
+    data: result?.data ?? data,
     html: result?.html ?? '',
     fileData: Buffer.from(result?.file ?? '', 'base64'),
     renderedElementNames: result?.processed_elements ?? [],
@@ -720,9 +720,7 @@ async function traverseQuestionAndExecuteFunctions<T extends ExecutionData>(
     }
 
     // Comment nodes don't have childNodes and can't be serialized.
-    if (!('childNodes' in node)) {
-      return null;
-    }
+    if (!('childNodes' in node)) return null;
 
     const newChildren: parse5.DefaultTreeAdapterTypes.ChildNode[] = [];
     for (let i = 0; i < (node.childNodes || []).length; i++) {
@@ -733,7 +731,7 @@ async function traverseQuestionAndExecuteFunctions<T extends ExecutionData>(
         } else if ('tagName' in childRes) {
           newChildren.push(childRes);
         } else {
-          throw new CourseIssueError(`Unexpected visited node - '${childRes}'`);
+          throw new CourseIssueError(`Unexpected visited node: ${childRes.nodeName}`);
         }
       }
     }
@@ -1138,13 +1136,19 @@ async function processQuestion<T extends ExecutionData>(
  * These include file paths that are relevant for questions and elements.
  * URLs are not included here because those are only applicable during 'render'.
  */
-function getContextOptions(context: { question_dir: string; course_dir: string }) {
+function getContextOptions({
+  question_dir,
+  course_dir,
+}: {
+  question_dir: string;
+  course_dir: string;
+}) {
   return {
-    question_path: context.question_dir,
-    client_files_question_path: path.join(context.question_dir, 'clientFilesQuestion'),
-    client_files_course_path: path.join(context.course_dir, 'clientFilesCourse'),
-    server_files_course_path: path.join(context.course_dir, 'serverFilesCourse'),
-    course_extensions_path: path.join(context.course_dir, 'elementExtensions'),
+    question_path: question_dir,
+    client_files_question_path: path.join(question_dir, 'clientFilesQuestion'),
+    client_files_course_path: path.join(course_dir, 'clientFilesCourse'),
+    server_files_course_path: path.join(course_dir, 'serverFilesCourse'),
+    course_extensions_path: path.join(course_dir, 'elementExtensions'),
   };
 }
 
@@ -1404,7 +1408,7 @@ export async function render(
       answerHtml: '',
     };
     let allRenderedElementNames: string[] = [];
-    const courseIssues: any[] = [];
+    const courseIssues: CourseIssueError[] = [];
     const context = await getContext(question, course);
 
     // Hack: we need to propagate this back up to the original caller so
@@ -1833,7 +1837,6 @@ export async function parse(
 
     const context = await getContext(question, course);
 
-    /** @satisfies {import('./types.js').ExecutionData} */
     const data = {
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
@@ -1855,7 +1858,7 @@ export async function parse(
         context,
       );
 
-      if (Object.keys(resultData.format_errors ?? {}).length > 0) resultData.gradable = false;
+      if (Object.keys(resultData.format_errors).length > 0) resultData.gradable = false;
 
       return {
         courseIssues,
@@ -1911,7 +1914,7 @@ export async function grade(
         context,
       );
 
-      if (Object.keys(resultData.format_errors ?? {}).length > 0) resultData.gradable = false;
+      if (Object.keys(resultData.format_errors).length > 0) resultData.gradable = false;
 
       return {
         courseIssues,
@@ -1942,6 +1945,7 @@ export async function test(
     if (variant.broken_at) throw new Error('attempted to test broken variant');
 
     const context = await getContext(question, course);
+
     const data = {
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
@@ -1964,7 +1968,8 @@ export async function test(
         data,
         context,
       );
-      if (Object.keys(resultData.format_errors ?? {}).length > 0) resultData.gradable = false;
+
+      if (Object.keys(resultData.format_errors).length > 0) resultData.gradable = false;
 
       return {
         courseIssues,
