@@ -123,7 +123,7 @@ function getParamsForAssessment(
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number | undefined;
-        comment: string | string[] | Record<string, any> | null;
+        comment?: string | string[] | Record<string, any> | null;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -144,7 +144,7 @@ function getParamsForAssessment(
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
-            comment: alternative.comment ?? null,
+            comment: alternative.comment,
           };
         });
       } else if (question.id) {
@@ -163,7 +163,7 @@ function getParamsForAssessment(
             jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
-            comment: question.comment ?? null,
+            comment: question.comment,
           },
         ];
       }
@@ -244,7 +244,7 @@ function getParamsForAssessment(
         json_can_submit: question.canSubmit,
         json_has_alternatives: !!question.alternatives,
         questions,
-        comment: question.id ? null : question.comment,
+        comment: question.comment,
       };
     });
   });
