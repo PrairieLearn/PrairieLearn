@@ -116,3 +116,32 @@ export type ElementExtensionJsonExtension = ElementExtensionJson & {
   name: string;
   directory: string;
 };
+
+// This data object changes over the lifetime of the question grading process.
+// That is why many fields are optional, as they are only present in later phases.
+export interface ExecutionData {
+  params: Record<string, any>;
+  correct_answers: Record<string, any>;
+  variant_seed: number;
+  options: Record<string, any> & {
+    question_path: string;
+    client_files_question_path: string;
+    client_files_course_path: string;
+    server_files_course_path: string;
+    course_extensions_path: string;
+  };
+  answers_names?: Record<string, string>;
+  submitted_answers?: Record<string, any>;
+  format_errors?: Record<string, any>;
+  partial_scores?: Record<string, any>;
+  score?: number;
+  feedback?: Record<string, any>;
+  raw_submitted_answers?: Record<string, any>;
+  editable?: boolean;
+  manual_grading?: boolean;
+  panel?: 'question' | 'answer' | 'submission';
+  num_valid_submissions?: number;
+  filename?: string;
+  gradable?: boolean;
+  extensions?: Record<string, ElementExtensionJsonExtension> | [];
+}
