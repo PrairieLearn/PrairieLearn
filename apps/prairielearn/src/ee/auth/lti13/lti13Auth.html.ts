@@ -64,8 +64,8 @@ export function Lti13AuthRequired({
         <main id="content" class="container mb-4">
           <h1>Authentication required</h1>
           <p>
-            Your institution requires you to authenticate via another method before you can access
-            this page.
+            Your institution requires you to authenticate via an additional method to complete the
+            login process.
           </p>
           <a href="/pl/login?institution_id=${institution_id}">Log in</a>
         </main>
