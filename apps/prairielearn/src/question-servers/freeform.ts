@@ -956,8 +956,6 @@ async function processQuestionHtml<T extends ExecutionData>(
   });
 
   if (phase === 'grade' || phase === 'test') {
-    const partial_scores: Record<string, unknown> = resultData.partial_scores ?? {};
-
     if (context.question.partial_credit) {
       let total_weight = 0;
       let total_weight_score = 0;
