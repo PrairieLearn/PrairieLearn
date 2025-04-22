@@ -48,13 +48,13 @@ Next, the `render(data)` function is called to render the question. You can use 
 
 ### Step 4: `parse`
 
-When a student submits their answer, the `parse` function is called to parse the submitted answers after the individual elements have parsed them. This function can be used to display more-specific format errors than the input elements or to parse the input differently. `<pl-number-input>` will have already parsed the submitted value as an integer, and display an error to the student if it was invalid. For this question, we will only allow the student to submit positive integers, so we will check for that and set a format error with `data["format_errors"]` if it is negative.
+When a student submits their answer, the `parse` function is called to parse the submitted answers after the individual elements have parsed them. This function can be used to display more-specific format errors than the input elements or to parse the input differently. When our parse function runs, `<pl-number-input>` will have already parsed the submitted value as an integer, and display an error to the student if it was invalid. For this question, we will allow the student to only submit positive integers, so we will check for that and set a format error with `data["format_errors"]` if it is negative.
 
 - `data["raw_submitted_answers"][NAME]` is the exact raw answer submitted by the student.
 - `data["submitted_answers"][NAME]` is the answer parsed by elements (e.g. strings converted to numbers).
-- `data["format_errors"][NAME]` is the answer format error (if any) from elements.
+- `data["format_errors"][NAME]` is the format error message for a named answer.
 
-If there are format errors then the submission is "invalid" and is not graded. To provide feedback but keep the submission "valid", `data["feedback"][NAME]` can be used.
+If there are format errors then the submission is "invalid" and is not graded. To provide feedback but keep the submission "valid", `data["feedback"][NAME]` can be used instead.
 
 ```python title="server.py"
 def parse(data):
