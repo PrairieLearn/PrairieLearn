@@ -163,6 +163,12 @@ def generate(data):
 
     More information about `server.py` in the [server.py documentation](server.md). For example, custom grading functions.
 
+## Question Lifecycle
+
+The diagram below shows the lifecycle of a question, including the server functions called, the different panels that are rendered, and points of interaction with the student.
+
+![](./lifecycle.d2){layout="dagre" scale="0.5" pad="0" }
+
 ### Question Dependencies
 
 Your question can load client-side assets such as scripts or stylesheets from different sources. A full list of dependencies will be compiled based on the question's needs and any dependencies needed by page elements, then they will be deduplicated and loaded onto the page.

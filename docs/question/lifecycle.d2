@@ -1,0 +1,71 @@
+
+# Shapes
+generate: "generate()" {
+  tooltip: "Generate random parameters and correct answers"
+}
+prepare: "prepare()" {
+  tooltip: "Post-process element data after generate()"
+}
+render_question: "render() - question panel" {
+  tooltip: "Render question.html for initial view"
+}
+student_interaction: "Student views and submits" {
+  shape: person
+  width: 100
+  height: 100
+}
+parse: "parse()" {
+  tooltip: "Parse submitted answers, check format"
+}
+check_format: "Has format errors?" {
+  shape: diamond
+  tooltip: "Check data['format_errors']"
+}
+
+grade: "grade()" {
+  tooltip: "Grade the submission, set score and feedback"
+}
+check_correct: "Is answer correct?" {
+  shape: diamond
+  tooltip: "Check data['score']"
+}
+render_submission: "render() - submission panel" {
+  tooltip: "Render question.html showing submission and feedback"
+}
+render_answer: "render() - answer panel" {
+  tooltip: "Render question.html showing correct answer (if enabled)"
+}
+check_attempts: "Attempts remain?" {
+  shape: diamond
+  tooltip: "Check if the student has more attempts available"
+}
+
+# Flow
+generate -> prepare
+prepare -> render_question
+render_question -> student_interaction
+student_interaction -> parse
+parse -> check_format
+
+# If format errors, show question panel again with errors
+check_format -> student_interaction: Yes
+
+# If no format errors, proceed to grading
+check_format -> grade: No
+
+grade -> check_correct
+
+# If correct, show answer panel
+check_correct -> render_answer: "Yes (score is 100%)"
+
+# If incorrect, show submission panel
+check_correct -> check_attempts: "No (score < 100%)"
+
+# After rendering submission, check if attempts remain
+check_attempts -> render_submission: "Yes"
+
+# If attempts remain, student can try again
+render_submission -> student_interaction
+
+# If no attempts remain, show the answer panel
+check_attempts -> render_answer: "No"
