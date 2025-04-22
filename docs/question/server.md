@@ -65,9 +65,9 @@ Finally, the `grade(data)` function is called to grade the question. The grade f
 - Setting the total score for the question in `data["score"]`.
 - Setting the overall feedback for the question in `data["feedback"]`.
 
-If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback.
+It is recommended that you give additional feedback to the student as they make progress towards the solution, and reward this progress with partial credit.
 
-It is recommended that you give additional feedback to the student beyond right and wrong, as well as partial credit. If the function is defined, the data you receive has already been graded by the elements. You should make sure that you don't override a correct answer by only giving partial credit.
+If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback. If the function _is_ defined, the data you receive has already been graded by the elements. You should ensure you don't lower the score that was already given by the elements. In the example below, we accomplish this using the `marked_as_incorrect` variable, which is set to `True` only if all elements (in this case, there is only one) have marked the named answers as incorrect. In this case, it is safe to award partial credit.
 
 You can also set `data["format_errors"]` to mark the submission as invalid. This will cause the question to not use up one of the student's attempts on assessments.
 
