@@ -175,7 +175,7 @@ export async function prepare(_question, _course, variant) {
   const data = {
     params: variant.params ?? {},
     true_answer: variant.true_answer ?? {},
-    options: variant.options,
+    options: variant.options ?? {},
   };
   return { courseIssues: [], data };
 }
