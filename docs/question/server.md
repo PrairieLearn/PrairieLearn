@@ -50,9 +50,15 @@ Next, the `render(data)` function is called to render the question. You can use 
 
 When a student submits their answer, the `parse` function is called to parse the submitted answers after the individual elements have parsed them. This function can be used to display more-specific format errors than the input elements or to parse the input differently. `<pl-number-input>` will have already parsed the submitted value as an integer, and display an error to the student if it was invalid. For this question, we will only allow the student to submit positive integers, so we will check for that and set a format error with `data["format_errors"]` if it is negative.
 
+- `data["raw_submitted_answers"][NAME]` is the exact raw answer submitted by the student.
+- `data["submitted_answers"][NAME]` is the answer parsed by elements (e.g. strings converted to numbers).
+- `data["format_errors"][NAME]` is the answer format error (if any) from elements.
+
+If there are format errors then the submission is "invalid" and is not graded. To provide feedback but keep the submission "valid", `data["feedback"][NAME]` can be used.
+
 ```python title="server.py"
 def parse(data):
-    # check we don't already have a format error, and if not, check if the answer is negative
+    # Reject negative numbers for "y" if we don't already have a format error
     if "y" not in data["format_errors"] and data["submitted_answers"]["y"] < 0:
         data["format_errors"]["y"] = "Negative numbers are not allowed"
 ```
@@ -65,18 +71,26 @@ Finally, the `grade(data)` function is called to grade the question. The grade f
 - Setting the total score for the question in `data["score"]`.
 - Setting the overall feedback for the question in `data["feedback"]`.
 
+This function only runs if `parse()` did not produce format errors, so we can assume all data is valid. All elements will have already graded their answers (if any) before this point.
+
+- `data["partial_scores"][NAME]["score"]` is the individual scores for the named answers (0 to 1).
+- `data["score"]` is the total score for the question (0 to 1).
+- `data["feedback"][NAME]` is the feedback for each named answer.
+
 It is recommended that you give additional feedback to the student as they make progress towards the solution, and reward this progress with partial credit.
 
-If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback. If the function _is_ defined, the data you receive has already been graded by the elements. You should ensure you don't lower the score that was already given by the elements. In the example below, we accomplish this using the `marked_as_incorrect` variable, which is set to `True` only if all elements (in this case, there is only one) have marked the named answers as incorrect. In this case, it is safe to award partial credit.
+If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback from the element that graded it. If the `grade` function _is_ defined, the data you receive has already been graded by the elements. You should ensure you only award partial credit if the answer isn't correct, otherwise you might give partial credit for a correct answer.
 
-You can also set `data["format_errors"]` to mark the submission as invalid. This will cause the question to not use up one of the student's attempts on assessments.
+You can set `data["format_errors"][NAME]` to mark the submission as invalid. This will cause the question to not use up one of the student's attempts on assessments. You are encouraged, though, to do any checks for invalid data that can be done in `parse(data)` there instead, since that method is also called when the student hits "Save only", in manually graded questions, or in assessments without real-time grading.
 
 ```python title="server.py"
 import math
 
 def grade(data):
-    marked_as_incorrect = math.isclose(data["score"], 0.0)
-    if marked_as_incorrect and data["submitted_answers"]["y"] > data["params"]["x"]:
+    # Give half points for incorrect answers larger than "x", only if not already correct.
+    # Use math.isclose to avoid possible floating point errors.
+    is_correct = math.isclose(data["score"], 1.0)
+    if not is_correct and data["submitted_answers"]["y"] > data["params"]["x"]:
         data["partial_scores"]["y"]["score"] = 0.5
         data["score"] = set_weighted_score_data(data)
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
@@ -105,48 +119,20 @@ import math
 def generate(data):
     # Generate random parameters for the question and store them in the data["params"] dict:
     data["params"]["x"] = random.randint(5, 10)
-    data["params"]["operation"] = random.choice(["double", "triple"])
 
     # Also compute the correct answer (if there is one) and store in the data["correct_answers"] dict:
-    if data["params"]["operation"] == "double":
-        data["correct_answers"]["y"] = 2 * data["params"]["x"]
-    else:
-        data["correct_answers"]["y"] = 3 * data["params"]["x"]
-
-def prepare(data):
-    # This function will run after all elements have run `generate()`.
-    # We can alter any of the element data here, but this is rarely needed.
-    pass
+    data["correct_answers"]["y"] = 2 * data["params"]["x"]
 
 def parse(data):
-    # data["raw_submitted_answers"][NAME] is the exact raw answer submitted by the student.
-    # data["submitted_answers"][NAME] is the answer parsed by elements (e.g., strings converted to numbers).
-    # data["format_errors"][NAME] is the answer format error (if any) from elements.
-    # We can modify or delete format errors if we have custom logic (rarely needed).
-    # If there are format errors then the submission is "invalid" and is not graded.
-    # To provide feedback but keep the submission "valid", data["feedback"][NAME] can be used.
-
-    # As an example, we will reject negative numbers for "y":
-    # check we don't already have a format error
+    # Reject negative numbers for "y" if we don't already have a format error
     if "y" not in data["format_errors"] and data["submitted_answers"]["y"] < 0:
         data["format_errors"]["y"] = "Negative numbers are not allowed"
 
 def grade(data):
-    # All elements will have already graded their answers (if any) before this point.
-    # data["partial_scores"][NAME]["score"] is the individual element scores (0 to 1).
-    # data["score"] is the total score for the question (0 to 1).
-    # We can modify or delete any of these if we have a custom grading method.
-    # This function only runs if `parse()` did not produce format errors, so we can assume all data is valid.
-
-    # grade(data) can also set data['format_errors'][NAME] if there is any reason to mark the question
-    # invalid during grading time.  This will cause the question to not use up one of the student's attempts' on exams.
-    # You are encouraged, though, to do any checks for invalid data that can be done in `parse(data)` there instead,
-    # since that method is also called when the student hits "Save only", in manually graded questions, or in
-    # assessments without real-time grading.
-
-    # As an example, we will give half points for incorrect answers larger than "x",
-    # only if not already correct. Use math.isclose to avoid possible floating point errors.
-    if math.isclose(data["score"], 0.0) and data["submitted_answers"]["y"] > data["params"]["x"]:
+    # Give half points for incorrect answers larger than "x", only if not already correct.
+    # Use math.isclose to avoid possible floating point errors.
+    is_correct = math.isclose(data["score"], 1.0)
+    if not is_correct and data["submitted_answers"]["y"] > data["params"]["x"]:
         data["partial_scores"]["y"]["score"] = 0.5
         data["score"] = set_weighted_score_data(data)
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
@@ -234,7 +220,7 @@ data["options"]["server_files_course_path"]
 
 ## Generating dynamic files with `file()`
 
-You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. These files are generated before the question is rendered in `question.html`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
+You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. They can also access `data["params"]`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
 
 ```html title="question.html"
 <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
@@ -250,11 +236,6 @@ def generate(data):
     data["params"]["a"] = random.choice([0.25, 0.5, 1, 2, 4])
 
 def file(data):
-    # We should look at data["filename"], generate the corresponding file,
-    # and return the contents of the file as a string, bytes-like, or file-like object.
-    # We can access data["params"].
-    # As an example, we will generate the "fig.png" figure.
-
     # check for the appropriate filename
     if data["filename"] == "fig.png":
         # plot a line with slope "a"
@@ -265,6 +246,8 @@ def file(data):
         plt.savefig(buf, format="png")
         return buf
 ```
+
+Note the use of `client_files_question_dynamic_url` in the `question.html` file. Requests for files to this URL will be routed to the `file()` function in `server.py`. The filename requested is stored in `data["filename"]`, and the file contents should be returned from the `file()` function. The URL for the dynamically generated files is set to `{{options.client_files_question_dynamic_url}}` in the HTML, which is a special URL that PrairieLearn uses to route requests to the `file()` function.
 
 You can also use this functionality in file-based elements (`pl-figure`, `pl-file-download`) by setting `type="dynamic"`.
 

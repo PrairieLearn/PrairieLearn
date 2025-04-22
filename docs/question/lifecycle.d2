@@ -38,7 +38,10 @@ check_attempts: "Attempts remain?" {
   shape: diamond
   tooltip: "Check if the student has more attempts available"
 }
-
+file: "file()" {
+  tooltip: "Dynamically generated file"
+  shape: page
+}
 # Flow
 generate -> prepare
 prepare -> render_question
@@ -68,3 +71,7 @@ render_submission -> student_interaction
 
 # If no attempts remain, show the answer panel
 check_attempts -> render_answer: "No"
+
+# Dynamic file generation
+file -> render_question: "Generated file"
+render_question -> file: "Dynamic file request"
