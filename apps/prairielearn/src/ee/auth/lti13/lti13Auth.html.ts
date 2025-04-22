@@ -56,12 +56,27 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
       </head>
       <body>
         <main id="content">
-          <form method="POST" target="_blank">
+          <form id="interceptForm" method="POST" target="_blank">
             ${Object.entries(parameters).map(
               ([key, value]) => html` <input type="hidden" name="${key}" value="${value}" />`,
             )}
-            <button class="btn btn-primary btn-lg m-3">Open PrairieLearn in a new window</button>
+            <button id="submitButton" class="btn btn-primary btn-lg mb-3">
+              Open PrairieLearn in a new window
+            </button>
           </form>
+          <div id="message">If there are login errors, reload this page to try again.</div>
+
+          <script>
+            const form = document.getElementById('interceptForm');
+            const button = document.getElementById('submitButton');
+            const messageDiv = document.getElementById('message');
+
+            form.addEventListener('submit', function () {
+              button.disabled = true;
+              button.textContent = 'Opened PrairieLearn in a new window';
+              messageDiv.textContent = 'Reload the page to try again.';
+            });
+          </script>
         </main>
       </body>
     </html>
