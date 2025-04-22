@@ -208,7 +208,11 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
   const parameters = OIDCLaunchFlowSchema.passthrough().parse({ ...req.body, ...req.query });
 
   // If the authentication request is coming from an iframe, intercept the parameters
-  // and offer a small form to open in a new window
+  // and offer a small form to open in a new window.
+  // SECURITY NOTE: We intentionally remove security headers CSP and X-Frame-Options
+  // only for this specific response to allow iframe embedding during LTI 1.3 auth to
+  // offer a redirect/POST in a new window.
+  // This is a controlled exception to our security policy for LTI compatibility.
   if (req.headers['sec-fetch-dest'] === 'iframe') {
     res.removeHeader('content-security-policy');
     res.removeHeader('x-frame-options');

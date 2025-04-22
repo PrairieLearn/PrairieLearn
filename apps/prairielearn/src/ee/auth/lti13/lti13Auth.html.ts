@@ -56,9 +56,10 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
       </head>
       <body>
         <main id="content">
-          <form id="interceptForm" method="POST" target="_blank">
+          <form id="interceptForm" method="POST" action="" target="_blank">
             ${Object.entries(parameters).map(
-              ([key, value]) => html` <input type="hidden" name="${key}" value="${value}" />`,
+              ([key, value]) =>
+                html` <input type="hidden" name="${key}" value="${String(value)}" />`,
             )}
             <button id="submitButton" class="btn btn-primary btn-lg mb-3">
               Open PrairieLearn in a new window
