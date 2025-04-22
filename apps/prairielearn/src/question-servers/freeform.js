@@ -1069,16 +1069,23 @@ function getContextOptions(context) {
   return options;
 }
 
+/**
+ * @param {import('../lib/db-types.js').Question} question
+ * @param {import('../lib/db-types.js').Course} course
+ * @param {string} variant_seed
+ * @returns {import('./types.js').QuestionServerReturnValue<import('./types.js').GenerateResultData>}
+ */
 export async function generate(question, course, variant_seed) {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
+
+    /** @satisfies {import('./types.js').ExecutionData} */
     const data = {
       params: {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
-      options: { ...course.options, ...question.options },
+      options: { ...course.options, ...question.options, ...getContextOptions(context) },
     };
-    Object.assign(data.options, getContextOptions(context));
 
     return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
@@ -1098,19 +1105,26 @@ export async function generate(question, course, variant_seed) {
   });
 }
 
+/**
+ * @param {import('../lib/db-types.js').Question} question
+ * @param {import('../lib/db-types.js').Course} course
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @returns {import('./types.js').QuestionServerReturnValue<import('./types.js').PrepareResultData>}
+ */
 export async function prepare(question, course, variant) {
   return instrumented('freeform.prepare', async () => {
     if (variant.broken_at) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
+
+    /** @satisfies {import('./types.js').ExecutionData} */
     const data = {
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: variant.options ?? {},
+      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
       answers_names: {},
     };
-    Object.assign(data.options, getContextOptions(context));
 
     return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
