@@ -1143,6 +1143,7 @@ export async function prepare(question, course, variant) {
 
     /** @satisfies {import('./types.js').ExecutionData} */
     const data = {
+      // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
@@ -1248,6 +1249,8 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
   const data = {
     // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
     // so we'll use the submission's values if they exist.
+    //
+    // These should never be null, but that can't be encoded in the schema.
     params: submission?.params ?? variant.params ?? {},
     correct_answers: submission?.true_answer ?? variant.true_answer ?? {},
     submitted_answers: submission?.submitted_answer ?? {},
@@ -1739,6 +1742,7 @@ export async function file(filename, variant, question, course) {
 
     /** @satisfies {import('./types.js').ExecutionData} */
     const data = {
+      // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
@@ -1789,6 +1793,7 @@ export async function parse(submission, variant, question, course) {
 
     /** @satisfies {import('./types.js').ExecutionData} */
     const data = {
+      // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       submitted_answers: submission.submitted_answer ?? {},
@@ -1844,6 +1849,8 @@ export async function grade(submission, variant, question, question_course) {
     let data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
       // use the submission's values when grading.
+      //
+      // These should never be null, but that can't be encoded in the schema.
       params: submission.params ?? {},
       correct_answers: submission.true_answer ?? {},
       submitted_answers: submission.submitted_answer ?? {},
@@ -1900,6 +1907,7 @@ export async function test(variant, question, course, test_type) {
 
     /** @satisfies {import('./types.js').ExecutionData & { test_type: 'correct' | 'incorrect' | 'invalid' }} */
     let data = {
+      // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       format_errors: {},
