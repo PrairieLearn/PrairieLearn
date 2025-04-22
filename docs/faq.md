@@ -38,7 +38,7 @@ Note that when granting access via `"active": false`, students can still access 
 Writing and maintaining a large pool of questions is a lot of work. There are many strategies for managing this process. The approach taken by the TAM 2XX courses (Introductory Mechanics sequence) at Illinois is:
 
 1. Homework questions are always re-used semester-to-semester. It is assumed that solutions to these will be posted by students on the internet, so they are strictly for practice. Students do get credit for homeworks, but it assumed that any student who puts in the effort will get 100%.
-2. Some questions in the pool are [tagged](https://prairielearn.readthedocs.io/en/latest/question/#question-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in a testing center or similar environment.
+2. Some questions in the pool are [tagged](https://prairielearn.readthedocs.io/en/latest/question/#metadata-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in a testing center or similar environment.
 3. Every semester a small number of secret questions are written, and some older secret questions are moved to homeworks. This keeps the secret pool reasonably fresh and grows the homework pool over time. It also ensures that homework and exam questions are truly comparable in topics and difficulty.
 4. For homeworks, the [`maxPoints`](https://prairielearn.readthedocs.io/en/latest/assessment/#question-specification) option is used so that students don't need to complete all homework questions to get 100% on the homework. This allows the homework to be quite long, and to be partially for credit and partially as a set of extra questions that students can practice.
 5. Homeworks can be accessed for 100% credit until the due date, for 80% credit for a week after that, and for 0% credit (but students can still practice the questions) for the rest of the semester.
@@ -334,7 +334,7 @@ If you have a block of text that you want to re-use in many questions, possibly 
 
 ## How can I hide the correct answer when students see their grading results?
 
-Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question/index.md#question-infojson).
+Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question/index.md#metadata-infojson).
 
 For more granular control, some elements in PL have their own options for specifying whether to hide individual correct answers (for example, `pl-checkbox` has a `hide-answer-panel` attribute). Not all element types offer this as an attribute (e.g., `pl-multiple-choice` currently does not). However, to hide the correct answer for any kind of element, you can surround the particular graded pl-element with `pl-hide-in-panel` in the `question.html` file.
 
