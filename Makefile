@@ -123,7 +123,7 @@ changeset:
 
 lint-docs: lint-d2 lint-links lint-markdown
 
-build-docs:
+prepare-docs-venv:
 	@if uv --version >/dev/null 2>&1; then \
 		uv venv /tmp/pldocs/venv; \
 		uv pip install -r docs/requirements.txt --python /tmp/pldocs/venv; \
@@ -131,9 +131,10 @@ build-docs:
 		python3 -m venv /tmp/pldocs/venv; \
 		/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt; \
 	fi
+build-docs: prepare-docs-venv
 	@/tmp/pldocs/venv/bin/mkdocs build --strict
-preview-docs:
-	@mkdocs serve
+preview-docs: prepare-docs-venv
+	@/tmp/pldocs/venv/bin/mkdocs serve
 
 format-d2:
 	@d2 fmt docs/**/*.d2

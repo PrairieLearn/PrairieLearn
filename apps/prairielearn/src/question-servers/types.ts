@@ -1,4 +1,5 @@
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
+import type { ElementExtensionJson } from '../schemas/index.js';
 
 export type QuestionType = Question['type'];
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
@@ -110,3 +111,8 @@ export interface QuestionServer {
     test_type: 'correct' | 'incorrect' | 'invalid',
   ) => QuestionServerReturnValue<TestResultData>;
 }
+
+export type ElementExtensionJsonExtension = ElementExtensionJson & {
+  name: string;
+  directory: string;
+};

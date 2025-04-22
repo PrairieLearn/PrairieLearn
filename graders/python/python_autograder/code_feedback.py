@@ -298,7 +298,7 @@ class Feedback:
         import numpy as np
 
         if not cls.check_numpy_array_features(
-            name, ref, data, accuracy_critical, report_failure
+            name, ref, data, accuracy_critical, report_failure, report_success=False
         ):
             return False
 
