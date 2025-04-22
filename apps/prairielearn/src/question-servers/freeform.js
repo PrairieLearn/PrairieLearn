@@ -344,18 +344,20 @@ async function elementFunction(codeCaller, fcn, elementName, elementHtml, data, 
   const type = `${resolvedElementType}-element`;
   const directory = resolvedElementName;
 
-  try {
-    return await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
-  } catch (err) {
-    if (err instanceof FunctionMissingError) {
-      // function wasn't present in server
-      return {
-        result: defaultElementFunctionRet(fcn, dataCopy),
-        output: '',
-      };
+  return await instrumented('codeCaller.call', async () => {
+    try {
+      return await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
+    } catch (err) {
+      if (err instanceof FunctionMissingError) {
+        // function wasn't present in server
+        return {
+          result: defaultElementFunctionRet(fcn, dataCopy),
+          output: '',
+        };
+      }
+      throw err;
     }
-    throw err;
-  }
+  });
 }
 
 function defaultElementFunctionRet(phase, data) {
@@ -397,27 +399,29 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
   debug(
     `execPythonServer(): codeCaller.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`,
   );
-  try {
-    const { result, output } = await codeCaller.call(
-      type,
-      directory,
-      pythonFile,
-      pythonFunction,
-      pythonArgs,
-    );
-    debug('execPythonServer(): completed');
-    return { result, output };
-  } catch (err) {
-    if (err instanceof FunctionMissingError) {
-      // function wasn't present in server
-      debug('execPythonServer(): function not present');
-      return {
-        result: defaultServerRet(phase, data, html, context),
-        output: '',
-      };
+  return instrumented('codeCaller.call', async () => {
+    try {
+      const { result, output } = await codeCaller.call(
+        type,
+        directory,
+        pythonFile,
+        pythonFunction,
+        pythonArgs,
+      );
+      debug('execPythonServer(): completed');
+      return { result, output };
+    } catch (err) {
+      if (err instanceof FunctionMissingError) {
+        // function wasn't present in server
+        debug('execPythonServer(): function not present');
+        return {
+          result: defaultServerRet(phase, data, html, context),
+          output: '',
+        };
+      }
+      throw err;
     }
-    throw err;
-  }
+  });
 }
 
 async function execTemplate(htmlFilename, data) {
@@ -535,22 +539,23 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
     course_path: config.workersExecutionMode === 'container' ? '/course' : context.course_dir_host,
   };
   const courseIssues = [];
-  let result = null;
-  let output = null;
 
-  try {
-    const res = await codeCaller.call(
-      'question',
-      context.question.directory,
-      'question.html',
-      phase,
-      [pythonContext, data],
-    );
-    result = res.result;
-    output = res.output;
-  } catch (err) {
-    courseIssues.push(err);
-  }
+  const { result, output } = await instrumented('codeCaller.call', async () => {
+    try {
+      const res = await instrumented(
+        'codeCaller.call',
+        async () =>
+          await codeCaller.call('question', context.question.directory, 'question.html', phase, [
+            pythonContext,
+            data,
+          ]),
+      );
+      return { result: res.result, output: res.output };
+    } catch (err) {
+      courseIssues.push(err);
+      return {};
+    }
+  });
 
   if ((output?.length ?? 0) > 0) {
     courseIssues.push(
@@ -1063,7 +1068,10 @@ function getContextOptions(context) {
 
 export async function generate(question, course, variant_seed) {
   return instrumented('freeform.generate', async () => {
-    const context = await getContext(question, course);
+    const context = await instrumented(
+      'freeform.getContext',
+      async () => await getContext(question, course),
+    );
     const data = {
       params: {},
       correct_answers: {},
@@ -1094,7 +1102,10 @@ export async function prepare(question, course, variant) {
   return instrumented('freeform.prepare', async () => {
     if (variant.broken_at) throw new Error('attempted to prepare broken variant');
 
-    const context = await getContext(question, course);
+    const context = await instrumented(
+      'freeform.getContext',
+      async () => await getContext(question, course),
+    );
     const data = {
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
@@ -1309,7 +1320,10 @@ export async function render(
     };
     let allRenderedElementNames = [];
     const courseIssues = [];
-    const context = await getContext(question, course);
+    const context = await instrumented(
+      'freeform.getContext',
+      async () => await getContext(question, course),
+    );
 
     // Hack: we need to propagate this back up to the original caller so
     // they can expose the selected renderer to the client via a header, but
@@ -1681,7 +1695,10 @@ export async function file(filename, variant, question, course) {
     debug('file()');
     if (variant.broken_at) throw new Error('attempted to get a file for a broken variant');
 
-    const context = await getContext(question, course);
+    const context = await instrumented(
+      'freeform.getContext',
+      async () => await getContext(question, course),
+    );
 
     const data = {
       params: variant.params ?? {},
@@ -1724,7 +1741,10 @@ export async function parse(submission, variant, question, course) {
     debug('parse()');
     if (variant.broken_at) throw new Error('attempted to parse broken variant');
 
-    const context = await getContext(question, course);
+    const context = await instrumented(
+      'freeform.getContext',
+      async () => await getContext(question, course),
+    );
     const data = {
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
@@ -1768,7 +1788,10 @@ export async function grade(submission, variant, question, question_course) {
     if (variant.broken_at) throw new Error('attempted to grade broken variant');
     if (submission.broken) throw new Error('attempted to grade broken submission');
 
-    const context = await getContext(question, question_course);
+    const context = await instrumented(
+      'freeform.getContext',
+      async () => await getContext(question, question_course),
+    );
     let data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
       // use the submission's values when grading.
@@ -1817,7 +1840,10 @@ export async function test(variant, question, course, test_type) {
     debug('test()');
     if (variant.broken_at) throw new Error('attempted to test broken variant');
 
-    const context = await getContext(question, course);
+    const context = await instrumented(
+      'freeform.getContext',
+      async () => await getContext(question, course),
+    );
     let data = {
       params: variant.params,
       correct_answers: variant.true_answer,
@@ -1863,13 +1889,15 @@ export async function test(variant, question, course, test_type) {
  */
 async function getContext(question, course) {
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-  await chunks.ensureChunksForCourseAsync(course.id, [
-    { type: 'question', questionId: question.id },
-    { type: 'clientFilesCourse' },
-    { type: 'serverFilesCourse' },
-    { type: 'elements' },
-    { type: 'elementExtensions' },
-  ]);
+  await instrumented('chunks.ensureChunksForCourseAsync', async () => {
+    await chunks.ensureChunksForCourseAsync(course.id, [
+      { type: 'question', questionId: question.id },
+      { type: 'clientFilesCourse' },
+      { type: 'serverFilesCourse' },
+      { type: 'elements' },
+      { type: 'elementExtensions' },
+    ]);
+  });
 
   // Select which rendering strategy we'll use. This is computed here so that
   // in can factor into the cache key.
@@ -1894,12 +1922,19 @@ async function getContext(question, course) {
   const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);
 
   // Load elements and any extensions
-  const elements = await loadElementsForCourse(course);
-  const extensions = await loadExtensionsForCourse({
-    course,
-    course_dir: courseDirectory,
-    course_dir_host: courseDirectoryHost,
-  });
+  const elements = await instrumented(
+    'freeform.loadElementsForCourse',
+    async () => await loadElementsForCourse(course),
+  );
+  const extensions = await instrumented(
+    'freeform.loadExtensionsForCourse',
+    async () =>
+      await loadExtensionsForCourse({
+        course,
+        course_dir: courseDirectory,
+        course_dir_host: courseDirectoryHost,
+      }),
+  );
 
   return {
     question,

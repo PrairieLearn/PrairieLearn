@@ -555,3 +555,22 @@ console.log(idsEqual(12345, '12345'));
 ```
 
 "Modern" queries that use Zod validation will automatically coerce all IDs to strings. If you're confident that data on both sides of the comparison is coming from a Zod-validated query, you can use the `===` operator directly.
+
+## Instrumentation
+
+PrairieLearn is instrumented with OpenTelemetry.
+
+### Tracing in development mode
+
+Follow the instructions at <https://www.jaegertracing.io/docs/latest/getting-started/> to run Jaeger locally with Docker.
+
+Update your PrairieLearn `config.json` file with the following:
+
+```json
+{
+  "openTelemetryEnabled": true,
+  "openTelemetryExporter": "jaeger"
+}
+```
+
+Start or restart PrairieLearn, make a request, then visit <http://localhost:16686/search>. You should see traces for your requests.

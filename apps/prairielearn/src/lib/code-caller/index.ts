@@ -5,6 +5,7 @@ import { type Pool, createPool } from 'generic-pool';
 import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
+import { instrumented } from '@prairielearn/opentelemetry';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
@@ -165,9 +166,11 @@ export async function withCodeCaller<T>(
 
   try {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    await codeCaller.prepareForCourse({
-      coursePath,
-      forbiddenModules: [],
+    await instrumented('codeCaller.prepareForCourse', async () => {
+      await codeCaller.prepareForCourse({
+        coursePath,
+        forbiddenModules: [],
+      });
     });
   } catch (err) {
     // If we fail to prepare for a course, assume that the code caller is

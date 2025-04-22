@@ -22,6 +22,7 @@ import io
 import json
 import os
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -163,8 +164,8 @@ def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> 
         raise
 
 
-def worker_loop() -> None:
-    # Whether the PRNGs have already been seeded in this worker_loop() call
+def worker_loop(s: socket.socket) -> None:
+    # whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
 
     path_finder = ForbidModuleMetaPathFinder()
@@ -177,238 +178,241 @@ def worker_loop() -> None:
     #   specifically for elements that want to maintain a cache of expensive-to-compute data.
     mod_cache: dict[str, dict[str, Any]] = {}
 
-    # file descriptor 3 is for output data
-    with open(3, "w", encoding="utf-8") as outf:
-        # Infinite loop where we wait for an input command, do it, and
-        # return the results. The caller should terminate us with a
-        # SIGTERM.
+    call_data = bytearray("", encoding="utf-8")
+    length = None
+
+    def receive_json_from_socket() -> Any:
+        nonlocal call_data, length
+
         while True:
-            # Wait for a single line of input
-            json_inp = sys.stdin.readline()
+            call_data.extend(s.recv(256 * 1024))
+            if len(call_data) >= 4:
+                if length is None:
+                    length = int.from_bytes(call_data[0:4], byteorder="big")
+                    del call_data[:4]
+                if len(call_data) >= length:
+                    json_inp = call_data[0:length]
+                    del call_data[:length]
+                    length = None
+                    return json.loads(json_inp, parse_int=zu.safe_parse_int)
 
-            # Sometimes we seem to get an empty line, so we'll just ignore it.
-            if not json_inp.strip():
-                continue
+    def write_str_to_socket(data: str) -> None:
+        encoded_data = bytes(data, "utf-8")
+        s.sendall(len(encoded_data).to_bytes(4, byteorder="big"))
+        s.sendall(encoded_data)
 
-            # Unpack the input line as JSON. If that fails, log the line for debugging.
-            try:
-                inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"Error decoding JSON input: {json_inp}") from exc
+    def write_json_to_socket(data: Any) -> None:
+        write_str_to_socket(try_dumps(data, allow_nan=False))
 
-            # Get the contents of the JSON input
-            file = inp.get("file", None)
-            fcn = inp.get("fcn", None)
-            args = inp.get("args", None)
-            cwd = inp.get("cwd", None)
-            paths = inp.get("paths", None)
-            forbidden_modules = inp.get("forbidden_modules", None)
+    # Infinite loop where we wait for an input command, do it, and
+    # return the results. The caller should terminate us with a
+    # SIGTERM.
+    while True:
+        # wait for a single message from the socket
+        inp = receive_json_from_socket()
 
-            # Wire up the custom importer to forbid modules as needed.
-            path_finder.reset_forbidden_modules()
-            if forbidden_modules is not None and isinstance(forbidden_modules, list):
-                path_finder.forbid_modules(forbidden_modules)
+        # get the contents of the JSON input
+        file = inp.get("file", None)
+        fcn = inp.get("fcn", None)
+        args = inp.get("args", None)
+        cwd = inp.get("cwd", None)
+        paths = inp.get("paths", None)
+        forbidden_modules = inp.get("forbidden_modules", None)
 
-            # "ping" is a special fake function name that the parent process
-            # will use to check if the worker is active and able to respond to
-            # calls. We just reply with "pong" to indicate that we're alive.
-            if file is None and fcn == "ping":
-                json.dump({"present": True, "val": "pong"}, outf)
-                outf.write("\n")
-                outf.flush()
-                continue
+        # Wire up the custom importer to forbid modules as needed.
+        path_finder.reset_forbidden_modules()
+        if forbidden_modules is not None and isinstance(forbidden_modules, list):
+            path_finder.forbid_modules(forbidden_modules)
 
-            # "restart" is a special fake function name that causes
-            # the forked worker to exit, returning control to the
-            # zygote parent process
-            if file is None and fcn == "restart":
-                json.dump({"present": True, "val": "success"}, outf)
-                outf.write("\n")
-                outf.flush()
+        # "ping" is a special fake function name that the parent process
+        # will use to check if the worker is active and able to respond to
+        # calls. We just reply with "pong" to indicate that we're alive.
+        if file is None and fcn == "ping":
+            write_json_to_socket({"present": True, "val": "pong"})
+            continue
 
-                # `sys.exit()` allows the process to gracefully shut down. however, that
-                # makes things much slower than necessary, because we can't reuse this
-                # worker until control returns to the parent, and one or more things we
-                # load into the process take on the order of hundreds of milliseconds to
-                # clean themselves up. `os._exit()` is much closer to a POSIX `exit()`
-                # since it will immediately terminate the process - in our case, we don't
-                # care about graceful termination, we just want to get out of here as
-                # fast as possible.
-                os._exit(0)
+        # "restart" is a special fake function name that causes
+        # the forked worker to exit, returning control to the
+        # zygote parent process
+        if file is None and fcn == "restart":
+            write_json_to_socket({"present": True, "val": "success"})
 
-            if file.endswith(".js"):
-                # We've shoehorned legacy v2 questions into the v3 code caller
-                # so that we can reuse the same worker processes, and specifically
-                # so that we can reuse the container pool.
-                #
-                # Node doesn't support POSIX-style forks, so we can't use a zygote
-                # process like we do with Python. Instead, we'll exec a Node subprocess.
-                # Node generally boots up very quickly, so this should be fine.
-                result = subprocess.run(
-                    [
-                        "node",
-                        "./apps/prairielearn/dist/question-servers/calculation-worker.js",
-                    ],
-                    cwd=cwd,
-                    capture_output=True,
-                    # By convention, the first argument is an object that contains all
-                    # the call information.
-                    input=json.dumps(args[0]),
-                    encoding="utf-8",
-                    check=False,
-                )
+            # `sys.exit()` allows the process to gracefully shut down. however, that
+            # makes things much slower than necessary, because we can't reuse this
+            # worker until control returns to the parent, and one or more things we
+            # load into the process take on the order of hundreds of milliseconds to
+            # clean themselves up. `os._exit()` is much closer to a POSIX `exit()`
+            # since it will immediately terminate the process - in our case, we don't
+            # care about graceful termination, we just want to get out of here as
+            # fast as possible.
+            os._exit(0)
 
-                # Proxy any output from the subprocess back to the caller.
-                # Note that we only deal with stderr, as the Node process rewrote
-                # the output streams so that writes to stdout actually go to stderr.
-                # This allows us to use stdout for the actual return value.
-                if result.stderr:
-                    print(result.stderr, file=sys.stderr)
-                    sys.stderr.flush()
+        if file.endswith(".js"):
+            # We've shoehorned legacy v2 questions into the v3 code caller
+            # so that we can reuse the same worker processes, and specifically
+            # so that we can reuse the container pool.
+            #
+            # Node doesn't support POSIX-style forks, so we can't use a zygote
+            # process like we do with Python. Instead, we'll exec a Node subprocess.
+            # Node generally boots up very quickly, so this should be fine.
+            result = subprocess.run(
+                [
+                    "node",
+                    "./apps/prairielearn/dist/question-servers/calculation-worker.js",
+                ],
+                cwd=cwd,
+                capture_output=True,
+                # By convention, the first argument is an object that contains all
+                # the call information.
+                input=json.dumps(args[0]),
+                encoding="utf-8",
+                check=False,
+            )
 
-                # If the subprocess exited with a non-zero exit code, raise an exception.
-                result.check_returncode()
-
-                outf.write(result.stdout)
-                outf.write("\n")
-                outf.flush()
-                continue
-
-            # Here, we re-seed the PRNGs if not already seeded in this worker_loop() call.
-            # We only want to seed the PRNGs once per worker_loop() call, so that if a
-            # question happens to contain multiple occurrences of the same element, the
-            # randomizations for each occurrence are independent of each other but still
-            # dependent on the variant seed.
-            if type(args[-1]) is dict and not seeded:
-                variant_seed = args[-1].get("variant_seed", None)
-                random.seed(variant_seed)
-                np.random.seed(variant_seed)
-                sys.meta_path.insert(0, FakerInitializeMetaPathFinder(variant_seed))
-                seeded = True
-
-            # reset and then set up the path
-            sys.path = copy.copy(saved_path)
-            for path in reversed(paths):
-                sys.path.insert(0, path)
-            sys.path.insert(0, cwd)
-
-            # change to the desired working directory
-            os.chdir(cwd)
-
-            if file == "question.html":
-                # This is an experimental implementation of question processing
-                # that does all HTML parsing and rendering in Python. This should
-                # be much faster than the current implementation that does an IPC
-                # call for each element.
-
-                context = args[0]
-                data = args[1]
-
-                result, processed_elements = question_phases.process(fcn, data, context)
-                val = {
-                    "html": result if fcn == "render" else None,
-                    "file": result if fcn == "file" else None,
-                    "data": data,
-                    "processed_elements": list(processed_elements),
-                }
-
-                # make sure all output streams are flushed
+            # Proxy any output from the subprocess back to the caller.
+            # Note that we only deal with stderr, as the Node process rewrote
+            # the output streams so that writes to stdout actually go to stderr.
+            # This allows us to use stdout for the actual return value.
+            if result.stderr:
+                print(result.stderr, file=sys.stderr)
                 sys.stderr.flush()
-                sys.stdout.flush()
 
-                # write the return value (JSON on a single line)
-                outf.write(try_dumps({"present": True, "val": val}))
-                outf.write("\n")
-                outf.flush()
+            # If the subprocess exited with a non-zero exit code, raise an exception.
+            result.check_returncode()
 
-                continue
+            write_str_to_socket(result.stdout)
+            continue
 
-            file_path = os.path.join(cwd, file + ".py")
+        # Here, we re-seed the PRNGs if not already seeded in this worker_loop() call.
+        # We only want to seed the PRNGs once per worker_loop() call, so that if a
+        # question happens to contain multiple occurrences of the same element, the
+        # randomizations for each occurrence are independent of each other but still
+        # dependent on the variant seed.
+        if type(args[-1]) is dict and not seeded:
+            variant_seed = args[-1].get("variant_seed", None)
+            random.seed(variant_seed)
+            np.random.seed(variant_seed)
+            sys.meta_path.insert(0, FakerInitializeMetaPathFinder(variant_seed))
+            seeded = True
 
-            mod = mod_cache.get(file_path)
-            if mod is None:
-                mod = {}
+        # reset and then set up the path
+        sys.path = copy.copy(saved_path)
+        for path in reversed(paths):
+            sys.path.insert(0, path)
+        sys.path.insert(0, cwd)
 
-                with open(file_path, encoding="utf-8") as inf:
-                    # Use `compile` to associate filename with code object, so the
-                    # filename appears in the traceback if there is an error:
-                    # https://stackoverflow.com/a/437857
-                    code = compile(inf.read(), file_path, "exec")
+        # change to the desired working directory
+        os.chdir(cwd)
 
-                exec(code, mod)
-                mod_cache[file_path] = mod
+        if file == "question.html":
+            # This is an experimental implementation of question processing
+            # that does all HTML parsing and rendering in Python. This should
+            # be much faster than the current implementation that does an IPC
+            # call for each element.
 
-            # check whether we have the desired fcn in the module
-            if fcn in mod:
-                # get the desired function in the loaded module
-                method = mod[fcn]
+            context = args[0]
+            data = args[1]
 
-                # check if the desired function is a legacy element function - if
-                # so, we add an argument for element_index
-                arg_names = list(signature(method).parameters.keys())
-                if arg_names == ["element_html", "element_index", "data"]:
-                    args.insert(1, None)
-
-                # call the desired function in the loaded module
-                val = method(*args)
-
-                if fcn == "file":
-                    # if val is None, replace it with empty string
-                    if val is None:
-                        val = ""
-                    # if val is a file-like object, read whatever is inside
-                    if isinstance(val, io.IOBase):
-                        val.seek(0)
-                        val = val.read()
-                    # if val is a string, treat it as utf-8
-                    if isinstance(val, str):
-                        val = bytes(val, "utf-8")
-                    # if this next call does not work, it will throw an error, because
-                    # the thing returned by file() does not have the correct format
-                    val = base64.b64encode(val).decode()
-
-                # Any function that is not 'file' or 'render' will modify 'data' and
-                # should not be returning anything (because 'data' is mutable).
-                if fcn not in ("file", "render"):
-                    if val is None or val is args[-1]:
-                        json_outp = try_dumps(
-                            {"present": True, "val": args[-1]}, allow_nan=False
-                        )
-                    else:
-                        json_outp = try_dumps(
-                            {"present": True, "val": val}, allow_nan=False
-                        )
-
-                        # We'll only actually complain if the function returned
-                        # a completely different object than the one passed in.
-                        # Otherwise, we'll just silently ignore the return value
-                        # and use the passed-in object (which should in fact be
-                        # the same object).
-                        #
-                        # TODO: Once this has been running in production for a while,
-                        # change this to raise an exception.
-                        sys.stderr.write(
-                            f"Function {fcn}() in {file + '.py'} returned a data object other than the one that was passed in.\n\n"
-                            + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
-                            + "For now, the return value will be used instead of the data object that was passed in.\n\n"
-                            + "In the future, returning a different object will trigger a fatal error."
-                        )
-                else:
-                    json_outp = try_dumps(
-                        {"present": True, "val": val}, allow_nan=False
-                    )
-            else:
-                # the function wasn't present, so report this
-                json_outp = try_dumps({"present": False}, allow_nan=False)
+            result, processed_elements = question_phases.process(fcn, data, context)
+            val = {
+                "html": result if fcn == "render" else None,
+                "file": result if fcn == "file" else None,
+                "data": data,
+                "processed_elements": list(processed_elements),
+            }
 
             # make sure all output streams are flushed
             sys.stderr.flush()
             sys.stdout.flush()
 
-            # write the return value (JSON on a single line)
-            outf.write(json_outp)
-            outf.write("\n")
-            outf.flush()
+            # write the return value
+            write_json_to_socket({"present": True, "val": val})
+
+            continue
+
+        file_path = os.path.join(cwd, file + ".py")
+
+        mod = mod_cache.get(file_path)
+        if mod is None:
+            mod = {}
+
+            with open(file_path, encoding="utf-8") as inf:
+                # Use `compile` to associate filename with code object, so the
+                # filename appears in the traceback if there is an error:
+                # https://stackoverflow.com/a/437857
+                code = compile(inf.read(), file_path, "exec")
+
+            exec(code, mod)
+            mod_cache[file_path] = mod
+
+        # check whether we have the desired fcn in the module
+        if fcn in mod:
+            # get the desired function in the loaded module
+            method = mod[fcn]
+
+            # check if the desired function is a legacy element function - if
+            # so, we add an argument for element_index
+            arg_names = list(signature(method).parameters.keys())
+            if (
+                len(arg_names) == 3
+                and arg_names[0] == "element_html"
+                and arg_names[1] == "element_index"
+                and arg_names[2] == "data"
+            ):
+                args.insert(1, None)
+
+            # call the desired function in the loaded module
+            val = method(*args)
+
+            if fcn == "file":
+                # if val is None, replace it with empty string
+                if val is None:
+                    val = ""
+                # if val is a file-like object, read whatever is inside
+                if isinstance(val, io.IOBase):
+                    val.seek(0)
+                    val = val.read()
+                # if val is a string, treat it as utf-8
+                if isinstance(val, str):
+                    val = bytes(val, "utf-8")
+                # if this next call does not work, it will throw an error, because
+                # the thing returned by file() does not have the correct format
+                val = base64.b64encode(val).decode()
+
+            # Any function that is not 'file' or 'render' will modify 'data' and
+            # should not be returning anything (because 'data' is mutable).
+            if fcn not in ("file", "render"):
+                if val is None or val is args[-1]:
+                    json_outp = {"present": True, "val": args[-1]}
+                else:
+                    json_outp = {"present": True, "val": val}
+
+                    # We'll only actually complain if the function returned
+                    # a completely different object than the one passed in.
+                    # Otherwise, we'll just silently ignore the return value
+                    # and use the passed-in object (which should in fact be
+                    # the same object).
+                    #
+                    # TODO: Once this has been running in production for a while,
+                    # change this to raise an exception.
+                    sys.stderr.write(
+                        f"Function {fcn}() in {file + '.py'} returned a data object other than the one that was passed in.\n\n"
+                        + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
+                        + "For now, the return value will be used instead of the data object that was passed in.\n\n"
+                        + "In the future, returning a different object will trigger a fatal error."
+                    )
+            else:
+                json_outp = {"present": True, "val": val}
+        else:
+            # the function wasn't present, so report this
+            json_outp = {"present": False}
+
+        # make sure all output streams are flushed
+        sys.stderr.flush()
+        sys.stdout.flush()
+
+        # write the return value (JSON on a single line)
+        write_json_to_socket(json_outp)
 
 
 worker_pid = 0
@@ -423,72 +427,81 @@ def terminate_worker(_signum: int, _stack: types.FrameType | None) -> None:
 signal.signal(signal.SIGTERM, terminate_worker)
 signal.signal(signal.SIGINT, terminate_worker)  # Ctrl-C case
 
-with open(4, "w", encoding="utf-8") as exitf:
-    while True:
-        worker_pid = os.fork()
-        if worker_pid == 0:
-            # Ensure that no code running in the worker can interact with
-            # file descriptor 4
-            exitf.close()
+port = int(os.environ["PORT"])
 
-            # If configured to do so, drop to a deprivileged user before running
-            # any user code. This should generally only be enabled when running
-            # in Docker, as the `prairielearn/executor` image will be guaranteed
-            # to have the user that we drop to.
-            if drop_privileges:
-                import pwd
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.connect(("127.0.0.1", port))
 
-                user = pwd.getpwnam("executor")
-                os.setgid(user.pw_gid)
-                os.setuid(user.pw_uid)
+    # Disable Nagle's algorithm
+    s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
-            worker_loop()
+    with open(4, "w", encoding="utf-8") as exitf:
+        while True:
+            worker_pid = os.fork()
+            if worker_pid == 0:
+                # Ensure that no code running in the worker can interact with
+                # file descriptor 4
+                exitf.close()
 
-            break
-        else:
-            pid, status = os.waitpid(worker_pid, 0)
-            worker_pid = 0
-            if os.WIFEXITED(status):
-                if os.WEXITSTATUS(status) == 0:
-                    # Everything is ok, the worker exited gracefully,
-                    # just repeat
+                # If configured to do so, drop to a deprivileged user before running
+                # any user code. This should generally only be enabled when running
+                # in Docker, as the `prairielearn/executor` image will be guaranteed
+                # to have the user that we drop to.
+                if drop_privileges:
+                    import pwd
 
-                    exited = True
+                    user = pwd.getpwnam("executor")
+                    os.setgid(user.pw_gid)
+                    os.setuid(user.pw_uid)
 
-                    # Once this child exits, clean up after it if we
-                    # were running as the `executor` user
-                    if drop_privileges:
-                        # Kill all processes started by `executor`.
-                        os.system("pkill -u executor --signal SIGKILL")
+                worker_loop(s)
 
-                        # Check that all processes are gone. If they're not,
-                        # that probably means that someone is trying to escape
-                        # by repeatedly forking. In that case, we'll refuse to
-                        # write an exit confirmation to FD 4. This process will
-                        # be killed, and if we're running inside a Docker container,
-                        # the entire container should be killed too.
-                        import psutil
+                break
+            else:
+                pid, status = os.waitpid(worker_pid, 0)
+                worker_pid = 0
+                if os.WIFEXITED(status):
+                    if os.WEXITSTATUS(status) == 0:
+                        # Everything is ok, the worker exited gracefully,
+                        # just repeat
 
-                        if any(
-                            p.username() == "executor" for p in psutil.process_iter()
-                        ):
-                            raise RuntimeError(
-                                "found remaining processes belonging to executor user"
-                            )
+                        exited = True
 
-                    # We'll need to write a confirmation message on file
-                    # descriptor 4 so that PL knows that control was actually
-                    # returned to the zygote.
-                    json.dump({"exited": True}, exitf)
-                    exitf.write("\n")
-                    exitf.flush()
+                        # Once this child exits, clean up after it if we
+                        # were running as the `executor` user
+                        if drop_privileges:
+                            # Kill all processes started by `executor`.
+                            os.system("pkill -u executor --signal SIGKILL")
+
+                            # Check that all processes are gone. If they're not,
+                            # that probably means that someone is trying to escape
+                            # by repeatedly forking. In that case, we'll refuse to
+                            # write an exit confirmation to FD 4. This process will
+                            # be killed, and if we're running inside a Docker container,
+                            # the entire container should be killed too.
+                            import psutil
+
+                            if any(
+                                p.username() == "executor"
+                                for p in psutil.process_iter()
+                            ):
+                                raise RuntimeError(
+                                    "found remaining processes belonging to executor user"
+                                )
+
+                        # We'll need to write a confirmation message on file
+                        # descriptor 4 so that PL knows that control was actually
+                        # returned to the zygote.
+                        json.dump({"exited": True}, exitf)
+                        exitf.write("\n")
+                        exitf.flush()
+                    else:
+                        # The worker did not exit gracefully
+                        raise RuntimeError(
+                            f"worker process exited unexpectedly with status {status}"
+                        )
                 else:
-                    # The worker did not exit gracefully
+                    # Something else happened that is weird
                     raise RuntimeError(
                         f"worker process exited unexpectedly with status {status}"
                     )
-            else:
-                # Something else happened that is weird
-                raise RuntimeError(
-                    f"worker process exited unexpectedly with status {status}"
-                )
