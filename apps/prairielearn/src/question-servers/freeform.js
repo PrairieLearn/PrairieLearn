@@ -45,8 +45,8 @@ const debug = debugfn('prairielearn:freeform');
  * @property {string} question_dir
  * @property {string} question_dir_host
  * @property {'experimental' | 'default' | 'legacy'} renderer
- * @property {any} course_elements
- * @property {any} course_element_extensions
+ * @property {ElementNameMap} course_elements
+ * @property {ElementExtensionNameDirMap} course_element_extensions
  */
 
 /** @typedef {import('../schemas/index.js').ElementCoreJson} ElementCoreJson */
@@ -285,6 +285,11 @@ export function flushElementCache() {
   courseExtensionsCache = {};
 }
 
+/**
+ * @param {string} elementName
+ * @param {QuestionProcessingContext} context
+ * @returns
+ */
 function resolveElement(elementName, context) {
   if (Object.prototype.hasOwnProperty.call(context.course_elements, elementName)) {
     return context.course_elements[elementName];
@@ -1427,12 +1432,12 @@ export async function render(
         // Transform non-global dependencies to be prefixed by the element name,
         // since they'll be served from their element's directory
         if ('elementStyles' in elementDependencies) {
-          elementDependencies.elementStyles = elementDependencies.elementStyles.map(
+          elementDependencies.elementStyles = elementDependencies.elementStyles?.map(
             (dep) => `${resolvedElement.name}/${dep}`,
           );
         }
         if ('elementScripts' in elementDependencies) {
-          elementDependencies.elementScripts = elementDependencies.elementScripts.map(
+          elementDependencies.elementScripts = elementDependencies.elementScripts?.map(
             (dep) => `${resolvedElement.name}/${dep}`,
           );
         }
@@ -1510,12 +1515,12 @@ export async function render(
             const extensionDynamic =
               structuredClone(extensions[elementName][extensionName].dynamicDependencies) ?? {};
             if ('extensionStyles' in extension) {
-              extension.extensionStyles = extension.extensionStyles.map(
+              extension.extensionStyles = extension.extensionStyles?.map(
                 (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
             if ('extensionScripts' in extension) {
-              extension.extensionScripts = extension.extensionScripts.map(
+              extension.extensionScripts = extension.extensionScripts?.map(
                 (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
