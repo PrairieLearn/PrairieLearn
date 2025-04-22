@@ -498,7 +498,7 @@ These options, which apply to all instances of your course, can be set in the `i
 
 The "legacy" renderer is the original renderer used in PrairieLearn. It renders elements alphabetically in order of their name and thus provides inconsistent support for nesting elements. It should be avoided in new courses.
 
-The "new" question renderer processes elements in a tree, which allows it to consistently and predictably support nested elements. It's also more performant. If you have an existing course that predates the new renderer, you should migrate to it at their earliest convenience by setting `"useNewQuestionRenderer": true` in your `infoCourse.json` file:
+The "new" question renderer processes elements in a tree, which allows it to consistently and predictably support nested elements. It's also more performant. If you have an existing course that predates the new renderer, you should migrate to it at your earliest convenience by setting `"useNewQuestionRenderer": true` in your `infoCourse.json` file:
 
 ```json title="infoCourse.json"
 {
