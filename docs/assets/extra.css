@@ -157,7 +157,7 @@ code.doc-symbol-json::after {
   content: 'json';
 }
 
-/* Don't render view source button in tooltips */
+/* Don't render view source button in mkdocstrings tooltips (see mkdocstrings/python/material/*.jinja) */
 .md-tooltip2__inner.md-typeset > .md-content__button.md-icon {
   display: none;
 }

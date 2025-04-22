@@ -9,11 +9,11 @@ To explain how this works, we will use a simple example of a question that asks 
 <!-- prettier-ignore -->
 ```html title="question.html"
 <pl-question-panel>
-    If $x = {{params.x}}$, what is $y$ if $y$ is double $x$?
+  If $x = {{params.x}}$, what is $y$ if $y$ is double $x$?
 </pl-question-panel>
 <pl-number-input answers-name="y" label="$y =$"></pl-number-input>
 <pl-submission-panel>
-    {{feedback.y}}
+  {{feedback.y}}
 </pl-submission-panel>
 ```
 
@@ -25,6 +25,7 @@ First, the `generate` function is called to generate random parameters for the v
 
 ```python title="server.py"
 import random
+
 def generate(data):
     # Generate random parameters for the question and store them in the data["params"] dict:
     data["params"]["x"] = random.randint(5, 10)
@@ -72,11 +73,12 @@ You can also set `data["format_errors"]` to mark the submission as invalid. This
 
 ```python title="server.py"
 import math
+
 def grade(data):
     marked_as_incorrect = math.isclose(data["score"], 0.0)
     if marked_as_incorrect and data["submitted_answers"]["y"] > data["params"]["x"]:
         data["partial_scores"]["y"]["score"] = 0.5
-        data["score"] = 0.5
+        data["score"] = set_weighted_score_data(data)
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
 
@@ -146,7 +148,7 @@ def grade(data):
     # only if not already correct. Use math.isclose to avoid possible floating point errors.
     if math.isclose(data["score"], 0.0) and data["submitted_answers"]["y"] > data["params"]["x"]:
         data["partial_scores"]["y"]["score"] = 0.5
-        data["score"] = 0.5
+        data["score"] = set_weighted_score_data(data)
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
 
@@ -298,7 +300,7 @@ def grade(data):
     set_weighted_score_data(data)
 ```
 
-More detailed information can be found in the [grading utilities documentation](http://localhost:8000/python-reference/prairielearn/grading_utils/). If you prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
+More detailed information can be found in the [grading utilities documentation](../python-reference/prairielearn/grading_utils.md). If you prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
 
 ### Custom feedback
 

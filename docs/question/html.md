@@ -2,12 +2,20 @@
 
 ## Template file
 
-All `question.html` files are rendered with the [Mustache](https://mustache.github.io/mustache.5.html) template engine. Outside direct variable substitution, you can use Mustache to do things like conditionally render elements. For example, you can use the following syntax to conditionally render a piece of HTML:
+All `question.html` files are rendered with the [Mustache](https://mustache.github.io/mustache.5.html) template engine. Outside direct variable substitution, you can use Mustache to do things like conditionally render elements and render over arrays. For example, you can use the following syntax to conditionally render a piece of HTML:
 
 ```html title="question.html"
 {{#params.show}}
 <p>This will only show up if params.show is true</p>
 {{/params.show}}
+```
+
+and this syntax to render over an array of strings (the `.` represents the current item in the array):
+
+```html title="question.html"
+{{#params.items}}
+<p>{{.}}</p>
+{{/params.items}}
 ```
 
 !!! tip
@@ -16,10 +24,7 @@ All `question.html` files are rendered with the [Mustache](https://mustache.gith
 
 ## Markdown in questions
 
-HTML and custom elements are great for flexibility and expressiveness. However, they're
-not great for working with large amounts of text, formatting text, and so on.
-[Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight
-plaintext markup syntax that's ideal for authoring simple but rich text. PrairieLearn recommends you author all the text of your questions in Markdown.
+HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text.
 
 You can use the special `<markdown>` tag to automatically convert its contents to HTML. Here's an example `question.html` that utilizes this element:
 

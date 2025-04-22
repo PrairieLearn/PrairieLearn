@@ -52,34 +52,49 @@ class QuestionData(TypedDict):
 
     params: dict[str, Any]
     """Parameters that describe the question variant."""
+
     correct_answers: dict[str, Any]
     """The true answer (if any) for the variant."""
+
     submitted_answers: dict[str, Any]
     """The answer submitted by the student (after parsing)."""
+
     format_errors: dict[str, Any]
     """A dictionary of format errors encountered while parsing the student input."""
+
     partial_scores: dict[str, PartialScore]
     """A dictionary of partial scores for each answer in the question."""
+
     score: float
     """The total final score for the question."""
+
     feedback: dict[str, Any]
     """Any feedback to the student on their submitted answer."""
+
     variant_seed: str
     """The random seed for this question variant."""
+
     options: dict[str, Any]
     """Any options associated with the question."""
+
     raw_submitted_answers: dict[str, Any]
     """The answer submitted by the student before parsing."""
+
     editable: bool
     """Whether the question is currently in an editable state."""
+
     panel: Literal["question", "submission", "answer"]
     """The panel that is being rendered."""
+
     extensions: dict[str, Any]
     """A list of extensions that are available to be loaded by this element."""
+
     num_valid_submissions: int
     """The number of valid (not containing format errors) submissions by the student for the current variant."""
+
     manual_grading: bool
     """Whether the question is being rendered in the manual grading view."""
+
     answers_names: dict[str, bool]
     """A dictionary whose keys list the names of the answers in the question."""
 

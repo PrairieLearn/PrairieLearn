@@ -1,8 +1,6 @@
 # Questions
 
-!!! note "Legacy questions"
-
-    Modern PrairieLearn questions are marked with `"type": "v3"`. This documentation describes modern v3 questions, although [legacy v2 questions](../oldQuestion.md#question-types-for-v1v2-format) are still supported by PrairieLearn, though will eventually be phased out.
+Questions are the basic building blocks of PrairieLearn. They are the individual problems that students will solve, and they can be composed into assessments (homeworks and exams). Questions can be simple or complex, and they can be written in a variety of ways. This document describes how to create questions, including the directory structure, metadata, HTML templates, and server-side code.
 
 ## Question components
 
@@ -49,7 +47,7 @@ questions
 
 !!! tip
 
-    Organize your questions by kind. A recommended folder structure is `topic/subtopic/question`. Folder layouts like `exam3/question12` or `Spring20/questionName` can make it harder to find and reuse questions.
+    Avoid using term names (e.g. `Spring20/questionName`) or assessment names (e.g. `exam3/question12`) in your question directory structure, as these can make it harder to find and reuse questions across assessments and terms.
 
 PrairieLearn assumes independent questions; nothing ties them together. However, each question could have multiple parts (inputs that are validated together).
 
@@ -188,11 +186,11 @@ The `question.html` is regular HTML, with four special features:
 
 !!! info
 
-    More information about `question.html` is in the [question.html documentation](html.md). Some non-intuitive aspects of the Markdown and LaTeX are described there.
+    More information about `question.html` is in the [question.html documentation](html.md). Some non-intuitive aspects of Markdown and LaTeX are described there.
 
 ## Custom generation and grading (`server.py`)
 
-The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answers. A minimal `server.py` might set `data["params"]` and `data["correct_answers"]`, and then use the built-in grading ability of the PrairieLearn elements to grade the students submission. A complete tutorial and example of a `server.py` file is described on the [server.py documentation](server.md) page.
+The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answers. A minimal `server.py` might set `data["params"]` and `data["correct_answers"]`, and then use the built-in grading ability of the PrairieLearn elements to grade the students submission.
 
 ```python title="server.py"
 import random
@@ -224,7 +222,7 @@ For most elements, there are four different ways of auto-grading the student ans
 
 If a question uses more than one method for grading, higher-numbered grading methods override results of lower-numbered grading methods. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](../elements.md#pl-answer-panel-element) that any correct answer would be accepted, and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
 
-## Question Lifecycle
+## Question lifecycle
 
 The diagram below shows the lifecycle of a question, including the server functions called, the different panels that are rendered, and points of interaction with the student.
 
