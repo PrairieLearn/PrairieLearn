@@ -34,8 +34,7 @@ VALUES
     $assessment_id,
     NOW()
   )
-ON CONFLICT (lti13_course_instance_id, lineitem_id_url) DO
-UPDATE
+ON CONFLICT (lti13_course_instance_id, lineitem_id_url) DO UPDATE
 SET
   lineitem = $lineitem,
   assessment_id = $assessment_id,

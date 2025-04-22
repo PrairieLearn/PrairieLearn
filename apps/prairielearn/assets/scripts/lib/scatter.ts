@@ -1,4 +1,4 @@
-import { scaleLinear, axisBottom, axisLeft, select, zip } from 'd3';
+import { axisBottom, axisLeft, scaleLinear, select, zip } from 'd3';
 
 export function scatter(
   selector: HTMLElement,
@@ -106,6 +106,8 @@ export function scatter(
       height + (resolvedOptions.topMargin ?? 10) + (resolvedOptions.bottomMargin ?? 55),
     )
     .attr('class', 'center-block statsPlot')
+    // We are deliberately setting role="none" here as we do not have any meaningful information to expose to screen readers.
+    .attr('role', 'none')
     .append('g')
     .attr('transform', `translate(${resolvedOptions.leftMargin},${resolvedOptions.topMargin})`);
 

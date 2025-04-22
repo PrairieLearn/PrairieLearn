@@ -1,7 +1,7 @@
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { generateSignedToken, checkSignedToken } from '@prairielearn/signed-token';
+import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
 

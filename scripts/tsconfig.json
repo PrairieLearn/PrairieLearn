@@ -1,0 +1,6 @@
+{
+  "extends": "@prairielearn/tsconfig/tsconfig.app.json",
+  "compilerOptions": {
+    "noEmit": true
+  }
+}

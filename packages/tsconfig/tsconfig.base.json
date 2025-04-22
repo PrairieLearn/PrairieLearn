@@ -11,6 +11,10 @@
     "skipLibCheck": true,
     // Ensure source maps are generated for easier debugging.
     "sourceMap": true,
-    "inlineSources": true
+    "inlineSources": true,
+    // Provides more consistent behavior when transpiling.
+    "verbatimModuleSyntax": true,
+    // Catch common mistakes.
+    "allowUnreachableCode": false
   }
 }

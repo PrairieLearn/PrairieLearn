@@ -5,7 +5,7 @@ import lxml.html
 import prairielearn as pl
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=["answers-name"], optional_attribs=[])
 
@@ -15,7 +15,7 @@ def prepare(element_html, data):
     data["correct_answers"][name] = number
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     # Grab the name of the element (name of the hidden input tag), and generate a unique UUID
     # Each element on the page has its own UUID to prevent the JavaScript of other elements from interfering
     element = lxml.html.fragment_fromstring(element_html)
@@ -44,7 +44,7 @@ def render(element_html, data):
         return chevron.render(f, html_params).strip()
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
@@ -53,7 +53,7 @@ def parse(element_html, data):
     data["submitted_answers"][name] = int(data["raw_submitted_answers"][name])
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     # Get the name of the element and the weight for this answer
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")

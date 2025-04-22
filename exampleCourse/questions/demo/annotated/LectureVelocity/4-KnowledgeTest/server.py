@@ -1,11 +1,11 @@
 import io
 import random
 
-import matplotlib as ml
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-ml.rcParams["text.usetex"] = True
+mpl.rcParams["text.usetex"] = True
 plt.rcParams.update({"font.size": 14})
 
 

@@ -1,0 +1,135 @@
+body,
+.app-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  overscroll-behavior: none;
+}
+
+.app-grid {
+  height: 100%;
+  display: grid;
+  grid-template-areas: 'navbar' 'content';
+  grid-template-rows: min-content 1fr;
+}
+
+.app-navbar {
+  grid-area: navbar;
+}
+
+.app-content {
+  grid-area: content;
+
+  display: grid;
+  grid-template-areas: 'back preview-tabs' 'chat preview';
+  grid-template-rows: min-content 1fr;
+  grid-template-columns: 400px 1fr;
+  min-height: 0;
+}
+
+.app-chat {
+  grid-area: chat;
+
+  display: grid;
+  grid-template-areas: 'history' 'prompt';
+  grid-template-rows: 1fr min-content;
+  min-height: 0;
+}
+
+.app-back {
+  grid-area: back;
+}
+
+.app-chat-history {
+  grid-area: history;
+  overflow-y: auto;
+  scrollbar-color: var(--bs-secondary) transparent;
+}
+
+.app-chat-prompt {
+  grid-area: prompt;
+}
+
+.app-preview-tabs {
+  grid-area: preview-tabs;
+}
+
+.app-preview {
+  grid-area: preview;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.question-wrapper {
+  max-width: 900px;
+}
+
+.editor-panes {
+  display: grid;
+  grid-template-areas: 'status status' 'html python';
+  grid-template-rows: min-content 1fr;
+  grid-template-columns: 1fr 1fr;
+  height: 100%;
+}
+
+.editor-pane-status {
+  grid-area: status;
+}
+
+.editor-pane-html {
+  grid-area: html;
+}
+
+.editor-pane-python {
+  grid-area: python;
+}
+
+.revert-to-revision-button {
+  /**
+   * We hide the button by setting its opacity instead of controlling its
+   * visibility with `display: none` or `visibility: hidden` because we need
+   * the button to be focusable for keyboard navigation.
+   */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.prompt-response:hover .revert-to-revision-button,
+.prompt-response:focus-within .revert-to-revision-button {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .revert-to-revision-button {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Reflow to a vertical layout on narrow viewports */
+@media (max-width: 768px) {
+  .app-grid {
+    height: auto;
+  }
+
+  .app-content {
+    grid-template-areas: 'back' 'chat' 'preview-tabs' 'preview';
+    grid-template-columns: 1fr;
+  }
+
+  .editor-pane-html,
+  .editor-pane-python {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 1400px) {
+  /* On narrower viewports, tile the editors vertically */
+  .editor-panes {
+    grid-template-areas: 'status' 'html' 'python';
+    grid-template-rows: min-content 1fr 1fr;
+    grid-template-columns: 1fr;
+  }
+}

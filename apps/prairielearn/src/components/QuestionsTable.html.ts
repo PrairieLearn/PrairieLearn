@@ -1,30 +1,32 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
-import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
+import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { type QuestionsPageData } from '../models/questions.js';
 
+import { Modal } from './Modal.html.js';
+
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
   // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way
+
   return html`
     <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
-    <script src="${nodeModulesAssetPath(
-        'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-      )}"></script>
     <script src="${nodeModulesAssetPath(
         'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js',
       )}"></script>
 
     ${compiledScriptTag('instructorQuestionsClient.ts')}
+    ${compiledScriptTag('bootstrap-table-sticky-header.js')}
     ${compiledStylesheetTag('questionsTable.css')}
   `;
 }
 
 export function QuestionsTable({
   questions,
+  templateQuestions = [],
   showAddQuestionButton = false,
   showAiGenerateQuestionButton = false,
   showSharingSets = false,
@@ -36,6 +38,10 @@ export function QuestionsTable({
   __csrf_token,
 }: {
   questions: QuestionsPageData[];
+  /**
+   * The template questions the user can select as a starting point when creating a new question.
+   */
+  templateQuestions?: { qid: string; title: string }[];
   showAddQuestionButton?: boolean;
   showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
@@ -60,7 +66,10 @@ export function QuestionsTable({
       },
       'questions-table-data',
     )}
-
+    ${CreateQuestionModal({
+      csrfToken: __csrf_token,
+      templateQuestions,
+    })}
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
         <h1>Questions</h1>
@@ -68,17 +77,12 @@ export function QuestionsTable({
 
       ${questions.length > 0
         ? html`
-            <form class="ml-1 btn-group" name="add-question-form" method="POST">
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-              <input type="hidden" name="__action" value="add_question" />
-            </form>
-
             <table
               id="questionsTable"
               aria-label="Questions"
               data-data="${JSON.stringify(questions)}"
               data-classes="table table-sm table-hover table-bordered"
-              data-thead-classes="thead-light"
+              data-thead-classes="table-light"
               data-filter-control="true"
               data-show-columns="true"
               data-show-columns-toggle-all="true"
@@ -218,7 +222,7 @@ export function QuestionsTable({
           `
         : html`
             <div class="my-4 card-body text-center" style="text-wrap: balance;">
-              <p class="font-weight-bold">No questions found.</p>
+              <p class="fw-bold">No questions found.</p>
               <p class="mb-0">
                 A question is a problem or task that tests a student's understanding of a specific
                 concept.
@@ -229,15 +233,121 @@ export function QuestionsTable({
                   >question documentation</a
                 >.
               </p>
-              <form class="ml-1 btn-group" name="add-question-form" method="POST">
-                <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                <button name="__action" value="add_question" class="btn btn-sm btn-primary">
-                  <i class="fa fa-plus" aria-hidden="true"></i>
-                  <span>Add question</span>
-                </button>
-              </form>
+              ${showAddQuestionButton
+                ? html`
+                    <div class="d-flex flex-row flex-wrap justify-content-center gap-3">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#createQuestionModal"
+                      >
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        Add question
+                      </button>
+                      ${showAiGenerateQuestionButton
+                        ? html`
+                            <a
+                              class="btn btn-sm btn-primary"
+                              href="${urlPrefix}/ai_generate_question_drafts"
+                            >
+                              <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+                              Generate question with AI
+                            </a>
+                          `
+                        : ''}
+                    </div>
+                  `
+                : ''}
             </div>
           `}
     </div>
   `;
+}
+
+function CreateQuestionModal({
+  csrfToken,
+  templateQuestions,
+}: {
+  csrfToken: string;
+  templateQuestions: { qid: string; title: string }[];
+}) {
+  return Modal({
+    id: 'createQuestionModal',
+    title: 'Create question',
+    formMethod: 'POST',
+    body: html`
+      <div class="mb-3">
+        <label class="form-label" for="title">Title</label>
+        <input
+          type="text"
+          class="form-control"
+          id="title"
+          name="title"
+          required
+          aria-describedby="title_help"
+        />
+        <small id="title_help" class="form-text text-muted">
+          The full name of the question, visible to users.
+        </small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="qid">Question identifier (QID)</label>
+        <input
+          type="text"
+          class="form-control"
+          id="qid"
+          name="qid"
+          required
+          pattern="[\\-A-Za-z0-9_\\/]+"
+          aria-describedby="qid_help"
+        />
+        <small id="qid_help" class="form-text text-muted">
+          A short unique identifier for this question, such as "add-vectors" or "find-derivative".
+          Use only letters, numbers, dashes, and underscores, with no spaces.
+        </small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="start_from">Start from</label>
+        <select
+          class="form-select"
+          id="start_from"
+          name="start_from"
+          required
+          aria-describedby="start_from_help"
+        >
+          <option value="Empty question">Empty question</option>
+          <option value="Template">Template</option>
+        </select>
+        <small id="start_from_help" class="form-text text-muted">
+          Begin with an empty question or a pre-made question template.
+        </small>
+      </div>
+
+      <div id="templateContainer" class="mb-3" hidden>
+        <label class="form-label" for="template_qid">Template</label>
+        <select
+          class="form-select"
+          id="template_qid"
+          name="template_qid"
+          required
+          aria-describedby="template_help"
+          disabled
+        >
+          ${templateQuestions.map(
+            (question) => html`<option value="${question.qid}">${question.title}</option>`,
+          )}
+        </select>
+        <small id="template_help" class="form-text text-muted">
+          The question will be created from this template.
+        </small>
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="add_question" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Create</button>
+    `,
+  });
 }

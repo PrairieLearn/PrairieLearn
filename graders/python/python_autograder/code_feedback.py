@@ -21,8 +21,30 @@ THE SOFTWARE.
 """
 
 
+from collections.abc import Callable
+from typing import Any, Literal, NoReturn, TypeVar
+
+import numpy as np
+from matplotlib.axes import Axes
+from numpy.typing import ArrayLike, NDArray
+from pandas import DataFrame
+
+
 class GradingComplete(Exception):  # noqa: N818
-    pass
+    """
+    A general exception to mark that grading has completed early.
+    All future test cases are skipped.
+    """
+
+
+class TestComplete(Exception):  # noqa: N818
+    """
+    A general exception to mark that the current test case has finished early.
+    Future test cases will still be executed.
+    """
+
+
+T = TypeVar("T")
 
 
 class Feedback:
@@ -36,27 +58,30 @@ class Feedback:
     buffer = ""
 
     @classmethod
-    def set_name(cls, name):
+    def set_name(cls, name: str) -> None:
         cls.test_name = name
         cls.feedback_file = "feedback_" + name
         cls.buffer = ""
 
     @classmethod
-    def set_main_output(cls):
+    def set_main_output(cls) -> None:
         cls.test_name = "output"
         cls.feedback_file = "output"
         cls.buffer = ""
 
     @classmethod
-    def set_test(cls, test):
+    def set_test(cls, test: Any) -> None:
+        # TODO: test cannot be typed as it would lead to a circular import
+        # TODO: In Python 3.11 cls can be typed with typing.Self
         cls.test = test
 
     @classmethod
-    def set_score(cls, score):
+    def set_score(cls, score: float) -> None:
         """
-        Feedback.set_score(percentage)
-
         Set the score for the test case, should be a floating point value between 0 and 1.
+
+        Examples:
+            >>> Feedback.set_score(0.75)
         """
         if score < 0:
             score = 0.0
@@ -66,20 +91,24 @@ class Feedback:
         cls.test.points = score
 
     @classmethod
-    def add_iteration_prefix(cls, iter_prefix):
+    def add_iteration_prefix(cls, iter_prefix: int) -> None:
         cls.buffer = cls.prefix_message % iter_prefix
 
     @classmethod
-    def clear_iteration_prefix(cls):
+    def clear_iteration_prefix(cls) -> None:
         cls.buffer = ""
 
     @classmethod
-    def add_feedback(cls, text):
+    def add_feedback(cls, text: str) -> None:
         """
-        Feedback.add_feedback(text)
-
         Adds some text to the feedback output for the current test.
+
+        Examples:
+            >>> Feedback.add_feedback("The return value is not correct.")
         """
+        if cls.feedback_file is None:
+            raise RuntimeError("Cannot add feedback without a feedback file set. ")
+
         with open(
             "/grade/run/" + cls.feedback_file + ".txt", "a+", encoding="utf-8"
         ) as f:
@@ -88,17 +117,36 @@ class Feedback:
             cls.buffer = ""
 
     @classmethod
-    def finish(cls, fb_text):
+    def finish(cls, fb_text: str) -> NoReturn:
         """
-        Feedback.finish(fb_text)
-
         Complete grading immediately, additionally outputting the message in fb_text.
+
+        Examples:
+            >>> Feedback.finish("Invalid format")
         """
         cls.add_feedback(fb_text)
-        raise GradingComplete()
+        raise GradingComplete
+
+    @classmethod
+    def finish_test(cls, fb_text: str) -> NoReturn:
+        """
+        Complete grading the current test case immediately, additionally
+        outputting the message in fb_text.
+
+        Unlike Feedback.finish(), this method only halts the current test case
+        while allowing subsequent test cases to continue executing.
+
+        Parameters:
+            fb_text: Message to output before halting the test case.
+
+        Examples:
+            >>> Feedback.finish_test("Invalid format")
+        """
+        cls.add_feedback(fb_text)
+        raise TestComplete
 
     @staticmethod
-    def not_allowed(*args, **kwargs):
+    def not_allowed(*_args: Any, **_kwargs: Any) -> NoReturn:
         """
         Used to hook into disallowed functions, raises an exception if
         the student tries to call it.
@@ -113,15 +161,19 @@ class Feedback:
         raise RuntimeError("The use of this function is not allowed.")
 
     @classmethod
-    def check_numpy_array_sanity(cls, name, num_axes, data):
+    def check_numpy_array_sanity(
+        cls, name: str, num_axes: int, data: ArrayLike | None
+    ) -> None:
         """
-        Feedback.check_numpy_array_sanity(name, num_axes, data)
-
         Perform a sanity check on a NumPy array, making sure that it is in fact defined and has the correct dimensionality. If the checks fail then grading will automatically stop.
 
-        - ``name``: Name of the array that is being checked. This will be used to give feedback.
-        - ``num_axes``: Number of axes that the array should have.
-        - ``data``: NumPy array to check.
+        Parameters:
+            name: Name of the array that is being checked. This will be used to give feedback.
+            num_axes: Number of axes that the array should have.
+            data: NumPy array to check.
+
+        Examples:
+            >>> Feedback.check_numpy_array_sanity(name, num_axes, data)
         """
 
         import numpy as np
@@ -152,22 +204,31 @@ class Feedback:
 
     @classmethod
     def check_numpy_array_features(
-        cls, name, ref, data, accuracy_critical=False, report_failure=True
-    ):
+        cls,
+        name: str,
+        ref: NDArray[Any],
+        data: None | ArrayLike,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
+    ) -> bool | None:
         """
-        Feedback.check_numpy_array_features(name, ref, data)
-
         Check that a student NumPy array has the same shape and datatype as a reference solution NumPy array.
 
-        - ``name``: Name of the array that is being checked. This will be used to give feedback.
-        - ``ref``: Reference NumPy array.
-        - ``data``: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
-        - ``accuracy_critical``: If true, grading will halt on failure.
-        - ``report_failure``: If true, feedback will be given on failure.
+        Parameters:
+            name: Name of the array that is being checked. This will be used to give feedback.
+            ref: Reference NumPy array.
+            data: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
+
+        Examples:
+            >>> Feedback.check_numpy_array_features("b", self.ref.a, self.st.b, accuracy_critical=True)
         """
         import numpy as np
 
-        def bad(msg):
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -200,39 +261,44 @@ class Feedback:
                 f"got: '{data.dtype}', expected: '{ref.dtype}'"
             )
 
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
+
         return True
 
     @classmethod
     def check_numpy_array_allclose(
         cls,
-        name,
-        ref,
-        data,
-        accuracy_critical=False,
-        rtol=1e-05,
-        atol=1e-08,
-        report_success=True,
-        report_failure=True,
-    ):
+        name: str,
+        ref: NDArray[Any],
+        data: ArrayLike,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        rtol: float = 1e-05,
+        atol: float = 1e-08,
+        report_success: bool = True,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+    ) -> bool:
         """
-        Feedback.check_numpy_allclose(name, ref, data)
-
         Check that a student NumPy array has similar values to a reference NumPy array. Note that this checks value according to the numpy.allclose function, which goes by the following check:
-        ``absolute(a - b) <= (atol + rtol * absolute(b))``
+        `absolute(a - b) <= (atol + rtol * absolute(b))`
 
-        - ``name``: Name of the array that is being checked. This will be used to give feedback.
-        - ``ref``: Reference NumPy array.
-        - ``data``: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
-        - ``rtol``: Maximum relative tolerance between values.
-        - ``atol``: Maximum absolute tolerance between values.
-        - ``accuracy_critical``: If true, grading will halt on failure.
-        - ``report_failure``: If true, feedback will be given on failure.
+        Parameters:
+            name: Name of the array that is being checked. This will be used to give feedback.
+            ref: Reference NumPy array.
+            data: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
+            rtol: Maximum relative tolerance between values.
+            atol: Maximum absolute tolerance between values.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
+
+        Examples:
+            >>> Feedback.check_numpy_array_allclose("G", self.ref.G, self.st.G)
         """
 
         import numpy as np
 
         if not cls.check_numpy_array_features(
-            name, ref, data, accuracy_critical, report_failure
+            name, ref, data, accuracy_critical, report_failure, report_success=False
         ):
             return False
 
@@ -241,41 +307,45 @@ class Feedback:
         if not good:
             if report_failure:
                 cls.add_feedback(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         if accuracy_critical and not good:
-            raise GradingComplete()
+            raise GradingComplete("Inaccurate, grading halted")
 
         return good
 
     @classmethod
     def check_list(
         cls,
-        name,
-        ref,
-        data,
-        entry_type=None,
-        accuracy_critical=False,
-        report_failure=True,
-    ):
+        name: str,
+        ref: list[Any],
+        data: list[Any] | None,
+        entry_type: Any | None = None,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
+    ) -> bool:
         """
-        Feedback.check_list(name, ref, data)
-
         Check that a student list has correct length with respect to a reference list. Can also check for a homogeneous data type for the list.
 
-        - ``name``: Name of the list that is being checked. This will be used to give feedback.
-        - ``ref``: Reference list.
-        - ``data``: Student list to be checked. Do not mix this up with the previous list! This argument is subject to more strict type checking.
-        - ``entry_type``: If not None, requires that each element in the student solution be of this type.
-        - ``accuracy_critical``: If true, grading will halt on failure.
-        - ``report_failure``: If true, feedback will be given on failure.
+        Parameters:
+            name: Name of the list that is being checked. This will be used to give feedback.
+            ref: Reference list.
+            data: Student list to be checked. Do not mix this up with the previous list! This argument is subject to more strict type checking.
+            entry_type: If not None, requires that each element in the student solution be of this type.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
+
+        Examples:
+            >>> Feedback.check_list(name, ref, data)
         """
 
-        def bad(msg):
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
+
             if accuracy_critical:
                 cls.finish("")
             else:
@@ -297,32 +367,114 @@ class Feedback:
                 if not isinstance(entry, entry_type):
                     return bad(f"'{name}[{i}]' has the wrong type")
 
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
+
+        return True
+
+    @classmethod
+    def check_dict(
+        cls,
+        name: str,
+        ref: dict[Any, Any],
+        data: dict[Any, Any],
+        *,
+        target_keys: None | list[str] | set[str] = None,
+        accuracy_critical: bool = False,
+        report_failure: bool = True,
+        report_success: bool = True,
+    ) -> bool:
+        """
+        Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`).
+
+        Parameters:
+            name: Name of the dict that is being checked. This will be used to give feedback.
+            ref: Reference dict.
+            data: Student dict to be checked. Do not mix this up with the previous dict! This argument is subject to more strict type checking.
+            target_keys: If not None, it will only only compare the keys listed.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
+        """
+
+        def bad(msg: str) -> Literal[False]:
+            if report_failure:
+                cls.add_feedback(msg)
+            if accuracy_critical:
+                cls.finish("")
+            else:
+                return False
+
+        if not isinstance(data, dict):
+            return bad(f"'{name}' is not a dict, got type {type(data).__name__}")
+
+        if target_keys is not None and not all(key in ref for key in target_keys):
+            # If target_keys is not None, we should only check the keys in target_keys
+            # and not the keys in ref
+            raise ValueError(
+                f"target_keys must be a subset of the reference dict keys. "
+                f"Got {target_keys=} but ref.keys={list(ref.keys())}"
+            )
+
+        check_all = target_keys is None
+        keys_to_check = ref.keys() if check_all else target_keys
+
+        missing_keys = set(keys_to_check) - set(data.keys())
+        if missing_keys:
+            return bad(
+                f"'{name}' has missing keys: `{', '.join(sorted(map(str, missing_keys)))}`"
+            )
+
+        extra_keys = set(data.keys()) - set(keys_to_check)
+        if check_all and extra_keys:
+            return bad(
+                f"'{name}' has extra keys: `{', '.join(sorted(map(str, extra_keys)))}`"
+            )
+
+        # Now check the values themselves
+        for key in keys_to_check:
+            # It's possible that the equality will pass even if the types are different
+            if type(ref[key]) is not type(data[key]):
+                return bad(
+                    f"'{name}' has key `{key}` with type `{type(data[key]).__name__}`, which is not the right type"
+                )
+
+            if ref[key] != data[key]:
+                return bad(
+                    f"'{name}' has key `{key}` with value `{data[key]}`, which is not correct"
+                )
+
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
+
         return True
 
     @classmethod
     def check_tuple(
         cls,
-        name,
-        ref,
-        data,
-        accuracy_critical=False,
-        report_failure=True,
-        report_success=True,
-    ):
+        name: str,
+        ref: tuple[Any],
+        data: tuple[Any] | None,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
+    ) -> bool:
         """
-        Feedback.check_tuple(name, ref, data)
-
         Check that a student tuple has correct length with respect to a reference tuple, and same values.
 
-        - ``name``: Name of the tuple that is being checked. This will be used to give feedback.
-        - ``ref``: Reference tuple.
-        - ``data``: Student tuple to be checked. Do not mix this up with the previous tuple! This argument is subject to more strict type checking.
-        - ``accuracy_critical``: If true, grading will halt on failure.
-        - ``report_failure``: If true, feedback will be given on failure.
-        - ``report_success``: If true, feedback will be given on success.
+        Parameters:
+            name: Name of the tuple that is being checked. This will be used to give feedback.
+            ref: Reference tuple.
+            data: Student tuple to be checked. Do not mix this up with the previous tuple! This argument is subject to more strict type checking.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
+
+        Examples:
+            >>> Feedback.check_tuple(name, ref, data)
         """
 
-        def bad(msg):
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -354,48 +506,49 @@ class Feedback:
 
         if not good:
             return bad(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         return True
 
     @classmethod
     def check_scalar(
         cls,
-        name,
-        ref,
-        data,
-        accuracy_critical=False,
-        rtol=1e-5,
-        atol=1e-8,
-        report_success=True,
-        report_failure=True,
-    ):
+        name: str,
+        ref: complex | np.number[Any],
+        data: complex | np.number[Any] | None,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        rtol: float = 1e-5,
+        atol: float = 1e-8,
+        report_success: bool = True,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+    ) -> bool:
         """
-        Feedback.check_scalar(name, ref, data)
-
         Check that a student scalar has correct value with respect to a reference scalar. This will mark a value as correct if it passes any of the following checks:
 
-        - ``abs(ref - data) < ref(ref) * rtol``
-        - ``abs(ref - data) < atol``
+        - `abs(ref - data) < ref(ref) * rtol`
+        - `abs(ref - data) < atol`
 
         One of rtol or atol can be omitted (set to None) if that check is unwanted.
         Or both, but then nothing would be graded :)
 
-        - ``name``: Name of the scalar that is being checked. This will be used to give feedback.
-        - ``ref``: Reference scalar.
-        - ``data``: Student scalar to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
-        - ``accuracy_critical``: If true, grading will halt on failure.
-        - ``rtol``: Maximum relative tolerance.
-        - ``atol``: Maximum absolute tolerance.
-        - ``report_failure``: If true, feedback will be given on failure.
-        - ``report_success``: If true, feedback will be given on success.
+        Parameters:
+            name: Name of the scalar that is being checked. This will be used to give feedback.
+            ref: Reference scalar.
+            data: Student scalar to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
+            accuracy_critical: If true, grading will halt on failure.
+            rtol: Maximum relative tolerance.
+            atol: Maximum absolute tolerance.
+            report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
+
+        Examples:
+            >>> Feedback.check_scalar("y", self.ref.y, self.st.y)
         """
 
         import numpy as np
 
-        def bad(msg):
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -407,7 +560,7 @@ class Feedback:
         if data is None:
             return bad(f"'{name}' is None or not defined")
 
-        if not isinstance(data, complex | float | int | np.number):
+        if not isinstance(data, (complex, float, int, np.number)):
             try:
                 # Check whether data is a sympy number because sympy
                 # numbers do not follow the typical interface
@@ -426,20 +579,35 @@ class Feedback:
 
         if not good:
             return bad(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         return True
 
     @classmethod
-    def call_user(cls, f, *args, **kwargs):
+    def call_user(
+        cls,
+        f: Callable[..., T],
+        *args: Any,
+        stop_on_exception: bool = True,
+        **kwargs: Any,
+    ) -> Any:
         """
-        Feedback.call_user(f)
-
-        Attempts to call a student defined function, with any arbitrary arguments specified in ``*args`` and ``**kwargs``. If the student code raises an exception, this will be caught and user feedback will be given.
-
+        Attempts to call a student defined function, with any arbitrary arguments.
+        If the student code raises an exception, this will be caught and user feedback will be given.
         If the function call succeeds, the user return value will be returned from this function.
+
+        Note that the keyword argument stop_on_exception will *not* be passed to the
+        student defined function f, but all other keyword arguments will.
+
+        Parameters:
+            f: Student defined function to be called.
+            *args: Arbitrary positional arguments to be passed to the student function.
+            stop_on_exception: If true, grading will halt on failure.
+            **kwargs: Arbitrary keyword arguments to be passed to the student function.
+
+        Examples:
+            >>> user_val = Feedback.call_user(self.st.fib, 5)
         """
 
         try:
@@ -449,7 +617,7 @@ class Feedback:
                 try:
                     callable_name = f.__name__
                 except Exception as e_name:
-                    callable_name = f"<unable to retrieve name; encountered {type(e_name).__name__}: {str(e_name)}>"
+                    callable_name = f"<unable to retrieve name; encountered {type(e_name).__name__}: {e_name}>"
                 from traceback import format_exc
 
                 cls.add_feedback(
@@ -465,37 +633,43 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete() from exc
+            cls.set_score(0.0)
+
+            if stop_on_exception:
+                raise GradingComplete from exc
+            raise TestComplete from exc
 
     @classmethod
     def check_plot(
         cls,
-        name,
-        ref,
-        plot,
-        check_axes_scale=None,
-        accuracy_critical=False,
-        report_failure=True,
-        report_success=True,
-    ):
+        name: str,
+        ref: Axes,
+        plot: Axes,
+        check_axes_scale: Literal[None, "x", "y", "xy"] = None,
+        accuracy_critical: bool = False,  # noqa: FBT001
+        report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
+    ) -> bool:
         """
-        Feedback.check_plot(name, ref, plot, check_axes_scale)
-
         Checks that a student plot has the same lines as a reference plot solution. Can optionally check the axis scales to ensure they are the same as the reference.
 
-        - ``name``: Name of plot scalar that is being checked. This will be used to give feedback.
-        - ``ref``: Reference plot.
-        - ``data``: Student plot to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
-        - ``check_axes_scale``: One of None, 'x', 'y', or 'xy'. Signals which axis scale should be checked against the reference solution.
-        - ``accuracy_critical``: If true, grading will halt on failure.
-        - ``report_failure``: If true, feedback will be given on failure.
-        - ``report_success``: If true, feedback will be given on success.
+        Parameters:
+            name: Name of plot scalar that is being checked. This will be used to give feedback.
+            ref: Reference plot.
+            plot: Student plot to be checked. Do not mix this up with the previous value! This argument is subject to more strict type checking.
+            check_axes_scale: Signals which axis scale should be checked against the reference solution.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
+
+        Examples:
+            >>> Feedback.check_plot("plot", self.ref.plot, self.st.plot, check_axes_scale="xy")
         """
 
         import matplotlib.axes
         import numpy as np
 
-        def bad(msg):
+        def bad(msg: str) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -550,10 +724,10 @@ class Feedback:
         for line in user_lines:
             data = np.array([line.get_data()[0], line.get_data()[1]])
             data = data[np.lexsort(data.T)]
-            for j, ref in ref_datas.items():
-                if data.shape == ref.shape and np.allclose(data, ref):
+            for j, ref_data in ref_datas.items():
+                if data.shape == ref_data.shape and np.allclose(data, ref_data):
                     num_correct += 1
-                    del [ref_datas[j]]
+                    del ref_datas[j]
                     break
 
         if num_correct == len(ref_lines):
@@ -566,38 +740,36 @@ class Feedback:
     @classmethod
     def check_dataframe(
         cls,
-        name,
-        ref,
-        data,
-        subset_columns=None,
-        check_values=True,
-        allow_order_variance=True,
-        display_input=False,
-    ):
+        name: str,
+        ref: DataFrame,
+        data: DataFrame,
+        subset_columns: list[str] | None = None,
+        check_values: bool = True,  # noqa: FBT001
+        allow_order_variance: bool = True,  # noqa: FBT001
+        display_input: bool = False,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
+    ) -> bool:
         """
-        ``check_dataframe``
-        Checks and adds feedback regarding the correctness of
-        a pandas ``DataFrame``.
-        Author: Wade Fagen-Ulmschneider (waf)
+        Checks and adds feedback regarding the correctness of a pandas! `DataFrame`.
 
-        By default, checks if the student DataFrame ``data`` contains the same contents as the reference DataFrame ``ref`` by using ``pandas.testing.assert_frame_equal`` after basic sanity checks.
+        **Author**: Wade Fagen-Ulmschneider (waf)
+
+        By default, checks if the student DataFrame `data` contains the same contents as the reference DataFrame `ref` by using `pandas.testing.assert_frame_equal` after basic sanity checks.
 
         Parameters:
-
-        - ``name``, String: The human-readable name of the DataFrame being checked
-        - ``ref``, DataFrame: The reference (correct) DataFrame
-        - ``data``, DataFrame: The student DataFrame
-        - ``subset_columns`` = None, Array of Strings:
-          If ``subset_columns`` is an empty array, all columns are used in the check.
-          Otherwise, only columns named in ``subset_columns`` are used in the check and other columns are dropped.
-        - ``check_values`` = True, Boolean: Check the values of each cell, in addition to the dimensions of the DataFrame
-        - ``allow_order_variance`` = True, Boolean: Allow rows to appear in any order (so long as the dimensions and values are correct)
-        - ``display_input`` = False, Boolean: Display the student's answer in the feedback area.
+            name: The human-readable name of the DataFrame being checked
+            ref: The reference (correct) DataFrame
+            data: The student DataFrame
+            subset_columns: If `subset_columns` is an empty array, all columns are used in the check. Otherwise, only columns named in `subset_columns` are used in the check and other columns are dropped.
+            check_values: Check the values of each cell, in addition to the dimensions of the DataFrame
+            allow_order_variance: Allow rows to appear in any order (so long as the dimensions and values are correct)
+            display_input: Display the student's answer in the feedback area.
+            report_success: Report success if the DataFrame is correct
         """
 
         import pandas as pd
 
-        def bad(msg):
+        def bad(msg: str) -> Literal[False]:
             cls.add_feedback(msg)
             if display_input and isinstance(data, pd.DataFrame):
                 cls.add_feedback("----------")
@@ -634,7 +806,9 @@ class Feedback:
             except Exception:
                 return bad(f"{name} is inaccurate")
 
-        cls.add_feedback(f"{name} looks good")
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
+
         if display_input:
             cls.add_feedback("----------")
             cls.add_feedback(data.to_string(max_rows=9))

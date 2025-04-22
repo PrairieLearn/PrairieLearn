@@ -28,16 +28,15 @@ def generate(data):
     # Build the list of input/output pairs.
     data["params"]["pairs"] = [
         {
-            "input": input,
-            "output": output,
+            "input": input_word,
+            "output": output_word,
         }
-        for (input, output) in zip(input_words, output_words, strict=True)
+        for (input_word, output_word) in zip(input_words, output_words, strict=True)
     ]
 
     # Pick the function name
     function_name = random.choice(FUN_CHOICES)
 
-    data["params"]["names_for_user"] = []
     data["params"]["names_from_user"] = [
         {
             "name": function_name,
