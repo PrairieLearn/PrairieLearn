@@ -916,12 +916,10 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
   });
 
   if (phase === 'grade' || phase === 'test') {
-    const partial_scores = /** @type {Record<string, unknown>} */ (resultData.partial_scores ?? {});
-
     if (context.question.partial_credit) {
       let total_weight = 0;
       let total_weight_score = 0;
-      for (const value of Object.values(partial_scores)) {
+      for (const value of Object.values(resultData.partial_scores ?? {})) {
         const { score, weight } = getPartialScoreValues(value);
         total_weight += weight;
         total_weight_score += weight * score;
@@ -930,8 +928,10 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     } else {
       let score = 0;
       if (
-        Object.keys(partial_scores).length > 0 &&
-        Object.values(partial_scores).every((value) => getPartialScoreValues(value).score >= 1)
+        Object.keys(resultData.partial_scores ?? {}).length > 0 &&
+        Object.values(resultData.partial_scores ?? {}).every(
+          (value) => getPartialScoreValues(value).score >= 1,
+        )
       ) {
         score = 1;
       }
