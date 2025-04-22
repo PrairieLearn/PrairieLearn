@@ -1,17 +1,77 @@
-# Question `server.py`
+# `server.py`
 
-The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answer. The `server.py` functions are:
+The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answers. To explain how this works, we will use a simple example of a question that asks the student to double a number. The question will look like this:
 
-| Function     | Return object                            | modifiable `data` keys                                                                                   | unmodifiable `data` keys                                                                                                                                                                                   | Description                                                                                                                                                                                                                                                                   |
-| ------------ | ---------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `generate()` |                                          | `correct_answers`, `params`                                                                              | `options`, `variant_seed`                                                                                                                                                                                  | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Modify the `data` dictionary in-place.                                                                 |
-| `prepare()`  |                                          | `answers_names`, `correct_answers`, `params`                                                             | `options`, `variant_seed`                                                                                                                                                                                  | Final question preparation after element code has run. Can modify data as necessary. Modify the `data` dictionary in-place.                                                                                                                                                   |
-| `render()`   | `html` (string)                          |                                                                                                          | `correct_answers`, `editable`, `feedback`, `format_errors`, `options`, `panel`, `params`, `partial_scores`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed`, `num_valid_submissions` | Render the HTML for one panel and return it as a string.                                                                                                                                                                                                                      |
-| `parse()`    |                                          | `format_errors`, `submitted_answers`, `correct_answers`, `feedback`                                      | `options`, `params`, `raw_submitted_answers`, `variant_seed`                                                                                                                                               | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Modify the `data` dictionary in-place.                                                                                                                                       |
-| `grade()`    |                                          | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `options`, `raw_submitted_answers`, `variant_seed`                                                                                                                                                         | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Modify the `data` dictionary in-place.                                                 |
-| `file()`     | `object` (string, bytes-like, file-like) |                                                                                                          | `correct_answers`, `filename`, `options`, `params`, `variant_seed`                                                                                                                                         | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used. |
+```html title="question.html"
+<pl-question-panel> If $x = {{params.x}}$, what is $y$ if $y$ is double $x$? </pl-question-panel>
+<pl-number-input answers-name="y" label="$y =$"></pl-number-input>
+<pl-submission-panel> {{feedback.y}} </pl-submission-panel>
+```
 
-A complete `question.html` and `server.py` example looks like:
+### Step 1: `generate`
+
+First, the `generate` function is called to generate random parameters for the variant, and the correct answers. It should set `data["params"]` with the parameters for the question, and `data["correct_answers"]` with the correct answers. The parameters can then be used in the `question.html` file by using `{{params.NAME}}`.
+
+```python title="server.py"
+import random
+def generate(data):
+    # Generate random parameters for the question and store them in the data["params"] dict:
+    data["params"]["x"] = random.randint(5, 10)
+
+    # Also compute the correct answer (if there is one) and store in the data["correct_answers"] dict:
+    data["correct_answers"]["y"] = 2 * data["params"]["x"]
+```
+
+### Step 2: `prepare`
+
+Next, the `prepare` function is called after all elements (e.g. `<pl-number-input>`) have run `generate()`. This is typically done to do any sort of final post-processing, but is not commonly used.
+
+### Step 3: `render`
+
+Next, the `render(data)` function is called to render the question. You can use this function to override how the question is rendered. This is typically only used for more advanced questions.
+
+### Step 4: `parse`
+
+When a student submits their answer, the `parse` function is called to parse the submitted answers after the individual elements have parsed them. This function can be used to display more-specific format errors than the input elements or to parse the input differently. `<pl-number-input>` will have already parsed the submitted value as an integer, and display an error to the student if it was invalid. For this question, we will only allow the student to submit positive integers, so we will check for that and set a format error with `data["format_errors"]` if it is negative.
+
+```python title="server.py"
+def parse(data):
+    # check we don't already have a format error, and if not, check if the answer is negative
+    if "y" not in data["format_errors"] and data["submitted_answers"]["y"] < 0:
+        data["format_errors"]["y"] = "Negative numbers are not allowed"
+```
+
+### Step 5: `grade(data)`
+
+Finally, the `grade(data)` function is called to grade the question. The grade function is responsible for:
+
+- Setting the score and feedback for each named answer in `data["partial_scores"]`.
+- Setting the total score for the question in `data["score"]`.
+- Setting the overall feedback for the question in `data["feedback"]`.
+
+If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback.
+
+It is recommended that you give additional feedback to the student beyond right and wrong, as well as partial credit. If the function is defined, the data you receive has already been graded by the elements. You should make sure that you don't override a correct answer by only giving partial credit.
+
+You can also set `data["format_errors"]` to mark the submission as invalid. This will cause the question to not use up one of the student's attempts on assessments.
+
+```python title="server.py"
+import math
+def grade(data):
+    marked_as_incorrect = math.isclose(data["score"], 0.0)
+    if marked_as_incorrect and data["submitted_answers"]["y"] > data["params"]["x"]:
+        data["partial_scores"]["y"]["score"] = 0.5
+        data["score"] = 0.5
+        data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
+```
+
+!!! info
+
+    More information about `server.py` is in the [server.py documentation](server.md).
+
+## Complete Example
+
+The finished, complete `question.html` and `server.py` example looks like:
 
 ```html title="question.html"
 <pl-question-panel>
@@ -79,6 +139,35 @@ def grade(data):
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
 
+## `server.py` functions
+
+This table summarizes the functions that can be defined in `server.py`.
+
+| Function     | Updates `data`?    | Modifiable `data` keys                                                                                   | Description                                                                                                                                                                                                                                                                   |
+| ------------ | ------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `generate()` | :white_check_mark: | `correct_answers`, `params`                                                                              | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Modify the `data` dictionary in-place.                                                                 |
+| `prepare()`  | :white_check_mark: | `answers_names`, `correct_answers`, `params`                                                             | Final question preparation after element code has run. Can modify data as necessary. Modify the `data` dictionary in-place.                                                                                                                                                   |
+| `render()`   | :x:                | N/A (Return `html` as a string)                                                                          | Render the HTML for one panel and return it as a string.                                                                                                                                                                                                                      |
+| `parse()`    | :white_check_mark: | `format_errors`, `submitted_answers`, `correct_answers`, `feedback`                                      | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Modify the `data` dictionary in-place.                                                                                                                                       |
+| `grade()`    | :white_check_mark: | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Modify the `data` dictionary in-place.                                                 |
+| `file()`     | :x:                | N/A (Returns an `object` (string, bytes-like, file-like))                                                | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used. |
+
+As shown in the table, most functions accept a single argument, `data` (a dictionary), and modify it in place. The key `data` fields and their types are described below, but you can also see the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData) for a complete listing.
+
+## QuestionData
+
+<!-- prettier-ignore -->
+::: prairielearn.question_utils.QuestionData
+    options:
+        heading_level: 3
+        show_root_full_path: false
+        show_root_toc_entry: false
+        show_root_heading: false
+        show_docstring_attributes: true
+        members: []
+        summary:
+              attributes: true
+
 ## Question Data Storage
 
 All persistent data related to a question variant is stored under different entries in the `data` dictionary. This dictionary is stored in JSON format by PrairieLearn, and as a result, everything in `data` must be JSON serializable. Some types in Python are natively JSON serializable, such as strings, lists, and dicts, while others are not, such as complex numbers, numpy ndarrays, and pandas DataFrames.
@@ -134,6 +223,7 @@ def generate(data):
     data["params"]["a"] = random.choice([0.25, 0.5, 1, 2, 4])
 
 def file(data):
+
     # We should look at data["filename"], generate the corresponding file,
     # and return the contents of the file as a string, bytes-like, or file-like object.
     # We can access data["params"].
@@ -147,3 +237,68 @@ def file(data):
 ```
 
 You can also use this functionality in file-based elements (`pl-figure`, `pl-file-download`) by setting `type="dynamic"`.
+
+### Custom grading best practices
+
+Although questions with custom grading usually don't use the grading functions from individual elements, it is _highly_ recommended that built-in elements are used for student input, as these elements include helpful parsing and feedback by default. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
+
+Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question. If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. The [`question_utils.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/question_utils.py) file from the `prairielearn` Python library provides the following score recomputation functions:
+
+- [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] sets `data["score"]` to be the weighted average of entries in `data["partial_scores"]`.
+- [`set_all_or_nothing_score_data`][prairielearn.question_utils.set_all_or_nothing_score_data] sets `data["score"]` to 1.0 if all entries in `data["partial_scores"]` are 1.0, 0.0 otherwise.
+
+This can be used like so:
+
+```python title="server.py"
+from prairielearn import set_weighted_score_data
+
+def grade(data):
+    # update partial_scores as necessary
+    # ...
+
+    # compute total question score
+    set_weighted_score_data(data)
+```
+
+More detailed information can be found in the docstrings for these functions. If you prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
+
+To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#complete-example) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feedback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
+
+For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. For example, the following is problematic:
+
+```python title="server.py"
+def generate(data):
+    a = 33.33337
+    b = 33.33333
+    data["params"]["a_for_student"] = f'{a:.2f}'
+    data["params"]["b_for_student"] = f'{a:.2f}'
+    # Note how the correct answer is computed with full precision,
+    # but the parameters displayed to students are rounded.
+    data["correct_answers"]["c"] = a - b
+```
+
+Instead, the numbers should be rounded at the beginning:
+
+```python title="server.py"
+def generate(data):
+  a = np.round(33.33337, 2)
+  b = np.round(33.33333, 2)
+  data["params"]["a_for_student"] = f'{a:.2f}'
+  data["params"]["b_for_student"] = f'{b:.2f}'
+  data["correct_answers"]["c"] = a - b
+```
+
+Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The [`grading_utils.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/grading_utils.py) file from the `prairielearn` Python library also offers several functions to perform more specialized comparisons:
+
+- [`is_correct_scalar_ra`][prairielearn.grading_utils.is_correct_scalar_ra] compares floats using relative and absolute tolerances.
+- [`is_correct_scalar_sf`][prairielearn.grading_utils.is_correct_scalar_sf] compares floats up to a specified number of significant figures.
+- [`is_correct_scalar_dd`][prairielearn.grading_utils.is_correct_scalar_dd] compares floats up to a specified number of digits.
+
+More detailed information can be found in the docstrings for these functions.
+
+!!! note
+
+    Data stored under the `"submitted_answers"` key in the data dictionary may be of varying type. Specifically, the `pl-integer-input`
+    element sometimes stores very large integers as strings instead of the Python `int` type used in most cases. The best practice for custom grader
+    code in this case is to always cast the data to the desired type, for example `int(data["submitted_answers"][name])`. See the
+    [PrairieLearn elements documentation](../elements.md) for more detailed discussion related to specific elements.

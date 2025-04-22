@@ -1,13 +1,32 @@
-# Using Markdown in questions
+# `question.html`
 
-HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text. To enable this, PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html` that utilizes this element:
+## Template file
+
+All `question.html` files are rendered with the [Mustache](https://mustache.github.io/mustache.5.html) template engine. Outside direct variable substitution, you can use Mustache to do things like conditionally render elements, iterate over lists, and so on. For example, you can use the following syntax to conditionally render a piece of HTML:
+
+```html title="question.html"
+{{#params.show}}
+<p>This will only show up if params.show is true</p>
+{{/params.show}}
+```
+
+!!! tip
+
+    If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it).
+
+## Markdown in questions
+
+HTML and custom elements are great for flexibility and expressiveness. However, they're
+not great for working with large amounts of text, formatting text, and so on.
+[Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight
+plaintext markup syntax that's ideal for authoring simple but rich text. To enable this,
+PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html`
+that utilizes this element:
 
 <!-- prettier-ignore -->
 ```html title="question.html"
 <markdown>
-# Hello, world!
-
-This is some **Markdown** text.
+# Hello, world! This is some **Markdown** text.
 </markdown>
 ```
 
@@ -120,7 +139,9 @@ adding the `mathjax_ignore` class to an HTML element.
 
 ## Rendering panels from `question.html`
 
-When a question is displayed to a student, there are three "panels" that will be shown at different stages: the "question" panel, the "submission" panel, and the "answer" panel. These display the question prompt, the solution provided by the student, and the correct answer.
+When a question is displayed to a student, there are three "panels" that will be shown at different stages: the `"question"` panel, the `"submission"` panel, and the `"answer"` panel. These display the question prompt, the solution provided by the student, and the correct answer.
+
+The `"question"` panel is displayed when the question is first shown to the student. The `"submission"` panel is displayed after the student submits an answer (but before they finish attempting the question), and the `"answer"` panel is displayed when the student either submits the correct answer or runs out of attempts.
 
 All three panels display the same `question.html` template, but elements will render differently in each panel. For example, the `<pl-number-input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the correct answer in the "answer" panel.
 
