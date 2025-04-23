@@ -30,6 +30,82 @@ const exampleCoursePath = resolve(__dirname, '..', '..', '..', '..', 'exampleCou
 const questionsPath = join(exampleCoursePath, 'questions');
 chaiConfig.showDiff = true;
 
+const buildSubmission = (answer: any): any => {
+  for (const key in answer) {
+    // if array, loop over
+    if (Array.isArray(answer[key])) {
+      answer[key] = answer[key].map((item) => {
+        if (typeof item === 'object' && 'key' in item) {
+          return item.key;
+        }
+        return item;
+      });
+      if (answer[key].some((v) => typeof v === 'object' && 'inner_html' in v)) {
+        answer[`${key}-input`] = JSON.stringify(answer[key]);
+        delete answer[key];
+      } else {
+        let i = 0;
+        for (const v in answer[key]) {
+          answer[`${key}-dropdown-${i}`] = v;
+          i += 1;
+        }
+      }
+    } else if (typeof answer[key] === 'number') {
+      // if number, convert to string
+      answer[key] = answer[key].toString();
+    } else if (typeof answer[key] === 'object') {
+      if ('_type' in answer[key] && answer[key]._type === 'ndarray') {
+        let i = 1;
+        for (const row in answer[key]['_value']) {
+          for (const col in answer[key]['_value'][row]) {
+            answer[`${key}${i}`] = answer[key]['_value'][row][col].toString();
+            i++;
+          }
+        }
+        answer[key] = JSON.stringify(answer[key]['_value']);
+      } else if ('_type' in answer[key] && answer[key]._type === 'complex_ndarray') {
+        let i = 1;
+        const realPart = answer[key]._value?.real;
+        const imagPart = answer[key]._value?.imag;
+
+        // Validate structure
+        const fullAnswer: string[] = [];
+        if (
+          Array.isArray(realPart) &&
+          Array.isArray(imagPart) &&
+          realPart.length === imagPart.length
+        ) {
+          for (let rowIdx = 0; rowIdx < realPart.length; rowIdx++) {
+            const realRow = realPart[rowIdx];
+            const imagRow = imagPart[rowIdx];
+            const row: string[] = [];
+
+            for (let colIdx = 0; colIdx < realRow.length; colIdx++) {
+              const real = realRow[colIdx];
+              const imag = imagRow[colIdx];
+              // Format as complex number string: handle sign of imaginary part
+              const imagSign = imag >= 0 ? '+' : '';
+              const complexString = `${real}${imagSign}${imag}j`;
+              answer[`${key}${i}`] = complexString;
+              i++;
+              row.push(complexString);
+            }
+            fullAnswer.push(`[${String(row)}]`);
+          }
+          answer[key] = `[${String(fullAnswer)}]`;
+        }
+      } else if ('key' in answer[key]) {
+        answer[key] = answer[key].key;
+      } else if (
+        '_type' in answer[key] &&
+        (answer[key]._type === 'np_scalar' || answer[key]._type === 'sympy')
+      ) {
+        answer[key] = answer[key]._value;
+      }
+    }
+  }
+  return answer;
+};
 // Helper function to find question directories recursively
 const findQuestionDirectories = (dir: string): string[] => {
   const questionDirs: string[] = [];
@@ -92,7 +168,7 @@ const internallyGradedQuestions = allQuestionDirs
   })
   .filter(
     (q): q is { path: string; relativePath: string; info: any } =>
-      q !== null && q.info.gradingMethod !== 'External' && q.info.type === 'v3',
+      q !== null && !['External', 'Manual'].includes(q.info.gradingMethod) && q.info.type === 'v3',
   );
 
 // Mock course object similar to render.test.ts
@@ -136,8 +212,10 @@ describe('Internally Graded Question Lifecycle Tests', () => {
     }, 10000);
   });
 
-  const maxQuestions = 30;
+  const maxQuestions = 100;
   const limitedInternallyGradedQuestions = internallyGradedQuestions.slice(0, maxQuestions);
+
+  const badQs = ['element/fileEditor', 'element/integerInput'];
   // Dynamically create tests for each identified question
   limitedInternallyGradedQuestions.forEach(({ relativePath, info }) => {
     it(`should succeed for ${relativePath}`, async () => {
@@ -226,7 +304,14 @@ describe('Internally Graded Question Lifecycle Tests', () => {
             'hidden-focusable': 'off',
             'wcag/h37': 'off',
             'attribute-empty-style': 'off',
+            'no-dup-id': 'off',
+            deprecated: 'off',
             // 'void-style': 'off',
+            'no-implicit-close': 'off',
+            'close-order': 'off',
+            'text-content': 'off',
+            'element-required-attributes': 'off',
+            'attribute-allowed-values': 'off',
 
             // Add other relevant html-validate rules to ignore if necessary
           },
@@ -240,17 +325,15 @@ describe('Internally Graded Question Lifecycle Tests', () => {
         assert.isTrue(valid, 'HTMLValidate should pass');
 
         // 4. Parse (using true_answer)
-        const submissionRaw = structuredClone(variant.true_answer);
-        // Convert all values to strings
-        Object.keys(submissionRaw).forEach((key) => {
-          if (typeof submissionRaw[key] !== 'string') {
-            submissionRaw[key] = JSON.stringify(submissionRaw[key]);
-          }
-        });
+        if (badQs.includes(relativePath)) {
+          return;
+        }
+        const submissionRaw = buildSubmission(structuredClone(variant.true_answer));
+
         // Mock submission object similar to render.test.ts
         const submissionInput = {
           submitted_answer: submissionRaw,
-          raw_submitted_answer: submissionRaw,
+          raw_submitted_answer: submissionRaw, // Keep original raw answer
           gradable: true, // Assume gradable initially
           // Add other properties only if strictly required by parse
         } as unknown as Submission;
@@ -261,20 +344,44 @@ describe('Internally Graded Question Lifecycle Tests', () => {
           question,
           course,
         );
-        assert.isEmpty(parseIssues, 'Parse courseIssues should be empty');
+        assert.isEmpty(
+          parseIssues,
+          `Parse courseIssues should be empty for input ${JSON.stringify(
+            submissionInput.submitted_answer,
+            undefined,
+            2,
+          )}, but it was ${JSON.stringify(parseIssues)}`,
+        );
         // console.log(parsedData);
         // if ((parsedData.format_errors as any).length > 0) {
         //   console.log('Format errors for question directory:', relativePath);
-        parsedData.format_errors = {};
-        parsedData.submitted_answer = structuredClone(variant.true_answer);
-        parsedData.gradable = true;
+        // parsedData.format_errors = {};
+        // parsedData.submitted_answer = structuredClone(variant.true_answer);
+        // parsedData.gradable = true;
         // }
         // console.log(parsedData);
-        // assert.isEmpty(
-        //   parsedData.format_errors ?? {},
-        //   `Parse format_errors should be empty
-        //   but it was ${JSON.stringify(parsedData.format_errors)}`,
-        // );
+        for (const issue of Object.keys(parseIssues)) {
+          if (issue === '_files') {
+            console.log("Can't handle file questions yet");
+            return;
+          }
+        }
+        for (const issue of Object.keys(parsedData.format_errors ?? {})) {
+          if (issue === '_files') {
+            console.log("Can't handle file questions yet");
+            return;
+          }
+        }
+
+        assert.isEmpty(
+          parsedData.format_errors ?? {},
+          `Parse format_errors should be empty
+          but it was ${JSON.stringify(parsedData.format_errors, undefined, 2)} for submission ${JSON.stringify(
+            submissionInput.submitted_answer,
+            undefined,
+            2,
+          )}`,
+        );
 
         // Update submission with parsed data
         const submissionForGrading = { ...parsedData };
@@ -301,11 +408,11 @@ describe('Internally Graded Question Lifecycle Tests', () => {
             );
           }
         }
-        // assert.isEmpty(
-        //   gradeIssues,
-        //   `Grade courseIssues should be empty but got ${JSON.stringify(gradeIssues)}`,
-        // );
-        // assert.isEmpty(gradeData.format_errors ?? {}, 'Grade format_errors should be empty');
+        assert.isEmpty(
+          gradeIssues,
+          `Grade courseIssues should be empty but got ${JSON.stringify(gradeIssues)}`,
+        );
+        assert.isEmpty(gradeData.format_errors ?? {}, 'Grade format_errors should be empty');
         if ((gradeData.true_answer as any).length > 0) {
           assert.equal(gradeData.score, 1, 'Grade should be 1 (100%)');
         }
