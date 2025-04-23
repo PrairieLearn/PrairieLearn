@@ -1,5 +1,6 @@
 // @ts-check
-import * as path from 'path';
+import assert from 'node:assert';
+import * as path from 'node:path';
 
 import * as async from 'async';
 // Use slim export, which relies on htmlparser2 instead of parse5. This provides
@@ -579,6 +580,22 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
 }
 
 /**
+ * @param {parse5.DefaultTreeAdapterTypes.Node} node
+ * @returns {node is parse5.DefaultTreeAdapterTypes.Document}
+ */
+function isDocumentNode(node) {
+  return node.nodeName === '#document';
+}
+
+/**
+ * @param {parse5.DefaultTreeAdapterTypes.Node} node
+ * @returns {node is parse5.DefaultTreeAdapterTypes.DocumentFragment}
+ */
+function isDocumentFragmentNode(node) {
+  return node.nodeName === '#document-fragment';
+}
+
+/**
  * @template T
  * @param {string} phase
  * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
@@ -596,8 +613,11 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
     ...Object.keys(context.course_elements),
   ]);
 
+  /**
+   * @param {parse5.DefaultTreeAdapterTypes.Node} node
+   */
   const visitNode = async (node) => {
-    if (node.tagName && questionElements.has(node.tagName)) {
+    if ('tagName' in node && questionElements.has(node.tagName)) {
       const elementName = node.tagName;
       const elementFile = getElementController(elementName, context);
       if (phase === 'render' && !renderedElementNames.includes(elementName)) {
@@ -685,24 +705,42 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
         }
       }
     }
+
+    if (!('childNodes' in node)) {
+      // This is a text node or comment node; there are no children to process.
+      return node;
+    }
+
+    /** @type {parse5.DefaultTreeAdapterTypes.ChildNode[]} */
     const newChildren = [];
-    for (let i = 0; i < (node.childNodes || []).length; i++) {
-      const childRes = await visitNode(node.childNodes[i]);
-      if (childRes) {
-        if (childRes.nodeName === '#document-fragment') {
-          newChildren.push(...childRes.childNodes);
-        } else {
-          newChildren.push(childRes);
-        }
+    for (const childNode of node.childNodes) {
+      const childRes = await visitNode(childNode);
+
+      // We can't rely on `nodeName` as a discriminant because for the `Element`
+      // type, it doesn't have a literal value:
+      // https://github.com/microsoft/TypeScript/issues/48500#issuecomment-1085063454
+      // We use custom type guards instead.
+
+      if (isDocumentFragmentNode(childRes)) {
+        newChildren.push(...childRes.childNodes);
+      } else if (!isDocumentNode(childRes)) {
+        newChildren.push(childRes);
       }
     }
+
     // the following line is safe because we can't be in multiple copies of this function simultaneously
     node.childNodes = newChildren;
     return node;
   };
+
   let questionHtml = '';
   try {
     const res = await visitNode(parse5.parseFragment(html));
+
+    // This assertion should always pass. If `visitNode` is passed a document
+    // fragment, it will always return a document fragment.
+    assert(isDocumentFragmentNode(res), 'Expected a document fragment');
+
     questionHtml = parse5.serialize(res);
   } catch (e) {
     courseIssues.push(e);
