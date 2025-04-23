@@ -189,7 +189,7 @@ Or a slot can contain a _question alternative list_:
 }
 ```
 
-- An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
+An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
 
 | Slot property     | Type            | Description                                                                                                                                                                 |
 | ----------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
