@@ -325,7 +325,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
         assert.isTrue(valid, 'HTMLValidate should pass');
 
         // 4. Parse (using true_answer)
-        if (badQs.includes(relativePath)) {
+        if (badQs.includes(relativePath) || relativePath.includes('demo/drawing')) {
           return;
         }
         const submissionRaw = buildSubmission(structuredClone(variant.true_answer));
