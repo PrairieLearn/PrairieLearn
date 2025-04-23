@@ -253,13 +253,13 @@ def file(data):
         return buf
 ```
 
-Requests for files to this URL will be routed to the `file()` function in `server.py` since the `type` of `pl-figure` is set to `"dynamic"`. The filename requested is stored in `data["filename"]`, and the file contents should be returned from the `file()` function. The URL for the dynamically generated files is set to `{{options.client_files_question_dynamic_url}}` in the HTML, which is a special URL that PrairieLearn uses to route requests to the `file()` function.
+Requests for files to this URL will be routed to the `file()` function in `server.py` since the `type` of `pl-figure` is set to `"dynamic"`. The filename requested is stored in `data["filename"]`, and the file contents should be returned from the `file()` function.
 
 We recommend using the [`pl-figure`](../elements.md#pl-figure-element) and [`pl-file-download`](../elements.md#pl-file-download-element) elements to display or download files. Specifically, you should use `pl-file-download` for PDFs and other content that should be downloaded, and `pl-figure` for images and other content that should be displayed.
 
 ??? info "Advanced usage"
 
-    The file will be served from the URL `{{options.client_files_question_dynamic_url}}/{{filename}}`, where `{{filename}}` is the name of the file requested. You could instead write `question.html` like so:
+    The URL for the dynamically generated files is set to `{{options.client_files_question_dynamic_url}}` in the HTML, which is a special URL that PrairieLearn uses to route requests to the `file()` function. You could instead write `question.html` like so:
 
     ```html title="question.html"
     <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
