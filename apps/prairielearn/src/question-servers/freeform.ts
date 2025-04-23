@@ -619,6 +619,18 @@ async function experimentalProcess<T>(
   };
 }
 
+function isDocumentNode(
+  node: parse5.DefaultTreeAdapterTypes.Node,
+): node is parse5.DefaultTreeAdapterTypes.Document {
+  return node.nodeName === '#document';
+}
+
+function isDocumentFragmentNode(
+  node: parse5.DefaultTreeAdapterTypes.Node,
+): node is parse5.DefaultTreeAdapterTypes.DocumentFragment {
+  return node.nodeName === '#document-fragment';
+}
+
 async function traverseQuestionAndExecuteFunctions<T extends ExecutionData>(
   phase: Phase,
   codeCaller: CodeCaller,
@@ -725,20 +737,24 @@ async function traverseQuestionAndExecuteFunctions<T extends ExecutionData>(
       }
     }
 
-    // Comment nodes don't have childNodes and can't be serialized.
-    if (!('childNodes' in node)) return null;
+    if (!('childNodes' in node)) {
+      // This is a text node or comment node; there are no children to process.
+      return node;
+    }
 
     const newChildren: parse5.DefaultTreeAdapterTypes.ChildNode[] = [];
-    for (let i = 0; i < (node.childNodes || []).length; i++) {
-      const childRes = await visitNode(node.childNodes[i]);
-      if (childRes) {
-        if (childRes.nodeName === '#document-fragment') {
-          newChildren.push(...childRes.childNodes);
-        } else if ('tagName' in childRes) {
-          newChildren.push(childRes);
-        } else {
-          throw new CourseIssueError(`Unexpected visited node: ${childRes.nodeName}`);
-        }
+    for (const childNode of node.childNodes) {
+      const childRes = await visitNode(childNode);
+
+      // We can't rely on `nodeName` as a discriminant because for the `Element`
+      // type, it doesn't have a literal value:
+      // https://github.com/microsoft/TypeScript/issues/48500#issuecomment-1085063454
+      // We use custom type guards instead.
+
+      if (isDocumentFragmentNode(childRes)) {
+        newChildren.push(...childRes.childNodes);
+      } else if (!isDocumentNode(childRes)) {
+        newChildren.push(childRes);
       }
     }
 
@@ -747,12 +763,16 @@ async function traverseQuestionAndExecuteFunctions<T extends ExecutionData>(
 
     return node;
   };
+
   let questionHtml = '';
   try {
     const res = await visitNode(parse5.parseFragment(html));
-    if (res) {
-      questionHtml = parse5.serialize(res);
-    }
+
+    // This assertion should always pass. If `visitNode` is passed a document
+    // fragment, it will always return a document fragment.
+    assert(isDocumentFragmentNode(res), 'Expected a document fragment');
+
+    questionHtml = parse5.serialize(res);
   } catch (e) {
     courseIssues.push(e);
   }
