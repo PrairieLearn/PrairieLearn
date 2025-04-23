@@ -340,7 +340,7 @@ After the four submissions above the student has achieved 6.5 points for the que
 
 ## Assessment instances, question selection, and question order
 
-PrairieLearn distinguishes between _assessments_ and _assessment instances_. An _assessment_ is determined by the code in an `assessments/` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to select the random list of questions for each student, and it is this selection that is the _assessment instance_ for the student. There is only one copy of each assessment, but every student has their own assessment instance.
+PrairieLearn distinguishes between _assessments_ and _assessment instances_. An _assessment_ is determined by the configuration in an `assessments/` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to select the random list of questions for each student, and it is this selection that is the _assessment instance_ for the student. There is only one copy of each assessment, but every student has their own assessment instance.
 
 Choosing the selection of questions for each student proceeds in three steps:
 
