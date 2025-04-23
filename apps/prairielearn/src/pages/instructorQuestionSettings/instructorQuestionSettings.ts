@@ -210,7 +210,7 @@ router.post(
           args: propertyValueWithDefault(
             questionInfo.workspaceOptions?.args,
             shlex.split(parsedReqBody.workspace_args?.replace(/\r\n/g, ' ') || ''),
-            '',
+            (v) => !v || v.length === 0,
           ),
           rewriteUrl: propertyValueWithDefault(
             questionInfo.workspaceOptions?.rewriteUrl,
@@ -219,8 +219,11 @@ router.post(
           ),
           gradedFiles: propertyValueWithDefault(
             questionInfo.workspaceOptions?.gradedFiles,
-            parsedReqBody.workspace_graded_files?.split(','),
-            '',
+            parsedReqBody.workspace_graded_files
+              ?.split(',')
+              .map((s) => s.trim())
+              .filter((s) => s !== '') || [],
+            (v) => !v || v.length === 0,
           ),
           enableNetworking: propertyValueWithDefault(
             questionInfo.workspaceOptions?.enableNetworking,

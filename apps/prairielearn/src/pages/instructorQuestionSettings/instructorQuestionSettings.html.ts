@@ -309,6 +309,7 @@ export function InstructorQuestionSettings({
               <h2 class="h4 mb-0 me-2">Workspace</h2>
               <button
                 class="btn btn-sm btn-light"
+                type="button"
                 id="show-workspace-options-button"
                 ${resLocals.question.workspace_image ? 'hidden' : ''}
               >
@@ -396,7 +397,7 @@ ${resLocals.question.workspace_args}</textarea
                     class="form-control"
                     id="workspace_graded_files"
                     name="workspace_graded_files"
-                    value="${resLocals.question.workspace_graded_files?.join(',')}"
+                    value="${resLocals.question.workspace_graded_files?.join(', ')}"
                     ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
