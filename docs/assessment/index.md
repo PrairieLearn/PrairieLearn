@@ -92,7 +92,7 @@ Each assessment has a `title` describing its topic. Additionally, each assessmen
 - Short name = `[Set] [Number]` (e.g., `Quiz 2`).
 - Long name = `[Set] [Number]: [Title]` (e.g., `Quiz 2: Coordinates and Vectors`).
 
-You can select a set name from the list of [standardized assessment sets](../course/index.md#standardized-assessment-sets) or create your [own](../course/index.md#adding-your-own-assessment-sets).
+You can select a set name from the list of [standardized assessment sets](../course/index.md#standardized-assessment-sets) or [create your own](../course/index.md#adding-your-own-assessment-sets).
 
 The `type` of an assessment does not have to correspond to the `set` it is in, but these are generally compatible. For example, `"type": "Homework"` assessments normally have `"set": "Homework"` or `"set": "Machine Problem"`. On the other hand, `"type": "Exam"` assessments normally have `"set": "Quiz"`, `"set": "Exam"`, or similar.
 
