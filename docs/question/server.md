@@ -226,7 +226,7 @@ data["options"]["server_files_course_path"]
 
 ## Generating dynamic files with `file()`
 
-You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. They can also access `data["params"]`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
+You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. `file()` has access to the full `data` object, including `data["params"]`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
 
 ```html title="question.html"
 <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
