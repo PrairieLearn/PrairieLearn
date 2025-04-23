@@ -1989,7 +1989,10 @@ export async function startServer() {
 }
 
 export async function stopServer() {
-  if (!server) throw new Error('cannot stop an undefined server');
+  if (!server) {
+    logger.warn('cannot stop an undefined server');
+    return;
+  }
   if (!server.listening) return;
 
   // This exists mostly for tests, where we might have dangling connections

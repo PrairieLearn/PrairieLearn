@@ -75,5 +75,9 @@ export async function close() {
   //
   // Note the use of `io.local`, which prevents the server from attempting to
   // broadcast the disconnect to other servers via Redis.
+  if (!io) {
+    logger.warn('socket server not initialized');
+    return;
+  }
   io.local.disconnectSockets(true);
 }
