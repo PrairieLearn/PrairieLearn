@@ -146,6 +146,8 @@ adding the `mathjax_ignore` class to an HTML element.
 
 When a question is displayed to a student, there are three "panels" that will be shown at different stages: the `"question"` panel, the `"submission"` panel, and the `"answer"` panel. These display the question prompt, the solution provided by the student, and the correct answer.
 
+![Question panels](./panels.png)
+
 The `"question"` panel is displayed when the question is first shown to the student. The `"submission"` panel is displayed after the student submits an answer (but before they finish attempting the question), and the `"answer"` panel is displayed when the student either submits the correct answer or runs out of attempts. You can see the [lifecycle diagram](server.md#question-lifecycle) for more details on how these panels are displayed.
 
 All three panels display the same `question.html` template, but elements will render differently in each panel. For example, the `<pl-number-input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the correct answer in the "answer" panel.
