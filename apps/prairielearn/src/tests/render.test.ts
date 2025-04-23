@@ -232,15 +232,15 @@ describe('Internally Graded Question Lifecycle Tests', () => {
     'demo/drawing/extensions', // empty answer array
     'demo/drawing/customizedButtons', // empty answer array
     'demo/drawing/buttons', // empty answer array
-    // Unknown issues
-    'demo/drawing/liftingMechanism',
-    'demo/annotated/LectureVelocity/2-Derivative',
   ];
   const reallyBadQs = [
     'demo/workspace/desktop',
     'demo/workspace/dynamicFiles',
     'demo/workspace/xtermjs',
     'demo/workspace/xtermjsPython',
+    // Unknown issues
+    'demo/drawing/liftingMechanism',
+    'demo/annotated/LectureVelocity/2-Derivative',
   ];
   // Dynamically create tests for each identified question
   limitedInternallyGradedQuestions.forEach(({ relativePath, info }) => {
