@@ -86,7 +86,7 @@ A detailed comparison is shown below.
 
 ## Assessment naming
 
-Each assessment has a `title` describing its topic. Additionally, assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and within each set the assessment has a `number`. Depending on the context, assessments are referred to by either an _abbreviation_, a _short name_ or a _long name_. The format of these is:
+Each assessment has a `title` describing its topic. Additionally, each assessment belongs to a `set` (e.g., `Homework`, `Quiz`, `Exam`) and within each set the assessment has a `number`. Depending on the context, assessments are referred to by either an _abbreviation_, a _short name_ or a _long name_. The format of these is:
 
 - Abbreviation = `[Set abbreviation][Number]` (e.g., `Q2` to mean the second quiz).
 - Short name = `[Set] [Number]` (e.g., `Quiz 2`).
