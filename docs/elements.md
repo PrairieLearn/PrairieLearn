@@ -857,6 +857,7 @@ Within the `pl-order-blocks` element, each element must either be a `pl-answer` 
 | `tag`                 | string             | —       | Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.                                                                                                                                                                                                                                              |
 | `distractor-for`      | string             | —       | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                        |
 | `distractor-feedback` | string             | —       | Optional attribute, used when `correct=false` that indicates why a given block is incorrect or should not be included in the solution. Shown to the student after all attempts at a problem are exhausted, or if `feedback="first-wrong"` and the first incorrect line in their submission has `distractor-feedback`.                                                  |
+| `ordering-feedback`   | string             | —       | Optional attribute used when `grading-method="dag"` or `grading-method="ranking"` and `correct=true`. Used to provide specific feedback when the block is placed in the wrong position relative to other blocks. This feedback is shown to the student after submission to help clarify ordering errors.                                                               |
 
 #### Details
 
@@ -1287,17 +1288,10 @@ data["params"]["names_from_user"] = [
 
 <p>Your code snippet should define the following variables:</p>
 <pl-external-grader-variables params-name="names_from_user">
-  <pl-variable name="x" type="numpy array (length $n$)"
-    >Solution to $\mathbf{Ax}=\mathbf{b}$.</pl-variable
-  >
+  <pl-variable name="x" type="numpy array (length $n$)">
+    Solution to $\mathbf{Ax}=\mathbf{b}$.
+  </pl-variable>
 </pl-external-grader-variables>
-
-<!--
-  The following tag defines an empty list for the given params-name.
-  This is useful for some cases where a parameter must be set to empty to run the external grader.
-  Nothing will be displayed from this tag.
--->
-<pl-external-grader-variables params-name="names_empty" empty="true"></pl-external-grader-variables>
 ```
 
 ```python title="server.py"

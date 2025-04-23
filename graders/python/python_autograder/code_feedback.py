@@ -31,7 +31,17 @@ from pandas import DataFrame
 
 
 class GradingComplete(Exception):  # noqa: N818
-    pass
+    """
+    A general exception to mark that grading has completed early.
+    All future test cases are skipped.
+    """
+
+
+class TestComplete(Exception):  # noqa: N818
+    """
+    A general exception to mark that the current test case has finished early.
+    Future test cases will still be executed.
+    """
 
 
 T = TypeVar("T")
@@ -115,7 +125,25 @@ class Feedback:
             >>> Feedback.finish("Invalid format")
         """
         cls.add_feedback(fb_text)
-        raise GradingComplete("Your answer is correct.")
+        raise GradingComplete
+
+    @classmethod
+    def finish_test(cls, fb_text: str) -> NoReturn:
+        """
+        Complete grading the current test case immediately, additionally
+        outputting the message in fb_text.
+
+        Unlike Feedback.finish(), this method only halts the current test case
+        while allowing subsequent test cases to continue executing.
+
+        Parameters:
+            fb_text: Message to output before halting the test case.
+
+        Examples:
+            >>> Feedback.finish_test("Invalid format")
+        """
+        cls.add_feedback(fb_text)
+        raise TestComplete
 
     @staticmethod
     def not_allowed(*_args: Any, **_kwargs: Any) -> NoReturn:
@@ -182,6 +210,7 @@ class Feedback:
         data: None | ArrayLike,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
     ) -> bool | None:
         """
         Check that a student NumPy array has the same shape and datatype as a reference solution NumPy array.
@@ -192,6 +221,7 @@ class Feedback:
             data: Student NumPy array to be checked. Do not mix this up with the previous array! This argument is subject to more strict type checking.
             accuracy_critical: If true, grading will halt on failure.
             report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
 
         Examples:
             >>> Feedback.check_numpy_array_features("b", self.ref.a, self.st.b, accuracy_critical=True)
@@ -231,6 +261,9 @@ class Feedback:
                 f"got: '{data.dtype}', expected: '{ref.dtype}'"
             )
 
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
+
         return True
 
     @classmethod
@@ -265,7 +298,7 @@ class Feedback:
         import numpy as np
 
         if not cls.check_numpy_array_features(
-            name, ref, data, accuracy_critical, report_failure
+            name, ref, data, accuracy_critical, report_failure, report_success=False
         ):
             return False
 
@@ -291,6 +324,7 @@ class Feedback:
         entry_type: Any | None = None,
         accuracy_critical: bool = False,  # noqa: FBT001
         report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
     ) -> bool:
         """
         Check that a student list has correct length with respect to a reference list. Can also check for a homogeneous data type for the list.
@@ -302,6 +336,7 @@ class Feedback:
             entry_type: If not None, requires that each element in the student solution be of this type.
             accuracy_critical: If true, grading will halt on failure.
             report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
 
         Examples:
             >>> Feedback.check_list(name, ref, data)
@@ -331,6 +366,86 @@ class Feedback:
             for i, entry in enumerate(data):
                 if not isinstance(entry, entry_type):
                     return bad(f"'{name}[{i}]' has the wrong type")
+
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
+
+        return True
+
+    @classmethod
+    def check_dict(
+        cls,
+        name: str,
+        ref: dict[Any, Any],
+        data: dict[Any, Any],
+        *,
+        target_keys: None | list[str] | set[str] = None,
+        accuracy_critical: bool = False,
+        report_failure: bool = True,
+        report_success: bool = True,
+    ) -> bool:
+        """
+        Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`).
+
+        Parameters:
+            name: Name of the dict that is being checked. This will be used to give feedback.
+            ref: Reference dict.
+            data: Student dict to be checked. Do not mix this up with the previous dict! This argument is subject to more strict type checking.
+            target_keys: If not None, it will only only compare the keys listed.
+            accuracy_critical: If true, grading will halt on failure.
+            report_failure: If true, feedback will be given on failure.
+            report_success: If true, feedback will be given on success.
+        """
+
+        def bad(msg: str) -> Literal[False]:
+            if report_failure:
+                cls.add_feedback(msg)
+            if accuracy_critical:
+                cls.finish("")
+            else:
+                return False
+
+        if not isinstance(data, dict):
+            return bad(f"'{name}' is not a dict, got type {type(data).__name__}")
+
+        if target_keys is not None and not all(key in ref for key in target_keys):
+            # If target_keys is not None, we should only check the keys in target_keys
+            # and not the keys in ref
+            raise ValueError(
+                f"target_keys must be a subset of the reference dict keys. "
+                f"Got {target_keys=} but ref.keys={list(ref.keys())}"
+            )
+
+        check_all = target_keys is None
+        keys_to_check = ref.keys() if check_all else target_keys
+
+        missing_keys = set(keys_to_check) - set(data.keys())
+        if missing_keys:
+            return bad(
+                f"'{name}' has missing keys: `{', '.join(sorted(map(str, missing_keys)))}`"
+            )
+
+        extra_keys = set(data.keys()) - set(keys_to_check)
+        if check_all and extra_keys:
+            return bad(
+                f"'{name}' has extra keys: `{', '.join(sorted(map(str, extra_keys)))}`"
+            )
+
+        # Now check the values themselves
+        for key in keys_to_check:
+            # It's possible that the equality will pass even if the types are different
+            if type(ref[key]) is not type(data[key]):
+                return bad(
+                    f"'{name}' has key `{key}` with type `{type(data[key]).__name__}`, which is not the right type"
+                )
+
+            if ref[key] != data[key]:
+                return bad(
+                    f"'{name}' has key `{key}` with value `{data[key]}`, which is not correct"
+                )
+
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         return True
 
@@ -470,11 +585,26 @@ class Feedback:
         return True
 
     @classmethod
-    def call_user(cls, f: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+    def call_user(
+        cls,
+        f: Callable[..., T],
+        *args: Any,
+        stop_on_exception: bool = True,
+        **kwargs: Any,
+    ) -> Any:
         """
-        Attempts to call a student defined function, with any arbitrary arguments specified in `*args` and `**kwargs`. If the student code raises an exception, this will be caught and user feedback will be given.
-
+        Attempts to call a student defined function, with any arbitrary arguments.
+        If the student code raises an exception, this will be caught and user feedback will be given.
         If the function call succeeds, the user return value will be returned from this function.
+
+        Note that the keyword argument stop_on_exception will *not* be passed to the
+        student defined function f, but all other keyword arguments will.
+
+        Parameters:
+            f: Student defined function to be called.
+            *args: Arbitrary positional arguments to be passed to the student function.
+            stop_on_exception: If true, grading will halt on failure.
+            **kwargs: Arbitrary keyword arguments to be passed to the student function.
 
         Examples:
             >>> user_val = Feedback.call_user(self.st.fib, 5)
@@ -503,7 +633,11 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete from exc
+            cls.set_score(0.0)
+
+            if stop_on_exception:
+                raise GradingComplete from exc
+            raise TestComplete from exc
 
     @classmethod
     def check_plot(
@@ -613,6 +747,7 @@ class Feedback:
         check_values: bool = True,  # noqa: FBT001
         allow_order_variance: bool = True,  # noqa: FBT001
         display_input: bool = False,  # noqa: FBT001
+        report_success: bool = True,  # noqa: FBT001
     ) -> bool:
         """
         Checks and adds feedback regarding the correctness of a pandas! `DataFrame`.
@@ -629,6 +764,7 @@ class Feedback:
             check_values: Check the values of each cell, in addition to the dimensions of the DataFrame
             allow_order_variance: Allow rows to appear in any order (so long as the dimensions and values are correct)
             display_input: Display the student's answer in the feedback area.
+            report_success: Report success if the DataFrame is correct
         """
 
         import pandas as pd
@@ -670,7 +806,9 @@ class Feedback:
             except Exception:
                 return bad(f"{name} is inaccurate")
 
-        cls.add_feedback(f"{name} looks good")
+        if report_success:
+            cls.add_feedback(f"'{name}' looks good")
+
         if display_input:
             cls.add_feedback("----------")
             cls.add_feedback(data.to_string(max_rows=9))

@@ -214,6 +214,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/clientFilesCourseInstance/*',
   '/pl/course_instance/:course_instance_id/elementExtensions/*',
   '/pl/course_instance/:course_instance_id/elements/*',
+  '/pl/course_instance/:course_instance_id/gradebook/:filename',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file/:filename',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion/*',
@@ -342,6 +343,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/text/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/ai_grading_runs',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id/grading_rubric_panels',
 
@@ -414,6 +416,21 @@ describe('accessibility', () => {
     await sqldb.queryOneRowAsync(
       'UPDATE questions SET share_publicly = true WHERE id = $question_id',
       { question_id: routeParams.question_id },
+    );
+
+    await sqldb.queryOneRowAsync(
+      'UPDATE assessments SET share_source_publicly = true WHERE id = $assessment_id',
+      { assessment_id: routeParams.assessment_id },
+    );
+
+    const courseId = await sqldb.queryOneRowAsync(
+      'SELECT course_id FROM course_instances WHERE id = $course_instance_id',
+      { course_instance_id: routeParams.course_instance_id },
+    );
+
+    await sqldb.queryOneRowAsync(
+      'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
+      { sharing_name: 'test', course_id: courseId.rows[0].course_id },
     );
   });
   after('shut down testing server', helperServer.after);

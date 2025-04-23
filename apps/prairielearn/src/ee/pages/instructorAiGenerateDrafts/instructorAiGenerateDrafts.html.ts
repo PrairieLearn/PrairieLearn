@@ -89,7 +89,8 @@ export function InstructorAIGenerateDrafts({
 
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
-                Describe the question and how students should respond.
+                Give a high-level overview of the question, including what parameters should be
+                generated and how students should provide their response.
               </label>
               <textarea
                 name="prompt"
@@ -98,35 +99,24 @@ export function InstructorAIGenerateDrafts({
                 style="resize: none;"
               ></textarea>
             </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <span
+                class="spinner-grow spinner-grow-sm d-none me-1"
+                role="status"
+                aria-hidden="true"
+                data-loading-class-remove="d-none"
+              >
+              </span>
+              Create question
+            </button>
 
-            <div class="js-hidden-inputs-container ${hasDrafts ? 'd-none' : ''}">
-              <button type="submit" class="btn btn-primary w-100">
-                <span
-                  class="spinner-grow spinner-grow-sm d-none me-1"
-                  role="status"
-                  aria-hidden="true"
-                  data-loading-class-remove="d-none"
-                >
-                </span>
-                Create question
-              </button>
-
-              <div class="text-muted small text-center mt-2">
-                AI can make mistakes. Review the generated question.
-              </div>
-
-              <div id="generation-results"></div>
+            <div class="text-muted small text-center mt-2">
+              AI can make mistakes. Review the generated question.
             </div>
+
+            <div id="generation-results"></div>
           </form>
-          ${hasDrafts ? html`<div class="reveal-fade"></div>` : ''}
         </div>
-        ${hasDrafts
-          ? html`
-              <div class="p-2 d-flex justify-content-center bg-light js-expand-button-container">
-                <button type="button" class="btn btn-sm btn-link">Expand</button>
-              </div>
-            `
-          : ''}
       </div>
       ${hasDrafts
         ? html`
