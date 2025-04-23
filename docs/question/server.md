@@ -81,7 +81,7 @@ It is recommended that you give additional feedback to the student as they make 
 
 If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback from the element that graded it. If the `grade` function _is_ defined, the data you receive has already been graded by the elements. You should ensure you only award partial credit if the answer isn't correct, otherwise you might give partial credit for a correct answer.
 
-You can set `data["format_errors"][NAME]` to mark the submission as invalid. This will cause the question to not use up one of the student's attempts on assessments. You are encouraged, though, to do any checks for invalid data that can be done in `parse(data)` there instead, since that method is also called when the student hits "Save only", in manually graded questions, or in assessments without real-time grading.
+You can set `data["format_errors"][NAME]` to mark the submission as invalid. This will cause the question to not use up one of the student's attempts on assessments. However, you are encouraged to do as many checks for invalid data as possible in `parse` instead of `grade`; the `parse` function is called when the student hits "Save only", in manually graded questions, and in assessments without real-time grading.
 
 ```python title="server.py"
 import math
