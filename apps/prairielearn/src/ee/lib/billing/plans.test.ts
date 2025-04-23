@@ -6,8 +6,8 @@ import { ensurePlanGrant } from '../../models/plan-grants.js';
 
 import {
   getPlanGrantsForContext,
-  getPlanGrantsForPartialContexts,
   getPlanGrantsForCourseInstance,
+  getPlanGrantsForPartialContexts,
   getPlanNamesFromPlanGrants,
   getRequiredPlansForCourseInstance,
   reconcilePlanGrantsForCourseInstance,

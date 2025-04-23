@@ -22,6 +22,7 @@ onDocumentReady(() => {
     aiGradingEnabled,
     courseStaff,
     csrfToken,
+    aiGradingUrl,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
@@ -62,17 +63,17 @@ onDocumentReady(() => {
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
     buttons: {
       aiGrade: {
-        text: 'AI Grade All',
-        icon: 'fa-pen',
         render: aiGradingEnabled,
         attributes: {
           id: 'js-ai-grade-button',
-          title: 'AI grade all instances',
+          title: 'AI grading',
         },
-        event: () => {
-          const form = document.getElementById('ai-grading') as HTMLFormElement;
-          form?.submit();
-        },
+        html: html`
+          <a class="btn btn-secondary" href="${aiGradingUrl}">
+            <i class="fa fa-pen" aria-hidden="true"></i>
+            AI Grading
+          </a>
+        `.toString(),
       },
       showStudentInfo: {
         text: 'Show student info',
@@ -271,7 +272,17 @@ onDocumentReady(() => {
           formatter: (value: string, row: InstanceQuestionRow) =>
             value ? row.last_grader_name : '&mdash;',
         },
-      ],
+        aiGradingEnabled
+          ? {
+              field: 'is_ai_graded',
+              title: 'AI Graded',
+              filterControl: 'select',
+              visible: aiGradingEnabled,
+              formatter: (value: boolean, row: InstanceQuestionRow) =>
+                row.is_ai_graded ? 'Yes' : 'No',
+            }
+          : null,
+      ].filter(Boolean),
     ],
   });
 });

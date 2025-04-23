@@ -62,9 +62,7 @@ def test_color_constructor_error() -> None:
     ],
 )
 def test_color_match_is_not_none(color: str) -> None:
-    """
-    Assert the custom color match method returns a color object
-    """
+    """Assert the custom color match method returns a color object"""
     assert PLColor.match(color) is not None
 
 
@@ -76,7 +74,5 @@ def test_color_match_is_not_none(color: str) -> None:
     ],
 )
 def test_color_match(invalid_color: str) -> None:
-    """
-    Assert the custom color match method returns None for invalid colors.
-    """
+    """Assert the custom color match method returns None for invalid colors."""
     assert PLColor.match(invalid_color) is None

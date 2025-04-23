@@ -7,13 +7,13 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { IdSchema, AiQuestionGenerationPromptSchema } from '../../../lib/db-types.js';
+import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
 
 import {
-  InstructorAIGenerateDrafts,
   DraftMetadataWithQidSchema,
   GenerationFailure,
+  InstructorAIGenerateDrafts,
 } from './instructorAiGenerateDrafts.html.js';
 
 const router = express.Router();
@@ -81,9 +81,7 @@ router.post(
         client,
         courseId: res.locals.course.id,
         authnUserId: res.locals.authn_user.user_id,
-        promptGeneral: req.body.prompt,
-        promptUserInput: req.body.prompt_user_input,
-        promptGrading: req.body.prompt_grading,
+        prompt: req.body.prompt,
         userId: res.locals.authn_user.user_id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });

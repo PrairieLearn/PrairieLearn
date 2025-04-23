@@ -7,18 +7,20 @@ import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
-  GradingJobSchema,
-  SubmissionSchema,
   type AssessmentQuestion,
   type GradingJob,
+  GradingJobSchema,
   type InstanceQuestion,
   type Question,
+  type RubricGradingItem,
+  SubmissionSchema,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
 import { Modal } from './Modal.html.js';
-import type { QuestionContext } from './QuestionContainer.types.js';
+import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 
 const detailedSubmissionColumns = {
   feedback: true,
@@ -47,6 +49,7 @@ export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
 
 export function SubmissionPanel({
   questionContext,
+  questionRenderContext,
   question,
   assessment_question,
   instance_question,
@@ -61,6 +64,7 @@ export function SubmissionPanel({
   renderSubmissionSearchParams,
 }: {
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   question: Question;
   assessment_question?: AssessmentQuestion | null;
   instance_question?: InstanceQuestion | null;
@@ -135,46 +139,12 @@ export function SubmissionPanel({
                               item.always_show_to_students ||
                               submission.rubric_grading?.rubric_items?.[item.id]?.score,
                           )
-                          .map(
-                            (item) => html`
-                              <div>
-                                <label class="w-100" data-testid="rubric-item-container-${item.id}">
-                                  <input
-                                    type="checkbox"
-                                    disabled
-                                    ${submission.rubric_grading?.rubric_items?.[item.id]?.score
-                                      ? 'checked'
-                                      : ''}
-                                  />
-                                  <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
-                                    <strong data-testid="rubric-item-points">
-                                      [${(item.points >= 0 ? '+' : '') + item.points}]
-                                    </strong>
-                                  </span>
-                                  <span
-                                    class="d-inline-block"
-                                    data-testid="rubric-item-description"
-                                  >
-                                    ${unsafeHtml(item.description_rendered ?? '')}
-                                  </span>
-                                  ${item.explanation
-                                    ? html`
-                                        <button
-                                          type="button"
-                                          class="btn btn-xs btn-ghost"
-                                          data-bs-toggle="popover"
-                                          data-bs-content="${item.explanation_rendered}"
-                                          data-bs-html="true"
-                                          data-testid="rubric-item-explanation"
-                                        >
-                                          <i class="fas fa-circle-info"></i>
-                                          <span class="visually-hidden">Details</span>
-                                        </button>
-                                      `
-                                    : ''}
-                                </label>
-                              </div>
-                            `,
+                          .map((item) =>
+                            RubricItem({
+                              item,
+                              item_grading:
+                                submission.rubric_grading?.rubric_items?.[item.id] ?? null,
+                            }),
                           )}
                         ${submission.rubric_grading?.adjust_points
                           ? html`
@@ -275,7 +245,9 @@ export function SubmissionPanel({
                     <span class="visually-hidden">Loading...</span>
                   </div>
                 `
-              : unsafeHtml(submissionHtml)}
+              : questionRenderContext === 'ai_grading'
+                ? AiGradingHtmlPreview(submissionHtml)
+                : unsafeHtml(submissionHtml)}
           </div>
         </div>
 
@@ -530,6 +502,45 @@ function SubmissionInfoModal({
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
     `,
   });
+}
+
+function RubricItem({
+  item,
+  item_grading,
+}: {
+  item: RubricData['rubric_items'][0];
+  item_grading: RubricGradingItem | undefined | null;
+}) {
+  return html`
+    <div>
+      <label class="w-100" data-testid="rubric-item-container-${item.id}">
+        <input type="checkbox" disabled ${item_grading?.score ? 'checked' : ''} />
+        <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
+          <strong data-testid="rubric-item-points">
+            [${(item.points >= 0 ? '+' : '') + item.points}]
+          </strong>
+        </span>
+        <span class="d-inline-block" data-testid="rubric-item-description">
+          ${unsafeHtml(item.description_rendered ?? '')}
+        </span>
+        ${item.explanation
+          ? html`
+              <button
+                type="button"
+                class="btn btn-xs btn-ghost"
+                data-bs-toggle="popover"
+                data-bs-content="${item.explanation_rendered}"
+                data-bs-html="true"
+                data-testid="rubric-item-explanation"
+              >
+                <i class="fas fa-circle-info"></i>
+                <span class="visually-hidden">Details</span>
+              </button>
+            `
+          : ''}
+      </label>
+    </div>
+  `;
 }
 
 function buildGradingJobStats(job: GradingJob | null) {

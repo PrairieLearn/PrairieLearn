@@ -1,13 +1,13 @@
 {
   "name": "@prairielearn/session",
-  "version": "3.0.11",
+  "version": "3.0.14",
   "type": "module",
-  "main": "dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/session"
   },
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
@@ -24,10 +24,10 @@
   "devDependencies": {
     "@prairielearn/express-test-utils": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/chai": "^5.0.1",
+    "@types/chai": "^5.2.1",
     "@types/cookie": "^0.6.0",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^20.17.23",
+    "@types/node": "^20.17.30",
     "@types/node-fetch": "^2.6.12",
     "@types/on-headers": "^1.0.3",
     "@types/set-cookie-parser": "^2.4.10",
@@ -41,7 +41,7 @@
     "set-cookie-parser": "^2.7.1",
     "source-map-support": "^0.5.21",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   },
   "c8": {
     "reporter": [

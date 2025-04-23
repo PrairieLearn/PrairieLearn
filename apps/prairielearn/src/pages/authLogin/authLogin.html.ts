@@ -1,4 +1,4 @@
-import { html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { assetPath } from '../../lib/assets.js';
@@ -345,7 +345,7 @@ function DevModeLogin({ csrfToken }: { csrfToken: string }) {
     <form method="POST">
       <div class="mb-3">
         <label class="form-label" for="dev_uid">UID</label>
-        <input type="text" class="form-control" id="dev_uid" name="uid" required />
+        <input type="email" class="form-control" id="dev_uid" name="uid" required />
       </div>
       <div class="mb-3">
         <label class="form-label" for="dev_name">Name</label>
