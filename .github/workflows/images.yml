@@ -28,7 +28,7 @@ jobs:
     uses: ./.github/workflows/image-builder.yml
     with:
       group: workspaces
-      images: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-rstudio,prairielearn/workspace-vscode-base,prairielearn/workspace-vscode-cpp,prairielearn/workspace-vscode-java,prairielearn/workspace-vscode-python,prairielearn/workspace-xtermjs
+      images: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-pgadmin,prairielearn/workspace-rstudio,prairielearn/workspace-vscode-base,prairielearn/workspace-vscode-cpp,prairielearn/workspace-vscode-java,prairielearn/workspace-vscode-python,prairielearn/workspace-xtermjs
     secrets: inherit
 
   build-grader-images:
@@ -82,6 +82,7 @@ jobs:
           images: |
             prairielearn/workspace-desktop
             prairielearn/workspace-jupyterlab-python
+            prairielearn/workspace-pgadmin
             prairielearn/workspace-rstudio
             prairielearn/workspace-vscode-base
             prairielearn/workspace-vscode-cpp
