@@ -549,7 +549,13 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
     result = res.result;
     output = res.output;
   } catch (err) {
-    courseIssues.push(err);
+    courseIssues.push(
+      new CourseIssueError(err.message, {
+        data: err.data,
+        cause: err,
+        fatal: true,
+      }),
+    );
   }
 
   if ((output?.length ?? 0) > 0) {
