@@ -277,7 +277,11 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
   return elements;
 }
 
-async function loadExtensionsForCourse({course, course_dir, course_dir_host}: {
+async function loadExtensionsForCourse({
+  course,
+  course_dir,
+  course_dir_host,
+}: {
   course: Course;
   course_dir: string;
   course_dir_host: string;
