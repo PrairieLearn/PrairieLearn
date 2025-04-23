@@ -277,12 +277,11 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
   return elements;
 }
 
-async function loadExtensionsForCourse(context: {
+async function loadExtensionsForCourse({course, course_dir, course_dir_host}: {
   course: Course;
   course_dir: string;
   course_dir_host: string;
 }) {
-  const { course, course_dir, course_dir_host } = context;
   if (
     courseExtensionsCache[course.id] !== undefined &&
     courseExtensionsCache[course.id].commit_hash &&
