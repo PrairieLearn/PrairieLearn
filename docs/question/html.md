@@ -2,7 +2,7 @@
 
 ## Template file
 
-All `question.html` files are rendered with the [Mustache](https://mustache.github.io/mustache.5.html) template engine. Outside direct variable substitution, you can use Mustache to do things like conditionally render elements and render over arrays. For example, you can use the following syntax to conditionally render a piece of HTML:
+All `question.html` files are processed with the [Mustache template engine](https://mustache.github.io/mustache.5.html), which allows for basic dynamic rendering of HTML. For example, you can use the following syntax to conditionally render a piece of HTML:
 
 ```html title="question.html"
 {{#params.show}}
