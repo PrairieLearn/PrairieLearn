@@ -1,29 +1,34 @@
-// @ts-check
 import assert from 'node:assert';
 import * as path from 'node:path';
 
 import { contains } from '@prairielearn/path-utils';
 
 import * as chunks from '../lib/chunks.js';
+import { type Chunk } from '../lib/chunks.js';
 import { withCodeCaller } from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
+import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import * as filePaths from '../lib/file-paths.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 
-/** @typedef {import('../lib/chunks.js').Chunk} Chunk */
-/**
- * @template T
- * @typedef {import('./types.ts').QuestionServerReturnValue<T>} QuestionServerReturnValue<T>
- */
+import {
+  type GenerateResultData,
+  type GradeResultData,
+  type ParseResultData,
+  type PrepareResultData,
+  type QuestionServerReturnValue,
+  type RenderResultData,
+} from './types.js';
 
-async function prepareChunksIfNeeded(question, course) {
+async function prepareChunksIfNeeded(question: Question, course: Course) {
   const questionIds = await chunks.getTemplateQuestionIds(question);
 
-  /** @type {Chunk[]} */
-  const templateQuestionChunks = questionIds.map((id) => ({ type: 'question', questionId: id }));
+  const templateQuestionChunks: Chunk[] = questionIds.map((id) => ({
+    type: 'question',
+    questionId: id,
+  }));
 
-  /** @type {Chunk[]} */
-  const chunksToLoad = [
+  const chunksToLoad: Chunk[] = [
     { type: 'question', questionId: question.id },
     { type: 'clientFilesCourse' },
     { type: 'serverFilesCourse' },
@@ -33,13 +38,11 @@ async function prepareChunksIfNeeded(question, course) {
   await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 }
 
-/**
- * @param {string} questionServerPath
- * @param {string} courseHostPath
- * @param {string} courseRuntimePath
- * @returns {string}
- */
-function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntimePath) {
+function getQuestionRuntimePath(
+  questionServerPath: string,
+  courseHostPath: string,
+  courseRuntimePath: string,
+) {
   const questionServerType = contains(courseHostPath, questionServerPath) ? 'course' : 'core';
 
   if (questionServerType === 'course') {
@@ -58,15 +61,13 @@ function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntim
   }
 }
 
-/**
- * @param {string} func
- * @param {import('../lib/db-types.js').Course} question_course
- * @param {import('../lib/db-types.js').Question} question
- * @param {any} inputData
- */
-async function callFunction(func, question_course, question, inputData) {
+async function callFunction<Data>(
+  func: string,
+  question_course: Course,
+  question: Question,
+  inputData: any,
+): Promise<QuestionServerReturnValue<Data>> {
   assert(question.directory, 'Question directory is required');
-
   await prepareChunksIfNeeded(question, question_course);
 
   const courseHostPath = chunks.getRuntimeDirectoryForCourse(question_course);
@@ -110,52 +111,46 @@ async function callFunction(func, question_course, question, inputData) {
     });
   } catch (err) {
     err.fatal = true;
-    return { data: {}, courseIssues: [err] };
+    return {
+      // We don't have any useful data to return. We'll just lie to the type checker.
+      data: {} as Data,
+      courseIssues: [err],
+    };
   }
 }
 
-/**
- * @param {import('../lib/db-types.js').Question} question
- * @param {import('../lib/db-types.js').Course} course
- * @param {string} variant_seed
- */
-export async function generate(question, course, variant_seed) {
-  return await callFunction('generate', course, question, { variant_seed });
+export async function generate(
+  question: Question,
+  course: Course,
+  variant_seed: string,
+): QuestionServerReturnValue<GenerateResultData> {
+  return await callFunction<GenerateResultData>('generate', course, question, { variant_seed });
 }
 
-/**
- *
- * @param {import('../lib/db-types.js').Submission} submission
- * @param {import('../lib/db-types.js').Variant} variant
- * @param {import('../lib/db-types.js').Question} question
- * @param {import('../lib/db-types.js').Course} question_course
- */
-export async function grade(submission, variant, question, question_course) {
-  return await callFunction('grade', question_course, question, { submission, variant });
+export async function grade(
+  submission: Submission,
+  variant: Variant,
+  question: Question,
+  question_course: Course,
+): QuestionServerReturnValue<GradeResultData> {
+  return await callFunction<GradeResultData>('grade', question_course, question, {
+    submission,
+    variant,
+  });
 }
 
 // The following functions don't do anything for v2 questions; they're just
 // here to satisfy the question server interface.
 
-/**
- * @param {import('./types.ts').RenderSelection} _renderSelection
- * @param {import('../lib/db-types.js').Variant} _variant
- * @param {import('../lib/db-types.js').Question} _question
- * @param {import('../lib/db-types.js').Submission} _submission
- * @param {import('../lib/db-types.js').Submission[]} submissions
- * @param {import('../lib/db-types.js').Course} _course
- * @param {Record<string, any>} _locals
- * @returns {QuestionServerReturnValue<import('./types.ts').RenderResultData>}
- */
 export async function render(
-  _renderSelection,
-  _variant,
-  _question,
-  _submission,
-  submissions,
-  _course,
-  _locals,
-) {
+  _renderSelection: any,
+  _variant: Variant,
+  _question: Question,
+  _submission: Submission,
+  submissions: Submission[],
+  _course: Course,
+  _locals: any,
+): QuestionServerReturnValue<RenderResultData> {
   const data = {
     extraHeadersHtml: '',
     questionHtml: '',
@@ -165,13 +160,11 @@ export async function render(
   return { courseIssues: [], data };
 }
 
-/**
- * @param {import('../lib/db-types.js').Question} _question
- * @param {import('../lib/db-types.js').Course} _course
- * @param {import('../lib/db-types.js').Variant} variant
- * @returns {QuestionServerReturnValue<import('./types.ts').PrepareResultData>}
- */
-export async function prepare(_question, _course, variant) {
+export async function prepare(
+  _question: Question,
+  _course: Course,
+  variant: Variant,
+): QuestionServerReturnValue<PrepareResultData> {
   const data = {
     params: variant.params ?? {},
     true_answer: variant.true_answer ?? {},
@@ -180,14 +173,12 @@ export async function prepare(_question, _course, variant) {
   return { courseIssues: [], data };
 }
 
-/**
- * @param {import('../lib/db-types.js').Submission} submission
- * @param {import('../lib/db-types.js').Variant} variant
- * @param {import('../lib/db-types.js').Question} _question
- * @param {import('../lib/db-types.js').Course} _course
- * @returns {QuestionServerReturnValue<import('./types.ts').ParseResultData>}
- */
-export async function parse(submission, variant, _question, _course) {
+export async function parse(
+  submission: Submission,
+  variant: Variant,
+  _question: Question,
+  _course: Course,
+): QuestionServerReturnValue<ParseResultData> {
   const data = {
     params: variant.params ?? {},
     true_answer: variant.true_answer ?? {},
