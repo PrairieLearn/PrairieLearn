@@ -619,12 +619,6 @@ async function experimentalProcess<T>(
   };
 }
 
-function isDocumentNode(
-  node: parse5.DefaultTreeAdapterTypes.Node,
-): node is parse5.DefaultTreeAdapterTypes.Document {
-  return node.nodeName === '#document';
-}
-
 function isDocumentFragmentNode(
   node: parse5.DefaultTreeAdapterTypes.Node,
 ): node is parse5.DefaultTreeAdapterTypes.DocumentFragment {
@@ -647,7 +641,11 @@ async function traverseQuestionAndExecuteFunctions<T extends ExecutionData>(
     ...Object.keys(context.course_elements),
   ]);
 
-  const visitNode = async (node: parse5.DefaultTreeAdapterTypes.Node) => {
+  const visitNode = async (
+    node:
+      | parse5.DefaultTreeAdapterTypes.DocumentFragment
+      | parse5.DefaultTreeAdapterTypes.ChildNode,
+  ) => {
     if ('tagName' in node && questionElements.has(node.tagName)) {
       const elementName = node.tagName;
       const elementFile = getElementController(elementName, context);
@@ -749,11 +747,11 @@ async function traverseQuestionAndExecuteFunctions<T extends ExecutionData>(
       // We can't rely on `nodeName` as a discriminant because for the `Element`
       // type, it doesn't have a literal value:
       // https://github.com/microsoft/TypeScript/issues/48500#issuecomment-1085063454
-      // We use custom type guards instead.
+      // We use a custom type guard instead.
 
       if (isDocumentFragmentNode(childRes)) {
         newChildren.push(...childRes.childNodes);
-      } else if (!isDocumentNode(childRes)) {
+      } else {
         newChildren.push(childRes);
       }
     }
