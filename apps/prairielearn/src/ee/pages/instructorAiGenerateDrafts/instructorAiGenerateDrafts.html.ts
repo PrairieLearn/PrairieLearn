@@ -3,11 +3,9 @@ import { z } from 'zod';
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
 
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
-import { type ExamplePrompt, examplePrompts } from '../../../lib/aiGeneratedQuestionSamples.js';
 import { nodeModulesAssetPath } from '../../../lib/assets.js';
 import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
 
@@ -41,11 +39,6 @@ export function InstructorAIGenerateDrafts({
       ${compiledScriptTag('instructorAiGenerateDraftsClient.ts')}
       ${compiledScriptTag('instructorAiGenerateDraftsSampleQuestions.tsx')}
       ${compiledStylesheetTag('instructorAiGenerateDrafts.css')}
-      <script src="https://cdn.jsdelivr.net/npm/react/umd/react.production.min.js" crossorigin></script>
-      <script
-        src="https://cdn.jsdelivr.net/npm/react-bootstrap@next/dist/react-bootstrap.min.js"
-        crossorigin></script>
-
       <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
       <style>
         .reveal-fade {
@@ -193,162 +186,6 @@ export function InstructorAIGenerateDrafts({
       ${DeleteQuestionsModal({ csrfToken: resLocals.__csrf_token })}
     `,
   });
-}
-
-function SampleQuestionSelector({
-  initialPrompt,
-  startOpen,
-}: {
-  initialPrompt: ExamplePrompt;
-  startOpen: boolean;
-}) {
-  return html`
-    <div class="accordion my-3" id="sample-question-accordion">
-      <div class="accordion-item">
-        <h2 class="accordion-header" id="sample-question-accordion-heading">
-          <button
-            class="accordion-button"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#sample-question-content"
-            aria-expanded="${startOpen ? 'true' : ''}"
-            aria-controls="sample-question-content"
-          >
-            Example questions and prompts
-          </button>
-        </h2>
-        <div
-          id="sample-question-content"
-          class="accordion-collapse ${startOpen ? 'show' : 'collapse'}"
-          aria-labelledby="sample-question-accordion-heading"
-          data-bs-parent="#sample-question-accordion"
-        >
-          <div class="accordion-body">
-            <div class="tab-content">
-              <div class="d-flex align-items-center gap-2">
-                <div id="sample-question-selector" class="dropdown d-flex flex-grow-1">
-                  <button
-                    id="sample-question-selector-button"
-                    type="button"
-                    style="width: 100%;"
-                    class="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
-                    aria-label="Change example question"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                    data-bs-toggle="dropdown"
-                    data-bs-boundary="window"
-                  >
-                    <span
-                      id="sample-question-selector-button-text"
-                      class="w-100 me-4 text-start"
-                      style="white-space: normal;"
-                    >
-                      ${initialPrompt.name}
-                    </span>
-                  </button>
-                  <div class="dropdown-menu py-0">
-                    <div class="overflow-auto">
-                      ${examplePrompts.map((a, index) => {
-                        return html`
-                          <a
-                            id="prompt-${a.id}"
-                            class="dropdown-item ${index === 0 ? 'active' : ''}"
-                            data-id="${a.id}"
-                          >
-                            ${a.name}
-                          </a>
-                        `;
-                      })}
-                    </div>
-                  </div>
-                </div>
-                <button id="previous-question-button" type="button" class="btn btn-primary">
-                  Previous
-                </button>
-                <button id="next-question-button" type="button" class="btn btn-primary">
-                  Next
-                </button>
-              </div>
-              <p class="fw-bold mb-1 mt-3">Question features</p>
-              <ul id="feature-list">
-                ${initialPrompt.features.map((feature) => html`<li>${feature}</li>`)}
-              </ul>
-              ${SampleQuestionDemo(initialPrompt)}
-              <p class="fw-bold mb-1 mt-3">Prompt</p>
-              <p id="sample-question-prompt">${initialPrompt.prompt}</p>
-              <button id="fill-prompts" type="button" class="btn btn-primary me-2">
-                <i class="fa fa-clone" aria-hidden="true"></i>
-                Fill prompt
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function SampleQuestionDemo(initialPrompt: ExamplePrompt) {
-  return html`
-    <div id="question-demo-container" class="card shadow">
-      <div class="card-header d-flex align-items-center p-3 gap-3">
-        <p id="question-demo-name" class="mb-0">${initialPrompt.name}</p>
-        <span class="badge rounded-pill bg-success me-3">Try me!</span>
-      </div>
-      <div class="card-body">
-        <div id="question-content"></div>
-        <div
-          id="response-container"
-          class="${run(() => {
-            if (initialPrompt.answerType === 'number' || initialPrompt.answerType === 'string') {
-              return 'input-response';
-            } else if (
-              initialPrompt.answerType === 'checkbox' ||
-              initialPrompt.answerType === 'radio'
-            ) {
-              return 'multiple-choice-response';
-            }
-          })}"
-        >
-          <span id="input-response" class="input-group">
-            <span id="answer-label-container" class="input-group-text">
-              <span id="answer-label"> ${initialPrompt.answerLabel} </span>
-            </span>
-            <input
-              id="user-input-response"
-              type="text"
-              class="form-control"
-              aria-label="Sample question response"
-            />
-            <span
-              id="input-feedback-and-units-container"
-              class="input-group-text ${initialPrompt.answerUnits ? 'show-units' : ''}"
-            >
-              <span id="answer-units">${initialPrompt.answerUnits}</span>
-              <span class="badge bg-success feedback-badge-correct">100%</span>
-              <span class="badge bg-danger feedback-badge-incorrect">0%</span>
-            </span>
-          </span>
-          <div id="multiple-choice-response">
-            <div id="multiple-choice-response-options"></div>
-            <div id="multiple-choice-feedback-container">
-              <span class="badge bg-success feedback-badge-correct">100%</span>
-              <span class="feedback-badge-partially-correct badge bg-warning text-dark">0%</span>
-              <span class="badge bg-danger feedback-badge-incorrect">0%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="card-footer d-flex justify-content-end align-items-center gap-2">
-        <p class="my-0"><i id="answer">Answer:</i></p>
-        <div class="flex-grow-1"></div>
-        <button id="new-variant-button" type="button" class="btn btn-primary text-nowrap">
-          New variant
-        </button>
-        <button id="grade-button" type="button" class="btn btn-primary">Grade</button>
-      </div>
-    </div>
-  `;
 }
 
 export function GenerationFailure({

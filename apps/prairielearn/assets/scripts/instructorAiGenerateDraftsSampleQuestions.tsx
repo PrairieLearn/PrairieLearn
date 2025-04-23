@@ -105,7 +105,7 @@ onDocumentReady(() => {
         const [placeholder, setPlaceholder] = useState('');
         const [answerLabel, setAnswerLabel] = useState<string | null>(null);
         const [selectedOptions, setSelectedOptions] = useState<Set<string>>(
-          new Set<string>()
+          () => new Set<string>()
         );
 
         const handleSelectOption = (option: string) => {
@@ -139,10 +139,7 @@ onDocumentReady(() => {
           handleClearSelectedOptions();
           const questionVariant = generateSampleQuestionVariant(prompt.id);
           setVariant(questionVariant);
-          console.log('questionVariant.question', questionVariant.question);
 
-
-          // split out **…**, $$…$$, or $…$ blocks (preserves them in the array)
           const parts = questionVariant.question
             .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
             .filter(Boolean);
@@ -234,8 +231,6 @@ onDocumentReady(() => {
                 if (atol) {
                     isValid = isValid || absoluteErrorValid;
                 }
-
-                console.log('Is Valid', isValid);
                 
 
                 if (isValid) {
@@ -310,7 +305,7 @@ onDocumentReady(() => {
         }, [answerLabel])
 
         return (
-          <Card id="question-demo-card">
+          <Card id="question-demo-card" className="shadow">
             <CardHeader>
               <div className="d-flex align-items-center gap-2">
                 <p id="question-demo-name" className="mb-0">{prompt.name}</p>
@@ -333,7 +328,7 @@ onDocumentReady(() => {
                       type="text" 
                       aria-label="Sample question response"
                       placeholder={placeholder}
-                      onChange={(e) => setUserInputResponse(e.target?.value)}
+                      onChange={(e) => setUserInputResponse(e.currentTarget.value)}
                     />
                     {(prompt.answerUnits || (grade !== null)) && (
                       <InputGroupText>
@@ -421,7 +416,7 @@ onDocumentReady(() => {
         }
 
         return (
-            <Accordion className="mb-3">
+            <Accordion className="mb-3" defaultActiveKey={startOpen ? '0' : undefined}>
               <AccordionItem eventKey={'0'}> 
                 <AccordionHeader>Example questions and prompts</AccordionHeader>
                 <AccordionBody>
