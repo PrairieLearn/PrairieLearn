@@ -1,16 +1,26 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { dirname, resolve } from 'path';
+import { dirname, parse, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
+import { expect } from 'chai';
+import { HtmlValidate } from 'html-validate';
+import { HTMLHint } from 'htmlhint';
+
+import { formatErrorStack } from '@prairielearn/error';
+
 import * as assetServer from '../lib/assets.js';
-import { init } from '../lib/code-caller/index.js';
+import * as codeCaller from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
+import * as loadEstimator from '../lib/load.js';
 import { buildQuestionUrls } from '../lib/question-render.js';
 import { makeVariant } from '../lib/question-variant.js';
 import * as freeformServer from '../question-servers/freeform.js';
 import * as questionServers from '../question-servers/index.js';
+
+const htmlvalidate = new HtmlValidate();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -20,7 +30,7 @@ const exampleQuestion = 'demo/calculation';
 
 // https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/question-servers/index.ts#L27
 
-console.log(exampleCourse, exampleQuestion);
+// console.log(exampleCourse, exampleQuestion);
 const question = {
   // QuestionOptionsv3JsonSchema is empty
   options: {},
@@ -41,26 +51,38 @@ const course = {
   path: exampleCourse,
 } as unknown as Course;
 
+// find all info.json where gradingMethod is not External.
+/*
+There should be a test case for each of those, named after the directory it tests.
+
+For each question, ensure that the courseIssues from each stage are the empty array.
+The rawSubmission should be a duplicate of the variant.true_answer
+
+*/
 features.runWithGlobalOverrides({ 'process-questions-in-server': false }, async () => {
+  // Disable load estimator connecting to SQL
+  loadEstimator.setLocalLoadEstimator(true);
+
   // Trick asset server
   config.devMode = false;
   await assetServer.init();
   config.devMode = true;
 
   // Setup code caller pool
-  await init();
-  console.log(features.globalOverrides);
+  await codeCaller.init();
   const questionModule = questionServers.getModule('Freeform');
   await freeformServer.init();
 
   const { courseIssues: prepareGenerateIssues, variant } = await makeVariant(question, course, {});
 
+  if (prepareGenerateIssues.length > 0) {
+    console.log('Prepare issues:', prepareGenerateIssues);
+  }
+
   // @ts-expect-error We need this for rendering
   variant.num_tries = 1;
-  // console.log(prepareGenerateIssues);
-  // console.log(variant);
-  // ../../../exampleCourse/questions/demo/calculation/question.html
-  const submissionRaw = { c: variant.params.a + variant.params.b };
+
+  const submissionRaw = structuredClone(variant.true_answer);
 
   const submission = {
     submitted_answer: submissionRaw,
@@ -78,20 +100,12 @@ features.runWithGlobalOverrides({ 'process-questions-in-server': false }, async 
       { id: 'qid' } as unknown as Question,
       null,
     ),
-    // We don't really need these
-    // ...buildLocals({
-    //   variant,
-    //   question,
-    //   instance_question,
-    //   group_role_permissions: groupRolePermissions,
-    //   assessment,
-    //   assessment_instance,
-    //   assessment_question,
-    //   group_config,
-    // }),
   };
 
-  const { courseIssues, data } = await questionModule.render(
+  const {
+    courseIssues: renderIssues,
+    data: { questionHtml },
+  } = await questionModule.render(
     {
       question: true,
       submissions: false,
@@ -104,8 +118,28 @@ features.runWithGlobalOverrides({ 'process-questions-in-server': false }, async 
     course,
     locals,
   );
-  console.log('Render issues:', courseIssues);
-  console.log('Render data:', data);
+
+  if (renderIssues.length > 0) {
+    console.log('Render issues:', renderIssues);
+  }
+
+  const messages = HTMLHint.verify(questionHtml, {
+    'doctype-first': false,
+  });
+
+  if (messages.length > 0) {
+    console.log('HTMLHint messages:', messages);
+  }
+
+  const { valid, results } = await htmlvalidate.validateString(questionHtml, {
+    rules: {
+      'attribute-boolean-style': 'off',
+    },
+  });
+  if (!valid) {
+    const messages = results.flatMap((result) => result.messages);
+    console.log('HTMLValidate messages:', messages);
+  }
 
   const { courseIssues: parseIssues, data: resultData } = await questionModule.parse(
     submission,
@@ -115,20 +149,33 @@ features.runWithGlobalOverrides({ 'process-questions-in-server': false }, async 
     course,
   );
 
+  if (parseIssues.length > 0) {
+    console.log('Parse issues:', parseIssues);
+  }
   // console.log('Parse issues:', parseIssues);
 
   if (Object.keys(resultData.format_errors).length > 0) resultData.gradable = false;
 
   // console.log(resultData);
-  const { courseIssues: gradeIssues, data: gradedData } = await questionModule.grade(
+  const { courseIssues: gradeIssues, data } = await questionModule.grade(
     resultData as unknown as Submission,
     variant as unknown as Variant,
     question,
     course,
   );
 
-  if (Object.keys(gradedData.format_errors || {}).length > 0) gradedData.gradable = false;
+  const formatErrors: Record<string, any> = data.format_errors || {};
+  const grade = data?.score || 0;
+  if (formatErrors.length > 0) {
+    console.log('Format errors:', formatErrors);
+  }
+  if (grade !== 1) {
+    console.log('Grade:', grade);
+  }
 
-  // console.log('Graded data:', gradedData);
-  // console.log('Grade issues:', gradeIssues);
+  if (gradeIssues.length > 0) {
+    console.log('Grade issues:', gradeIssues);
+  }
+  await codeCaller.finish();
+  loadEstimator.close();
 });
