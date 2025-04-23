@@ -136,7 +136,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
     }, 10000);
   });
 
-  const maxQuestions = 20;
+  const maxQuestions = 30;
   const limitedInternallyGradedQuestions = internallyGradedQuestions.slice(0, maxQuestions);
   // Dynamically create tests for each identified question
   limitedInternallyGradedQuestions.forEach(({ relativePath, info }) => {
@@ -263,12 +263,12 @@ describe('Internally Graded Question Lifecycle Tests', () => {
         );
         assert.isEmpty(parseIssues, 'Parse courseIssues should be empty');
         // console.log(parsedData);
-        if ((parsedData.format_errors as any).length > 0) {
-          console.log('Format errors for question directory:', relativePath);
-          parsedData.format_errors = {};
-          parsedData.submitted_answer = structuredClone(variant.true_answer);
-          parsedData.gradable = true;
-        }
+        // if ((parsedData.format_errors as any).length > 0) {
+        //   console.log('Format errors for question directory:', relativePath);
+        parsedData.format_errors = {};
+        parsedData.submitted_answer = structuredClone(variant.true_answer);
+        parsedData.gradable = true;
+        // }
         // console.log(parsedData);
         // assert.isEmpty(
         //   parsedData.format_errors ?? {},
@@ -291,7 +291,20 @@ describe('Internally Graded Question Lifecycle Tests', () => {
           question,
           course,
         );
-        assert.isEmpty(gradeIssues, 'Grade courseIssues should be empty');
+
+        for (const issue of gradeIssues) {
+          if (issue.data.outputStderr) {
+            assert.fail(
+              JSON.stringify(submissionForGrading.submitted_answer, undefined, 2) +
+                '\n' +
+                issue.data.outputStderr,
+            );
+          }
+        }
+        // assert.isEmpty(
+        //   gradeIssues,
+        //   `Grade courseIssues should be empty but got ${JSON.stringify(gradeIssues)}`,
+        // );
         // assert.isEmpty(gradeData.format_errors ?? {}, 'Grade format_errors should be empty');
         if ((gradeData.true_answer as any).length > 0) {
           assert.equal(gradeData.score, 1, 'Grade should be 1 (100%)');
