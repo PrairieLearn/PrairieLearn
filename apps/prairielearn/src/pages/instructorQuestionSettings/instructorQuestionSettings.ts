@@ -125,16 +125,18 @@ router.post(
         );
       }
 
-      const parsedReqBody = z
+      const validatedReqBody = z
         .object({
           __action: z.string(),
           __csrf_token: z.string(),
           orig_hash: z.string(),
           qid: z.string(),
           title: z.string(),
-          topic: z.string(),
-          tags: z.array(z.string()).optional(),
-          grading_method: z.string(),
+          topic: z.string().optional(),
+          tags: z.union([z.string(), z.array(z.string())]).optional(),
+          grading_method: z.string().optional(),
+          single_variant: z.string().optional(),
+          show_correct_answer: z.string().optional(),
           workspace_image: z.string().optional(),
           workspace_port: z.coerce.number().optional(),
           workspace_home: z.string().optional(),
@@ -150,76 +152,76 @@ router.post(
 
       const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
 
-      const origHash = req.body.orig_hash;
-      questionInfo.title = req.body.title;
-      questionInfo.topic = req.body.topic;
+      const origHash = validatedReqBody.orig_hash;
+      questionInfo.title = validatedReqBody.title;
+      questionInfo.topic = validatedReqBody.topic;
       questionInfo.tags = run(() => {
         // If no tags are provided, remove the entire property.
-        if (!req.body.tags) return undefined;
+        if (!validatedReqBody.tags) return undefined;
 
         // Handle multiple and single tags.
-        if (Array.isArray(req.body.tags)) return req.body.tags;
-        return [req.body.tags];
+        if (Array.isArray(validatedReqBody.tags)) return validatedReqBody.tags;
+        return [validatedReqBody.tags];
       });
 
       questionInfo.gradingMethod = propertyValueWithDefault(
         questionInfo.gradingMethod,
-        req.body.grading_method,
+        validatedReqBody.grading_method,
         'Internal',
       );
 
       questionInfo.singleVariant = propertyValueWithDefault(
         questionInfo.singleVariant,
-        req.body.single_variant === 'on',
+        validatedReqBody.single_variant === 'on',
         false,
       );
 
       questionInfo.showCorrectAnswer = propertyValueWithDefault(
         questionInfo.showCorrectAnswer,
-        req.body.show_correct_answer === 'on',
+        validatedReqBody.show_correct_answer === 'on',
         true,
       );
 
       if (
-        parsedReqBody.workspace_image ||
-        parsedReqBody.workspace_port ||
-        parsedReqBody.workspace_home ||
-        parsedReqBody.workspace_args ||
-        parsedReqBody.workspace_rewrite_url ||
-        parsedReqBody.workspace_graded_files ||
-        parsedReqBody.workspace_enable_networking ||
-        parsedReqBody.workspace_environment
+        validatedReqBody.workspace_image ||
+        validatedReqBody.workspace_port ||
+        validatedReqBody.workspace_home ||
+        validatedReqBody.workspace_args ||
+        validatedReqBody.workspace_rewrite_url ||
+        validatedReqBody.workspace_graded_files ||
+        validatedReqBody.workspace_enable_networking ||
+        validatedReqBody.workspace_environment
       ) {
         const workspaceOptions = {
           comment: questionInfo.workspaceOptions?.comment ?? undefined,
           image: propertyValueWithDefault(
             questionInfo.workspaceOptions?.image,
-            parsedReqBody.workspace_image,
+            validatedReqBody.workspace_image,
             '',
           ),
           port: propertyValueWithDefault(
             questionInfo.workspaceOptions?.port,
-            parsedReqBody.workspace_port,
+            validatedReqBody.workspace_port,
             0,
           ),
           home: propertyValueWithDefault(
             questionInfo.workspaceOptions?.home,
-            parsedReqBody.workspace_home,
+            validatedReqBody.workspace_home,
             '',
           ),
           args: propertyValueWithDefault(
             questionInfo.workspaceOptions?.args,
-            shlex.split(parsedReqBody.workspace_args?.replace(/\r\n/g, ' ') || ''),
+            shlex.split(validatedReqBody.workspace_args?.replace(/\r\n/g, ' ') || ''),
             (v) => !v || v.length === 0,
           ),
           rewriteUrl: propertyValueWithDefault(
             questionInfo.workspaceOptions?.rewriteUrl,
-            parsedReqBody.workspace_rewrite_url === 'on',
+            validatedReqBody.workspace_rewrite_url === 'on',
             false,
           ),
           gradedFiles: propertyValueWithDefault(
             questionInfo.workspaceOptions?.gradedFiles,
-            parsedReqBody.workspace_graded_files
+            validatedReqBody.workspace_graded_files
               ?.split(',')
               .map((s) => s.trim())
               .filter((s) => s !== '') || [],
@@ -227,12 +229,12 @@ router.post(
           ),
           enableNetworking: propertyValueWithDefault(
             questionInfo.workspaceOptions?.enableNetworking,
-            parsedReqBody.workspace_enable_networking === 'on',
+            validatedReqBody.workspace_enable_networking === 'on',
             false,
           ),
           environment: propertyValueWithDefault(
             questionInfo.workspaceOptions?.environment,
-            JSON.parse(parsedReqBody.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
+            JSON.parse(validatedReqBody.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
             (val) => !val || Object.keys(val).length === 0,
           ),
         };
