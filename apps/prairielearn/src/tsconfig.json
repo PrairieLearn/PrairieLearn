@@ -1,6 +1,7 @@
 {
   "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
+    "jsx": "react",
     "rootDir": "./",
     "outDir": "../dist"
   },
