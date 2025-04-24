@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
+  callRow,
   loadSqlEquiv,
   queryAsync,
   queryRow,
@@ -705,13 +706,14 @@ class Lti13ContextMembership {
 
   /**
    * @param user The user to look up.
-   * @returns The LTI 1.3 sub (user_id) for the user, or null if not found.
+   * @returns The LTI 1.3 record for the user, or null if not found.
    */
-  async lookup(user: UsersWithLti13Sub): Promise<string | null> {
-    if (user.lti13_sub !== null) {
-      return user.lti13_sub;
-    }
-
+  async lookup(user: UsersWithLti13Sub): Promise<ContextMembership | null> {
+    // 1) This used to check user.lti13_sub from DB cache, but because we
+    // didn't have the full ContextMembership data cached, it was removed
+    // from this function. If we only need sub returned, perhaps break the
+    // cacheable lookup out to a different function.
+    // 2) Tests might need to be updated because lookup returns the full user not sub
     for (const match of ['uid', 'email']) {
       const memberResults = this.#memberships[user[match]];
 
@@ -720,8 +722,7 @@ class Lti13ContextMembership {
       // member.email cannot be duplicated in memberships
       if (memberResults.length > 1) return null;
 
-      // The `user_id` that we get from the membership API is what we call `lti13_sub`.
-      return memberResults[0].user_id;
+      return memberResults[0];
     }
 
     // The user wan't found.
@@ -771,28 +772,67 @@ export async function updateLti13Scores(
   const memberships = await Lti13ContextMembership.loadForInstance(instance);
   const timestamp = new Date();
 
-  const missingUsers: UsersWithLti13Sub[] = [];
-  let postedCount = 0;
+  let counts = {
+    success: 0,
+    error: 0,
+    not_sent: 0,
+  };
+
+  /*
+  https://github.com/PrairieLearn/PrairieLearn/issues/10900
+  To summarize it, I think we can get three lists of users:
+
+non-students in PL
+students in PL
+students in Canvas
+
+The groups are:
+
+student in PL and student in Canvas ==> push and report error if it fails
+non-student in PL and student in Canvas ==> push and report error if it fails
+
+non-student in PL and NOT student in Canvas ==> report that we skipping the user
+    because they are course staff
+
+student in PL and NOT student in Canvas ==> report that we are skipping the user
+    because they aren't in Canvas
+
+At the end, we should summarize the error cases (not the ones that we report we are skipping).
+
+*/
 
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
-      // Grading assessment instance #333 for mussulma@illinois.edu
-      //job.info(`ai=${assessment_instance.id}, ${assessment_instance.score_perc}% for ${user.name}`);
-      job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}`);
+      const ltiUser = await memberships.lookup(user);
+      const is_staff = await callRow(
+        'users_is_instructor_in_course_instance',
+        [user.user_id, assessment.course_instance_id],
+        z.boolean(),
+      );
 
-      const userId = await memberships.lookup(user);
-      console.log(userId);
-      if (userId === null) {
-        //job.warn(`* Could not find LTI user information for ${user.name} ${user.uid}, skipping...`);
-        job.warn(
-          `\tCould not find ${user.name} as a student in the linked ` +
-            `${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label} ` +
-            `(UID ${user.uid}${user.email ? ` email ${user.email}` : ''})`,
+      // User not found in LTI, reporting only
+      if (ltiUser === null) {
+        job.info(
+          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+            ` Could not find ${is_staff ? 'PL course staff' : 'PL student'} ${user.uid}` +
+            ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
         );
-        // Log the fail to report later
-        missingUsers.push(user);
+        counts.not_sent++;
         continue;
       }
+
+      // User is not a student in LTI, reporting only
+      if (!ltiUser.roles.includes(STUDENT_ROLE)) {
+        job.info(
+          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+            ` ${is_staff ? 'PL course staff' : 'PL student'} ${user.uid} is not a student` +
+            ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+        );
+        counts.not_sent++;
+        continue;
+      }
+
+      job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.`);
 
       const submittedAt = await selectAssessmentInstanceLastSubmissionDate(assessment_instance.id);
 
@@ -807,7 +847,7 @@ export async function updateLti13Scores(
         scoreMaximum: 100,
         activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
         gradingProgress: 'FullyGraded',
-        userId,
+        userId: ltiUser.user_id,
         submission: {
           startedAt: assessment_instance.date,
           submittedAt: submittedAt ?? undefined,
@@ -824,42 +864,18 @@ export async function updateLti13Scores(
       });
 
       if (res.ok) {
-        postedCount++;
+        counts.success++;
       } else {
+        counts.error++;
         const results = await res.json();
-        console.log(results);
-
-        // Handle the special cases
-
-        /*
-
-        // Unprocessable Entity
-        // {"errors":{"type":"unprocessable_entity","message":"User not found in course or is not a student"}}
-        if (results?.errors?.type === 'unprocessable_entity') {
-          missingUsers.push(user);
-          job.info(`\t${res.statusText}: ${results?.errors?.message}`);
-          continue;
-        }
-          */
 
         // Default to showing the whole error
-        job.info(`\t${res.statusText}`);
+        job.warn(`\t${res.statusText}`);
         job.warn(`\t${JSON.stringify(results)}`);
       }
     }
   }
   job.info('Done.\n\nSummary:');
-  job.info(`${postedCount} score${postedCount === 1 ? '' : 's'} successfully posted.`);
-
-  if (missingUsers) {
-    job.info(
-      'PrairieLearn users who do not exist as students in ' +
-        `${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}:`,
-    );
-    missingUsers.forEach((user) => {
-      job.info(
-        `\t${user.name} PrairieLearn UID: ${user.uid} UIN: ${user.uin} email: ${user.email}`,
-      );
-    });
-  }
+  job.info(`${counts.success} score${counts.success === 1 ? '' : 's'} successfully posted.`);
+  job.info(`${counts.error} error${counts.error === 1 ? '' : 's'} posting.`);
 }
