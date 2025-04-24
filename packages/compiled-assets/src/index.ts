@@ -9,7 +9,6 @@ import { globby } from 'globby';
 
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
-
 const DEFAULT_OPTIONS = {
   dev: process.env.NODE_ENV !== 'production',
   sourceDirectory: './assets',
