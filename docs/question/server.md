@@ -89,8 +89,8 @@ import math
 def grade(data):
     # Give half points for incorrect answers larger than "x", only if not already correct.
     # Use math.isclose to avoid possible floating point errors.
-    is_correct = math.isclose(data["score"], 1.0)
-    if not is_correct and data["submitted_answers"]["y"] > data["params"]["x"]:
+    y_is_correct = math.isclose(data["partial_scores"]["y"]["score"], 1.0)
+    if not y_is_correct and data["submitted_answers"]["y"] > data["params"]["x"]:
         data["partial_scores"]["y"]["score"] = 0.5
         data["score"] = set_weighted_score_data(data)
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
@@ -131,8 +131,8 @@ def parse(data):
 def grade(data):
     # Give half points for incorrect answers larger than "x", only if not already correct.
     # Use math.isclose to avoid possible floating point errors.
-    is_correct = math.isclose(data["score"], 1.0)
-    if not is_correct and data["submitted_answers"]["y"] > data["params"]["x"]:
+    y_is_correct = math.isclose(data["partial_scores"]["y"]["score"], 1.0)
+    if not y_is_correct and data["submitted_answers"]["y"] > data["params"]["x"]:
         data["partial_scores"]["y"]["score"] = 0.5
         data["score"] = set_weighted_score_data(data)
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
