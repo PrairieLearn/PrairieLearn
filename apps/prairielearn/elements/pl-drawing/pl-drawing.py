@@ -190,7 +190,7 @@ def render_controls(template, elem):
                 template,
                 {
                     "render_button": True,
-                    "button_class": type_name,
+                    "button_class": elem.attrib.get("type", ""),
                     "options": html.escape(json.dumps(opts), quote=True),
                 },
             ).strip()
