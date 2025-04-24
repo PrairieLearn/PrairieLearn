@@ -177,10 +177,10 @@ export function SampleQuestionDemo({
         rtol && variant.correctAnswer !== 0 ? relativeError <= rtol : false;
       const absoluteErrorValid = atol ? absoluteError <= atol : false;
 
-      const isValid = 
-          responseNum === variant.correctAnswer || 
-          (rtol && relativeErrorValid) || 
-          (atol && absoluteErrorValid);
+      const isValid =
+        responseNum === variant.correctAnswer ||
+        (rtol && relativeErrorValid) ||
+        (atol && absoluteErrorValid);
 
       if (isValid) {
         setGrade(100);
