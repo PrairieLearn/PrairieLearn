@@ -337,12 +337,10 @@ describe('Internally Graded Question Lifecycle Tests', () => {
             'attribute-empty-style': 'off',
             'no-dup-id': 'off',
             deprecated: 'off',
-            // 'void-style': 'off',
             'no-implicit-close': 'off',
             'close-order': 'off',
             'text-content': 'off',
             'element-required-attributes': 'off',
-            'attribute-allowed-values': 'off',
             'input-attributes': 'off',
 
             // Add other relevant html-validate rules to ignore if necessary
