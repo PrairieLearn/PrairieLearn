@@ -406,7 +406,7 @@ describe('Course instance syncing', () => {
     assert.equal(newCourseInstanceRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 
-  it('syncs JSON comments correctly', async () => {
+  it('syncs string comments correctly', async () => {
     const courseData = util.getCourseData();
     courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.comment =
       'course instance comment';
@@ -421,42 +421,58 @@ describe('Course instance syncing', () => {
     assert.equal(syncedCourseInstances[0].json_comment, 'course instance comment');
     let syncedAccessRules = await util.dumpTable('course_instance_access_rules');
     assert.equal(syncedAccessRules[0].json_comment, 'course instance access rule comment');
+  });
+
+  it('syncs array comments correctly', async () => {
+    const courseData = util.getCourseData();
     courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.comment = [
-      'comment1',
-      'comment2',
+      'course instance comment',
+      'course instance comment 2',
     ];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
       {
-        comment: ['comment1', 'comment2'],
+        comment: ['course instance access rule comment', 'course instance access rule comment 2'],
       },
     ];
-    await util.overwriteAndSyncCourseData(courseData, courseDir);
-    syncedCourseInstances = await util.dumpTable('course_instances');
-    assert.deepEqual(syncedCourseInstances[0].json_comment, ['comment1', 'comment2']);
-    syncedAccessRules = await util.dumpTable('course_instance_access_rules');
-    assert.deepEqual(syncedAccessRules[0].json_comment, ['comment1', 'comment2']);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    let syncedCourseInstances = await util.dumpTable('course_instances');
+    assert.deepEqual(syncedCourseInstances[0].json_comment, [
+      'course instance comment',
+      'course instance comment 2',
+    ]);
+    let syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    assert.deepEqual(syncedAccessRules[0].json_comment, [
+      'course instance access rule comment',
+      'course instance access rule comment 2',
+    ]);
+  });
+
+  it('syncs object comments correctly', async () => {
+    const courseData = util.getCourseData();
     courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.comment = {
-      comment1: 'comment1',
-      comment2: 'comment2',
+      comment: 'course instance comment',
+      comment2: 'course instance comment 2',
     };
     courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
       {
         comment: {
-          comment1: 'comment1',
-          comment2: 'comment2',
+          comment: 'course instance access rule comment',
+          comment2: 'course instance access rule comment 2',
         },
       },
     ];
-    await util.overwriteAndSyncCourseData(courseData, courseDir);
-    syncedCourseInstances = await util.dumpTable('course_instances');
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    let syncedCourseInstances = await util.dumpTable('course_instances');
     assert.deepEqual(syncedCourseInstances[0].json_comment, {
-      comment1: 'comment1',
-      comment2: 'comment2',
+      comment: 'course instance comment',
+      comment2: 'course instance comment 2',
     });
-    syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    let syncedAccessRules = await util.dumpTable('course_instance_access_rules');
     assert.deepEqual(syncedAccessRules[0].json_comment, {
-      comment1: 'comment1',
-      comment2: 'comment2',
+      comment: 'course instance access rule comment',
+      comment2: 'course instance access rule comment 2',
     });
   });
 });

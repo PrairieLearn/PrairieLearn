@@ -12,6 +12,7 @@ import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
 import { determineOperationsForEntities } from './entity-list.js';
+import type { CommentJson } from '../../schemas/comment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -19,7 +20,7 @@ interface DesiredTag {
   name: string;
   color: string;
   description?: string | null;
-  comment?: string | string[] | Record<string, any> | null;
+  comment?: CommentJson;
 }
 
 export async function sync(

@@ -6,7 +6,7 @@ import { run } from '@prairielearn/run';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { type AssessmentJson } from '../../schemas/index.js';
+import { type AssessmentJson, type CommentJson } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
@@ -123,7 +123,7 @@ function getParamsForAssessment(
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number | undefined;
-        comment?: string | string[] | Record<string, any> | null;
+        comment?: CommentJson;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -284,7 +284,7 @@ function getParamsForAssessment(
     student_group_join: !!assessment.studentGroupJoin,
     student_group_leave: !!assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
-    comment: JSON.stringify(assessment.comment),
+    comment: assessment.comment,
     has_roles: !!assessment.groupRoles,
     json_can_view: assessment.canView,
     json_can_submit: assessment.canSubmit,

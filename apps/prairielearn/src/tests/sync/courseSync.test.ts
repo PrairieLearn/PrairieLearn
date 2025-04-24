@@ -108,33 +108,36 @@ describe('Course syncing', () => {
     }
   });
 
-  it('syncs JSON comments correctly', async () => {
+  it('syncs string comments correctly', async () => {
     const courseData = util.getCourseData();
     courseData.course.comment = 'Course comment';
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const arrayCommentCourseData = courseData;
-    arrayCommentCourseData.course.uuid = '03fbaa19-69c5-41a9-922c-712136777781';
-    arrayCommentCourseData.course.title = 'Course with array comment';
-    arrayCommentCourseData.course.comment = ['comment 1', 'comment 2'];
-    const arrayCommentCourseDir = await util.writeCourseToTempDirectory(arrayCommentCourseData);
-    await util.syncCourseData(arrayCommentCourseDir);
-    const objectCommentCourseData = courseData;
-    arrayCommentCourseData.course.uuid = '96e305e2-a149-4342-8d4c-172c010b45f9';
-    arrayCommentCourseData.course.title = 'Course with object comment';
-    objectCommentCourseData.course.comment = {
-      comment1: 'comment 1',
-      comment2: 'comment 2',
-    };
-    const objectCommentCourseDir = await util.writeCourseToTempDirectory(objectCommentCourseData);
-    await util.syncCourseData(objectCommentCourseDir);
     const syncedCourses = await util.dumpTable('pl_courses');
-    assert.lengthOf(syncedCourses, 3);
+    assert.lengthOf(syncedCourses, 1);
     assert.equal(syncedCourses[0].json_comment, 'Course comment');
-    assert.deepEqual(syncedCourses[1].json_comment, ['comment 1', 'comment 2']);
-    assert.deepEqual(syncedCourses[2].json_comment, {
-      comment1: 'comment 1',
-      comment2: 'comment 2',
+  });
+
+  it('syncs array comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.comment = ['Course comment 1', 'Course comment 2'];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourses = await util.dumpTable('pl_courses');
+    assert.lengthOf(syncedCourses, 1);
+    assert.deepEqual(syncedCourses[0].json_comment, ['Course comment 1', 'Course comment 2']);
+  });
+
+  it('syncs object comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.comment = { comment: 'Course comment', comment2: 'Course comment 2' };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourses = await util.dumpTable('pl_courses');
+    assert.lengthOf(syncedCourses, 1);
+    assert.deepEqual(syncedCourses[0].json_comment, {
+      comment: 'Course comment',
+      comment2: 'Course comment 2',
     });
   });
 });

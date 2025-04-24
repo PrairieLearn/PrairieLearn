@@ -2568,7 +2568,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.assessment_questions[3].effective_advance_score_perc, 90);
   });
 
-  it('syncs JSON comments correctly', async () => {
+  it('syncs string comments correctly', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.comment = 'assessment comment';
@@ -2592,6 +2592,7 @@ describe('Assessment syncing', () => {
           alternatives: [
             {
               id: util.ALTERNATIVE_QUESTION_ID,
+              comment: 'alternative question comment',
             },
             {
               id: util.MANUAL_GRADING_QUESTION_ID,
@@ -2600,14 +2601,41 @@ describe('Assessment syncing', () => {
         },
       ],
     });
-    const assessmentWithArrayComments = makeAssessment(courseData, 'Homework');
-    assessmentWithArrayComments.comment = ['assessment comment 1', 'assessment comment 2'];
-    assessmentWithArrayComments.allowAccess = [
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testHomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('testHomework');
+    assert.equal(syncedData.assessment.json_comment, 'assessment comment');
+
+    const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
+    const rulesForAssessmentWithString = syncedAssessmentAccessRules.filter((aar) =>
+      idsEqual(aar.assessment_id, syncedData.assessment.id),
+    );
+    assert.lengthOf(rulesForAssessmentWithString, 1);
+    assert.equal(rulesForAssessmentWithString[0].json_comment, 'access rule');
+
+    assert.equal(syncedData.zones[0].json_comment, 'zone comment');
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID,
+    );
+    assert.equal(firstAssessmentQuestion?.json_comment, 'question comment');
+    assert.equal(syncedData.alternative_groups[1].json_comment, 'alternative group comment');
+    const alternativeQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+    );
+    assert.equal(alternativeQuestion?.json_comment, 'alternative question comment');
+  });
+
+  it('syncs array comments correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.comment = ['assessment comment 1', 'assessment comment 2'];
+    assessment.allowAccess = [
       {
-        comment: ['access rule 1', 'access rule 2'],
+        comment: ['access rule comment 1', 'access rule comment 2'],
       },
     ];
-    assessmentWithArrayComments.zones?.push({
+    assessment.zones?.push({
       title: 'zone 1',
       comment: ['zone comment 1', 'zone comment 2'],
       questions: [
@@ -2622,6 +2650,7 @@ describe('Assessment syncing', () => {
           alternatives: [
             {
               id: util.ALTERNATIVE_QUESTION_ID,
+              comment: ['alternative question comment 1', 'alternative question comment 2'],
             },
             {
               id: util.MANUAL_GRADING_QUESTION_ID,
@@ -2630,12 +2659,54 @@ describe('Assessment syncing', () => {
         },
       ],
     });
-    const assessmentWithObjectComments = makeAssessment(courseData, 'Homework');
-    assessmentWithObjectComments.comment = {
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testHomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('testHomework');
+    assert.deepEqual(syncedData.assessment.json_comment, [
+      'assessment comment 1',
+      'assessment comment 2',
+    ]);
+
+    const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
+    const rulesForAssessmentWithString = syncedAssessmentAccessRules.filter((aar) =>
+      idsEqual(aar.assessment_id, syncedData.assessment.id),
+    );
+    assert.lengthOf(rulesForAssessmentWithString, 1);
+    assert.deepEqual(rulesForAssessmentWithString[0].json_comment, [
+      'access rule comment 1',
+      'access rule comment 2',
+    ]);
+
+    assert.deepEqual(syncedData.zones[0].json_comment, ['zone comment 1', 'zone comment 2']);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID,
+    );
+    assert.deepEqual(firstAssessmentQuestion?.json_comment, [
+      'question comment 1',
+      'question comment 2',
+    ]);
+    assert.deepEqual(syncedData.alternative_groups[1].json_comment, [
+      'alternative group comment 1',
+      'alternative group comment 2',
+    ]);
+    const alternativeQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+    );
+    assert.deepEqual(alternativeQuestion?.json_comment, [
+      'alternative question comment 1',
+      'alternative question comment 2',
+    ]);
+  });
+
+  it('syncs object comments correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.comment = {
       comment: 'assessment comment',
       comment2: 'assessment comment 2',
     };
-    assessmentWithObjectComments.allowAccess = [
+    assessment.allowAccess = [
       {
         comment: {
           comment: 'access rule comment',
@@ -2643,7 +2714,7 @@ describe('Assessment syncing', () => {
         },
       },
     ];
-    assessmentWithObjectComments.zones?.push({
+    assessment.zones?.push({
       title: 'zone 1',
       comment: {
         comment: 'zone comment',
@@ -2667,6 +2738,10 @@ describe('Assessment syncing', () => {
           alternatives: [
             {
               id: util.ALTERNATIVE_QUESTION_ID,
+              comment: {
+                comment: 'alternative question comment',
+                comment2: 'alternative question comment 2',
+              },
             },
             {
               id: util.MANUAL_GRADING_QUESTION_ID,
@@ -2675,90 +2750,46 @@ describe('Assessment syncing', () => {
         },
       ],
     });
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkWithStringComments'] =
-      assessment;
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkWithArrayComments'] =
-      assessmentWithArrayComments;
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkWithObjectComments'] =
-      assessmentWithObjectComments;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testHomework'] = assessment;
     await util.writeAndSyncCourseData(courseData);
-    const assessmentWithStringComments = await getSyncedAssessmentData(
-      'homeworkWithStringComments',
-    );
-    assert.equal(assessmentWithStringComments.assessment.json_comment, 'assessment comment');
-
-    const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
-    const rulesForAssessmentWithString = syncedAssessmentAccessRules.filter((aar) =>
-      idsEqual(aar.assessment_id, assessmentWithStringComments.assessment.id),
-    );
-    assert.lengthOf(rulesForAssessmentWithString, 1);
-    assert.equal(rulesForAssessmentWithString[0].json_comment, 'access rule');
-
-    assert.equal(assessmentWithStringComments.zones[0].json_comment, 'zone comment');
-
-    const firstAssessmentQuestion = assessmentWithStringComments.assessment_questions.find(
-      (aq) => aq.question.qid === util.QUESTION_ID,
-    );
-    assert.equal(firstAssessmentQuestion?.json_comment, 'question comment');
-    assert.equal(
-      assessmentWithStringComments.alternative_groups[1].json_comment,
-      'alternative group comment',
-    );
-
-    const assessmentWithArrayCommentsData = await getSyncedAssessmentData(
-      'homeworkWithArrayComments',
-    );
-    const rulesForAssessmentWithArray = syncedAssessmentAccessRules.filter((aar) =>
-      idsEqual(aar.assessment_id, assessmentWithArrayCommentsData.assessment.id),
-    );
-    assert.lengthOf(rulesForAssessmentWithArray, 1);
-    assert.deepEqual(rulesForAssessmentWithArray[0].json_comment, [
-      'access rule 1',
-      'access rule 2',
-    ]);
-    assert.deepEqual(assessmentWithArrayCommentsData.assessment.json_comment, [
-      'assessment comment 1',
-      'assessment comment 2',
-    ]);
-    assert.deepEqual(assessmentWithArrayCommentsData.zones[0].json_comment, [
-      'zone comment 1',
-      'zone comment 2',
-    ]);
-    assert.deepEqual(assessmentWithArrayCommentsData.assessment_questions[0].json_comment, [
-      'question comment 1',
-      'question comment 2',
-    ]);
-    assert.deepEqual(assessmentWithArrayCommentsData.alternative_groups[1].json_comment, [
-      'alternative group comment 1',
-      'alternative group comment 2',
-    ]);
-
-    const assessmentWithObjectCommentsData = await getSyncedAssessmentData(
-      'homeworkWithObjectComments',
-    );
-    const rulesForAssessmentWithObject = syncedAssessmentAccessRules.filter((aar) =>
-      idsEqual(aar.assessment_id, assessmentWithObjectCommentsData.assessment.id),
-    );
-    assert.lengthOf(rulesForAssessmentWithObject, 1);
-    assert.deepEqual(rulesForAssessmentWithObject[0].json_comment, {
-      comment: 'access rule comment',
-      comment2: 'access rule comment 2',
-    });
-    assert.deepEqual(assessmentWithObjectCommentsData.assessment.json_comment, {
+    const syncedData = await getSyncedAssessmentData('testHomework');
+    assert.deepEqual(syncedData.assessment.json_comment, {
       comment: 'assessment comment',
       comment2: 'assessment comment 2',
     });
-    assert.deepEqual(assessmentWithObjectCommentsData.zones[0].json_comment, {
+
+    const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
+    const rulesForAssessmentWithString = syncedAssessmentAccessRules.filter((aar) =>
+      idsEqual(aar.assessment_id, syncedData.assessment.id),
+    );
+    assert.lengthOf(rulesForAssessmentWithString, 1);
+    assert.deepEqual(rulesForAssessmentWithString[0].json_comment, {
+      comment: 'access rule comment',
+      comment2: 'access rule comment 2',
+    });
+
+    assert.deepEqual(syncedData.zones[0].json_comment, {
       comment: 'zone comment',
       comment2: 'zone comment 2',
     });
-    assert.deepEqual(assessmentWithObjectCommentsData.assessment_questions[0].json_comment, {
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID,
+    );
+    assert.deepEqual(firstAssessmentQuestion?.json_comment, {
       comment: 'question comment',
       comment2: 'question comment 2',
     });
-    assert.deepEqual(assessmentWithObjectCommentsData.alternative_groups[1].json_comment, {
+    assert.deepEqual(syncedData.alternative_groups[1].json_comment, {
       comment: 'alternative group comment',
       comment2: 'alternative group comment 2',
+    });
+    const alternativeQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+    );
+    assert.deepEqual(alternativeQuestion?.json_comment, {
+      comment: 'alternative question comment',
+      comment2: 'alternative question comment 2',
     });
   });
 });
