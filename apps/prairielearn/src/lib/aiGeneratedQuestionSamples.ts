@@ -7,7 +7,7 @@ export interface ExamplePrompt {
   /* Describes what the question answer is, e.g. dot product or velocity */
   answerLabel?: string;
   answerUnits?: string;
-  /* Placeholder text to be displayed in the response input field */
+  /* Numeric tolerances for grading number answers */
   rtol?: number;
   atol?: number;
 }
