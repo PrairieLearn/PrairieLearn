@@ -7,14 +7,16 @@ def generate(data):
     name_greek_list = ["$\\gamma$", "$\\mu$", "$\\sigma$", "$\\lambda$", "$\\alpha$"]
 
     # Generate complete html string
-    mytable = '<table style="width:30%"><thead><tr><th scope="col"> Name </th> <th scope="col"> Age </th> <th scope="col"> Id </th></tr></thead><tbody>'
+    mytable = '<table style="width:30%"><thead><tr><th> Name </th> <th> Age </th> <th> Id </th></tr></thead><tbody>'
     for name, age, name_greek in zip(name_list, age_list, name_greek_list, strict=True):
         mytable += f"<tr><td> {name} </td><td> {age} </td><td> {name_greek} </td></tr>"
     mytable += "</table>"
     data["params"]["mytable"] = mytable
 
     # Generate only the table content
-    mytable2 = '<thead><tr><th scope="col"> Name </th> <th scope="col"> Age </th> <th scope="col"> Id </th></tr></thead><tbody>'
+    mytable2 = (
+        "<thead><tr><th> Name </th> <th> Age </th> <th> Id </th></tr></thead><tbody>"
+    )
     for name, age, name_greek in zip(name_list, age_list, name_greek_list, strict=True):
         mytable2 += f"<tr><td> {name} </td><td> {age} </td><td> {name_greek} </td></tr>"
     mytable2 += "</tbody>"
