@@ -721,7 +721,7 @@ class Lti13ContextMembership {
       return memberResults[0];
     }
 
-    // The user wan't found.
+    // The user wasn't found.
     return null;
   }
 }
