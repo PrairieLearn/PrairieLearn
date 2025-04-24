@@ -105,7 +105,7 @@ function SampleQuestionSelector({
           style={{ width: '100%' }}
           className="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
         >
-          <span class="overflow-hidden text-truncate">{selectedQuestionName}</span>
+          {selectedQuestionName}
         </DropdownToggle>
         <DropdownMenu>
           <div>
