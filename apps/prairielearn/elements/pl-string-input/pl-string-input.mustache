@@ -41,6 +41,7 @@
                 {{^editable}}disabled{{/editable}}
                 placeholder="{{placeholder}}"
                 {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
+                {{^label}}aria-label="Variable {{name}}"{{/label}}
             >{{raw_submitted_answer}}</textarea>
     {{/multiline}}
     {{^multiline}}
@@ -143,6 +144,7 @@
             style="resize: none;"
             disabled
             aria-describedby="pl-string-input-submission-{{uuid}}-suffix"
+            {{^label}}aria-label="Variable {{name}}"{{/label}}
         >{{a_sub}}</textarea>
         {{#a_sub}}
         <button
