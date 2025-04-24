@@ -174,9 +174,24 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Might be worth moving everything out of the CSS file and handle it all with the builtin styler.
     frame_style.set_table_attributes("class=pl-dataframe-table")
 
+    # Generate the initial HTML
+    frame_html_raw = frame_style.to_html()
+
+    # https://www.w3.org/WAI/WCAG21/Techniques/html/H63
+    html_root = lxml.html.fromstring(frame_html_raw)
+    for th in html_root.xpath("//th[contains(@class, 'blank')]"):
+        th.set("scope", "colgroup")
+    for th in html_root.xpath("//th[contains(@class, 'col_heading')]"):
+        th.set("scope", "col")
+    for th in html_root.xpath("//th[contains(@class, 'row_heading')]"):
+        th.set("scope", "row")
+
+    # Convert back to string
+    frame_html = lxml.html.tostring(html_root, encoding="unicode")
+
     html_params: dict[str, str | bool | int] = {
         "uuid": pl.get_uuid(),
-        "frame_html": frame_style.to_html(),
+        "frame_html": frame_html,  # Use the modified HTML
         "code_string": pprint.pformat(
             frame.to_dict(), width=width, indent=4, sort_dicts=False
         ),
