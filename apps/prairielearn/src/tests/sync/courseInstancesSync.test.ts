@@ -417,9 +417,9 @@ describe('Course instance syncing', () => {
     ];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    let syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstances = await util.dumpTable('course_instances');
     assert.equal(syncedCourseInstances[0].json_comment, 'course instance comment');
-    let syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
     assert.equal(syncedAccessRules[0].json_comment, 'course instance access rule comment');
   });
 
@@ -436,12 +436,12 @@ describe('Course instance syncing', () => {
     ];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    let syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstances = await util.dumpTable('course_instances');
     assert.deepEqual(syncedCourseInstances[0].json_comment, [
       'course instance comment',
       'course instance comment 2',
     ]);
-    let syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
     assert.deepEqual(syncedAccessRules[0].json_comment, [
       'course instance access rule comment',
       'course instance access rule comment 2',
@@ -464,12 +464,12 @@ describe('Course instance syncing', () => {
     ];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    let syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstances = await util.dumpTable('course_instances');
     assert.deepEqual(syncedCourseInstances[0].json_comment, {
       comment: 'course instance comment',
       comment2: 'course instance comment 2',
     });
-    let syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
     assert.deepEqual(syncedAccessRules[0].json_comment, {
       comment: 'course instance access rule comment',
       comment2: 'course instance access rule comment 2',

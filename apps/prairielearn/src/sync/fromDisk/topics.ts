@@ -1,11 +1,11 @@
 import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { TopicSchema } from '../../lib/db-types.js';
+import type { CommentJson } from '../../schemas/comment.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
 import { determineOperationsForEntities } from './entity-list.js';
-import type { CommentJson } from '../../schemas/comment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
