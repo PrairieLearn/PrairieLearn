@@ -179,10 +179,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     # https://www.w3.org/WAI/WCAG21/Techniques/html/H63
     html_root = lxml.html.fromstring(frame_html_raw)
-    for th in html_root.xpath("//th[contains(@class, 'blank')]"):
-        th.set("scope", "colgroup")
-    for th in html_root.xpath("//th[contains(@class, 'col_heading')]"):
-        th.set("scope", "col")
     for th in html_root.xpath("//th[contains(@class, 'row_heading')]"):
         th.set("scope", "row")
 
