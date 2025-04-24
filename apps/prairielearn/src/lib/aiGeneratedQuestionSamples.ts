@@ -33,8 +33,7 @@ export const examplePrompts: ExamplePrompt[] = [
     id: 'convert-radians-to-degrees',
     name: 'Convert angle in radians to degrees',
     features: ['Random parameters', 'Number input', 'Single correct answer'],
-    prompt:
-      'Prompt the user to convert a random angle in radians, in terms of pi, to degrees.',
+    prompt: 'Prompt the user to convert a random angle in radians, in terms of pi, to degrees.',
     answerLabel: '$$ \\theta =$$',
     answerType: 'number',
     rtol: 0.01,

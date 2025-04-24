@@ -67,11 +67,7 @@ export function InstructorAIGenerateDrafts({
           Back to all questions
         </a>
       </div>
-      <div
-        id="add-question-card"
-        class="card mb-5 mx-auto"
-        style="max-width: 700px"
-      >
+      <div id="add-question-card" class="card mb-5 mx-auto" style="max-width: 700px">
         <div class="card-body position-relative">
           <h1 class="h3 text-center">Generate a new question with AI</h1>
           <form
@@ -85,7 +81,11 @@ export function InstructorAIGenerateDrafts({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="generate_question" />
 
-            <div id="sample-questions" class="mb-3" data-start-open="${sampleQuestionOpen ? true : false}"></div>
+            <div
+              id="sample-questions"
+              class="mb-3"
+              data-start-open="${sampleQuestionOpen ? true : false}"
+            ></div>
 
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
