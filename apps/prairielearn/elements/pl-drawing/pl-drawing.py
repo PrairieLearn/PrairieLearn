@@ -162,9 +162,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render_controls(template, elem):
-    additional_button_labels = {
-        "delete": "Delete",
-    }
     if elem.tag == "pl-controls":
         markup = ""
         for el in elem:
@@ -194,11 +191,6 @@ def render_controls(template, elem):
                 {
                     "render_button": True,
                     "button_class": type_name,
-                    "button_label": elements.element_labels.get(type_name)
-                    or additional_button_labels.get(
-                        type_name,
-                        type_name,
-                    ),
                     "options": html.escape(json.dumps(opts), quote=True),
                 },
             ).strip()

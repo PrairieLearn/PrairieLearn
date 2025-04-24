@@ -2390,43 +2390,7 @@ elements["pl-resistor"] = Resistor
 elements["pl-inductor"] = Inductor
 elements["pl-switch"] = Switch
 
-element_labels = {
-    "pl-4pointrod": "4 Point Rod",
-    "pl-3pointrod": "3 Point Rod",
-    "pl-arc": "Arc",
-    "pl-arc-dimensions": "Arc Dimensions",
-    "pl-arc-vector": "Arc Vector",
-    "pl-axes": "Axes",
-    "pl-circle": "Circle",
-    "pl-clamped": "Clamped",
-    "pl-collar-rod": "Collar Rod",
-    "pl-controlled-curved-line": "Controlled Curved Line",
-    "pl-controlled-line": "Controlled Line",
-    "pl-coordinates": "Coordinates",
-    "pl-dimensions": "Dimensions",
-    "pl-distributed-load": "Distributed Load",
-    "pl-double-headed-vector": "Double Headed Vector",
-    "pl-fixed-pin": "Fixed Pin",
-    "pl-graph-line": "Graph Line",
-    "pl-line": "Line",
-    "pl-point": "Point",
-    "pl-polygon": "Polygon",
-    "pl-pulley": "Pulley",
-    "pl-rectangle": "Rectangle",
-    "pl-rod": "Rod",
-    "pl-roller": "Roller",
-    "pl-spring": "Spring",
-    "pl-coil": "Coil",
-    "pl-text": "Text",
-    "pl-triangle": "Triangle",
-    "pl-vector": "Vector",
-    "pl-paired-vector": "Paired Vector",
-    "pl-capacitor": "Capacitor",
-    "pl-battery": "Battery",
-    "pl-resistor": "Resistor",
-    "pl-inductor": "Inductor",
-    "pl-switch": "Switch",
-}
+
 # Base Elements
 
 
