@@ -12,38 +12,6 @@ export interface ExamplePrompt {
   atol?: number;
 }
 
-export interface VariantOption {
-  letter?: string;
-  value: string;
-}
-
-// Given a variant option, prepend its option letter (if available) to its value.
-// e.g. Provided a variant option with letter 'a' and value 'Blue', this function would return '(a) Blue'
-export const variantOptionToString = (option: VariantOption) => {
-  return `${option.letter ? `(${option.letter}) ` : ''}${option.value}`;
-};
-
-export interface CheckboxOrRadioVariant {
-  answerType: 'checkbox' | 'radio';
-  question: string;
-  options: VariantOption[];
-  correctAnswer: VariantOption[];
-}
-
-export interface StringVariant {
-  answerType: 'string';
-  question: string;
-  correctAnswer: string;
-}
-
-export interface NumberVariant {
-  answerType: 'number';
-  question: string;
-  correctAnswer: number;
-}
-
-export type SampleQuestionVariant = CheckboxOrRadioVariant | StringVariant | NumberVariant;
-
 export const examplePrompts: ExamplePrompt[] = [
   {
     id: 'cities-in-random-country',
@@ -146,6 +114,17 @@ export const examplePrompts: ExamplePrompt[] = [
   },
 ];
 
+export interface VariantOption {
+  letter?: string;
+  value: string;
+}
+
+// Given a variant option, prepend its option letter (if available) to its value.
+// e.g. Provided a variant option with letter 'a' and value 'Blue', this function would return '(a) Blue'
+export const variantOptionToString = (option: VariantOption) => {
+  return `${option.letter ? `(${option.letter}) ` : ''}${option.value}`;
+};
+
 const convertStringListToVariantOptions = (options: string[], includeLetter = true) => {
   const optionsArray = options.map((option) => option.trim());
   return optionsArray.map((option, index) => ({
@@ -159,6 +138,24 @@ const findCorrectVariantOptions = (options: VariantOption[], correctAnswers: str
     correctAnswers.map((answer) => answer.trim()).includes(option.value),
   );
 };
+
+export type SampleQuestionVariant =
+  | {
+      answerType: 'checkbox' | 'radio';
+      question: string;
+      options: VariantOption[];
+      correctAnswer: VariantOption[];
+    }
+  | {
+      answerType: 'string';
+      question: string;
+      correctAnswer: string;
+    }
+  | {
+      answerType: 'number';
+      question: string;
+      correctAnswer: number;
+    };
 
 export function generateSampleQuestionVariant(id: string) {
   let variant: SampleQuestionVariant;
