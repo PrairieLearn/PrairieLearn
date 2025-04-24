@@ -2325,13 +2325,14 @@ def generate(data):
 
 #### Customizations
 
-| Attribute      | Type    | Default | Description                                                                                                                                                          |
-| -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name` | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
-| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
-| `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
-| `allow-blank`  | boolean | false   | Whether an empty submission is allowed. By default, empty dropdowns will not be graded (invalid format).                                                             |
+| Attribute         | Type    | Default | Description                                                                                                                                                          |
+| ----------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`    | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `weight`          | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
+| `sort`            | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
+| `blank`           | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
+| `allow-blank`     | boolean | false   | Whether an empty submission is allowed. By default, empty dropdowns will not be graded (invalid format).                                                             |
+| `aria-labelledby` | string  | None    | ID of the element that labels this dropdown.                                                                                                                         |
 
 #### Example implementation
 

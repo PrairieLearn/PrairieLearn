@@ -1,6 +1,12 @@
 {{#question}}
     <span class="d-inline-block mb-3">
-        <select name="{{answers-name}}" class="form-select w-auto" {{^editable}}disabled{{/editable}}>
+        <select
+            name="{{answers-name}}"
+            class="form-select w-auto"
+            {{^editable}}disabled{{/editable}}
+            {{#aria-labelledby}}aria-labelledby="{{aria-labelledby}}"{{/aria-labelledby}}
+            {{#aria-label}}aria-label="{{aria-label}}"{{/aria-label}}
+        >
             {{#options}}
                 <option value="{{value}}" {{#selected}}selected{{/selected}}>{{{value}}}</option>
             {{/options}}
