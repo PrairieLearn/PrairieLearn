@@ -7,15 +7,15 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { config } from '../../../lib/config.js';
-import { type AssessmentQuestion, type Course, type Question } from '../../../lib/db-types.js';
-import * as manualGrading from '../../../lib/manualGrading.js';
-import { buildQuestionUrls } from '../../../lib/question-render.js';
-import { getQuestionCourse } from '../../../lib/question-variant.js';
-import { createServerJob } from '../../../lib/server-jobs.js';
-import * as questionServers from '../../../question-servers/index.js';
+import { config } from '../../lib/config.js';
+import { type AssessmentQuestion, type Course, type Question } from '../../lib/db-types.js';
+import * as manualGrading from '../../lib/manualGrading.js';
+import { buildQuestionUrls } from '../../lib/question-render.js';
+import { getQuestionCourse } from '../../lib/question-variant.js';
+import { createServerJob } from '../../lib/server-jobs.js';
+import * as questionServers from '../../question-servers/index.js';
 
-import * as aiGradingUtil from './ai-grading-util.js';
+import * as aiGradingUtil from './ai-grading/ai-grading-util.js';
 
 export async function aiGrade({
   course,
