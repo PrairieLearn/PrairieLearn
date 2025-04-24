@@ -708,7 +708,7 @@ class Lti13ContextMembership {
    * @param user The user to look up.
    * @returns The LTI 1.3 record for the user, or null if not found.
    */
-  async lookup(user: UsersWithLti13Sub): Promise<ContextMembership | null> {
+  lookup(user: UsersWithLti13Sub): ContextMembership | null {
     for (const match of ['uid', 'email']) {
       const memberResults = this.#memberships[user[match]];
 
@@ -750,8 +750,6 @@ export async function updateLti13Scores(
 
   job.info(`Working on assessment ${assessment.title} (${assessment.tid}):`);
 
-  const token = await getAccessToken(instance.lti13_instance.id);
-
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
     {
@@ -771,8 +769,9 @@ export async function updateLti13Scores(
   const course_staff = new Set(course_staff_data.map((staff) => staff.uid));
 
   const memberships = await Lti13ContextMembership.loadForInstance(instance);
-  const timestamp = new Date();
 
+  const token = await getAccessToken(instance.lti13_instance.id);
+  const timestamp = new Date();
   const counts = {
     success: 0,
     error: 0,
@@ -781,7 +780,7 @@ export async function updateLti13Scores(
 
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
-      const ltiUser = await memberships.lookup(user);
+      const ltiUser = memberships.lookup(user);
       const is_staff = course_staff.has(user.uid);
 
       // User not found in LTI, reporting only
