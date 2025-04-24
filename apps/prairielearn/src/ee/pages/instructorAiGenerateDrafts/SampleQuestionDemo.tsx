@@ -40,7 +40,7 @@ export function SampleQuestionDemo({
   const [variant, setVariant] = useState<SampleQuestionVariant | null>(null);
   const [questionContent, setQuestionContent] = useState<VNode | null>(null);
 
-  // Used if the question has a number or string response
+  // Used if the question receives a number or string response
   const [userInputResponse, setUserInputResponse] = useState('');
 
   // Used if the question has a checkbox or multiple choice response
