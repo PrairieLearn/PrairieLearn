@@ -75,12 +75,9 @@ export function SampleQuestionDemo({
   const handleGenerateNewVariant = async () => {
     // Clear the previous question content
     setQuestionContent(null);
-
-    // TODO: This timeout exists to ensure that unrendered MathJax content is placed into the
-    //       DOM before the mathjaxTypeset is called. Without it, the MathJax content does not update.
-    //       However, this timeout causes a flicker when a new question variant is loaded. We need
-    //       to find a better solution.
-    await new Promise((resolve) => setTimeout(() => resolve(true), 10));
+    // Ensure the component is rendered before typesetting MathJax
+    // TODO: This results in flickering. Find a better solution.
+    await new Promise(resolve => requestAnimationFrame(resolve));
 
     // Clear the grade shown to the user
     setGrade(null);
@@ -146,15 +143,10 @@ export function SampleQuestionDemo({
   };
 
   const handleTypesetMathjax = async () => {
-    // TODO: This timeout exists to ensure that unrendered MathJax content is placed into the
-    //       DOM before the mathjaxTypeset is called. Without it, the MathJax content does not update.
-    //       However, this timeout causes a flicker when a new question variant is loaded. We need
-    //       to find a better solution.
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(true);
-      }, 10);
-    });
+
+    // Ensure the component is rendered before typesetting MathJax
+    // TODO: This results in flickering. Find a better solution.
+    await new Promise(resolve => requestAnimationFrame(resolve));
     await onMathjaxTypeset();
   };
 
@@ -240,11 +232,10 @@ export function SampleQuestionDemo({
 
   const handleUpdateAnswerLabel = async () => {
     setAnswerLabel(null);
-    // TODO: This timeout exists to ensure that unrendered MathJax content is placed into the
-    //       DOM before the mathjaxTypeset is called. Without it, the MathJax content does not update.
-    //       However, this timeout causes a flicker when a new question variant is loaded. We need
-    //       to find a better solution.
-    await new Promise((resolve) => setTimeout(() => resolve(true), 10));
+    
+    // Ensure the component is rendered before typesetting MathJax
+    // TODO: This results in flickering. Find a better solution.
+    await new Promise(resolve => requestAnimationFrame(resolve));
     if (prompt.answerLabel) {
       setAnswerLabel(prompt.answerLabel);
     }
