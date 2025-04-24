@@ -13,7 +13,6 @@
       "react-dom": ["./node_modules/preact/compat/", "../../../node_modules/preact/compat/"],
       "react-dom/*": ["./node_modules/preact/compat/*", "../../../node_modules/preact/compat/*"]
     }
-
   },
   "include": ["**/*"]
 }

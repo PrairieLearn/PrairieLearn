@@ -21,10 +21,7 @@ const DropdownItem = DropdownItemOriginal as unknown as typeof DropdownItemOrigi
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { render } from '@prairielearn/preact-cjs';
-import {
-  useMemo,
-  useState
-} from '@prairielearn/preact-cjs/hooks';
+import { useMemo, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
 import { examplePrompts } from '../../src/lib/aiGeneratedQuestionSamples.js';
@@ -35,72 +32,63 @@ onDocumentReady(() => {
   const sampleQuestions = document.querySelector('#sample-questions') as HTMLElement;
   const startOpen = sampleQuestions.dataset.startOpen === 'true';
 
-  function SampleQuestionSelector(
-    {
-      selectedQuestionName,
-      selectedQuestionIndex,
-      onSelectQuestionIndex,
-      onClickPrevious,
-      onClickNext
-    } : {
-      selectedQuestionName: string;
-      selectedQuestionIndex: number;
-      onSelectQuestionIndex: (index: number) => void;
-      onClickPrevious: () => void;
-      onClickNext: () => void;
-    }
-  ) {
-    return <div
-      style={{ width: '100%' }}
-      className="d-flex align-items-center gap-2 mb-3 flex-wrap"
-    >
-      <Dropdown
-        style={{ flex: 1 }}
-        onSelect={(eventKey) => onSelectQuestionIndex(Number(eventKey))}
-      >
-        <DropdownToggle
-          as="button"
-          type="button"
-          style={{ width: '100%' }}
-          className="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
+  function SampleQuestionSelector({
+    selectedQuestionName,
+    selectedQuestionIndex,
+    onSelectQuestionIndex,
+    onClickPrevious,
+    onClickNext,
+  }: {
+    selectedQuestionName: string;
+    selectedQuestionIndex: number;
+    onSelectQuestionIndex: (index: number) => void;
+    onClickPrevious: () => void;
+    onClickNext: () => void;
+  }) {
+    return (
+      <div style={{ width: '100%' }} className="d-flex align-items-center gap-2 mb-3 flex-wrap">
+        <Dropdown
+          style={{ flex: 1 }}
+          onSelect={(eventKey) => onSelectQuestionIndex(Number(eventKey))}
         >
-          {selectedQuestionName}
-        </DropdownToggle>
-        <DropdownMenu>
-          <div>
-            {examplePrompts.map((prompt, index) => (
-              <DropdownItem
-                key={prompt.id}
-                active={index === selectedQuestionIndex}
-                eventKey={index.toString()}
-              >
-                {prompt.name}
-              </DropdownItem>
-            ))}
-          </div>
-        </DropdownMenu>
-      </Dropdown>
-      <div class="d-flex align-items-center gap-2">
-        <Button onClick={onClickPrevious} disabled={selectedQuestionIndex === 0}>
-          Previous
-        </Button>
-        <Button
-          onClick={onClickNext}
-          disabled={selectedQuestionIndex === examplePrompts.length - 1}
-        >
-          Next
-        </Button>
+          <DropdownToggle
+            as="button"
+            type="button"
+            style={{ width: '100%' }}
+            className="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
+          >
+            {selectedQuestionName}
+          </DropdownToggle>
+          <DropdownMenu>
+            <div>
+              {examplePrompts.map((prompt, index) => (
+                <DropdownItem
+                  key={prompt.id}
+                  active={index === selectedQuestionIndex}
+                  eventKey={index.toString()}
+                >
+                  {prompt.name}
+                </DropdownItem>
+              ))}
+            </div>
+          </DropdownMenu>
+        </Dropdown>
+        <div className="d-flex align-items-center gap-2">
+          <Button onClick={onClickPrevious} disabled={selectedQuestionIndex === 0}>
+            Previous
+          </Button>
+          <Button
+            onClick={onClickNext}
+            disabled={selectedQuestionIndex === examplePrompts.length - 1}
+          >
+            Next
+          </Button>
+        </div>
       </div>
-    </div>
+    );
   }
 
-  function FeatureList(
-    {
-      features
-    }: {
-      features: {id: number, text: string}[]
-    }
-  ) {
+  function FeatureList({ features }: { features: { id: number; text: string }[] }) {
     return (
       <>
         <p className="fw-bold mb-1 mt-3">Question features</p>
@@ -110,18 +98,10 @@ onDocumentReady(() => {
           ))}
         </ul>
       </>
-    )
+    );
   }
 
-  function SampleQuestionPrompt(
-    {
-      prompt
-    }: {
-      prompt: string;
-    }
-  ) {
-
-
+  function SampleQuestionPrompt({ prompt }: { prompt: string }) {
     const handleFillPrompt = () => {
       const promptTextarea = document.querySelector('#user-prompt-llm') as HTMLTextAreaElement;
       promptTextarea.value = prompt;
@@ -137,7 +117,7 @@ onDocumentReady(() => {
           Fill prompt
         </Button>
       </>
-    )   
+    );
   }
 
   function SampleQuestion() {
@@ -171,18 +151,14 @@ onDocumentReady(() => {
               onClickPrevious={handleClickPrevious}
               onClickNext={handleClickNext}
             />
-            <SampleQuestionDemo 
-              prompt={selectedQuestion} 
-              onMathjaxTypeset={mathjaxTypeset}
-            />
-            <FeatureList 
+            <SampleQuestionDemo prompt={selectedQuestion} onMathjaxTypeset={mathjaxTypeset} />
+            <FeatureList
               features={selectedQuestion.features.map((feature, index) => ({
-                id: index, text: feature
+                id: index,
+                text: feature,
               }))}
             />
-            <SampleQuestionPrompt
-              prompt={selectedQuestion.prompt}
-            />
+            <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
           </AccordionBody>
         </AccordionItem>
       </Accordion>

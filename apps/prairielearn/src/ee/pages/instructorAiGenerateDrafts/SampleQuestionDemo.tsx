@@ -30,13 +30,12 @@ import {
   variantOptionToString,
 } from '../../../lib/aiGeneratedQuestionSamples.js';
 
-
-export function SampleQuestionDemo({ 
-  prompt, 
-  onMathjaxTypeset 
-}: { 
-  prompt: ExamplePrompt, 
-  onMathjaxTypeset: () => Promise<void>
+export function SampleQuestionDemo({
+  prompt,
+  onMathjaxTypeset,
+}: {
+  prompt: ExamplePrompt;
+  onMathjaxTypeset: () => Promise<void>;
 }) {
   const [variant, setVariant] = useState<SampleQuestionVariant | null>(null);
   const [questionContent, setQuestionContent] = useState<VNode | null>(null);
